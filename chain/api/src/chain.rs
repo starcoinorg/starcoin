@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -118,6 +119,13 @@ pub trait ChainReader {
     fn get_pruning_height(&self) -> BlockNumber;
     fn get_pruning_config(&self) -> (u64, u64);
     fn get_genesis_hash(&self) -> HashValue;
+    fn get_dag(&self) -> BlockDAG;
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()>;
 }
 
 pub trait ChainWriter {

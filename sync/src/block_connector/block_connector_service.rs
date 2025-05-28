@@ -12,25 +12,31 @@ use crate::block_connector::{
 };
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
-use anyhow::{bail, format_err, Ok, Result};
+#[cfg(test)]
+use anyhow::bail;
+use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
+use starcoin_chain::ChainWriter;
+use starcoin_chain_api::VerifiedBlock;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::blockdag::MineNewDagBlockInfo;
+use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
+use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
+use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
-use starcoin_sync_api::SyncSpecificTargretRequest;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -38,11 +44,11 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
-
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
@@ -53,6 +59,10 @@ where
     chain_service: WriteBlockChainService<TransactionPoolServiceT>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
+    storage: Arc<Storage>,
+    vm_metrics: Option<VMMetrics>,
+    genesis: Genesis,
+    pruning_point_channel: PruningPointInfoChannel,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -62,11 +72,19 @@ where
     pub fn new(
         chain_service: WriteBlockChainService<TransactionPoolServiceT>,
         config: Arc<NodeConfig>,
+        storage: Arc<Storage>,
+        vm_metrics: Option<VMMetrics>,
+        genesis: Genesis,
+        pruning_point_channel: PruningPointInfoChannel,
     ) -> Self {
         Self {
             chain_service,
             sync_status: None,
             config,
+            storage,
+            vm_metrics,
+            genesis,
+            pruning_point_channel,
         }
     }
 
@@ -131,6 +149,7 @@ where
     // else return true.
     // return false will trigger the burden sync operation.
     // return true will trigger the specific(light) sync operation.
+    #[allow(dead_code)]
     fn is_near_block(&self, block_header: &BlockHeader) -> bool {
         let current_number = self.chain_service.get_main().status().head().number();
         if current_number <= block_header.number() {
@@ -142,7 +161,7 @@ where
             .config
             .sync
             .lightweight_sync_max_gap()
-            .map_or(k.saturating_mul(2), |max_gap| max_gap);
+            .map_or(k.saturating_mul(k), |max_gap| max_gap);
         debug!(
             "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
             current_number,
@@ -169,17 +188,26 @@ where
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
+        let genesis = ctx.get_shared::<Genesis>()?;
+        let pruning_point_channel = ctx.get_shared::<PruningPointInfoChannel>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
-            storage,
+            storage.clone(),
             txpool,
             bus,
-            vm_metrics,
+            vm_metrics.clone(),
             dag,
         )?;
 
-        Ok(Self::new(chain_service, config))
+        Ok(Self::new(
+            chain_service,
+            config,
+            storage,
+            vm_metrics,
+            genesis,
+            pruning_point_channel,
+        ))
     }
 }
 
@@ -192,6 +220,7 @@ where
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<NewDagBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -203,6 +232,7 @@ where
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
@@ -222,6 +252,48 @@ where
                     error!("{}", e);
                     ctx.broadcast(SystemShutdown);
                 }
+            }
+        }
+    }
+}
+
+impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        let block_header = match self
+            .chain_service
+            .switch_header(msg.executed_block.header())
+        {
+            std::result::Result::Ok(block_header) => block_header,
+            Err(e) => {
+                error!(
+                    "failed to switch header when processing NewDagBlock, error: {:?}, id: {:?}",
+                    e,
+                    msg.executed_block.header().id()
+                );
+                return;
+            }
+        };
+
+        let _consume = self
+            .pruning_point_channel
+            .pruning_receiver
+            .try_iter()
+            .count();
+        match self
+            .pruning_point_channel
+            .pruning_sender
+            .send(PruningPointMessage { block_header })
+        {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!(
+                    "failed to send NewDagBlock for calculating the pruning point, error: {:?}",
+                    e
+                );
             }
         }
     }
@@ -281,24 +353,51 @@ impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => {
-                debug!("Process mined block {} success.", id);
+        let main = self.chain_service.get_main();
+        let mut chain = BlockChain::new(
+            main.time_service(),
+            new_block.header().parent_hash(),
+            main.get_storage(),
+            None,
+            main.dag(),
+        )
+        .unwrap_or_else(|e| {
+            panic!(
+                "new block chain error when processing the mined block: {:?}",
+                e
+            )
+        });
 
-                match self.chain_service.broadcast_new_dag_block(id) {
-                    std::result::Result::Ok(_) => (),
-                    Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
-                }
+        let bus = self.chain_service.get_bus();
+
+        ctx.spawn(async move {
+            let executed_block = match chain.execute(VerifiedBlock {
+                    block: new_block.as_ref().clone(),
+                    ghostdata: None,
+                }) {
+                    std::result::Result::Ok(executed_block) => executed_block,
+                    Err(e) => {
+                        error!("when executing the mined block, failed to execute block error: {:?}, id: {:?}", e, new_block.id());
+                        return;
+                    },
+                };
+            match chain.connect(executed_block.clone()) {
+                std::result::Result::Ok(_) => (),
+                Err(e) => {
+                    error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
+                    return;
+                },
             }
-            Err(e) => {
-                warn!("Process mined block {} fail, error: {:?}", id, e);
-            }
-        }
+
+            let _ = bus.broadcast(NewDagBlock {
+                executed_block: Arc::new(executed_block.clone()),
+            });
+        });
     }
 }
 
@@ -338,15 +437,7 @@ where
                                     block.header().number(),
                                     peer_id
                                 );
-                                if !self.is_near_block(block.as_ref().header()) {
-                                    let _ = sync_service.notify(CheckSyncEvent::default());
-                                } else {
-                                    let _ = sync_service.notify(SyncSpecificTargretRequest {
-                                        block: Some(block.as_ref().clone()),
-                                        block_id: block.id(),
-                                        peer_id: Some(peer_id),
-                                    });
-                                }
+                                let _ = sync_service.notify(CheckSyncEvent::default());
                             }
                         }
                         e => {
@@ -418,69 +509,62 @@ where
     fn handle(
         &mut self,
         _msg: MinerRequest,
-        ctx: &mut ServiceContext<Self>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
-
+        let genesis = self.genesis.clone();
         let MineNewDagBlockInfo {
             tips,
-            blue_blocks,
+            ghostdata,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
-            let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
-                == HashValue::zero()
-            {
-                let genesis = ctx.get_shared::<Genesis>()?;
-                (
-                        self.chain_service
-                            .get_dag()
-                            .ghostdata_by_hash(genesis.block().id())?
-                            .ok_or_else(|| format_err!("The ghostdata of Genesis block header dose not exist., genesis id: {:?}", genesis.block().id()))?,
-                        genesis.block().id(),
-                    )
+            let pruning_point = if main_header.pruning_point() == HashValue::zero() {
+                genesis.block().id()
             } else {
-                (
-                        self.chain_service
-                            .get_dag()
-                            .ghostdata_by_hash(main_header.pruning_point())?
-                            .ok_or_else(|| format_err!("The ghostdata of the pruning point does not exist. pruning point id: {:?}", main_header.pruning_point()))?,
-                        main_header.pruning_point(),
-                    )
+                main_header.pruning_point()
             };
-            let (pruning_depth, pruning_finality) =
-                self.chain_service.get_main().get_pruning_config();
 
-            dag.calc_mergeset_and_tips(
+            let MineNewDagBlockInfo {
+                tips,
+                ghostdata,
                 pruning_point,
-                previous_ghostdata.as_ref(),
-                pruning_depth,
-                pruning_finality,
+            } = dag.calc_mergeset_and_tips(
+                pruning_point,
                 self.config.miner.maximum_parents_count(),
                 self.chain_service.get_main().get_genesis_hash(),
-            )?
+            )?;
+            let merge_bound_hash = self
+                .chain_service
+                .get_main()
+                .get_merge_bound_hash(ghostdata.selected_parent)?;
+
+            let (tips, ghostdata) = dag.remove_bounded_merge_breaking_parents(
+                tips,
+                ghostdata,
+                pruning_point,
+                merge_bound_hash,
+            )?;
+            MineNewDagBlockInfo {
+                tips,
+                ghostdata,
+                pruning_point,
+            }
         } else {
-            let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
             let ghostdata = dag.ghostdata(&tips)?;
             MineNewDagBlockInfo {
-                tips: tips.clone(),
-                blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+                tips,
+                ghostdata,
                 pruning_point: HashValue::zero(),
             }
         };
 
-        if blue_blocks.is_empty() {
-            bail!("failed to get the blue blocks from the DAG");
-        }
-
-        let selected_parent = *blue_blocks
-            .first()
-            .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;
+        let selected_parent = ghostdata.selected_parent;
 
         let time_service = self.config.net().time_service();
-        let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let storage = self.storage.clone();
+        let vm_metrics = self.vm_metrics.clone();
         let main = BlockChain::new(time_service, selected_parent, storage, vm_metrics, dag)?;
 
         let epoch = main.epoch().clone();
@@ -497,7 +581,7 @@ where
             previous_header,
             on_chain_block_gas_limit,
             tips_hash: tips,
-            blue_blocks_hash: blue_blocks[1..].to_vec(),
+            blue_blocks_hash: ghostdata.mergeset_blues.as_ref()[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,

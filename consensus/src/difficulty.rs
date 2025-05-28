@@ -3,10 +3,13 @@
 use crate::difficult_to_target;
 use anyhow::{bail, format_err, Result};
 use starcoin_chain_api::ChainReader;
+use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::convert::TryFrom;
 
 /// Get the target of next pow work
@@ -35,16 +38,54 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             chain
                 .get_header_by_number(n)?
                 .ok_or_else(|| format_err!("Can not find header by number {}", n))
-                .and_then(|header| header.try_into())
+                .map(|header| header.id())
         })
-        .collect::<Result<Vec<BlockDiffInfo>>>()?;
+        .collect::<Result<Vec<HashValue>>>()?;
+
     if start_window_num != 0 {
         debug_assert!(
             blocks.len() == epoch.block_difficulty_window() as usize,
             "block difficulty count should eq block_difficulty_window"
         );
     }
-    let target = get_next_target_helper(blocks, epoch.block_time_target())?;
+
+    let mut block_set = HashSet::new();
+    block_set.extend(
+        blocks
+            .into_iter()
+            .flat_map(|id| {
+                chain
+                    .get_dag()
+                    .storage
+                    .ghost_dag_store
+                    .get_mergeset_blues(id)
+                    .into_iter()
+                    .flat_map(|blue_id| blue_id.as_ref().clone())
+            })
+            .map(|id| {
+                chain.get_header_by_hash(id)?.ok_or_else(|| {
+                    format_err!("failed to get the block header when getting next work required")
+                })
+            })
+            .collect::<Result<Vec<BlockHeader>>>()?,
+    );
+
+    let mut block_in_order: Vec<BlockHeader> = block_set.into_iter().collect();
+
+    block_in_order.sort_by(|a, b| {
+        b.number()
+            .cmp(&a.number())
+            .then_with(|| b.timestamp().cmp(&a.timestamp()))
+            .then_with(|| b.id().cmp(&a.id()))
+    });
+
+    let target = get_next_target_helper(
+        block_in_order
+            .into_iter()
+            .map(|header| header.try_into())
+            .collect::<Result<Vec<BlockDiffInfo>>>()?,
+        200,
+    )?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),

@@ -4,6 +4,7 @@
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
+use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
 use starcoin_miner::{
     BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, SubmitSealRequest,
@@ -42,6 +43,8 @@ async fn test_miner_service() {
         .register_mocker(AccountService::mock().unwrap())
         .await
         .unwrap();
+
+    registry.register::<PruningPointService>().await.unwrap();
 
     registry
         .register::<BlockConnectorService<TxPoolService>>()

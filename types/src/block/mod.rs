@@ -505,16 +505,12 @@ impl BlockHeader {
     fn upgrade(&self) -> bool {
         Self::check_upgrade(self.number(), self.chain_id())
     }
-
+    // legacy: only main block need upgrade?
     pub fn check_upgrade(number: BlockNumber, chain_id: ChainId) -> bool {
         if number == 0 {
             false
         } else if chain_id.is_vega() {
             number >= 3300000
-        } else if chain_id.is_halley() {
-            number >= 3100000
-        } else if chain_id.is_proxima() {
-            number >= 200
         } else {
             true
         }
@@ -602,6 +598,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
                         value.map_or(Some(vec![]), |value| value)
                     });
 
+                // legacy
                 let (version, pruning_point) = if !BlockHeader::check_upgrade(number, chain_id) {
                     (0, HashValue::zero())
                 } else {

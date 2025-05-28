@@ -21,6 +21,7 @@ pub use get_block_cmd::*;
 pub use get_block_info_cmd::*;
 pub use get_dag_state_cmd::*;
 pub use get_events_cmd::*;
+pub use get_ghost_dag_data::*;
 pub use get_txn_cmd::*;
 pub use get_txn_info_cmd::*;
 pub use get_txn_info_list_cmd::*;

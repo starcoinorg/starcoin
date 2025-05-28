@@ -40,7 +40,7 @@ pub struct SyncStatus {
     state: SyncState,
 }
 
-pub const NEARLY_SYNCED_BLOCKS: u64 = 24;
+pub const NEARLY_SYNCED_BLOCKS: u64 = 240;
 
 impl SyncStatus {
     pub fn new(chain_status: ChainStatus) -> Self {
@@ -94,7 +94,7 @@ impl SyncStatus {
             SyncState::Synchronized => true,
             SyncState::Synchronizing {
                 target,
-                total_difficulty,
+                total_difficulty: _,
             } => {
                 if target.number() < self.chain_status.head().number() {
                     false
@@ -103,7 +103,7 @@ impl SyncStatus {
                         .number
                         .saturating_sub(self.chain_status.head().number())
                         <= NEARLY_SYNCED_BLOCKS
-                        || self.chain_status.total_difficulty() >= *total_difficulty
+                    //|| self.chain_status.total_difficulty() >= *total_difficulty
                 }
             }
         }

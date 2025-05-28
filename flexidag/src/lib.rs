@@ -7,6 +7,7 @@ pub mod consensusdb;
 pub mod ghostdag;
 pub mod prune;
 pub mod reachability;
+pub mod service;
 pub mod types;
 
 pub fn process_key_already_error(result: Result<(), StoreError>) -> Result<(), StoreError> {

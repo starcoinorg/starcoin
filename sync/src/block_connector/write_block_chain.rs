@@ -12,7 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::consenses_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -167,6 +167,13 @@ where
         Ok(this)
     }
 
+    pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
+        let new_branch = self.main.select_dag_state(header)?;
+        self.select_head(new_branch)?;
+        self.update_startup_info(&self.main.current_header())?;
+        Ok(self.main.current_header())
+    }
+
     fn find_or_fork(
         &self,
         header: &BlockHeader,
@@ -207,6 +214,10 @@ where
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    pub fn get_bus(&self) -> ServiceRef<BusService> {
+        self.bus.clone()
     }
 
     //todo: return a reference

@@ -9,7 +9,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_logger::prelude::debug;
+use starcoin_logger::prelude::{debug, warn};
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::{collections::HashSet, str::FromStr};
@@ -468,10 +468,13 @@ impl BlockVerifier for DagVerifierWithGhostData {
     where
         R: ChainReader,
     {
-        Ok(Some(BasicDagVerifier::verify_blue_blocks(
-            current_chain,
-            uncles,
-            header,
-        )?))
+        let ghostdata = BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?;
+
+        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+            Ok(()) => (),
+            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+        }
+
+        Ok(Some(ghostdata))
     }
 }

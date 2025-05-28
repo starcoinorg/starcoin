@@ -1,11 +1,12 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::block_depth::block_depth_info::BlockDepthManagerT;
-use crate::consensusdb::consenses_state::{
-    DagState, DagStateReader, DagStateStore, ReachabilityView,
+use crate::consensusdb::consensus_block_depth::DbBlockDepthInfoStore;
+use crate::consensusdb::consensus_pruning_info::{
+    PruningPointInfo, PruningPointInfoReader, PruningPointInfoWriter,
 };
-use crate::consensusdb::consensus_block_depth::{
-    BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
+use crate::consensusdb::consensus_state::{
+    DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{
@@ -25,12 +26,12 @@ use crate::reachability::ReachabilityError;
 use crate::{process_key_already_error, GetAbsentBlock, GetAbsentBlockResult};
 use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
 use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_logger::prelude::{debug, error, info, warn};
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{IntoSuper, Storage};
@@ -61,7 +62,7 @@ pub type BlockDepthManager =
 
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
-    pub blue_blocks: Vec<HashValue>,
+    pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
 }
 
@@ -291,6 +292,20 @@ impl BlockDAG {
             Err(StoreError::KeyNotFound(_)) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+    pub fn ghostdata_by_hashes(
+        &self,
+        hashes: &[HashValue],
+    ) -> anyhow::Result<Vec<Option<Arc<GhostdagData>>>> {
+        let mut results = Vec::with_capacity(hashes.len());
+        for &hash in hashes {
+            match self.storage.ghost_dag_store.get_data(hash) {
+                Result::Ok(data) => results.push(Some(data)),
+                Err(StoreError::KeyNotFound(_)) => results.push(None),
+                Err(e) => return Err(e.into()),
+            }
+        }
+        Ok(results)
     }
 
     pub fn pruning_point_manager(&self) -> PruningPointManager {
@@ -693,13 +708,33 @@ impl BlockDAG {
     pub fn calc_mergeset_and_tips(
         &self,
         previous_pruning_point: HashValue,
-        previous_ghostdata: &GhostdagData,
-        pruning_depth: u64,
-        pruning_finality: u64,
         max_parents_count: u64,
         genesis_id: HashValue,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
+
+        let latest_pruning_point = if let Some(pruning_point_info) = self
+            .storage
+            .pruning_point_store
+            .read()
+            .get_pruning_point_info()?
+        {
+            pruning_point_info.pruning_point
+        } else {
+            warn!(
+                "failed to get the pruning point info by hash: {:?}, the block should be re-executed",
+                previous_pruning_point
+            );
+            previous_pruning_point
+        };
+
+        let pruned_tips = self.pruning_point_manager().prune(
+            &dag_state,
+            previous_pruning_point,
+            latest_pruning_point,
+        )?;
+        let mut next_pruning_point = latest_pruning_point;
+        dag_state.tips = pruned_tips;
 
         // filter
         if dag_state.tips.len() > max_parents_count as usize {
@@ -738,55 +773,26 @@ impl BlockDAG {
         }
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
-
-        let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            previous_pruning_point,
-            previous_ghostdata,
-            &next_ghostdata,
-            pruning_depth,
-            pruning_finality,
-        )?;
-
-        let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
-            || next_pruning_point == previous_pruning_point
-        {
-            info!(
-                "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-                dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
-            );
-            (dag_state.tips, next_ghostdata, next_pruning_point)
-        } else {
-            let pruned_tips = self.pruning_point_manager().prune(
-                &dag_state,
-                previous_pruning_point,
-                next_pruning_point,
-            )?;
-            let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
-            info!(
-                "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-                pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
-            );
-            (pruned_tips, pruned_ghostdata, next_pruning_point)
-        };
-
-        if pruning_point == Hash::zero() {
-            pruning_point = genesis_id;
+        match self.storage.ghost_dag_store.insert(
+            self.ghost_dag_manager()
+                .find_selected_parent(dag_state.tips.iter().cloned())?,
+            Arc::new(next_ghostdata.clone()),
+        ) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => match e {
+                StoreError::KeyAlreadyExists(_) => (),
+                _ => return Err(e.into()),
+            },
         }
-        // else {
-        //     self.generate_the_block_depth(pruning_point, &ghostdata, pruning_finality)?;
-        // }
 
-        // info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
-        // (tips, ghostdata) =
-        //     self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
-        // info!(
-        //     "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
-        //     tips, ghostdata
-        // );
+        if next_pruning_point == Hash::zero() {
+            next_pruning_point = genesis_id;
+        }
+
         anyhow::Ok(MineNewDagBlockInfo {
-            tips,
-            blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
-            pruning_point,
+            tips: dag_state.tips,
+            ghostdata: next_ghostdata,
+            pruning_point: next_pruning_point,
         })
     }
 
@@ -813,49 +819,90 @@ impl BlockDAG {
         anyhow::Ok(())
     }
 
-    pub fn generate_the_block_depth(
+    pub fn validate_pruning_point(
         &self,
+        selected_header: Hash,
         pruning_point: Hash,
-        ghostdata: &GhostdagData,
-        finality_depth: u64,
-    ) -> anyhow::Result<BlockDepthInfo> {
-        let merge_depth_root = self
-            .block_depth_manager
-            .calc_merge_depth_root(ghostdata, pruning_point)?;
-        if merge_depth_root == Hash::zero() {
-            return anyhow::Ok(BlockDepthInfo {
-                merge_depth_root,
-                finality_point: Hash::zero(),
-            });
+        pruning_depth: u64,
+    ) -> anyhow::Result<()> {
+        // if !self
+        //     .reachability_service()
+        //     .is_chain_ancestor_of(pruning_point, selected_header)
+        // {
+        //     warn!("the pruning point is not the ancestor of the selected header");
+        //     return Err(anyhow::anyhow!(
+        //         "the pruning point: {:?} is not the ancestor of the selected header: {:?}",
+        //         pruning_point,
+        //         selected_header
+        //     ));
+        // }
+
+        let selected_header_blue_score = self
+            .storage
+            .ghost_dag_store
+            .get_blue_score(selected_header)?;
+        let pruning_point_blue_score =
+            self.storage.ghost_dag_store.get_blue_score(pruning_point)?;
+
+        if selected_header_blue_score < pruning_point_blue_score + pruning_depth {
+            warn!("the pruning point blue score is not correct");
+            return Err(anyhow::anyhow!("the pruning point blue score: {:?} + pruning depth: {:?} is larger than selected header blue score: {:?}", pruning_point_blue_score, pruning_depth, selected_header_blue_score));
         }
-        let finality_point = self.block_depth_manager.calc_finality_point(
-            ghostdata,
-            pruning_point,
-            finality_depth,
-        )?;
-        self.storage.block_depth_info_store.insert(
-            ghostdata.selected_parent,
-            BlockDepthInfo {
-                merge_depth_root,
-                finality_point,
-            },
-        )?;
-        info!(
-            "the merge depth root is: {:?}, the finality point is: {:?}",
-            merge_depth_root, finality_point
-        );
-        Ok(BlockDepthInfo {
-            merge_depth_root,
-            finality_point,
-        })
+
+        anyhow::Ok(())
     }
 
-    pub fn check_bounded_merge_depth(&self, ghostdata: &GhostdagData) -> anyhow::Result<()> {
-        let merge_depth_root = self
-            .block_depth_manager
-            .get_block_depth_info(ghostdata.selected_parent)?
-            .ok_or_else(|| format_err!("failed to get block depth info"))?
-            .merge_depth_root;
+    pub fn block_depth_manager(&self) -> BlockDepthManager {
+        self.block_depth_manager.clone()
+    }
+
+    // pub fn generate_the_block_depth(
+    //     &self,
+    //     merge_depth_root: Hash,
+    //     finality_point: Hash,
+    //     ghostdata: &GhostdagData,
+    // ) -> anyhow::Result<BlockDepthInfo> {
+    //     // let merge_depth_root = self
+    //     //     .block_depth_manager
+    //     //     .calc_merge_depth_root(ghostdata, pruning_point)?;
+    //     // if merge_depth_root == Hash::zero() {
+    //     //     return anyhow::Ok(BlockDepthInfo {
+    //     //         merge_depth_root,
+    //     //         finality_point: Hash::zero(),
+    //     //     });
+    //     // }
+    //     // let finality_point = self.block_depth_manager.calc_finality_point(
+    //     //     ghostdata,
+    //     //     pruning_point,
+    //     //     finality_depth,
+    //     // )?;
+    //     self.storage.block_depth_info_store.insert(
+    //         ghostdata.selected_parent,
+    //         BlockDepthInfo {
+    //             merge_depth_root,
+    //             finality_point,
+    //         },
+    //     )?;
+    //     info!(
+    //         "the merge depth root is: {:?}, the finality point is: {:?}",
+    //         merge_depth_root, finality_point
+    //     );
+    //     Ok(BlockDepthInfo {
+    //         merge_depth_root,
+    //         finality_point,
+    //     })
+    // }
+
+    pub fn check_bounded_merge_depth(
+        &self,
+        ghostdata: &GhostdagData,
+        merge_depth_root: Hash,
+    ) -> anyhow::Result<()> {
+        // let merge_depth_root = self
+        //     .block_depth_manager
+        //     .get_block_depth_info(ghostdata.selected_parent)?
+        //     .ok_or_else(|| format_err!("failed to get block depth info"))?
+        //     .merge_depth_root;
 
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
 
@@ -878,7 +925,7 @@ impl BlockDAG {
                 red,
                 &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
             ) {
-                bail!("failed to verify the bounded merge depth, the header refers too many bad red blocks");
+                warn!("failed to verify the bounded merge depth, the header refers too many bad red blocks, red: {:?}, kosherizing blues: {:?}", red, kosherizing_blues);
             }
         }
 
@@ -890,18 +937,19 @@ impl BlockDAG {
         mut parents: Vec<Hash>,
         mut ghostdata: GhostdagData,
         pruning_point: Hash,
+        merge_depth_root: Hash,
     ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
         if pruning_point == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
         }
-        let merge_depth_root = self
-            .block_depth_manager
-            .calc_merge_depth_root(&ghostdata, pruning_point)
-            .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
+        // let merge_depth_root = self
+        //     .block_depth_manager
+        //     .calc_merge_depth_root(&ghostdata, pruning_point)
+        //     .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
         if merge_depth_root == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
         }
-        debug!("merge depth root: {:?}", merge_depth_root);
+        // debug!("merge depth root: {:?}", merge_depth_root);
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
         let mut bad_reds = Vec::new();
 
@@ -1003,7 +1051,13 @@ impl BlockDAG {
             header.pruning_point(),
             latest_pruning_point
         );
-        if self.check_historical_block(header, latest_pruning_point)? {
+
+        // 3500000 is the block number that the pruning logic was delivered in vega
+        // when the logic is delivered onto the vega,  we should check a number larger than 3500000 to ignore this logic
+        if header.chain_id().is_vega()
+            && header.number() < 3500000
+            && self.check_historical_block(header, latest_pruning_point)?
+        {
             info!(
                 "the block is a historical block, the header id: {:?}",
                 header.id()
@@ -1128,5 +1182,118 @@ impl BlockDAG {
         Ok(GetAbsentBlockResult {
             absent_blocks: result.into_iter().collect(),
         })
+    }
+
+    pub async fn generate_pruning_point(
+        &self,
+        header: &BlockHeader,
+        pruning_depth: u64,
+        pruning_finality: u64,
+        genesis_id: Hash,
+    ) -> anyhow::Result<()> {
+        let previous_ghostdata = if header.pruning_point() == HashValue::zero() {
+            self.ghostdata_by_hash(genesis_id)?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
+        } else {
+            self.ghostdata_by_hash(header.pruning_point())?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
+        };
+        let next_ghostdata = self.ghostdata_by_hash(header.id())?.ok_or_else(|| {
+            format_err!(
+                "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
+                header.id()
+            )
+        })?;
+
+        let reader = self.storage.pruning_point_store.upgradable_read();
+
+        let current_pruning_point_info = match reader.get_pruning_point_info() {
+            std::result::Result::Ok(info) => match info {
+                Some(info) => info,
+                None => {
+                    let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+                    writer.insert(PruningPointInfo {
+                        pruning_point: if header.pruning_point() == HashValue::zero() {
+                            genesis_id
+                        } else {
+                            header.pruning_point()
+                        },
+                    })?;
+
+                    drop(writer);
+                    return Ok(());
+                }
+            },
+            Err(e) => match e {
+                StoreError::KeyNotFound(_) => {
+                    let writer = RwLockUpgradableReadGuard::upgrade(reader);
+                    writer.insert(PruningPointInfo {
+                        pruning_point: if header.pruning_point() == HashValue::zero() {
+                            genesis_id
+                        } else {
+                            header.pruning_point()
+                        },
+                    })?;
+
+                    drop(writer);
+                    return Ok(());
+                }
+                _ => {
+                    error!("Failed to get pruning point info: {:?}", e);
+                    return Err(e.into());
+                }
+            },
+        };
+
+        let current_pruning_point_ghostdata = self
+            .storage
+            .ghost_dag_store
+            .get_data(current_pruning_point_info.pruning_point)?;
+
+        let new_pruning_point = self.pruning_point_manager().next_pruning_point(
+            current_pruning_point_info.pruning_point,
+            previous_ghostdata.as_ref(),
+            next_ghostdata.as_ref(),
+            pruning_depth,
+            pruning_finality,
+        )?;
+
+        let new_pruning_point_ghostdata =
+            self.storage
+                .ghost_dag_store
+                .get_data(if new_pruning_point == HashValue::zero() {
+                    genesis_id
+                } else {
+                    new_pruning_point
+                })?;
+
+        let should_update = match current_pruning_point_ghostdata
+            .blue_score
+            .cmp(&new_pruning_point_ghostdata.blue_score)
+        {
+            std::cmp::Ordering::Less => true,
+            std::cmp::Ordering::Equal => {
+                match new_pruning_point.cmp(&current_pruning_point_info.pruning_point) {
+                    std::cmp::Ordering::Less => false,
+                    std::cmp::Ordering::Equal => false,
+                    std::cmp::Ordering::Greater => true,
+                }
+            }
+            std::cmp::Ordering::Greater => false,
+        };
+
+        if !should_update {
+            drop(reader);
+            return Ok(());
+        }
+
+        let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+        writer.insert(PruningPointInfo {
+            pruning_point: new_pruning_point,
+        })?;
+
+        drop(writer);
+
+        Ok(())
     }
 }

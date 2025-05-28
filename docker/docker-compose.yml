@@ -1,6 +1,6 @@
 services:
   starcoin_1:
-    image: starcoin:v2.0
+    image: starcoin:v2.9
     container_name: starcoin_1
     networks:
       - starcoin_network
@@ -11,12 +11,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config vega -d /starcoin/data;
-
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512
     volumes:
       - starcoin_data_1:/starcoin/data
   starcoin_2:
-    image: starcoin:v2.0
+    image: starcoin:v2.9
     container_name: starcoin_2
     networks:
       - starcoin_network
@@ -27,11 +26,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config vega --seed /dns/starcoin_1/tcp/9840/p2p/12D3KooWReBQ3pirsxBAuB3FR61zYd8Sc6j2QvqLWNKzvmug9Fo8 -d /starcoin/data
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512
     volumes:
       - starcoin_data_2:/starcoin/data
   starcoin_3:
-    image: starcoin:v2.0
+    image: starcoin:v2.9
     container_name: starcoin_3
     networks:
       - starcoin_network
@@ -42,11 +41,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config vega --seed /dns/starcoin_1/tcp/9840/p2p/12D3KooWReBQ3pirsxBAuB3FR61zYd8Sc6j2QvqLWNKzvmug9Fo8 -d /starcoin/data
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley  -d /starcoin/data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512
     volumes:
       - starcoin_data_3:/starcoin/data
   starcoin_4:
-    image: starcoin:v2.0
+    image: starcoin:v2.9
     container_name: starcoin_4
     networks:
       - starcoin_network
@@ -57,7 +56,7 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config vega --seed /dns/starcoin_1/tcp/9840/p2p/12D3KooWReBQ3pirsxBAuB3FR61zYd8Sc6j2QvqLWNKzvmug9Fo8 -d /starcoin/data
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512
     volumes:
       - starcoin_data_4:/starcoin/data
   

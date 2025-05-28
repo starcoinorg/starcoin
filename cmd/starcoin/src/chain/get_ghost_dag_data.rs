@@ -17,9 +17,9 @@ pub struct GetGhostdagData {
     id: HashValue,
 }
 
-pub struct GetDagStateCommand;
+pub struct GetGhostDagDataCommand;
 
-impl CommandAction for GetDagStateCommand {
+impl CommandAction for GetGhostDagDataCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetGhostdagData;
@@ -31,7 +31,10 @@ impl CommandAction for GetDagStateCommand {
     ) -> Result<Self::ReturnItem> {
         ctx.state()
             .client()
-            .get_ghost_dag_data(ctx.opt().id)?
+            .get_ghost_dag_data(vec![ctx.opt().id])?
+            .into_iter()
+            .next()
+            .flatten()
             .ok_or_else(|| anyhow!("Ghostdag data not found for block hash: {}", ctx.opt().id))
     }
 }

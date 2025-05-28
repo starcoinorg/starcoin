@@ -17,6 +17,7 @@ use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::NodeConfig;
+use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -315,6 +316,8 @@ impl NodeService {
         registry.put_shared(genesis).await?;
 
         let node_service = registry.register::<Self>().await?;
+
+        registry.register::<PruningPointService>().await?;
 
         registry.register::<ChainStateService>().await?;
 

@@ -24,7 +24,7 @@ use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
@@ -593,43 +593,55 @@ where
                         .get_dag_sync_block(**id)
                         .unwrap_or(None)
                         .is_none()
-                        || self.chain.has_dag_block(**id).unwrap_or(true)
+                        && match self.chain.has_dag_block(**id) {
+                            Ok(exist) => !exist,
+                            Err(_) => true,
+                        }
                 })
                 .cloned()
                 .collect::<Vec<_>>();
-            if filtered_chunk.is_empty() {
-                continue;
+            let mut filtered_set = HashSet::new();
+            filtered_set.extend(filtered_chunk);
+            if filtered_set.is_empty() {
+                break;
             }
-            let remote_dag_sync_blocks = self
-                .fetcher
-                .fetch_dag_block_in_batch(filtered_chunk.to_vec(), exp)
-                .await?;
-            for block in remote_dag_sync_blocks {
-                self.local_store
-                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
-                        block: block.clone(),
-                        children: vec![],
-                    })?;
-                self.sync_dag_store.save_block(block.clone())?;
-                result.push(block.header().clone());
-            }
-            if exp < 16 {
-                exp = exp.saturating_mul(2);
+            loop {
+                let remote_dag_sync_blocks = self
+                    .fetcher
+                    .fetch_dag_block_in_batch(filtered_set.into_iter().collect(), exp)
+                    .await?;
+                filtered_set = HashSet::new();
+                for (block, _) in remote_dag_sync_blocks {
+                    self.local_store.save_dag_sync_block(
+                        starcoin_storage::block::DagSyncBlock {
+                            block: block.clone(),
+                            children: vec![],
+                        },
+                    )?;
+                    self.sync_dag_store.save_block(block.clone())?;
+                    result.push(block.header().clone());
+                    filtered_set.extend(block.header().parents_hash().into_iter().filter(|id| {
+                        self.local_store
+                            .get_dag_sync_block(*id)
+                            .unwrap_or(None)
+                            .is_none()
+                            && match self.chain.has_dag_block(*id) {
+                                Ok(exist) => !exist,
+                                Err(_) => true,
+                            }
+                    }));
+                }
+                if filtered_set.is_empty() {
+                    exp = 1;
+                    break;
+                }
+                if exp <= 8 {
+                    exp = exp.saturating_mul(2);
+                }
             }
         }
 
-        Ok(result
-            .into_iter()
-            .filter(|block_header| {
-                !block_header.parents_hash().iter().all(|parent_id| {
-                    self.local_store
-                        .get_dag_sync_block(*parent_id)
-                        .map(|opt_block| opt_block.is_none())
-                        .unwrap_or(true)
-                        || self.chain.has_dag_block(*parent_id).unwrap_or(false)
-                })
-            })
-            .collect())
+        Ok(result)
     }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {

@@ -61,6 +61,10 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
         Ok(self.depth_store.get_block_depth_info(hash)?)
     }
 
+    pub fn merge_depth(&self) -> u64 {
+        self.merge_depth
+    }
+
     // return hash zero if no requiring merge depth
     fn calculate_block_at_depth(
         &self,

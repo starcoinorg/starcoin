@@ -153,49 +153,6 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
     }
 }
 
-// one hour
-const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
-
-#[derive(Debug)]
-pub struct SyncBlockTemplateRequest {
-    pub respond_to: futures::channel::oneshot::Sender<Result<Option<BlockTemplate>>>,
-}
-impl ServiceRequest for SyncBlockTemplateRequest {
-    type Response = ();
-}
-impl ServiceHandler<Self, SyncBlockTemplateRequest> for MinerService {
-    fn handle(&mut self, msg: SyncBlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
-        let config = self.config.clone();
-        let create_block_template_service = self.create_block_template_service.clone();
-        let tx = msg.respond_to;
-
-        ctx.spawn(async move {
-            let result = async {
-                let res = create_block_template_service
-                    .send(BlockTemplateRequest)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("send BlockTemplateRequest failed: {}", e))?
-                    .await?;
-                let parent = res.parent;
-                let block_template = res.template;
-                let block_time_gap = block_template.timestamp - parent.timestamp();
-
-                if block_template.body.transactions.is_empty()
-                    && config.miner.is_disable_mint_empty_block()
-                    && block_time_gap < MAX_BLOCK_TIME_GAP
-                {
-                    Ok(None)
-                } else {
-                    Ok(Some(block_template))
-                }
-            }
-            .await;
-
-            let _ = tx.send(result); // send back
-        });
-    }
-}
-
 #[derive(Debug)]
 pub struct DispatchMintBlockTemplate {
     pub block_template: BlockTemplate,

@@ -655,7 +655,7 @@ impl BlockFetcher for MockBlockFetcher {
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
-    ) -> BoxFuture<Result<Vec<Block>>> {
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
         let mut round = block_ids.into_iter().collect::<HashSet<HashValue>>();
         let blocks = self.blocks.lock().unwrap();
         let mut result = HashSet::new();
@@ -676,7 +676,7 @@ impl BlockFetcher for MockBlockFetcher {
         }
         async {
             Delay::new(Duration::from_millis(100)).await;
-            Ok(result.into_iter().collect())
+            Ok(result.into_iter().map(|block| (block, None)).collect())
         }
         .boxed()
     }

@@ -11,6 +11,16 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
 
     // blue blocks
     let block_blue_1 = mock_chain.produce_and_apply_by_tips(genesis.clone(), vec![genesis.id()])?;
+
+    let pruning_depth = 4;
+    let pruning_finality = 3;
+    futures::executor::block_on(mock_chain.head().dag().generate_pruning_point(
+        &block_blue_1,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
+
     let block_blue_2 =
         mock_chain.produce_and_apply_by_tips(block_blue_1.clone(), vec![block_blue_1.id()])?;
     let block_blue_3 =
@@ -74,6 +84,19 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
             block_red_4.id()
         ])
     );
+
+    futures::executor::block_on(mock_chain.head().dag().generate_pruning_point(
+        &block_blue_6,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
+    futures::executor::block_on(mock_chain.head().dag().generate_pruning_point(
+        &block_blue_6_1,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
 
     let block_blue_7 = mock_chain.produce_block_for_pruning()?;
     mock_chain.apply(block_blue_7.clone())?;

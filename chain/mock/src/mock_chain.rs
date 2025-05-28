@@ -274,35 +274,36 @@ impl MockChain {
             selected_header.pruning_point()
         };
 
-        let prevous_ghostdata = self
-            .head()
-            .dag()
-            .ghostdata_by_hash(previous_pruning)?
-            .ok_or_else(|| format_err!("Cannot find ghostdata by hash: {:?}", previous_pruning))?;
+        // let prevous_ghostdata = self
+        //     .head()
+        //     .dag()
+        //     .ghostdata_by_hash(previous_pruning)?
+        //     .ok_or_else(|| format_err!("Cannot find ghostdata by hash: {:?}", previous_pruning))?;
 
         let MineNewDagBlockInfo {
             tips: pruned_tips,
-            blue_blocks,
+            ghostdata,
             pruning_point,
         } = self.head.dag().calc_mergeset_and_tips(
             previous_pruning,
-            prevous_ghostdata.as_ref(),
-            4,
-            3,
+            // prevous_ghostdata.as_ref(),
+            // 4,
+            // 3,
             G_MAX_PARENTS_COUNT,
             self.head().get_genesis_hash(),
         )?;
 
         debug!(
             "tips: {:?}, blue_blocks: {:?}, pruning_point: {:?}",
-            pruned_tips, blue_blocks, pruning_point
+            pruned_tips, ghostdata, pruning_point
         );
 
         let (template, _) = self.head.create_block_template_by_header(
             *self.miner.address(),
             selected_header,
             vec![],
-            blue_blocks
+            ghostdata
+                .mergeset_blues
                 .get(1..)
                 .unwrap_or(&[])
                 .iter()

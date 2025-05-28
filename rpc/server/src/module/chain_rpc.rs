@@ -7,7 +7,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -492,9 +492,10 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn get_ghostdagdata(&self, block_hash: HashValue) -> FutureResult<Option<GhostdagData>> {
+    #[doc = r" Get the ghostdag data by ids."]
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
         let service = self.service.clone();
-        let fut = async move { service.get_ghostdagdata(block_hash).await }.map_err(map_err);
+        let fut = async move { service.get_ghostdagdata(ids).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -503,7 +504,7 @@ where
         &self,
         ancestor: HashValue,
         descendants: Vec<HashValue>,
-    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView> {
+    ) -> FutureResult<starcoin_dag::consensusdb::consensus_state::ReachabilityView> {
         let service = self.service.clone();
         let fut =
             async move { service.is_ancestor_of(ancestor, descendants).await }.map_err(map_err);

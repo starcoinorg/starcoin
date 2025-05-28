@@ -5,7 +5,7 @@ use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -68,7 +68,7 @@ pub enum ChainRequest {
     },
     GetDagStateView,
     CheckChainType,
-    GetGhostdagData(HashValue),
+    GetGhostdagData(Vec<HashValue>),
     IsAncestorOfCommand {
         ancestor: HashValue,
         descendants: Vec<HashValue>,
@@ -111,7 +111,7 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     CheckChainType(ChainType),
-    GhostdagDataOption(Box<Option<GhostdagData>>),
+    GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     GetRangeInLocation { range: RangeInLocation },
     GetAbsentBlocks { absent_blocks: Vec<Block> },

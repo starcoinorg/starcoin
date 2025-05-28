@@ -4,7 +4,7 @@ use starcoin_logger::prelude::info;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::{
     consensusdb::{
-        consenses_state::DagState,
+        consensus_state::DagState,
         schemadb::{DbGhostdagStore, GhostdagStoreReader, ReachabilityStoreReader},
     },
     reachability::reachability_service::MTReachabilityService,
@@ -61,7 +61,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         )
     }
 
-    pub(crate) fn next_pruning_point(
+    pub fn next_pruning_point(
         &self,
         previous_pruning_point: HashValue,
         previous_ghostdata: &GhostdagData,
@@ -90,6 +90,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
                     break;
                 }
+
                 if self.finality_score(next_pruning_ghostdata.blue_score, pruning_finality)
                     > self.finality_score(latest_pruning_ghost_data.blue_score, pruning_finality)
                 {

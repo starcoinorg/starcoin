@@ -17,12 +17,14 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
-use starcoin_dag::consensusdb::consenses_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -46,9 +48,11 @@ use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, sync::Arc};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
@@ -281,6 +285,54 @@ impl BlockChain {
         )
     }
 
+    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+        let new_pruning_point = if header.pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            header.pruning_point()
+        };
+        let current_pruning_point = if self.status().head().pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            self.status().head().pruning_point()
+        };
+        let chain = if current_pruning_point == new_pruning_point
+            || current_pruning_point == HashValue::zero()
+        {
+            let state = self.dag.get_dag_state(new_pruning_point).unwrap();
+            let block_id = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(state.tips)
+                .unwrap();
+            self.fork(block_id)?
+        } else {
+            let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
+            let current_state = self.dag.get_dag_state(current_pruning_point).unwrap();
+
+            let new_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(new_state.tips)
+                .unwrap();
+            let current_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(current_state.tips)
+                .unwrap();
+
+            let selected_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent([new_header, current_header])
+                .unwrap();
+
+            self.fork(selected_header)?
+        };
+
+        Ok(chain)
+    }
+
     // This is only for testing.
     // Uncles, pruning point and tips must be coherent, if not,
     // there will be some unexpected behaviour happening.
@@ -312,23 +364,26 @@ impl BlockChain {
 
         let MineNewDagBlockInfo {
             tips,
-            blue_blocks,
+            ghostdata,
             pruning_point: _,
         } = {
-            let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
             MineNewDagBlockInfo {
                 tips,
-                blue_blocks,
+                ghostdata,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
         };
 
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
-            blue_blocks
+            ghostdata.mergeset_blues
         );
-        let blue_blocks = blue_blocks
-            .into_iter()
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .as_ref()
+            .iter()
+            .skip(1)
+            .cloned()
             .map(|block| self.storage.get_block_by_hash(block))
             .collect::<Result<Vec<Option<Block>>>>()?
             .into_iter()
@@ -1006,6 +1061,35 @@ impl BlockChain {
             self.dag.get_dag_state(current_pruning_point)
         }
     }
+
+    pub fn get_merge_bound_hash(&self, selected_parent: HashValue) -> Result<HashValue> {
+        let header = self
+            .storage
+            .get_block_header_by_hash(selected_parent)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash {:?} when get merge bound hash",
+                    selected_parent
+                )
+            })?;
+        let merge_depth = self.dag().block_depth_manager().merge_depth();
+        if header.number() < merge_depth {
+            return Ok(self.genesis_hash);
+        }
+        let merge_depth_index = (header.number().checked_div(merge_depth))
+            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?
+            .checked_mul(merge_depth)
+            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?;
+        Ok(self
+            .block_accumulator
+            .get_leaf(merge_depth_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by number {} when get merge bound hash",
+                    merge_depth_index
+                )
+            })?)
+    }
 }
 
 impl ChainReader for BlockChain {
@@ -1405,7 +1489,10 @@ impl ChainReader for BlockChain {
         //     header.pruning_point()
         // };
 
-        // dag.check_bounded_merge_depth(pruning_point, &ghostdata, self.get_pruning_config().0)?;
+        dag.check_bounded_merge_depth(
+            &ghostdata,
+            self.get_merge_bound_hash(ghostdata.selected_parent)?,
+        )?;
 
         Ok(ghostdata)
     }
@@ -1432,6 +1519,68 @@ impl ChainReader for BlockChain {
 
     fn get_genesis_hash(&self) -> HashValue {
         self.genesis_hash
+    }
+
+    fn get_dag(&self) -> BlockDAG {
+        self.dag()
+    }
+
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.get_block_header_by_hash(block_id)
+    }
+
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()> {
+        let chain_pruning_point = if pruning_point == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            pruning_point
+        };
+        let pruning_point_header = self
+            .storage
+            .get_block_header_by_hash(chain_pruning_point)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash when validating the block header {:?}",
+                    pruning_point
+                )
+            })?;
+        let pruning_point_hash = self
+            .get_hash_by_number(pruning_point_header.number())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block hash by number when validating the block header {:?}",
+                    pruning_point_header.number()
+                )
+            })?;
+        if pruning_point_header.id() != pruning_point_hash {
+            bail!(
+                "Pruning point header id: {:?} not match with pruning point: {:?}",
+                pruning_point_header.id(),
+                pruning_point_hash
+            );
+        }
+
+        let pruning_point_blue_score = self
+            .dag()
+            .storage
+            .ghost_dag_store
+            .get_blue_score(chain_pruning_point)?;
+        let (pruning_depth, _pruning_finality) = self.get_pruning_config();
+        if let Some(blue_score) = pruning_point_blue_score.checked_add(pruning_depth) {
+            if ghostdata.blue_score < blue_score && chain_pruning_point != self.genesis_hash {
+                bail!("Pruning point blue score: {:?} not match with ghostdag blue score: {:?} and pruning depth: {:?}", pruning_point_blue_score, ghostdata.blue_score, pruning_depth);
+            }
+        } else {
+            bail!(
+                "Overflow occurred when computing pruning_point_blue_score + pruning_depth: {:?} + {:?}",
+                pruning_point_blue_score, pruning_depth
+            );
+        }
+        Ok(())
     }
 }
 
@@ -1619,6 +1768,71 @@ impl BlockChain {
         };
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
+        } else if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+            let start_block_id = self
+                .get_block_by_number(self.epoch.start_block_number())?
+                .unwrap_or_else(|| {
+                    panic!(
+                        "the block: {:?} should exist",
+                        self.epoch.start_block_number()
+                    )
+                });
+            let end_block_id = block.id();
+            let epoch_info = self.chain_state().get_epoch_info()?;
+            let total_selectd_chain_blocks = block
+                .header()
+                .number()
+                .saturating_sub(self.epoch.start_block_number())
+                .saturating_add(1);
+            let total_blocks = epoch_info
+                .uncles()
+                .saturating_add(total_selectd_chain_blocks);
+
+            let mut block_set = HashSet::new();
+            let blocks = (self.epoch.start_block_number()..=block.header().number())
+                .map(|block_number| {
+                    self.get_block_by_number(block_number)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the block: {:?} should exist, for error: {:?}",
+                                block_number, e
+                            )
+                        })
+                        .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
+                })
+                .collect::<Vec<_>>();
+            block_set.extend(blocks.iter().map(|block| block.header()).cloned());
+            block_set.extend(blocks.iter().flat_map(|block| {
+                if let Some(uncles) = &block.body.uncles {
+                    uncles.clone()
+                } else {
+                    vec![]
+                }
+            }));
+            let total_difficulty: U256 = block_set
+                .iter()
+                .map(|block_header| block_header.difficulty())
+                .sum();
+            let avg_total_difficulty = if let Some(avg_total_difficulty) =
+                total_difficulty.checked_div(U256::from(total_blocks))
+            {
+                info!("avg_total_difficulty overflow");
+                avg_total_difficulty
+            } else {
+                U256::MAX
+            };
+
+            let eclapse_time = {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis();
+                now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
+            };
+            let bps = (total_blocks as f64) / eclapse_time;
+
+            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
+                total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
         }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
@@ -1655,21 +1869,15 @@ impl BlockChain {
         }
         Ok(())
     }
-
+    // legacy: pruning height should alawys start from genesis.
     pub fn get_pruning_height(&self) -> BlockNumber {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_vega() {
             3500000
-        } else if chain_id.is_proxima() {
-            850000
-        } else if chain_id.is_halley() {
-            4090000
-        } else if chain_id.is_main() {
-            1
         } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
             BlockNumber::MAX
         } else {
-            1
+            0
         }
     }
 }

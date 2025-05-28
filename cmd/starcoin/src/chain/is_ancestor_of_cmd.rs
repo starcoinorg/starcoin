@@ -9,7 +9,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::ReachabilityView;
+use starcoin_dag::consensusdb::consensus_state::ReachabilityView;
 
 /// Get block info by number
 #[derive(Debug, Parser, Clone)]

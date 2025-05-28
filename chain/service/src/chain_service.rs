@@ -11,7 +11,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;
@@ -22,7 +22,7 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{NewDagBlock, NewHeadBlock};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -69,12 +69,38 @@ impl ServiceFactory<Self> for ChainReaderService {
 impl ActorService for ChainReaderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewDagBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, NewDagBlock> for ChainReaderService {
+    fn handle_event(&mut self, event: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in chain reader service");
+        let mut main = self
+            .inner
+            .get_main()
+            .fork(self.inner.main_head_header().id())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "fork error when handle NewDagBlock in chain reader service: {:?}",
+                    e
+                )
+            });
+        self.inner.main = main
+            .select_dag_state(event.executed_block.as_ref().header())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "select_dag_state error when handle NewDagBlock in chain reader service: {:?}",
+                    e
+                )
+            });
     }
 }
 
@@ -253,8 +279,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::CheckChainType => Ok(ChainResponse::CheckChainType({
                 self.inner.check_chain_type()?
             })),
-            ChainRequest::GetGhostdagData(id) => Ok(ChainResponse::GhostdagDataOption(Box::new(
-                self.inner.get_ghostdagdata(id)?,
+            ChainRequest::GetGhostdagData(ids) => Ok(ChainResponse::GhostdagDataOption(Box::new(
+                self.inner.get_ghostdagdata(ids)?,
             ))),
             ChainRequest::IsAncestorOfCommand {
                 ancestor,
@@ -512,14 +538,18 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn check_chain_type(&self) -> Result<ChainType> {
         self.main.check_chain_type()
     }
-    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>> {
-        self.dag
-            .ghostdata_by_hash(id)
-            .map(|option_arc_ghostdagdata| {
-                option_arc_ghostdagdata.map(|arc_ghostdagdata| {
-                    Arc::try_unwrap(arc_ghostdagdata).unwrap_or_else(|arc| (*arc).clone())
-                })
+
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
+        let arc_results = self.dag.ghostdata_by_hashes(&ids)?;
+
+        let results = arc_results
+            .into_iter()
+            .map(|maybe_arc| {
+                maybe_arc.map(|arc| Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone()))
             })
+            .collect();
+
+        Ok(results)
     }
 
     fn get_range_in_location(

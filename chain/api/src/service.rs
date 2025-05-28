@@ -5,7 +5,7 @@ use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_network_rpc_api::{
     GetAbsentBlockRequest, GetAbsentBlockResponse, GetRangeInLocationRequest,
@@ -81,7 +81,7 @@ pub trait ReadableChainService {
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_chain_type(&self) -> Result<ChainType>;
-    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>>;
     fn get_range_in_location(
         &self,
         start_id: HashValue,
@@ -161,12 +161,12 @@ pub trait ChainAsyncService:
     ) -> Result<GetRangeInLocationResponse>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_chain_type(&self) -> Result<ChainType>;
-    async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>>;
     async fn is_ancestor_of(
         &self,
         ancestor: HashValue,
         descendants: Vec<HashValue>,
-    ) -> Result<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
+    ) -> Result<starcoin_dag::consensusdb::consensus_state::ReachabilityView>;
     async fn get_absent_blocks(&self, req: GetAbsentBlockRequest)
         -> Result<GetAbsentBlockResponse>;
 }
@@ -542,10 +542,8 @@ where
         }
     }
 
-    async fn get_ghostdagdata(&self, block_hash: HashValue) -> Result<Option<GhostdagData>> {
-        let response = self
-            .send(ChainRequest::GetGhostdagData(block_hash))
-            .await??;
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
+        let response = self.send(ChainRequest::GetGhostdagData(ids)).await??;
         if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
             Ok(*ghostdag_data)
         } else {
