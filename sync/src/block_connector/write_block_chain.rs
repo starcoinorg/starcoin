@@ -168,7 +168,8 @@ where
     }
 
     pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
-        self.main = self.main.selecte_dag_state(header)?;
+        let new_branch = self.main.selecte_dag_state(header)?;
+        self.select_head(new_branch)?;
         self.update_startup_info(&self.main.current_header())?;
         Ok(self.main.current_header())
     }

@@ -372,6 +372,7 @@ where
                 e
             )
         });
+
         let bus = self.chain_service.get_bus();
 
         ctx.spawn(async move {
