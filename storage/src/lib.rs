@@ -12,7 +12,7 @@ use crate::contract_event::StcContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::table_info::{TableInfoStorage, TableInfoStore};
-use crate::transaction::TransactionStorage;
+use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
@@ -27,7 +27,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
-use starcoin_types::transaction::{RichTransactionInfo, Transaction};
+use starcoin_types::transaction::{RichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
@@ -76,6 +76,7 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STATE_NODE_PREFIX_NAME_PREV: ColumnFamilyName = "state_node_prev";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
+pub const TRANSACTION_PREFIX_NAME_V2: ColumnFamilyName = "transaction_v2";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_v2";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
@@ -153,6 +154,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
     prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
     prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
+    prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
     prefix_vec
 });
 
@@ -288,10 +290,10 @@ pub trait ContractEventStore {
 }
 
 pub trait TransactionStore {
-    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
-    fn save_transaction(&self, txn_info: Transaction) -> Result<()>;
-    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()>;
-    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>>;
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>>;
+    fn save_transaction(&self, txn_info: StcTransaction) -> Result<()>;
+    fn save_transaction_batch(&self, txn_vec: Vec<StcTransaction>) -> Result<()>;
+    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<StcTransaction>>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -299,7 +301,7 @@ pub trait TransactionStore {
 pub struct Storage {
     transaction_info_storage: TransactionInfoStorage,
     transaction_info_hash_storage: TransactionInfoHashStorage,
-    transaction_storage: TransactionStorage,
+    transaction_storage: StcTransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
@@ -317,14 +319,14 @@ impl Storage {
         let storage = Self {
             transaction_info_storage: TransactionInfoStorage::new(instance.clone()),
             transaction_info_hash_storage: TransactionInfoHashStorage::new(instance.clone()),
-            transaction_storage: TransactionStorage::new(instance.clone()),
+            transaction_storage: StcTransactionStorage::new(instance.clone()),
             block_storage: BlockStorage::new(instance.clone()),
             state_node_storage: StateStorage::new(instance.clone()),
             block_accumulator_storage: AccumulatorStorage::new_block_accumulator_storage(
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
@@ -602,36 +604,36 @@ impl ContractEventStore for Storage {
 }
 
 impl TransactionStore for Storage {
-    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>, Error> {
         self.transaction_storage.get(txn_hash)
     }
 
-    fn save_transaction(&self, txn: Transaction) -> Result<(), Error> {
+    fn save_transaction(&self, txn: StcTransaction) -> Result<(), Error> {
         self.transaction_storage.put(txn.id(), txn)
     }
 
-    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<(), Error> {
+    fn save_transaction_batch(&self, txn_vec: Vec<StcTransaction>) -> Result<(), Error> {
         self.transaction_storage.save_transaction_batch(txn_vec)
     }
 
     fn get_transactions(
         &self,
         txn_hash_vec: Vec<HashValue>,
-    ) -> Result<Vec<Option<Transaction>>, Error> {
+    ) -> Result<Vec<Option<StcTransaction>>, Error> {
         self.transaction_storage.multiple_get(txn_hash_vec)
     }
 }
 
 /// Chain storage define
 pub trait Store:
-    StateNodeStore
-    + BlockStore
-    + BlockInfoStore
-    + TransactionStore
-    + BlockTransactionInfoStore
-    + ContractEventStore
-    + IntoSuper<dyn StateNodeStore>
-    + TableInfoStore
+StateNodeStore
++ BlockStore
++ BlockInfoStore
++ TransactionStore
++ BlockTransactionInfoStore
++ ContractEventStore
++ IntoSuper<dyn StateNodeStore>
++ TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
