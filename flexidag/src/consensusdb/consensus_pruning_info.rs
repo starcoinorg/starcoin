@@ -77,17 +77,14 @@ impl PruningPointInfoStore {
 
 impl PruningPointInfoReader for PruningPointInfoStore {
     fn get_pruning_point_info(&self) -> Result<Option<PruningPointInfo>, StoreError> {
-        let result = match self.pruning_point_info_access.read(Hash::zero()) {
-            Ok(info) => Some(info),
-            Err(e) => match e {
-                StoreError::KeyNotFound(_) => None,
-                _ => {
-                    error!("get_pruning_point_info error: {:?} for id: {:?}, the candidate in tips referring too many red blocks will not be filtered.", e, Hash::zero());
-                    None
-                }
-            },
-        };
-        Ok(result)
+        match self.pruning_point_info_access.read(Hash::zero()) {
+            Ok(info) => Ok(Some(info)),
+            Err(StoreError::KeyNotFound(_)) => Ok(None),
+            Err(e) => {
+                error!("Failed to get pruning point info: {:?}", e);
+                Err(e)
+            }
+        }
     }
 }
 

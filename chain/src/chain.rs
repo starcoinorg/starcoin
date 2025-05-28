@@ -285,7 +285,7 @@ impl BlockChain {
         )
     }
 
-    pub fn selecte_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
         let new_pruning_point = if header.pruning_point() == HashValue::zero() {
             self.genesis_hash
         } else {

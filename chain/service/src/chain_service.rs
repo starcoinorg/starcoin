@@ -94,10 +94,10 @@ impl EventHandler<Self, NewDagBlock> for ChainReaderService {
                 )
             });
         self.inner.main = main
-            .selecte_dag_state(event.executed_block.as_ref().header())
+            .select_dag_state(event.executed_block.as_ref().header())
             .unwrap_or_else(|e| {
                 panic!(
-                    "selecte_dag_state error when handle NewDagBlock in chain reader service: {:?}",
+                    "select_dag_state error when handle NewDagBlock in chain reader service: {:?}",
                     e
                 )
             });
