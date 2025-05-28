@@ -17,7 +17,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
-use starcoin_types::contract_event::StcContractEventInfo;
+use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -28,7 +28,6 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
-use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
@@ -387,8 +386,8 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_events_by_txn_info_hash2(
         &self,
         txn_info_id: HashValue,
-    ) -> Result<Option<Vec<ContractEvent2>>, Error> {
-        self.storage2.get_contract_events(txn_info_id)
+    ) -> Result<Option<Vec<StcContractEvent>>> {
+        self.storage.get_contract_events_v2(txn_info_id)
     }
 
     fn main_head_header(&self) -> BlockHeader {

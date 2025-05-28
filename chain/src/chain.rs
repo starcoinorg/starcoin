@@ -1394,7 +1394,7 @@ impl ChainReader for BlockChain {
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof2>> {
-        let (storage, storage2) = &self.storage;
+        let (storage, _) = &self.storage;
         let (_, statedb2) = &self.statedb;
         let block_info = match self.get_block_info(Some(block_id))? {
             Some(block_info) => block_info,
@@ -1422,9 +1422,13 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
-            let events = storage2
-                .get_contract_events(txn_info_hash)?
+            let events = storage
+                .get_contract_events_v2(txn_info_hash)?
                 .unwrap_or_default();
+            let events = events
+                .into_iter()
+                .filter_map(|e| e.to_v2())
+                .collect::<Vec<_>>();
             let event = events.get(event_index as usize).cloned().ok_or_else(|| {
                 format_err!("event index out of range, events len:{}", events.len())
             })?;

@@ -3,6 +3,8 @@
 
 pub use crate::event_info::{ContractEventInfo, StcContractEventInfo};
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
+use starcoin_vm2_crypto::hash::PlainCryptoHash;
 pub use starcoin_vm_types::contract_event::*;
 
 use crate::event::StcEventKey;
@@ -53,6 +55,13 @@ impl StcContractEvent {
         match self {
             Self::V1(event) => StcTypeTag::V1(event.type_tag().clone()),
             Self::V2(event) => StcTypeTag::V2(event.type_tag().clone()),
+        }
+    }
+
+    pub fn hash(&self) -> HashValue {
+        match self {
+            Self::V1(event) => event.crypto_hash(),
+            Self::V2(event) => event.crypto_hash(),
         }
     }
 
