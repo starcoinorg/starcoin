@@ -62,4 +62,11 @@ impl StcContractEvent {
             Self::V2(_) => None,
         }
     }
+
+    pub fn to_v2(&self) -> Option<ContractEvent2> {
+        match self {
+            Self::V1(_) => None,
+            Self::V2(event) => Some(event.clone()),
+        }
+    }
 }
