@@ -31,6 +31,7 @@ impl CompactBlock {
             .transactions
             .into_iter()
             .map(|tx| tx.id())
+            .chain(block.body.transactions2.into_iter().map(|tx| tx.id()))
             .map(ShortId)
             .collect();
         CompactBlock {

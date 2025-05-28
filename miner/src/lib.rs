@@ -171,6 +171,7 @@ impl MinerService {
 
         if !event.skip_empty_block_check
             && (block_template.body.transactions.is_empty()
+            && block_template.body.transactions2.is_empty()
             && self.config.miner.is_disable_mint_empty_block()
             //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
             && block_time_gap < MAX_BLOCK_TIME_GAP)

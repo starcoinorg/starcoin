@@ -71,7 +71,12 @@ impl ChainNotifyHandlerService {
     pub fn notify_new_block(&self, block: &Block, ctx: &mut ServiceContext<Self>) {
         let thin_block = ThinBlock::new(
             block.header().clone(),
-            block.transactions().iter().map(|t| t.id()).collect(),
+            block
+                .transactions()
+                .iter()
+                .map(|t| t.id())
+                .chain(block.transactions2().iter().map(|t| t.id()))
+                .collect(),
         );
         ctx.broadcast(Notification(thin_block));
     }
