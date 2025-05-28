@@ -164,6 +164,7 @@ impl CliStateVM2 {
                 None
             });
 
+        // TODO(BobOng): [dual-vm] Want to convert txn_info from vm1 to vm2
         let _txn_info = {
             if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                 info
@@ -177,15 +178,18 @@ impl CliStateVM2 {
                 }
             }
         };
+
+        // TODO(BobOng): [dual-vm] This event want get from chain_get_events_by_txn_hash2, this will be fix by next PR
         let _events = self
             .client
             .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
 
-        // TODO(BobOng): [dual-vm] to put result into output view
-        // Ok(ExecutionOutputView1::new_with_info(
+        // TODO(BobOng): [dual-vm] Want to convert txn_info and events from vm1 to vm2
+        // Ok(ExecutionOutputView::new_with_info(
         //     txn_hash, txn_info, events,
         // ))
-        Ok(ExecutionOutputView::new(HashValue::random()))
+
+        Ok(ExecutionOutputView::new(txn_hash))
     }
 
     pub fn build_and_execute_transaction(
