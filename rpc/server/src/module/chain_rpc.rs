@@ -33,6 +33,7 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    TransactionEventResponse as TransactionEventResponse2
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::StateView as StateView2;
