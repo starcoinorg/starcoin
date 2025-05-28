@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::TransactionInfoWithProof;
+use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -16,6 +16,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
@@ -80,6 +81,13 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    ) -> Result<Option<TransactionInfoWithProof2>>;
 }
 
 /// Writeable block chain service trait

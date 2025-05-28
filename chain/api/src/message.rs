@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::TransactionInfoWithProof;
+use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
@@ -14,6 +14,7 @@ use starcoin_types::{
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
 #[allow(clippy::large_enum_variant)]
@@ -65,6 +66,12 @@ pub enum ChainRequest {
     },
     GetBlockInfos(Vec<HashValue>),
     GetMultiStateByHash(HashValue),
+    GetTransactionProof2 {
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -94,4 +101,5 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     MultiStateResp(Option<MultiState>),
+    TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
 }

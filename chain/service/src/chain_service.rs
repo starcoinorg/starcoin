@@ -6,6 +6,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+    TransactionInfoWithProof2,
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -28,6 +29,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 
@@ -249,6 +251,19 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 let state = self.inner.storage.get_vm_multi_state(hash)?;
                 Ok(ChainResponse::MultiStateResp(Some(state)))
             }
+            ChainRequest::GetTransactionProof2 {
+                block_id,
+                transaction_global_index,
+                event_index,
+                access_path,
+            } => Ok(ChainResponse::TransactionProof2(Box::new(
+                self.inner.get_transaction_proof2(
+                    block_id,
+                    transaction_global_index,
+                    event_index,
+                    access_path,
+                )?,
+            ))),
         }
     }
 }
@@ -448,6 +463,21 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
+    }
+
+    fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    ) -> Result<Option<TransactionInfoWithProof2>> {
+        self.main.get_transaction_proof2(
+            block_id,
+            transaction_global_index,
+            event_index,
+            access_path,
+        )
     }
 }
 
