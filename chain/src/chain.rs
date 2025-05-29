@@ -32,7 +32,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
+use starcoin_types::transaction::{RichTransactionInfo, StcTransaction, TransactionInfo};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
@@ -633,12 +633,7 @@ impl BlockChain {
         );
 
         // save transaction relationship and save transaction to storage2
-        starcoin_vm2_chain::save_executed_transactions(
-            block_id,
-            storage2,
-            transactions2,
-            executed_data2.clone(),
-        )?;
+        starcoin_vm2_chain::save_executed_transactions(storage2, executed_data2.clone())?;
 
         watch(CHAIN_WATCH_NAME, "n25");
 
@@ -701,12 +696,17 @@ impl BlockChain {
                 .collect(),
         )?;
 
-        let txn_id_vec = transactions
+        let all_transactions: Vec<StcTransaction> = transactions
+            .into_iter()
+            .map(Into::into)
+            .chain(transactions2.into_iter().map(Into::into))
+            .collect();
+        let txn_id_vec = all_transactions
             .iter()
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save transactions
-        storage.save_transaction_batch(transactions)?;
+        storage.save_transaction_batch(all_transactions)?;
 
         // save block's transactions
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
@@ -854,7 +854,7 @@ impl BlockChain {
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save transactions
-        storage.save_transaction_batch(transactions)?;
+        storage.save_transaction_batch(transactions.into_iter().map(Into::into).collect())?;
 
         // save block's transactions
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
@@ -1102,9 +1102,11 @@ impl ChainReader for BlockChain {
     }
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
-        let (storage, _storage2) = &self.storage;
+        let (storage, _) = &self.storage;
         //TODO check txn should exist on current chain.
-        storage.get_transaction(txn_hash)
+        Ok(storage
+            .get_transaction(txn_hash)?
+            .and_then(|txn| txn.to_v1()))
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>> {

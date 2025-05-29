@@ -9,12 +9,11 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
+use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::transaction::{StcTransaction, Transaction};
 use std::collections::HashMap;
 
 #[stest::test(timeout = 480)]
@@ -25,7 +24,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         BuiltinNetworkID::Test.genesis_config().clone(),
         BuiltinNetworkID::Test.genesis_config2().clone(),
     )
-    .unwrap();
+        .unwrap();
     let mut block_chain = test_helper::gen_blockchain_for_test(&net)?;
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
@@ -84,12 +83,12 @@ fn test_transaction_info_and_proof() -> Result<()> {
         all_txns.extend_from_slice(&[Transaction::BlockMetadata(
             block.to_metadata(current_header.gas_used()),
         )
-        .into()]);
+            .into()]);
         all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
             block.to_metadata2(current_header.gas_used()),
         )
-        .into()]);
+            .into()]);
         current_header = block.header().clone();
     });
 

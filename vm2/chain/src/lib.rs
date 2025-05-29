@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
@@ -28,9 +27,7 @@ pub fn execute_transactions(
 
 // todo: remove me.
 pub fn save_executed_transactions(
-    block_id: HashValue,
     storage: &dyn Store,
-    transactions: Vec<Transaction>,
     executed_data: BlockExecutedData,
 ) -> anyhow::Result<()> {
     let txn_table_infos = executed_data
@@ -38,15 +35,6 @@ pub fn save_executed_transactions(
         .into_iter()
         .collect::<Vec<_>>();
 
-    let txn_id_vec = transactions
-        .iter()
-        .map(|user_txn| user_txn.id())
-        .collect::<Vec<HashValue>>();
-    // save transactions
-    storage.save_transaction_batch(transactions)?;
-
-    // save block's transactions
-    storage.save_block_transaction_ids(block_id, txn_id_vec)?;
     storage.save_table_infos(txn_table_infos)?;
 
     Ok(())

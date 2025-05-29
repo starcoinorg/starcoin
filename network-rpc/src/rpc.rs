@@ -93,7 +93,13 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         req: GetTxnsWithHash,
     ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
         let storage = self.storage.clone();
-        let fut = async move { storage.get_transactions(req.ids) };
+        let fut = async move {
+            let txns = storage.get_transactions(req.ids)?;
+            Ok(txns
+                .into_iter()
+                .map(|txn| txn.and_then(|t| t.to_v1()))
+                .collect::<Vec<_>>())
+        };
         Box::pin(fut)
     }
 

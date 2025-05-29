@@ -354,7 +354,10 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
-        self.storage.get_transaction(txn_hash)
+        Ok(self
+            .storage
+            .get_transaction(txn_hash)?
+            .and_then(|txn| txn.to_v1()))
     }
 
     fn get_transaction_info(

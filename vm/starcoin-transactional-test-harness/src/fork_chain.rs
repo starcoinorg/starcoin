@@ -158,7 +158,7 @@ impl ForkBlockChain {
         self.txn_accumulator.append(&[txn_info.id()])?;
 
         self.storage.save_contract_events(txn_hash, events)?;
-        self.storage.save_transaction(txn)?;
+        self.storage.save_transaction(txn.into())?;
         Ok(())
     }
 
@@ -353,7 +353,10 @@ impl ChainApi for MockChainApi {
         let status = chain.status.clone();
         let decode_payload = option.unwrap_or_default().decode;
         let fut = async move {
-            match storage.get_transaction(transaction_hash)? {
+            match storage
+                .get_transaction(transaction_hash)?
+                .and_then(|t| t.to_v1())
+            {
                 Some(txn) => {
                     // WATNING: the txn here is not in any blocks, use head block instead.
                     // TODO: How to handle the txns not in any blocks.
