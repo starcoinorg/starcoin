@@ -13971,6 +13971,7 @@ dependencies = [
  "starcoin-types 2.0.1",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
  "stdlib",
  "tempfile",
  "tokio",

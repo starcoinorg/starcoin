@@ -63,6 +63,7 @@ stdlib = { workspace = true }
 
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

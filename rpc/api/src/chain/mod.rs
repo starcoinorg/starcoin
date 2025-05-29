@@ -14,7 +14,9 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
-use starcoin_vm2_types::view::TransactionInfoWithProofView as TransactionInfoWithProofView2;
+use starcoin_vm2_types::view::{
+    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+};
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
@@ -142,7 +144,7 @@ pub trait ChainApi {
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        //    access_path: Option<StrView<AccessPath2>>,
+        access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView2>>;
 
     /// Get TransactionInfoWithProof2Raw, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
@@ -152,8 +154,8 @@ pub trait ChainApi {
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        //     access_path: Option<StrView<AccessPath2>>,
-    ) -> FutureResult<Option<StrView<Vec<u8>>>>;
+        access_path: Option<StrView2<AccessPath2>>,
+    ) -> FutureResult<Option<StrView2<Vec<u8>>>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

@@ -15,7 +15,7 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, StrView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
     TransactionEventResponse, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -30,12 +30,14 @@ use starcoin_storage::{
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
-use starcoin_vm2_types::view::TransactionInfoWithProofView as TransactionInfoWithProofView2;
+use starcoin_vm2_types::view::{
+    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+};
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
-
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -516,19 +518,21 @@ impl ChainApi for MockChainApi {
 
     fn get_transaction_proof2(
         &self,
-        block_hash: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
+        _block_hash: HashValue,
+        _transaction_global_index: u64,
+        _event_index: Option<u64>,
+        _access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
         todo!()
     }
 
     fn get_transaction_proof2_raw(
         &self,
-        block_hash: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-    ) -> FutureResult<Option<StrView<Vec<u8>>>> {
+        _block_hash: HashValue,
+        _transaction_global_index: u64,
+        _event_index: Option<u64>,
+        _access_path: Option<StrView2<AccessPath2>>,
+    ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
         todo!()
     }
 }
