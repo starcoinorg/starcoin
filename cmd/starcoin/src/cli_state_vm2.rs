@@ -28,18 +28,20 @@ use starcoin_vm2_types::view::{
     DryRunOutputView, RawUserTransactionView, SignedUserTransactionView,
     TransactionInfoView as TransactionInfoView2, TransactionPayloadView, TransactionStatusView,
 };
-use starcoin_vm2_vm_types::transaction::{RichTransactionInfo, TransactionInfo};
-use starcoin_vm2_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm2_vm_types::contract_event::ContractEvent;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
     account_config::{association_address, AccountResource, STC_TOKEN_CODE_STR},
+    contract_event::ContractEvent as ContractEvent2,
     genesis_config::ChainId,
     move_resource::MoveResource,
     state_view::StateReaderExt,
     transaction::{
         authenticator::{AccountPublicKey, TransactionAuthenticator},
-        DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
+        DryRunTransaction, RawUserTransaction, RichTransactionInfo, SignedUserTransaction,
+        TransactionInfo, TransactionPayload,
     },
+    vm_status::KeptVMStatus,
 };
 use std::env::current_dir;
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
@@ -73,7 +75,10 @@ fn build_dirs_from_net(net: &ChainNetworkID) -> Result<(PathBuf, DataDirPath)> {
     Ok((data_dir, temp_dir))
 }
 
-fn transaction_info1_to_2(info: TransactionInfoView1) -> TransactionInfoView2 {
+fn transaction_info1_to_2(
+    info: TransactionInfoView1,
+    events: Vec<ContractEvent2>,
+) -> TransactionInfoView2 {
     // TODO(BobOng): [dual-vm]: this place want to convert info.vm_status from vm1 to vm2
     let vm_status = KeptVMStatus::Executed;
     let txn_info = RichTransactionInfo::new(
@@ -82,7 +87,7 @@ fn transaction_info1_to_2(info: TransactionInfoView1) -> TransactionInfoView2 {
         TransactionInfo::new(
             info.transaction_hash,
             info.state_root_hash,
-            &[], //TODO(BobOng) [dual-vm]: want to check this info view
+            &events,
             info.gas_used.0,
             vm_status,
         ),
@@ -214,9 +219,19 @@ impl CliStateVM2 {
             .client
             .chain_get_events_by_txn_hash2(txn_hash, Some(GetEventOption { decode: true }))?;
 
+        let contract_events = events
+            .iter()
+            .map(|response| {
+                ContractEvent::new_v2_with_type_tag_str(
+                    response.event.type_tag.to_string().as_str(),
+                    response.event.data.0.clone(),
+                )
+            })
+            .collect();
+
         Ok(ExecutionOutputView::new_with_info(
             txn_hash,
-            transaction_info1_to_2(txn_info),
+            transaction_info1_to_2(txn_info, contract_events),
             events,
         ))
     }
