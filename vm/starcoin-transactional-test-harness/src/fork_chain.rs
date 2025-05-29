@@ -15,7 +15,7 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, StrView,
     TransactionEventResponse, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -30,6 +30,7 @@ use starcoin_storage::{
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
+use starcoin_vm2_types::view::TransactionInfoWithProofView as TransactionInfoWithProofView2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
@@ -511,6 +512,24 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_transaction_proof2(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
+        todo!()
+    }
+
+    fn get_transaction_proof2_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+    ) -> FutureResult<Option<StrView<Vec<u8>>>> {
+        todo!()
     }
 }
 
