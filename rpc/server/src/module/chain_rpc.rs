@@ -25,10 +25,11 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::contract_event::{ContractEventInfo, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
+use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::view::{
@@ -36,6 +37,7 @@ use starcoin_vm2_types::view::{
     TransactionEventResponse as TransactionEventResponse2
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
+use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -344,11 +346,50 @@ where
 
     fn get_events_by_txn_hash2(
         &self,
-        _txn_hash: HashValue,
-        _option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
-        // TODO(BobOng): [dual-vm] to get event s by txn hash for vm2
-        unimplemented!()
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse2>> {
+        let event_option = option.unwrap_or_default();
+        let service = self.service.clone();
+        let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
+        let fut = async move {
+            let events = service.get_events_by_txn_hash2(txn_hash).await?;
+            let state_root = if event_option.decode {
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                Some(multi_state.state_root2())
+            } else {
+                None
+            };
+
+            let mut resp_data: Vec<_> = events
+                .into_iter()
+                .filter_map(|e: StcContractEventInfo| {
+                    e.try_into()
+                        .ok()
+                        .map(|e: ContractEventInfo2| TransactionEventResponse2 {
+                            event: e.into(),
+                            decode_event_data: None,
+                        })
+                })
+                .collect();
+
+            if let Some(state_root) = state_root {
+                let state = ChainStateDB2::new(storage2, Some(state_root));
+                let annotator = MoveValueAnnotator2::new(&state);
+                for elem in resp_data.iter_mut() {
+                    elem.decode_event_data = Some(
+                        annotator
+                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
+                            .into(),
+                    );
+                }
+            }
+            Ok(resp_data)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
     }
 
     fn get_events(

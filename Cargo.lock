@@ -13424,6 +13424,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-node-api",
  "starcoin-resource-viewer 1.13.19",
+ "starcoin-resource-viewer 2.0.1",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-rpc-middleware",
