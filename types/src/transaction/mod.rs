@@ -11,11 +11,15 @@ use starcoin_crypto::hash::{
     CryptoHash, CryptoHasher, PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use starcoin_crypto::HashValue;
-use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfoV2;
-use starcoin_vm2_types::vm_error::{AbortLocation, KeptVMStatus};
-use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm2_types::{
+    transaction::TransactionInfo as TransactionInfoV2,
+    vm_error::{AbortLocation as AbortLocation2, KeptVMStatus},
+};
 pub use starcoin_vm_types::transaction::*;
 pub use stc_transaction::{StcTransaction, Transaction2};
+use starcoin_vm_types::{
+    contract_event::ContractEvent, vm_status::AbortLocation as AbortLocation1,
+};
 use std::ops::Deref;
 
 /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
@@ -169,11 +173,11 @@ impl RichTransactionInfo {
     }
 }
 
-fn lo_convert(lo: AbortLocation) -> starcoin_vm_types::vm_status::AbortLocation {
-    match lo {
-        AbortLocation::Script => starcoin_vm_types::vm_status::AbortLocation::Script,
-        AbortLocation::Module(module_id) => {
-            starcoin_vm_types::vm_status::AbortLocation::Module(ModuleId::new(
+fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
+    match location2 {
+        AbortLocation2::Script => AbortLocation1::Script,
+        AbortLocation2::Module(module_id) => {
+            AbortLocation1::Module(ModuleId::new(
                 module_id.address.into_bytes().into(),
                 // todo: double check, this conversion should never fail.
                 Identifier::from_utf8(module_id.name.into_bytes()).unwrap(),
@@ -193,14 +197,14 @@ impl From<TransactionInfoV2> for TransactionInfo {
             status: match value.status {
                 KeptVMStatus::Executed => Executed,
                 KeptVMStatus::OutOfGas => OutOfGas,
-                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert(lo), code),
+                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert_from_2_to_1(lo), code),
                 KeptVMStatus::ExecutionFailure {
                     location,
                     function,
                     code_offset,
                     message: _,
                 } => ExecutionFailure {
-                    location: lo_convert(location),
+                    location: lo_convert_from_2_to_1(location),
                     function,
                     code_offset,
                 },

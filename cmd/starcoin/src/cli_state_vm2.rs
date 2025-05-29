@@ -16,8 +16,12 @@ use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_vm2_account_api::{AccountInfo, AccountProvider};
 
 use starcoin_logger::prelude::info;
-use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_rpc_api::types::TransactionInfoView as TransactionInfoView1;
+use starcoin_rpc_api::{
+    chain::GetEventOption,
+    types::{
+        TransactionInfoView as TransactionInfoView1,
+    },
+};
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -28,6 +32,7 @@ use starcoin_vm2_types::view::{
     DryRunOutputView, RawUserTransactionView, SignedUserTransactionView,
     TransactionInfoView as TransactionInfoView2, TransactionPayloadView, TransactionStatusView,
 };
+use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::contract_event::ContractEvent;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
@@ -41,7 +46,6 @@ use starcoin_vm2_vm_types::{
         DryRunTransaction, RawUserTransaction, RichTransactionInfo, SignedUserTransaction,
         TransactionInfo, TransactionPayload,
     },
-    vm_status::KeptVMStatus,
 };
 use std::env::current_dir;
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
@@ -75,26 +79,23 @@ fn build_dirs_from_net(net: &ChainNetworkID) -> Result<(PathBuf, DataDirPath)> {
     Ok((data_dir, temp_dir))
 }
 
-fn transaction_info1_to_2(
-    info: TransactionInfoView1,
+fn transaction_info_view_from_1_to_2(
+    view: TransactionInfoView1,
     events: Vec<ContractEvent2>,
 ) -> TransactionInfoView2 {
-    // TODO(BobOng): [dual-vm]: this place want to convert info.vm_status from vm1 to vm2
-    let vm_status = KeptVMStatus::Executed;
-    let txn_info = RichTransactionInfo::new(
-        info.transaction_hash,
-        info.block_number.0,
+    TransactionInfoView2::new(RichTransactionInfo::new(
+        view.block_hash,
+        view.block_number.0,
         TransactionInfo::new(
-            info.transaction_hash,
-            info.state_root_hash,
+            view.transaction_hash,
+            view.state_root_hash,
             &events,
-            info.gas_used.0,
-            vm_status,
+            view.gas_used.0,
+            KeptVMStatus::Executed, // TODO(BobOng): [dual-vm] should convert from view, fix by next PR
         ),
-        info.transaction_index,
-        info.transaction_global_index.0,
-    );
-    TransactionInfoView2::new(txn_info)
+        view.transaction_index,
+        view.transaction_global_index.0,
+    ))
 }
 
 impl CliStateVM2 {
@@ -231,7 +232,7 @@ impl CliStateVM2 {
 
         Ok(ExecutionOutputView::new_with_info(
             txn_hash,
-            transaction_info1_to_2(txn_info, contract_events),
+            transaction_info_view_from_1_to_2(txn_info, contract_events),
             events,
         ))
     }
