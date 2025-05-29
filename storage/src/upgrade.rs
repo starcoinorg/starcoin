@@ -4,12 +4,11 @@
 use crate::block::BlockStorage;
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
-use crate::transaction::legacy::TransactionStorage;
-use crate::transaction_info::OldTransactionInfoStorage;
-use crate::transaction_info::TransactionInfoStorage;
+use crate::transaction::{legacy::TransactionStorage, StcTransactionStorage};
+use crate::transaction_info::{OldTransactionInfoStorage, TransactionInfoStorage};
 use crate::{
-    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME,
+    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
+    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
@@ -71,7 +70,10 @@ impl DBUpgrade {
         let block_storage = BlockStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
-        let transaction_storage = TransactionStorage::new(instance.clone());
+        // todo: remove me. silence the warning about unused function.
+        let _ = TransactionStorage::new(instance.clone());
+        // todo: upgrade transaction storage first
+        let transaction_storage = StcTransactionStorage::new(instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -113,7 +115,8 @@ impl DBUpgrade {
             //check the transaction.
             if block_number != 0 {
                 let transaction = transaction_storage
-                    .get(old_transaction_info.txn_info.transaction_hash)?
+                    .get_transaction(old_transaction_info.txn_info.transaction_hash)?
+                    .and_then(|t| t.to_v1())
                     .ok_or_else(|| {
                         format_err!(
                             "Can not find transaction by {}",
