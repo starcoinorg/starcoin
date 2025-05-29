@@ -41,7 +41,6 @@ pub use script::{
     ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
     TypeArgumentABI,
 };
-pub use stc_transaction::StcTransaction;
 use std::str::FromStr;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
@@ -53,7 +52,6 @@ pub mod helpers;
 mod module;
 mod package;
 mod script;
-mod stc_transaction;
 #[cfg(test)]
 mod tests;
 mod transaction_argument;

@@ -9,12 +9,11 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
+use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::transaction::{StcTransaction, Transaction};
 use std::collections::HashMap;
 
 #[stest::test(timeout = 480)]

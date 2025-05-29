@@ -29,7 +29,7 @@ fn init_store(
         .collect::<Vec<_>>();
     store
         .transaction_storage
-        .save_transaction_batch(txns.clone())
+        .save_transaction_batch(txns.clone().into_iter().map(Into::into).collect())
         .unwrap();
     txns
 }
@@ -56,7 +56,7 @@ proptest! {
         for  txn in txns.iter() {
             prop_assert_eq!(storage
                             .transaction_storage
-                            .get_transaction(txn.id()).unwrap().unwrap(), txn.clone());
+                            .get_transaction(txn.id()).unwrap().and_then(|t|t.to_v1()).unwrap(), txn.clone());
         }
     }
 }

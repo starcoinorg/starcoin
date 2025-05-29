@@ -306,7 +306,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
     );
     storage
         .transaction_storage
-        .save_transaction(Transaction::BlockMetadata(block_metadata))?;
+        .save_transaction(Transaction::BlockMetadata(block_metadata).into())?;
     txn_inf_ids.push(txn_info_0.id());
     let txn_info_1 = TransactionInfo::new(
         txn.id(),
@@ -325,7 +325,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
     );
     storage
         .transaction_storage
-        .save_transaction(Transaction::UserTransaction(txn))?;
+        .save_transaction(Transaction::UserTransaction(txn).into())?;
     storage.commit_block(block)?;
     storage.save_block_info(block_info)?;
 
@@ -348,7 +348,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
 }
 
 #[stest::test]
-pub fn test_db_upgrade() -> Result<()> {
+fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
     let txn_info_ids = generate_old_db(tmpdir.path())?;
     let mut instance = StorageInstance::new_cache_and_db_instance(

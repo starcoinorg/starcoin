@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod stc_transaction;
+
 use crate::{identifier::Identifier, language_storage::ModuleId};
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
@@ -13,6 +15,7 @@ use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfoV2;
 use starcoin_vm2_types::vm_error::{AbortLocation, KeptVMStatus};
 use starcoin_vm_types::contract_event::ContractEvent;
 pub use starcoin_vm_types::transaction::*;
+pub use stc_transaction::{StcTransaction, Transaction2};
 use std::ops::Deref;
 
 /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
