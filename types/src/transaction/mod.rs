@@ -1,6 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{
+    identifier::{Identifier as Identifier1, Identifier2},
+    language_storage::{ModuleId as ModuleId1, ModuleId2},
+};
 mod stc_transaction;
 
 use crate::{identifier::Identifier, language_storage::ModuleId};
@@ -173,14 +177,27 @@ impl RichTransactionInfo {
     }
 }
 
-fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
+pub fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
     match location2 {
         AbortLocation2::Script => AbortLocation1::Script,
         AbortLocation2::Module(module_id) => {
-            AbortLocation1::Module(ModuleId::new(
+            AbortLocation1::Module(ModuleId1::new(
                 module_id.address.into_bytes().into(),
                 // todo: double check, this conversion should never fail.
-                Identifier::from_utf8(module_id.name.into_bytes()).unwrap(),
+                Identifier1::from_utf8(module_id.name.into_bytes()).unwrap(),
+            ))
+        }
+    }
+}
+
+pub fn lo_convert_from_1_to_2(location1: AbortLocation1) -> AbortLocation2 {
+    match location1 {
+        AbortLocation1::Script => AbortLocation2::Script,
+        AbortLocation1::Module(module_id) => {
+            AbortLocation2::Module(ModuleId2::new(
+                module_id.address().into_bytes().into(),
+                // todo: double check, this conversion should never fail.
+                Identifier2::from_utf8(module_id.name().as_bytes().to_vec()).unwrap(),
             ))
         }
     }

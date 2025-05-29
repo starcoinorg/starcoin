@@ -20,8 +20,10 @@ use starcoin_rpc_api::{
     chain::GetEventOption,
     types::{
         TransactionInfoView as TransactionInfoView1,
+        TransactionStatusView as TransactionStatusView1,
     },
 };
+use starcoin_types::transaction::lo_convert_from_1_to_2;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -79,6 +81,31 @@ fn build_dirs_from_net(net: &ChainNetworkID) -> Result<(PathBuf, DataDirPath)> {
     Ok((data_dir, temp_dir))
 }
 
+fn transaction_status_view_to_tokept_vm_status(
+    status_view: TransactionStatusView1,
+) -> KeptVMStatus {
+    match status_view {
+        TransactionStatusView1::Executed => KeptVMStatus::Executed,
+        TransactionStatusView1::OutOfGas => KeptVMStatus::OutOfGas,
+        TransactionStatusView1::MoveAbort {
+            location,
+            abort_code,
+        } => KeptVMStatus::MoveAbort(lo_convert_from_1_to_2(location), abort_code.0),
+        TransactionStatusView1::ExecutionFailure {
+            location,
+            function,
+            code_offset,
+        } => KeptVMStatus::ExecutionFailure {
+            location: lo_convert_from_1_to_2(location),
+            function,
+            code_offset,
+            message: None,
+        },
+        TransactionStatusView1::MiscellaneousError => KeptVMStatus::MiscellaneousError,
+        _ => unreachable!(), // TODO(BobOng): [dual-vm] to confirm how to handle the status type
+    }
+}
+
 fn transaction_info_view_from_1_to_2(
     view: TransactionInfoView1,
     events: Vec<ContractEvent2>,
@@ -91,7 +118,7 @@ fn transaction_info_view_from_1_to_2(
             view.state_root_hash,
             &events,
             view.gas_used.0,
-            KeptVMStatus::Executed, // TODO(BobOng): [dual-vm] should convert from view, fix by next PR
+            transaction_status_view_to_tokept_vm_status(view.status),
         ),
         view.transaction_index,
         view.transaction_global_index.0,

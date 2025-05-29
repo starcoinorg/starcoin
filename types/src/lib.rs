@@ -103,7 +103,7 @@ pub mod language_storage {
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
 
-    pub use starcoin_vm2_vm_types::language_storage::TypeTag as TypeTag2;
+    pub use starcoin_vm2_vm_types::language_storage::{ModuleId as ModuleId2, TypeTag as TypeTag2};
 
     #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
     pub enum StcTypeTag {
@@ -148,6 +148,7 @@ pub mod language_storage {
 }
 
 pub mod identifier {
+    pub use starcoin_vm2_vm_types::identifier::Identifier as Identifier2;
     pub use starcoin_vm_types::identifier::{IdentStr, Identifier};
 }
 
