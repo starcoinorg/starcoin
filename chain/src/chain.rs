@@ -466,7 +466,7 @@ impl BlockChain {
         block: Block,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
-        let (storage, storage2) = storage;
+        let (storage, _storage2) = storage;
         let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -632,9 +632,6 @@ impl BlockChain {
             vm_state_accumulator_info,
         );
 
-        // save transaction relationship and save transaction to storage2
-        starcoin_vm2_chain::save_executed_transactions(storage2, executed_data2.clone())?;
-
         watch(CHAIN_WATCH_NAME, "n25");
 
         // save block's transaction relationship and save transaction
@@ -645,6 +642,13 @@ impl BlockChain {
         let txn_table_infos = executed_data
             .txn_table_infos
             .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .chain(
+                executed_data2
+                    .txn_table_infos
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into())),
+            )
             .collect::<Vec<_>>();
 
         debug_assert!(
@@ -823,6 +827,7 @@ impl BlockChain {
         let txn_table_infos = executed_data
             .txn_table_infos
             .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
             .collect::<Vec<_>>();
 
         // save block's transaction relationship and save transaction

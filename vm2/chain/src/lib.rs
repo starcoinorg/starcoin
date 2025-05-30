@@ -4,7 +4,6 @@
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
@@ -23,21 +22,6 @@ pub fn execute_transactions(
         block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
 
     Ok(executed_data)
-}
-
-// todo: remove me.
-pub fn save_executed_transactions(
-    storage: &dyn Store,
-    executed_data: BlockExecutedData,
-) -> anyhow::Result<()> {
-    let txn_table_infos = executed_data
-        .txn_table_infos
-        .into_iter()
-        .collect::<Vec<_>>();
-
-    storage.save_table_infos(txn_table_infos)?;
-
-    Ok(())
 }
 
 pub fn build_block_transactions(
