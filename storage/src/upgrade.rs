@@ -4,6 +4,8 @@
 use crate::block::BlockStorage;
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
+use crate::contract_event::legacy::ContractEventStorage;
+use crate::table_info::legacy::TableInfoStorage;
 use crate::transaction::{legacy::TransactionStorage, StcTransactionStorage};
 use crate::transaction_info::{OldTransactionInfoStorage, TransactionInfoStorage};
 use crate::{
@@ -26,7 +28,7 @@ pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
         "0xf6fc5d0d737e0b9c5768a62a9b4b3bb79b9b1bc47c62fa9fb3b215157dbed9ac",
     )
-    .expect("")
+        .expect("")
 });
 
 pub static DRAGON_HARD_FORK_HEIGHT: BlockNumber = 16801958;
@@ -34,7 +36,7 @@ pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
         "0xbef8d0af3b358af9fe25f7383fd2580679c54fe2ce7ff7a7434785ba6d11b943",
     )
-    .expect("")
+        .expect("")
 });
 
 impl DBUpgrade {
@@ -174,6 +176,14 @@ impl DBUpgrade {
         Ok(())
     }
 
+    // todo: fixme
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
+        let _ = TableInfoStorage::new(instance.clone());
+        let _ = ContractEventStorage::new(instance.clone());
+
+        Ok(())
+    }
+
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
@@ -202,7 +212,7 @@ impl DBUpgrade {
                 Self::db_upgrade_v2_v3(instance)?;
             }
             (StorageVersion::V3, StorageVersion::V4) => {
-                // todo: upgrade contract event storage
+                Self::db_upgrade_v3_v4(instance)?;
                 debug!("nothing to do for V3");
             }
             _ => bail!(

@@ -11,7 +11,7 @@ use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::StcContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
-use crate::table_info::{TableInfoStorage, TableInfoStore};
+use crate::table_info::{StcTableInfoStorage, TableInfoStore};
 use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
@@ -27,6 +27,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
+use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_types::transaction::{RichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -84,6 +85,7 @@ pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
+pub const TABLE_INFO_PREFIX_NAME_V2: ColumnFamilyName = "table_info_v2";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -155,6 +157,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
     prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
     prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
+    prefix_vec.push(TABLE_INFO_PREFIX_NAME_V2);
     prefix_vec
 });
 
@@ -294,7 +297,7 @@ pub trait TransactionStore {
     fn save_transaction(&self, txn_info: StcTransaction) -> Result<()>;
     fn save_transaction_batch(&self, txn_vec: Vec<StcTransaction>) -> Result<()>;
     fn get_transactions(&self, txn_hash_vec: Vec<HashValue>)
-        -> Result<Vec<Option<StcTransaction>>>;
+                        -> Result<Vec<Option<StcTransaction>>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -311,7 +314,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: StcContractEventStorage,
     chain_info_storage: ChainInfoStorage,
-    table_info_storage: TableInfoStorage,
+    table_info_storage: StcTableInfoStorage,
     // instance: StorageInstance,
 }
 
@@ -327,14 +330,14 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: StcContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            table_info_storage: TableInfoStorage::new(instance),
+            table_info_storage: StcTableInfoStorage::new(instance),
             // instance,
         };
         Ok(storage)
@@ -366,8 +369,8 @@ impl StateNodeStore for Storage {
     }
 
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let handle = TableHandle(address);
-        self.table_info_storage.get(handle)
+        let handle = TableHandle(address).into();
+        Ok(self.table_info_storage.get(handle)?.and_then(|i| i.to_v1()))
     }
 }
 
@@ -627,14 +630,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-    StateNodeStore
-    + BlockStore
-    + BlockInfoStore
-    + TransactionStore
-    + BlockTransactionInfoStore
-    + ContractEventStore
-    + IntoSuper<dyn StateNodeStore>
-    + TableInfoStore
+StateNodeStore
++ BlockStore
++ BlockInfoStore
++ TransactionStore
++ BlockTransactionInfoStore
++ ContractEventStore
++ IntoSuper<dyn StateNodeStore>
++ TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
@@ -737,19 +740,19 @@ impl Store for Storage {
 }
 
 impl TableInfoStore for Storage {
-    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
+    fn get_table_info(&self, key: StcTableHandle) -> Result<Option<StcTableInfo>> {
         self.table_info_storage.get(key)
     }
 
-    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
+    fn save_table_info(&self, key: StcTableHandle, table_info: StcTableInfo) -> Result<()> {
         self.table_info_storage.put(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
+    fn get_table_infos(&self, keys: Vec<StcTableHandle>) -> Result<Vec<Option<StcTableInfo>>> {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()> {
+    fn save_table_infos(&self, table_infos: Vec<(StcTableHandle, StcTableInfo)>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(table_infos);
         self.table_info_storage.write_batch(batch)
     }
