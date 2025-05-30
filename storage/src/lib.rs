@@ -16,8 +16,7 @@ use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use once_cell::sync::Lazy;
+use num_enum::TryFromPrimitive;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
@@ -40,6 +39,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
+pub use version::StorageVersion;
 
 pub mod accumulator;
 pub mod batch;
@@ -62,6 +62,7 @@ mod upgrade;
 
 #[macro_use]
 pub mod storage_macros;
+mod version;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
@@ -86,104 +87,6 @@ pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const TABLE_INFO_PREFIX_NAME_V2: ColumnFamilyName = "table_info_v2";
-
-///db storage use prefix_name vec to init
-/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
-static VEC_PREFIX_NAME_V1: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME,
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V2: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME,
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME_V2,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME, // unused column
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME, // unused column
-        TRANSACTION_INFO_PREFIX_NAME_V2,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-        TABLE_INFO_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
-    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
-    prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
-    prefix_vec.push(TABLE_INFO_PREFIX_NAME_V2);
-    prefix_vec
-});
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
-#[repr(u8)]
-pub enum StorageVersion {
-    V1 = 1,
-    V2 = 2,
-    V3 = 3,
-    V4 = 4,
-}
-
-impl StorageVersion {
-    pub fn current_version() -> StorageVersion {
-        StorageVersion::V4
-    }
-
-    pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
-        match self {
-            StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
-            StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
-            StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
-            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
-        }
-    }
-}
 
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
@@ -297,7 +200,7 @@ pub trait TransactionStore {
     fn save_transaction(&self, txn_info: StcTransaction) -> Result<()>;
     fn save_transaction_batch(&self, txn_vec: Vec<StcTransaction>) -> Result<()>;
     fn get_transactions(&self, txn_hash_vec: Vec<HashValue>)
-                        -> Result<Vec<Option<StcTransaction>>>;
+        -> Result<Vec<Option<StcTransaction>>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -330,7 +233,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
@@ -630,14 +533,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-StateNodeStore
-+ BlockStore
-+ BlockInfoStore
-+ TransactionStore
-+ BlockTransactionInfoStore
-+ ContractEventStore
-+ IntoSuper<dyn StateNodeStore>
-+ TableInfoStore
+    StateNodeStore
+    + BlockStore
+    + BlockInfoStore
+    + TransactionStore
+    + BlockTransactionInfoStore
+    + ContractEventStore
+    + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
