@@ -8,13 +8,11 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_vm2_move_compiler::{
     compile_source_string_no_report, diagnostics,
     move_command_line_common::files::{MOVE_COMPILED_EXTENSION, MOVE_EXTENSION},
-    shared::known_attributes::KnownAttribute,
     shared::Flags,
     starcoin_framework_named_addresses, Compiler,
 };
 use starcoin_vm2_types::account_address::AccountAddress;
 use std::{fs::File, io::Write, path::PathBuf};
-use stdlib::stdlib_files;
 
 /// Compile module or script, support compile source dir.
 #[derive(Debug, Parser)]
@@ -71,7 +69,7 @@ impl CommandAction for CompileCommand {
             source_file_or_dir
         );
 
-        let mut deps = stdlib_files();
+        let mut deps = starcoin_vm2_cached_packages::head_release_bundle().files()?;
 
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
@@ -99,7 +97,7 @@ impl CommandAction for CompileCommand {
                 deps,
                 starcoin_framework_named_addresses(),
                 Flags::empty().set_sources_shadow_deps(true),
-                KnownAttribute::get_all_attribute_names(),
+                starcoin_vm2_framework::extended_checks::get_all_attribute_names(),
             )
             .build()?
         };
