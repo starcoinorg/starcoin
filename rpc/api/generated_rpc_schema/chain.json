@@ -5101,6 +5101,416 @@
           ]
         }
       }
+    },
+    {
+      "name": "chain.get_transaction_proof2",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "transaction_global_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "event_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_uint64",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionInfoWithProofView2 >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionInfoWithProofView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "proof",
+            "transaction_info"
+          ],
+          "properties": {
+            "event_proof": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "event",
+                "proof"
+              ],
+              "properties": {
+                "event": {
+                  "description": "event is serialized bytes in bcs format.",
+                  "type": "string"
+                },
+                "proof": {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "siblings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "proof": {
+              "type": "object",
+              "required": [
+                "siblings"
+              ],
+              "properties": {
+                "siblings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                }
+              }
+            },
+            "state_proof": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "account_proof",
+                "account_state_proof"
+              ],
+              "properties": {
+                "account_proof": {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                "account_state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "account_state_proof": {
+                  "type": "object",
+                  "required": [
+                    "siblings"
+                  ],
+                  "properties": {
+                    "leaf": {
+                      "description": "This proof can be used to authenticate whether a given leaf exists in the tree or not. - If this is `Some(HashValue, HashValue)` - If the first `HashValue` equals requested key, this is an inclusion proof and the second `HashValue` equals the hash of the corresponding account blob. - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key that exists in the subtree and the second `HashValue` equals the hash of the corresponding account blob. - If this is `None`, this is also a non-inclusion proof which indicates the subtree is empty.",
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": [
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      ],
+                      "maxItems": 2,
+                      "minItems": 2
+                    },
+                    "siblings": {
+                      "description": "All siblings in this proof, including the default ones. Siblings are ordered from the bottom level to the root level.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "HashValue"
+                      }
+                    }
+                  }
+                },
+                "state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "transaction_info": {
+              "type": "object",
+              "required": [
+                "block_hash",
+                "block_number",
+                "event_root_hash",
+                "gas_used",
+                "state_root_hash",
+                "status",
+                "transaction_global_index",
+                "transaction_hash",
+                "transaction_index"
+              ],
+              "properties": {
+                "block_hash": {
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "block_number": {
+                  "type": "string"
+                },
+                "event_root_hash": {
+                  "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "gas_used": {
+                  "description": "The amount of gas used.",
+                  "type": "string"
+                },
+                "state_root_hash": {
+                  "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "status": {
+                  "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "Executed",
+                        "OutOfGas",
+                        "MiscellaneousError",
+                        "Retry"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "MoveAbort"
+                      ],
+                      "properties": {
+                        "MoveAbort": {
+                          "type": "object",
+                          "required": [
+                            "abort_code",
+                            "location"
+                          ],
+                          "properties": {
+                            "abort_code": {
+                              "type": "string"
+                            },
+                            "location": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "ExecutionFailure"
+                      ],
+                      "properties": {
+                        "ExecutionFailure": {
+                          "type": "object",
+                          "required": [
+                            "code_offset",
+                            "function",
+                            "location"
+                          ],
+                          "properties": {
+                            "code_offset": {
+                              "type": "integer",
+                              "format": "uint16",
+                              "minimum": 0.0
+                            },
+                            "function": {
+                              "type": "integer",
+                              "format": "uint16",
+                              "minimum": 0.0
+                            },
+                            "location": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "Discard"
+                      ],
+                      "properties": {
+                        "Discard": {
+                          "type": "object",
+                          "required": [
+                            "status_code",
+                            "status_code_name"
+                          ],
+                          "properties": {
+                            "status_code": {
+                              "type": "string"
+                            },
+                            "status_code_name": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "transaction_global_index": {
+                  "description": "The index of this transaction in chain",
+                  "type": "string"
+                },
+                "transaction_hash": {
+                  "description": "The hash of this transaction.",
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "transaction_index": {
+                  "description": "The index of this transaction in block",
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0.0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_transaction_proof2_raw",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "transaction_global_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "event_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_uint64",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "access_path",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < StrView2 < Vec < u8 > > >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_alloc::vec::Vec<u8>",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   ]
 }

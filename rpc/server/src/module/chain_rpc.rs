@@ -31,6 +31,10 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_types::view::{
+    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+};
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -502,6 +506,26 @@ where
         .map_err(map_err);
 
         Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_proof2(
+        &self,
+        _block_hash: HashValue,
+        _transaction_global_index: u64,
+        _event_index: Option<u64>,
+        _access_path: Option<StrView2<AccessPath2>>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
+        todo!()
+    }
+
+    fn get_transaction_proof2_raw(
+        &self,
+        _block_hash: HashValue,
+        _transaction_global_index: u64,
+        _event_index: Option<u64>,
+        _access_path: Option<StrView2<AccessPath2>>,
+    ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
+        todo!()
     }
 }
 
