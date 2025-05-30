@@ -85,7 +85,7 @@ impl TryFrom<StcContractEventInfo> for ContractEventInfo2 {
                 event,
             }),
             StcContractEvent::V1(_event) => Err(anyhow::anyhow!(
-                "StcContractEvent V2 is not compatible with V1"
+                "StcContractEvent V1 is not compatible with V2"
             )),
         }
     }
