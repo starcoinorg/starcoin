@@ -16,7 +16,6 @@ use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
-use num_enum::TryFromPrimitive;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;

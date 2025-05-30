@@ -485,23 +485,23 @@ fn test_table_info_storage() -> Result<()> {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance)?;
-    let key1 = TableHandle(AccountAddress::random());
+    let key1 = TableHandle(AccountAddress::random()).into();
     let table_info1 = TableInfo::new(TypeTag::U8, TypeTag::U8);
-    storage.save_table_info(key1, table_info1.clone())?;
+    storage.save_table_info(key1, table_info1.clone().into())?;
     let val = storage.get_table_info(key1);
     assert!(val.is_ok());
-    assert_eq!(val.unwrap().unwrap(), table_info1);
-    let key2 = TableHandle(AccountAddress::random());
+    assert_eq!(val.unwrap().unwrap(), table_info1.into());
+    let key2 = TableHandle(AccountAddress::random()).into();
     let val = storage.get_table_info(key2);
     assert!(val.is_ok());
     assert_eq!(val.unwrap(), None);
     let keys = vec![
-        TableHandle(AccountAddress::random()),
-        TableHandle(AccountAddress::random()),
+        TableHandle(AccountAddress::random()).into(),
+        TableHandle(AccountAddress::random()).into(),
     ];
     let vals = vec![
-        TableInfo::new(TypeTag::U8, TypeTag::Address),
-        TableInfo::new(TypeTag::Address, TypeTag::U128),
+        TableInfo::new(TypeTag::U8, TypeTag::Address).into(),
+        TableInfo::new(TypeTag::Address, TypeTag::U128).into(),
     ];
     let table_infos = keys
         .clone()
@@ -515,7 +515,7 @@ fn test_table_info_storage() -> Result<()> {
         .unwrap()
         .into_iter()
         .map(|x| x.unwrap())
-        .collect::<Vec<TableInfo>>();
+        .collect::<Vec<_>>();
     assert_eq!(vals, vals2);
     Ok(())
 }
