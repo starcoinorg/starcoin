@@ -183,7 +183,8 @@ pub fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
             AbortLocation1::Module(ModuleId1::new(
                 module_id.address.into_bytes().into(),
                 // todo: double check, this conversion should never fail.
-                Identifier1::from_utf8(module_id.name.into_bytes()).unwrap(),
+                Identifier1::from_utf8(module_id.name.into_bytes())
+                    .expect("Failed to convert module_id.name to Identifier1 due to invalid UTF-8"),
             ))
         }
     }
