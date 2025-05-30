@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schemadb::ReachabilityStoreReader};
+use starcoin_logger::prelude::*;
 use starcoin_storage::Store;
 
 use crate::ChainReader;
@@ -47,29 +48,24 @@ pub fn find_common_header_in_range(
             .get(1)
             .ok_or_else(|| FindCommonHeaderError::InvalidRange("error end index".to_string()))?;
 
-        match (
-            dag.storage
-                .reachability_store
-                .read()
-                .has(start)
-                .map_err(|err| {
-                    FindCommonHeaderError::CheckAncestor(format!(
-                        "failed to check the reachability has for start for error: {:?}",
-                        err
-                    ))
-                })?,
-            dag.storage
-                .reachability_store
-                .read()
-                .has(end)
-                .map_err(|err| {
-                    FindCommonHeaderError::CheckAncestor(format!(
-                        "failed to check the reachability has for end for error: {:?}",
-                        err
-                    ))
-                })?,
-        ) {
+        info!("jacktest: go to find the range locate for range: ({start}, {end})",);
+        let reader = dag.storage.reachability_store.read();
+        let start_has = reader.has(start).map_err(|err| {
+            FindCommonHeaderError::CheckAncestor(format!(
+                "failed to check the reachability has for start for error: {:?}",
+                err
+            ))
+        })?;
+        let end_has = reader.has(end).map_err(|err| {
+            FindCommonHeaderError::CheckAncestor(format!(
+                "failed to check the reachability has for end for error: {:?}",
+                err
+            ))
+        })?;
+        drop(reader);
+        match (start_has, end_has) {
             (true, true) => {
+                info!("jacktest: found the common header in range: ({start}, {end})");
                 continue;
             }
             (true, false) => return std::result::Result::Ok(FindCommonHeader::InRange(start, end)),

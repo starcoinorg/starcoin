@@ -19,6 +19,7 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-storage = { workspace = true }
+starcoin-logger = { workspace = true }
 
 [dev-dependencies]
 

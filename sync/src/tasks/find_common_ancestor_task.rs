@@ -7,6 +7,7 @@ use futures::FutureExt;
 use starcoin_chain_api::range_locate::{find_common_header_in_range, FindCommonHeader};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::RangeInLocation;
 use starcoin_storage::Store;
 use starcoin_types::block::BlockIdAndNumber;
@@ -54,10 +55,10 @@ impl TaskState for FindRangeLocateTask {
             let mut end_id = self.end_id;
             let mut found_common_header = None;
             loop {
-                match self
-                    .fetcher
-                    .fetch_range_locate(None, start_id, end_id)
-                    .await?
+                info!("jacktest: find the commone header in range({start_id}, {:?})", end_id);
+                let range_locate = self.fetcher.fetch_range_locate(None, start_id, end_id).await?;
+                info!("jacktest: range locate: {range_locate:?}");
+                match range_locate
                 {
                     RangeInLocation::NotInSelectedChain => {
                         let block_header = self
@@ -115,6 +116,7 @@ impl TaskState for FindRangeLocateTask {
                                     )
                                 })?;
 
+                            info!("jacktest: find_result: {find_result:?}");
                             match find_result {
                                 FindCommonHeader::AllInRange => {
                                     found_common_header =
