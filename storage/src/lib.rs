@@ -11,13 +11,11 @@ use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::StcContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
-use crate::table_info::{TableInfoStorage, TableInfoStore};
+use crate::table_info::{StcTableInfoStorage, TableInfoStore};
 use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
@@ -27,6 +25,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
+use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_types::transaction::{RichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -39,6 +38,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
+pub use version::StorageVersion;
 
 pub mod accumulator;
 pub mod batch;
@@ -61,6 +61,7 @@ mod upgrade;
 
 #[macro_use]
 pub mod storage_macros;
+mod version;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
@@ -84,103 +85,7 @@ pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
-
-///db storage use prefix_name vec to init
-/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
-static VEC_PREFIX_NAME_V1: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME,
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V2: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME,
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME_V2,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    vec![
-        BLOCK_ACCUMULATOR_NODE_PREFIX_NAME,
-        TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
-        BLOCK_PREFIX_NAME,
-        BLOCK_HEADER_PREFIX_NAME,
-        BLOCK_BODY_PREFIX_NAME, // unused column
-        BLOCK_INFO_PREFIX_NAME,
-        BLOCK_TRANSACTIONS_PREFIX_NAME,
-        BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-        STATE_NODE_PREFIX_NAME,
-        CHAIN_INFO_PREFIX_NAME,
-        TRANSACTION_PREFIX_NAME,
-        TRANSACTION_INFO_PREFIX_NAME, // unused column
-        TRANSACTION_INFO_PREFIX_NAME_V2,
-        TRANSACTION_INFO_HASH_PREFIX_NAME,
-        CONTRACT_EVENT_PREFIX_NAME,
-        FAILED_BLOCK_PREFIX_NAME,
-        TABLE_INFO_PREFIX_NAME,
-    ]
-});
-
-static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
-    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
-    prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
-    prefix_vec
-});
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
-#[repr(u8)]
-pub enum StorageVersion {
-    V1 = 1,
-    V2 = 2,
-    V3 = 3,
-    V4 = 4,
-}
-
-impl StorageVersion {
-    pub fn current_version() -> StorageVersion {
-        StorageVersion::V4
-    }
-
-    pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
-        match self {
-            StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
-            StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
-            StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
-            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
-        }
-    }
-}
+pub const TABLE_INFO_PREFIX_NAME_V2: ColumnFamilyName = "table_info_v2";
 
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
@@ -311,7 +216,7 @@ pub struct Storage {
     block_info_storage: BlockInfoStorage,
     event_storage: StcContractEventStorage,
     chain_info_storage: ChainInfoStorage,
-    table_info_storage: TableInfoStorage,
+    table_info_storage: StcTableInfoStorage,
     // instance: StorageInstance,
 }
 
@@ -334,7 +239,7 @@ impl Storage {
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: StcContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
-            table_info_storage: TableInfoStorage::new(instance),
+            table_info_storage: StcTableInfoStorage::new(instance),
             // instance,
         };
         Ok(storage)
@@ -366,8 +271,8 @@ impl StateNodeStore for Storage {
     }
 
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let handle = TableHandle(address);
-        self.table_info_storage.get(handle)
+        let handle = TableHandle(address).into();
+        Ok(self.table_info_storage.get(handle)?.and_then(|i| i.to_v1()))
     }
 }
 
@@ -737,19 +642,19 @@ impl Store for Storage {
 }
 
 impl TableInfoStore for Storage {
-    fn get_table_info(&self, key: TableHandle) -> Result<Option<TableInfo>> {
+    fn get_table_info(&self, key: StcTableHandle) -> Result<Option<StcTableInfo>> {
         self.table_info_storage.get(key)
     }
 
-    fn save_table_info(&self, key: TableHandle, table_info: TableInfo) -> Result<()> {
+    fn save_table_info(&self, key: StcTableHandle, table_info: StcTableInfo) -> Result<()> {
         self.table_info_storage.put(key, table_info)
     }
 
-    fn get_table_infos(&self, keys: Vec<TableHandle>) -> Result<Vec<Option<TableInfo>>> {
+    fn get_table_infos(&self, keys: Vec<StcTableHandle>) -> Result<Vec<Option<StcTableInfo>>> {
         self.table_info_storage.multiple_get(keys)
     }
 
-    fn save_table_infos(&self, table_infos: Vec<(TableHandle, TableInfo)>) -> Result<()> {
+    fn save_table_infos(&self, table_infos: Vec<(StcTableHandle, StcTableInfo)>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(table_infos);
         self.table_info_storage.write_batch(batch)
     }
