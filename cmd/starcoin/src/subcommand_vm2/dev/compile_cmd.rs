@@ -151,7 +151,7 @@ impl CommandAction for CompileCommand {
             std::fs::create_dir_all(out_dir.as_path())
                 .map_err(|e| format_err!("make out_dir({:?}) error: {:?}", out_dir, e))?;
         }
-        ensure!(out_dir.is_dir(), "out_dir should is a dir.");
+        ensure!(out_dir.is_dir(), "out_dir should be a directory.");
         let mut results = vec![];
         for unit in compile_units {
             let unit = unit.into_compiled_unit();
