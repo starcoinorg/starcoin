@@ -9,7 +9,7 @@ use crate::{DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2};
 use anyhow::Result;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
+use starcoin_types::transaction::{legacy::RichTransactionInfo, TransactionInfo};
 use starcoin_types::vm_error::KeptVMStatus;
 use std::convert::TryInto;
 use std::sync::Arc;

@@ -7,10 +7,10 @@ use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::legacy::ContractEventStorage;
 use crate::table_info::legacy::TableInfoStorage;
 use crate::transaction::{legacy::TransactionStorage, StcTransactionStorage};
-use crate::transaction_info::{OldTransactionInfoStorage, TransactionInfoStorage};
+use crate::transaction_info::legacy::{OldTransactionInfoStorage, TransactionInfoStorage};
 use crate::{
-    CodecKVStore, RichTransactionInfo, StorageInstance, StorageVersion, TransactionStore,
-    BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    CodecKVStore, StorageInstance, StorageVersion, TransactionStore, BLOCK_BODY_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
@@ -18,7 +18,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{BarnardHardFork, DragonHardFork, StartupInfo};
-use starcoin_types::transaction::Transaction;
+use starcoin_types::transaction::{legacy::RichTransactionInfo, Transaction};
 use std::cmp::Ordering;
 
 pub struct DBUpgrade;

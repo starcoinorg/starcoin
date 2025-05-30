@@ -1,11 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    identifier::{Identifier as Identifier1, Identifier2},
-    language_storage::{ModuleId as ModuleId1, ModuleId2},
-};
+pub mod legacy;
 mod stc_transaction;
+mod stc_transaction_info;
 
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
@@ -14,20 +12,10 @@ use starcoin_crypto::hash::{
     CryptoHash, CryptoHasher, PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use starcoin_crypto::HashValue;
-use starcoin_vm2_types::{
-    transaction::TransactionInfo as TransactionInfoV2,
-    view::{
-        TransactionInfoView as TransactionInfoView2,
-        TransactionStatusView as TransactionStatusView2,
-    },
-    vm_error::{AbortLocation as AbortLocation2, KeptVMStatus},
-};
+use starcoin_vm_types::contract_event::ContractEvent;
 pub use starcoin_vm_types::transaction::*;
-use starcoin_vm_types::{
-    contract_event::ContractEvent, vm_status::AbortLocation as AbortLocation1,
-};
-pub use stc_transaction::{StcTransaction, Transaction2};
-use std::ops::Deref;
+pub use stc_transaction::StcTransaction;
+pub use stc_transaction_info::StcRichTransactionInfo;
 
 /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
 pub fn parse_transaction_argument_advance(s: &str) -> anyhow::Result<TransactionArgument> {
@@ -129,147 +117,5 @@ impl Sample for TransactionInfo {
             0,
             crate::vm_error::KeptVMStatus::Executed,
         )
-    }
-}
-
-/// `RichTransactionInfo` is a wrapper of `TransactionInfo` with more info,
-/// such as `block_id`, `block_number` which is the block that include the txn producing the txn info.
-/// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct RichTransactionInfo {
-    pub block_id: HashValue,
-    pub block_number: u64,
-    pub transaction_info: TransactionInfo,
-    /// Transaction index in block
-    pub transaction_index: u32,
-    /// Transaction global index in chain, equivalent to transaction accumulator's leaf index
-    pub transaction_global_index: u64,
-}
-
-impl Deref for RichTransactionInfo {
-    type Target = TransactionInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.transaction_info
-    }
-}
-
-impl RichTransactionInfo {
-    pub fn new(
-        block_id: HashValue,
-        block_number: u64,
-        transaction_info: TransactionInfo,
-        transaction_index: u32,
-        transaction_global_index: u64,
-    ) -> Self {
-        Self {
-            block_id,
-            block_number,
-            transaction_info,
-            transaction_index,
-            transaction_global_index,
-        }
-    }
-
-    pub fn block_id(&self) -> HashValue {
-        self.block_id
-    }
-
-    pub fn txn_info(&self) -> &TransactionInfo {
-        &self.transaction_info
-    }
-}
-
-pub fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
-    match location2 {
-        AbortLocation2::Script => AbortLocation1::Script,
-        AbortLocation2::Module(module_id) => {
-            AbortLocation1::Module(ModuleId1::new(
-                module_id.address.into_bytes().into(),
-                // todo: double check, this conversion should never fail.
-                Identifier1::from_utf8(module_id.name.into_bytes())
-                    .expect("Failed to convert module_id.name to Identifier1 due to invalid UTF-8"),
-            ))
-        }
-    }
-}
-
-pub fn lo_convert_from_1_to_2(location1: AbortLocation1) -> AbortLocation2 {
-    match location1 {
-        AbortLocation1::Script => AbortLocation2::Script,
-        AbortLocation1::Module(module_id) => {
-            AbortLocation2::Module(ModuleId2::new(
-                module_id.address().into_bytes().into(),
-                // todo: double check, this conversion should never fail.
-                Identifier2::from_utf8(module_id.name().as_bytes().to_vec()).unwrap(),
-            ))
-        }
-    }
-}
-
-impl From<TransactionInfoV2> for TransactionInfo {
-    fn from(value: TransactionInfoV2) -> Self {
-        use starcoin_vm_types::vm_status::KeptVMStatus::*;
-        Self {
-            transaction_hash: value.transaction_hash,
-            state_root_hash: value.state_root_hash,
-            event_root_hash: value.event_root_hash,
-            gas_used: value.gas_used,
-            status: match value.status {
-                KeptVMStatus::Executed => Executed,
-                KeptVMStatus::OutOfGas => OutOfGas,
-                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert_from_2_to_1(lo), code),
-                KeptVMStatus::ExecutionFailure {
-                    location,
-                    function,
-                    code_offset,
-                    message: _,
-                } => ExecutionFailure {
-                    location: lo_convert_from_2_to_1(location),
-                    function,
-                    code_offset,
-                },
-                KeptVMStatus::MiscellaneousError => MiscellaneousError,
-            },
-        }
-    }
-}
-
-impl From<RichTransactionInfo> for TransactionInfoView2 {
-    fn from(info: RichTransactionInfo) -> Self {
-        let status = match info.status.clone() {
-            crate::vm_error::KeptVMStatus::Executed => TransactionStatusView2::Executed,
-            crate::vm_error::KeptVMStatus::OutOfGas => TransactionStatusView2::OutOfGas,
-            crate::vm_error::KeptVMStatus::MoveAbort(lo, code) => {
-                TransactionStatusView2::MoveAbort {
-                    location: lo_convert_from_1_to_2(lo),
-                    abort_code: code.into(),
-                }
-            }
-            crate::vm_error::KeptVMStatus::ExecutionFailure {
-                location,
-                function,
-                code_offset,
-                ..
-            } => TransactionStatusView2::ExecutionFailure {
-                location: lo_convert_from_1_to_2(location),
-                function,
-                code_offset,
-            },
-            crate::vm_error::KeptVMStatus::MiscellaneousError => {
-                TransactionStatusView2::MiscellaneousError
-            }
-        };
-        Self {
-            block_hash: info.block_id,
-            block_number: info.block_number.into(),
-            transaction_hash: info.transaction_hash,
-            transaction_index: info.transaction_index,
-            transaction_global_index: info.transaction_global_index.into(),
-            state_root_hash: info.state_root_hash,
-            event_root_hash: info.event_root_hash,
-            gas_used: info.gas_used.into(),
-            status,
-        }
     }
 }

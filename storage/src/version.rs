@@ -9,8 +9,8 @@ use crate::{
     CONTRACT_EVENT_PREFIX_NAME_V2, FAILED_BLOCK_PREFIX_NAME, STATE_NODE_PREFIX_NAME,
     TABLE_INFO_PREFIX_NAME, TABLE_INFO_PREFIX_NAME_V2, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
     TRANSACTION_INFO_HASH_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME_V2, TRANSACTION_PREFIX_NAME, TRANSACTION_PREFIX_NAME_V2,
-    VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME_V2, TRANSACTION_INFO_PREFIX_NAME_V3, TRANSACTION_PREFIX_NAME,
+    TRANSACTION_PREFIX_NAME_V2, VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -86,20 +86,21 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
     prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
     prefix_vec.push(TABLE_INFO_PREFIX_NAME_V2);
+    prefix_vec.push(TRANSACTION_INFO_PREFIX_NAME_V3);
     prefix_vec
 });
 
 // For V4 storage, the following column families are updated from V3:
 // check db_upgrade_from_v3_v4 to see the details of the upgrade.
 // --------------------------------------------------------------------------------------------------
-// new cf added                          | old cf to be replaced      | new key-value               |
+// new cf added                          | old cf to be replaced           | new key-value
 // --------------------------------------------------------------------------------------------------
-// VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME |                            |(HashValue,AccumulatorNode)  |
-// CONTRACT_EVENT_PREFIX_NAME_V2         | CONTRACT_EVENT_PREFIX_NAME |(HashValue,StcContractEvent) |
-// TRANSACTION_PREFIX_NAME_V2            | TRANSACTION_PREFIX_NAME    |(HashValue,StcTransaction)   |
-// TABLE_INFO_PREFIX_NAME_V2             | TABLE_INFO_PREFIX_NAME     |(StcTableHandle,StcTableInfo)|
+// VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME |                                 |(HashValue,AccumulatorNode)
+// CONTRACT_EVENT_PREFIX_NAME_V2         | CONTRACT_EVENT_PREFIX_NAME      |(HashValue,StcContractEvent)
+// TRANSACTION_PREFIX_NAME_V2            | TRANSACTION_PREFIX_NAME         |(HashValue,StcTransaction)
+// TABLE_INFO_PREFIX_NAME_V2             | TABLE_INFO_PREFIX_NAME          |(StcTableHandle,StcTableInfo)
+// TRANSACTION_INFO_PREFIX_NAME_V2       | TRANSACTION_INFO_PREFIX_NAME_V3 |(HashValue,StcRichTransactionInfo)
 // --------------------------------------------------------------------------------------------------
-// todo: TRANSACTION_INFO_PREFIX_NAME_V2 | TRANSACTION_INFO_PREFIX_NAME | (HashValue,StcTransactionInfo) |
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]

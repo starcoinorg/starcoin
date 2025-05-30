@@ -13,7 +13,7 @@ use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::table_info::{StcTableInfoStorage, TableInfoStore};
 use crate::transaction::StcTransactionStorage;
-use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
+use crate::transaction_info::{StcTransactionInfoStorage, TransactionInfoHashStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -26,7 +26,7 @@ use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
-use starcoin_types::transaction::{RichTransactionInfo, StcTransaction};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
@@ -80,6 +80,7 @@ pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_PREFIX_NAME_V2: ColumnFamilyName = "transaction_v2";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_v2";
+pub const TRANSACTION_INFO_PREFIX_NAME_V3: ColumnFamilyName = "transaction_info_v3";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
@@ -149,19 +150,19 @@ pub trait BlockStore {
 }
 
 pub trait BlockTransactionInfoStore {
-    fn get_transaction_info(&self, id: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, id: HashValue) -> Result<Option<StcRichTransactionInfo>>;
     fn get_transaction_info_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Vec<RichTransactionInfo>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
     /// Get transaction info ids by transaction hash, one transaction may be in different chain branch, so produce multiply transaction info.
     /// if not transaction info match with the `txn_hash`, return empty Vec.
     fn get_transaction_info_ids_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<HashValue>>;
-    fn save_transaction_infos(&self, vec_txn_info: Vec<RichTransactionInfo>) -> Result<()>;
+    fn save_transaction_infos(&self, vec_txn_info: Vec<StcRichTransactionInfo>) -> Result<()>;
     fn get_transaction_infos(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<RichTransactionInfo>>>;
+    ) -> Result<Vec<Option<StcRichTransactionInfo>>>;
 }
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
@@ -205,7 +206,7 @@ pub trait TransactionStore {
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
 #[derive(Clone)]
 pub struct Storage {
-    transaction_info_storage: TransactionInfoStorage,
+    transaction_info_storage: StcTransactionInfoStorage,
     transaction_info_hash_storage: TransactionInfoHashStorage,
     transaction_storage: StcTransactionStorage,
     block_storage: BlockStorage,
@@ -223,7 +224,7 @@ pub struct Storage {
 impl Storage {
     pub fn new(instance: StorageInstance) -> Result<Self> {
         let storage = Self {
-            transaction_info_storage: TransactionInfoStorage::new(instance.clone()),
+            transaction_info_storage: StcTransactionInfoStorage::new(instance.clone()),
             transaction_info_hash_storage: TransactionInfoHashStorage::new(instance.clone()),
             transaction_storage: StcTransactionStorage::new(instance.clone()),
             block_storage: BlockStorage::new(instance.clone()),
@@ -435,14 +436,14 @@ impl BlockInfoStore for Storage {
 }
 
 impl BlockTransactionInfoStore for Storage {
-    fn get_transaction_info(&self, id: HashValue) -> Result<Option<RichTransactionInfo>> {
+    fn get_transaction_info(&self, id: HashValue) -> Result<Option<StcRichTransactionInfo>> {
         self.transaction_info_storage.get_transaction_info(id)
     }
 
     fn get_transaction_info_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Vec<RichTransactionInfo>, Error> {
+    ) -> Result<Vec<StcRichTransactionInfo>, Error> {
         let mut transaction_info_vec = vec![];
         if let Some(transaction_info_ids) = self.transaction_info_hash_storage.get(txn_hash)? {
             let txn_infos = self.get_transaction_infos(transaction_info_ids)?;
@@ -461,7 +462,10 @@ impl BlockTransactionInfoStore for Storage {
             .get_transaction_info_ids_by_hash(txn_hash)
     }
 
-    fn save_transaction_infos(&self, vec_txn_info: Vec<RichTransactionInfo>) -> Result<(), Error> {
+    fn save_transaction_infos(
+        &self,
+        vec_txn_info: Vec<StcRichTransactionInfo>,
+    ) -> Result<(), Error> {
         self.transaction_info_hash_storage
             .save_transaction_infos(vec_txn_info.as_slice())?;
         self.transaction_info_storage
@@ -471,7 +475,7 @@ impl BlockTransactionInfoStore for Storage {
     fn get_transaction_infos(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<RichTransactionInfo>>> {
+    ) -> Result<Vec<Option<StcRichTransactionInfo>>> {
         self.transaction_info_storage.get_transaction_infos(ids)
     }
 }
@@ -545,7 +549,7 @@ pub trait Store:
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>> {
+    ) -> Result<Option<StcRichTransactionInfo>> {
         let txn_infos = self.get_block_txn_info_ids(block_id)?;
         match txn_infos.get(idx as usize) {
             None => Ok(None),
@@ -556,7 +560,7 @@ pub trait Store:
     fn get_block_transaction_infos(
         &self,
         block_id: HashValue,
-    ) -> Result<Vec<RichTransactionInfo>, Error> {
+    ) -> Result<Vec<StcRichTransactionInfo>, Error> {
         let txn_info_ids = self.get_block_txn_info_ids(block_id)?;
         let mut txn_infos = vec![];
         let txn_opt_infos = self.get_transaction_infos(txn_info_ids.clone())?;
