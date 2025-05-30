@@ -19,7 +19,8 @@ use starcoin_vm2_types::{
         AccountStateSetView, AnnotatedMoveStructView, CodeView, ContractCall, DryRunOutputView,
         DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
         ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
-        StructTagView, TableInfoView, TransactionEventResponse, TransactionRequest,
+        StructTagView, TableInfoView, TransactionEventResponse as TransactionEventResponse2,
+        TransactionRequest,
     },
 };
 use starcoin_vm2_vm_types::{
@@ -431,7 +432,7 @@ impl RpcClient {
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> anyhow::Result<Vec<TransactionEventResponse>> {
+    ) -> anyhow::Result<Vec<TransactionEventResponse2>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash2(txn_hash, option))
             .map_err(map_err)
     }

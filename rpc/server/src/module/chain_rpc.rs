@@ -32,12 +32,12 @@ use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
-    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
-    TransactionEventResponse as TransactionEventResponse2
+    StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
