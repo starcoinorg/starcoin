@@ -23,6 +23,7 @@ use starcoin_rpc_api::{
         TransactionStatusView as TransactionStatusView1,
     },
 };
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::lo_convert_from_1_to_2;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
@@ -378,10 +379,10 @@ impl CliStateVM2 {
         }
 
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
-
         let multisig_public_key = match &public_key {
             AccountPublicKey::Single(_) => {
-                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                let multi_signed_user_txn = MultiSignedUserTransaction::VM2(signed_txn.clone());
+                let signed_txn_hex = hex::encode(multi_signed_user_txn.encode()?);
                 let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
                 eprintln!("txn {} submitted.", txn_hash);
                 let execute_output = if blocking {
