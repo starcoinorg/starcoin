@@ -417,10 +417,10 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        if !self.is_synced() {
-            debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
-            return;
-        }
+        // if !self.is_synced() {
+        //     debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
+        //     return;
+        // }
         let peer_id = msg.get_peer_id();
         if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
