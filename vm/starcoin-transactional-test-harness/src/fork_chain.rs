@@ -15,8 +15,8 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    TransactionEventResponse, TransactionInfoView, TransactionView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, TransactionInfoView,
+    TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
@@ -31,7 +31,8 @@ use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
 use starcoin_vm2_types::view::{
-    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
@@ -451,7 +452,7 @@ impl ChainApi for MockChainApi {
         &self,
         _txn_hash: HashValue,
         _option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
+    ) -> FutureResult<Vec<TransactionEventResponse2>> {
         let fut = async move {
             bail!("not implemented.");
         };

@@ -1,6 +1,7 @@
 use crate::block::BlockNumber;
 use crate::contract_event::{ContractEvent, StcContractEvent};
 use starcoin_crypto::HashValue;
+use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct ContractEventInfo {
@@ -55,6 +56,36 @@ impl TryFrom<StcContractEventInfo> for ContractEventInfo {
             }),
             StcContractEvent::V2(_event) => Err(anyhow::anyhow!(
                 "StcContractEvent V2 is not compatible with V1"
+            )),
+        }
+    }
+}
+
+impl TryFrom<StcContractEventInfo> for ContractEventInfo2 {
+    type Error = anyhow::Error;
+
+    fn try_from(value: StcContractEventInfo) -> Result<Self, Self::Error> {
+        let StcContractEventInfo {
+            block_hash,
+            block_number,
+            transaction_hash,
+            transaction_index,
+            transaction_global_index,
+            event_index,
+            event,
+        } = value;
+        match event {
+            StcContractEvent::V2(event) => Ok(ContractEventInfo2 {
+                block_hash,
+                block_number,
+                transaction_hash,
+                transaction_index,
+                transaction_global_index,
+                event_index,
+                event,
+            }),
+            StcContractEvent::V1(_event) => Err(anyhow::anyhow!(
+                "StcContractEvent V1 is not compatible with V2"
             )),
         }
     }

@@ -5,18 +5,25 @@ use crate::{
     view::TransactionOptions,
     view_vm2::{ExecuteResultView, ExecutionOutputView},
 };
-use anyhow::{bail, format_err, Result};
-use serde::de::DeserializeOwned;
-use starcoin_vm2_account_api::{AccountInfo, AccountProvider};
 
+use anyhow::{anyhow, bail, format_err, Result};
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
+use serde::de::DeserializeOwned;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
+use starcoin_vm2_account_api::{AccountInfo, AccountProvider};
 
 use starcoin_logger::prelude::info;
-use starcoin_rpc_api::chain::GetEventOption;
+use starcoin_rpc_api::{
+    chain::GetEventOption,
+    types::{
+        TransactionInfoView as TransactionInfoView1,
+        TransactionStatusView as TransactionStatusView1,
+    },
+};
+use starcoin_types::transaction::lo_convert_from_1_to_2;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -24,20 +31,22 @@ use starcoin_vm2_crypto::{
 };
 use starcoin_vm2_dev::playground;
 use starcoin_vm2_types::view::{
-    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,
-    TransactionStatusView,
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView,
+    TransactionInfoView as TransactionInfoView2, TransactionPayloadView, TransactionStatusView,
 };
-use starcoin_vm2_vm_types::genesis_config::ChainId;
-use starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey;
+use starcoin_vm2_types::vm_error::KeptVMStatus;
+use starcoin_vm2_vm_types::contract_event::ContractEvent;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
-    account_config::association_address,
-    account_config::{AccountResource, STC_TOKEN_CODE_STR},
+    account_config::{association_address, AccountResource, STC_TOKEN_CODE_STR},
+    contract_event::ContractEvent as ContractEvent2,
+    genesis_config::ChainId,
     move_resource::MoveResource,
     state_view::StateReaderExt,
-    transaction::authenticator::TransactionAuthenticator,
     transaction::{
-        DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
+        authenticator::{AccountPublicKey, TransactionAuthenticator},
+        DryRunTransaction, RawUserTransaction, RichTransactionInfo, SignedUserTransaction,
+        TransactionInfo, TransactionPayload,
     },
 };
 use std::env::current_dir;
@@ -70,6 +79,50 @@ fn build_dirs_from_net(net: &ChainNetworkID) -> Result<(PathBuf, DataDirPath)> {
     }
     let temp_dir = starcoin_config::temp_dir_in(temp_dir);
     Ok((data_dir, temp_dir))
+}
+
+fn transaction_status_view_to_tokept_vm_status(
+    status_view: TransactionStatusView1,
+) -> KeptVMStatus {
+    match status_view {
+        TransactionStatusView1::Executed => KeptVMStatus::Executed,
+        TransactionStatusView1::OutOfGas => KeptVMStatus::OutOfGas,
+        TransactionStatusView1::MoveAbort {
+            location,
+            abort_code,
+        } => KeptVMStatus::MoveAbort(lo_convert_from_1_to_2(location), abort_code.0),
+        TransactionStatusView1::ExecutionFailure {
+            location,
+            function,
+            code_offset,
+        } => KeptVMStatus::ExecutionFailure {
+            location: lo_convert_from_1_to_2(location),
+            function,
+            code_offset,
+            message: None,
+        },
+        TransactionStatusView1::MiscellaneousError => KeptVMStatus::MiscellaneousError,
+        _ => unreachable!(), // TODO(BobOng): [dual-vm] to confirm how to handle the status type
+    }
+}
+
+fn transaction_info_view_from_1_to_2(
+    view: TransactionInfoView1,
+    events: Vec<ContractEvent2>,
+) -> TransactionInfoView2 {
+    TransactionInfoView2::new(RichTransactionInfo::new(
+        view.block_hash,
+        view.block_number.0,
+        TransactionInfo::new(
+            view.transaction_hash,
+            view.state_root_hash,
+            &events,
+            view.gas_used.0,
+            transaction_status_view_to_tokept_vm_status(view.status),
+        ),
+        view.transaction_index,
+        view.transaction_global_index.0,
+    ))
 }
 
 impl CliStateVM2 {
@@ -164,32 +217,51 @@ impl CliStateVM2 {
                 None
             });
 
-        // TODO(BobOng): [dual-vm] Want to convert txn_info from vm1 to vm2
-        let _txn_info = {
-            if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
-                info
-            } else {
-                //sleep and try again.
-                std::thread::sleep(Duration::from_secs(5));
-                if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
-                    info
-                } else {
-                    bail!("transaction execute success, but get transaction info return none, block: {}", block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
+        let txn_info = {
+            const MAX_ATTEMPTS: usize = 2;
+            let mut info = None;
+
+            for attempt in 0..MAX_ATTEMPTS {
+                if attempt > 0 {
+                    std::thread::sleep(Duration::from_secs(5));
+                }
+
+                if let Some(result) = self.client.chain_get_transaction_info(txn_hash)? {
+                    info = Some(result);
+                    break;
                 }
             }
+
+            info.ok_or_else(|| {
+                anyhow!(
+                    "transaction execute success, but get transaction info return none, block: {}",
+                    block
+                        .as_ref()
+                        .map(|b| b.header.number.to_string())
+                        .unwrap_or_else(|| "unknown".to_string())
+                )
+            })?
         };
 
-        // TODO(BobOng): [dual-vm] This event want get from chain_get_events_by_txn_hash2, this will be fix by next PR
-        let _events = self
+        let events = self
             .client
-            .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
+            .chain_get_events_by_txn_hash2(txn_hash, Some(GetEventOption { decode: true }))?;
 
-        // TODO(BobOng): [dual-vm] Want to convert txn_info and events from vm1 to vm2
-        // Ok(ExecutionOutputView::new_with_info(
-        //     txn_hash, txn_info, events,
-        // ))
+        let contract_events = events
+            .iter()
+            .map(|response| {
+                ContractEvent::new_v2_with_type_tag_str(
+                    response.event.type_tag.to_string().as_str(),
+                    response.event.data.0.clone(),
+                )
+            })
+            .collect();
 
-        Ok(ExecutionOutputView::new(txn_hash))
+        Ok(ExecutionOutputView::new_with_info(
+            txn_hash,
+            transaction_info_view_from_1_to_2(txn_info, contract_events),
+            events,
+        ))
     }
 
     pub fn build_and_execute_transaction(

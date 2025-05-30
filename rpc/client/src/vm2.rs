@@ -3,6 +3,7 @@
 
 use crate::{map_err, remote_state_reader2::RemoteStateReader, RpcClient, StateRootOption};
 use bcs_ext::BCSCodec;
+use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
@@ -10,18 +11,16 @@ use starcoin_vm2_rpc_api::{
     state_api::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
     DecodedMoveValue,
 };
-use starcoin_vm2_types::view::{
-    AnnotatedMoveStructView, ContractCall, DryRunOutputView, DryRunTransactionRequest,
-    FunctionIdView, ModuleIdView,
-};
 use starcoin_vm2_types::{
     account_address::AccountAddress,
     account_state::AccountState,
     language_storage::{ModuleId, StructTag},
     view::{
-        AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-        SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
-        TableInfoView, TransactionRequest,
+        AccountStateSetView, AnnotatedMoveStructView, CodeView, ContractCall, DryRunOutputView,
+        DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
+        ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
+        StructTagView, TableInfoView, TransactionEventResponse as TransactionEventResponse2,
+        TransactionRequest,
     },
 };
 use starcoin_vm2_vm_types::{
@@ -426,6 +425,15 @@ impl RpcClient {
         address: AccountAddress,
     ) -> anyhow::Result<Option<u64>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.next_sequence_number2(address))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> anyhow::Result<Vec<TransactionEventResponse2>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash2(txn_hash, option))
             .map_err(map_err)
     }
 }

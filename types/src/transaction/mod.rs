@@ -1,9 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{
+    identifier::{Identifier as Identifier1, Identifier2},
+    language_storage::{ModuleId as ModuleId1, ModuleId2},
+};
 mod stc_transaction;
 
-use crate::{identifier::Identifier, language_storage::ModuleId};
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -11,10 +14,14 @@ use starcoin_crypto::hash::{
     CryptoHash, CryptoHasher, PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use starcoin_crypto::HashValue;
-use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfoV2;
-use starcoin_vm2_types::vm_error::{AbortLocation, KeptVMStatus};
-use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm2_types::{
+    transaction::TransactionInfo as TransactionInfoV2,
+    vm_error::{AbortLocation as AbortLocation2, KeptVMStatus},
+};
 pub use starcoin_vm_types::transaction::*;
+use starcoin_vm_types::{
+    contract_event::ContractEvent, vm_status::AbortLocation as AbortLocation1,
+};
 pub use stc_transaction::{StcTransaction, Transaction2};
 use std::ops::Deref;
 
@@ -169,14 +176,28 @@ impl RichTransactionInfo {
     }
 }
 
-fn lo_convert(lo: AbortLocation) -> starcoin_vm_types::vm_status::AbortLocation {
-    match lo {
-        AbortLocation::Script => starcoin_vm_types::vm_status::AbortLocation::Script,
-        AbortLocation::Module(module_id) => {
-            starcoin_vm_types::vm_status::AbortLocation::Module(ModuleId::new(
+pub fn lo_convert_from_2_to_1(location2: AbortLocation2) -> AbortLocation1 {
+    match location2 {
+        AbortLocation2::Script => AbortLocation1::Script,
+        AbortLocation2::Module(module_id) => {
+            AbortLocation1::Module(ModuleId1::new(
                 module_id.address.into_bytes().into(),
                 // todo: double check, this conversion should never fail.
-                Identifier::from_utf8(module_id.name.into_bytes()).unwrap(),
+                Identifier1::from_utf8(module_id.name.into_bytes())
+                    .expect("Failed to convert module_id.name to Identifier1 due to invalid UTF-8"),
+            ))
+        }
+    }
+}
+
+pub fn lo_convert_from_1_to_2(location1: AbortLocation1) -> AbortLocation2 {
+    match location1 {
+        AbortLocation1::Script => AbortLocation2::Script,
+        AbortLocation1::Module(module_id) => {
+            AbortLocation2::Module(ModuleId2::new(
+                module_id.address().into_bytes().into(),
+                // todo: double check, this conversion should never fail.
+                Identifier2::from_utf8(module_id.name().as_bytes().to_vec()).unwrap(),
             ))
         }
     }
@@ -193,14 +214,14 @@ impl From<TransactionInfoV2> for TransactionInfo {
             status: match value.status {
                 KeptVMStatus::Executed => Executed,
                 KeptVMStatus::OutOfGas => OutOfGas,
-                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert(lo), code),
+                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert_from_2_to_1(lo), code),
                 KeptVMStatus::ExecutionFailure {
                     location,
                     function,
                     code_offset,
                     message: _,
                 } => ExecutionFailure {
-                    location: lo_convert(location),
+                    location: lo_convert_from_2_to_1(location),
                     function,
                     code_offset,
                 },

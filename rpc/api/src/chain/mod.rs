@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm2_types::view::{
-    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
@@ -90,7 +91,7 @@ pub trait ChainApi {
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>>;
+    ) -> FutureResult<Vec<TransactionEventResponse2>>;
 
     #[rpc(name = "chain.get_events")]
     fn get_events(

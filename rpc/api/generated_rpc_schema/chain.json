@@ -4137,7 +4137,7 @@
         }
       ],
       "result": {
-        "name": "Vec < TransactionEventResponse >",
+        "name": "Vec < TransactionEventResponse2 >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Array_of_TransactionEventResponse",
@@ -4178,7 +4178,22 @@
               },
               "event_key": {
                 "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                "type": "string"
+                "type": "object",
+                "required": [
+                  "account_address",
+                  "creation_number"
+                ],
+                "properties": {
+                  "account_address": {
+                    "type": "string",
+                    "format": "AccountAddress"
+                  },
+                  "creation_number": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
               },
               "event_seq_number": {
                 "type": "string"
