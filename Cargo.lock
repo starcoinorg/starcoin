@@ -11730,6 +11730,7 @@ dependencies = [
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
+ "starcoin-types 2.0.1",
 ]
 
 [[package]]
@@ -11866,6 +11867,7 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bcs-ext 1.13.19",
  "futures 0.3.31",
  "network-api",
  "rand 0.8.5",

@@ -16,6 +16,7 @@ use starcoin_crypto::hash::{
 use starcoin_crypto::HashValue;
 use starcoin_vm2_types::{
     transaction::TransactionInfo as TransactionInfoV2,
+    view::{TransactionInfoView as TransactionInfoView2, TransactionStatusView as TransactionStatusView2},
     vm_error::{AbortLocation as AbortLocation2, KeptVMStatus},
 };
 pub use starcoin_vm_types::transaction::*;
@@ -24,6 +25,7 @@ use starcoin_vm_types::{
 };
 pub use stc_transaction::{StcTransaction, Transaction2};
 use std::ops::Deref;
+use starcoin_vm2_types::view::TransactionStatusView;
 
 /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
 pub fn parse_transaction_argument_advance(s: &str) -> anyhow::Result<TransactionArgument> {
@@ -227,6 +229,32 @@ impl From<TransactionInfoV2> for TransactionInfo {
                 },
                 KeptVMStatus::MiscellaneousError => MiscellaneousError,
             },
+        }
+    }
+}
+
+impl From<RichTransactionInfo> for TransactionInfoView2 {
+    fn from(info: RichTransactionInfo) -> Self {
+        Self {
+            block_hash: info.block_id,
+            block_number: info.block_number.into(),
+            transaction_hash: info.transaction_hash,
+            transaction_index: 0,
+            transaction_global_index: info.transaction_global_index.into(),
+            state_root_hash: info.state_root_hash,
+            event_root_hash: info.event_root_hash,
+            gas_used: info.gas_used.into(),
+            status: match &info.status {
+                crate::vm_error::KeptVMStatus::Executed => TransactionStatusView2::Executed,
+                crate::vm_error::KeptVMStatus::OutOfGas => TransactionStatusView2::OutOfGas,
+                crate::vm_error::KeptVMStatus::MoveAbort(lo  , _) => TransactionStatusView2::MoveAbort {}
+                crate::vm_error::KeptVMStatus::ExecutionFailure { location, function, code_offset, ..} => TransactionStatusView2::ExecutionFailure {
+                    *location,
+                    *function,
+                    *code_offset,
+                },
+                crate::vm_error::KeptVMStatus::MiscellaneousError => TransactionStatusView2::MiscellaneousError,
+            }
         }
     }
 }

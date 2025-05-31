@@ -163,6 +163,14 @@ pub trait ChainAsyncService:
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_multi_state_by_hash(&self, hash: HashValue) -> Result<Option<MultiState>>;
+
+    async fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    ) -> Result<Option<TransactionInfoWithProof2>>;
 }
 
 #[async_trait::async_trait]
@@ -465,7 +473,7 @@ where
         if let ChainResponse::TransactionProof(proof) = response {
             Ok(*proof)
         } else {
-            bail!("get transactin proof error")
+            bail!("get transaction proof error")
         }
     }
 
@@ -484,6 +492,28 @@ where
             Ok(multi_state)
         } else {
             bail!("get multi state error")
+        }
+    }
+
+    async fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    ) -> Result<Option<TransactionInfoWithProof2>> {
+        let response = self
+            .send(ChainRequest::GetTransactionProof2 {
+                block_id,
+                transaction_global_index,
+                event_index,
+                access_path,
+            })
+            .await??;
+        if let ChainResponse::TransactionProof2(proof) = response {
+            Ok(*proof)
+        } else {
+            bail!("get transaction proof2 error")
         }
     }
 }
