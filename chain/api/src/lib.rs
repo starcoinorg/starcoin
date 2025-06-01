@@ -3,6 +3,7 @@
 #![deny(clippy::arithmetic_side_effects)]
 
 use anyhow::{bail, format_err, Result};
+use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
@@ -26,6 +27,11 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+
+use starcoin_vm2_types::view::{
+    EventWithProofView as EventWithProofView2, StrView as StrView2,
+    TransactionInfoWithProofView as TransactionInfoWithProofView2,
+};
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {
@@ -186,5 +192,25 @@ impl TransactionInfoWithProof2 {
             }
         };
         Ok(())
+    }
+}
+
+impl From<EventWithProof2> for EventWithProofView2 {
+    fn from(origin: EventWithProof2) -> Self {
+        Self {
+            event: StrView2(origin.event.encode().expect("encode event should succeed")),
+            proof: origin.proof.into(),
+        }
+    }
+}
+
+impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
+    fn from(origin: TransactionInfoWithProof2) -> Self {
+        Self {
+            transaction_info: origin.transaction_info.into(),
+            proof: origin.proof.into(),
+            event_proof: origin.event_proof.map(Into::into),
+            state_proof: origin.state_proof.map(Into::into),
+        }
     }
 }

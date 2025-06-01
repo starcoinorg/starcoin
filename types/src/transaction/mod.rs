@@ -16,6 +16,10 @@ use starcoin_crypto::hash::{
 use starcoin_crypto::HashValue;
 use starcoin_vm2_types::{
     transaction::TransactionInfo as TransactionInfoV2,
+    view::{
+        TransactionInfoView as TransactionInfoView2,
+        TransactionStatusView as TransactionStatusView2,
+    },
     vm_error::{AbortLocation as AbortLocation2, KeptVMStatus},
 };
 pub use starcoin_vm_types::transaction::*;
@@ -227,6 +231,45 @@ impl From<TransactionInfoV2> for TransactionInfo {
                 },
                 KeptVMStatus::MiscellaneousError => MiscellaneousError,
             },
+        }
+    }
+}
+
+impl From<RichTransactionInfo> for TransactionInfoView2 {
+    fn from(info: RichTransactionInfo) -> Self {
+        let status = match info.status.clone() {
+            crate::vm_error::KeptVMStatus::Executed => TransactionStatusView2::Executed,
+            crate::vm_error::KeptVMStatus::OutOfGas => TransactionStatusView2::OutOfGas,
+            crate::vm_error::KeptVMStatus::MoveAbort(lo, code) => {
+                TransactionStatusView2::MoveAbort {
+                    location: lo_convert_from_1_to_2(lo),
+                    abort_code: code.into(),
+                }
+            }
+            crate::vm_error::KeptVMStatus::ExecutionFailure {
+                location,
+                function,
+                code_offset,
+                ..
+            } => TransactionStatusView2::ExecutionFailure {
+                location: lo_convert_from_1_to_2(location),
+                function,
+                code_offset,
+            },
+            crate::vm_error::KeptVMStatus::MiscellaneousError => {
+                TransactionStatusView2::MiscellaneousError
+            }
+        };
+        Self {
+            block_hash: info.block_id,
+            block_number: info.block_number.into(),
+            transaction_hash: info.transaction_hash,
+            transaction_index: info.transaction_index,
+            transaction_global_index: info.transaction_global_index.into(),
+            state_root_hash: info.state_root_hash,
+            event_root_hash: info.event_root_hash,
+            gas_used: info.gas_used.into(),
+            status,
         }
     }
 }

@@ -1,6 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 network-api = { workspace = true }
 rand = { workspace = true }

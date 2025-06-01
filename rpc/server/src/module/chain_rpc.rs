@@ -552,22 +552,56 @@ where
 
     fn get_transaction_proof2(
         &self,
-        _block_hash: HashValue,
-        _transaction_global_index: u64,
-        _event_index: Option<u64>,
-        _access_path: Option<StrView2<AccessPath2>>,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
-        todo!()
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_transaction_proof2(
+                    block_hash,
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
+                .await?
+                .map(Into::into))
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
     }
 
     fn get_transaction_proof2_raw(
         &self,
-        _block_hash: HashValue,
-        _transaction_global_index: u64,
-        _event_index: Option<u64>,
-        _access_path: Option<StrView2<AccessPath2>>,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
-        todo!()
+        let service = self.service.clone();
+        let fut = async move {
+            let proof = service
+                .get_transaction_proof2(
+                    block_hash,
+                    transaction_global_index,
+                    event_index,
+                    access_path.map(Into::into),
+                )
+                .await?
+                .map(|proof| {
+                    StrView2(
+                        bcs_ext::to_bytes(&proof)
+                            .expect("serialize TransactionInfoWithProof to bcs should success."),
+                    )
+                });
+            Ok(proof)
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
     }
 }
 
