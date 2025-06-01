@@ -264,7 +264,7 @@ impl From<RichTransactionInfo> for TransactionInfoView2 {
             block_hash: info.block_id,
             block_number: info.block_number.into(),
             transaction_hash: info.transaction_hash,
-            transaction_index: 0,
+            transaction_index: info.transaction_index,
             transaction_global_index: info.transaction_global_index.into(),
             state_root_hash: info.state_root_hash,
             event_root_hash: info.event_root_hash,

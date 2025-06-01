@@ -198,7 +198,7 @@ impl TransactionInfoWithProof2 {
 impl From<EventWithProof2> for EventWithProofView2 {
     fn from(origin: EventWithProof2) -> Self {
         Self {
-            event: StrView2(origin.event.encode().expect("encode event should success")),
+            event: StrView2(origin.event.encode().expect("encode event should succeed")),
             proof: origin.proof.into(),
         }
     }
