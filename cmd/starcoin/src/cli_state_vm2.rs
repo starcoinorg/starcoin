@@ -512,7 +512,7 @@ impl CliStateVM2 {
     pub fn submit_txn(
         &self,
         signed_txn: SignedUserTransaction,
-        _blocking: bool,
+        blocking: bool,
     ) -> Result<ExecutionOutputView> {
         let mut signed_txn_view: SignedUserTransactionView = signed_txn.clone().try_into()?;
         signed_txn_view.raw_txn.decoded_payload =
@@ -527,11 +527,10 @@ impl CliStateVM2 {
 
         eprintln!("txn {:#x} submitted.", txn_hash);
 
-        // TODO(BobOng): [dual-vm] This is not completed yet and needs to be blocked
-        // if blocking {
-        //     self.watch_txn(txn_hash)
-        // } else {
-        Ok(ExecutionOutputView::new(txn_hash))
-        // }
+        if blocking {
+            self.watch_txn(txn_hash)
+        } else {
+            Ok(ExecutionOutputView::new(txn_hash))
+        }
     }
 }
