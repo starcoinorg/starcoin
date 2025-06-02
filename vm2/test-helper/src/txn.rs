@@ -145,6 +145,28 @@ pub fn create_account_txn_sent_as_association(
     )
 }
 
+pub fn build_transfer_txn(
+    receiver: AccountAddress,
+    sender: AccountAddress,
+    seq_number: u64,
+    amount: u128,
+    gas_price: u64,
+    max_gas: u64,
+    expire_timestamp_in_secs: u64,
+    chain_id: u8,
+) -> RawUserTransaction {
+    starcoin_vm2_transaction_builder::build_transfer_txn(
+        receiver,
+        sender,
+        seq_number,
+        amount,
+        gas_price,
+        max_gas,
+        expire_timestamp_in_secs,
+        chain_id.into(),
+    )
+}
+
 fn build_transaction(
     user_address: AccountAddress,
     seq_number: u64,

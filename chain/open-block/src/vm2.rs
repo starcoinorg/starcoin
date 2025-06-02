@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::OpenedBlock;
-use anyhow::bail;
+use anyhow::{bail, format_err};
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
@@ -101,13 +101,22 @@ impl OpenedBlock {
         let mut discarded_txns: Vec<MultiSignedUserTransaction> = Vec::new();
         let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
-        let txn_outputs = do_execute_block_transactions(
-            state,
-            txns.clone(),
-            Some(self.gas_limit),
-            self.vm_metrics.clone(),
-        )
-        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let txn_outputs = {
+            let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+                format_err!(
+                    "block gas_used {} exceed block gas_limit:{}",
+                    self.gas_used,
+                    self.gas_limit
+                )
+            })?;
+            do_execute_block_transactions(
+                state,
+                txns.clone(),
+                Some(gas_left),
+                self.vm_metrics.clone(),
+            )
+            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
+        };
 
         if txn_outputs.len() < txns.len() {
             untouched_txns = txns

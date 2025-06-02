@@ -10,15 +10,16 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
-use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
-use starcoin_types::account_address;
+use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::{StcTypeTag, TypeTag};
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::language_storage::StructTag;
+use starcoin_types::language_storage::{StcTypeTag, TypeTag2};
+use starcoin_vm2_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
+use starcoin_vm2_test_helper::build_transfer_from_association;
+use starcoin_vm2_types::account_address;
+use starcoin_vm2_vm_types::account_config::genesis_address;
+use starcoin_vm2_vm_types::identifier::Identifier;
+use starcoin_vm2_vm_types::language_storage::StructTag;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -28,11 +29,11 @@ fn test_chain_filter_events() {
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
 
-    let event_type_tag = TypeTag::Struct(Box::new(StructTag {
+    let event_type_tag = TypeTag2::Struct(Box::new(StructTag {
         address: genesis_address(),
-        module: Identifier::from_str("Block").unwrap(),
+        module: Identifier::from_str("stc_block").unwrap(),
         name: Identifier::from_str("NewBlockEvent").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }));
 
     // Origin block event index is 4, after https://github.com/starcoinorg/starcoin-framework/pull/42 , Genesis account create more event_handles, so the block event index is 7.
@@ -53,7 +54,7 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         assert_eq!(evt.transaction_index, 0);
-        assert_eq!(evt.event.type_tag(), StcTypeTag::V1(event_type_tag.clone()));
+        assert_eq!(evt.event.type_tag(), StcTypeTag::V2(event_type_tag.clone()));
     }
 
     {
