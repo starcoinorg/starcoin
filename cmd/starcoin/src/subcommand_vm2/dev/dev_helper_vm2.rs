@@ -29,6 +29,7 @@ pub fn load_package_from_file(mv_or_package_file: &Path) -> Result<Package> {
     Ok(package)
 }
 
+// TODO(BobOng): [dual-vm] It is used by CompatibilityCheckCommand, and will be unlocked when the command is added in the next version.
 // pub fn load_package_from_dir(path: &Path) -> Result<Package> {
 //     ensure!(path.is_dir(), "path need to be a dir");
 //
