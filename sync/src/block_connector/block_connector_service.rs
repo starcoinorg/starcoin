@@ -7,9 +7,8 @@ use super::CheckBlockConnectorHashValue;
 use super::CreateBlockRequest;
 #[cfg(test)]
 use super::CreateBlockResponse;
-use crate::block_connector::{
-    ExecuteRequest, MinerRequest, MinerResponse, ResetRequest, WriteBlockChainService,
-};
+use super::ResetRequest;
+use crate::block_connector::{ExecuteRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 #[cfg(test)]
@@ -21,19 +20,16 @@ use starcoin_chain::ChainWriter;
 use starcoin_chain_api::VerifiedBlock;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::blockdag::MineNewDagBlockInfo;
 use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
 use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
-use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
@@ -59,9 +55,6 @@ where
     chain_service: WriteBlockChainService<TransactionPoolServiceT>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
-    storage: Arc<Storage>,
-    vm_metrics: Option<VMMetrics>,
-    genesis: Genesis,
     pruning_point_channel: PruningPointInfoChannel,
 }
 
@@ -72,18 +65,12 @@ where
     pub fn new(
         chain_service: WriteBlockChainService<TransactionPoolServiceT>,
         config: Arc<NodeConfig>,
-        storage: Arc<Storage>,
-        vm_metrics: Option<VMMetrics>,
-        genesis: Genesis,
         pruning_point_channel: PruningPointInfoChannel,
     ) -> Self {
         Self {
             chain_service,
             sync_status: None,
             config,
-            storage,
-            vm_metrics,
-            genesis,
             pruning_point_channel,
         }
     }
@@ -188,26 +175,18 @@ where
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
-        let genesis = ctx.get_shared::<Genesis>()?;
         let pruning_point_channel = ctx.get_shared::<PruningPointInfoChannel>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
-            storage.clone(),
+            storage,
             txpool,
             bus,
-            vm_metrics.clone(),
+            vm_metrics,
             dag,
         )?;
 
-        Ok(Self::new(
-            chain_service,
-            config,
-            storage,
-            vm_metrics,
-            genesis,
-            pruning_point_channel,
-        ))
+        Ok(Self::new(chain_service, config, pruning_point_channel))
     }
 }
 
@@ -499,94 +478,6 @@ where
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<ExecutedBlock> {
         self.chain_service.execute(msg.block)
-    }
-}
-
-impl<T> ServiceHandler<Self, MinerRequest> for BlockConnectorService<T>
-where
-    T: TxPoolSyncService + 'static,
-{
-    fn handle(
-        &mut self,
-        _msg: MinerRequest,
-        _ctx: &mut ServiceContext<Self>,
-    ) -> <MinerRequest as ServiceRequest>::Response {
-        let main_header = self.chain_service.get_main().status().head().clone();
-        let dag = self.chain_service.get_dag();
-        let genesis = self.genesis.clone();
-        let MineNewDagBlockInfo {
-            tips,
-            ghostdata,
-            pruning_point,
-        } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
-            let pruning_point = if main_header.pruning_point() == HashValue::zero() {
-                genesis.block().id()
-            } else {
-                main_header.pruning_point()
-            };
-
-            let MineNewDagBlockInfo {
-                tips,
-                ghostdata,
-                pruning_point,
-            } = dag.calc_mergeset_and_tips(
-                pruning_point,
-                self.config.miner.maximum_parents_count(),
-                self.chain_service.get_main().get_genesis_hash(),
-            )?;
-            let merge_bound_hash = self
-                .chain_service
-                .get_main()
-                .get_merge_bound_hash(ghostdata.selected_parent)?;
-
-            let (tips, ghostdata) = dag.remove_bounded_merge_breaking_parents(
-                tips,
-                ghostdata,
-                pruning_point,
-                merge_bound_hash,
-            )?;
-            MineNewDagBlockInfo {
-                tips,
-                ghostdata,
-                pruning_point,
-            }
-        } else {
-            let tips = dag.get_dag_state(genesis.block().id())?.tips;
-            let ghostdata = dag.ghostdata(&tips)?;
-            MineNewDagBlockInfo {
-                tips,
-                ghostdata,
-                pruning_point: HashValue::zero(),
-            }
-        };
-
-        let selected_parent = ghostdata.selected_parent;
-
-        let time_service = self.config.net().time_service();
-        let storage = self.storage.clone();
-        let vm_metrics = self.vm_metrics.clone();
-        let main = BlockChain::new(time_service, selected_parent, storage, vm_metrics, dag)?;
-
-        let epoch = main.epoch().clone();
-        let strategy = epoch.strategy();
-        let on_chain_block_gas_limit = epoch.block_gas_limit();
-        let previous_header = main
-            .get_storage()
-            .get_block_header_by_hash(selected_parent)?
-            .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
-        let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
-        let now_milliseconds = main.time_service().now_millis();
-
-        Ok(Box::new(MinerResponse {
-            previous_header,
-            on_chain_block_gas_limit,
-            tips_hash: tips,
-            blue_blocks_hash: ghostdata.mergeset_blues.as_ref()[1..].to_vec(),
-            strategy,
-            next_difficulty,
-            now_milliseconds,
-            pruning_point,
-        }))
     }
 }
 

@@ -202,47 +202,25 @@ impl MinerService {
         let addr = ctx.service_ref::<Self>()?.clone();
         let flag = self.task_flag.clone();
         ctx.spawn(async move {
-            let timeout_result = tokio::time::timeout(
-                Duration::from_millis(2000),
-                create_block_template_service.send(BlockTemplateRequest),
-            )
-            .await;
-
-            let send_result = match timeout_result {
-                Ok(res) => res,
-                Err(elapsed) => {
-                    warn!(
-                        "Timeout waiting BlockTemplateRequest: {:?}. Retrying.",
-                        elapsed
-                    );
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
-                    return;
-                }
-            };
-
-            let response_future = match send_result {
-                Ok(fut) => fut,
+            let block_template = match create_block_template_service
+                .send(BlockTemplateRequest)
+                .await
+            {
+                Ok(send_result) => match send_result {
+                    Ok(block_template) => block_template,
+                    Err(e) => {
+                        error!("BlockTemplateRequest processing failed: {:?}", e);
+                        return;
+                    }
+                },
                 Err(e) => {
-                    warn!("BlockTemplateRequest delivery failed: {}", e);
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
+                    error!("BlockTemplateRequest delivery failed: {:?}", e);
                     return;
                 }
             };
 
-            let response = match response_future.await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    warn!("BlockTemplateRequest handler failed: {}", e);
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
-                    return;
-                }
-            };
-
-            let parent = response.parent;
-            let block_template = response.template;
+            let parent = block_template.parent;
+            let block_template = block_template.template;
             let block_time_gap = block_template.timestamp - parent.timestamp();
 
             let should_skip = !event.skip_empty_block_check
