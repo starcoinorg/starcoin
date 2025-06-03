@@ -90,7 +90,7 @@ where
 
     pub fn is_synced(&self) -> bool {
         match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+            Some(sync_status) => sync_status.is_nearly_synced(),
             None => false,
         }
     }
