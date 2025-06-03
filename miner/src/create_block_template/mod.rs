@@ -10,6 +10,7 @@ use starcoin_account_service::AccountService;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_consensus::Consensus;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
+use starcoin_types::system_events::NewHeadBlock;
 use std::sync::RwLock;
 
 use starcoin_config::NodeConfig;
@@ -133,11 +134,13 @@ impl ServiceFactory<Self> for BlockBuilderService {
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
+        ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
+        ctx.unsubscribe::<NewHeadBlock>();
         Ok(())
     }
 }
@@ -150,6 +153,21 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
             *account = msg.new_account;
         } else {
             warn!("Failed to acquire write lock for miner_account");
+        }
+    }
+}
+
+impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+        match self
+            .inner
+            .set_current_block_header(msg.executed_block.block().header().clone())
+        {
+            Ok(()) => todo!(),
+            Err(e) => warn!(
+                "Failed to set current block header: {:?} in BlockBuilderService",
+                e
+            ),
         }
     }
 }
@@ -247,7 +265,6 @@ where
             ghostdata,
             pruning_point,
         } = {
-            info!("block template main is {:?}", self.main.current_header());
             let pruning_point = if self.main.current_header().pruning_point() == HashValue::zero() {
                 self.main.get_genesis_hash()
             } else {
@@ -263,7 +280,6 @@ where
                 self.config.miner.maximum_parents_count(),
                 self.main.get_genesis_hash(),
             )?;
-            info!("after calculate the ghostdata, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}", tips, ghostdata, pruning_point);
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
@@ -275,7 +291,6 @@ where
                 pruning_point,
                 merge_bound_hash,
             )?;
-            info!("after remove the bounded merge breaking parents, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}, merge bound hash is: {:?}", tips, ghostdata, pruning_point, merge_bound_hash);
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
