@@ -44,4 +44,8 @@ impl RichTransactionInfo {
             transaction_global_index,
         }
     }
+
+    pub fn txn_info(&self) -> &TransactionInfo {
+        &self.transaction_info
+    }
 }

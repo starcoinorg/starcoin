@@ -35,6 +35,7 @@ use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoView as TransactionInfoView2,
     TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
@@ -257,6 +258,24 @@ where
             Ok(service
                 .get_transaction_info(transaction_hash)
                 .await?
+                .and_then(|i| i.to_v1())
+                .map(Into::into))
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_transaction_info(transaction_hash)
+                .await?
+                .and_then(|i| i.to_v2())
                 .map(Into::into))
         }
         .map_err(map_err);
@@ -271,6 +290,26 @@ where
                 .get_block_txn_infos(block_hash)
                 .await?
                 .into_iter()
+                .filter_map(|i| i.to_v1())
+                .map(Into::into)
+                .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_txn_infos2(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionInfoView2>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_block_txn_infos(block_hash)
+                .await?
+                .into_iter()
+                .filter_map(|i| i.to_v2())
                 .map(Into::into)
                 .collect::<Vec<_>>())
         }
@@ -289,6 +328,25 @@ where
             Ok(service
                 .get_txn_info_by_block_and_index(block_hash, idx)
                 .await?
+                .and_then(|i| i.to_v1())
+                .map(Into::into))
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_txn_info_by_block_and_index2(
+        &self,
+        block_hash: HashValue,
+        idx: u64,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_txn_info_by_block_and_index(block_hash, idx)
+                .await?
+                .and_then(|i| i.to_v2())
                 .map(Into::into))
         }
         .map_err(map_err);
@@ -488,6 +546,30 @@ where
                 .get_transaction_infos(start_global_index, reverse, max_return_num)
                 .await?
                 .into_iter()
+                .filter_map(|i| i.to_v1())
+                .map(Into::into)
+                .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction_infos2(
+        &self,
+        start_global_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> FutureResult<Vec<TransactionInfoView2>> {
+        let service = self.service.clone();
+        let config = self.config.clone();
+        let fut = async move {
+            let max_return_num = max_size.min(config.rpc.txn_info_query_max_range());
+            Ok(service
+                .get_transaction_infos(start_global_index, reverse, max_return_num)
+                .await?
+                .into_iter()
+                .filter_map(|i| i.to_v2())
                 .map(Into::into)
                 .collect::<Vec<_>>())
         }

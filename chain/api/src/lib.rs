@@ -8,9 +8,10 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{
-    multi_transaction::MultiSignedUserTransaction, transaction::RichTransactionInfo,
+    multi_transaction::MultiSignedUserTransaction, transaction::legacy::RichTransactionInfo,
 };
 use starcoin_vm2_state_api::StateWithProof as StateWithProof2;
+use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
 use starcoin_vm2_vm_types::{
     access_path::AccessPath as AccessPath2, contract_event::ContractEvent as ContractEvent2,
 };
@@ -136,7 +137,7 @@ impl EventWithProof2 {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof2 {
-    pub transaction_info: RichTransactionInfo,
+    pub transaction_info: RichTransactionInfo2,
     pub proof: AccumulatorProof,
     pub event_proof: Option<EventWithProof2>,
     pub state_proof: Option<StateWithProof2>,

@@ -64,6 +64,7 @@ use starcoin_vm2_rpc_api::{
     account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
     state_api::StateClient as StateClient2,
 };
+use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -832,6 +833,14 @@ impl RpcClient {
         txn_hash: HashValue,
     ) -> anyhow::Result<Option<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_transaction_info(txn_hash))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_info2(
+        &self,
+        txn_hash: HashValue,
+    ) -> anyhow::Result<Option<TransactionInfoView2>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_transaction_info2(txn_hash))
             .map_err(map_err)
     }
 

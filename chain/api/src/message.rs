@@ -7,7 +7,7 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::multi_state::MultiState;
-use starcoin_types::transaction::{RichTransactionInfo, StcRichTransactionInfo};
+use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     filter::Filter,

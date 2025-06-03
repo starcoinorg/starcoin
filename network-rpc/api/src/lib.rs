@@ -19,7 +19,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_types::transaction::{StcTransactionInfo, Transaction};
 use starcoin_vm_types::state_store::table::TableInfo;
 
 mod remote_chain_state;
@@ -224,7 +224,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         block_id: HashValue,
-    ) -> BoxFuture<Result<Option<Vec<TransactionInfo>>>>;
+    ) -> BoxFuture<Result<Option<Vec<StcTransactionInfo>>>>;
 
     fn get_headers_by_number(
         &self,

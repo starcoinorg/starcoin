@@ -14,7 +14,7 @@ use starcoin_crypto::hash::{
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::contract_event::ContractEvent;
 pub use starcoin_vm_types::transaction::*;
-pub use stc_transaction::StcTransaction;
+pub use stc_transaction::{StcTransaction, Transaction2};
 pub use stc_transaction_info::{StcRichTransactionInfo, StcTransactionInfo};
 
 /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>

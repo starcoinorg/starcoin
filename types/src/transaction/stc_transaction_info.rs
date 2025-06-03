@@ -29,6 +29,13 @@ impl StcTransactionInfo {
             Self::V2(info) => Some(info),
         }
     }
+
+    pub fn id(&self) -> HashValue {
+        match self {
+            StcTransactionInfo::V1(info) => info.id(),
+            StcTransactionInfo::V2(info) => info.id(),
+        }
+    }
 }
 
 impl From<TransactionInfo> for StcTransactionInfo {

@@ -32,9 +32,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{
-    StcRichTransactionInfo, StcTransaction, StcTransactionInfo, TransactionInfo,
-};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
@@ -1362,6 +1360,7 @@ impl ChainReader for BlockChain {
             })?;
         let transaction_info = storage
             .get_transaction_info(txn_info_hash)?
+            .and_then(|i| i.to_v1())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
@@ -1428,6 +1427,7 @@ impl ChainReader for BlockChain {
             })?;
         let transaction_info = storage
             .get_transaction_info(txn_info_hash)?
+            .and_then(|i| i.to_v2())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
