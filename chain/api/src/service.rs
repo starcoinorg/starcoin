@@ -10,7 +10,9 @@ use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContrac
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
-use starcoin_types::transaction::{RichTransactionInfo, Transaction};
+use starcoin_types::transaction::{
+    legacy::RichTransactionInfo, StcRichTransactionInfo, Transaction,
+};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
@@ -26,13 +28,13 @@ pub trait ReadableChainService {
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<StcRichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
     fn get_events_by_txn_info_hash(
         &self,
         txn_info_id: HashValue,
@@ -449,7 +451,7 @@ where
             })
             .await??;
         if let ChainResponse::TransactionInfos(tx_infos) = response {
-            Ok(tx_infos)
+            Ok(tx_infos.into_iter().map(|r| r.to_v1()).collect())
         } else {
             bail!("get txn infos error")
         }

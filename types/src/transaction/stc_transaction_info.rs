@@ -61,14 +61,14 @@ impl StcRichTransactionInfo {
     pub fn new(
         block_id: HashValue,
         block_number: u64,
-        transaction_info: TransactionInfo,
+        transaction_info: StcTransactionInfo,
         transaction_index: u32,
         transaction_global_index: u64,
     ) -> Self {
         Self {
             block_id,
             block_number,
-            transaction_info: transaction_info.into(),
+            transaction_info,
             transaction_index,
             transaction_global_index,
         }

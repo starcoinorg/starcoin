@@ -20,7 +20,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::{RichTransactionInfo, StcRichTransactionInfo};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     contract_event::ContractEvent,
@@ -363,11 +363,14 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<RichTransactionInfo>, Error> {
+    ) -> Result<Option<StcRichTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }
 
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>, Error> {
+    fn get_block_txn_infos(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Vec<StcRichTransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
     }
 
@@ -375,7 +378,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>, Error> {
+    ) -> Result<Option<StcRichTransactionInfo>, Error> {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
     }

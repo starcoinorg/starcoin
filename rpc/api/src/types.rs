@@ -34,9 +34,9 @@ use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{
     authenticator::{AccountPublicKey, AuthenticationKey, TransactionAuthenticator},
-    RawUserTransaction, RichTransactionInfo, Script, ScriptFunction, SignedUserTransaction,
-    Transaction, TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload,
-    TransactionStatus,
+    legacy::RichTransactionInfo,
+    RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, Transaction,
+    TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload, TransactionStatus,
 };
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
