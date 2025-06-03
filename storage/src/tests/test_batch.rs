@@ -1,16 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use super::random_txn_info;
 use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecWriteBatch, InnerStore, ValueCodec};
-use crate::{DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2};
+use crate::{DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V3};
 use anyhow::Result;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::{legacy::RichTransactionInfo, TransactionInfo};
-use starcoin_types::vm_error::KeptVMStatus;
+use starcoin_types::transaction::StcRichTransactionInfo;
 use std::convert::TryInto;
 use std::sync::Arc;
 
@@ -20,41 +20,17 @@ fn test_db_batch() {
     let db_storage =
         Arc::new(DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap());
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id = transaction_info1.id();
     write_batch.put(id, transaction_info1.clone()).unwrap();
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone()).unwrap();
     db_storage
         .write_batch(DEFAULT_PREFIX_NAME, write_batch.try_into().unwrap())
         .unwrap();
     assert_eq!(
-        RichTransactionInfo::decode_value(
+        StcRichTransactionInfo::decode_value(
             &db_storage
                 .get(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
@@ -64,7 +40,7 @@ fn test_db_batch() {
         transaction_info1
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(
+        StcRichTransactionInfo::decode_value(
             &db_storage
                 .get(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()
@@ -79,41 +55,17 @@ fn test_db_batch() {
 fn test_cache_batch() {
     let cache_storage = Arc::new(CacheStorage::new(None));
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id = transaction_info1.id();
     write_batch.put(id, transaction_info1.clone()).unwrap();
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone()).unwrap();
     cache_storage
         .write_batch(DEFAULT_PREFIX_NAME, write_batch.try_into().unwrap())
         .unwrap();
     assert_eq!(
-        RichTransactionInfo::decode_value(
+        StcRichTransactionInfo::decode_value(
             &cache_storage
                 .get(DEFAULT_PREFIX_NAME, id.to_vec())
                 .unwrap()
@@ -123,7 +75,7 @@ fn test_cache_batch() {
         transaction_info1
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(
+        StcRichTransactionInfo::decode_value(
             &cache_storage
                 .get(DEFAULT_PREFIX_NAME, id2.to_vec())
                 .unwrap()
@@ -171,48 +123,24 @@ fn test_write_batch_multi_get() -> Result<()> {
     let db_storage =
         Arc::new(DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap());
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id1 = transaction_info1.id();
     write_batch.put(id1, transaction_info1.clone())?;
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone())?;
-    db_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V2, write_batch.try_into()?)?;
+    db_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V3, write_batch.try_into()?)?;
 
     let infos = db_storage.multi_get(
-        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_PREFIX_NAME_V3,
         vec![id1.to_vec(), id2.to_vec()],
     )?;
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
         transaction_info1
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2
     );
     Ok(())
@@ -222,49 +150,25 @@ fn test_write_batch_multi_get() -> Result<()> {
 fn test_cache_multi_get_no_evict() -> Result<()> {
     let cache_storage = Arc::new(CacheStorage::new(None));
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id1 = transaction_info1.id();
     write_batch.put(id1, transaction_info1.clone())?;
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone())?;
-    cache_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V2, write_batch.try_into()?)?;
+    cache_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V3, write_batch.try_into()?)?;
 
     let infos = cache_storage.multi_get(
-        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_PREFIX_NAME_V3,
         vec![id1.to_vec(), id2.to_vec()],
     )?;
 
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.first().unwrap().clone().unwrap())?,
         transaction_info1
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2
     );
     Ok(())
@@ -274,65 +178,29 @@ fn test_cache_multi_get_no_evict() -> Result<()> {
 fn test_cache_multi_get_with_evict() -> Result<()> {
     let cache_storage = Arc::new(CacheStorage::new_with_capacity(2, None));
     let mut write_batch = CodecWriteBatch::new();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id1 = transaction_info1.id();
     write_batch.put(id1, transaction_info1)?;
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone())?;
-    let transaction_info3 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            1,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info3 = random_txn_info(2);
     let id3 = transaction_info3.id();
     write_batch.put(id3, transaction_info3.clone())?;
-    cache_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V2, write_batch.try_into()?)?;
+    cache_storage.write_batch(TRANSACTION_INFO_PREFIX_NAME_V3, write_batch.try_into()?)?;
 
     let infos = cache_storage.multi_get(
-        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_PREFIX_NAME_V3,
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
 
     assert!(&infos.first().unwrap().is_none(), "id1 has evicted");
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(&infos.get(2).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&infos.get(2).unwrap().clone().unwrap())?,
         transaction_info3
     );
     Ok(())

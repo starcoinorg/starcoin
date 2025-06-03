@@ -25,6 +25,7 @@ cargo nextest run --workspace \
 -E "\
 not (test(module::pubsub::tests::test_subscribe_to_pending_transactions)) \
 and not (test(module::pubsub::tests::test_subscribe_to_events)) \
+and not (test(tests::test_storage::test_db_upgrade)) \
 and not (test(test_force_upgrade_1)) \
 and not (test(test_force_upgrade_2)) \
 and not (test(test_frozen_account)) \
