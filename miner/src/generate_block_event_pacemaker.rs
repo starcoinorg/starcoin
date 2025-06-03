@@ -44,6 +44,26 @@ impl GenerateBlockEventPacemaker {
             },
             None => false,
         }
+        // match self.sync_status.as_ref() {
+        //     Some(sync_status) => match sync_status.sync_status() {
+        //         starcoin_types::sync_status::SyncState::Prepare => false,
+        //         starcoin_types::sync_status::SyncState::Synchronizing {
+        //             target,
+        //             total_difficulty: _,
+        //         } => {
+        //             if let Some(last_sync_status) = self.last_sync_status.as_ref() {
+        //                 target
+        //                     .number()
+        //                     .abs_diff(last_sync_status.chain_status().head().number())
+        //                     <= NEARLY_SYNCED_BLOCKS
+        //             } else {
+        //                 false
+        //             }
+        //         }
+        //         starcoin_types::sync_status::SyncState::Synchronized => true,
+        //     },
+        //     None => false,
+        // }
     }
 }
 
