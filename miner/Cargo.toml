@@ -30,6 +30,8 @@ tokio = { features = ["full"], workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-sync = { workspace = true }
+starcoin-genesis = { workspace = true }
+
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }
 starcoin-genesis = { workspace = true }

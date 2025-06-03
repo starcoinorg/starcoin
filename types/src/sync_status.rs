@@ -97,15 +97,6 @@ impl SyncStatus {
                 total_difficulty: _,
             } => {
                 target.number().abs_diff(self.chain_status.head().number()) <= NEARLY_SYNCED_BLOCKS
-                // if target.number() < self.chain_status.head().number() {
-                //     false
-                // } else {
-                //     target
-                //         .number
-                //         .saturating_sub(self.chain_status.head().number())
-                //         <= NEARLY_SYNCED_BLOCKS
-                //     //|| self.chain_status.total_difficulty() >= *total_difficulty
-                // }
             }
         }
     }
