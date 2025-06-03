@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::CliState;
+use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::StarcoinOpt;
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_types::account_address::AccountAddress;
-use anyhow::Result;
 
 /// Change account password, should unlock the account before change password.
 #[derive(Debug, Parser)]
