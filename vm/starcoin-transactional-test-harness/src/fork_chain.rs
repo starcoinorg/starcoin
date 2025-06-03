@@ -418,7 +418,7 @@ impl ChainApi for MockChainApi {
 
     fn get_transaction_info2(
         &self,
-        transaction_hash: HashValue,
+        _transaction_hash: HashValue,
     ) -> FutureResult<Option<TransactionInfoView2>> {
         todo!()
     }
@@ -435,7 +435,7 @@ impl ChainApi for MockChainApi {
 
     fn get_block_txn_infos2(
         &self,
-        block_hash: HashValue,
+        _block_hash: HashValue,
     ) -> FutureResult<Vec<TransactionInfoView2>> {
         todo!()
     }
@@ -453,8 +453,8 @@ impl ChainApi for MockChainApi {
 
     fn get_txn_info_by_block_and_index2(
         &self,
-        block_hash: HashValue,
-        idx: u64,
+        _block_hash: HashValue,
+        _idx: u64,
     ) -> FutureResult<Option<TransactionInfoView2>> {
         todo!()
     }
@@ -518,9 +518,9 @@ impl ChainApi for MockChainApi {
 
     fn get_transaction_infos2(
         &self,
-        start_global_index: u64,
-        reverse: bool,
-        max_size: u64,
+        _start_global_index: u64,
+        _reverse: bool,
+        _max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView2>> {
         todo!()
     }
