@@ -1,6 +1,7 @@
 pub mod accept_token_cmd;
 pub mod change_password_cmd;
 pub mod create_cmd;
+pub mod default_cmd;
 pub mod execute_script_cmd;
 pub mod execute_script_function_cmd;
 pub mod show_cmd;
