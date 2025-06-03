@@ -306,7 +306,7 @@ impl RpcClient {
     }
 
     pub fn submit_transaction(&self, txn: MultiSignedUserTransaction) -> anyhow::Result<HashValue> {
-        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction_multi(txn))
             .map_err(map_err)
     }
 

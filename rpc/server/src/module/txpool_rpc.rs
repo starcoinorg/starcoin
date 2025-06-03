@@ -11,6 +11,8 @@ use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use starcoin_vm2_vm_types::account_address::AccountAddress as AccountAddress2;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::convert::TryInto;
 
 /// Re-export the API
@@ -35,7 +37,15 @@ impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService,
 {
-    fn submit_transaction(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
+    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM1(txn))
+    }
+
+    fn submit_transaction2(&self, txn: SignedUserTransaction2) -> FutureResult<HashValue> {
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
+    }
+
+    fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self
             .service
@@ -51,11 +61,28 @@ where
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
         let result = hex::decode(tx)
             .map_err(convert_to_rpc_error)
-            .and_then(|txn_bytes| MultiSignedUserTransaction::decode(&txn_bytes).map_err(map_err))
+            .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns(vec![txn])
+                    .add_txns(vec![MultiSignedUserTransaction::VM1(txn)])
+                    .pop()
+                    .expect("txpool should return result")
+                    .map(|_| txn_hash)
+                    .map_err(convert_to_rpc_error)
+            });
+        Box::pin(futures::future::ready(result))
+    }
+
+    fn submit_hex_transaction2(&self, tx: String) -> FutureResult<HashValue> {
+        let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
+        let result = hex::decode(tx)
+            .map_err(convert_to_rpc_error)
+            .and_then(|txn_bytes| SignedUserTransaction2::decode(&txn_bytes).map_err(map_err))
+            .and_then(|txn| {
+                let txn_hash = txn.id();
+                self.service
+                    .add_txns(vec![MultiSignedUserTransaction::VM2(txn)])
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)
