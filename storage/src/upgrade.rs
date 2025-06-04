@@ -323,8 +323,8 @@ fn upgrade_store<K1, V1, K2, V2, T1, T2>(
     batch_size: usize,
 ) -> Result<usize>
 where
-    K1: KeyCodec + Copy + Into<K2>,
-    K2: KeyCodec + Copy,
+    K1: KeyCodec + Into<K2>,
+    K2: KeyCodec,
     V1: ValueCodec + Into<V2>,
     V2: ValueCodec,
     T1: SchemaStorage + ColumnFamily<Key = K1, Value = V1>,
@@ -337,51 +337,47 @@ where
     let mut to_delete = Some(CodecWriteBatch::<K1, V1>::new());
     let mut to_put = Some(CodecWriteBatch::<K2, V2>::new());
     let mut item_count = 0;
+    let mut no_more = false;
 
-    for item in old_iter {
-        let (id, old_val) = item?;
-        let new_id: K2 = id.into();
-        let new_val: V2 = old_val.into();
-        to_delete
-            .as_mut()
-            .unwrap()
-            .delete(id)
-            .expect("should never fail");
-        to_put
-            .as_mut()
-            .unwrap()
-            .put(new_id, new_val)
-            .expect("should never fail");
-
-        item_count += 1;
-        if item_count == batch_size {
+    loop {
+        if let Some(item) = old_iter.next() {
+            let (id, old_val) = item?;
+            let (new_id, new_val) = (id.clone().into(), old_val.into());
+            to_delete
+                .as_mut()
+                .unwrap()
+                .delete(id)
+                .expect("should never fail");
+            to_put
+                .as_mut()
+                .unwrap()
+                .put(new_id, new_val)
+                .expect("should never fail");
+            item_count += 1;
+        } else {
+            no_more = true;
+        }
+        if item_count == batch_size || no_more {
             total_size = total_size
                 .checked_add(item_count)
                 .ok_or_else(|| format_err!("total size overflow, item_count: {}", item_count))?;
-            item_count = 0;
-            old_store
-                .write_batch(to_delete.take().unwrap())
-                .expect("should never fail");
+            // save new items first
             store
                 .write_batch(to_put.take().unwrap())
                 .expect("should never fail");
+            old_store
+                .write_batch(to_delete.take().unwrap())
+                .expect("should never fail");
 
+            // no more items, let's wrap up
+            if no_more {
+                return Ok(total_size);
+            }
+
+            // reset for next batch
+            item_count = 0;
             to_delete = Some(CodecWriteBatch::new());
             to_put = Some(CodecWriteBatch::new());
         }
     }
-    // process the remaining items
-    if item_count != 0 {
-        total_size = total_size
-            .checked_add(item_count)
-            .ok_or_else(|| format_err!("total size overflow, item_count: {}", item_count))?;
-        old_store
-            .write_batch(to_delete.take().unwrap())
-            .expect("should never fail");
-        store
-            .write_batch(to_put.take().unwrap())
-            .expect("should never fail");
-    }
-
-    Ok(total_size)
 }
