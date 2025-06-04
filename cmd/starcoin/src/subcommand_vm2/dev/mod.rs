@@ -14,3 +14,9 @@ pub mod package_cmd;
 pub mod panic_cmd;
 pub mod resolve_cmd;
 pub mod sleep_cmd;
+
+pub use {
+    call_api_cmd::*, call_contract_cmd::*, compile_cmd::*, concurrency_level_cmd::*, deploy_cmd::*,
+    gen_block_cmd::*, get_coin_cmd::*, move_explain::*, package_cmd::*, panic_cmd::*,
+    resolve_cmd::*, sleep_cmd::*,
+};
