@@ -15,7 +15,7 @@ use starcoin_vm2_vm_types::account_address::AccountAddress;
 pub struct LockOpt {
     #[clap(
         name = "account_address",
-        help = "The wallet account address witch to lock, if absent, lock the default wallet."
+        help = "The wallet account address which to lock, if absent, lock the default wallet."
     )]
     account_address: Option<AccountAddress>,
 }
