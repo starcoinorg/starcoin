@@ -10,16 +10,28 @@ use crate::multi_types::MultiSignedUserTransactionView;
 use crate::types::StrView;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
+use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use starcoin_vm2_types::{
+    account_address::AccountAddress as AccountAddress2,
+    transaction::SignedUserTransaction as SignedUserTransaction2,
+};
 
 #[openrpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
-    fn submit_transaction(&self, tx: MultiSignedUserTransaction) -> FutureResult<HashValue>;
+    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
+
+    #[rpc(name = "txpool.submit_transaction2")]
+    fn submit_transaction2(&self, tx: SignedUserTransaction2) -> FutureResult<HashValue>;
+
+    #[rpc(name = "txpool.submit_transaction_multi")]
+    fn submit_transaction_multi(&self, tx: MultiSignedUserTransaction) -> FutureResult<HashValue>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;
+
+    #[rpc(name = "txpool.submit_hex_transaction2")]
+    fn submit_hex_transaction2(&self, tx: String) -> FutureResult<HashValue>;
 
     /// return current gas price
     #[rpc(name = "txpool.gas_price")]
