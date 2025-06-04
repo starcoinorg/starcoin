@@ -20,7 +20,7 @@ use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::TransactionInfo,
+    transaction::StcTransactionInfo,
 };
 use std::fmt::Debug;
 use std::time::Instant;
@@ -241,7 +241,7 @@ impl VerifiedRpcClient {
     pub async fn get_txn_infos(
         &self,
         block_id: HashValue,
-    ) -> Result<(PeerId, Option<Vec<TransactionInfo>>)> {
+    ) -> Result<(PeerId, Option<Vec<StcTransactionInfo>>)> {
         let peer_id = self.select_a_peer()?;
         Ok((
             peer_id.clone(),

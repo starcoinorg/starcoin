@@ -10,7 +10,7 @@ use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContrac
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
-use starcoin_types::transaction::{RichTransactionInfo, Transaction};
+use starcoin_types::transaction::{StcRichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
@@ -26,13 +26,13 @@ pub trait ReadableChainService {
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
-    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
+    fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<StcRichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
     fn get_events_by_txn_info_hash(
         &self,
         txn_info_id: HashValue,
@@ -69,7 +69,7 @@ pub trait ReadableChainService {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
 
     fn get_transaction_proof(
         &self,
@@ -108,14 +108,17 @@ pub trait ChainAsyncService:
     async fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
     async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
-    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<RichTransactionInfo>>;
+    async fn get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> Result<Vec<StcRichTransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
     async fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
@@ -151,7 +154,7 @@ pub trait ChainAsyncService:
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
 
     async fn get_transaction_proof(
         &self,
@@ -253,7 +256,7 @@ where
     async fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<RichTransactionInfo>> {
+    ) -> Result<Option<StcRichTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfo(txn_hash))
             .await??;
@@ -275,7 +278,10 @@ where
         }
     }
 
-    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<RichTransactionInfo>> {
+    async fn get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> Result<Vec<StcRichTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetBlockTransactionInfos(block_hash))
             .await??;
@@ -290,7 +296,7 @@ where
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> Result<Option<RichTransactionInfo>> {
+    ) -> Result<Option<StcRichTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfoByBlockAndIndex {
                 block_hash: block_id,
@@ -440,7 +446,7 @@ where
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>> {
+    ) -> Result<Vec<StcRichTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfos {
                 start_index,

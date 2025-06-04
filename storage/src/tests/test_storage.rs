@@ -7,23 +7,24 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::table_info::TableInfoStore;
-use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
+use crate::tests::{random_txn_info, random_txn_info2};
+use crate::transaction_info::legacy::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
-    StorageVersion, /*TableInfoStore,*/
+    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
     TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME_V2,
+    TRANSACTION_INFO_PREFIX_NAME_V3,
 };
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
+use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     language_storage::TypeTag,
     startup_info::SnapshotRange,
-    transaction::{RichTransactionInfo, SignedUserTransaction, Transaction, TransactionInfo},
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     vm_error::KeptVMStatus,
 };
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -85,19 +86,7 @@ fn test_storage() {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -116,19 +105,7 @@ fn test_iter() {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap(),
     ))
     .unwrap();
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -153,19 +130,7 @@ fn test_two_level_storage() {
     let db_storage = instance.db().unwrap();
     let storage = Storage::new(instance.clone()).unwrap();
 
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id = transaction_info1.id();
     storage
         .transaction_info_storage
@@ -176,17 +141,17 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info1, transaction_info2.unwrap());
     //verfiy cache storage
     let value3 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME_V3, id.to_vec())
         .unwrap()
         .unwrap();
-    let transaction_info3 = RichTransactionInfo::decode_value(&value3).unwrap();
+    let transaction_info3 = StcRichTransactionInfo::decode_value(&value3).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     // // verify db storage
     let value4 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME_V3, id.to_vec())
         .unwrap()
         .unwrap();
-    let transaction_info4 = RichTransactionInfo::decode_value(&value4).unwrap();
+    let transaction_info4 = StcRichTransactionInfo::decode_value(&value4).unwrap();
     assert_eq!(transaction_info4, transaction_info1);
     // // test remove
     storage.transaction_info_storage.remove(id).unwrap();
@@ -194,11 +159,11 @@ fn test_two_level_storage() {
     assert_eq!(transaction_info5, None);
     // verify cache storage is null
     let value6 = cache_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME_V3, id.to_vec())
         .unwrap();
     assert!(value6.is_none());
     let value7 = db_storage
-        .get(TRANSACTION_INFO_PREFIX_NAME_V2, id.to_vec())
+        .get(TRANSACTION_INFO_PREFIX_NAME_V3, id.to_vec())
         .unwrap();
     assert_eq!(value7, None);
 }
@@ -207,19 +172,7 @@ fn test_two_level_storage() {
 fn test_two_level_storage_read_through() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
 
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        1,
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        1,
-        1,
-    );
+    let transaction_info1 = random_txn_info2(1, 0);
     let id = transaction_info1.id();
 
     {
@@ -401,49 +354,13 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance.clone())?;
-    let transaction_info1 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info1 = random_txn_info(0);
     let id1 = transaction_info1.id();
 
-    let transaction_info2 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info2 = random_txn_info(0);
     let id2 = transaction_info2.id();
 
-    let transaction_info3 = RichTransactionInfo::new(
-        HashValue::random(),
-        rand::random(),
-        TransactionInfo::new(
-            HashValue::random(),
-            HashValue::zero(),
-            vec![].as_slice(),
-            0,
-            KeptVMStatus::Executed,
-        ),
-        rand::random(),
-        rand::random(),
-    );
+    let transaction_info3 = random_txn_info(0);
     let id3 = transaction_info3.id();
     storage
         .transaction_info_storage
@@ -456,16 +373,16 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         .put(id3, transaction_info3.clone())?;
     let cache_storage = instance.cache().unwrap();
     let cache_infos = cache_storage.multi_get(
-        TRANSACTION_INFO_PREFIX_NAME_V2,
+        TRANSACTION_INFO_PREFIX_NAME_V3,
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
     assert!(&cache_infos.first().unwrap().is_none(), "id1 has evicted");
     assert_eq!(
-        RichTransactionInfo::decode_value(&cache_infos.get(1).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&cache_infos.get(1).unwrap().clone().unwrap())?,
         transaction_info2
     );
     assert_eq!(
-        RichTransactionInfo::decode_value(&cache_infos.get(2).unwrap().clone().unwrap())?,
+        StcRichTransactionInfo::decode_value(&cache_infos.get(2).unwrap().clone().unwrap())?,
         transaction_info3
     );
     let infos = storage

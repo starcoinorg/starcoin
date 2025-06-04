@@ -16,6 +16,7 @@ use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoView as TransactionInfoView2,
     TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
@@ -67,10 +68,23 @@ pub trait ChainApi {
         &self,
         transaction_hash: HashValue,
     ) -> FutureResult<Option<TransactionInfoView>>;
+    /// Get chain vm2 transaction info
+    #[rpc(name = "chain.get_transaction_info2")]
+    fn get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>>;
 
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]
     fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>>;
+    /// Get chain vm2 transactions infos by block id
+    #[rpc(name = "chain.get_block_txn_infos2")]
+    fn get_block_txn_infos2(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionInfoView2>>;
+
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]
     fn get_txn_info_by_block_and_index(
@@ -78,6 +92,13 @@ pub trait ChainApi {
         block_hash: HashValue,
         idx: u64,
     ) -> FutureResult<Option<TransactionInfoView>>;
+    /// Get txn info of a vm2 txn at `idx` of block `block_id`
+    #[rpc(name = "chain.get_txn_info_by_block_and_index2")]
+    fn get_txn_info_by_block_and_index2(
+        &self,
+        block_hash: HashValue,
+        idx: u64,
+    ) -> FutureResult<Option<TransactionInfoView2>>;
 
     #[rpc(name = "chain.get_events_by_txn_hash")]
     fn get_events_by_txn_hash(
@@ -113,6 +134,16 @@ pub trait ChainApi {
         reverse: bool,
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView>>;
+
+    /// Get vm2 transaction info list
+    /// `start_global_index` is the transaction global index
+    #[rpc(name = "chain.get_transaction_infos2")]
+    fn get_transaction_infos2(
+        &self,
+        start_global_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> FutureResult<Vec<TransactionInfoView2>>;
 
     /// Get TransactionInfoWithProof, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
     /// if `event_index` is some, also return the EventWithProof in current transaction event_root

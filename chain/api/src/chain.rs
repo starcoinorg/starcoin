@@ -10,7 +10,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 pub use starcoin_types::block::ExecutedBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::Transaction,
@@ -50,13 +50,13 @@ pub trait ChainReader {
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
 
     /// get transaction info by global index in chain.
     fn get_transaction_info_by_global_index(
         &self,
         transaction_global_index: u64,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn chain_state_reader2(&self) -> &dyn ChainStateReader2;
@@ -91,7 +91,7 @@ pub trait ChainReader {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
 
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
 

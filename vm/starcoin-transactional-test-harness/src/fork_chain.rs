@@ -32,6 +32,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoView as TransactionInfoView2,
     TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
@@ -415,6 +416,13 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_transaction_info2(
+        &self,
+        _transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        todo!()
+    }
+
     fn get_block_txn_infos(
         &self,
         _block_hash: HashValue,
@@ -423,6 +431,13 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_block_txn_infos2(
+        &self,
+        _block_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionInfoView2>> {
+        todo!()
     }
 
     fn get_txn_info_by_block_and_index(
@@ -434,6 +449,14 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_txn_info_by_block_and_index2(
+        &self,
+        _block_hash: HashValue,
+        _idx: u64,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        todo!()
     }
 
     fn get_events_by_txn_hash(
@@ -491,6 +514,15 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_transaction_infos2(
+        &self,
+        _start_global_index: u64,
+        _reverse: bool,
+        _max_size: u64,
+    ) -> FutureResult<Vec<TransactionInfoView2>> {
+        todo!()
     }
 
     fn get_transaction_proof(

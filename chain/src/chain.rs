@@ -32,7 +32,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{RichTransactionInfo, StcTransaction, TransactionInfo};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
@@ -535,12 +535,7 @@ impl BlockChain {
         };
 
         let vec_transaction_info = &executed_data.txn_infos;
-        let vm2_txn_infos = executed_data2
-            .txn_infos
-            .clone()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<TransactionInfo>>();
+        let vm2_txn_infos = &executed_data2.txn_infos;
 
         verify_block!(
             VerifyBlockField::State,
@@ -551,10 +546,14 @@ impl BlockChain {
             header.state_root(),
             multi_state
         );
-        let block_gas_used = vec_transaction_info
+        let vm1_block_gas_used = vec_transaction_info
             .iter()
-            .chain(vm2_txn_infos.iter())
             .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
+        let block_gas_used = vm1_block_gas_used.saturating_add(
+            vm2_txn_infos
+                .iter()
+                .fold(0u64, |acc, i| acc.saturating_add(i.gas_used())),
+        );
         verify_block!(
             VerifyBlockField::State,
             block_gas_used == header.gas_used(),
@@ -684,10 +683,11 @@ impl BlockChain {
         storage.save_transaction_infos(
             txn_infos
                 .into_iter()
-                .chain(vm2_txn_infos)
+                .map(Into::into)
+                .chain(executed_data2.txn_infos.into_iter().map(Into::into))
                 .enumerate()
                 .map(|(transaction_index, info)| {
-                    RichTransactionInfo::new(
+                    StcRichTransactionInfo::new(
                         block_id,
                         block.header().number(),
                         info,
@@ -841,10 +841,10 @@ impl BlockChain {
                 .into_iter()
                 .enumerate()
                 .map(|(transaction_index, info)| {
-                    RichTransactionInfo::new(
+                    StcRichTransactionInfo::new(
                         block_id,
                         block.header().number(),
-                        info,
+                        info.into(),
                         transaction_index as u32,
                         transaction_global_index
                             .checked_add(transaction_index as u64)
@@ -1114,7 +1114,7 @@ impl ChainReader for BlockChain {
             .and_then(|txn| txn.to_v1()))
     }
 
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>> {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>> {
         let (storage, _storage2) = &self.storage;
         let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
@@ -1131,7 +1131,7 @@ impl ChainReader for BlockChain {
     fn get_transaction_info_by_global_index(
         &self,
         transaction_global_index: u64,
-    ) -> Result<Option<RichTransactionInfo>> {
+    ) -> Result<Option<StcRichTransactionInfo>> {
         let (storage, _storage2) = &self.storage;
         match self.txn_accumulator.get_leaf(transaction_global_index)? {
             None => Ok(None),
@@ -1302,7 +1302,7 @@ impl ChainReader for BlockChain {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>> {
+    ) -> Result<Vec<StcRichTransactionInfo>> {
         let (storage, _storage2) = &self.storage;
         let chain_header = self.current_header();
         let hashes = self
@@ -1360,6 +1360,7 @@ impl ChainReader for BlockChain {
             })?;
         let transaction_info = storage
             .get_transaction_info(txn_info_hash)?
+            .and_then(|i| i.to_v1())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
@@ -1426,6 +1427,7 @@ impl ChainReader for BlockChain {
             })?;
         let transaction_info = storage
             .get_transaction_info(txn_info_hash)?
+            .and_then(|i| i.to_v2())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {

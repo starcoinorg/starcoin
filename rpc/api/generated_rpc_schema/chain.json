@@ -3655,6 +3655,174 @@
       }
     },
     {
+      "name": "chain.get_transaction_info2",
+      "params": [
+        {
+          "name": "transaction_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionInfoView2 >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionInfoView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_hash",
+            "block_number",
+            "event_root_hash",
+            "gas_used",
+            "state_root_hash",
+            "status",
+            "transaction_global_index",
+            "transaction_hash",
+            "transaction_index"
+          ],
+          "properties": {
+            "block_hash": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "block_number": {
+              "type": "string"
+            },
+            "event_root_hash": {
+              "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "gas_used": {
+              "description": "The amount of gas used.",
+              "type": "string"
+            },
+            "state_root_hash": {
+              "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "status": {
+              "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Executed",
+                    "OutOfGas",
+                    "MiscellaneousError",
+                    "Retry"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "MoveAbort"
+                  ],
+                  "properties": {
+                    "MoveAbort": {
+                      "type": "object",
+                      "required": [
+                        "abort_code",
+                        "location"
+                      ],
+                      "properties": {
+                        "abort_code": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "ExecutionFailure"
+                  ],
+                  "properties": {
+                    "ExecutionFailure": {
+                      "type": "object",
+                      "required": [
+                        "code_offset",
+                        "function",
+                        "location"
+                      ],
+                      "properties": {
+                        "code_offset": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "function": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Discard"
+                  ],
+                  "properties": {
+                    "Discard": {
+                      "type": "object",
+                      "required": [
+                        "status_code",
+                        "status_code_name"
+                      ],
+                      "properties": {
+                        "status_code": {
+                          "type": "string"
+                        },
+                        "status_code_name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "transaction_global_index": {
+              "description": "The index of this transaction in chain",
+              "type": "string"
+            },
+            "transaction_hash": {
+              "description": "The hash of this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "transaction_index": {
+              "description": "The index of this transaction in block",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "chain.get_block_txn_infos",
       "params": [
         {
@@ -3669,6 +3837,174 @@
       ],
       "result": {
         "name": "Vec < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionInfoView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "block_hash",
+              "block_number",
+              "event_root_hash",
+              "gas_used",
+              "state_root_hash",
+              "status",
+              "transaction_global_index",
+              "transaction_hash",
+              "transaction_index"
+            ],
+            "properties": {
+              "block_hash": {
+                "type": "string",
+                "format": "HashValue"
+              },
+              "block_number": {
+                "type": "string"
+              },
+              "event_root_hash": {
+                "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "gas_used": {
+                "description": "The amount of gas used.",
+                "type": "string"
+              },
+              "state_root_hash": {
+                "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "status": {
+                "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Executed",
+                      "OutOfGas",
+                      "MiscellaneousError",
+                      "Retry"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "MoveAbort"
+                    ],
+                    "properties": {
+                      "MoveAbort": {
+                        "type": "object",
+                        "required": [
+                          "abort_code",
+                          "location"
+                        ],
+                        "properties": {
+                          "abort_code": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "ExecutionFailure"
+                    ],
+                    "properties": {
+                      "ExecutionFailure": {
+                        "type": "object",
+                        "required": [
+                          "code_offset",
+                          "function",
+                          "location"
+                        ],
+                        "properties": {
+                          "code_offset": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "function": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "location": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Discard"
+                    ],
+                    "properties": {
+                      "Discard": {
+                        "type": "object",
+                        "required": [
+                          "status_code",
+                          "status_code_name"
+                        ],
+                        "properties": {
+                          "status_code": {
+                            "type": "string"
+                          },
+                          "status_code_name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "transaction_global_index": {
+                "description": "The index of this transaction in chain",
+                "type": "string"
+              },
+              "transaction_hash": {
+                "description": "The hash of this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "transaction_index": {
+                "description": "The index of this transaction in block",
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_block_txn_infos2",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionInfoView2 >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Array_of_TransactionInfoView",
@@ -3847,6 +4183,184 @@
       ],
       "result": {
         "name": "Option < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_TransactionInfoView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_hash",
+            "block_number",
+            "event_root_hash",
+            "gas_used",
+            "state_root_hash",
+            "status",
+            "transaction_global_index",
+            "transaction_hash",
+            "transaction_index"
+          ],
+          "properties": {
+            "block_hash": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "block_number": {
+              "type": "string"
+            },
+            "event_root_hash": {
+              "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "gas_used": {
+              "description": "The amount of gas used.",
+              "type": "string"
+            },
+            "state_root_hash": {
+              "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "status": {
+              "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "Executed",
+                    "OutOfGas",
+                    "MiscellaneousError",
+                    "Retry"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "MoveAbort"
+                  ],
+                  "properties": {
+                    "MoveAbort": {
+                      "type": "object",
+                      "required": [
+                        "abort_code",
+                        "location"
+                      ],
+                      "properties": {
+                        "abort_code": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "ExecutionFailure"
+                  ],
+                  "properties": {
+                    "ExecutionFailure": {
+                      "type": "object",
+                      "required": [
+                        "code_offset",
+                        "function",
+                        "location"
+                      ],
+                      "properties": {
+                        "code_offset": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "function": {
+                          "type": "integer",
+                          "format": "uint16",
+                          "minimum": 0.0
+                        },
+                        "location": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "Discard"
+                  ],
+                  "properties": {
+                    "Discard": {
+                      "type": "object",
+                      "required": [
+                        "status_code",
+                        "status_code_name"
+                      ],
+                      "properties": {
+                        "status_code": {
+                          "type": "string"
+                        },
+                        "status_code_name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "transaction_global_index": {
+              "description": "The index of this transaction in chain",
+              "type": "string"
+            },
+            "transaction_hash": {
+              "description": "The hash of this transaction.",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "transaction_index": {
+              "description": "The index of this transaction in block",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_txn_info_by_block_and_index2",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "idx",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < TransactionInfoView2 >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Nullable_TransactionInfoView",
@@ -4554,6 +5068,193 @@
       ],
       "result": {
         "name": "Vec < TransactionInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionInfoView",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "block_hash",
+              "block_number",
+              "event_root_hash",
+              "gas_used",
+              "state_root_hash",
+              "status",
+              "transaction_global_index",
+              "transaction_hash",
+              "transaction_index"
+            ],
+            "properties": {
+              "block_hash": {
+                "type": "string",
+                "format": "HashValue"
+              },
+              "block_number": {
+                "type": "string"
+              },
+              "event_root_hash": {
+                "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "gas_used": {
+                "description": "The amount of gas used.",
+                "type": "string"
+              },
+              "state_root_hash": {
+                "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "status": {
+                "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Executed",
+                      "OutOfGas",
+                      "MiscellaneousError",
+                      "Retry"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "MoveAbort"
+                    ],
+                    "properties": {
+                      "MoveAbort": {
+                        "type": "object",
+                        "required": [
+                          "abort_code",
+                          "location"
+                        ],
+                        "properties": {
+                          "abort_code": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "ExecutionFailure"
+                    ],
+                    "properties": {
+                      "ExecutionFailure": {
+                        "type": "object",
+                        "required": [
+                          "code_offset",
+                          "function",
+                          "location"
+                        ],
+                        "properties": {
+                          "code_offset": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "function": {
+                            "type": "integer",
+                            "format": "uint16",
+                            "minimum": 0.0
+                          },
+                          "location": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Discard"
+                    ],
+                    "properties": {
+                      "Discard": {
+                        "type": "object",
+                        "required": [
+                          "status_code",
+                          "status_code_name"
+                        ],
+                        "properties": {
+                          "status_code": {
+                            "type": "string"
+                          },
+                          "status_code_name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "transaction_global_index": {
+                "description": "The index of this transaction in chain",
+                "type": "string"
+              },
+              "transaction_hash": {
+                "description": "The hash of this transaction.",
+                "type": "string",
+                "format": "HashValue"
+              },
+              "transaction_index": {
+                "description": "The index of this transaction in block",
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "chain.get_transaction_infos2",
+      "params": [
+        {
+          "name": "start_global_index",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "reverse",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Boolean",
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "max_size",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionInfoView2 >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Array_of_TransactionInfoView",
