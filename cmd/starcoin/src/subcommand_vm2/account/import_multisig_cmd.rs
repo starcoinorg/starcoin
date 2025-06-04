@@ -17,7 +17,7 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use std::path::PathBuf;
 
-/// Import multisin account.
+/// Import multisig account.
 #[derive(Debug, Parser)]
 #[clap(name = "import-multisig")]
 pub struct ImportMultisigOpt {
