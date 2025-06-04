@@ -132,7 +132,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
             .inner
             .set_current_block_header(msg.executed_block.block().header().clone())
         {
-            Ok(()) => todo!(),
+            Ok(()) => (),
             Err(e) => warn!(
                 "Failed to set current block header: {:?} in BlockBuilderService",
                 e
