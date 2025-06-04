@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::range_locate::RangeInLocation;
-use crate::{ChainType, TransactionInfoWithProof};
+use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
@@ -67,7 +67,6 @@ pub enum ChainRequest {
         block_ids: Vec<HashValue>,
     },
     GetDagStateView,
-    CheckChainType,
     GetGhostdagData(Vec<HashValue>),
     IsAncestorOfCommand {
         ancestor: HashValue,
@@ -110,7 +109,6 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
-    CheckChainType(ChainType),
     GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     GetRangeInLocation { range: RangeInLocation },

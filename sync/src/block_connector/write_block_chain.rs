@@ -4,9 +4,7 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{
-    ChainReader, ChainType, ChainWriter, ConnectBlockError, WriteableChainService,
-};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 #[cfg(test)]
 use starcoin_consensus::Consensus;
@@ -20,7 +18,6 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -259,18 +256,8 @@ where
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
-        use starcoin_chain::verifier::{DagVerifier, FullVerifier};
-
-        let verified_block = match self.main.check_chain_type()? {
-            ChainType::Single => {
-                // apply but no connection
-                self.main.verify_with_verifier::<FullVerifier>(block)?
-            }
-            ChainType::Dag => {
-                // apply but no connection
-                self.main.verify_with_verifier::<DagVerifier>(block)?
-            }
-        };
+        use starcoin_chain::verifier::DagVerifier;
+        let verified_block = self.main.verify_with_verifier::<DagVerifier>(block)?;
         let _executed_block = self.main.execute(verified_block)?;
         bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }
@@ -544,55 +531,6 @@ where
         }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
-    }
-
-    // In dag chain, the new block minted by the node itself may have the less total difficulty than other nodes'.
-    // Hence, the new block may not be the new head of the chain.
-    // But it still needs to be broadcasted to other nodes.
-    pub fn broadcast_new_dag_block(&self, block_id: HashValue) -> Result<()> {
-        if let Some(metrics) = self.metrics.as_ref() {
-            metrics
-                .chain_select_head_total
-                .with_label_values(&["new_head"])
-                .inc()
-        }
-
-        let chain = self.get_main();
-
-        // the execution process broadcast the block already
-        if chain.current_header().id() == block_id {
-            return Ok(());
-        }
-
-        // the single chain no need to broadcast the block, it is only for dag
-        if chain.check_chain_type()? == ChainType::Single {
-            return Ok(());
-        }
-
-        let block = chain
-            .get_storage()
-            .get_block_by_hash(block_id)?
-            .ok_or_else(|| {
-                format_err!(
-                    "failed to get the block after executing the block: {:?}",
-                    block_id
-                )
-            })?;
-        let block_info = chain
-            .get_storage()
-            .get_block_info(block_id)?
-            .ok_or_else(|| {
-                format_err!(
-                    "failed to get the block info after executing the block: {:?}",
-                    block_id
-                )
-            })?;
-
-        self.bus
-            .broadcast(NewDagBlock {
-                executed_block: Arc::new(ExecutedBlock { block, block_info }),
-            })
-            .map_err(|e| format_err!("Broadcast NewDagBlock error: {:?}", e))
     }
 
     fn broadcast_new_branch(&self, block: ExecutedBlock) {
