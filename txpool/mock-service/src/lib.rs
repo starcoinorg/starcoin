@@ -33,7 +33,7 @@ impl MockTxPoolService {
 }
 
 impl TxPoolSyncService for MockTxPoolService {
-    fn add_txns(
+    fn add_txns_multi_signed(
         &self,
         mut txns: Vec<MultiSignedUserTransaction>,
     ) -> Vec<Result<(), MultiTransactionError>> {
@@ -116,13 +116,13 @@ impl TxPoolSyncService for MockTxPoolService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+    use starcoin_types::transaction::SignedUserTransaction;
 
     #[stest::test]
     async fn test_txpool() {
         let pool = MockTxPoolService::new();
 
-        pool.add_txns(vec![MultiSignedUserTransaction::mock()])
+        pool.add_txns(vec![SignedUserTransaction::mock()])
             .pop()
             .unwrap()
             .unwrap();

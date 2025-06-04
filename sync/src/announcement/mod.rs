@@ -97,7 +97,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                             });
 
                             if !fresh_txns.is_empty() {
-                                txpool.add_txns(fresh_txns);
+                                txpool.add_txns_multi_signed(fresh_txns);
                             }
                         }
                     }
@@ -149,7 +149,7 @@ mod tests {
         let txpool = service1.txpool();
         let txns = test_helper::txn::create_account(config_1.net(), 0, 1);
         txpool
-            .add_txns(txns.into_iter().map(|(_, txn)| txn.into()).collect())
+            .add_txns(txns.into_iter().map(|(_, txn)| txn).collect())
             .into_iter()
             .for_each(|r| r.unwrap());
 
