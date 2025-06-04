@@ -1,5 +1,15 @@
 pub mod accept_token_cmd;
+pub mod change_password_cmd;
+pub mod create_cmd;
+pub mod default_cmd;
 pub mod execute_script_cmd;
 pub mod execute_script_function_cmd;
+pub mod export_cmd;
+pub mod import_cmd;
+pub mod import_multisig_cmd;
+pub mod import_readonly_cmd;
+pub mod list_cmd;
+pub mod lock_cmd;
+pub mod remove_cmd;
 pub mod show_cmd;
 pub mod unlock_cmd;
