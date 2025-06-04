@@ -16,7 +16,6 @@ use network_p2p_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
@@ -897,12 +896,8 @@ where
             if target.target_id.number() <= latest_status.head.number() {
                 break;
             }
-            if latest_block_chain
-                .check_chain_type()
-                .map_err(TaskError::BreakError)?
-                == ChainType::Dag
-                && latest_status.info().get_total_difficulty()
-                    >= target.block_info.get_total_difficulty()
+            if latest_status.info().get_total_difficulty()
+                >= target.block_info.get_total_difficulty()
             {
                 break;
             }

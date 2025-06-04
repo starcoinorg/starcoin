@@ -9,9 +9,8 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainType, ChainWriter, ConnectBlockError, EventWithProof,
-    ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock,
-    VerifyBlockField,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
+    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -1456,10 +1455,6 @@ impl ChainReader for BlockChain {
         }
 
         self.dag.has_block_connected(&header)
-    }
-
-    fn check_chain_type(&self) -> Result<ChainType> {
-        Ok(ChainType::Dag)
     }
 
     fn verify_and_ghostdata(

@@ -6,7 +6,6 @@ use crate::node::NodeService;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use futures_timer::Delay;
-use starcoin_chain_api::ChainType;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
 use starcoin_dag::blockdag::BlockDAG;
@@ -184,7 +183,7 @@ impl NodeHandle {
     }
 
     /// Just for test
-    pub fn generate_block(&self) -> Result<(Block, bool)> {
+    pub fn generate_block(&self) -> Result<Block> {
         let registry = &self.registry;
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
@@ -212,8 +211,7 @@ impl NodeHandle {
                     bail!("Wait timeout for generate_block")
                 }
             };
-            let dag_type = chain_service.check_chain_type().await?;
-            Ok((block, dag_type == ChainType::Dag))
+            Ok(block)
         })
     }
 

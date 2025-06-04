@@ -6,7 +6,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
-    ChainReader, ChainType, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+    ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -276,9 +276,6 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
                 self.inner.get_dag_state()?,
             ))),
-            ChainRequest::CheckChainType => Ok(ChainResponse::CheckChainType({
-                self.inner.check_chain_type()?
-            })),
             ChainRequest::GetGhostdagData(ids) => Ok(ChainResponse::GhostdagDataOption(Box::new(
                 self.inner.get_ghostdagdata(ids)?,
             ))),
@@ -533,10 +530,6 @@ impl ReadableChainService for ChainReaderServiceInner {
             tips: state.tips,
             pruning_point,
         })
-    }
-
-    fn check_chain_type(&self) -> Result<ChainType> {
-        self.main.check_chain_type()
     }
 
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
