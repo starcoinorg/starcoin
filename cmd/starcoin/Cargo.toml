@@ -68,6 +68,8 @@ starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
 starcoin-vm2-cached-packages = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
+starcoin-vm2-status-translator = { workspace = true }
+starcoin-vm2-abi-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
