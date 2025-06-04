@@ -75,7 +75,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
-            self.send_event(true, ctx)
+            self.send_event(false, ctx)
         } else {
             debug!("[pacemaker] Ignore NewHeadBlock event because the node has not been synchronized yet.")
         }
@@ -114,6 +114,6 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
-        self.send_event(true, ctx);
+        self.send_event(false, ctx);
     }
 }
