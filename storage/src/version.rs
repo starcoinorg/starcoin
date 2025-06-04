@@ -89,11 +89,12 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     prefix.remove(TRANSACTION_PREFIX_NAME);
     assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() - 4);
 
-    prefix.push(CONTRACT_EVENT_PREFIX_NAME_V2);
-    prefix.push(TRANSACTION_PREFIX_NAME_V2);
-    prefix.push(TABLE_INFO_PREFIX_NAME_V2);
-    prefix.push(TRANSACTION_INFO_PREFIX_NAME_V3);
-    prefix.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
+    prefix.insert(CONTRACT_EVENT_PREFIX_NAME_V2);
+    prefix.insert(TRANSACTION_PREFIX_NAME_V2);
+    prefix.insert(TABLE_INFO_PREFIX_NAME_V2);
+    prefix.insert(TRANSACTION_INFO_PREFIX_NAME_V3);
+    prefix.insert(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 1);
 
     prefix.into_iter().collect()
 });
