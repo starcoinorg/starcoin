@@ -14,6 +14,7 @@ use crate::{
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
+use std::collections::HashSet;
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -81,13 +82,20 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 });
 
 static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
-    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
-    prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
-    prefix_vec.push(TABLE_INFO_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_INFO_PREFIX_NAME_V3);
-    prefix_vec
+    let mut prefix = VEC_PREFIX_NAME_V3.iter().cloned().collect::<HashSet<_>>();
+    prefix.remove(CONTRACT_EVENT_PREFIX_NAME);
+    prefix.remove(TABLE_INFO_PREFIX_NAME);
+    prefix.remove(TRANSACTION_PREFIX_NAME);
+    prefix.remove(TRANSACTION_PREFIX_NAME);
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() - 4);
+
+    prefix.push(CONTRACT_EVENT_PREFIX_NAME_V2);
+    prefix.push(TRANSACTION_PREFIX_NAME_V2);
+    prefix.push(TABLE_INFO_PREFIX_NAME_V2);
+    prefix.push(TRANSACTION_INFO_PREFIX_NAME_V3);
+    prefix.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
+
+    prefix.into_iter().collect()
 });
 
 // For V4 storage, the following column families are updated from V3:

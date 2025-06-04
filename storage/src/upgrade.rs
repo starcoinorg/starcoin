@@ -210,6 +210,7 @@ impl DBUpgrade {
             (StorageVersion::V1, StorageVersion::V4) => {
                 Self::db_upgrade_v1_v2(instance)?;
                 Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance)?;
             }
             (StorageVersion::V3, StorageVersion::V4) => {
                 Self::db_upgrade_v3_v4(instance)?;
