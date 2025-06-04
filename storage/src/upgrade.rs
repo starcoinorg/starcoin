@@ -4,11 +4,14 @@
 use crate::block::BlockStorage;
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
-use crate::contract_event::legacy::ContractEventStorage;
+use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
 use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
-use crate::table_info::legacy::TableInfoStorage;
+use crate::table_info::{legacy::TableInfoStorage, StcTableInfoStorage};
 use crate::transaction::{legacy::TransactionStorage, StcTransactionStorage};
-use crate::transaction_info::legacy::{OldTransactionInfoStorage, TransactionInfoStorage};
+use crate::transaction_info::{
+    legacy::{OldTransactionInfoStorage, TransactionInfoStorage},
+    StcTransactionInfoStorage,
+};
 use crate::{
     CodecKVStore, StorageInstance, StorageVersion, TransactionStore, BLOCK_BODY_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME,
@@ -177,10 +180,22 @@ impl DBUpgrade {
         Ok(())
     }
 
-    // todo: fixme
     fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        let _ = TableInfoStorage::new(instance.clone());
-        let _ = ContractEventStorage::new(instance.clone());
+        let old_table = TableInfoStorage::new(instance.clone());
+        let new_table = StcTableInfoStorage::new(instance.clone());
+        upgrade_store(old_table, new_table, 1000)?;
+
+        let old_event = ContractEventStorage::new(instance.clone());
+        let new_event = StcContractEventStorage::new(instance.clone());
+        upgrade_store(old_event, new_event, 1000)?;
+
+        let old_transaction = TransactionStorage::new(instance.clone());
+        let new_transaction = StcTransactionStorage::new(instance.clone());
+        upgrade_store(old_transaction, new_transaction, 1000)?;
+
+        let old_transaction_info = TransactionInfoStorage::new(instance.clone());
+        let new_transaction_info = StcTransactionInfoStorage::new(instance.clone());
+        upgrade_store(old_transaction_info, new_transaction_info, 1000)?;
 
         Ok(())
     }
