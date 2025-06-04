@@ -47,28 +47,25 @@ pub fn find_common_header_in_range(
             .get(1)
             .ok_or_else(|| FindCommonHeaderError::InvalidRange("error end index".to_string()))?;
 
-        match (
-            dag.storage
-                .reachability_store
-                .read()
-                .has(start)
-                .map_err(|err| {
-                    FindCommonHeaderError::CheckAncestor(format!(
-                        "failed to check the reachability has for start for error: {:?}",
-                        err
-                    ))
-                })?,
-            dag.storage
-                .reachability_store
-                .read()
-                .has(end)
-                .map_err(|err| {
-                    FindCommonHeaderError::CheckAncestor(format!(
-                        "failed to check the reachability has for end for error: {:?}",
-                        err
-                    ))
-                })?,
-        ) {
+        let reader = dag.storage.reachability_store.read();
+
+        let start_reachable = reader.has(start).map_err(|err| {
+            FindCommonHeaderError::CheckAncestor(format!(
+                "failed to check the reachability has for start for error: {:?}",
+                err
+            ))
+        })?;
+
+        let end_reachable = reader.has(end).map_err(|err| {
+            FindCommonHeaderError::CheckAncestor(format!(
+                "failed to check the reachability has for end for error: {:?}",
+                err
+            ))
+        })?;
+
+        drop(reader);
+
+        match (start_reachable, end_reachable) {
             (true, true) => {
                 continue;
             }

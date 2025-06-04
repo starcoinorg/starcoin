@@ -24,7 +24,6 @@ use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
 use thiserror::Error;
 
 const DEFAULT_TASK_POOL_SIZE: usize = 16;
@@ -51,7 +50,6 @@ pub struct MinerService {
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
     metrics: Option<MinerMetrics>,
-    task_flag: Arc<AtomicBool>,
 }
 
 impl ServiceRequest for SubmitSealRequest {
@@ -121,7 +119,6 @@ impl ServiceFactory<Self> for MinerService {
             create_block_template_service,
             client_subscribers_num: 0,
             metrics,
-            task_flag: Arc::new(AtomicBool::new(false)),
         })
     }
 }
@@ -191,16 +188,9 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        if self.task_flag.load(Ordering::Relaxed) {
-            debug!("Mint task already running, skip dispatch");
-            return Ok(());
-        }
-        self.task_flag.store(true, Ordering::Relaxed);
-
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
-        let flag = self.task_flag.clone();
         ctx.spawn(async move {
             let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
@@ -235,8 +225,6 @@ impl MinerService {
             {
                 warn!("Failed to dispatch block template: {}", e);
             }
-
-            flag.store(false, Ordering::Relaxed);
         });
         Ok(())
     }
