@@ -38,7 +38,7 @@ impl CommandAction for ChangePasswordCmd {
         let opt: &ChangePasswordOpt = ctx.opt();
         let account_client = ctx.state().vm2()?.account_client();
         let account_info = account_client.change_account_password(
-            AccountAddress::new(opt.account_address.into_bytes()),
+            opt.account_address,
             opt.password.clone(),
         )?;
         Ok(account_info)
