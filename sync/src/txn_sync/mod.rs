@@ -104,7 +104,7 @@ impl Inner {
             .rpc_client
             .get_txns_from_pool(peer_id.clone(), GetTxnsWithSize { max_size: 100 })
             .await?;
-        let import_result = self.pool.add_txns(txn_data);
+        let import_result = self.pool.add_txns_multi_signed(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);
         Ok(())

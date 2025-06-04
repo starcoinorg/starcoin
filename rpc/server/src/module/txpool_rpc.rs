@@ -49,7 +49,7 @@ where
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self
             .service
-            .add_txns(vec![txn])
+            .add_txns_multi_signed(vec![txn])
             .pop()
             .expect("txpool should return result")
             .map_err(convert_to_rpc_error);
@@ -65,7 +65,7 @@ where
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns(vec![MultiSignedUserTransaction::VM1(txn)])
+                    .add_txns(vec![txn])
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)
@@ -82,7 +82,7 @@ where
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns(vec![MultiSignedUserTransaction::VM2(txn)])
+                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)])
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)

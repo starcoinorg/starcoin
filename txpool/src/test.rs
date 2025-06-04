@@ -58,7 +58,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
     let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
-    let txn = generate_txn(config, 0).into();
+    let txn = generate_txn(config, 0);
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
     assert_eq!(pendings.len(), 1);
@@ -83,7 +83,7 @@ async fn test_tx_pool() -> Result<()> {
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.id();
-    let mut result = txpool_service.add_txns(vec![txn.into()]);
+    let mut result = txpool_service.add_txns(vec![txn]);
     assert!(result.pop().unwrap().is_ok());
     let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
     assert_eq!(pending_txns.pop().unwrap().id(), txn_hash);
@@ -109,7 +109,7 @@ async fn test_pool_pending() -> Result<()> {
     let metrics_config: &MetricsConfig = &node_config.metrics;
 
     let txn_vec = (0..pool_size + expect_reject)
-        .map(|index| generate_txn(node_config.clone(), index).into())
+        .map(|index| generate_txn(node_config.clone(), index))
         .collect::<Vec<_>>();
 
     let _ = txpool_service.add_txns(txn_vec.clone());
@@ -155,7 +155,7 @@ async fn test_pool_pending() -> Result<()> {
         .map(|index| generate_txn(node_config.clone(), index).into())
         .collect::<Vec<_>>();
 
-    let _ = txpool_service.add_txns(txn_vec.clone());
+    let _ = txpool_service.add_txns_multi_signed(txn_vec.clone());
     let pending = txpool_service.get_pending_txns(Some(pool_size), None);
     assert!(!pending.is_empty());
 
@@ -194,7 +194,7 @@ async fn test_rollback() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let _ = pool.add_txns(vec![retracted_txn.clone().into()]);
+    let _ = pool.add_txns(vec![retracted_txn.clone()]);
 
     let enacted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();

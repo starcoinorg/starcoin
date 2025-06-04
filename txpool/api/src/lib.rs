@@ -9,6 +9,7 @@ use starcoin_crypto::hash::HashValue;
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
+use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
@@ -28,6 +29,25 @@ pub struct TxPoolStatus {
 
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
+        &self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Vec<Result<(), transaction::TransactionError>> {
+        let multi_txns = txns.into_iter().map(|txn| txn.into()).collect();
+        let rets = self.add_txns_multi_signed(multi_txns);
+        let mut results = vec![];
+        for ret in rets {
+            match ret {
+                Ok(()) => results.push(Ok(())),
+                Err(err) => match err {
+                    MultiTransactionError::VM1(err) => results.push(Err(err)),
+                    _ => panic!("should be vm1 type"),
+                },
+            }
+        }
+        results
+    }
+
+    fn add_txns_multi_signed(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
     ) -> Vec<Result<(), MultiTransactionError>>;

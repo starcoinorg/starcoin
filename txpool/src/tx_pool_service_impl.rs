@@ -101,7 +101,7 @@ impl TxPoolService {
 }
 
 impl TxPoolSyncService for TxPoolService {
-    fn add_txns(
+    fn add_txns_multi_signed(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
     ) -> Vec<Result<(), MultiTransactionError>> {
