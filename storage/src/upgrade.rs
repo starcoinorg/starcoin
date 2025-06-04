@@ -13,7 +13,7 @@ use crate::transaction_info::{
     StcTransactionInfoStorage,
 };
 use crate::{
-    CodecKVStore, StorageInstance, StorageVersion, TransactionStore, BLOCK_BODY_PREFIX_NAME,
+    CodecKVStore, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
@@ -44,7 +44,7 @@ pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
 });
 
 impl DBUpgrade {
-    pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
+    pub fn check_upgrade(instance: &mut StorageInstance, batch_size: Option<usize>) -> Result<()> {
         let version_in_db = {
             let chain_info_storage = ChainInfoStorage::new(instance.clone());
             chain_info_storage.get_storage_version()?
@@ -53,7 +53,7 @@ impl DBUpgrade {
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
             Ordering::Less => {
-                Self::do_upgrade(version_in_db, version_in_code, instance)?;
+                Self::do_upgrade(version_in_db, version_in_code, instance, batch_size)?;
                 let chain_info_storage = ChainInfoStorage::new(instance.clone());
                 chain_info_storage.set_storage_version(version_in_code)?;
             }
@@ -76,10 +76,7 @@ impl DBUpgrade {
         let block_storage = BlockStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
-        // todo: remove me. silence the warning about unused function.
-        let _ = TransactionStorage::new(instance.clone());
-        // todo: upgrade transaction storage first
-        let transaction_storage = StcTransactionStorage::new(instance.clone());
+        let transaction_storage = TransactionStorage::new(instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -121,8 +118,7 @@ impl DBUpgrade {
             //check the transaction.
             if block_number != 0 {
                 let transaction = transaction_storage
-                    .get_transaction(old_transaction_info.txn_info.transaction_hash)?
-                    .and_then(|t| t.to_v1())
+                    .get(old_transaction_info.txn_info.transaction_hash)?
                     .ok_or_else(|| {
                         format_err!(
                             "Can not find transaction by {}",
@@ -180,22 +176,37 @@ impl DBUpgrade {
         Ok(())
     }
 
-    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance, batch_size: Option<usize>) -> Result<()> {
+        let batch_size = batch_size.unwrap_or(1024 * 100); // 100K items per batch default
         let old_table = TableInfoStorage::new(instance.clone());
         let new_table = StcTableInfoStorage::new(instance.clone());
-        upgrade_store(old_table, new_table, 1000)?;
+        let num = upgrade_store(old_table, new_table, batch_size)?;
+        info!("upgrade table storage, total items: {}", num);
 
         let old_event = ContractEventStorage::new(instance.clone());
         let new_event = StcContractEventStorage::new(instance.clone());
-        upgrade_store(old_event, new_event, 1000)?;
+        let num = upgrade_store(old_event, new_event, batch_size)?;
+        info!("upgrade contract event storage, total items: {}", num);
 
         let old_transaction = TransactionStorage::new(instance.clone());
         let new_transaction = StcTransactionStorage::new(instance.clone());
-        upgrade_store(old_transaction, new_transaction, 1000)?;
+        let num = upgrade_store(old_transaction, new_transaction, batch_size)?;
+        info!("upgrade transaction storage, total items: {}", num);
 
         let old_transaction_info = TransactionInfoStorage::new(instance.clone());
         let new_transaction_info = StcTransactionInfoStorage::new(instance.clone());
-        upgrade_store(old_transaction_info, new_transaction_info, 1000)?;
+        let num = upgrade_store(old_transaction_info, new_transaction_info, batch_size)?;
+        info!("upgrade transaction info storage, total items: {}", num);
+
+        let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
+        instance
+            .db_mut()
+            .unwrap()
+            .drop_unused_cfs(unused_cfs.clone())?;
+        info!(
+            "remove unused columns {:?} for StorageVersion V4",
+            unused_cfs
+        );
 
         Ok(())
     }
@@ -204,6 +215,7 @@ impl DBUpgrade {
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
         instance: &mut StorageInstance,
+        batch_size: Option<usize>,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",
@@ -226,11 +238,10 @@ impl DBUpgrade {
             (StorageVersion::V1, StorageVersion::V4) => {
                 Self::db_upgrade_v1_v2(instance)?;
                 Self::db_upgrade_v2_v3(instance)?;
-                Self::db_upgrade_v3_v4(instance)?;
+                Self::db_upgrade_v3_v4(instance, batch_size)?;
             }
             (StorageVersion::V3, StorageVersion::V4) => {
-                Self::db_upgrade_v3_v4(instance)?;
-                debug!("nothing to do for V3");
+                Self::db_upgrade_v3_v4(instance, batch_size)?;
             }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",
@@ -373,6 +384,14 @@ where
             no_more = true;
         }
         if item_count == batch_size || no_more {
+            if item_count == 0 {
+                debug!("no more items to process");
+                return Ok(total_size);
+            }
+            debug!(
+                "persisting {} items, processed {} items",
+                item_count, total_size
+            );
             total_size = total_size
                 .checked_add(item_count)
                 .ok_or_else(|| format_err!("total size overflow, item_count: {}", item_count))?;

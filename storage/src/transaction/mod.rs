@@ -4,8 +4,7 @@
 pub(crate) mod legacy;
 
 use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
-use crate::TRANSACTION_PREFIX_NAME;
-use crate::{define_storage, TransactionStore};
+use crate::{define_storage, TransactionStore, TRANSACTION_PREFIX_NAME_V2};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
@@ -15,7 +14,7 @@ define_storage!(
     StcTransactionStorage,
     HashValue,
     StcTransaction,
-    TRANSACTION_PREFIX_NAME
+    TRANSACTION_PREFIX_NAME_V2
 );
 
 impl ValueCodec for StcTransaction {

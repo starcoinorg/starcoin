@@ -83,18 +83,13 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 
 static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     let mut prefix = VEC_PREFIX_NAME_V3.iter().cloned().collect::<HashSet<_>>();
-    prefix.remove(CONTRACT_EVENT_PREFIX_NAME);
-    prefix.remove(TABLE_INFO_PREFIX_NAME);
-    prefix.remove(TRANSACTION_PREFIX_NAME);
-    prefix.remove(TRANSACTION_INFO_PREFIX_NAME);
-    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() - 4);
 
     prefix.insert(CONTRACT_EVENT_PREFIX_NAME_V2);
     prefix.insert(TRANSACTION_PREFIX_NAME_V2);
     prefix.insert(TABLE_INFO_PREFIX_NAME_V2);
     prefix.insert(TRANSACTION_INFO_PREFIX_NAME_V3);
     prefix.insert(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
-    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 1);
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 5);
 
     prefix.into_iter().collect()
 });
@@ -131,6 +126,20 @@ impl StorageVersion {
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
             StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
+        }
+    }
+
+    pub fn cfs_to_be_dropped_since_last_version(&self) -> Vec<ColumnFamilyName> {
+        match self {
+            StorageVersion::V1 => vec![],
+            StorageVersion::V2 => vec![],
+            StorageVersion::V3 => vec![],
+            StorageVersion::V4 => vec![
+                CONTRACT_EVENT_PREFIX_NAME,
+                TRANSACTION_PREFIX_NAME,
+                TABLE_INFO_PREFIX_NAME,
+                TRANSACTION_INFO_PREFIX_NAME_V2,
+            ],
         }
     }
 }

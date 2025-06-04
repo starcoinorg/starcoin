@@ -322,7 +322,7 @@ impl NodeService {
         );
 
         let start_time = SystemTime::now();
-        storage_instance.check_upgrade()?;
+        storage_instance.check_upgrade(None)?;
         storage_instance.barnard_hard_fork(config.clone())?;
         // disable dragon hard fork
         //storage_instance.dragon_hard_fork(config.clone())?;

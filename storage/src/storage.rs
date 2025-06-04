@@ -107,8 +107,8 @@ impl StorageInstance {
         }
     }
 
-    pub fn check_upgrade(&mut self) -> Result<()> {
-        DBUpgrade::check_upgrade(self)
+    pub fn check_upgrade(&mut self, batch_size: Option<usize>) -> Result<()> {
+        DBUpgrade::check_upgrade(self, batch_size)
     }
 
     pub fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
