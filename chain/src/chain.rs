@@ -1842,7 +1842,6 @@ impl BlockChain {
         tips: Vec<HashValue>,
     ) -> Result<()> {
         if parent_header.pruning_point() == tip_header.pruning_point() {
-            info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, tip_header.pruning_point());
             if tip_header.pruning_point() == HashValue::zero() {
                 self.dag
                     .save_dag_state(self.genesis_hash, DagState { tips })?;
