@@ -25,6 +25,8 @@ use starcoin_types::startup_info::{BarnardHardFork, DragonHardFork, StartupInfo}
 use starcoin_types::transaction::{legacy::RichTransactionInfo, Transaction};
 use std::cmp::Ordering;
 
+pub const DEFAULT_UPGRADE_BATCH_SIZE: usize = 1024 * 100; // 100K for default batch size
+
 pub struct DBUpgrade;
 
 pub static BARNARD_HARD_FORK_HEIGHT: BlockNumber = 16080000;
@@ -44,7 +46,7 @@ pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
 });
 
 impl DBUpgrade {
-    pub fn check_upgrade(instance: &mut StorageInstance, batch_size: Option<usize>) -> Result<()> {
+    pub fn check_upgrade(instance: &mut StorageInstance, batch_size: usize) -> Result<()> {
         let version_in_db = {
             let chain_info_storage = ChainInfoStorage::new(instance.clone());
             chain_info_storage.get_storage_version()?
@@ -176,8 +178,7 @@ impl DBUpgrade {
         Ok(())
     }
 
-    fn db_upgrade_v3_v4(instance: &mut StorageInstance, batch_size: Option<usize>) -> Result<()> {
-        let batch_size = batch_size.unwrap_or(1024 * 100); // 100K items per batch default
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance, batch_size: usize) -> Result<()> {
         let old_table = TableInfoStorage::new(instance.clone());
         let new_table = StcTableInfoStorage::new(instance.clone());
         let num = upgrade_store(old_table, new_table, batch_size)?;
@@ -215,7 +216,7 @@ impl DBUpgrade {
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
         instance: &mut StorageInstance,
-        batch_size: Option<usize>,
+        batch_size: usize,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",

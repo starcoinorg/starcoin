@@ -264,8 +264,6 @@ fn generate_old_db(
     );
     let mut txn_inf_ids = vec![];
     let mut txn_ids = vec![];
-    //let mut contract_event_ids = vec![];
-    //let mut table_handle = vec![];
     let block_metadata = block.to_metadata(0);
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
@@ -327,7 +325,6 @@ fn generate_old_db_with_contract_event(instance: StorageInstance) -> Result<Vec<
 
     for _ in 0..10 {
         let events = (0..10)
-            .into_iter()
             .map(|i| ContractEvent::new(EventKey::random(), i as u64, TypeTag::Bool, vec![0u8; 32]))
             .collect::<Vec<_>>();
         // just use the event hash as the id for simplicity
@@ -361,7 +358,7 @@ fn test_db_upgrade() -> Result<()> {
     );
 
     // set batch size to 5 to trigger multi-batches upgrade for ContractEventStorage and TableInfoStorage
-    instance.check_upgrade(Some(5))?;
+    instance.check_upgrade(5)?;
     let storage = Storage::new(instance.clone())?;
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
 
