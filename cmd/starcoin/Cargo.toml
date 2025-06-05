@@ -59,6 +59,7 @@ schemars = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-account-api = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-cached-packages = { workspace = true }
 starcoin-vm2-dev = { workspace = true }
