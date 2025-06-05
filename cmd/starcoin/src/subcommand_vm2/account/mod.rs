@@ -13,3 +13,10 @@ pub mod lock_cmd;
 pub mod remove_cmd;
 pub mod show_cmd;
 pub mod unlock_cmd;
+
+pub use {
+    accept_token_cmd::*, change_password_cmd::*, create_cmd::*, default_cmd::*,
+    execute_script_cmd::*, execute_script_function_cmd::*, export_cmd::*, import_cmd::*,
+    import_multisig_cmd::*, import_readonly_cmd::*, list_cmd::*, lock_cmd::*, remove_cmd::*,
+    show_cmd::*, unlock_cmd::*,
+};
