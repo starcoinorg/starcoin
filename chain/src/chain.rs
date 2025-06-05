@@ -1072,7 +1072,7 @@ impl BlockChain {
                 )
             })?;
         let merge_depth = self.dag().block_depth_manager().merge_depth();
-        if header.number() < merge_depth {
+        if header.number() <= merge_depth {
             return Ok(self.genesis_hash);
         }
         let merge_depth_index = (header.number().checked_div(merge_depth))
