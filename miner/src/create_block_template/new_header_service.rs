@@ -11,6 +11,7 @@ use starcoin_types::{
     system_events::{NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
+
 #[derive(Clone, Debug)]
 pub struct ProcessNewHeadBlock;
 
