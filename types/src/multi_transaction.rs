@@ -174,6 +174,11 @@ impl MultiSignedUserTransaction {
     pub fn mock() -> Self {
         Self::VM1(SignedUserTransaction::mock())
     }
+
+    #[inline]
+    pub fn is_v1(&self) -> bool {
+        matches!(self, Self::VM1(_))
+    }
 }
 
 impl TryFrom<Transaction> for MultiSignedUserTransaction {

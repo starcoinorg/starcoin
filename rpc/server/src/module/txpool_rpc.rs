@@ -5,7 +5,10 @@ use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 /// Re-export the API
-use starcoin_rpc_api::{multi_types::MultiSignedUserTransactionView, types::StrView};
+use starcoin_rpc_api::{
+    multi_types::MultiSignedUserTransactionView,
+    types::{SignedUserTransactionView, StrView},
+};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
@@ -100,6 +103,25 @@ where
         &self,
         addr: AccountAddress,
         max_len: Option<u32>,
+    ) -> FutureResult<Vec<SignedUserTransactionView>> {
+        let multi_address = MultiAccountAddress::VM1(addr);
+        let txns: Result<Vec<SignedUserTransactionView>, _> = self
+            .service
+            .txns_of_sender(&multi_address, max_len.map(|v| v as usize))
+            .into_iter()
+            .filter_map(|txn| match txn {
+                MultiSignedUserTransaction::VM1(txn) => Some(txn),
+                _ => None,
+            })
+            .map(TryInto::try_into)
+            .collect();
+        Box::pin(futures::future::ready(txns.map_err(map_err)))
+    }
+
+    fn pending_txns_multi(
+        &self,
+        addr: AccountAddress,
+        max_len: Option<u32>,
     ) -> FutureResult<Vec<MultiSignedUserTransactionView>> {
         let multi_address = MultiAccountAddress::VM1(addr);
         let txns: Result<Vec<MultiSignedUserTransactionView>, _> = self
@@ -111,7 +133,22 @@ where
         Box::pin(futures::future::ready(txns.map_err(map_err)))
     }
 
-    fn pending_txn(
+    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>> {
+        let txn = self
+            .service
+            .find_txn(&txn_hash)
+            .and_then(|txn| match txn {
+                MultiSignedUserTransaction::VM1(t) => Some(t),
+                _ => None,
+            })
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(map_err);
+
+        Box::pin(futures::future::ready(txn))
+    }
+
+    fn pending_txn_multi(
         &self,
         txn_hash: HashValue,
     ) -> FutureResult<Option<MultiSignedUserTransactionView>> {

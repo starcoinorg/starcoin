@@ -320,7 +320,7 @@ impl RpcClient {
         &self,
         txn_hash: HashValue,
     ) -> anyhow::Result<Option<MultiSignedUserTransactionView>> {
-        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txn(txn_hash))
+        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txn_multi(txn_hash))
             .map_err(map_err)
     }
 
@@ -329,7 +329,7 @@ impl RpcClient {
         sender: AccountAddress,
         max_len: Option<u32>,
     ) -> anyhow::Result<Vec<MultiSignedUserTransactionView>> {
-        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns(sender, max_len))
+        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns_multi(sender, max_len))
             .map_err(map_err)
     }
 

@@ -7,7 +7,7 @@ use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
 use crate::multi_types::MultiSignedUserTransactionView;
-use crate::types::StrView;
+use crate::types::{SignedUserTransactionView, StrView};
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
@@ -43,11 +43,22 @@ pub trait TxPoolApi {
         &self,
         addr: AccountAddress,
         max_len: Option<u32>,
+    ) -> FutureResult<Vec<SignedUserTransactionView>>;
+
+    #[rpc(name = "txpool.pending_txns_of_sender_multi")]
+    fn pending_txns_multi(
+        &self,
+        addr: AccountAddress,
+        max_len: Option<u32>,
     ) -> FutureResult<Vec<MultiSignedUserTransactionView>>;
 
     /// get pending txn in txpool by its hash value
     #[rpc(name = "txpool.pending_txn")]
-    fn pending_txn(
+    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>>;
+
+    /// get pending txn in txpool by its hash value
+    #[rpc(name = "txpool.pending_txn_multi")]
+    fn pending_txn_multi(
         &self,
         txn_hash: HashValue,
     ) -> FutureResult<Option<MultiSignedUserTransactionView>>;
