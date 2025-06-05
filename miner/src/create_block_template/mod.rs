@@ -29,8 +29,12 @@ use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::sync::Arc;
 mod metrics;
+use crossbeam::channel::{self, Receiver, Sender};
 //#[cfg(test)]
 //mod test_create_block_template;
+
+#[derive(Clone, Debug)]
+pub struct ProcessNewHeadBlock;
 
 #[derive(Debug)]
 pub struct BlockTemplateRequest;
@@ -45,8 +49,14 @@ pub struct BlockTemplateResponse {
     pub template: BlockTemplate,
 }
 
+pub struct LatestNewHeader {
+    pub new_header_sender: Sender<NewHeadBlock>,
+    pub new_header_receiver: Receiver<NewHeadBlock>,
+}
+
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
+    new_header_channel: LatestNewHeader,
 }
 
 impl BlockBuilderService {}
@@ -96,7 +106,14 @@ impl ServiceFactory<Self> for BlockBuilderService {
             metrics,
             vm_metrics,
         )?;
-        Ok(Self { inner })
+        let (new_header_sender, new_header_receiver) = channel::bounded(2);
+        Ok(Self {
+            inner,
+            new_header_channel: LatestNewHeader {
+                new_header_sender,
+                new_header_receiver,
+            },
+        })
     }
 }
 
@@ -104,12 +121,14 @@ impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<ProcessNewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<ProcessNewHeadBlock>();
         Ok(())
     }
 }
@@ -126,17 +145,45 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
-impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
-        match self
-            .inner
-            .set_current_block_header(msg.executed_block.block().header().clone())
-        {
-            Ok(()) => (),
-            Err(e) => warn!(
-                "Failed to set current block header: {:?} in BlockBuilderService",
+impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
+    fn handle_event(&mut self, msg: ProcessNewHeadBlock, ctx: &mut ServiceContext<Self>) {
+        match self.new_header_channel.new_header_receiver.try_recv() {
+            Ok(new_header) => {
+                match self
+                    .inner
+                    .set_current_block_header(new_header.executed_block.block().header().clone())
+                {
+                    Ok(()) => (),
+                    Err(e) => error!(
+                        "Failed to set current block header: {:?} in BlockBuilderService",
+                        e
+                    ),
+                }
+            }
+            Err(e) => error!(
+                "Failed to get new head block: {:?} in BlockBuilderService",
                 e
             ),
+        }
+        ctx.broadcast(msg);
+    }
+}
+
+impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+        let _consume = self
+            .new_header_channel
+            .new_header_receiver
+            .try_iter()
+            .count();
+        match self.new_header_channel.new_header_sender.send(msg) {
+            Ok(()) => (),
+            Err(e) => {
+                warn!(
+                    "Failed to send new head block: {:?} in BlockBuilderService",
+                    e
+                );
+            }
         }
     }
 }

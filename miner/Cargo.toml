@@ -31,6 +31,7 @@ starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-sync = { workspace = true }
 starcoin-genesis = { workspace = true }
+crossbeam = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }
