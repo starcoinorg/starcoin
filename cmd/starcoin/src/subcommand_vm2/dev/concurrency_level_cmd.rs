@@ -11,7 +11,7 @@ use starcoin_logger::prelude::*;
 
 /// concurrency_level command option
 #[derive(Debug, Parser)]
-#[clap(name = "set_concurrency_level")]
+#[clap(name = "set-concurrency-level", alias = "set_concurrency_level")]
 pub struct SetConcurrencyLevelCommandOpt {
     #[clap(name = "level", help = "set vm concurrency_level")]
     level: usize,
@@ -40,7 +40,7 @@ impl CommandAction for SetConcurrencyLevelCommand {
 
 /// get_concurrency_level command option
 #[derive(Debug, Parser)]
-#[clap(name = "get_concurrency_level")]
+#[clap(name = "get-concurrency-level", alias = "get_concurrency_level")]
 pub struct GetConcurrencyLevelCommandOpt;
 
 pub struct GetConcurrencyLevelCommand;
