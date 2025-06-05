@@ -274,7 +274,7 @@ where
         })
     }
 
-    fn get_block_parents(&self) -> Result<MinerResponse> {
+    fn resolve_block_parents(&mut self) -> Result<MinerResponse> {
         let MineNewDagBlockInfo {
             tips,
             ghostdata,
@@ -296,6 +296,16 @@ where
                 self.main.get_genesis_hash(),
             )?;
 
+            if self.main.head_block().header().id() != ghostdata.selected_parent {
+                self.main = BlockChain::new(
+                    self.config.net().time_service(),
+                    ghostdata.selected_parent,
+                    self.storage.clone(),
+                    self.vm_metrics.clone(),
+                    self.main.dag(),
+                )?;
+            }
+
             let merge_bound_hash = self.main.get_merge_bound_hash(ghostdata.selected_parent)?;
 
             let (tips, ghostdata) = self.main.dag().remove_bounded_merge_breaking_parents(
@@ -304,6 +314,17 @@ where
                 pruning_point,
                 merge_bound_hash,
             )?;
+
+            if self.main.head_block().header().id() != ghostdata.selected_parent {
+                self.main = BlockChain::new(
+                    self.config.net().time_service(),
+                    ghostdata.selected_parent,
+                    self.storage.clone(),
+                    self.vm_metrics.clone(),
+                    self.main.dag(),
+                )?;
+            }
+
             MineNewDagBlockInfo {
                 tips,
                 ghostdata,
@@ -346,7 +367,7 @@ where
         })
     }
 
-    pub fn create_block_template(&self, version: Version) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(&mut self, version: Version) -> Result<BlockTemplateResponse> {
         let MinerResponse {
             previous_header,
             tips_hash,
@@ -356,7 +377,7 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-        } = self.get_block_parents()?;
+        } = self.resolve_block_parents()?;
 
         let block_gas_limit = self
             .local_block_gas_limit
