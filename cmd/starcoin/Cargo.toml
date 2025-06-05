@@ -56,20 +56,20 @@ vm-status-translator = { workspace = true }
 num_cpus = { workspace = true }
 schemars = { workspace = true }
 
-starcoin-vm2-dev = { workspace = true }
-starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
-starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
-starcoin-vm2-types = { workspace = true }
-starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-account-api = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
+starcoin-vm2-dev = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
-starcoin-vm2-cached-packages = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-status-translator = { workspace = true }
-starcoin-vm2-abi-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
