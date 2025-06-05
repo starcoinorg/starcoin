@@ -23,7 +23,7 @@ use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
-use starcoin_miner::{BlockBuilderService, MinerService};
+use starcoin_miner::{BlockBuilderService, MinerService, NewHeaderChannel, NewHeaderService};
 use starcoin_miner_client::job_bus_client::JobBusClient;
 use starcoin_miner_client::miner::MinerClientService;
 use starcoin_network::NetworkActorService;
@@ -366,6 +366,8 @@ impl NodeService {
         info!("Self peer_id is: {}", peer_id.to_base58());
         info!("Self address is: {}", config.network.self_address());
 
+        registry.put_shared(NewHeaderChannel::new()).await?;
+        registry.register::<NewHeaderService>().await?;
         registry.register::<BlockBuilderService>().await?;
         let miner_service = registry.register::<MinerService>().await?;
 

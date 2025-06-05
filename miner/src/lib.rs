@@ -19,7 +19,10 @@ pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
 
-pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
+pub use create_block_template::{
+    new_header_service::NewHeaderChannel, new_header_service::NewHeaderService,
+    BlockBuilderService, BlockTemplateRequest,
+};
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};

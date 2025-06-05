@@ -4,12 +4,12 @@
 use crate::create_block_template::metrics::BlockBuilderMetrics;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
+use new_header_service::NewHeaderChannel;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_consensus::Consensus;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
-use starcoin_types::system_events::NewHeadBlock;
 use std::sync::RwLock;
 
 use starcoin_config::NodeConfig;
@@ -29,7 +29,7 @@ use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::sync::Arc;
 mod metrics;
-use crossbeam::channel::{self, Receiver, Sender};
+pub mod new_header_service;
 //#[cfg(test)]
 //mod test_create_block_template;
 
@@ -49,14 +49,9 @@ pub struct BlockTemplateResponse {
     pub template: BlockTemplate,
 }
 
-pub struct LatestNewHeader {
-    pub new_header_sender: Sender<NewHeadBlock>,
-    pub new_header_receiver: Receiver<NewHeadBlock>,
-}
-
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
-    new_header_channel: LatestNewHeader,
+    new_header_channel: NewHeaderChannel,
 }
 
 impl BlockBuilderService {}
@@ -106,13 +101,10 @@ impl ServiceFactory<Self> for BlockBuilderService {
             metrics,
             vm_metrics,
         )?;
-        let (new_header_sender, new_header_receiver) = channel::bounded(2);
+        let new_header_channel = ctx.get_shared::<NewHeaderChannel>()?;
         Ok(Self {
             inner,
-            new_header_channel: LatestNewHeader {
-                new_header_sender,
-                new_header_receiver,
-            },
+            new_header_channel,
         })
     }
 }
@@ -120,14 +112,12 @@ impl ServiceFactory<Self> for BlockBuilderService {
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
-        ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<ProcessNewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
-        ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<ProcessNewHeadBlock>();
         Ok(())
     }
@@ -160,31 +150,14 @@ impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
                     ),
                 }
             }
-            Err(e) => error!(
-                "Failed to get new head block: {:?} in BlockBuilderService",
-                e
-            ),
+            Err(e) => match e {
+                crossbeam::channel::TryRecvError::Empty => (),
+                crossbeam::channel::TryRecvError::Disconnected => {
+                    error!("the new headerchannel is disconnected")
+                }
+            },
         }
-        ctx.broadcast(msg);
-    }
-}
-
-impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
-    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
-        let _consume = self
-            .new_header_channel
-            .new_header_receiver
-            .try_iter()
-            .count();
-        match self.new_header_channel.new_header_sender.send(msg) {
-            Ok(()) => (),
-            Err(e) => {
-                warn!(
-                    "Failed to send new head block: {:?} in BlockBuilderService",
-                    e
-                );
-            }
-        }
+        ctx.notify(msg);
     }
 }
 

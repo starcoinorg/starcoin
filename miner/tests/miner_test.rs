@@ -7,7 +7,8 @@ use starcoin_consensus::Consensus;
 use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
 use starcoin_miner::{
-    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, SubmitSealRequest,
+    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, NewHeaderChannel,
+    NewHeaderService, SubmitSealRequest,
 };
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
@@ -51,6 +52,8 @@ async fn test_miner_service() {
         .await
         .unwrap();
 
+    registry.put_shared(NewHeaderChannel::new()).await.unwrap();
+    registry.register::<NewHeaderService>().await.unwrap();
     let template = registry.register::<BlockBuilderService>().await.unwrap();
     let response = template
         .send(BlockTemplateRequest)
