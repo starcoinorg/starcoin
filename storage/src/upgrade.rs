@@ -361,7 +361,6 @@ where
     let mut old_iter = old_store.iter()?;
     old_iter.seek_to_first();
 
-    let mut to_delete = Some(CodecWriteBatch::<K1, V1>::new());
     let mut to_put = Some(CodecWriteBatch::<K2, V2>::new());
     let mut item_count = 0;
     let mut no_more = false;
@@ -369,12 +368,7 @@ where
     loop {
         if let Some(item) = old_iter.next() {
             let (id, old_val) = item?;
-            let (new_id, new_val) = (id.clone().into(), old_val.into());
-            to_delete
-                .as_mut()
-                .unwrap()
-                .delete(id)
-                .expect("should never fail");
+            let (new_id, new_val) = (id.into(), old_val.into());
             to_put
                 .as_mut()
                 .unwrap()
@@ -386,7 +380,7 @@ where
         }
         if item_count == batch_size || no_more {
             if item_count == 0 {
-                debug!("no more items to process");
+                debug!("no more items to be processed");
                 return Ok(total_size);
             }
             debug!(
@@ -396,12 +390,9 @@ where
             total_size = total_size
                 .checked_add(item_count)
                 .ok_or_else(|| format_err!("total size overflow, item_count: {}", item_count))?;
-            // save new items first
+            // save new items
             store
                 .write_batch(to_put.take().unwrap())
-                .expect("should never fail");
-            old_store
-                .write_batch(to_delete.take().unwrap())
                 .expect("should never fail");
 
             // no more items, let's wrap up
@@ -411,7 +402,6 @@ where
 
             // reset for next batch
             item_count = 0;
-            to_delete = Some(CodecWriteBatch::new());
             to_put = Some(CodecWriteBatch::new());
         }
     }
