@@ -183,6 +183,12 @@ mod tests {
     use futures::executor::block_on;
     use jsonrpc_core::IoHandler;
     use starcoin_txpool_mock_service::MockTxPoolService;
+    use starcoin_types::account::{peer_to_peer_txn, Account};
+    use starcoin_vm2_types::{
+        account::{peer_to_peer_txn as peer_to_peer_txn2, Account as Account2},
+        transaction::SignedUserTransaction as SignedUserTransaction2,
+    };
+    use starcoin_vm_types::transaction::TransactionPayload;
 
     #[test]
     fn test_submit_transaction() {
@@ -211,5 +217,36 @@ mod tests {
             block_on(io.handle_request(request.as_str())).unwrap(),
             response
         );
+    }
+
+    #[test]
+    fn test_submit_hex_transaction_v1_to_v2_not_compatible() {
+        let alice = Account::new();
+        let bob = Account::new();
+        let txn1 = peer_to_peer_txn(&alice, &bob, 0, 10_000, 5_000, 255.into());
+        let payload = txn1.payload().clone();
+        println!("payload1 {:?}", payload);
+
+        let txn_bytes = bcs_ext::to_bytes(&txn1).unwrap();
+        let txn1 = SignedUserTransaction2::decode(&txn_bytes);
+        assert!(txn1.is_ok());
+        let script_function = match payload {
+            TransactionPayload::ScriptFunction(s) => s,
+            _ => panic!(
+                "Unexpected TransactionPayload variant encountered; expected ScriptFunction."
+            ),
+        };
+        // payload1 ScriptFunction(ScriptFunction { module: ModuleId { address: 0x00000000000000000000000000000001, name: Identifier("TransferScripts") }, function: Identifier("peer_to_peer_v2"), ty_args: [Struct(StructTag { address: 0x00000000000000000000000000000001, module: Identifier("STC"), name: Identifier("STC"), type_params: [] })], args: [[248, 41, 114, 187, 41, 9, 54, 78, 201, 220, 218, 226, 116, 49, 145, 185], [16, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]] })
+        assert_eq!(script_function.module().name().as_str(), "TransferScripts");
+
+        let alice2 = Account2::new();
+        let bob2 = Account2::new();
+        let payload2 = peer_to_peer_txn2(&alice2, &bob2, 0, 10_000, 5_000, 255.into())
+            .payload()
+            .clone();
+
+        //  payload2 EntryFunction(EntryFunction { module: ModuleId { address: 0x00000000000000000000000000000001, name: Identifier("transfer_scripts") }, function: Identifier("peer_to_peer_v2"), ty_args: [Struct(StructTag { address: 0x00000000000000000000000000000001, module: Identifier("starcoin_coin"), name: Identifier("STC"), type_args: [] })], args: [[49, 168, 188, 110, 65, 29, 84, 144, 62, 98, 92, 76, 111, 114, 234, 38], [16, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]] })
+
+        println!("payload2 {:?}", payload2);
     }
 }
