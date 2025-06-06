@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::BlockStorage;
-use crate::block_info::BlockInfoStorage;
+use crate::block_info::legacy::BlockInfoStorage;
+use crate::block_info::StcBlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
 use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
@@ -269,7 +270,7 @@ impl DBUpgrade {
             if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
                 info!("barnard hard fork rollback height");
                 let mut processed_count = 0;
-                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let block_info_storage = StcBlockInfoStorage::new(instance.clone());
                 let mut iter = block_storage.header_store.iter()?;
                 iter.seek_to_first();
                 for item in iter {
@@ -317,7 +318,7 @@ impl DBUpgrade {
                         to_deleted.push(id);
                     }
                 }
-                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let block_info_storage = StcBlockInfoStorage::new(instance.clone());
                 let mut processed_count = 0;
                 for id in to_deleted {
                     block_info_storage.remove(id)?;

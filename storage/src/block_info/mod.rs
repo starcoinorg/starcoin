@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::define_storage;
+pub mod legacy;
+
 use crate::storage::ValueCodec;
-use crate::BLOCK_INFO_PREFIX_NAME;
+use crate::{define_storage, BLOCK_INFO_PREFIX_NAME_V2};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
@@ -17,10 +18,10 @@ pub trait BlockInfoStore {
 }
 
 define_storage!(
-    BlockInfoStorage,
+    StcBlockInfoStorage,
     HashValue,
     BlockInfo,
-    BLOCK_INFO_PREFIX_NAME
+    BLOCK_INFO_PREFIX_NAME_V2
 );
 
 impl ValueCodec for BlockInfo {
