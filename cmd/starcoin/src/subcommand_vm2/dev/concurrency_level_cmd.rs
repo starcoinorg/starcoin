@@ -30,7 +30,7 @@ impl CommandAction for SetConcurrencyLevelCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         let concurrency_level = std::cmp::min(opt.level, num_cpus::get());
         client.set_concurrency_level(concurrency_level)?;
         info!("client set vm concurrency_level {}", concurrency_level);

@@ -17,7 +17,6 @@ use starcoin_vm2_account_api::{AccountInfo, AccountProvider};
 
 use starcoin_logger::prelude::info;
 use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -314,9 +313,8 @@ impl CliStateVM2 {
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
         let multisig_public_key = match &public_key {
             AccountPublicKey::Single(_) => {
-                let multi_signed_user_txn = MultiSignedUserTransaction::VM2(signed_txn.clone());
-                let signed_txn_hex = hex::encode(multi_signed_user_txn.encode()?);
-                let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
+                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                let txn_hash = self.client.submit_hex_transaction2(signed_txn_hex)?;
                 eprintln!("txn {} submitted.", txn_hash);
                 let execute_output = if blocking {
                     self.watch_txn(txn_hash)?
