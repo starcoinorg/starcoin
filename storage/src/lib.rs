@@ -28,7 +28,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{Block, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
@@ -104,8 +104,6 @@ pub trait BlockStore {
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
-
-    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
     fn commit_block(&self, block: Block) -> Result<()>;
 
@@ -336,11 +334,6 @@ impl BlockStore for Storage {
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         self.block_storage.get_blocks(ids)
-    }
-
-    #[allow(deprecated)]
-    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.block_storage.get_body(block_id)
     }
 
     fn commit_block(&self, block: Block) -> Result<()> {

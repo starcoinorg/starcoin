@@ -62,12 +62,6 @@ define_storage!(
     BLOCK_HEADER_PREFIX_NAME
 );
 define_storage!(
-    BlockBodyStorage,
-    HashValue,
-    BlockBody,
-    BLOCK_BODY_PREFIX_NAME
-);
-define_storage!(
     BlockTransactionsStorage,
     HashValue,
     Vec<HashValue>,
@@ -90,7 +84,6 @@ define_storage!(
 pub struct BlockStorage {
     block_store: StcBlockInnerStorage,
     pub(crate) header_store: BlockHeaderStorage,
-    body_store: BlockBodyStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
     failed_block_storage: StcFailedBlockStorage,
@@ -116,16 +109,6 @@ impl ValueCodec for BlockHeader {
     }
 }
 
-impl ValueCodec for BlockBody {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
 impl ValueCodec for FailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -141,7 +124,6 @@ impl BlockStorage {
         BlockStorage {
             block_store: StcBlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
-            body_store: BlockBodyStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
             failed_block_storage: StcFailedBlockStorage::new(instance),
@@ -169,20 +151,12 @@ impl BlockStorage {
         Ok(key_hashes)
     }
 
-    pub fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
-        self.body_store.put(block_id, body)
-    }
-
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_store.get(block_id)
     }
 
     pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         Ok(self.block_store.multiple_get(ids)?.into_iter().collect())
-    }
-
-    pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.body_store.get(block_id)
     }
 
     pub fn commit_block(&self, block: Block) -> Result<()> {
@@ -196,7 +170,6 @@ impl BlockStorage {
     }
     pub fn delete_block(&self, block_id: HashValue) -> Result<()> {
         self.header_store.remove(block_id)?;
-        self.body_store.remove(block_id)?;
         self.block_store.remove(block_id)?;
         self.block_txns_store.remove(block_id)?;
         self.block_txn_infos_store.remove(block_id)
