@@ -232,7 +232,7 @@ mod tests {
         assert!(txn1.is_ok());
         let script_function = match payload {
             TransactionPayload::ScriptFunction(s) => s,
-            _ => panic!(),
+            _ => panic!("Unexpected TransactionPayload variant encountered; expected ScriptFunction."),
         };
         // payload1 ScriptFunction(ScriptFunction { module: ModuleId { address: 0x00000000000000000000000000000001, name: Identifier("TransferScripts") }, function: Identifier("peer_to_peer_v2"), ty_args: [Struct(StructTag { address: 0x00000000000000000000000000000001, module: Identifier("STC"), name: Identifier("STC"), type_params: [] })], args: [[248, 41, 114, 187, 41, 9, 54, 78, 201, 220, 218, 226, 116, 49, 145, 185], [16, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]] })
         assert_eq!(script_function.function().as_str(), "TransferScripts");
