@@ -38,6 +38,7 @@ use starcoin_service_registry::{
     ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
+use starcoin_storage::storage::DEFAULT_UPGRADE_BATCH_SIZE;
 use starcoin_storage::{
     block_info::BlockInfoStore, cache_storage::CacheStorage, db_storage::DBStorage,
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
@@ -322,7 +323,7 @@ impl NodeService {
         );
 
         let start_time = SystemTime::now();
-        storage_instance.check_upgrade()?;
+        storage_instance.check_upgrade(DEFAULT_UPGRADE_BATCH_SIZE)?;
         storage_instance.barnard_hard_fork(config.clone())?;
         // disable dragon hard fork
         //storage_instance.dragon_hard_fork(config.clone())?;

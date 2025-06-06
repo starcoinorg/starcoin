@@ -4,19 +4,23 @@
 extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
+use crate::contract_event::legacy::ContractEventStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
+use crate::table_info::legacy::TableInfoStorage;
 use crate::table_info::TableInfoStore;
 use crate::tests::{random_txn_info, random_txn_info2};
+use crate::transaction::legacy::TransactionStorage;
 use crate::transaction_info::legacy::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
-    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    BlockInfoStore, BlockStore, BlockTransactionInfoStore, ContractEventStore, Storage,
+    StorageVersion, TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME_V3,
 };
 use anyhow::Result;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
@@ -27,6 +31,8 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     vm_error::KeptVMStatus,
 };
+use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
@@ -234,13 +240,21 @@ fn test_missing_key_handle() -> Result<()> {
     Ok(())
 }
 
-fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
+fn generate_old_db(
+    path: &Path,
+) -> Result<(
+    Vec<HashValue>,
+    Vec<HashValue>,
+    Vec<HashValue>,
+    Vec<TableHandle>,
+)> {
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(path, RocksdbConfig::default(), None)?,
     );
     let storage = Storage::new(instance.clone())?;
-    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
+    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
+    let transaction_storage = TransactionStorage::new(instance.clone());
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
@@ -249,6 +263,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         BlockBody::new(vec![txn.clone().into()], None),
     );
     let mut txn_inf_ids = vec![];
+    let mut txn_ids = vec![];
     let block_metadata = block.to_metadata(0);
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
@@ -257,9 +272,10 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         0,
         KeptVMStatus::Executed,
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::BlockMetadata(block_metadata).into())?;
+
+    let txn_meta = Transaction::BlockMetadata(block_metadata);
+    txn_ids.push(txn_meta.id());
+    transaction_storage.put(txn_meta.id(), txn_meta)?;
     txn_inf_ids.push(txn_info_0.id());
     let txn_info_1 = TransactionInfo::new(
         txn.id(),
@@ -276,9 +292,9 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
     );
-    storage
-        .transaction_storage
-        .save_transaction(Transaction::UserTransaction(txn).into())?;
+    let user_txn = Transaction::UserTransaction(txn);
+    txn_ids.push(user_txn.id());
+    transaction_storage.put(user_txn.id(), user_txn)?;
     storage.commit_block(block)?;
     storage.save_block_info(block_info)?;
 
@@ -297,21 +313,54 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         },
     )?;
 
-    Ok(txn_inf_ids)
+    let event_ids = generate_old_db_with_contract_event(instance.clone())?;
+    let table_handles = generate_old_db_with_table_info(instance)?;
+
+    Ok((txn_inf_ids, txn_ids, event_ids, table_handles))
+}
+
+fn generate_old_db_with_contract_event(instance: StorageInstance) -> Result<Vec<HashValue>> {
+    let contract_event_storage = ContractEventStorage::new(instance.clone());
+    let mut contract_event_ids = vec![];
+
+    for _ in 0..10 {
+        let events = (0..10)
+            .map(|i| ContractEvent::new(EventKey::random(), i as u64, TypeTag::Bool, vec![0u8; 32]))
+            .collect::<Vec<_>>();
+        // just use the event hash as the id for simplicity
+        let key = events[0].crypto_hash();
+        contract_event_storage.put(key, events)?;
+        contract_event_ids.push(key);
+    }
+    Ok(contract_event_ids)
+}
+
+fn generate_old_db_with_table_info(instance: StorageInstance) -> Result<Vec<TableHandle>> {
+    let table_info_storage = TableInfoStorage::new(instance.clone());
+    let mut table_handles = vec![];
+
+    for i in 0..12u8 {
+        let table_handle = TableHandle(AccountAddress::new([i; AccountAddress::LENGTH]));
+        let table_info = TableInfo::new(TypeTag::U8, TypeTag::U8);
+        table_info_storage.put(table_handle, table_info)?;
+        table_handles.push(table_handle);
+    }
+    Ok(table_handles)
 }
 
 #[stest::test]
 fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
-    let txn_info_ids = generate_old_db(tmpdir.path())?;
+    let (txn_info_ids, txn_ids, event_ids, table_handles) = generate_old_db(tmpdir.path())?;
     let mut instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
     );
 
-    instance.check_upgrade()?;
+    // set batch size to 5 to trigger multi-batches upgrade for ContractEventStorage and TableInfoStorage
+    instance.check_upgrade(5)?;
     let storage = Storage::new(instance.clone())?;
-    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance);
+    let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
 
     for txn_info_id in txn_info_ids {
         assert!(
@@ -323,6 +372,52 @@ fn test_db_upgrade() -> Result<()> {
             "expect RichTransactionInfo is some"
         );
     }
+    let transaction_storage = TransactionStorage::new(instance.clone());
+    for txn_id in txn_ids {
+        assert!(
+            transaction_storage.get(txn_id)?.is_none(),
+            "expect Transaction is some"
+        );
+        assert!(
+            storage
+                .get_transaction(txn_id)?
+                .and_then(|txn| txn.to_v1())
+                .is_some(),
+            "expect Transaction is some"
+        );
+    }
+
+    let contract_event_storage = ContractEventStorage::new(instance.clone());
+    for event_id in event_ids {
+        assert!(
+            contract_event_storage.get(event_id)?.is_none(),
+            "expect ContractEvent is none"
+        );
+
+        assert_eq!(
+            storage
+                .get_contract_events_v2(event_id)?
+                .map(|e| e.into_iter().all(|e| e.to_v1().is_some())),
+            Some(true),
+            "expect ContractEvents is none"
+        );
+    }
+
+    let table_info_storage = TableInfoStorage::new(instance.clone());
+    for table_handle in table_handles {
+        assert!(
+            table_info_storage.get(table_handle)?.is_none(),
+            "expect TableInfo is none"
+        );
+        assert!(
+            storage
+                .get_table_info(table_handle.into())?
+                .and_then(|ti| ti.to_v1())
+                .is_some(),
+            "expect TableInfo is none"
+        );
+    }
+
     Ok(())
 }
 

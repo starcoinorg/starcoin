@@ -14,6 +14,7 @@ use crate::{
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
+use std::collections::HashSet;
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -81,13 +82,16 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 });
 
 static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
-    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
-    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
-    prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_PREFIX_NAME_V2);
-    prefix_vec.push(TABLE_INFO_PREFIX_NAME_V2);
-    prefix_vec.push(TRANSACTION_INFO_PREFIX_NAME_V3);
-    prefix_vec
+    let mut prefix = VEC_PREFIX_NAME_V3.iter().cloned().collect::<HashSet<_>>();
+
+    prefix.insert(CONTRACT_EVENT_PREFIX_NAME_V2);
+    prefix.insert(TRANSACTION_PREFIX_NAME_V2);
+    prefix.insert(TABLE_INFO_PREFIX_NAME_V2);
+    prefix.insert(TRANSACTION_INFO_PREFIX_NAME_V3);
+    prefix.insert(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 5);
+
+    prefix.into_iter().collect()
 });
 
 // For V4 storage, the following column families are updated from V3:
@@ -122,6 +126,20 @@ impl StorageVersion {
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
             StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
+        }
+    }
+
+    pub fn cfs_to_be_dropped_since_last_version(&self) -> Vec<ColumnFamilyName> {
+        match self {
+            StorageVersion::V1 => vec![],
+            StorageVersion::V2 => vec![],
+            StorageVersion::V3 => vec![],
+            StorageVersion::V4 => vec![
+                CONTRACT_EVENT_PREFIX_NAME,
+                TRANSACTION_PREFIX_NAME,
+                TABLE_INFO_PREFIX_NAME,
+                TRANSACTION_INFO_PREFIX_NAME_V2,
+            ],
         }
     }
 }

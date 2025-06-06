@@ -5,6 +5,7 @@ pub use crate::batch::WriteBatch;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::{DBStorage, SchemaIterator};
 use crate::upgrade::DBUpgrade;
+pub use crate::upgrade::DEFAULT_UPGRADE_BATCH_SIZE;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use starcoin_config::NodeConfig;
@@ -107,8 +108,8 @@ impl StorageInstance {
         }
     }
 
-    pub fn check_upgrade(&mut self) -> Result<()> {
-        DBUpgrade::check_upgrade(self)
+    pub fn check_upgrade(&mut self, batch_size: usize) -> Result<()> {
+        DBUpgrade::check_upgrade(self, batch_size)
     }
 
     pub fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {

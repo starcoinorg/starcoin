@@ -4,12 +4,16 @@
 use crate::block::BlockStorage;
 use crate::block_info::BlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
-use crate::contract_event::legacy::ContractEventStorage;
-use crate::table_info::legacy::TableInfoStorage;
+use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
+use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
+use crate::table_info::{legacy::TableInfoStorage, StcTableInfoStorage};
 use crate::transaction::{legacy::TransactionStorage, StcTransactionStorage};
-use crate::transaction_info::legacy::{OldTransactionInfoStorage, TransactionInfoStorage};
+use crate::transaction_info::{
+    legacy::{OldTransactionInfoStorage, TransactionInfoStorage},
+    StcTransactionInfoStorage,
+};
 use crate::{
-    CodecKVStore, StorageInstance, StorageVersion, TransactionStore, BLOCK_BODY_PREFIX_NAME,
+    CodecKVStore, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME,
 };
 use anyhow::{bail, ensure, format_err, Result};
@@ -20,6 +24,8 @@ use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::{BarnardHardFork, DragonHardFork, StartupInfo};
 use starcoin_types::transaction::{legacy::RichTransactionInfo, Transaction};
 use std::cmp::Ordering;
+
+pub const DEFAULT_UPGRADE_BATCH_SIZE: usize = 1024 * 100; // 100K for default batch size
 
 pub struct DBUpgrade;
 
@@ -40,7 +46,7 @@ pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
 });
 
 impl DBUpgrade {
-    pub fn check_upgrade(instance: &mut StorageInstance) -> Result<()> {
+    pub fn check_upgrade(instance: &mut StorageInstance, batch_size: usize) -> Result<()> {
         let version_in_db = {
             let chain_info_storage = ChainInfoStorage::new(instance.clone());
             chain_info_storage.get_storage_version()?
@@ -49,7 +55,7 @@ impl DBUpgrade {
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
             Ordering::Less => {
-                Self::do_upgrade(version_in_db, version_in_code, instance)?;
+                Self::do_upgrade(version_in_db, version_in_code, instance, batch_size)?;
                 let chain_info_storage = ChainInfoStorage::new(instance.clone());
                 chain_info_storage.set_storage_version(version_in_code)?;
             }
@@ -72,10 +78,7 @@ impl DBUpgrade {
         let block_storage = BlockStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
-        // todo: remove me. silence the warning about unused function.
-        let _ = TransactionStorage::new(instance.clone());
-        // todo: upgrade transaction storage first
-        let transaction_storage = StcTransactionStorage::new(instance.clone());
+        let transaction_storage = TransactionStorage::new(instance.clone());
         let mut iter = old_transaction_info_storage.iter()?;
         iter.seek_to_first();
         let mut processed_count = 0;
@@ -117,8 +120,7 @@ impl DBUpgrade {
             //check the transaction.
             if block_number != 0 {
                 let transaction = transaction_storage
-                    .get_transaction(old_transaction_info.txn_info.transaction_hash)?
-                    .and_then(|t| t.to_v1())
+                    .get(old_transaction_info.txn_info.transaction_hash)?
                     .ok_or_else(|| {
                         format_err!(
                             "Can not find transaction by {}",
@@ -176,10 +178,36 @@ impl DBUpgrade {
         Ok(())
     }
 
-    // todo: fixme
-    fn db_upgrade_v3_v4(instance: &mut StorageInstance) -> Result<()> {
-        let _ = TableInfoStorage::new(instance.clone());
-        let _ = ContractEventStorage::new(instance.clone());
+    fn db_upgrade_v3_v4(instance: &mut StorageInstance, batch_size: usize) -> Result<()> {
+        let old_table = TableInfoStorage::new(instance.clone());
+        let new_table = StcTableInfoStorage::new(instance.clone());
+        let num = upgrade_store(old_table, new_table, batch_size)?;
+        info!("upgrade table storage, total items: {}", num);
+
+        let old_event = ContractEventStorage::new(instance.clone());
+        let new_event = StcContractEventStorage::new(instance.clone());
+        let num = upgrade_store(old_event, new_event, batch_size)?;
+        info!("upgrade contract event storage, total items: {}", num);
+
+        let old_transaction = TransactionStorage::new(instance.clone());
+        let new_transaction = StcTransactionStorage::new(instance.clone());
+        let num = upgrade_store(old_transaction, new_transaction, batch_size)?;
+        info!("upgrade transaction storage, total items: {}", num);
+
+        let old_transaction_info = TransactionInfoStorage::new(instance.clone());
+        let new_transaction_info = StcTransactionInfoStorage::new(instance.clone());
+        let num = upgrade_store(old_transaction_info, new_transaction_info, batch_size)?;
+        info!("upgrade transaction info storage, total items: {}", num);
+
+        let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
+        instance
+            .db_mut()
+            .unwrap()
+            .drop_unused_cfs(unused_cfs.clone())?;
+        info!(
+            "remove unused columns {:?} for StorageVersion V4",
+            unused_cfs
+        );
 
         Ok(())
     }
@@ -188,6 +216,7 @@ impl DBUpgrade {
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
         instance: &mut StorageInstance,
+        batch_size: usize,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",
@@ -210,10 +239,10 @@ impl DBUpgrade {
             (StorageVersion::V1, StorageVersion::V4) => {
                 Self::db_upgrade_v1_v2(instance)?;
                 Self::db_upgrade_v2_v3(instance)?;
+                Self::db_upgrade_v3_v4(instance, batch_size)?;
             }
             (StorageVersion::V3, StorageVersion::V4) => {
-                Self::db_upgrade_v3_v4(instance)?;
-                debug!("nothing to do for V3");
+                Self::db_upgrade_v3_v4(instance, batch_size)?;
             }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",
@@ -312,5 +341,68 @@ impl DBUpgrade {
             }
         }
         Ok(())
+    }
+}
+
+fn upgrade_store<K1, V1, K2, V2, T1, T2>(
+    old_store: T1,
+    store: T2,
+    batch_size: usize,
+) -> Result<usize>
+where
+    K1: KeyCodec + Into<K2>,
+    K2: KeyCodec,
+    V1: ValueCodec + Into<V2>,
+    V2: ValueCodec,
+    T1: SchemaStorage + ColumnFamily<Key = K1, Value = V1>,
+    T2: SchemaStorage + ColumnFamily<Key = K2, Value = V2>,
+{
+    let mut total_size: usize = 0;
+    let mut old_iter = old_store.iter()?;
+    old_iter.seek_to_first();
+
+    let mut to_put = Some(CodecWriteBatch::<K2, V2>::new());
+    let mut item_count = 0;
+    let mut no_more = false;
+
+    loop {
+        if let Some(item) = old_iter.next() {
+            let (id, old_val) = item?;
+            let (new_id, new_val) = (id.into(), old_val.into());
+            to_put
+                .as_mut()
+                .unwrap()
+                .put(new_id, new_val)
+                .expect("should never fail");
+            item_count += 1;
+        } else {
+            no_more = true;
+        }
+        if item_count == batch_size || no_more {
+            if item_count == 0 {
+                debug!("no more items to be processed");
+                return Ok(total_size);
+            }
+            debug!(
+                "persisting {} items, processed {} items",
+                item_count, total_size
+            );
+            total_size = total_size
+                .checked_add(item_count)
+                .ok_or_else(|| format_err!("total size overflow, item_count: {}", item_count))?;
+            // save new items
+            store
+                .write_batch(to_put.take().unwrap())
+                .expect("should never fail");
+
+            // no more items, let's wrap up
+            if no_more {
+                return Ok(total_size);
+            }
+
+            // reset for next batch
+            item_count = 0;
+            to_put = Some(CodecWriteBatch::new());
+        }
     }
 }
