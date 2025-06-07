@@ -552,6 +552,7 @@ impl BlockDAG {
                     .collect::<HashSet<_>>()
                     .into_iter()
                     .collect::<Vec<_>>();
+
                 let mut tips_in_order = merged_tips
                     .into_iter()
                     .map(|hash: Hash| {
