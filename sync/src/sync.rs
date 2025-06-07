@@ -728,11 +728,11 @@ impl EventHandler<Self, PeerEvent> for SyncService {
 #[derive(Debug, Clone)]
 pub struct SpecificSyncDone;
 
-impl EventHandler<Self, SpecificSyncDone> for SyncService {
-    fn handle_event(&mut self, _msg: SpecificSyncDone, ctx: &mut ServiceContext<Self>) {
-        ctx.broadcast(NewDagBlockFromPeer);
-    }
-}
+// impl EventHandler<Self, SpecificSyncDone> for SyncService {
+//     fn handle_event(&mut self, _msg: SpecificSyncDone, ctx: &mut ServiceContext<Self>) {
+//         ctx.broadcast(NewDagBlockFromPeer);
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct SyncBeginEvent {

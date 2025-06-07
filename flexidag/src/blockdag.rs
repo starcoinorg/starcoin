@@ -28,7 +28,7 @@ use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
-use starcoin_config::miner_config::G_MERGE_DEPTH;
+use starcoin_config::miner_config::{G_MAX_PARENTS_COUNT, G_MERGE_DEPTH};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, error, info, warn};
@@ -689,7 +689,32 @@ impl BlockDAG {
                     .collect::<HashSet<_>>()
                     .into_iter()
                     .collect::<Vec<_>>();
-                writer.insert(hash, DagState { tips: merged_tips })?;
+
+                let mut tips_in_order = merged_tips
+                    .into_iter()
+                    .map(|hash: Hash| {
+                        let data = self.storage.ghost_dag_store.get_compact_data(hash)?;
+                        std::result::Result::Ok((hash, data))
+                    })
+                    .collect::<std::result::Result<Vec<_>, StoreError>>()?;
+                tips_in_order.sort_by(|a, b| match b.1.blue_work.cmp(&a.1.blue_work) {
+                    std::cmp::Ordering::Equal => match b.1.blue_score.cmp(&a.1.blue_score) {
+                        std::cmp::Ordering::Equal => b.0.cmp(&a.0),
+                        other => other,
+                    },
+                    other => other,
+                });
+
+                writer.insert(
+                    hash,
+                    DagState {
+                        tips: tips_in_order
+                            .into_iter()
+                            .map(|(id, _)| id)
+                            .take(usize::try_from(G_MAX_PARENTS_COUNT)?)
+                            .collect(),
+                    },
+                )?;
             }
             Err(_) => {
                 writer.insert(hash, state)?;

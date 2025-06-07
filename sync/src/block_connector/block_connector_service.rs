@@ -452,7 +452,9 @@ where
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
         } else {
-            ctx.broadcast(NewDagBlockFromPeer);
+            ctx.broadcast(NewDagBlockFromPeer {
+                executed_block: Arc::new(msg.get_block().header().clone()),
+            });
         }
     }
 }
