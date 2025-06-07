@@ -141,7 +141,7 @@ impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
             Ok(new_header) => {
                 match self
                     .inner
-                    .set_current_block_header(new_header.executed_block.block().header().clone())
+                    .set_current_block_header(new_header.as_ref().clone())
                 {
                     Ok(()) => (),
                     Err(e) => error!(
@@ -435,14 +435,8 @@ where
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
-        let current_header = self.main.current_header();
-        if current_header.id() == header.id() {
+        if self.main.current_header().id() == header.id() {
             return Ok(());
-        }
-        if current_header.pruning_point() != header.pruning_point() {
-            
-        } else {
-
         }
         self.main = BlockChain::new(
             self.config.net().time_service(),
