@@ -435,6 +435,15 @@ where
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
+        let current_header = self.main.current_header();
+        if current_header.id() == header.id() {
+            return Ok(());
+        }
+        if current_header.pruning_point() != header.pruning_point() {
+            
+        } else {
+
+        }
         self.main = BlockChain::new(
             self.config.net().time_service(),
             header.id(),
