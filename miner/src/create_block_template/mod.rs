@@ -278,6 +278,7 @@ where
             ghostdata,
             pruning_point,
         } = {
+            info!("block template main is {:?}", self.main.current_header());
             let pruning_point = if self.main.current_header().pruning_point() == HashValue::zero() {
                 self.main.get_genesis_hash()
             } else {
@@ -293,6 +294,7 @@ where
                 self.config.miner.maximum_parents_count(),
                 self.main.get_genesis_hash(),
             )?;
+            info!("after calculate the ghostdata, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}", tips, ghostdata, pruning_point);
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
@@ -304,6 +306,7 @@ where
                 pruning_point,
                 merge_bound_hash,
             )?;
+            info!("after remove the bounded merge breaking parents, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}, merge bound hash is: {:?}", tips, ghostdata, pruning_point, merge_bound_hash);
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
