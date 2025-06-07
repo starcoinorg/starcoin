@@ -35,9 +35,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{
-    NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted,
-};
+use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
@@ -224,7 +222,6 @@ impl SyncService {
         let config = self.config.clone();
         let storage = self.storage.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
-        let self_ref = ctx.self_ref();
 
         let fut = async move {
             let verified_rpc_client = Self::create_verified_client(
@@ -417,7 +414,7 @@ impl SyncService {
                 ));
             }
             info!("[sync specific] Sync specific block done");
-            self_ref.notify(SpecificSyncDone)?;
+            // self_ref.notify(SpecificSyncDone)?;
             Ok(())
         };
 
