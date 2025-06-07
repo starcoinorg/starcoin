@@ -11,7 +11,6 @@ use starcoin_types::{
     system_events::{NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
-
 #[derive(Clone, Debug)]
 pub struct ProcessNewHeadBlock;
 
@@ -125,12 +124,6 @@ impl ServiceFactory<Self> for NewHeaderService {
 
 impl NewHeaderService {
     fn resolve_header(&mut self, header: &BlockHeader) -> anyhow::Result<bool> {
-        info!(
-            "resolve_header: new header: {:?}, current header: {:?}",
-            header.id(),
-            self.header.id()
-        );
-
         if header.id() == self.header.id() {
             return Ok(false);
         }
@@ -224,10 +217,6 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        info!(
-            "handle_event: NewDagBlock, msg: {:?}",
-            msg.executed_block.header().id()
-        );
         match self.determine_header(msg.executed_block.header()) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
