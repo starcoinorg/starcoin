@@ -28,6 +28,7 @@ pub fn add_command_vm2(
                 .subcommand(LockCommand)
                 .subcommand(RemoveCommand)
                 .subcommand(ShowCommand)
+                .subcommand(TransferCommand)
                 .subcommand(UnlockCommand),
         )
         .command(
