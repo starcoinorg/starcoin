@@ -2,8 +2,8 @@ use crate::CliState;
 use scmd::{CmdContext, CustomCommand};
 use starcoin_config::StarcoinOpt;
 
-mod account;
-mod dev;
+pub mod account;
+pub mod dev;
 
 use account::*;
 use dev::*;
