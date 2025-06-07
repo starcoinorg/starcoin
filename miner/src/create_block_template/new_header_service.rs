@@ -149,6 +149,7 @@ impl NewHeaderService {
             "resolve_header: new ghostdata: {:?}, current ghostdata: {:?}",
             new_ghostdata, self.ghostdag_data
         );
+
         let update = match new_ghostdata.blue_work.cmp(&self.ghostdag_data.blue_work) {
             std::cmp::Ordering::Less => false,
             std::cmp::Ordering::Equal => {
