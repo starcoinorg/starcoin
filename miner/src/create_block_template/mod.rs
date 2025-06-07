@@ -165,7 +165,7 @@ impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
             Ok(new_header) => {
                 match self
                     .inner
-                    .set_current_block_header(new_header.executed_block.block().header().clone())
+                    .set_current_block_header(new_header.as_ref().clone())
                 {
                     Ok(()) => (),
                     Err(e) => error!(
