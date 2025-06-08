@@ -54,7 +54,31 @@ pub struct BlockBuilderService {
     new_header_channel: NewHeaderChannel,
 }
 
-impl BlockBuilderService {}
+impl BlockBuilderService {
+    fn receive_header(&mut self) {
+        info!("receive header in block builder service");
+        match self.new_header_channel.new_header_receiver.try_recv() {
+            Ok(new_header) => {
+                match self
+                    .inner
+                    .set_current_block_header(new_header.as_ref().clone())
+                {
+                    Ok(()) => (),
+                    Err(e) => error!(
+                        "Failed to set current block header: {:?} in BlockBuilderService",
+                        e
+                    ),
+                }
+            }
+            Err(e) => match e {
+                crossbeam::channel::TryRecvError::Empty => (),
+                crossbeam::channel::TryRecvError::Disconnected => {
+                    error!("the new headerchannel is disconnected")
+                }
+            },
+        }
+    }
+}
 
 impl ServiceFactory<Self> for BlockBuilderService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
@@ -137,26 +161,7 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 
 impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: ProcessNewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        match self.new_header_channel.new_header_receiver.try_recv() {
-            Ok(new_header) => {
-                match self
-                    .inner
-                    .set_current_block_header(new_header.as_ref().clone())
-                {
-                    Ok(()) => (),
-                    Err(e) => error!(
-                        "Failed to set current block header: {:?} in BlockBuilderService",
-                        e
-                    ),
-                }
-            }
-            Err(e) => match e {
-                crossbeam::channel::TryRecvError::Empty => (),
-                crossbeam::channel::TryRecvError::Disconnected => {
-                    error!("the new headerchannel is disconnected")
-                }
-            },
-        }
+        self.receive_header();
         ctx.notify(msg);
     }
 }
@@ -173,6 +178,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
+        self.receive_header();
         self.inner.create_block_template(header_version)
     }
 }

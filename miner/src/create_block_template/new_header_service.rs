@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
-use starcoin_logger::prelude::{error, warn};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
@@ -123,6 +123,12 @@ impl ServiceFactory<Self> for NewHeaderService {
 
 impl NewHeaderService {
     fn resolve_header(&mut self, header: &BlockHeader) -> anyhow::Result<bool> {
+        info!(
+            "resolve_header: new header: {:?}, current header: {:?}",
+            header.id(),
+            self.header.id()
+        );
+
         if header.id() == self.header.id() {
             return Ok(false);
         }
@@ -137,6 +143,10 @@ impl NewHeaderService {
             })?
             .as_ref()
             .clone();
+        info!(
+            "resolve_header: new ghostdata: {:?}, current ghostdata: {:?}",
+            new_ghostdata, self.ghostdag_data
+        );
         let update = match new_ghostdata.blue_work.cmp(&self.ghostdag_data.blue_work) {
             std::cmp::Ordering::Less => false,
             std::cmp::Ordering::Equal => {
@@ -165,6 +175,10 @@ impl NewHeaderService {
 
     fn determine_header(&mut self, header: &BlockHeader) -> anyhow::Result<()> {
         if self.resolve_header(header)? {
+            info!(
+                "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
+                header.id()
+            );
             let _consume = self
                 .new_header_channel
                 .new_header_receiver
@@ -183,6 +197,8 @@ impl NewHeaderService {
                     );
                 }
             }
+        } else {
+            info!("resolve header returns false");
         }
 
         Ok(())
@@ -197,6 +213,10 @@ impl EventHandler<Self, SystemStarted> for NewHeaderService {
 
 impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+        info!(
+            "handle_event: NewDagBlockFromPeer, msg: {:?}",
+            msg.executed_block.id()
+        );
         match self.determine_header(msg.executed_block.as_ref()) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
@@ -209,6 +229,10 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!(
+            "handle_event: NewDagBlock, msg: {:?}",
+            msg.executed_block.header().id()
+        );
         match self.determine_header(msg.executed_block.header()) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
