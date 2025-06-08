@@ -161,26 +161,7 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 
 impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
     fn handle_event(&mut self, msg: ProcessNewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        match self.new_header_channel.new_header_receiver.try_recv() {
-            Ok(new_header) => {
-                match self
-                    .inner
-                    .set_current_block_header(new_header.as_ref().clone())
-                {
-                    Ok(()) => (),
-                    Err(e) => error!(
-                        "Failed to set current block header: {:?} in BlockBuilderService",
-                        e
-                    ),
-                }
-            }
-            Err(e) => match e {
-                crossbeam::channel::TryRecvError::Empty => (),
-                crossbeam::channel::TryRecvError::Disconnected => {
-                    error!("the new headerchannel is disconnected")
-                }
-            },
-        }
+        self.receive_header();
         ctx.notify(msg);
     }
 }
