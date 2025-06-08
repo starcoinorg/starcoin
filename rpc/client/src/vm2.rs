@@ -436,4 +436,9 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash2(txn_hash, option))
             .map_err(map_err)
     }
+
+    pub fn submit_hex_transaction2(&self, txn: String) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_hex_transaction2(txn))
+            .map_err(map_err)
+    }
 }

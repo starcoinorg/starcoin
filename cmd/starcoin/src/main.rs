@@ -4,7 +4,6 @@ use anyhow::Result;
 use scmd::error::CmdError;
 use scmd::CmdContext;
 use starcoin_account_provider::ProviderFactory;
-use starcoin_cmd::subcommand_vm2::add_command_vm2;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::{Connect, G_APP_VERSION, G_CRATE_VERSION};
@@ -130,9 +129,7 @@ fn run() -> Result<()> {
             }
         },
     );
-
-    let context = add_command(context);
-    add_command_vm2(context).exec()
+    add_command(context).exec()
 }
 
 #[rustfmt::skip]

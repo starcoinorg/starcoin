@@ -11,7 +11,7 @@ use starcoin_logger::prelude::*;
 
 /// concurrency_level command option
 #[derive(Debug, Parser)]
-#[clap(name = "set_concurrency_level")]
+#[clap(name = "set-concurrency-level", alias = "set_concurrency_level")]
 pub struct SetConcurrencyLevelCommandOpt {
     #[clap(name = "level", help = "set vm concurrency_level")]
     level: usize,
@@ -30,7 +30,7 @@ impl CommandAction for SetConcurrencyLevelCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         let concurrency_level = std::cmp::min(opt.level, num_cpus::get());
         client.set_concurrency_level(concurrency_level)?;
         info!("client set vm concurrency_level {}", concurrency_level);
@@ -40,7 +40,7 @@ impl CommandAction for SetConcurrencyLevelCommand {
 
 /// get_concurrency_level command option
 #[derive(Debug, Parser)]
-#[clap(name = "get_concurrency_level")]
+#[clap(name = "get-concurrency-level", alias = "get_concurrency_level")]
 pub struct GetConcurrencyLevelCommandOpt;
 
 pub struct GetConcurrencyLevelCommand;
