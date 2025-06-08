@@ -184,7 +184,7 @@ pub fn add_command_legacy(
                 .subcommand(account::nft_cmd::NFTCommand),
         )
         .command(
-            CustomCommand::with_name("dev")
+            CustomCommand::with_name("dev1")
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::move_explain::MoveExplain)
                 .subcommand(dev::CompileCommand)
