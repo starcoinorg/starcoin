@@ -22,8 +22,7 @@ use scmd::{CmdContext, CustomCommand};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
-use subcommand_vm2::account as account2;
-// use subcommand_vm2::dev as dev2;
+use subcommand_vm2::{account as account2, contract as contract2, dev as dev2};
 
 pub fn add_command(
     context: CmdContext<CliState, StarcoinOpt>,
@@ -118,19 +117,20 @@ pub fn add_command(
         )
         .command(
             CustomCommand::with_name("dev")
-                .subcommand(dev::GetCoinCommand)
-                .subcommand(dev::move_explain::MoveExplain)
-                .subcommand(dev::CompileCommand)
-                .subcommand(dev::DeployCommand)
-                .subcommand(dev::UpgradeModuleProposalCommand)
-                .subcommand(dev::UpgradeModulePlanCommand)
-                .subcommand(dev::UpgradeModuleQueueCommand)
-                .subcommand(dev::UpgradeModuleExeCommand)
-                .subcommand(dev::UpgradeVMConfigProposalCommand)
-                .subcommand(dev::PackageCmd)
-                .subcommand(dev::CallContractCommand)
-                .subcommand(dev::resolve_cmd::ResolveCommand)
-                .subcommand(dev::call_api_cmd::CallApiCommand)
+                .subcommand(dev2::GetCoinCommand)
+                .subcommand(dev2::MoveExplain)
+                .subcommand(dev2::CompileCommand)
+                .subcommand(dev2::DeployCommand)
+                // This command move to legecy
+                //.subcommand(dev::UpgradeModuleProposalCommand)
+                //.subcommand(dev::UpgradeModulePlanCommand)
+                //.subcommand(dev::UpgradeModuleQueueCommand)
+                //.subcommand(dev::UpgradeModuleExeCommand)
+                //.subcommand(dev::UpgradeVMConfigProposalCommand)
+                .subcommand(dev2::PackageCmd)
+                .subcommand(dev2::CallContractCommand)
+                .subcommand(dev2::ResolveCommand)
+                .subcommand(dev2::CallApiCommand)
                 .subcommand(
                     CustomCommand::with_name("subscribe")
                         .with_about("Subscribe the chain events")
@@ -148,12 +148,12 @@ pub fn add_command(
                 .subcommand(dev::panic_cmd::PanicCommand)
                 .subcommand(dev::sleep_cmd::SleepCommand)
                 .subcommand(dev::gen_block_cmd::GenBlockCommand)
-                .subcommand(dev::SetConcurrencyLevelCommand)
-                .subcommand(dev::GetConcurrencyLevelCommand)
+                .subcommand(dev2::SetConcurrencyLevelCommand)
+                .subcommand(dev2::GetConcurrencyLevelCommand)
                 .subcommand(dev::SetLoggerBalanceAmoutCommand)
                 .subcommand(dev::GetLoggerBalanceAmountCommand),
         )
-        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
+        .command(CustomCommand::with_name("contract").subcommand(contract2::GetContractDataCommand))
 }
 
 /// The legacy command will handle vm1 related commands
@@ -243,12 +243,12 @@ pub fn add_command_legecy(
         //         .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
         //         .subcommand(chain::GetBlockInfoCommand),
         // )
-        .command(
-            CustomCommand::with_name("txpool")
-                .subcommand(txpool::PendingTxnCommand)
-                .subcommand(txpool::PendingTxnsCommand)
-                .subcommand(txpool::TxPoolStatusCommand),
-        )
+        // .command(
+        //     CustomCommand::with_name("txpool")
+        //         .subcommand(txpool::PendingTxnCommand)
+        //         .subcommand(txpool::PendingTxnsCommand)
+        //         .subcommand(txpool::TxPoolStatusCommand),
+        // )
         .command(
             CustomCommand::with_name("dev")
                 .subcommand(dev::GetCoinCommand)

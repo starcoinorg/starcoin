@@ -130,9 +130,7 @@ fn run() -> Result<()> {
             }
         },
     );
-
-    let context = add_command(context);
-    add_command_vm2(context).exec()
+    add_command(context).exec()
 }
 
 #[rustfmt::skip]
