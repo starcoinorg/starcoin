@@ -129,6 +129,7 @@ impl NewHeaderService {
             header.id(),
             self.header.id()
         );
+
         if header.id() == self.header.id() {
             return Ok(false);
         }
