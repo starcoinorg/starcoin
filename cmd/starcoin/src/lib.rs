@@ -121,12 +121,6 @@ pub fn add_command(
                 .subcommand(dev2::MoveExplain)
                 .subcommand(dev2::CompileCommand)
                 .subcommand(dev2::DeployCommand)
-                // This command move to legecy
-                //.subcommand(dev::UpgradeModuleProposalCommand)
-                //.subcommand(dev::UpgradeModulePlanCommand)
-                //.subcommand(dev::UpgradeModuleQueueCommand)
-                //.subcommand(dev::UpgradeModuleExeCommand)
-                //.subcommand(dev::UpgradeVMConfigProposalCommand)
                 .subcommand(dev2::PackageCmd)
                 .subcommand(dev2::CallContractCommand)
                 .subcommand(dev2::ResolveCommand)
@@ -157,7 +151,7 @@ pub fn add_command(
 }
 
 /// The legacy command will handle vm1 related commands
-pub fn add_command_legecy(
+pub fn add_command_legacy(
     context: CmdContext<CliState, StarcoinOpt>,
 ) -> CmdContext<CliState, StarcoinOpt> {
     context
@@ -189,66 +183,6 @@ pub fn add_command_legecy(
                 .subcommand(account::rotate_auth_key_cmd::RotateAuthenticationKeyCommand)
                 .subcommand(account::nft_cmd::NFTCommand),
         )
-        // .command(
-        //     CustomCommand::with_name("state")
-        //         .subcommand(state::ListCmd)
-        //         .subcommand(state::GetCommand)
-        //         .subcommand(state::GetProofCommand)
-        //         .subcommand(state::GetRootCommand),
-        // )
-        // .command(
-        //     CustomCommand::with_name("node")
-        //         .subcommand(node::InfoCommand)
-        //         .subcommand(node::PeersCommand)
-        //         .subcommand(node::MetricsCommand)
-        //         .subcommand(node::manager::NodeManagerCommand)
-        //         .subcommand(
-        //             CustomCommand::with_name("service")
-        //                 .subcommand(node::service::ListCommand)
-        //                 .subcommand(node::service::StartCommand)
-        //                 .subcommand(node::service::CheckCommand)
-        //                 .subcommand(node::service::StopCommand), //TODO support shutdown by command
-        //             //.subcommand(node::service::ShutdownSystemCommand),
-        //         )
-        //         .subcommand(
-        //             CustomCommand::with_name("sync")
-        //                 .subcommand(node::sync::StartCommand)
-        //                 .subcommand(node::sync::StatusCommand)
-        //                 .subcommand(node::sync::ProgressCommand)
-        //                 .subcommand(node::sync::CancelCommand)
-        //                 .subcommand(node::sync::PeerScoreCommand),
-        //         )
-        //         .subcommand(
-        //             CustomCommand::with_name("network")
-        //                 .subcommand(node::network::StateCommand)
-        //                 .subcommand(node::network::KnownPeersCommand)
-        //                 .subcommand(node::network::GetAddressCommand)
-        //                 .subcommand(node::network::AddPeerCommand)
-        //                 .subcommand(node::network::CallPeerCommand)
-        //                 .subcommand(node::network::SetPeerReputation)
-        //                 .subcommand(node::network::BanPeerCommand),
-        //         ),
-        // )
-        // .command(
-        //     CustomCommand::with_name("chain")
-        //         .subcommand(chain::InfoCommand)
-        //         .subcommand(chain::GetBlockCommand)
-        //         .subcommand(chain::ListBlockCommand)
-        //         .subcommand(chain::GetTransactionCommand)
-        //         .subcommand(chain::GetTxnInfosCommand)
-        //         .subcommand(chain::GetTransactionInfoCommand)
-        //         .subcommand(chain::GetEventsCommand)
-        //         .subcommand(chain::EpochInfoCommand)
-        //         .subcommand(chain::GetTransactionInfoListCommand)
-        //         .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
-        //         .subcommand(chain::GetBlockInfoCommand),
-        // )
-        // .command(
-        //     CustomCommand::with_name("txpool")
-        //         .subcommand(txpool::PendingTxnCommand)
-        //         .subcommand(txpool::PendingTxnsCommand)
-        //         .subcommand(txpool::TxPoolStatusCommand),
-        // )
         .command(
             CustomCommand::with_name("dev")
                 .subcommand(dev::GetCoinCommand)
