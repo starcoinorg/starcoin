@@ -36,13 +36,7 @@ impl CmdBatchExecution {
 
     pub fn progress<CmdT, BodyT, ErrorT>(self) -> anyhow::Result<()>
     where
-        BodyT: BatchCmdExec<CmdT, BodyT, ErrorT>
-            + Send
-            + Sync
-            + Clone
-            + serde::Serialize
-            + for<'a> serde::Deserialize<'a>
-            + 'static,
+        BodyT: BatchCmdExec<CmdT, BodyT, ErrorT> + Send + for<'a> serde::Deserialize<'a>,
     {
         println!("Start progress task, batch_size: {:?}", self.batch_size);
 
