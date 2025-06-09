@@ -25,6 +25,19 @@ pub struct Block {
     pub body: BlockBody,
 }
 
+impl From<Block> for super::Block {
+    fn from(legacy_block: Block) -> Self {
+        super::Block {
+            header: legacy_block.header,
+            body: super::BlockBody {
+                transactions: legacy_block.body.transactions,
+                transactions2: vec![],
+                uncles: legacy_block.body.uncles,
+            },
+        }
+    }
+}
+
 #[derive(
     Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]

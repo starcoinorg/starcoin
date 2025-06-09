@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockStorage;
-use crate::block_info::legacy::BlockInfoStorage;
-use crate::block_info::StcBlockInfoStorage;
+use crate::block::legacy::{BlockInnerStorage, FailedBlockStorage};
+use crate::block::{BlockStorage, StcBlockInnerStorage, StcFailedBlockStorage};
+use crate::block_info::{legacy::BlockInfoStorage, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
 use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
@@ -199,6 +199,21 @@ impl DBUpgrade {
         let new_transaction_info = StcTransactionInfoStorage::new(instance.clone());
         let num = upgrade_store(old_transaction_info, new_transaction_info, batch_size)?;
         info!("upgrade transaction info storage, total items: {}", num);
+
+        let old_block_info = BlockInfoStorage::new(instance.clone());
+        let new_block_info = StcBlockInfoStorage::new(instance.clone());
+        let num = upgrade_store(old_block_info, new_block_info, batch_size)?;
+        info!("upgrade block info storage, total items: {}", num);
+
+        let old_block = BlockInnerStorage::new(instance.clone());
+        let new_block = StcBlockInnerStorage::new(instance.clone());
+        let num = upgrade_store(old_block, new_block, batch_size)?;
+        info!("upgrade block storage, total items: {}", num);
+
+        let old_failed_block = FailedBlockStorage::new(instance.clone());
+        let new_failed_block = StcFailedBlockStorage::new(instance.clone());
+        let num = upgrade_store(old_failed_block, new_failed_block, batch_size)?;
+        info!("upgrade failed block storage, total items: {}", num);
 
         let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
         instance

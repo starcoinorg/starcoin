@@ -25,6 +25,17 @@ pub struct FailedBlock {
     version: String,
 }
 
+impl From<FailedBlock> for super::FailedBlock {
+    fn from(failed_block: FailedBlock) -> Self {
+        super::FailedBlock {
+            block: failed_block.block.into(),
+            peer_id: failed_block.peer_id,
+            failed: failed_block.failed,
+            version: failed_block.version,
+        }
+    }
+}
+
 define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
 define_storage!(
     FailedBlockStorage,

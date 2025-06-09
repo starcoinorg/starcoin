@@ -4,13 +4,14 @@
 use crate::storage::ColumnFamilyName;
 use crate::{
     BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME,
-    BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2, BLOCK_PREFIX_NAME,
+    BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2, BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, CHAIN_INFO_PREFIX_NAME,
     CONTRACT_EVENT_PREFIX_NAME, CONTRACT_EVENT_PREFIX_NAME_V2, FAILED_BLOCK_PREFIX_NAME,
-    STATE_NODE_PREFIX_NAME, TABLE_INFO_PREFIX_NAME, TABLE_INFO_PREFIX_NAME_V2,
-    TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_INFO_HASH_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2, TRANSACTION_INFO_PREFIX_NAME_V3,
-    TRANSACTION_PREFIX_NAME, TRANSACTION_PREFIX_NAME_V2, VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME,
+    FAILED_BLOCK_PREFIX_NAME_V2, STATE_NODE_PREFIX_NAME, TABLE_INFO_PREFIX_NAME,
+    TABLE_INFO_PREFIX_NAME_V2, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
+    TRANSACTION_INFO_HASH_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME_V2, TRANSACTION_INFO_PREFIX_NAME_V3, TRANSACTION_PREFIX_NAME,
+    TRANSACTION_PREFIX_NAME_V2, VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -90,7 +91,9 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     prefix.insert(TRANSACTION_INFO_PREFIX_NAME_V3);
     prefix.insert(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME); // newly added
     prefix.insert(BLOCK_INFO_PREFIX_NAME_V2);
-    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 6);
+    prefix.insert(BLOCK_PREFIX_NAME_V2);
+    prefix.insert(FAILED_BLOCK_PREFIX_NAME_V2);
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V3.len() + 8);
 
     prefix.into_iter().collect()
 });
@@ -105,7 +108,9 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 // TRANSACTION_PREFIX_NAME_V2            | TRANSACTION_PREFIX_NAME         |(HashValue,StcTransaction)
 // TABLE_INFO_PREFIX_NAME_V2             | TABLE_INFO_PREFIX_NAME          |(StcTableHandle,StcTableInfo)
 // TRANSACTION_INFO_PREFIX_NAME_V2       | TRANSACTION_INFO_PREFIX_NAME_V3 |(HashValue,StcRichTransactionInfo)
-// BLOCK_INFO_PREFIX_NAME                | BLOCK_INFO_PREFIX_NAME_V2       |(HashValue,BlockInfo)
+// BLOCK_INFO_PREFIX_NAME_V2             | BLOCK_INFO_PREFIX_NAME          |(HashValue,BlockInfo)
+// BLOCK_PREFIX_NAME_V2                  | BLOCK_PREFIX_NAME               |(HashValue,Block)
+// FAILED_BLOCK_PREFIX_NAME_V2           | FAILED_BLOCK_PREFIX_NAME        |(HashValue,FailedBlock)
 // --------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
@@ -138,7 +143,9 @@ impl StorageVersion {
             StorageVersion::V3 => vec![],
             StorageVersion::V4 => vec![
                 BLOCK_INFO_PREFIX_NAME,
+                BLOCK_PREFIX_NAME,
                 CONTRACT_EVENT_PREFIX_NAME,
+                FAILED_BLOCK_PREFIX_NAME,
                 TRANSACTION_PREFIX_NAME,
                 TABLE_INFO_PREFIX_NAME,
                 TRANSACTION_INFO_PREFIX_NAME_V2,
