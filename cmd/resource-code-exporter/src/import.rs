@@ -12,7 +12,13 @@ use starcoin_types::{
 use std::path::Path;
 use std::sync::Arc;
 
-pub fn import(csv_path: &Path, db_path: &Path, expect_root_hash: HashValue) -> anyhow::Result<()> {
+pub fn import(
+    csv_path: &Path,
+    db_path: &Path,
+    expect_root_hash: HashValue,
+    start: u64,
+    end: u64,
+) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
         db_path,
         StorageVersion::current_version()
@@ -26,7 +32,7 @@ pub fn import(csv_path: &Path, db_path: &Path, expect_root_hash: HashValue) -> a
         Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
         None,
     );
-    import_from_statedb(&statedb, csv_path, expect_root_hash)
+    import_from_statedb(&statedb, csv_path, expect_root_hash, start, end)
 }
 
 /// Import resources and code from CSV file to a new statedb
@@ -34,6 +40,8 @@ pub fn import_from_statedb(
     statedb: &ChainStateDB,
     csv_path: &Path,
     expect_state_root_hash: HashValue,
+    start: u64,
+    end: u64,
 ) -> anyhow::Result<()> {
     // Read CSV file
     let mut csv_reader = csv::Reader::from_path(csv_path)?;
@@ -115,7 +123,7 @@ mod test {
         // Export data
         {
             let mut csv_writer = csv::WriterBuilder::new().from_path(&export_path)?;
-            export_from_statedb(&export_chain_statedb, &mut csv_writer)?;
+            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, 0)?;
         }
 
         //////////////////////////////////////////////////////
@@ -138,7 +146,7 @@ mod test {
             Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
             None,
         );
-        import_from_statedb(&imported_statedb, &export_path, export_state_root)?;
+        import_from_statedb(&imported_statedb, &export_path, export_state_root, 0, 0)?;
 
         Ok(())
     }

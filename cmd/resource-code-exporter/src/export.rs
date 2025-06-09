@@ -9,7 +9,13 @@ use starcoin_storage::{
 use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
-pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<()> {
+pub fn export(
+    db: &str,
+    output: &Path,
+    block_hash: HashValue,
+    start: u64,
+    end: u64,
+) -> anyhow::Result<()> {
     println!("Starting export process for block: {}", block_hash);
     println!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
@@ -40,7 +46,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     println!("Creating CSV writer for output: {}", output.display());
     let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
     println!("Starting export from StateDB...");
-    export_from_statedb(&statedb, &mut csv_writer)?;
+    export_from_statedb(&statedb, &mut csv_writer, start, end)?;
     println!("Export completed successfully");
 
     Ok(())
@@ -50,8 +56,13 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
 pub fn export_from_statedb<W: Write>(
     statedb: &ChainStateDB,
     writer: &mut csv::Writer<W>,
+    start: u64,
+    end: u64,
 ) -> anyhow::Result<()> {
-    println!("Starting export_from_statedb...");
+    println!(
+        "Starting export_from_statedb...， start: {}, end: {}",
+        start, end
+    );
     // write csv header
     {
         println!("Writing CSV header...");
@@ -65,8 +76,7 @@ pub fn export_from_statedb<W: Write>(
     }
 
     println!("Dumping global states from StateDB...");
-    let global_states = statedb.dump()?;
-    println!("Total accounts to process: {}", global_states.len());
+    let global_states = statedb.dump_iter()?;
 
     use std::time::Instant;
     let now = Instant::now();
@@ -74,7 +84,17 @@ pub fn export_from_statedb<W: Write>(
     let mut total_code_size = 0;
     let mut total_resource_size = 0;
 
-    for (account_address, account_state_set) in global_states.into_iter() {
+    for (account_address, account_state_set) in global_states {
+        // Skip accounts before start index
+        if processed < start {
+            processed += 1;
+            continue;
+        }
+        // Stop processing after end index
+        if processed >= end && end > 0 {
+            break;
+        }
+
         println!("Processing account: {}", account_address);
 
         // Process codes
@@ -126,12 +146,7 @@ pub fn export_from_statedb<W: Write>(
         processed += 1;
 
         if processed % 100 == 0 {
-            println!(
-                "Progress: {}/{} accounts processed ({}%)",
-                processed,
-                global_states.len(),
-                (processed as f64 / global_states.len() as f64 * 100.0) as u32
-            );
+            println!("Progress: {} accounts processed ", processed);
         }
     }
 
@@ -162,7 +177,8 @@ mod test {
         let mut buffer = Cursor::new(Vec::new());
         {
             let mut csv_writer = csv::WriterBuilder::new().from_writer(&mut buffer);
-            export_from_statedb(&chain_statedb, &mut csv_writer)?;
+            // Export all accounts (from index 0 to u64::MAX)
+            export_from_statedb(&chain_statedb, &mut csv_writer, 0, u64::MAX)?;
         }
 
         // Get the written data
