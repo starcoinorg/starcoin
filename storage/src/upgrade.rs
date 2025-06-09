@@ -76,7 +76,7 @@ impl DBUpgrade {
 
     fn db_upgrade_v1_v2(instance: &mut StorageInstance) -> Result<()> {
         let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
-        let block_storage = BlockStorage::new(instance.clone());
+        let block_storage = BlockInnerStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
         let transaction_storage = TransactionStorage::new(instance.clone());
@@ -96,7 +96,7 @@ impl DBUpgrade {
                     continue;
                 }
             };
-            let block_number = block.header().number();
+            let block_number = block.header.number();
 
             //user transaction start from 1, 0 is block metadata transaction, but the genesis transaction is user transaction, and transaction_index is 0.
             //genesis block s no block metadata transaction.

@@ -3,6 +3,9 @@
 
 extern crate chrono;
 
+use crate::block::legacy::BlockInnerStorage;
+use crate::block::BlockHeaderStorage;
+use crate::block_info::legacy::BlockInfoStorage;
 use crate::cache_storage::CacheStorage;
 use crate::contract_event::legacy::ContractEventStorage;
 use crate::db_storage::DBStorage;
@@ -13,8 +16,8 @@ use crate::tests::{random_txn_info, random_txn_info2};
 use crate::transaction::legacy::TransactionStorage;
 use crate::transaction_info::legacy::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, ContractEventStore, Storage,
-    StorageVersion, TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    BlockStore, BlockTransactionInfoStore, ContractEventStore, Storage, StorageVersion,
+    TransactionStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     TRANSACTION_INFO_PREFIX_NAME_V3,
 };
 use anyhow::Result;
@@ -22,10 +25,11 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_types::block::Block;
 use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{BlockHeader, LegacyBlock, LegacyBlockBody, LegacyBlockInfo},
     language_storage::TypeTag,
     startup_info::SnapshotRange,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -252,19 +256,28 @@ fn generate_old_db(
         CacheStorage::new(None),
         DBStorage::new(path, RocksdbConfig::default(), None)?,
     );
-    let storage = Storage::new(instance.clone())?;
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
     let transaction_storage = TransactionStorage::new(instance.clone());
+    let block_header_storage = BlockHeaderStorage::new(instance.clone());
+    let block_storage = BlockInnerStorage::new(instance.clone());
+    let block_info_storage = BlockInfoStorage::new(instance.clone());
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
-    let block = Block::new(
-        block_header.clone(),
-        BlockBody::new(vec![txn.clone().into()], None),
-    );
+    let block = LegacyBlock {
+        header: block_header.clone(),
+        body: LegacyBlockBody {
+            transactions: vec![txn.clone()],
+            uncles: None,
+        },
+    };
     let mut txn_inf_ids = vec![];
     let mut txn_ids = vec![];
-    let block_metadata = block.to_metadata(0);
+    let block_metadata = {
+        // convert to latest type to construct block-meta txn just for convenient.
+        let b = Block::from(block.clone());
+        b.to_metadata(0)
+    };
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),
@@ -285,18 +298,20 @@ fn generate_old_db(
         KeptVMStatus::Executed,
     );
     txn_inf_ids.push(txn_info_1.id());
-    let block_info = BlockInfo::new(
-        block_header.id(),
-        0.into(),
-        AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
-        AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
-        AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
-    );
+    let block_info = LegacyBlockInfo {
+        block_id: block_header.id(),
+        total_difficulty: 0.into(),
+        txn_accumulator_info: AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
+        block_accumulator_info: AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
+    };
     let user_txn = Transaction::UserTransaction(txn);
     txn_ids.push(user_txn.id());
     transaction_storage.put(user_txn.id(), user_txn)?;
-    storage.commit_block(block)?;
-    storage.save_block_info(block_info)?;
+    //commit_block(block)?;
+    block_header_storage.put(block_header.id(), block_header.clone())?;
+    block_storage.put(block_header.id(), block.clone())?;
+    //save_block_info(block_info)?;
+    block_info_storage.put(block_info.block_id, block_info.clone())?;
 
     old_transaction_info_storage.put(
         txn_info_0.id(),
