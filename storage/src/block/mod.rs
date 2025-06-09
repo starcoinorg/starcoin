@@ -3,9 +3,8 @@
 
 use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
-    define_storage, BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME_V2,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
-    FAILED_BLOCK_PREFIX_NAME_V2,
+    define_storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME_V2,
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
@@ -13,7 +12,7 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader};
 
 pub mod legacy;
 

@@ -211,6 +211,11 @@ impl DBUpgrade {
         info!("upgrade block storage, total items: {}", num);
 
         let old_failed_block = FailedBlockStorage::new(instance.clone());
+        let old_count = old_failed_block.upgrade_old_failed_block()?;
+        info!(
+            "upgrade old failed blocks in storage, total items: {}",
+            old_count
+        );
         let new_failed_block = StcFailedBlockStorage::new(instance.clone());
         let num = upgrade_store(old_failed_block, new_failed_block, batch_size)?;
         info!("upgrade failed block storage, total items: {}", num);
