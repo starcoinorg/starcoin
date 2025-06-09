@@ -153,7 +153,7 @@ impl ActorService for BlockBuilderService {
 
 impl EventHandler<Self, SystemStarted> for BlockBuilderService {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        ctx.run_interval(Duration::from_millis(300), |ctx| {
+        ctx.run_interval(Duration::from_millis(1000), |ctx| {
             info!("process new head block");
             ctx.broadcast(ProcessNewHeadBlock);
         });
