@@ -10,9 +10,7 @@ use starcoin_account_service::AccountService;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_consensus::Consensus;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
-use starcoin_types::system_events::SystemStarted;
 use std::sync::RwLock;
-use std::time::Duration;
 
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
@@ -34,9 +32,6 @@ mod metrics;
 pub mod new_header_service;
 //#[cfg(test)]
 //mod test_create_block_template;
-
-#[derive(Clone, Debug)]
-pub struct ProcessNewHeadBlock;
 
 #[derive(Debug)]
 pub struct BlockTemplateRequest;
@@ -137,26 +132,13 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<DefaultAccountChangeEvent>();
-        ctx.subscribe::<ProcessNewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<SystemStarted>();
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
-        ctx.unsubscribe::<ProcessNewHeadBlock>();
         Ok(())
-    }
-}
-
-impl EventHandler<Self, SystemStarted> for BlockBuilderService {
-    fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        ctx.run_interval(Duration::from_millis(1000), |ctx| {
-            info!("process new head block");
-            ctx.broadcast(ProcessNewHeadBlock);
-        });
     }
 }
 
@@ -172,12 +154,6 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
-impl EventHandler<Self, ProcessNewHeadBlock> for BlockBuilderService {
-    fn handle_event(&mut self, _msg: ProcessNewHeadBlock, _ctx: &mut ServiceContext<Self>) {
-        self.receive_header();
-    }
-}
-
 impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
@@ -190,6 +166,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
+        self.receive_header();
         self.inner.create_block_template(header_version)
     }
 }
