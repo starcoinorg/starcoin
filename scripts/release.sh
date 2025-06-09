@@ -3,7 +3,6 @@ rm -rf starcoin-artifacts/*
 mkdir -p starcoin-artifacts/
 cp -v target/release/starcoin starcoin-artifacts/
 cp -v target/release/starcoin_miner starcoin-artifacts/
-cp -v target/release/starcoin_generator starcoin-artifacts/
 cp -v target/release/mpm starcoin-artifacts/
 cp -v target/release/starcoin_db_exporter starcoin-artifacts/
 cp -v scripts/import_block.sh starcoin-artifacts/
