@@ -43,15 +43,31 @@ pub fn import_from_statedb(
     start: u64,
     end: u64,
 ) -> anyhow::Result<()> {
+    println!(
+        "Starting import_from_statedb...， start: {}, end: {}",
+        start, end
+    );
+
     // Read CSV file
     let mut csv_reader = csv::Reader::from_path(csv_path)?;
     let mut chain_state_set_data = Vec::new();
+    let mut processed = 0;
 
     for result in csv_reader.records() {
+        // Skip records before start index
+        if processed < start {
+            processed += 1;
+            continue;
+        }
+        // Stop processing after end index
+        if processed >= end && end > 0 {
+            break;
+        }
+
         let record = result?;
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
         assert_eq!(record.len(), 5);
-        println!("record len: {:?}", record.len());
+        println!("Processing record {}: account {}", processed, account_address);
 
         let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {
             let code_state_hash = &record[1];
@@ -81,8 +97,14 @@ pub fn import_from_statedb(
             account_address,
             AccountStateSet::new(vec![code_state_set, resource_state_set]),
         ));
+        processed += 1;
+
+        if processed % 100 == 0 {
+            println!("Progress: {} records processed", processed);
+        }
     }
 
+    println!("Applying {} state sets to statedb...", chain_state_set_data.len());
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
 
     // Get new state root
@@ -123,7 +145,7 @@ mod test {
         // Export data
         {
             let mut csv_writer = csv::WriterBuilder::new().from_path(&export_path)?;
-            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, 0)?;
+            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, u64::MAX)?;
         }
 
         //////////////////////////////////////////////////////
@@ -146,7 +168,7 @@ mod test {
             Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
             None,
         );
-        import_from_statedb(&imported_statedb, &export_path, export_state_root, 0, 0)?;
+        import_from_statedb(&imported_statedb, &export_path, export_state_root, 0, u64::MAX)?;
 
         Ok(())
     }
