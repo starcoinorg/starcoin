@@ -146,9 +146,9 @@ pub fn export_from_statedb<W: Write>(
         writer.flush()?;
         processed += 1;
 
-        if processed % 100 == 0 {
-            println!("Progress: {} accounts processed ", processed);
-        }
+        // if processed % 100 == 0 {
+        println!("Progress: {} accounts processed ", processed);
+        // }
     }
 
     println!("Export completed:");
