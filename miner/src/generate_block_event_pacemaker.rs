@@ -33,31 +33,17 @@ impl GenerateBlockEventPacemaker {
     }
 
     pub fn is_synced(&self) -> bool {
-        if let Some(syc_status) = self.sync_status.as_ref() {
-            syc_status.is_nearly_synced()
-        } else {
-            false
+        match &self.sync_status {
+            Some(status) => match status.sync_status() {
+                starcoin_types::sync_status::SyncState::Prepare => false,
+                starcoin_types::sync_status::SyncState::Synchronizing {
+                    target: _,
+                    total_difficulty: _,
+                } => false,
+                starcoin_types::sync_status::SyncState::Synchronized => true,
+            },
+            None => false,
         }
-        // match self.sync_status.as_ref() {
-        //     Some(sync_status) => match sync_status.sync_status() {
-        //         starcoin_types::sync_status::SyncState::Prepare => false,
-        //         starcoin_types::sync_status::SyncState::Synchronizing {
-        //             target,
-        //             total_difficulty: _,
-        //         } => {
-        //             if let Some(last_sync_status) = self.last_sync_status.as_ref() {
-        //                 target
-        //                     .number()
-        //                     .abs_diff(last_sync_status.chain_status().head().number())
-        //                     <= NEARLY_SYNCED_BLOCKS
-        //             } else {
-        //                 false
-        //             }
-        //         }
-        //         starcoin_types::sync_status::SyncState::Synchronized => true,
-        //     },
-        //     None => false,
-        // }
     }
 }
 
@@ -89,7 +75,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
-            self.send_event(false, ctx)
+            self.send_event(true, ctx)
         } else {
             debug!("[pacemaker] Ignore NewHeadBlock event because the node has not been synchronized yet.")
         }
