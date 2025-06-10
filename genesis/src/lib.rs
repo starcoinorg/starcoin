@@ -41,7 +41,7 @@ pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
+use starcoin_types::block::{legacy, BlockBody};
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
@@ -57,7 +57,7 @@ pub struct Genesis {
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename = "Genesis")]
 pub struct LegacyGenesis {
-    block: LegacyBlock,
+    block: legacy::Block,
 }
 
 impl From<LegacyGenesis> for Genesis {
@@ -82,9 +82,9 @@ impl From<LegacyGenesis> for Genesis {
 impl From<Genesis> for LegacyGenesis {
     fn from(genesis: Genesis) -> Self {
         LegacyGenesis {
-            block: LegacyBlock {
+            block: legacy::Block {
                 header: genesis.block.header,
-                body: LegacyBlockBody {
+                body: legacy::BlockBody {
                     transactions: genesis.block.body.transactions,
                     uncles: genesis.block.body.uncles,
                 },

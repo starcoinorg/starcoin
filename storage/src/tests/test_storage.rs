@@ -29,7 +29,7 @@ use starcoin_types::block::Block;
 use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{BlockHeader, LegacyBlock, LegacyBlockBody, LegacyBlockInfo},
+    block::{legacy, BlockHeader},
     language_storage::TypeTag,
     startup_info::SnapshotRange,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
@@ -264,9 +264,9 @@ fn generate_old_db(
 
     let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
-    let block = LegacyBlock {
+    let block = legacy::Block {
         header: block_header.clone(),
-        body: LegacyBlockBody {
+        body: legacy::BlockBody {
             transactions: vec![txn.clone()],
             uncles: None,
         },
@@ -298,7 +298,7 @@ fn generate_old_db(
         KeptVMStatus::Executed,
     );
     txn_inf_ids.push(txn_info_1.id());
-    let block_info = LegacyBlockInfo {
+    let block_info = legacy::BlockInfo {
         block_id: block_header.id(),
         total_difficulty: 0.into(),
         txn_accumulator_info: AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),

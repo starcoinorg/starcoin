@@ -12,9 +12,6 @@ use crate::multi_transaction::MultiSignedUserTransaction;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
-pub use legacy::{
-    Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockInfo as LegacyBlockInfo,
-};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

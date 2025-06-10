@@ -4,11 +4,11 @@
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_executor::BlockExecutedData;
-use starcoin_types::block::LegacyBlockInfo;
+use starcoin_types::block::legacy::BlockInfo;
 use std::collections::BTreeMap;
 
 pub(crate) static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<
-    BTreeMap<HashValue, (BlockExecutedData, LegacyBlockInfo)>,
+    BTreeMap<HashValue, (BlockExecutedData, BlockInfo)>,
 > = Lazy::new(|| {
     let mut maps = BTreeMap::new();
     // insert by execute_block_without_save OUTPUT_BLOCK printf code
