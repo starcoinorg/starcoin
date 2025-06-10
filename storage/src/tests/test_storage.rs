@@ -3,13 +3,16 @@
 
 extern crate chrono;
 
-use crate::block::legacy::BlockInnerStorage;
-use crate::block::BlockHeaderStorage;
+use crate::block::legacy::{BlockInnerStorage, FailedBlockStorage, OldFailedBlock};
+use crate::block::{BlockHeaderStorage, StcBlockInnerStorage, StcFailedBlockStorage};
 use crate::block_info::legacy::BlockInfoStorage;
+use crate::block_info::StcBlockInfoStorage;
 use crate::cache_storage::CacheStorage;
 use crate::contract_event::legacy::ContractEventStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
+use crate::storage::{
+    CodecKVStore, InnerStore, KVStore, KeyCodec, SchemaStorage, StorageInstance, ValueCodec,
+};
 use crate::table_info::legacy::TableInfoStorage;
 use crate::table_info::TableInfoStore;
 use crate::tests::{random_txn_info, random_txn_info2};
@@ -25,7 +28,8 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::Block;
+use starcoin_logger::prelude::info;
+use starcoin_types::block::{Block, BlockHeaderExtra, BlockNumber};
 use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -35,8 +39,10 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     vm_error::KeptVMStatus,
 };
+use starcoin_uint::U256;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::event::EventKey;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::path::Path;
 
@@ -244,6 +250,24 @@ fn test_missing_key_handle() -> Result<()> {
     Ok(())
 }
 
+fn random_header_with_number(number: BlockNumber) -> BlockHeader {
+    BlockHeader::new(
+        HashValue::random(),
+        rand::random(),
+        number,
+        AccountAddress::random(),
+        HashValue::random(),
+        HashValue::random(),
+        HashValue::random(),
+        rand::random(),
+        U256::MAX,
+        HashValue::random(),
+        ChainId::test(),
+        0,
+        BlockHeaderExtra::new([0u8; 4]),
+    )
+}
+
 fn generate_old_db(
     path: &Path,
 ) -> Result<(
@@ -251,6 +275,8 @@ fn generate_old_db(
     Vec<HashValue>,
     Vec<HashValue>,
     Vec<TableHandle>,
+    Vec<HashValue>,
+    Vec<HashValue>,
 )> {
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
@@ -262,7 +288,7 @@ fn generate_old_db(
     let block_storage = BlockInnerStorage::new(instance.clone());
     let block_info_storage = BlockInfoStorage::new(instance.clone());
 
-    let block_header = BlockHeader::random();
+    let block_header = random_header_with_number(1);
     let txn = SignedUserTransaction::mock();
     let block = legacy::Block {
         header: block_header.clone(),
@@ -329,9 +355,90 @@ fn generate_old_db(
     )?;
 
     let event_ids = generate_old_db_with_contract_event(instance.clone())?;
-    let table_handles = generate_old_db_with_table_info(instance)?;
+    let table_handles = generate_old_db_with_table_info(instance.clone())?;
+    let (mut blocks, failed_blocks) = generate_old_block_and_block_info(instance)?;
+    blocks.push(block_header.id());
 
-    Ok((txn_inf_ids, txn_ids, event_ids, table_handles))
+    Ok((
+        txn_inf_ids,
+        txn_ids,
+        event_ids,
+        table_handles,
+        blocks,
+        failed_blocks,
+    ))
+}
+
+fn generate_old_block_and_block_info(
+    instance: StorageInstance,
+) -> Result<(Vec<HashValue>, Vec<HashValue>)> {
+    let block_header_storage = BlockHeaderStorage::new(instance.clone());
+    let block_storage = BlockInnerStorage::new(instance.clone());
+    let block_info_storage = BlockInfoStorage::new(instance.clone());
+    let failed_block_storage = FailedBlockStorage::new(instance.clone());
+
+    let num_blocks = 5u64;
+    let num_failed_blocks = 2u64;
+    let mut blocks = Vec::with_capacity(num_blocks as usize);
+    let mut failed_blocks = Vec::with_capacity(num_failed_blocks as usize);
+    for i in 0..num_blocks {
+        let block_header = random_header_with_number(2 + i);
+        let block_id = block_header.id();
+        let block = legacy::Block {
+            header: block_header.clone(),
+            body: legacy::BlockBody {
+                transactions: vec![],
+                uncles: None,
+            },
+        };
+        let block_info = legacy::BlockInfo {
+            block_id: block_header.id(),
+            total_difficulty: 0.into(),
+            txn_accumulator_info: AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
+            block_accumulator_info: AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
+        };
+
+        blocks.push(block_id);
+        // commit_block
+        block_header_storage.put(block_id, block_header)?;
+        block_storage.put(block_id, block)?;
+        // save block_info
+        block_info_storage.put(block_id, block_info)?;
+    }
+
+    for i in 0..num_failed_blocks {
+        let block_header = random_header_with_number(num_blocks + 2 + i);
+        let block_id = block_header.id();
+        let block = legacy::Block {
+            header: block_header.clone(),
+            body: legacy::BlockBody {
+                transactions: vec![],
+                uncles: None,
+            },
+        };
+        if i == 0 {
+            let old_failed_block = OldFailedBlock {
+                block,
+                peer_id: None,
+                failed: format!("test old failed block {block_id}"),
+            };
+            failed_block_storage
+                .get_store()
+                .put(block_id.encode_key()?, old_failed_block.encode_value()?)?;
+        } else {
+            let failed_block = crate::block::legacy::FailedBlock {
+                block,
+                peer_id: None,
+                failed: format!("test failed block{block_id}"),
+                version: "v1".to_string(), // if not empty, it will be treated as a new version
+            };
+            failed_block_storage.put(block_id, failed_block)?;
+        };
+        info!("insert failed block: {}, idx {}", block_id, i);
+        failed_blocks.push(block_id);
+    }
+
+    Ok((blocks, failed_blocks))
 }
 
 fn generate_old_db_with_contract_event(instance: StorageInstance) -> Result<Vec<HashValue>> {
@@ -366,7 +473,8 @@ fn generate_old_db_with_table_info(instance: StorageInstance) -> Result<Vec<Tabl
 #[stest::test]
 fn test_db_upgrade() -> Result<()> {
     let tmpdir = starcoin_config::temp_dir();
-    let (txn_info_ids, txn_ids, event_ids, table_handles) = generate_old_db(tmpdir.path())?;
+    let (txn_info_ids, txn_ids, event_ids, table_handles, blocks, failed_blocks) =
+        generate_old_db(tmpdir.path())?;
     let mut instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
         DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
@@ -431,6 +539,56 @@ fn test_db_upgrade() -> Result<()> {
                 .is_some(),
             "expect TableInfo is none"
         );
+    }
+
+    let block_storage = BlockInnerStorage::new(instance.clone());
+    let new_block_storage = StcBlockInnerStorage::new(instance.clone());
+    let block_info_storage = BlockInfoStorage::new(instance.clone());
+    let new_block_info_storage = StcBlockInfoStorage::new(instance.clone());
+
+    for block_id in blocks {
+        assert!(
+            block_storage.get(block_id)?.is_none(),
+            "expect Block is none"
+        );
+        assert!(
+            new_block_storage.get(block_id)?.is_some(),
+            "expect Block is some"
+        );
+        assert!(
+            block_info_storage.get(block_id)?.is_none(),
+            "expect BlockInfo is none"
+        );
+        assert!(
+            new_block_info_storage.get(block_id)?.is_some(),
+            "expect BlockInfo is some"
+        );
+    }
+
+    let failed_block_storage = FailedBlockStorage::new(instance.clone());
+    let new_failed_block_storage = StcFailedBlockStorage::new(instance.clone());
+
+    for (idx, failed_block_id) in failed_blocks.into_iter().enumerate() {
+        assert!(
+            failed_block_storage.get(failed_block_id)?.is_none(),
+            "expect FailedBlock is none"
+        );
+        let Some(failed_block) = new_failed_block_storage.get(failed_block_id)? else {
+            panic!("expect FailedBlock is some");
+        };
+        let (_block, _peer_id, _failed, version) = failed_block.into();
+        if idx == 0 {
+            assert!(
+                version.is_empty(),
+                "expect old failed block version is empty"
+            );
+        } else {
+            assert_eq!(
+                version,
+                "v1".to_string(),
+                "expect new failed block version is v1"
+            );
+        }
     }
 
     Ok(())

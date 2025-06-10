@@ -152,7 +152,11 @@ fn test_old_failed_block_decode() {
         body: block_body,
     };
 
-    let old_failed_block = OldFailedBlock::new(block, None, "test decode".to_string());
+    let old_failed_block = OldFailedBlock {
+        block,
+        peer_id: None,
+        failed: "test decode".to_string(),
+    };
     let encoded = old_failed_block.encode();
     assert!(encoded.is_ok());
     let result = FailedBlock::decode(encoded.unwrap().as_slice());

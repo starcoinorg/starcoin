@@ -1,8 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::legacy::{BlockInnerStorage, FailedBlockStorage, OldFailedBlock};
-use crate::block::{BlockStorage, FailedBlock, StcBlockInnerStorage, StcFailedBlockStorage};
+use crate::block::{
+    legacy, BlockStorage, FailedBlock, StcBlockInnerStorage, StcFailedBlockStorage,
+};
 use crate::block_info::{legacy::BlockInfoStorage, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
@@ -76,7 +77,7 @@ impl DBUpgrade {
 
     fn db_upgrade_v1_v2(instance: &mut StorageInstance) -> Result<()> {
         let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
-        let block_storage = BlockInnerStorage::new(instance.clone());
+        let block_storage = legacy::BlockInnerStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
         let transaction_storage = TransactionStorage::new(instance.clone());
@@ -205,20 +206,15 @@ impl DBUpgrade {
         let num = upgrade_store(old_block_info, new_block_info, batch_size)?;
         info!("upgrade block info storage, total items: {}", num);
 
-        let old_block = BlockInnerStorage::new(instance.clone());
+        let old_block = legacy::BlockInnerStorage::new(instance.clone());
         let new_block = StcBlockInnerStorage::new(instance.clone());
         let num = upgrade_store(old_block, new_block, batch_size)?;
         info!("upgrade block storage, total items: {}", num);
 
-        let failed_block = FailedBlockStorage::new(instance.clone());
+        let failed_block = legacy::FailedBlockStorage::new(instance.clone());
         let new_failed_block = StcFailedBlockStorage::new(instance.clone());
-        let old_count = upgrade_old_failed_block(&failed_block, &new_failed_block)?;
-        info!(
-            "upgrade old failed blocks in storage, total items: {}",
-            old_count
-        );
-        let num = upgrade_store(failed_block, new_failed_block, batch_size)?;
-        info!("upgrade failed block storage, total items: {}", num);
+        let num = upgrade_failed_block(failed_block, new_failed_block)?;
+        info!("upgrade old failed blocks in storage, total items: {}", num);
 
         let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
         instance
@@ -428,9 +424,9 @@ where
     }
 }
 
-fn upgrade_old_failed_block(
-    old: &FailedBlockStorage,
-    new: &StcFailedBlockStorage,
+fn upgrade_failed_block(
+    old: legacy::FailedBlockStorage,
+    new: StcFailedBlockStorage,
 ) -> Result<usize> {
     let mut item_count = 0;
     let db = old
@@ -439,14 +435,22 @@ fn upgrade_old_failed_block(
         .db()
         .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
     let mut iter = db.iter::<HashValue, Vec<u8>>(old.get_store().prefix_name)?;
+    iter.seek_to_first();
     loop {
         let Some(item) = iter.next() else { break };
         let (key, value) = item?;
-        let result = OldFailedBlock::decode_value(value.as_slice());
-        let Ok(ofb) = result else {
-            continue;
+        let nfb = match legacy::FailedBlock::decode_value(value.as_slice()) {
+            Ok(fb) => {
+                let nfb: FailedBlock = (fb.block.into(), fb.peer_id, fb.failed, fb.version).into();
+                nfb
+            }
+            _ => {
+                let ofb = legacy::OldFailedBlock::decode_value(value.as_slice())?;
+                let nfb: FailedBlock =
+                    (ofb.block.into(), ofb.peer_id, ofb.failed, "".to_string()).into();
+                nfb
+            }
         };
-        let nfb: FailedBlock = (ofb.block.into(), ofb.peer_id, ofb.failed, "".to_string()).into();
         item_count += 1;
         new.put(key, nfb)?
     }

@@ -17,22 +17,12 @@ pub struct OldFailedBlock {
     pub failed: String,
 }
 
-impl OldFailedBlock {
-    pub fn new(block: Block, peer_id: Option<PeerId>, failed: String) -> Self {
-        Self {
-            block,
-            peer_id,
-            failed,
-        }
-    }
-}
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
-    block: Block,
-    peer_id: Option<PeerId>,
-    failed: String,
-    version: String,
+    pub block: Block,
+    pub peer_id: Option<PeerId>,
+    pub failed: String,
+    pub version: String,
 }
 
 impl From<FailedBlock> for super::FailedBlock {
