@@ -47,7 +47,7 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         libssl-dev; \
-	
+
     rm -rf /var/lib/apt/lists/*
 
 ENV RELEASE_PATH="/starcoin/target/release"
@@ -55,9 +55,7 @@ COPY --from=builder $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_miner \
      $RELEASE_PATH/starcoin_txfactory \
      $RELEASE_PATH/starcoin_faucet \
-     $RELEASE_PATH/starcoin_indexer \
      $RELEASE_PATH/mpm \
-     $RELEASE_PATH/starcoin_db_exporter \
      /starcoin/
      
 CMD ["/starcoin/starcoin"]
