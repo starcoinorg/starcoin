@@ -143,6 +143,7 @@ pub fn export_from_statedb<W: Write>(
         ];
 
         writer.serialize(record)?;
+        writer.flush()?;
         processed += 1;
 
         if processed % 100 == 0 {
@@ -156,8 +157,8 @@ pub fn export_from_statedb<W: Write>(
     println!("  Total resource size: {} bytes", total_resource_size);
     println!("  Total processing time: {} ms", now.elapsed().as_millis());
 
-    println!("Flushing CSV writer...");
-    writer.flush()?;
+    // println!("Flushing CSV writer...");
+    // writer.flush()?;
     println!("CSV writer flushed successfully");
     Ok(())
 }
