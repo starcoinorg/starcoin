@@ -7,14 +7,14 @@ use bcs_ext::BCSCodec;
 use chrono::prelude::*;
 use starcoin_crypto::HashValue;
 
-use crate::block::{FailedBlock, OldFailedBlock};
+use crate::block::{legacy::OldFailedBlock, FailedBlock};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
+use starcoin_types::block::{legacy, Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_uint::U256;
@@ -58,10 +58,6 @@ fn test_block() {
             .unwrap()
     );
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
-    storage
-        .block_storage
-        .save_body(block_id, block_body1.clone())
-        .unwrap();
     let block1 = Block::new(block_header1.clone(), block_body1);
     // save block1
     storage.block_storage.save(block1.clone()).unwrap();
@@ -117,10 +113,6 @@ fn test_block_number() {
         block_header1
     );
     let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
-    storage
-        .block_storage
-        .save_body(block_id, block_body1.clone())
-        .unwrap();
     let block1 = Block::new(block_header1, block_body1);
 
     // save block1
@@ -150,11 +142,21 @@ fn test_old_failed_block_decode() {
         0,
         BlockHeaderExtra::new([0u8; 4]),
     );
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
+    let block_body = legacy::BlockBody {
+        transactions: vec![SignedUserTransaction::mock()],
+        uncles: None,
+    };
 
-    let block = Block::new(block_header, block_body);
+    let block = legacy::Block {
+        header: block_header,
+        body: block_body,
+    };
 
-    let old_failed_block: OldFailedBlock = (block, None, "test decode".to_string()).into();
+    let old_failed_block = OldFailedBlock {
+        block,
+        peer_id: None,
+        failed: "test decode".to_string(),
+    };
     let encoded = old_failed_block.encode();
     assert!(encoded.is_ok());
     let result = FailedBlock::decode(encoded.unwrap().as_slice());
@@ -188,26 +190,7 @@ fn test_save_failed_block() {
     );
 
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
-
     let block = Block::new(block_header, block_body);
-
-    storage
-        .block_storage
-        .save_old_failed_block(
-            block.id(),
-            block.clone(),
-            None,
-            "test old block".to_string(),
-        )
-        .unwrap();
-
-    let result = storage
-        .block_storage
-        .get_failed_block_by_id(block.id())
-        .unwrap()
-        .unwrap();
-    assert_eq!(result.0, block);
-    assert_eq!(result.3, "".to_string());
 
     storage
         .block_storage
@@ -215,7 +198,7 @@ fn test_save_failed_block() {
             block.id(),
             block.clone(),
             None,
-            "test old block".to_string(),
+            "test failed block".to_string(),
             "1".to_string(),
         )
         .unwrap();

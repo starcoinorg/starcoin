@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::define_storage;
+
 use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
-    BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
+    define_storage, BLOCK_HEADER_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME,
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME_V2,
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
@@ -12,31 +12,9 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader};
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct OldFailedBlock {
-    block: Block,
-    peer_id: Option<PeerId>,
-    failed: String,
-}
-
-impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
-    fn from(block: (Block, Option<PeerId>, String)) -> Self {
-        Self {
-            block: block.0,
-            peer_id: block.1,
-            failed: block.2,
-        }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<(Block, Option<PeerId>, String, String)> for OldFailedBlock {
-    fn into(self) -> (Block, Option<PeerId>, String, String) {
-        (self.block, self.peer_id, self.failed, "".to_string())
-    }
-}
+pub mod legacy;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
@@ -75,18 +53,12 @@ impl Sample for FailedBlock {
     }
 }
 
-define_storage!(BlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME);
+define_storage!(StcBlockInnerStorage, HashValue, Block, BLOCK_PREFIX_NAME_V2);
 define_storage!(
     BlockHeaderStorage,
     HashValue,
     BlockHeader,
     BLOCK_HEADER_PREFIX_NAME
-);
-define_storage!(
-    BlockBodyStorage,
-    HashValue,
-    BlockBody,
-    BLOCK_BODY_PREFIX_NAME
 );
 define_storage!(
     BlockTransactionsStorage,
@@ -101,20 +73,19 @@ define_storage!(
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
 define_storage!(
-    FailedBlockStorage,
+    StcFailedBlockStorage,
     HashValue,
     FailedBlock,
-    FAILED_BLOCK_PREFIX_NAME
+    FAILED_BLOCK_PREFIX_NAME_V2
 );
 
 #[derive(Clone)]
 pub struct BlockStorage {
-    block_store: BlockInnerStorage,
+    block_store: StcBlockInnerStorage,
     pub(crate) header_store: BlockHeaderStorage,
-    body_store: BlockBodyStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
-    failed_block_storage: FailedBlockStorage,
+    failed_block_storage: StcFailedBlockStorage,
 }
 
 impl ValueCodec for Block {
@@ -137,25 +108,6 @@ impl ValueCodec for BlockHeader {
     }
 }
 
-impl ValueCodec for BlockBody {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
-
-impl ValueCodec for OldFailedBlock {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        self.encode()
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Self::decode(data)
-    }
-}
 impl ValueCodec for FailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
@@ -169,12 +121,11 @@ impl ValueCodec for FailedBlock {
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
         BlockStorage {
-            block_store: BlockInnerStorage::new(instance.clone()),
+            block_store: StcBlockInnerStorage::new(instance.clone()),
             header_store: BlockHeaderStorage::new(instance.clone()),
-            body_store: BlockBodyStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
-            failed_block_storage: FailedBlockStorage::new(instance),
+            failed_block_storage: StcFailedBlockStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {
@@ -199,20 +150,12 @@ impl BlockStorage {
         Ok(key_hashes)
     }
 
-    pub fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
-        self.body_store.put(block_id, body)
-    }
-
     pub fn get(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_store.get(block_id)
     }
 
     pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         Ok(self.block_store.multiple_get(ids)?.into_iter().collect())
-    }
-
-    pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.body_store.get(block_id)
     }
 
     pub fn commit_block(&self, block: Block) -> Result<()> {
@@ -226,7 +169,6 @@ impl BlockStorage {
     }
     pub fn delete_block(&self, block_id: HashValue) -> Result<()> {
         self.header_store.remove(block_id)?;
-        self.body_store.remove(block_id)?;
         self.block_store.remove(block_id)?;
         self.block_txns_store.remove(block_id)?;
         self.block_txn_infos_store.remove(block_id)
@@ -289,29 +231,6 @@ impl BlockStorage {
         &self,
         block_id: HashValue,
     ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
-        let res = self.failed_block_storage.get_raw(block_id)?;
-        match res {
-            Some(res) => {
-                let result = OldFailedBlock::decode_value(res.as_slice());
-                if result.is_ok() {
-                    return Ok(Some(result?.into()));
-                }
-                let result = FailedBlock::decode_value(res.as_slice())?;
-                Ok(Some(result.into()))
-            }
-            None => Ok(None),
-        }
-    }
-
-    pub fn save_old_failed_block(
-        &self,
-        block_id: HashValue,
-        block: Block,
-        peer_id: Option<PeerId>,
-        failed: String,
-    ) -> Result<()> {
-        let old_block: OldFailedBlock = (block, peer_id, failed).into();
-        self.failed_block_storage
-            .put_raw(block_id, old_block.encode_value()?)
+        Ok(self.failed_block_storage.get(block_id)?.map(Into::into))
     }
 }

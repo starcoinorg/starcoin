@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::BlockStorage;
-use crate::block_info::BlockInfoStorage;
+use crate::block::{
+    legacy, BlockStorage, FailedBlock, StcBlockInnerStorage, StcFailedBlockStorage,
+};
+use crate::block_info::{legacy::BlockInfoStorage, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
 use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
@@ -75,7 +77,7 @@ impl DBUpgrade {
 
     fn db_upgrade_v1_v2(instance: &mut StorageInstance) -> Result<()> {
         let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
-        let block_storage = BlockStorage::new(instance.clone());
+        let block_storage = legacy::BlockInnerStorage::new(instance.clone());
         let block_info_storage = BlockInfoStorage::new(instance.clone());
         let transaction_info_storage = TransactionInfoStorage::new(instance.clone());
         let transaction_storage = TransactionStorage::new(instance.clone());
@@ -95,7 +97,7 @@ impl DBUpgrade {
                     continue;
                 }
             };
-            let block_number = block.header().number();
+            let block_number = block.header.number();
 
             //user transaction start from 1, 0 is block metadata transaction, but the genesis transaction is user transaction, and transaction_index is 0.
             //genesis block s no block metadata transaction.
@@ -199,6 +201,21 @@ impl DBUpgrade {
         let num = upgrade_store(old_transaction_info, new_transaction_info, batch_size)?;
         info!("upgrade transaction info storage, total items: {}", num);
 
+        let old_block_info = BlockInfoStorage::new(instance.clone());
+        let new_block_info = StcBlockInfoStorage::new(instance.clone());
+        let num = upgrade_store(old_block_info, new_block_info, batch_size)?;
+        info!("upgrade block info storage, total items: {}", num);
+
+        let old_block = legacy::BlockInnerStorage::new(instance.clone());
+        let new_block = StcBlockInnerStorage::new(instance.clone());
+        let num = upgrade_store(old_block, new_block, batch_size)?;
+        info!("upgrade block storage, total items: {}", num);
+
+        let failed_block = legacy::FailedBlockStorage::new(instance.clone());
+        let new_failed_block = StcFailedBlockStorage::new(instance.clone());
+        let num = upgrade_failed_block(failed_block, new_failed_block)?;
+        info!("upgrade old failed blocks in storage, total items: {}", num);
+
         let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
         instance
             .db_mut()
@@ -269,7 +286,7 @@ impl DBUpgrade {
             if block.header().number() == BARNARD_HARD_FORK_HEIGHT {
                 info!("barnard hard fork rollback height");
                 let mut processed_count = 0;
-                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let block_info_storage = StcBlockInfoStorage::new(instance.clone());
                 let mut iter = block_storage.header_store.iter()?;
                 iter.seek_to_first();
                 for item in iter {
@@ -317,7 +334,7 @@ impl DBUpgrade {
                         to_deleted.push(id);
                     }
                 }
-                let block_info_storage = BlockInfoStorage::new(instance.clone());
+                let block_info_storage = StcBlockInfoStorage::new(instance.clone());
                 let mut processed_count = 0;
                 for id in to_deleted {
                     block_info_storage.remove(id)?;
@@ -405,4 +422,37 @@ where
             to_put = Some(CodecWriteBatch::new());
         }
     }
+}
+
+fn upgrade_failed_block(
+    old: legacy::FailedBlockStorage,
+    new: StcFailedBlockStorage,
+) -> Result<usize> {
+    let mut item_count = 0;
+    let db = old
+        .get_store()
+        .storage()
+        .db()
+        .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
+    let mut iter = db.iter::<HashValue, Vec<u8>>(old.get_store().prefix_name)?;
+    iter.seek_to_first();
+    loop {
+        let Some(item) = iter.next() else { break };
+        let (key, value) = item?;
+        let nfb = match legacy::FailedBlock::decode_value(value.as_slice()) {
+            Ok(fb) => {
+                let nfb: FailedBlock = (fb.block.into(), fb.peer_id, fb.failed, fb.version).into();
+                nfb
+            }
+            _ => {
+                let ofb = legacy::OldFailedBlock::decode_value(value.as_slice())?;
+                let nfb: FailedBlock =
+                    (ofb.block.into(), ofb.peer_id, ofb.failed, "".to_string()).into();
+                nfb
+            }
+        };
+        item_count += 1;
+        new.put(key, nfb)?
+    }
+    Ok(item_count)
 }

@@ -6,7 +6,7 @@ use crate::accumulator::{
     VMStateAccumulatorStorage,
 };
 use crate::block::BlockStorage;
-use crate::block_info::{BlockInfoStorage, BlockInfoStore};
+use crate::block_info::{BlockInfoStore, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::StcContractEventStorage;
 use crate::state_node::StateStorage;
@@ -28,7 +28,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
-    block::{Block, BlockBody, BlockHeader, BlockInfo},
+    block::{Block, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
@@ -68,9 +68,11 @@ pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
 pub const VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_vm_state";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
+pub const BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "block_v2";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
+pub const BLOCK_INFO_PREFIX_NAME_V2: ColumnFamilyName = "block_info_v2";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const BLOCK_TRANSACTION_INFOS_PREFIX_NAME: ColumnFamilyName = "block_txn_infos";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
@@ -85,6 +87,7 @@ pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_inf
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
 pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
+pub const FAILED_BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "failed_block_v2";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const TABLE_INFO_PREFIX_NAME_V2: ColumnFamilyName = "table_info_v2";
 
@@ -101,8 +104,6 @@ pub trait BlockStore {
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
-
-    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
 
     fn commit_block(&self, block: Block) -> Result<()>;
 
@@ -214,7 +215,7 @@ pub struct Storage {
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
     vm_state_accumulator_storage: AccumulatorStorage<VMStateAccumulatorStorage>,
-    block_info_storage: BlockInfoStorage,
+    block_info_storage: StcBlockInfoStorage,
     event_storage: StcContractEventStorage,
     chain_info_storage: ChainInfoStorage,
     table_info_storage: StcTableInfoStorage,
@@ -237,7 +238,7 @@ impl Storage {
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
-            block_info_storage: BlockInfoStorage::new(instance.clone()),
+            block_info_storage: StcBlockInfoStorage::new(instance.clone()),
             event_storage: StcContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
             table_info_storage: StcTableInfoStorage::new(instance),
@@ -333,11 +334,6 @@ impl BlockStore for Storage {
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         self.block_storage.get_blocks(ids)
-    }
-
-    #[allow(deprecated)]
-    fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
-        self.block_storage.get_body(block_id)
     }
 
     fn commit_block(&self, block: Block) -> Result<()> {

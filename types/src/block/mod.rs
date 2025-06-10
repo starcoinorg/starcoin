@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod legacy;
+
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
@@ -605,18 +607,6 @@ pub struct BlockBody {
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
-
-#[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
-)]
-#[serde(rename = "BlockBody")]
-pub struct LegacyBlockBody {
-    /// The transactions in this block.
-    pub transactions: Vec<SignedUserTransaction>,
-    /// uncles block header
-    pub uncles: Option<Vec<BlockHeader>>,
-}
-
 impl BlockBody {
     pub fn new(
         multi_transactions: Vec<MultiSignedUserTransaction>,
@@ -714,15 +704,6 @@ pub struct Block {
     pub header: BlockHeader,
     /// The body of this block.
     pub body: BlockBody,
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-#[serde(rename = "Block")]
-pub struct LegacyBlock {
-    /// The header of this block.
-    pub header: BlockHeader,
-    /// The body of this block.
-    pub body: LegacyBlockBody,
 }
 
 impl Block {
@@ -888,34 +869,6 @@ pub struct BlockInfo {
     pub block_accumulator_info: AccumulatorInfo,
     /// The vm state accumulator info for dual-vm
     pub vm_state_accumulator_info: AccumulatorInfo,
-}
-
-#[derive(
-    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
-)]
-#[serde(rename = "BlockInfo")]
-pub struct LegacyBlockInfo {
-    /// Block id
-    pub block_id: HashValue,
-    /// The total difficulty.
-    #[schemars(with = "String")]
-    pub total_difficulty: U256,
-    /// The transaction accumulator info
-    pub txn_accumulator_info: AccumulatorInfo,
-    /// The block accumulator info.
-    pub block_accumulator_info: AccumulatorInfo,
-}
-
-impl From<LegacyBlockInfo> for BlockInfo {
-    fn from(legacy_block_info: LegacyBlockInfo) -> Self {
-        BlockInfo {
-            block_id: legacy_block_info.block_id,
-            total_difficulty: legacy_block_info.total_difficulty,
-            txn_accumulator_info: legacy_block_info.txn_accumulator_info,
-            block_accumulator_info: legacy_block_info.block_accumulator_info,
-            vm_state_accumulator_info: AccumulatorInfo::default(),
-        }
-    }
 }
 
 impl BlockInfo {
