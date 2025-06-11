@@ -47,7 +47,6 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         libssl-dev; \
-
     rm -rf /var/lib/apt/lists/*
 
 ENV RELEASE_PATH="/starcoin/target/release"
