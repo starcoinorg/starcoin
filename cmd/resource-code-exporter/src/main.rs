@@ -31,7 +31,15 @@ enum Commands {
 
         #[clap(long)]
         /// Block id to export state at
-        block_id: starcoin_crypto::HashValue,
+        block_hash: starcoin_crypto::HashValue,
+
+        #[clap(long, short = 's')]
+        /// Start account index
+        start: u64,
+
+        #[clap(long, short = 'e')]
+        /// End account index, 0 to process to end of data list
+        end: u64,
     },
     /// Import state data from CSV file
     Import {
@@ -46,6 +54,14 @@ enum Commands {
         #[clap(long)]
         /// expect state root hash
         state_root: starcoin_crypto::HashValue,
+
+        #[clap(long, short = 's')]
+        /// Start account index
+        start: u64,
+
+        #[clap(long, short = 'e')]
+        /// End account index, 0 to process to end of data list
+        end: u64,
     },
 }
 
@@ -56,18 +72,34 @@ fn main() -> anyhow::Result<()> {
         Commands::Export {
             output,
             db_path,
-            block_id,
+            block_hash,
+            start,
+            end,
         } => {
-            export::export(db_path.display().to_string().as_str(), &output, block_id)?;
+            index_check(start, end);
+            export::export(
+                db_path.display().to_string().as_str(),
+                &output,
+                block_hash,
+                start,
+                end,
+            )?;
         }
         Commands::Import {
             csv_input,
             db_path,
             state_root,
+            start,
+            end,
         } => {
-            import::import(&csv_input, &db_path, state_root)?;
+            index_check(start, end);
+            import::import(&csv_input, &db_path, state_root, start, end)?;
         }
     }
 
     Ok(())
+}
+
+fn index_check(start: u64, end: u64) {
+    assert!(start < end && end != 0);
 }
