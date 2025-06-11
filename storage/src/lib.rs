@@ -16,6 +16,7 @@ use crate::transaction::StcTransactionStorage;
 use crate::transaction_info::{StcTransactionInfoStorage, TransactionInfoHashStorage};
 use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
@@ -307,13 +308,11 @@ impl BlockStore for Storage {
     }
 
     fn get_chain_info(&self) -> Result<Option<ChainInfo>> {
-        let genesis_hash = match self.get_genesis()? {
-            Some(genesis_hash) => genesis_hash,
-            None => return Ok(None),
+        let Some(genesis_hash) = self.get_genesis()? else {
+            return Ok(None);
         };
-        let startup_info = match self.get_startup_info()? {
-            Some(startup_info) => startup_info,
-            None => return Ok(None),
+        let Some(startup_info) = self.get_startup_info()? else {
+            return Ok(None);
         };
         let head_block = self
             .get_block_header_by_hash(startup_info.main)?
@@ -321,6 +320,10 @@ impl BlockStore for Storage {
         let head_block_info = self.get_block_info(head_block.id())?.ok_or_else(|| {
             format_err!("Startup block info {:?} should exist", startup_info.main)
         })?;
+        // if the vm_state_accumulator_info is default, it means the new genesis has not been upgraded.
+        if head_block_info.vm_state_accumulator_info == AccumulatorInfo::default() {
+            return Ok(None);
+        }
         Ok(Some(ChainInfo::new(
             head_block.chain_id(),
             genesis_hash,

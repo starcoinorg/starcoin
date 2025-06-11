@@ -46,6 +46,20 @@ use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
 
+// **如何从一个已存在的链检查升级成新的链
+// 1. 新的节点启动时，首先进行storage升级，此时startup_info指向的block_info为升级后的版本
+// 2. 此时该block_info中vm_state_accumulator_info为缺省值，这时需要升级，与生成一个新链流程基本相同
+// 3. 升级时，检查`Genesis`文件是否存在，如果存在并且是旧链Genesis，则需要重建Genesis
+// 4. 重建Genesis后，genesis block_info中vm_state_accumulator_info字段会包含有意义的数据
+// 5. 最后更新startup_info以及其他必要的字段，最后返回新的ChainInfo和Genesis。
+// **如何build 和 execute genesis block
+// 1. Genesis_Config设定正确的parent_hash、timestamp、difficulty等参数
+// 2. 构造Genesis block时，可能需要依赖旧链的storage，确保本地已经存在该区块，并且合法
+// 3. 旧链Genesis txn由于已经执行过了，新Genesis中vm1 不再填充txn, vm2正常填充
+// 4. 重构build_genesis_block和execute_genesis_block，注意处理高度以及gas问题
+//      4a. vm2的genesis txn执行后，还需要更新block_meta，设置正确的高度
+//      4b. new_with_genesis
+
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
 
@@ -145,7 +159,8 @@ impl Genesis {
     pub fn build(net: &ChainNetwork) -> Result<Self> {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
-        assert_eq!(block.header().number(), 0);
+        // todo: how to check genesis block number?
+        // assert_eq!(block.header().number(), 0);
         debug!("Genesis block id : {:?}", block.header().id());
         let genesis = Self { block };
         Ok(genesis)
@@ -295,13 +310,18 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
+        let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content);
         let genesis = if legacy {
-            let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?;
-            legacy_genesis.into()
+            Some(legacy_genesis?.into())
         } else {
-            bcs_ext::from_bytes(&content)?
+            if legacy_genesis.is_ok() {
+                // treat legacy genesis as not exist
+                None
+            } else {
+                Some(bcs_ext::from_bytes(&content)?)
+            }
         };
-        Ok(Some(genesis))
+        Ok(genesis)
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
@@ -360,10 +380,13 @@ impl Genesis {
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        // todo: how and when upgrade legacy genesis?
+        // When booting a node, we must upgrade genesis file if it's not.
+        // The legacy_genesis flag must be FALSE here
         let legacy_genesis = false;
+        // if loading genesis file fails, we will build a new upgraded one.
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
+                assert!(!init, "Genesis already exists, init flag must not be set.");
                 let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
@@ -374,7 +397,6 @@ impl Genesis {
                 }
                 genesis
             }
-            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
@@ -385,6 +407,7 @@ impl Genesis {
                     return Err(GenesisError::GenesisNotExist("data_dir".to_owned()).into());
                 }
             }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
         };
         Ok(genesis)
     }

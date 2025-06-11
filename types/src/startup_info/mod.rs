@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod legacy;
+
 use crate::block::{BlockHeader, BlockInfo, BlockNumber};
 use anyhow::Result;
 use bcs_ext::{BCSCodec, Sample};
@@ -67,7 +69,7 @@ impl ChainInfo {
     }
 }
 
-impl std::default::Default for ChainInfo {
+impl Default for ChainInfo {
     fn default() -> Self {
         Self {
             chain_id: ChainId::test(),
