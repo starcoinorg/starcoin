@@ -20,8 +20,8 @@ mod metrics;
 pub mod task;
 
 pub use create_block_template::{
+    block_builder_service::BlockBuilderService, block_builder_service::BlockTemplateRequest,
     new_header_service::NewHeaderChannel, new_header_service::NewHeaderService,
-    BlockBuilderService, BlockTemplateRequest,
 };
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
