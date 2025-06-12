@@ -325,6 +325,34 @@ fn test_get_leaves_overflow() {
 #[test]
 fn test_get_frozen_subtrees() {}
 
+#[test]
+fn test_rebuilding_accumulator_root() {
+    let leaves = create_leaves(1000..1020);
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        Arc::new(mock_store),
+    );
+    accumulator.append(&leaves).unwrap();
+    let info = accumulator.get_info();
+    let new_leaf = HashValue::random();
+    let root_hash = accumulator.append(&[new_leaf]).unwrap();
+
+    // 1. Create a new empty accumulator
+    let mock_store2 = MockAccumulatorStore::new();
+    let accumulator2 = MerkleAccumulator::new_with_info(info, Arc::new(mock_store2));
+    // 2. Append the same new leaf to the new accumulator with empty store
+    let root_hash2 = accumulator2.append(&[new_leaf]).unwrap();
+    // 3. Check if the root hash is the same
+    assert_eq!(
+        root_hash, root_hash2,
+        "rebuild accumulator root hash not match"
+    );
+}
+
 fn proof_verify(
     accumulator: &MerkleAccumulator,
     root_hash: HashValue,
