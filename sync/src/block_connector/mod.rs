@@ -50,7 +50,7 @@ impl ServiceRequest for ExecuteRequest {
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
     pub previous_header: BlockHeader,
-    pub tips_hash: Vec<HashValue>,
+    pub selected_parents: Vec<HashValue>,
     pub blue_blocks_hash: Vec<HashValue>,
     pub strategy: ConsensusStrategy,
     pub on_chain_block_gas_limit: u64,

@@ -362,12 +362,12 @@ impl BlockChain {
         };
 
         let MineNewDagBlockInfo {
-            tips,
+            selected_parents,
             ghostdata,
             pruning_point: _,
         } = {
             MineNewDagBlockInfo {
-                tips,
+                selected_parents: tips,
                 ghostdata,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
@@ -421,7 +421,7 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            tips,
+            selected_parents,
             blue_blocks,
             0,
             pruning_point,

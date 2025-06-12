@@ -10274,6 +10274,7 @@ dependencies = [
  "hex",
  "once_cell",
  "parking_lot 0.12.1",
+ "rand 0.8.5",
  "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-account-service",

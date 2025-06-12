@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
-use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
@@ -1033,21 +1032,21 @@ fn test_prune() -> anyhow::Result<()> {
     )?; // update the dag state to the latest pruning point(5, state)
 
     let MineNewDagBlockInfo {
-        tips,
+        selected_parents,
         ghostdata: _,
         pruning_point,
     } = dag
-        .calc_mergeset_and_tips(genesis.id(), G_MAX_PARENTS_COUNT, genesis.id())
+        .calc_mergeset_and_tips(genesis.id(), genesis.id())
         .unwrap();
 
     assert_eq!(pruning_point, block_main_2.id());
-    assert_eq!(tips.len(), 1);
-    assert_eq!(*tips.last().unwrap(), block_main_6.id());
+    assert_eq!(selected_parents.len(), 1);
+    assert_eq!(*selected_parents.last().unwrap(), block_main_6.id());
 
     // test the pruning logic
 
-    let block_main_7 = add_and_print(7, block_main_6.id(), tips.clone(), &mut dag)?;
-    let block_main_7_1 = add_and_print(7, block_main_6.id(), tips, &mut dag)?;
+    let block_main_7 = add_and_print(7, block_main_6.id(), selected_parents.clone(), &mut dag)?;
+    let block_main_7_1 = add_and_print(7, block_main_6.id(), selected_parents, &mut dag)?;
     let block_fork = add_and_print(4, block_red_3.id(), vec![block_red_3.id()], &mut dag)?;
 
     let tips = vec![
@@ -1094,15 +1093,15 @@ fn test_prune() -> anyhow::Result<()> {
     )?;
 
     let MineNewDagBlockInfo {
-        tips,
+        selected_parents,
         ghostdata: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(genesis.id(), G_MAX_PARENTS_COUNT, genesis.id())?;
+    } = dag.calc_mergeset_and_tips(genesis.id(), genesis.id())?;
 
     assert_eq!(pruning_point, block_main_2.id());
-    assert_eq!(tips.len(), 2);
+    assert_eq!(selected_parents.len(), 2);
     assert_eq!(
-        tips.into_iter().collect::<HashSet<_>>(),
+        selected_parents.into_iter().collect::<HashSet<_>>(),
         HashSet::from_iter(vec![block_main_7.id(), block_main_7_1.id()])
     );
 
