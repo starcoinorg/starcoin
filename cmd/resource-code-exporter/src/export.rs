@@ -143,7 +143,6 @@ pub fn export_from_statedb<W: Write>(
         ];
 
         writer.serialize(record)?;
-        writer.flush()?;
         processed += 1;
 
         // if processed % 100 == 0 {
