@@ -4,7 +4,6 @@
 use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
-use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -281,7 +280,7 @@ impl MockChain {
         //     .ok_or_else(|| format_err!("Cannot find ghostdata by hash: {:?}", previous_pruning))?;
 
         let MineNewDagBlockInfo {
-            tips: pruned_tips,
+            selected_parents: pruned_tips,
             ghostdata,
             pruning_point,
         } = self.head.dag().calc_mergeset_and_tips(
@@ -289,7 +288,6 @@ impl MockChain {
             // prevous_ghostdata.as_ref(),
             // 4,
             // 3,
-            G_MAX_PARENTS_COUNT,
             self.head().get_genesis_hash(),
         )?;
 
