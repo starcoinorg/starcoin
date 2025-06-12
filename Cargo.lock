@@ -13671,7 +13671,6 @@ dependencies = [
  "lru 0.7.8",
  "once_cell",
  "parking_lot 0.12.3",
- "rayon",
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
