@@ -67,7 +67,10 @@ pub fn import_from_statedb(
         let record = result?;
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
         assert_eq!(record.len(), 5);
-        println!("Processing record {}: account {}", processed, account_address);
+        println!(
+            "Processing record {}: account {}",
+            processed, account_address
+        );
 
         let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {
             let code_state_hash = &record[1];
@@ -104,7 +107,10 @@ pub fn import_from_statedb(
         }
     }
 
-    println!("Applying {} state sets to statedb...", chain_state_set_data.len());
+    println!(
+        "Applying {} state sets to statedb...",
+        chain_state_set_data.len()
+    );
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
 
     // Get new state root
@@ -168,7 +174,13 @@ mod test {
             Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
             None,
         );
-        import_from_statedb(&imported_statedb, &export_path, export_state_root, 0, u64::MAX)?;
+        import_from_statedb(
+            &imported_statedb,
+            &export_path,
+            export_state_root,
+            0,
+            u64::MAX,
+        )?;
 
         Ok(())
     }
