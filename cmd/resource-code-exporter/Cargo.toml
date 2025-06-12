@@ -20,7 +20,7 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 tempfile = "3.19.1"
-log = "0.4.27"
+starcoin-logger = { workspace = true }
 
 
 [dev-dependencies]

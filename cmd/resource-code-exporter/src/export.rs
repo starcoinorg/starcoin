@@ -20,9 +20,7 @@ pub fn export(
     println!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
         db,
-        StorageVersion::current_version()
-            .get_column_family_names()
-            .to_vec(),
+        StorageVersion::V3.get_column_family_names().to_vec(),
         true,
         Default::default(),
         None,
