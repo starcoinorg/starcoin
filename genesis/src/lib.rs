@@ -45,7 +45,6 @@ use starcoin_types::block::{legacy, BlockBody};
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
-
 // **如何从一个已存在的链检查升级成新的链
 // 1. 新的节点启动时，首先进行storage升级，此时startup_info指向的block_info为升级后的版本
 // 2. 此时该block_info中vm_state_accumulator_info为缺省值，这时需要升级，与生成一个新链流程基本相同
@@ -178,6 +177,7 @@ impl Genesis {
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
                 genesis_config2,
+                None,
             );
 
             let txn = Self::build_genesis_transaction(net)?;
@@ -313,13 +313,11 @@ impl Genesis {
         let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content);
         let genesis = if legacy {
             Some(legacy_genesis?.into())
+        } else if legacy_genesis.is_ok() {
+            // treat legacy genesis as not exist
+            None
         } else {
-            if legacy_genesis.is_ok() {
-                // treat legacy genesis as not exist
-                None
-            } else {
-                Some(bcs_ext::from_bytes(&content)?)
-            }
+            Some(bcs_ext::from_bytes(&content)?)
         };
         Ok(genesis)
     }

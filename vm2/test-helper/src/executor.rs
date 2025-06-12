@@ -48,7 +48,7 @@ pub fn prepare_genesis() -> anyhow::Result<(ChainStateDB, ChainNetwork)> {
     let net = ChainNetwork::new_test();
     let chain_state = ChainStateDB::mock();
     let (genesis_txn, _) =
-        build_and_execute_genesis_transaction(net.chain_id().id(), net.genesis_config2());
+        build_and_execute_genesis_transaction(net.chain_id().id(), net.genesis_config2(), None);
     // execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     execute_genesis_transaction(&chain_state, Transaction::UserTransaction(genesis_txn))?;
     Ok((chain_state, net))
@@ -57,7 +57,7 @@ pub fn prepare_genesis() -> anyhow::Result<(ChainStateDB, ChainNetwork)> {
 pub fn prepare_customized_genesis(net: &ChainNetwork) -> Result<ChainStateDB> {
     let chain_state = ChainStateDB::mock();
     let (genesis_txn, _) =
-        build_and_execute_genesis_transaction(net.chain_id().id(), net.genesis_config2());
+        build_and_execute_genesis_transaction(net.chain_id().id(), net.genesis_config2(), None);
     // execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     execute_genesis_transaction(&chain_state, Transaction::UserTransaction(genesis_txn))?;
     Ok(chain_state)
