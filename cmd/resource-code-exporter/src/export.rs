@@ -4,7 +4,9 @@
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
+    storage::CodecKVStore,
     db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
+    block::legacy::BlockInnerStorage,
 };
 use std::{io::Write, path::Path, sync::Arc};
 
@@ -28,17 +30,19 @@ pub fn export(
     println!("Database opened successfully");
 
     println!("Initializing storage...");
-    let storage = Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?);
+    let storage_instance = StorageInstance::new_db_instance(db_storage);
+    let block_storage = BlockInnerStorage::new(storage_instance.clone());
 
     println!("Fetching block {} from storage...", block_hash);
-    let block = storage
-        .get_block(block_hash)?
+    let block = block_storage
+        .get(block_hash)?
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
     println!("Block found successfully");
 
     let root = block.header.state_root();
     println!("State root: {}", root);
     println!("Initializing ChainStateDB...");
+    let storage = Arc::new(Storage::new(storage_instance)?);
     let statedb = ChainStateDB::new(storage, Some(root));
 
     println!("Creating CSV writer for output: {}", output.display());
