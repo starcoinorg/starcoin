@@ -23,20 +23,14 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:sha-e1b8569
+        image: starcoin/starcoin:sha-081a426
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
-          -
-            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK /sc-data/halley/genesis_config.json;
-            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
-            node_key=${node_keys[$id]};
-            if [ ! -z $node_key ]; then
-              node_key_flag="--node-key ${node_key}";
-            fi;
-            /starcoin/starcoin -n halley --range-locate true -d /sc-data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 --discover-local=true $node_key_flag;
+          - |
+            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK /sc-data/halley/genesis_config.json; id=$(echo -e $POD_NAME | awk -F'-' '{print $2}'); IFS='; ' read -r -a node_keys <<< "$NODE_KEYS"; node_key=${node_keys[$id]}; node_key_flag=""; if [ -n "$node_key" ]; then node_key_flag="--node-key ${node_key}"; fi; miner_thread_flag=""; { case "$POD_NAME" in starcoin-0) miner_thread_flag="--miner-thread=1" ;; starcoin-1) miner_thread_flag="--miner-thread=2" ;; starcoin-2) miner_thread_flag="--miner-thread=3" ;; *) miner_thread_flag="" ;; esac; }; /starcoin/starcoin -n halley -d /sc-data --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 --discover-local=true $node_key_flag $miner_thread_flag
         ports:
           - containerPort: 9840
             hostPort: 9840
