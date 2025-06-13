@@ -5,7 +5,7 @@ use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
-    storage::StorageInstance, BlockStore, Storage, StorageVersion,
+    storage::StorageInstance, Storage, StorageVersion,
 };
 use std::{io::Write, path::Path, sync::Arc};
 
