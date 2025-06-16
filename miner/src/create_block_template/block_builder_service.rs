@@ -538,7 +538,7 @@ where
             }
         }
 
-        Ok(candidates.into())
+        Ok(parents)
     }
 
     fn mergeset_increase(
