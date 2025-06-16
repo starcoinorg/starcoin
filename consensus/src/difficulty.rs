@@ -112,7 +112,10 @@ fn next_block_time_target(
     time_plan: u64,
 ) -> Result<u64> {
     match block_headers.first() {
-        Some(end_block_header) => match end_block_header.number().cmp(&epoch.end_block_number()) {
+        Some(end_block_header) => match end_block_header
+            .number()
+            .cmp(&epoch.end_block_number().saturating_sub(1))
+        {
             Ordering::Less => Ok(time_plan),
             Ordering::Equal => {
                 let start_block_header = block_headers.last().unwrap();
