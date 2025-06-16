@@ -13,6 +13,7 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
     DEFAULT_CACHE_SIZE,
 };
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -156,11 +157,22 @@ impl Genesis {
         let genesis_config = net.genesis_config();
         let genesis_config2 = net.genesis_config2();
         if let Some(GenesisBlockParameter {
-            parent_hash,
+            parent_hash: parent_hash1,
             timestamp,
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            let parent_hash2 = genesis_config2
+                .genesis_block_parameter()
+                .expect("failed to get genesis block parameter")
+                .parent_hash;
+
+            let parent_hash = HashValue::sha3_256_of(
+                [parent_hash1.clone().to_vec(), parent_hash2.to_vec()]
+                    .concat()
+                    .as_slice(),
+            );
+
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
                 genesis_config2,
@@ -195,7 +207,7 @@ impl Genesis {
             accumulator.flush()?;
 
             Ok(Block::genesis_block(
-                *parent_hash,
+                parent_hash,
                 *timestamp,
                 accumulator_root,
                 state_root,
