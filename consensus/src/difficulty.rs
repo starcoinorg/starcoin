@@ -8,6 +8,7 @@ use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{U256, U512};
+use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::convert::TryFrom;
@@ -103,6 +104,67 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         target
     );
     Ok(target)
+}
+
+fn next_block_time_target(
+    epoch: &Epoch,
+    block_headers: &[BlockHeader],
+    time_plan: u64,
+) -> Result<u64> {
+    match block_headers.first() {
+        Some(end_block_header) => match end_block_header.number().cmp(&epoch.end_block_number()) {
+            Ordering::Less => Ok(time_plan),
+            Ordering::Equal => {
+                let start_block_header = block_headers.last().unwrap();
+                let end_block_header = block_headers.first().unwrap();
+
+                let start_time = start_block_header.timestamp();
+                let end_time = end_block_header.timestamp();
+                let duration = end_time.saturating_sub(start_time);
+
+                let total_block_count = u64::try_from(block_headers.len())?;
+                let selected_block_count = end_block_header
+                    .number()
+                    .saturating_sub(start_block_header.number())
+                    .saturating_add(1);
+
+                let average_time = duration
+                    .saturating_mul(1000)
+                    .checked_div(total_block_count)
+                    .ok_or_else(|| {
+                        format_err!(
+                            "calculate average time overflow, total block count: {:?}",
+                            total_block_count
+                        )
+                    })?;
+
+                let mut next_block_time_target = match total_block_count.cmp(&selected_block_count)
+                {
+                    Ordering::Less => {
+                        panic!("it is impossible blue count is less than selected block count")
+                    }
+                    Ordering::Equal => Ok(average_time.saturating_div(2).saturating_div(1000)),
+                    Ordering::Greater => Ok(average_time.saturating_mul(2).saturating_div(1000)),
+                }?;
+
+                info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, selected block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
+                start_block_header.id(), end_block_header.id(), duration, total_block_count, selected_block_count, average_time, time_plan, next_block_time_target);
+
+                next_block_time_target = next_block_time_target.clamp(100, 500);
+
+                info!(
+                    "jacktest: final next block time target: {:?}",
+                    next_block_time_target
+                );
+
+                Ok(next_block_time_target)
+            }
+            Ordering::Greater => {
+                panic!("why end block number is greater than epoch end block number?")
+            }
+        },
+        None => Ok(time_plan),
+    }
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
