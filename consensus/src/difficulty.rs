@@ -80,7 +80,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .then_with(|| b.id().cmp(&a.id()))
     });
 
-    let next_block_time_target = next_block_time_target(epoch, &block_in_order, 200)?;
+    let next_block_time_target = next_block_time_target(epoch, &block_in_order, 100)?;
 
     let target = get_next_target_helper(
         block_in_order
@@ -105,7 +105,10 @@ fn next_block_time_target(
     time_plan: u64,
 ) -> Result<u64> {
     match block_headers.first() {
-        Some(end_block_header) => match end_block_header.number().cmp(&epoch.end_block_number()) {
+        Some(end_block_header) => match end_block_header
+            .number()
+            .cmp(&epoch.end_block_number().saturating_sub(1))
+        {
             Ordering::Less => Ok(time_plan),
             Ordering::Equal => {
                 let start_block_header = block_headers.last().unwrap();
