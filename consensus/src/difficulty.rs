@@ -8,7 +8,6 @@ use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{U256, U512};
-use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::convert::TryFrom;
