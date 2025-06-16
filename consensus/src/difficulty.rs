@@ -116,7 +116,7 @@ fn next_block_time_target(
                 .saturating_sub(start_block_header.number());
             info!("jacktest: next_block_time_target range: {:?}, epoch number: {:?}, start_block_number: {:?}, end_block_number: {:?}", range, epoch_number, start_block_header.number(), end_block_header.number());
             match range.cmp(&epoch_number) {
-                Ordering::Less => Ok(epoch.block_time_target()),
+                Ordering::Less => Ok(time_plan),
                 Ordering::Equal => {
                     let start_time = start_block_header.timestamp();
                     let end_time = u64::try_from(
