@@ -18,6 +18,8 @@ use starcoin_config::{
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfo;
 use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfoWriter;
+use starcoin_dag::consensusdb::consensus_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagStateStore;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -277,6 +279,12 @@ impl Genesis {
             .insert(PruningPointInfo {
                 pruning_point: self.block.id(),
             })?;
+        dag.storage.state_store.write().insert(
+            self.block.id(),
+            DagState {
+                tips: vec![self.block.id()],
+            },
+        )?;
         storage
             .get_chain_info()?
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
