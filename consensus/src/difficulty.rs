@@ -80,7 +80,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .then_with(|| b.id().cmp(&a.id()))
     });
 
-    let next_block_time_target = next_block_time_target(epoch, &block_in_order, 100)?;
+    let next_block_time_target = next_block_time_target(&block_in_order, 100)?;
 
     let target = get_next_target_helper(
         block_in_order
@@ -99,80 +99,60 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-fn next_block_time_target(
-    epoch: &Epoch,
-    block_headers: &[BlockHeader],
-    time_plan: u64,
-) -> Result<u64> {
-    let epoch_number = epoch
-        .end_block_number()
-        .saturating_sub(epoch.start_block_number());
-    match (block_headers.last(), block_headers.first()) {
-        (None, None) => Ok(time_plan),
-        (Some(start_block_header), Some(end_block_header)) => {
-            let range = end_block_header
-                .number()
-                .saturating_add(1)
-                .saturating_sub(start_block_header.number());
-            info!("jacktest: next_block_time_target range: {:?}, epoch number: {:?}, start_block_number: {:?}, end_block_number: {:?}", range, epoch_number, start_block_header.number(), end_block_header.number());
-            match range.cmp(&epoch_number) {
-                Ordering::Less => Ok(time_plan),
-                Ordering::Equal => {
-                    let start_time = start_block_header.timestamp();
-                    let end_time = u64::try_from(
-                        std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)?
-                            .as_millis(),
-                    )?;
-                    let duration = end_time.saturating_sub(start_time);
+fn next_block_time_target(block_headers: &[BlockHeader], time_plan: u64) -> Result<u64> {
+    let start_block_header = if let Some(header) = block_headers.last() {
+        header
+    } else {
+        return Ok(time_plan);
+    };
+    let end_block_header = if let Some(header) = block_headers.first() {
+        header
+    } else {
+        return Ok(time_plan);
+    };
+    let start_time = start_block_header.timestamp();
+    let end_time = u64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_millis(),
+    )?;
+    let duration = end_time.saturating_sub(start_time);
 
-                    let total_block_count = u64::try_from(block_headers.len())?;
-                    let selected_block_count = end_block_header
-                        .number()
-                        .saturating_sub(start_block_header.number())
-                        .saturating_add(1);
+    let total_block_count = u64::try_from(block_headers.len())?;
+    let selected_block_count = end_block_header
+        .number()
+        .saturating_sub(start_block_header.number())
+        .saturating_add(1);
 
-                    let average_time = duration
-                        .saturating_mul(1000)
-                        .checked_div(total_block_count)
-                        .ok_or_else(|| {
-                            format_err!(
-                                "calculate average time overflow, total block count: {:?}",
-                                total_block_count
-                            )
-                        })?;
+    let average_time = duration
+        .saturating_mul(1000)
+        .checked_div(total_block_count)
+        .ok_or_else(|| {
+            format_err!(
+                "calculate average time overflow, total block count: {:?}",
+                total_block_count
+            )
+        })?;
 
-                    let mut next_block_time_target = match total_block_count
-                        .cmp(&selected_block_count)
-                    {
-                        Ordering::Less => {
-                            panic!("it is impossible blue count is less than selected block count")
-                        }
-                        Ordering::Equal => Ok(average_time.saturating_div(2).saturating_div(1000)),
-                        Ordering::Greater => {
-                            Ok(average_time.saturating_mul(2).saturating_div(1000))
-                        }
-                    }?;
+    let mut next_block_time_target = match total_block_count.cmp(&selected_block_count) {
+        Ordering::Less => {
+            panic!("it is impossible blue count is less than selected block count")
+        }
+        Ordering::Equal => average_time.saturating_div(2).saturating_div(1000),
+        Ordering::Greater => average_time.saturating_mul(2).saturating_div(1000),
+    };
 
-                    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, selected block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
+    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, selected block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
                     start_block_header.id(), end_block_header.id(), duration, total_block_count, selected_block_count, average_time, time_plan, next_block_time_target);
 
-                    next_block_time_target = next_block_time_target.clamp(100, 500);
+    next_block_time_target = next_block_time_target.clamp(time_plan, 500);
 
-                    info!(
-                        "jacktest: final next block time target: {:?}",
-                        next_block_time_target
-                    );
+    info!(
+        "jacktest: final next block time target: {:?}",
+        next_block_time_target
+    );
 
-                    Ok(next_block_time_target)
-                }
-                Ordering::Greater => {
-                    panic!("why end block number is greater than epoch end block number?")
-                }
-            }
-        }
-        _ => panic!("impossible flow"),
-    }
+    Ok(next_block_time_target)
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
