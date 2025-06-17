@@ -52,11 +52,11 @@ fn prepare_csv_content() -> anyhow::Result<String> {
     Ok(csv_content)
 }
 
-pub fn legecy_account_state_migration(
+pub fn legacy_account_state_migration(
     statedb: &ChainStateDB,
     maxium_count: Option<u64>,
 ) -> anyhow::Result<()> {
-    info!("legecy_account_state_migration | entered");
+    info!("legacy_account_state_migration | entered");
     let csv_content = prepare_csv_content()?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();
@@ -103,7 +103,7 @@ pub fn legecy_account_state_migration(
         processed += 1;
 
         info!(
-            "legecy_account_state_migration | Progress: {} records processed",
+            "legacy_account_state_migration | Progress: {} records processed",
             processed
         );
         if processed >= maxium_process_count {
@@ -115,6 +115,6 @@ pub fn legecy_account_state_migration(
         chain_state_set_data.len()
     );
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
-    info!("legecy_account_state_migration | exited");
+    info!("legacy_account_state_migration | exited");
     Ok(())
 }

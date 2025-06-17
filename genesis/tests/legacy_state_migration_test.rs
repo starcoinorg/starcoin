@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_genesis::legecy_state_migration::legecy_account_state_migration;
+use starcoin_genesis::legacy_state_migration::legacy_account_state_migration;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
 use starcoin_types::account_address::AccountAddress;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tempfile::tempdir;
 
 #[test]
-pub fn test_legecy_account_state_migration() -> anyhow::Result<()> {
+pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
     starcoin_logger::init_for_test();
 
     // Create a temporary directory for test storage
@@ -31,7 +31,7 @@ pub fn test_legecy_account_state_migration() -> anyhow::Result<()> {
     );
 
     // Execute the migration
-    legecy_account_state_migration(&statedb, Some(50))?;
+    legacy_account_state_migration(&statedb, Some(50))?;
 
     // Verify 0x1 account balance
     let account1 = AccountAddress::from_hex_literal("0x4e79f666993fd24c4f143ff28918c4fe")?;
