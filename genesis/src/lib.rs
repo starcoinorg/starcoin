@@ -38,11 +38,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+pub mod legecy_state_migration;
 
 pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
+use crate::legecy_state_migration::legecy_account_state_migration;
 use starcoin_types::block::{legacy, BlockBody};
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
@@ -437,6 +439,10 @@ impl Genesis {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let chain_info =
                     genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+
+                // Transfer relevant account data of the old main network
+                legecy_account_state_migration(&ChainStateDB::new(storage.clone(), None))?;
+
                 (chain_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
