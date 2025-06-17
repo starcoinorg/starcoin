@@ -424,7 +424,7 @@ where
     }
 }
 
-// todo: support batch upgrade
+// TODO: support batch upgrade
 fn upgrade_failed_block(
     old: legacy::FailedBlockStorage,
     new: StcFailedBlockStorage,
