@@ -105,17 +105,29 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-fn next_block_time_target(block_headers: &[BlockHeader], time_plan: u64) -> Result<u64> {
-    let start_block_header = if let Some(header) = block_headers.last() {
+/// The ratio determines how closely the proportion of the blue block approaches k; a value of 1000 means the expected ratio equals k, while a value of 0 means it deviates infinitely from k.
+fn next_block_time_target(
+    total_block_count: u64,
+    blue_block_headers: &[BlockHeader],
+    time_plan: u64,
+    k: u64,
+    ratio: u64,
+) -> Result<u64> {
+    let start_block_header = if let Some(header) = blue_block_headers.last() {
         header
     } else {
         return Ok(time_plan);
     };
-    let end_block_header = if let Some(header) = block_headers.first() {
+    let end_block_header = if let Some(header) = blue_block_headers.first() {
         header
     } else {
         return Ok(time_plan);
     };
+
+    if ratio == 0 || ratio > 1000 {
+        panic!("k ratio should in (0, 1000]");
+    }
+
     let start_time = start_block_header.timestamp();
     let end_time = u64::try_from(
         std::time::SystemTime::now()
@@ -124,11 +136,7 @@ fn next_block_time_target(block_headers: &[BlockHeader], time_plan: u64) -> Resu
     )?;
     let duration = end_time.saturating_sub(start_time);
 
-    let total_block_count = u64::try_from(block_headers.len())?;
-    let selected_block_count = end_block_header
-        .number()
-        .saturating_sub(start_block_header.number())
-        .saturating_add(1);
+    let blue_block_count = u64::try_from(blue_block_headers.len())?;
 
     let average_time = duration
         .saturating_mul(1000)
@@ -140,16 +148,29 @@ fn next_block_time_target(block_headers: &[BlockHeader], time_plan: u64) -> Resu
             )
         })?;
 
-    let mut next_block_time_target = match total_block_count.cmp(&selected_block_count) {
-        Ordering::Less => {
-            panic!("it is impossible blue count is less than selected block count")
-        }
-        Ordering::Equal => average_time.saturating_div(2).saturating_div(1000),
+    let blue_rate = blue_block_count
+        .saturating_mul(1000)
+        .checked_div(total_block_count)
+        .ok_or_else(|| {
+            format_err!(
+                "calculate blue rate overflow, total block count: {:?}, blue block count: {:?}",
+                total_block_count,
+                blue_block_count
+            )
+        })?;
+    let k_ratio = k
+        .saturating_mul(1000000)
+        .checked_div(ratio)
+        .ok_or_else(|| format_err!("calculate k ratio overflow, k: {:?}, ratio: {:?}", k, ratio))?;
+
+    let mut next_block_time_target = match blue_rate.cmp(&k_ratio) {
+        Ordering::Less => average_time.saturating_div(2).saturating_div(1000),
+        Ordering::Equal => time_plan,
         Ordering::Greater => average_time.saturating_mul(2).saturating_div(1000),
     };
 
-    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, selected block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
-                    start_block_header.id(), end_block_header.id(), duration, total_block_count, selected_block_count, average_time, time_plan, next_block_time_target);
+    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, total block count: {:?}, blue block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
+                    start_block_header.id(), end_block_header.id(), duration, total_block_count, total_block_count, blue_block_count, average_time, time_plan, next_block_time_target);
 
     next_block_time_target = next_block_time_target.clamp(time_plan, 500);
 
