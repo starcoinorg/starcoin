@@ -58,7 +58,7 @@ Feature: cmd integration test
     Then cmd: "dev get-coin"
     Then cmd: "account generate-keypair -c 3"
     Then cmd: "account derive-address -t 2 -p {{$.account[1].ok[0].public_key}} -p {{$.account[1].ok[1].public_key}}  -p {{$.account[1].ok[2].public_key}} "
-    Then cmd: "account transfer --blocking -r {{$.account[-1].ok.receipt_identifier}} -t 0x1::STC::STC -v 10000000 --gas-token 0x1::STC::STC"
+    Then cmd: "account transfer --blocking -r {{$.account[-1].ok.receipt_identifier}} -t 0x1::starcoin_coin::STC -v 10000000 --gas-token 0x1::starcoin_coin::STC"
     # account for testing only
     Then cmd: "account import-multisig --pubkey 0x934e8a5a557229f90be7c95ec17fab84e64dcc3cf2dc934ff83ffc0915fad13e --pubkey 0x28358c05692e6758ba1398835525687c16d65abc9e1dc89023b46298ed2c575a --prikey 0x0c84a983ff0bfab39570c2ceed3e1c1feb645e84eccf9fd6baf4f49351a52329 --prikey 0x3695d6e08e3ad41962cba8c55ebb0552827807ae4cd6236d35195c769437272e -t 2"
     Then cmd: "account unlock"
@@ -68,7 +68,7 @@ Feature: cmd integration test
     Then cmd: "account transfer -s 0x056d9bed868f8e8c74cf19109a2b375a -r 0x056d9bed868f8e8c74cf19109a2b375b -v 10000000 -b"
     Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
     # sign to file first
-    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::TransferScripts::peer_to_peer_v2 -t 0x1::STC::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
+    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::transfer_scripts::peer_to_peer_v2 -t 0x1::starcoin_coin::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
     Then cmd: "account submit-txn {{$.account[-1].ok}} -b"
     Then stop
 
@@ -78,9 +78,9 @@ Feature: cmd integration test
 
   #dev
   Scenario Outline: [cmd] dev resolve test
-    Then cmd: "dev resolve function 0x1::TransferScripts::peer_to_peer_v2"
-    Then cmd: "dev resolve struct 0x1::Account::Account"
-    Then cmd: "dev resolve module 0x1::Account"
+    Then cmd: "dev resolve function 0x1::transfer_scripts::peer_to_peer_v2"
+    Then cmd: "dev resolve struct 0x1::account::Account"
+    Then cmd: "dev resolve module 0x1::account"
     Then stop
 
     Examples:
@@ -100,9 +100,9 @@ Feature: cmd integration test
     Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
-    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::Account::Account"
-    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::Account::Account --raw"
-    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Account"
+    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account"
+    Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account --raw"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::account::Account"
     Then assert: "{{$.state[-1].ok.json.sequence_number}} == 0"
     Then cmd: "account show"
     Then cmd: "state list resource {{$.account[0].ok.account.address}}"
@@ -139,7 +139,7 @@ Feature: cmd integration test
     Then cmd: "account transfer --blocking -v 100000000 -r 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account unlock 0x809c795045105a7b1efbcca4510d2034"
     # using a temporal private key as import
-    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554 --gas-token 0x1::STC::STC"
+    Then cmd: "account rotate-authentication-key 0x809c795045105a7b1efbcca4510d2034 -i 0x3885e7dde8381046849d64d28b675f1c668dc36eaa9be11cbcaadb24c3917554 --gas-token 0x1::starcoin_coin::STC"
     # rotate-authentication-key twice for:
     # 1. auth key will be verified on chain, so do it again for checking last rotation.
     # 2. ensuring it's idempotent
@@ -152,7 +152,7 @@ Feature: cmd integration test
     Then cmd: "account remove 0x809c795045105a7b1efbcca4510d2034"
     Then cmd: "account list"
     Then cmd: "account show"
-    Then cmd: "account accept-token 0x1::DummyToken::DummyToken"
+    #Then cmd: "account accept-token 0x1::DummyToken::DummyToken"
     Then stop
 
 
@@ -184,77 +184,98 @@ Feature: cmd integration test
     Examples:
       |  |
 
-  #StarcoinFramework checkpoint
-  Scenario Outline: [ignore] starcoin-framework checkpoint
-    Then cmd: "dev get-coin"
-    Then cmd: "account unlock"
-    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
-    Then cmd: "dev call-api chain.get_block_by_number [1,{\"raw\":true}]"
-    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[1].ok.raw.header}} -b"
-     Then cmd: "dev call --function 0x1::Block::latest_state_root"
-    Then assert: "{{$.dev[2].ok[1]}} == {{$.dev[1].ok.header.state_root}}"
-
-    Examples:
-      |  |
-
-
-  #easy gas testing
-  Scenario Outline: [ignore] starcoin easy gas test
+#  #StarcoinFramework checkpoint
+#  Scenario Outline: [ignore] starcoin-framework checkpoint
+#    Then cmd: "dev get-coin"
+#    Then cmd: "account unlock"
+#    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
+#    Then cmd: "dev call-api chain.get_block_by_number [1,{\"raw\":true}]"
+#    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[1].ok.raw.header}} -b"
+#    Then cmd: "dev call --function 0x1::Block::latest_state_root"
+#    Then assert: "{{$.dev[2].ok[1]}} == {{$.dev[1].ok.header.state_root}}"
+#
+#    Examples:
+#      |  |
+#
+  #flexidagconfig dao testing
+  Scenario Outline: [cmd] starcoin flexidagconfig dao
+    # 1. deposit to default account which is a proposer
     Then cmd: "dev get-coin -v 1000000"
-    Then cmd: "account show"
     Then cmd: "account unlock"
-    # stake to sbt
-    Then cmd: "account execute-function --function 0x1::StakeToSBTPlugin::stake_entry -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::STC::STC  --arg 1000000000000u128 --arg 60000u64 -b"
-    Then cmd: "account execute-function --function 0x1::DummyTokenScripts::mint --arg 9000u128 -b"
-    Then cmd: "dev call-api chain.info"
-    # check point and update state root
-    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
-    Then cmd: "dev call-api chain.get_block_by_number [{{$.dev[1].ok.head.number}},{\"raw\":true}]"
-    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[2].ok.raw.header}} -b"
-    Then cmd: "dev call --function 0x1::Block::latest_state_root"
-    Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
-    # create gas oracle proposal
-    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::create_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg b"title" --arg b"intro" --arg b"desc" --arg 0 --arg {{$.account[0].ok.account.address}} -b"
+    # 2. create FlexiDagConfig proposal with proposer account
+    Then cmd: "account execute-function --function 0x1::on_chain_config_scripts::propose_update_flexi_dag_effective_height -s {{$.account[0].ok.address}} --arg 10000u64 --arg 0u64 -b"
     Then cmd: "dev sleep -t 60000"
-    # make 0x1::Timestamp::now_seconds updated directly
+    # 3. make sure proposal has been ACTIVE for voting
     Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[6].ok[0]}} == 2"
-    # cast vote
-    # result of this call can't use
-    Then cmd: "dev call --function 0x1::SnapshotUtil::get_access_path -t 0x1::StarcoinDAO::StarcoinDAO  --arg {{$.account[0].ok.account.address}}"
-    Then cmd: "dev call-api state.get_with_proof_by_root_raw [\"{{$.account[0].ok.account.address}}/1/0x00000000000000000000000000000001::IdentifierNFT::IdentifierNFT<0x00000000000000000000000000000001::DAOSpace::DAOMember<0x00000000000000000000000000000001::StarcoinDAO::StarcoinDAO>,0x00000000000000000000000000000001::DAOSpace::DAOMemberBody<0x00000000000000000000000000000001::StarcoinDAO::StarcoinDAO>>\",\"{{$.dev[2].ok.header.state_root}}\"]"
-    Then cmd: "account execute-function --function 0x1::DAOSpace::cast_vote_entry -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64 --arg {{$.dev[8].ok}} --arg 1u8 -b"
+    Then cmd: "dev call --function 0x1::dao::proposal_state -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0"
+    Then assert: "{{$.dev[-1].ok[0]}} == 2"
+    # 4. create a new account to vote, deposit enough tokens
+    Then cmd: "account create -p 1234"
+    Then cmd: "dev get-coin -v 10000000 {{$.account[2].ok.address}}"
+    Then cmd: "dev get-coin -v 10000000 {{$.account[2].ok.address}}"
+    Then cmd: "account unlock {{$.account[2].ok.address}} -p 1234"
+    # 5. stake and cast vote with new account
+    Then cmd: "account execute-function --function 0x1::dao_vote_scripts::cast_vote -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> -s {{$.account[2].ok.address}} --arg {{$.account[0].ok.address}} --arg 0 --arg true --arg 12740545600000000u128 -b"
     Then cmd: "dev sleep -t 3600000"
+    # 6. switch to proposer account, make sure proposal has been AGREED
+    Then cmd: "account unlock"
     Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[11].ok[0]}} == 5"
-    # queue proposal
-    Then cmd: "account execute-function --function 0x1::DAOSpace::queue_proposal_action_entry -t 0x1::StarcoinDAO::StarcoinDAO --arg 1 -b"
+    Then cmd: "dev call --function 0x1::dao::proposal_state -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0"
+    Then assert: "{{$.dev[-1].ok[0]}} == 4"
+    # 7. add proposal to execution queue with proposer account
+    Then cmd: "account execute-function -s {{$.account[0].ok.address}} --function 0x1::dao::queue_proposal_action -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0 -b"
     Then cmd: "dev sleep -t 3600000"
+    # 8. make sure proposal is EXECUTABLE
     Then cmd: "dev gen-block"
-    Then cmd: "dev call --function 0x1::DAOSpace::proposal_state -t 0x1::StarcoinDAO::StarcoinDAO --arg 1u64"
-    Then assert: "{{$.dev[14].ok[0]}} == 7"
-    # execute proposal
-    Then cmd: "account execute-function --function 0x1::GasOracleProposalPlugin::execute_oracle_add_proposal -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken  --arg 1 -b"
-    # register oracle
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::register_oracle -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 15u8 -b"
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::init_data_source -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 43793u128 -b"
-    Then cmd: "account execute-function --function 0x1::PriceOracleScripts::update -t 0x1::GasOracle::STCToken<0x1::DummyToken::DummyToken> --arg 43794u128 -b"
-    Then cmd: "dev call --function 0x1::GasOracleProposalPlugin::gas_oracle_read -t 0x1::StarcoinDAO::StarcoinDAO -t 0x1::DummyToken::DummyToken"
-    Then assert: "{{$.dev[15].ok[0]}} == 43794"
-    # transfer stc to 0x1
-    Then cmd: "account transfer --blocking -r 0x1 -v 10000000000"
-    # transfer use gas fee by DummyToken
-    Then cmd: "account transfer --blocking -r 0x1 -v 1 --gas-token 0x1::DummyToken::DummyToken"
-    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Balance<0x1::DummyToken::DummyToken>"
-    Then assert: "{{$.state[0].ok.json.token.value}} == 8999"
-    Then stop
+    Then cmd: "dev call --function 0x1::dao::proposal_state -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0"
+    Then assert: "{{$.dev[-1].ok[0]}} == 6"
+    # 9. execute proposal with proposer account
+    Then cmd: "account execute-function -s {{$.account[0].ok.address}} --function 0x1::on_chain_config_scripts::execute_on_chain_config_proposal -t 0x1::flexi_dag_config::FlexiDagConfig --arg 0 -b"
+    # 10. make sure the proposal is EXTRACTED
+    Then cmd: "dev gen-block"
+    Then cmd: "dev call --function 0x1::dao::proposal_state -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0"
+    Then assert: "{{$.dev[-1].ok[0]}} == 7"
+    # 11. clean up proposal
+    Then cmd: "account execute-function --function 0x1::dao::destroy_terminated_proposal -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::flexi_dag_config::FlexiDagConfig> --arg {{$.account[0].ok.address}} --arg 0u64"
+    # 12. check the latest flexidagconfig
+    Then cmd: "state get resource 0x1 0x1::on_chain_config::Config<0x01::flexi_dag_config::FlexiDagConfig>"
+    Then assert: "{{$.state[0].ok.json.payload.effective_height}} == 10000"
 
     Examples:
-      |  |
+      |  |  |
 
-
+#  #easy gas testing
+#  Scenario Outline: starcoin easy gas test
+#    Then cmd: "dev get-coin -v 1000000"
+#    Then cmd: "account show"
+#    Then cmd: "account unlock"
+#    # stake to sbt
+#    Then cmd: "account execute-function --function 0x1::DummyTokenScripts::mint --arg 9000u128 -b"
+#    Then cmd: "dev call-api chain.info"
+#    # check point and update state root
+#    Then cmd: "account execute-function --function 0x1::Block::checkpoint_entry -b"
+#    Then cmd: "dev call-api chain.get_block_by_number [{{$.dev[1].ok.head.number}},{\"raw\":true}]"
+#    Then cmd: "account execute-function --function 0x1::Block::update_state_root_entry --arg {{$.dev[2].ok.raw.header}} -b"
+#    Then cmd: "dev call --function 0x1::Block::latest_state_root"
+#    Then assert: "{{$.dev[3].ok[1]}} == {{$.dev[2].ok.header.state_root}}"
+#    # register oracle
+#    Then cmd: "account execute-function --function 0x1::EasyGas::register_oracle -t 0x1::DummyToken::DummyToken --arg 15u8 -b"
+#    Then cmd: "account execute-function --function 0x1::EasyGas::init_data_source -t 0x1::DummyToken::DummyToken --arg 43793u128 -b"
+#    Then cmd: "account execute-function --function 0x1::EasyGas::update -t 0x1::DummyToken::DummyToken --arg 43794u128 -b"
+#    Then cmd: "dev call --function 0x1::EasyGas::gas_oracle_read -t 0x1::DummyToken::DummyToken"
+#    Then assert: "{{$.dev[15].ok[0]}} == 43794"
+#    # transfer stc to 0x1
+#    Then cmd: "account transfer --blocking -r 0x1 -v 10000000000"
+#    # transfer use gas fee by DummyToken
+#    Then cmd: "account transfer --blocking -r 0x1 -v 1 --gas-token 0x1::DummyToken::DummyToken"
+#    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::Account::Balance<0x1::DummyToken::DummyToken>"
+#    Then assert: "{{$.state[0].ok.json.token.value}} == 8999"
+#    Then stop
+#
+#    Examples:
+#      |  |
+#
+#
 #mytoken
 #  Scenario Outline: [cmd] my_token test
 #    Then cmd: "account unlock 0x0000000000000000000000000a550c18"
