@@ -44,7 +44,7 @@ pub type ParentsHash = Vec<HashValue>;
 pub type Version = u32;
 
 pub const BLOCK_HEADER_VERSION_1: BlockNumber = 1024;
-
+pub const MAX_LEVELS: usize = 255;
 lazy_static! {
     static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
     static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
@@ -203,6 +203,8 @@ pub struct BlockHeader {
     version: Version,
     /// pruning point
     pruning_point: HashValue,
+    /// interlink
+    interlink: Vec<HashValue>,
 }
 
 impl BlockHeader {
@@ -223,6 +225,7 @@ impl BlockHeader {
         parents_hash: ParentsHash,
         version: Version,
         pruning_point: HashValue,
+        interlink: Vec<HashValue>,
     ) -> Self {
         Self::new_with_auth_key(
             parent_hash,
@@ -242,6 +245,7 @@ impl BlockHeader {
             parents_hash,
             version,
             pruning_point,
+            interlink,
         )
     }
 
@@ -264,6 +268,7 @@ impl BlockHeader {
         parents_hash: ParentsHash,
         version: Version,
         pruning_point: HashValue,
+        interlink: Vec<HashValue>,
     ) -> Self {
         let header = BlockHeaderDataLatest {
             parent_hash,
@@ -283,6 +288,7 @@ impl BlockHeader {
             parents_hash: Some(parents_hash),
             version,
             pruning_point,
+            interlink,
         };
         let mut result = Self {
             id: None,
@@ -306,6 +312,7 @@ impl BlockHeader {
                 .expect("parents hash should not be none, use [] instead if it is"),
             version: header.version,
             pruning_point: header.pruning_point,
+            interlink: header.interlink.clone(),
         };
         let id = Some(header.into_hash());
         result.id = id;
@@ -427,6 +434,7 @@ impl BlockHeader {
             vec![], // in fact, it is better to put the [origin] into this field but here [] is done for the adaptability.
             0,
             HashValue::zero(),
+            vec![HashValue::zero(); MAX_LEVELS],
         )
     }
 
@@ -469,6 +477,7 @@ impl BlockHeader {
             vec![HashValue::random(), HashValue::random()],
             rand::random::<Version>(),
             HashValue::random(),
+            vec![],
         )
     }
 
@@ -490,6 +499,7 @@ impl BlockHeader {
             vec![HashValue::random(), HashValue::random()],
             rand::random::<Version>(),
             HashValue::random(),
+            vec![],
         )
     }
 
@@ -611,6 +621,9 @@ impl<'de> Deserialize<'de> for BlockHeader {
                         });
                     (version, pruning_point)
                 };
+                let interlink: Vec<HashValue> = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
 
                 let header = BlockHeader::new_with_auth_key(
                     parent_hash,
@@ -630,6 +643,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
                     parents_hash.map_or(vec![], |value| value),
                     version,
                     pruning_point,
+                    interlink,
                 );
                 Ok(header)
             }
@@ -653,6 +667,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
             "parents_hash",
             "version",
             "pruning_point",
+            "interlink",
         ];
 
         deserializer.deserialize_struct("BlockHeader", BLOCK_HEADER_FIELDS, BlockHeaderVisitor)
@@ -678,6 +693,7 @@ impl Default for BlockHeader {
             vec![],
             0,
             HashValue::zero(),
+            vec![],
         )
     }
 }
@@ -701,6 +717,7 @@ impl Sample for BlockHeader {
             vec![],
             0,
             HashValue::zero(),
+            vec![],
         )
     }
 }
@@ -724,6 +741,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             parents_hash: self.parents_hash,
             version: self.version,
             pruning_point: self.pruning_point,
+            interlink: self.interlink,
         }
     }
 }
@@ -859,6 +877,7 @@ impl BlockHeaderBuilder {
                 .expect("parents hash should not be none, use [] instead if it is"),
             version: crypto_data.version,
             pruning_point: crypto_data.pruning_point,
+            interlink: crypto_data.interlink.clone(),
         };
         let id = Some(crypto_data.into_hash());
         header.id = id;
@@ -1284,6 +1303,8 @@ pub struct BlockTemplate {
     pub version: Version,
     /// pruning point
     pub pruning_point: HashValue,
+    /// interlink
+    pub interlink: Vec<HashValue>,
 }
 
 impl BlockTemplate {
@@ -1299,6 +1320,7 @@ impl BlockTemplate {
         block_metadata: BlockMetadata,
         version: Version,
         pruning_point: HashValue,
+        interlink: Vec<HashValue>,
     ) -> Self {
         let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             block_metadata.into_inner();
@@ -1320,6 +1342,7 @@ impl BlockTemplate {
             parents_hash,
             version,
             pruning_point,
+            interlink,
         }
     }
 
@@ -1341,6 +1364,7 @@ impl BlockTemplate {
             self.parents_hash,
             self.version,
             self.pruning_point,
+            self.interlink,
         );
 
         Block {
@@ -1366,6 +1390,7 @@ impl BlockTemplate {
             parents_hash: self.parents_hash.clone(),
             version: self.version,
             pruning_point: self.pruning_point,
+            interlink: self.interlink.clone(),
         }
     }
 

@@ -139,6 +139,7 @@ impl From<BlockHeader> for crate::block::BlockHeader {
             parents_hash: vec![],
             version: 0,
             pruning_point: HashValue::zero(),
+            interlink: vec![],
         }
     }
 }

@@ -33,6 +33,7 @@ pub(crate) struct BlockHeaderDataLatest {
     pub parents_hash: Option<ParentsHash>,
     pub version: Version,
     pub pruning_point: HashValue,
+    pub interlink: Vec<HashValue>,
 }
 
 #[derive(Serialize, Deserialize, CryptoHasher, CryptoHash)]
@@ -126,6 +127,7 @@ impl From<BlockHeader> for BlockHeaderDataLatest {
             },
             version: val.version,
             pruning_point: val.pruning_point,
+            interlink: val.interlink,
         }
     }
 }
@@ -176,6 +178,7 @@ impl From<BlockHeaderBuilder> for BlockHeaderDataLatest {
             parents_hash: Some(val.buffer.parents_hash),
             version: val.buffer.version,
             pruning_point: val.buffer.pruning_point,
+            interlink: val.buffer.interlink,
         }
     }
 }

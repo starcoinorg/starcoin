@@ -44,6 +44,8 @@ pub struct RawBlockHeader {
     pub version: Version,
     /// pruning point
     pub pruning_point: HashValue,
+    /// interlink
+    pub interlink: Vec<HashValue>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
