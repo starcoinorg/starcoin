@@ -7,9 +7,9 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_rpc_api::types::{CodeView, ResourceView, StrView};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm2_types::view::{CodeView, ResourceView, StrView};
+use starcoin_vm2_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag};
 
 /// Get state data command
 ///  Some examples:
@@ -81,7 +81,7 @@ impl CommandAction for GetCommand {
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
-                GetDataResult::Code(ctx.state().client().state_get_code(
+                GetDataResult::Code(ctx.state().client().state_get_code2(
                     module_id.0.clone(),
                     true,
                     state_root,
@@ -100,7 +100,7 @@ impl CommandAction for GetCommand {
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
-                GetDataResult::Resource(ctx.state().client().state_get_resource(
+                GetDataResult::Resource(ctx.state().client().state_get_resource2(
                     *address,
                     resource_type.0.clone(),
                     true,

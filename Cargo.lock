@@ -12015,6 +12015,7 @@ dependencies = [
  "starcoin-abi-decoder 1.13.19",
  "starcoin-abi-decoder 2.0.1",
  "starcoin-abi-resolver 1.13.19",
+ "starcoin-abi-resolver 2.0.1",
  "starcoin-abi-types 1.13.19",
  "starcoin-abi-types 2.0.1",
  "starcoin-account-api 1.13.19",
