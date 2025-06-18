@@ -34,7 +34,7 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
     legacy_account_state_migration(&statedb, Some(50))?;
 
     // Verify 0x1 account balance
-    let account1 = AccountAddress::from_hex_literal("0x4e79f666993fd24c4f143ff28918c4fe")?;
-    assert!(statedb.get_balance(account1)?.unwrap_or(0) > 0);
+    let account1 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
+    assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 24453);
     Ok(())
 }
