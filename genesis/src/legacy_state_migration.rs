@@ -55,14 +55,14 @@ fn prepare_csv_content() -> anyhow::Result<String> {
 
 pub fn legacy_account_state_migration(
     statedb: &ChainStateDB,
-    maxium_count: Option<u64>,
+    maximum_count: Option<u64>,
 ) -> anyhow::Result<()> {
     info!("legacy_account_state_migration | entered");
     let csv_content = prepare_csv_content()?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();
     let mut processed = 0;
-    let maxium_process_count = maxium_count.unwrap_or(u64::MAX);
+    let maximum_process_count = maximum_count.unwrap_or(u64::MAX);
 
     for result in csv_reader.records() {
         let record = result?;
