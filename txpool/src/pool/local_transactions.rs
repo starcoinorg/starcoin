@@ -84,17 +84,6 @@ impl LocalTransactionsList {
         }
     }
 
-    /// Set blockchain checker.
-    ///
-    /// The function should return true if transaction is included in chain.
-    pub fn set_in_chain_checker<F, T>(&mut self, checker: T)
-    where
-        T: Into<Option<F>>,
-        F: Fn(&HashValue) -> bool + Send + Sync + 'static,
-    {
-        self.in_chain = checker.into().map(|f| Box::new(f) as _);
-    }
-
     /// Returns true if the transaction is already in local transactions.
     pub fn contains(&self, hash: &HashValue) -> bool {
         self.transactions.contains_key(hash)
