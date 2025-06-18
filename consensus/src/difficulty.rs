@@ -151,7 +151,7 @@ fn next_block_time_target(
     let expected_blue_uncles_count = selected_count
         .saturating_mul(1000)
         .saturating_mul(k)
-        .saturating_mul(ratio)
+        .saturating_div(ratio)
         .saturating_sub(selected_count.saturating_mul(1000))
         .saturating_div(1000);
     let blue_uncles_count = blue_block_count.saturating_sub(selected_count);
