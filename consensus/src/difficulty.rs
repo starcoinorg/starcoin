@@ -127,7 +127,7 @@ fn next_block_time_target(
         return Ok(time_plan);
     };
 
-    if (1..=k).contains(&ratio) {
+    if !(1..=k).contains(&ratio) {
         panic!("ratio must be greater than 1 and less than k");
     }
 
