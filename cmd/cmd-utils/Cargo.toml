@@ -10,6 +10,6 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
+hex = { workspace = true }
 serde = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
-hex = { workspace = true }

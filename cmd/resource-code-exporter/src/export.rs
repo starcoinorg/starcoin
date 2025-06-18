@@ -26,7 +26,6 @@ pub fn export(
         Default::default(),
         None,
     )?;
-    println!("Database opened successfully");
 
     println!("Initializing storage...");
     let storage_instance = StorageInstance::new_db_instance(db_storage);

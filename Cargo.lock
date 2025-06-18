@@ -10218,7 +10218,6 @@ name = "resource-code-exporter"
 version = "1.13.19"
 dependencies = [
  "anyhow",
- "bcs-ext 1.13.19",
  "clap 3.2.25",
  "csv",
  "serde_json",

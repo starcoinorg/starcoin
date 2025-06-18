@@ -29,7 +29,6 @@ use tokio::runtime::Runtime;
 pub mod crash_handler;
 mod genesis_parameter_resolve;
 mod metrics;
-// mod multi_vm_vm1_data_migration;
 pub mod network_service_factory;
 pub mod node;
 pub mod peer_message_handler;
