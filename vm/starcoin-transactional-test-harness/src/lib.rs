@@ -874,6 +874,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             parents_hash,
             0,
             HashValue::zero(),
+            vec![],
         );
         let new_block = Block::new(block_header, block_body);
         let mut chain = self.context.chain.lock().unwrap();

@@ -351,6 +351,9 @@ impl BlockHeader {
     pub fn pruning_point(&self) -> HashValue {
         self.pruning_point
     }
+    pub fn interlink(&self) -> Vec<HashValue> {
+        self.interlink.clone()
+    }
 
     pub fn timestamp(&self) -> u64 {
         self.timestamp
@@ -434,7 +437,7 @@ impl BlockHeader {
             vec![], // in fact, it is better to put the [origin] into this field but here [] is done for the adaptability.
             0,
             HashValue::zero(),
-            vec![HashValue::zero(); MAX_LEVELS],
+            vec![],
         )
     }
 

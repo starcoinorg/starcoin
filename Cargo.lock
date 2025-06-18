@@ -10636,6 +10636,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "starcoin-accumulator",
  "starcoin-chain-api",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-force-upgrade",

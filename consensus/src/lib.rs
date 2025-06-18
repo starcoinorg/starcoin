@@ -40,6 +40,27 @@ pub fn difficult_to_target(difficulty: U256) -> Result<U256> {
         .ok_or(format_err!("zero-divisor"))
 }
 
+/// Returns the NiPoPoW level µ of this block.
+///
+/// level 0 – “normal” PoW: hash ≤ target; every valid block is at least level 0  
+/// level 1 – hash ≤ target / 2 (≈ 50 % of blocks); higher levels get one bit rarer each  
+/// level 255 – theoretical maximum (hash = 1)
+pub fn calculate_level(pow_hash: HashValue, difficulty: U256) -> Result<u8> {
+    // µ = floor(log₂(target / hash ))
+
+    let target: U256 = difficult_to_target(difficulty)?;
+    let pow_hash_val: U256 = pow_hash.into();
+    if pow_hash_val.is_zero() {
+        return Ok(255);
+    }
+    // ratio = T / H
+    let ratio = target
+        .checked_div(pow_hash_val)
+        .ok_or_else(|| anyhow::anyhow!("divide-by-zero in target/hash"))?;
+    // µ = floor(log₂(ratio)) = ratio.bits()-1
+    Ok(ratio.bits().saturating_sub(1) as u8)
+}
+
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {
     let len = header.len();
     if len != 76 {

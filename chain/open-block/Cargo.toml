@@ -16,6 +16,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-consensus = { workspace = true }
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }

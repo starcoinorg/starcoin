@@ -440,6 +440,8 @@ pub struct BlockHeaderView {
     pub version: Version,
     /// pruning point
     pub pruning_point: HashValue,
+    /// interlink
+    pub interlink: Vec<HashValue>,
 }
 
 impl From<BlockHeader> for BlockHeaderView {
@@ -463,6 +465,7 @@ impl From<BlockHeader> for BlockHeaderView {
             parents_hash: origin.parents_hash(),
             version: origin.version(),
             pruning_point: origin.pruning_point(),
+            interlink: origin.interlink(),
         }
     }
 }
@@ -486,6 +489,7 @@ impl From<BlockHeaderView> for BlockHeader {
             header_view.parents_hash,
             header_view.version,
             header_view.pruning_point,
+            header_view.interlink,
         )
     }
 }
