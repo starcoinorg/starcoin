@@ -68,7 +68,7 @@ pub fn legacy_account_state_migration(
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
         assert_eq!(record.len(), 5);
         info!(
-            "Processing record {}: account {}",
+            "legacy_account_state_migration | Processing record {}: account {}",
             processed, account_address
         );
 
@@ -111,7 +111,7 @@ pub fn legacy_account_state_migration(
         }
     }
     info!(
-        "Applying {} state sets to statedb...",
+        "legacy_account_state_migration | Applying {} state sets to statedb...",
         chain_state_set_data.len()
     );
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
