@@ -10,7 +10,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
-use std::{fs::File, path::PathBuf};
+use std::fs::File;
 use tar::Archive;
 use tempfile::tempdir;
 
@@ -28,7 +28,7 @@ fn prepare_csv_content() -> anyhow::Result<String> {
     let mut archive = Archive::new(decompressed);
 
     // 3. unpack it to a temporary directory
-    archive.unpack(&dir_path)?;
+    archive.unpack(dir_path)?;
 
     // 4. Read the unpacked csv file
     let csv_path = dir_path.join(CSV_FILE_NAME);
