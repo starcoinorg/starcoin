@@ -90,7 +90,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         u64::try_from(selected_blocks.len())?,
         100,
         k,
-        10,
+        11,
     )?;
 
     let target = get_next_target_helper(
@@ -156,7 +156,7 @@ fn next_block_time_target(
     let expected_blue_uncles_count = selected_count
         .saturating_mul(1000)
         .saturating_mul(k)
-        .saturating_div(ratio)
+        .checked_div(ratio).ok_or_else(|| format_err!("calculate expected blue uncles count overflow, selected count: {:?}, k: {:?}, ratio: {:?}", selected_count, k, ratio))?
         .saturating_sub(selected_count.saturating_mul(1000))
         .saturating_div(1000);
     let blue_uncles_count = blue_block_count.saturating_sub(selected_count);
