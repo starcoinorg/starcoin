@@ -16,6 +16,7 @@ use tempfile::tempdir;
 
 const CSV_FILE_HASH: &str = "0xab47a1acc0ad8ee89af6222f36828f834cbab5273211aa5b0fbcf1d6f3f19554";
 const CSV_FILE_NAME: &str = "legacy-state-data.csv";
+const CSV_TAR_FILE_NAME: &str = "migration/legacy-state-data.csv.tar.gz";
 
 fn prepare_csv_content() -> anyhow::Result<String> {
     // 1. Create a temporary directory
@@ -23,7 +24,7 @@ fn prepare_csv_content() -> anyhow::Result<String> {
     let dir_path = dir.path();
 
     // 2. Open the original tar.gz file directly
-    let tar_gz_file = File::open("migration/legacy-state-data.csv.tar.gz")?;
+    let tar_gz_file = File::open(CSV_TAR_FILE_NAME)?;
     let decompressed = GzDecoder::new(tar_gz_file);
     let mut archive = Archive::new(decompressed);
 
