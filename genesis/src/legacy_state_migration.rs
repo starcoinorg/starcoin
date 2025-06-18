@@ -1,16 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::format_err;
 use flate2::read::GzDecoder;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage;
 use starcoin_types::{
     account_address::AccountAddress,
     state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
+use starcoin_vm_types::on_chain_config::Version;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::fs::File;
+use std::sync::Arc;
 use tar::Archive;
 use tempfile::tempdir;
 
@@ -53,11 +58,26 @@ fn prepare_csv_content() -> anyhow::Result<String> {
     Ok(csv_content)
 }
 
-pub fn legacy_account_state_migration(
-    statedb: &ChainStateDB,
+fn check_legecy_data_has_migration(statedb: &ChainStateDB) -> anyhow::Result<bool> {
+    let stdlib_version = statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    Ok(stdlib_version == 12)
+}
+
+pub fn maybe_legacy_account_state_migration(
+    storage: Arc<Storage>,
     maximum_count: Option<u64>,
 ) -> anyhow::Result<()> {
-    info!("legacy_account_state_migration | entered");
+    info!("maybe_legacy_account_state_migration | entered");
+    let statedb = ChainStateDB::new(storage, None);
+
+    if check_legecy_data_has_migration(&statedb)? {
+        info!("maybe_legacy_account_state_migration | check_legecy_data_has_migration has done, Exit!");
+        return Ok(());
+    }
+
     let csv_content = prepare_csv_content()?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();

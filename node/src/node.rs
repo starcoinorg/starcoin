@@ -17,7 +17,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_genesis::{Genesis, GenesisError};
+use starcoin_genesis::{legacy_state_migration, Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
 use starcoin_logger::LoggerHandle;
@@ -338,6 +338,9 @@ impl NodeService {
             storage2,
             config.data_dir(),
         )?;
+
+        // Transfer relevant account data of the old main network
+        legacy_state_migration::maybe_legacy_account_state_migration(storage.clone(), None)?;
 
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
