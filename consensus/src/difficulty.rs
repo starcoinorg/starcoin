@@ -112,6 +112,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 fn next_block_time_target(
     total_block_count: u64,
     blue_block_headers: &[BlockHeader],
+    selected_count: u64,
     time_plan: u64,
     k: u64,
     ratio: u64,
@@ -151,30 +152,17 @@ fn next_block_time_target(
             )
         })?;
 
-    let blue_uncles_count = total_block_count.saturating_mul(1000).saturating_mul(k).saturating_mul(ratio).checked_sub(blue_block_count.saturating_mul(1000)).ok_or_else(|| format_err!("calculate expect blue block count overflow, total block count: {:?}, blue block count: {:?}, k: {:?}, ratio: {:?}", total_block_count, blue_block_count, k, ratio))?;
-    // let blue_rate = blue_block_count
-    //     .saturating_mul(1000)
-    //     .checked_div(total_block_count)
-    //     .ok_or_else(|| {
-    //         format_err!(
-    //             "calculate blue rate overflow, total block count: {:?}, blue block count: {:?}",
-    //             total_block_count,
-    //             blue_block_count
-    //         )
-    //     })?;
-    // let k_ratio = k
-    //     .saturating_mul(1000)
-    //     .checked_div(ratio)
-    //     .ok_or_else(|| format_err!("calculate k ratio overflow, k: {:?}, ratio: {:?}", k, ratio))?;
+    let expected_blue_uncles_count = selected_count.saturating_mul(1000).saturating_mul(k).saturating_mul(ratio).saturating_sub(selected_count.saturating_mul(1000)).saturating_div(1000);
+    let blue_uncles_count = blue_block_count.saturating_sub(selected_count);
 
-    let mut next_block_time_target = match blue_uncles_count.cmp(&0) {
-        Ordering::Less => panic!("blue uncles count is less than 0"),
-        Ordering::Equal => average_time.saturating_div(2).saturating_div(1000),
+    let mut next_block_time_target = match blue_uncles_count.cmp(&expected_blue_uncles_count) {
+        Ordering::Less => average_time.saturating_div(2).saturating_div(1000),
+        Ordering::Equal => time_plan,
         Ordering::Greater => average_time.saturating_mul(2).saturating_div(1000),
     };
 
-    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, blue uncles count: {:?}, blue block count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
-                    start_block_header.id(), end_block_header.id(), duration, total_block_count, blue_uncles_count, blue_block_count, average_time, time_plan, next_block_time_target);
+    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, blue uncles count: {:?}, blue block count: {:?}, expected blue uncles count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
+                    start_block_header.id(), end_block_header.id(), duration, total_block_count, blue_uncles_count, blue_block_count, expected_blue_uncles_count, average_time, time_plan, next_block_time_target);
 
     next_block_time_target = next_block_time_target.clamp(time_plan, 500);
 
