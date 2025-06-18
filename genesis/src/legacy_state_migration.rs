@@ -62,7 +62,7 @@ pub fn legacy_account_state_migration(
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();
     let mut processed = 0;
-    let maximum_process_count = maximum_count.unwrap_or(u64::MAX);
+    let maximum_processing_count = maximum_count.unwrap_or(u64::MAX);
 
     for result in csv_reader.records() {
         let record = result?;
@@ -107,7 +107,7 @@ pub fn legacy_account_state_migration(
             "legacy_account_state_migration | Progress: {} records processed",
             processed
         );
-        if processed >= maxium_process_count {
+        if processed >= maximum_processing_count {
             break;
         }
     }
