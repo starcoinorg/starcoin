@@ -4,7 +4,6 @@
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_consensus::calculate_level;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
@@ -12,7 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockNumber, Version, MAX_LEVELS};
+use starcoin_types::block::{Block, BlockNumber, Version};
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -29,6 +28,7 @@ use starcoin_vm_types::on_chain_config;
 use std::convert::TryInto;
 use std::sync::Arc;
 
+use starcoin_compressed_proof::interlink::calculate_interlink;
 use starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier};
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
@@ -101,7 +101,7 @@ impl OpenedBlock {
             previous_header.gas_used(),
             tips_hash,
         );
-        let interlink = Self::calculate_interlink(&previous_header);
+        let interlink = calculate_interlink(&previous_header);
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
@@ -123,61 +123,6 @@ impl OpenedBlock {
 
         opened_block.initialize()?;
         Ok(opened_block)
-    }
-
-    //TODO: Move to some place
-    /// Build the child-block interlink (variable length, genesis ⇒ empty vec).
-    ///
-    /// MAX_LEVELS is the *theoretical* upper bound (255 for SHA-256).
-    fn calculate_interlink(parent: &BlockHeader) -> Vec<HashValue> {
-        // Derive μ(parent)
-        let mut parent_level = calculate_level(parent.id(), parent.difficulty())
-            .expect("level must be computable") as usize;
-
-        // Clamp in case someone sets MAX_LEVELS < 255
-        if parent_level >= MAX_LEVELS {
-            parent_level = MAX_LEVELS - 1;
-        }
-
-        assert!(
-            parent.interlink().len() >= parent_level + 1,
-            "parent interlink too short"
-        );
-        assert!(
-            parent.interlink().len() <= MAX_LEVELS,
-            "parent interlink too long"
-        );
-
-        // determine exact final length
-        let suffix_len = parent.interlink().len().saturating_sub(parent_level + 1);
-
-        let final_len = parent_level + 1 + suffix_len;
-        assert!(final_len <= MAX_LEVELS);
-
-        let mut interlink = Vec::with_capacity(final_len);
-
-        // prefix: copy parent.hash μ+1 times
-        interlink.extend(std::iter::repeat(parent.id()).take(parent_level + 1));
-
-        // suffix: copy untouched tail from parent
-        interlink.extend(
-            parent
-                .interlink()
-                .iter()
-                .skip(parent_level + 1)
-                .take(suffix_len)
-                .copied(),
-        );
-
-        debug_assert_eq!(interlink.len(), final_len);
-        interlink
-    }
-
-    //TODO: Move to verifier
-    fn verify_interlink(child: &BlockHeader, parent: &BlockHeader) -> Result<()> {
-        assert!(child.interlink().len() <= MAX_LEVELS, "interlink too long");
-        // ... other check
-        Ok(())
     }
 
     pub fn gas_used(&self) -> u64 {

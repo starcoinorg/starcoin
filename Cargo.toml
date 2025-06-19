@@ -113,6 +113,7 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
+    "compressed-proof"
 ]
 
 default-members = [
@@ -221,6 +222,7 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
+    "compressed-proof"
 ]
 
 [workspace.lints.clippy]
@@ -511,6 +513,7 @@ starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 starcoin-dag = { path = "flexidag" }
+starcoin-compressed-proof = { path = "compressed-proof" }
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

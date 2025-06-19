@@ -44,7 +44,7 @@ pub type ParentsHash = Vec<HashValue>;
 pub type Version = u32;
 
 pub const BLOCK_HEADER_VERSION_1: BlockNumber = 1024;
-pub const MAX_LEVELS: usize = 255;
+
 lazy_static! {
     static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
     static ref CUSTOM_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);

@@ -9749,6 +9749,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-compressed-proof"
+version = "2.0.7"
+dependencies = [
+ "anyhow",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-config"
 version = "2.0.7"
 dependencies = [
@@ -10636,7 +10646,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "starcoin-accumulator",
  "starcoin-chain-api",
- "starcoin-consensus",
+ "starcoin-compressed-proof",
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-force-upgrade",
