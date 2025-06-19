@@ -51,7 +51,6 @@ pub fn calculate_interlink(parent: &BlockHeader) -> Vec<HashValue> {
     interlink
 }
 
-//TODO: Move to verifier
 fn verify_interlink(child: &BlockHeader, parent: &BlockHeader) -> Result<()> {
     assert!(child.interlink().len() <= MAX_LEVELS, "interlink too long");
     // ... other check
