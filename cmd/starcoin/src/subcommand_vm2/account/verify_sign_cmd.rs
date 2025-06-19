@@ -32,12 +32,12 @@ impl CommandAction for VerifySignMessageCmd {
         let opt = ctx.opt();
         let state = ctx.state().vm2()?;
         let signed_message = opt.signed_message.clone();
-        let account_resource = state.get_account_resource(signed_message.account)?;
+        let account_resource = state.get_account_resource(signed_message.account).ok();
 
         let result = signed_message.check_signature().and_then(|_| {
             signed_message.check_account(
                 ChainId::new(state.net().chain_id().id()),
-                Some(&account_resource),
+                account_resource.as_ref(),
             )
         });
 

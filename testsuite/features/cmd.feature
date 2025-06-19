@@ -162,7 +162,6 @@ Feature: cmd integration test
   #account sign message
   Scenario Outline: [cmd] account sign message
     # test the account do not exist on chain
-    Then cmd: "dev get-coin"
     Then cmd: "account unlock"
     Then cmd: "account sign-message -m helloworld"
     Then cmd: "account verify-sign-message -m {{$.account[-1].ok.hex}}"
