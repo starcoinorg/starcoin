@@ -25,9 +25,12 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
         ]),
     )?;
 
+    let account1 = AccountAddress::from_hex_literal("0x1")?;
+    assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 10000);
+    
     // Verify 0xdb2ba632664e1579e6bd949c538405c2 account balance
-    let account1 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
-    assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 24453);
+    let account2 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
+    assert_eq!(statedb.get_balance(account2)?.unwrap_or(0), 24453);
 
     // Verify version is 12
     assert!(check_legecy_data_has_migration(&statedb)?);

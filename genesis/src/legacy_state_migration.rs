@@ -94,37 +94,26 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();
     let mut processed = 0;
-    
-    // Track processed white list items
-    let mut white_list_processed = 0;
-    let total_white_list_items = white_lists.as_ref().map(|wl| wl.len()).unwrap_or(0);
+
+    // For performance optimization: track remaining white list items
+    let mut remaining_white_list = white_lists.as_ref().map(|wl| wl.clone());
 
     for result in csv_reader.records() {
         let record = result?;
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
         assert_eq!(record.len(), 5);
         
-        // Check if account is in white_lists (if provided)
+        // Skip if account is not in white_lists (when white_lists is provided)
         if let Some(ref white_lists) = white_lists {
             if !white_lists.contains(&account_address) {
-                info!(
-                    "maybe_legacy_account_state_migration_with_statedb | Skipping account {} (not in white list)",
-                    account_address
-                );
                 continue;
             }
-            // Increment white list processed count
-            white_list_processed += 1;
-            info!(
-                "maybe_legacy_account_state_migration_with_statedb | Processing white list item {}/{}: account {}",
-                white_list_processed, total_white_list_items, account_address
-            );
-        } else {
-            info!(
-                "maybe_legacy_account_state_migration_with_statedb | Processing record {}: account {}",
-                processed, account_address
-            );
         }
+
+        info!(
+            "maybe_legacy_account_state_migration_with_statedb | Processing record {}: account {}",
+            processed, account_address
+        );
 
         let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {
             let code_state_hash = &record[1];
@@ -156,26 +145,28 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
         ));
         processed += 1;
 
-        info!(
-            "maybe_legacy_account_state_migration_with_statedb | Progress: {} records processed",
-            processed
-        );
-        
-        // If we have a white list and all items are processed, exit immediately
-        if let Some(_) = white_lists {
-            if white_list_processed >= total_white_list_items {
+        // Remove processed account from remaining white list for early exit optimization
+        if let Some(ref mut remaining) = remaining_white_list {
+            remaining.retain(|&addr| addr != account_address);
+            if remaining.is_empty() {
                 info!(
-                    "maybe_legacy_account_state_migration_with_statedb | All white list items processed ({}), exiting early",
-                    total_white_list_items
+                    "maybe_legacy_account_state_migration_with_statedb | All white list items processed, exiting early"
                 );
                 break;
             }
         }
+
+        info!(
+            "maybe_legacy_account_state_migration_with_statedb | Progress: {} records processed",
+            processed
+        );
     }
+    
     info!(
         "maybe_legacy_account_state_migration_with_statedb | Applying {} state sets to statedb...",
         chain_state_set_data.len()
     );
+
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
     statedb.commit()?;
     statedb.flush()?;
