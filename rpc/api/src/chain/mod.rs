@@ -188,6 +188,9 @@ pub trait ChainApi {
         event_index: Option<u64>,
         access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>>;
+
+    #[rpc(name = "chain.get_vm_multi_state")]
+    fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

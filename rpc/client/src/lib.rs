@@ -924,6 +924,14 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn chain_get_vm_multi_state(
+        &self,
+        block_hash: HashValue,
+    ) -> anyhow::Result<Option<MultiStateView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_vm_multi_state(block_hash))
+            .map_err(map_err)
+    }
+
     pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<DryRunOutputView> {
         self.call_rpc_blocking(|inner| inner.contract_client.dry_run(txn))
             .map_err(map_err)

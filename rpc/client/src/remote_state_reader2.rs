@@ -31,6 +31,7 @@ impl<'a> RemoteStateReader<'a> {
     pub(crate) fn new(client: &'a RpcClient, state_root_opt: StateRootOption) -> Result<Self> {
         let state_root = match state_root_opt {
             StateRootOption::Latest => client.state_get_state_root2()?,
+            // todo: state_root in header is not the root of vm2 state tree
             StateRootOption::BlockHash(block_hash) => {
                 let block = client
                     .chain_get_block_by_hash(block_hash, None)?

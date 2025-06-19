@@ -685,6 +685,16 @@ where
 
         Box::pin(fut.boxed())
     }
+
+    fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let multi_state = service.get_multi_state_by_hash(block_hash).await?;
+            Ok(multi_state.map(Into::into))
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
 }
 
 fn try_decode_block_txns(
