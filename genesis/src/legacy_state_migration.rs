@@ -58,7 +58,7 @@ fn prepare_csv_content() -> anyhow::Result<String> {
     Ok(csv_content)
 }
 
-fn check_legecy_data_has_migration(statedb: &ChainStateDB) -> anyhow::Result<bool> {
+pub fn check_legecy_data_has_migration(statedb: &ChainStateDB) -> anyhow::Result<bool> {
     let stdlib_version = statedb
         .get_on_chain_config::<Version>()?
         .map(|version| version.major)
@@ -68,10 +68,15 @@ fn check_legecy_data_has_migration(statedb: &ChainStateDB) -> anyhow::Result<boo
 
 pub fn maybe_legacy_account_state_migration(
     storage: Arc<Storage>,
+    state_root: Option<HashValue>,
     maximum_count: Option<u64>,
 ) -> anyhow::Result<()> {
-    info!("maybe_legacy_account_state_migration | entered");
-    let statedb = ChainStateDB::new(storage, None);
+    info!(
+        "maybe_legacy_account_state_migration | entered, state_root: {:?}",
+        state_root
+    );
+
+    let statedb = ChainStateDB::new(storage, state_root);
 
     if check_legecy_data_has_migration(&statedb)? {
         info!("maybe_legacy_account_state_migration | check_legecy_data_has_migration has done, Exit!");

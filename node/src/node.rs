@@ -339,8 +339,24 @@ impl NodeService {
             config.data_dir(),
         )?;
 
+        let state_root = storage
+            .get_block(
+                storage
+                    .get_startup_info()
+                    .expect("get startup info failed")
+                    .unwrap()
+                    .main,
+            )?
+            .expect("get block failed")
+            .header
+            .state_root();
+
         // Transfer relevant account data of the old main network
-        legacy_state_migration::maybe_legacy_account_state_migration(storage.clone(), None)?;
+        legacy_state_migration::maybe_legacy_account_state_migration(
+            storage.clone(),
+            Some(state_root),
+            None,
+        )?;
 
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
