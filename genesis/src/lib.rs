@@ -207,6 +207,11 @@ impl Genesis {
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
 
+            info!(
+                "build_genesis_block | state_root: {:?}, accumulator_root: {:?}",
+                state_root, accumulator_root
+            );
+
             Ok(Block::genesis_block(
                 parent_hash,
                 *timestamp,

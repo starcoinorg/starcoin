@@ -355,7 +355,6 @@ impl NodeService {
         legacy_state_migration::maybe_legacy_account_state_migration(
             storage.clone(),
             Some(state_root),
-            None,
         )?;
 
         info!(
