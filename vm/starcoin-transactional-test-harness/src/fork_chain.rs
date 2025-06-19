@@ -15,8 +15,8 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, TransactionInfoView,
-    TransactionView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, MultiStateView,
+    TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
@@ -235,6 +235,7 @@ impl ChainApi for MockChainApi {
                 Some(block) => {
                     let mut block_view = BlockView::try_from_block(block, false, raw)?;
                     if decode {
+                        // TODO: check state_root
                         debug_assert!(status.is_some());
                         let state = ChainStateDB::new(
                             storage,
@@ -284,8 +285,10 @@ impl ChainApi for MockChainApi {
                     Some(hash) => match storage.get_block_by_hash(hash)? {
                         Some(block) => {
                             let mut block_view = BlockView::try_from_block(block, false, raw)?;
+                            // TODO: check state_root
                             if decode {
                                 debug_assert!(status.is_some());
+                                // TODO: check state_root
                                 let state = ChainStateDB::new(
                                     storage,
                                     Some(status.unwrap().status.head().state_root()),
@@ -368,6 +371,7 @@ impl ChainApi for MockChainApi {
                     let block = status.clone().unwrap().head;
 
                     let mut txn = TransactionView::new(txn, &block)?;
+                    // TODO: check state_root
                     if decode_payload {
                         let state = ChainStateDB::new(
                             storage,
@@ -569,6 +573,10 @@ impl ChainApi for MockChainApi {
         _event_index: Option<u64>,
         _access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
+        todo!()
+    }
+
+    fn get_vm_multi_state(&self, _block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
         todo!()
     }
 }

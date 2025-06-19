@@ -36,7 +36,7 @@ use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
-    MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+    MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
     TransactionRequest, TransactionView,

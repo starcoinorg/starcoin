@@ -655,6 +655,7 @@ pub fn dao_vote_test(
     let access_path_bytes = snapshot_access_path(chain_state, alice.address());
     let access_path_str = std::str::from_utf8(&access_path_bytes)?;
     let access_path = AccessPath::from_str(access_path_str)?;
+    // TODO: check state_root
     let proof = get_with_proof_by_root(chain_state, access_path, snapshot.header.state_root())?;
     execute_cast_vote(
         chain_state,

@@ -16,8 +16,8 @@ use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionView,
+    MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;

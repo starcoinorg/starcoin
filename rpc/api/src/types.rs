@@ -2021,6 +2021,20 @@ impl From<TableInfoView> for TableInfo {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct MultiStateView {
+    pub state_root1: HashValue,
+    pub state_root2: HashValue,
+}
+
+impl From<starcoin_types::multi_state::MultiState> for MultiStateView {
+    fn from(ms: starcoin_types::multi_state::MultiState) -> Self {
+        Self {
+            state_root1: ms.state_root1(),
+            state_root2: ms.state_root2(),
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::types::{ByteCodeOrScriptFunction, FunctionId, StrView};

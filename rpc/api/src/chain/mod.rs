@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
+    BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, MultiStateView, StrView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
