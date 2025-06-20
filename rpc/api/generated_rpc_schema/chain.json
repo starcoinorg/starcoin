@@ -6227,6 +6227,45 @@
           ]
         }
       }
+    },
+    {
+      "name": "chain.get_vm_multi_state",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < MultiStateView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_MultiStateView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "state_root1",
+            "state_root2"
+          ],
+          "properties": {
+            "state_root1": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "state_root2": {
+              "type": "string",
+              "format": "HashValue"
+            }
+          }
+        }
+      }
     }
   ]
 }
