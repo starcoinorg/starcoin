@@ -31,18 +31,24 @@ impl<'a> RemoteStateReader<'a> {
     pub(crate) fn new(client: &'a RpcClient, state_root_opt: StateRootOption) -> Result<Self> {
         let state_root = match state_root_opt {
             StateRootOption::Latest => client.state_get_state_root2()?,
-            // todo: state_root in header is not the root of vm2 state tree
             StateRootOption::BlockHash(block_hash) => {
-                let block = client
-                    .chain_get_block_by_hash(block_hash, None)?
-                    .ok_or_else(|| format_err!("Can not find block by hash:{}", block_hash))?;
-                block.header.state_root
+                let multi_state =
+                    client
+                        .chain_get_vm_multi_state(block_hash)?
+                        .ok_or_else(|| {
+                            format_err!("Can not find vm multi_state by hash:{}", block_hash)
+                        })?;
+                multi_state.state_root2
             }
             StateRootOption::BlockNumber(block_number) => {
                 let block = client
                     .chain_get_block_by_number(block_number, None)?
                     .ok_or_else(|| format_err!("Can not find block by number: {}", block_number))?;
-                block.header.state_root
+                let block_hash = block.header.block_hash;
+                let multi_state = client
+                    .chain_get_vm_multi_state(block_hash)?
+                    .ok_or_else(|| format_err!("Can not vm multi_state by hash:{}", block_hash))?;
+                multi_state.state_root2
             }
         };
 
