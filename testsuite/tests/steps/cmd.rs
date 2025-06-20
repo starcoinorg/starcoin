@@ -28,6 +28,14 @@ pub fn steps() -> Steps<MyWorld> {
                     &AccountProviderConfig::default(),
                 )
                 .unwrap();
+                let account_provider2_option = Some(
+                    ProviderFactory::create_provider2(
+                        client.clone(),
+                        chain_id.id().into(),
+                        &AccountProviderConfig::default(),
+                    )
+                    .unwrap(),
+                );
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(
                     node_info.net,
@@ -35,7 +43,7 @@ pub fn steps() -> Steps<MyWorld> {
                     Some(Duration::from_secs(5)),
                     None,
                     account_client,
-                    None,
+                    account_provider2_option,
                 );
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(
                     G_CRATE_VERSION,

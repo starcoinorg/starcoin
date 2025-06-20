@@ -7,12 +7,12 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_abi_resolver::ABIResolver;
-use starcoin_rpc_api::types::{ListCodeView, ListResourceView, StructTagView};
 use starcoin_rpc_client::StateRootOption;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm2_abi_resolver::ABIResolver;
+use starcoin_vm2_types::view::{ListCodeView, ListResourceView, StructTagView};
+use starcoin_vm2_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::language_storage::ModuleId;
+use starcoin_vm2_vm_types::StateView;
 
 /// List state data command
 ///  Some examples:
@@ -93,7 +93,7 @@ impl CommandAction for ListCmd {
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
-                let state_reader = ctx.state().client().state_reader(
+                let state_reader = ctx.state().client().state_reader2(
                     state_root.map_or(StateRootOption::Latest, StateRootOption::BlockHash),
                 )?;
                 ListDataResult::Code(resolve_code(
@@ -101,7 +101,7 @@ impl CommandAction for ListCmd {
                     *address,
                     ctx.state()
                         .client()
-                        .state_list_code(*address, false, state_root)?,
+                        .state_list_code2(*address, false, state_root)?,
                 ))
             }
             ListDataOpt::Resource {
@@ -119,13 +119,13 @@ impl CommandAction for ListCmd {
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
-                let state_reader = ctx.state().client().state_reader(
+                let state_reader = ctx.state().client().state_reader2(
                     state_root.map_or(StateRootOption::Latest, StateRootOption::BlockHash),
                 )?;
 
                 ListDataResult::Resource(decode_resource(
                     &state_reader,
-                    ctx.state().client().state_list_resource(
+                    ctx.state().client().state_list_resource2(
                         *address,
                         false,
                         state_root,
@@ -144,7 +144,7 @@ fn decode_resource<S: StateView>(state_view: &S, mut list: ListResourceView) -> 
     list.resources
         .iter_mut()
         .for_each(|(tag_view, resource_view)| {
-            match starcoin_dev::playground::view_resource(
+            match starcoin_vm2_dev::playground::view_resource(
                 state_view,
                 tag_view.0.clone(),
                 resource_view.raw.0.as_slice(),

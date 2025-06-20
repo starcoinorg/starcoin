@@ -141,7 +141,7 @@ pub fn add_command(
                 )
                 .subcommand(dev::panic_cmd::PanicCommand)
                 .subcommand(dev::sleep_cmd::SleepCommand)
-                .subcommand(dev::gen_block_cmd::GenBlockCommand)
+                .subcommand(dev2::gen_block_cmd::GenBlockCommand)
                 .subcommand(dev2::SetConcurrencyLevelCommand)
                 .subcommand(dev2::GetConcurrencyLevelCommand)
                 .subcommand(dev::SetLoggerBalanceAmoutCommand)

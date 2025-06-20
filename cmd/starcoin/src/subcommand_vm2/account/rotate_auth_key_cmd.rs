@@ -98,8 +98,8 @@ impl CommandAction for RotateAuthenticationKeyCommand {
         let result = ctx.state().vm2()?.build_and_execute_transaction(
             txn_opt,
             TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-                Identifier::new("rotate_authentication_key").unwrap(),
+                ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
+                Identifier::new("rotate_authentication_key_call").unwrap(),
                 vec![],
                 vec![
                     MoveValue::from(TransactionArgument::U8Vector(auth_key.to_vec()))

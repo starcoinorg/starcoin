@@ -149,7 +149,7 @@ impl OpenedBlock {
         if !vm1_offline {
             opened_block.initialize()?;
         } else {
-            opened_block.initialize2()?;
+            opened_block.initialize_v2()?;
         }
         Ok(opened_block)
     }
@@ -367,7 +367,7 @@ impl OpenedBlock {
     pub fn finalize(mut self) -> Result<BlockTemplate> {
         // if vm2 is not initialized, we need to execute vm2 block_meta txn first
         if !self.vm2_initialized {
-            self.initialize2()?;
+            self.initialize_v2()?;
         }
         debug_assert!(self.vm2_initialized);
         let accumulator_root = self.txn_accumulator.root_hash();

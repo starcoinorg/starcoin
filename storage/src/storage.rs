@@ -503,10 +503,6 @@ where
 
     fn keys(&self) -> Result<Vec<K>>;
 
-    fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()>;
-
-    fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
-
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
 }
 
@@ -633,14 +629,6 @@ where
         keys.into_iter()
             .map(|key| <K>::decode_key(key.as_slice()))
             .collect()
-    }
-
-    fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()> {
-        KVStore::put(self.get_store(), key.encode_key()?, value)
-    }
-
-    fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>> {
-        KVStore::get(self.get_store(), key.encode_key()?.as_slice())
     }
 
     fn iter(&self) -> Result<SchemaIterator<K, V>> {

@@ -203,7 +203,7 @@ impl BlockChain {
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let statedb2 = ChainStateDB2::new(storage2.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
-            (storage.as_ref(), storage2.as_ref()),
+            storage.as_ref(),
             (statedb, statedb2),
             txn_accumulator,
             block_accumulator,
@@ -456,7 +456,7 @@ impl BlockChain {
 
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
-        storage: (&dyn Store, &dyn Store2),
+        storage: &dyn Store,
         statedb: (ChainStateDB, ChainStateDB2),
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
@@ -466,7 +466,6 @@ impl BlockChain {
         block: Block,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
-        let (storage, _storage2) = storage;
         let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -1272,7 +1271,7 @@ impl ChainReader for BlockChain {
             )
         } else {
             Self::execute_block_and_save(
-                (self.storage.0.as_ref(), self.storage.1.as_ref()),
+                self.storage.0.as_ref(),
                 (self.statedb.0.fork(), self.statedb.1.fork()),
                 self.txn_accumulator.fork(None),
                 self.block_accumulator.fork(None),
