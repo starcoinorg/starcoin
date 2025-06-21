@@ -24,7 +24,7 @@ use std::{
         Arc,
     },
 };
-use tx_pool::{self, Verifier};
+use tx_pool::{self, VerifiedTransaction, Verifier};
 
 type Listener = (
     LocalTransactionsList,
@@ -50,6 +50,8 @@ const TIMESTAMP_CACHE: u64 = 1000;
 /// chunks and allow other threads to utilize the pool in the meantime.
 /// This parameter controls how many (best) senders at once will be processed.
 const CULL_SENDERS_CHUNK: usize = 1024;
+
+const VM1_TXN_CULL_THRESHOLD: usize = 100;
 
 /// Transaction queue status.
 #[derive(Debug, Clone, PartialEq)]
@@ -331,6 +333,8 @@ impl TransactionQueue {
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }
+
+        self.cull_vm1_excess();
         results
     }
 
@@ -561,6 +565,43 @@ impl TransactionQueue {
     #[cfg(test)]
     pub fn is_pending_cached(&self) -> bool {
         self.cached_pending.read().pending.is_some()
+    }
+
+    /// Automatic cleanup: When the number of VM1 transactions exceeds the threshold,
+    /// remove the oldest transactions up to the threshold.
+    fn cull_vm1_excess(&self) {
+        // first check through light_status
+        let status = self.pool.read().light_status();
+        let txn_count = status.transaction_count;
+        if txn_count <= VM1_TXN_CULL_THRESHOLD {
+            return;
+        }
+        let pool = self.pool.read();
+        let mut vm1_txs = Vec::new();
+        for sender in pool.senders() {
+            let txs = pool.pending_from_sender(Expiration::new(0), sender);
+            for tx in txs {
+                if tx.signed().is_v1() {
+                    vm1_txs.push(tx);
+                }
+            }
+        }
+        if vm1_txs.len() > VM1_TXN_CULL_THRESHOLD {
+            vm1_txs.sort_by_key(|tx| tx.insertion_id());
+            let to_remove: Vec<_> = vm1_txs
+                .iter()
+                .take(VM1_TXN_CULL_THRESHOLD)
+                .map(|tx| tx.hash())
+                .cloned()
+                .collect();
+            drop(pool);
+            self.remove(&to_remove, false);
+            self.cached_pending.write().clear();
+            log::info!(
+                "cull_vm1_excess: removed {} oldest VM1 txs",
+                to_remove.len()
+            );
+        }
     }
 }
 

@@ -296,6 +296,29 @@ async fn test_txpool_actor_service() {
     sleep(Duration::from_millis(300)).await;
 }
 
+#[stest::test]
+async fn test_vm1_auto_cull() -> Result<()> {
+    let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
+
+    let txns: Vec<_> = (0..120)
+        .map(|i| generate_txn(config.clone(), i).into())
+        .collect();
+    let results = txpool_service.add_txns_multi_signed(txns);
+
+    assert!(results.iter().all(|r| r.is_ok()));
+
+    let pendings = txpool_service.get_pending_txns(None, None);
+
+    let vm1: Vec<_> = pendings.into_iter().filter(|txn| txn.is_v1()).collect();
+
+    assert_eq!(vm1.len(), 20, "should only keep 20 VM1 txns");
+
+    let mut seqs: Vec<_> = vm1.iter().map(|txn| txn.sequence_number()).collect();
+    seqs.sort();
+    assert_eq!(seqs, (100..120).collect::<Vec<_>>());
+    Ok(())
+}
+
 fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
