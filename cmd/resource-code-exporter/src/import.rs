@@ -151,7 +151,7 @@ mod test {
         // Export data
         {
             let mut csv_writer = csv::WriterBuilder::new().from_path(&export_path)?;
-            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, u64::MAX)?;
+            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, u64::MAX, None)?;
         }
 
         //////////////////////////////////////////////////////

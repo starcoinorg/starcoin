@@ -7,6 +7,7 @@ use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
     storage::StorageInstance, Storage, StorageVersion,
 };
+use starcoin_types::account_address::AccountAddress;
 use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
@@ -16,6 +17,7 @@ pub fn export(
     block_hash: HashValue,
     start: u64,
     end: u64,
+    white_list: Option<Vec<AccountAddress>>,
 ) -> anyhow::Result<()> {
     println!("Starting export process for block: {}", block_hash);
     println!("Opening database at: {}", db);
@@ -46,7 +48,7 @@ pub fn export(
     println!("Creating CSV writer for output: {}", output.display());
     let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
     println!("Starting export from StateDB...");
-    export_from_statedb(&statedb, &mut csv_writer, start, end)?;
+    export_from_statedb(&statedb, &mut csv_writer, start, end, white_list)?;
     println!("Export completed successfully");
 
     Ok(())
@@ -58,6 +60,7 @@ pub fn export_from_statedb<W: Write>(
     writer: &mut csv::Writer<W>,
     start: u64,
     end: u64,
+    white_list: Option<Vec<AccountAddress>>,
 ) -> anyhow::Result<()> {
     println!(
         "Starting export_from_statedb...， start: {}, end: {}",
@@ -83,6 +86,7 @@ pub fn export_from_statedb<W: Write>(
     let mut processed = 0;
     let mut total_code_size = 0;
     let mut total_resource_size = 0;
+    let mut remaining_white_list = white_list.as_ref().map(|wl| wl.clone());
 
     for (account_address, account_state_set) in global_states {
         // Skip accounts before start index
@@ -93,6 +97,13 @@ pub fn export_from_statedb<W: Write>(
         // Stop processing after end index
         if processed >= end && end > 0 {
             break;
+        }
+
+        // Skip if account is not in white_lists (when white_lists is provided)
+        if let Some(ref list) = white_list {
+            if !list.contains(&account_address) {
+                continue;
+            }
         }
 
         println!("Processing account: {}", account_address);
@@ -145,9 +156,15 @@ pub fn export_from_statedb<W: Write>(
         writer.serialize(record)?;
         processed += 1;
 
-        // if processed % 100 == 0 {
+        // Remove processed account from remaining white list for early exit optimization
+        if let Some(ref mut remaining) = remaining_white_list {
+            remaining.retain(|&addr| addr != account_address);
+            if remaining.is_empty() {
+                println!("All white list items processed, exiting early");
+                break;
+            }
+        }
         println!("Progress: {} accounts processed ", processed);
-        // }
     }
 
     println!("Export completed:");
@@ -178,7 +195,7 @@ mod test {
         {
             let mut csv_writer = csv::WriterBuilder::new().from_writer(&mut buffer);
             // Export all accounts (from index 0 to u64::MAX)
-            export_from_statedb(&chain_statedb, &mut csv_writer, 0, u64::MAX)?;
+            export_from_statedb(&chain_statedb, &mut csv_writer, 0, u64::MAX, None)?;
         }
 
         // Get the written data
@@ -195,6 +212,109 @@ mod test {
             has_data = true;
         }
         assert!(has_data, "CSV should contain exported data");
+        Ok(())
+    }
+
+    #[test]
+    fn test_export_white_list_from_statedb() -> anyhow::Result<()> {
+        // Initialize test storage with genesis
+        let (chain_statedb, _net) = prepare_genesis();
+
+        // Create a buffer to write CSV data
+        let mut buffer = Cursor::new(Vec::new());
+        let white_list = vec![AccountAddress::from_hex_literal("0x1").unwrap()];
+        {
+            let mut csv_writer = csv::WriterBuilder::new().from_writer(&mut buffer);
+            // Export with whitelist
+            export_from_statedb(
+                &chain_statedb,
+                &mut csv_writer,
+                0,
+                u64::MAX,
+                Some(white_list.clone()),
+            )?;
+        }
+        let data = buffer.into_inner();
+        let data_str = String::from_utf8(data)?;
+        
+        // Parse CSV data and verify whitelist functionality
+        let mut csv_reader = csv::Reader::from_reader(data_str.as_bytes());
+        let headers = csv_reader.headers()?;
+        assert_eq!(headers.get(0).unwrap(), "address");
+        assert_eq!(headers.get(1).unwrap(), "code_blob_hash");
+        assert_eq!(headers.get(2).unwrap(), "code_blob");
+        assert_eq!(headers.get(3).unwrap(), "resource_blob_hash");
+        assert_eq!(headers.get(4).unwrap(), "resource_blob");
+        let mut exported_addresses = Vec::new();
+        let mut record_count = 0;
+        
+        for result in csv_reader.records() {
+            let record = result?;
+            record_count += 1;
+            // Parse address from the record
+            let address_str = record.get(0).unwrap();
+            let address: AccountAddress = serde_json::from_str(address_str)?;
+            exported_addresses.push(address);
+            // Verify record has correct format (5 fields)
+            assert_eq!(record.len(), 5, "Each record should have 5 fields");
+            // Verify address is in whitelist
+            assert!(
+                white_list.contains(&address),
+                "Exported address {} is not in whitelist {:?}",
+                address,
+                white_list
+            );
+            // Verify hash fields are valid hex strings (if not empty)
+            if let Some(code_hash) = record.get(1) {
+                if !code_hash.is_empty() {
+                    assert!(
+                        code_hash.starts_with("0x"),
+                        "Code hash should start with 0x: {}",
+                        code_hash
+                    );
+                }
+            }
+            if let Some(resource_hash) = record.get(3) {
+                if !resource_hash.is_empty() {
+                    assert!(
+                        resource_hash.starts_with("0x"),
+                        "Resource hash should start with 0x: {}",
+                        resource_hash
+                    );
+                }
+            }
+        }
+        
+        // Verify that we exported at least one record (excluding header)
+        assert!(
+            record_count >= 1,
+            "Should have exported at least one data record, got {} records",
+            record_count
+        );
+        
+        // Verify that all exported addresses are unique
+        let unique_addresses: std::collections::HashSet<_> = exported_addresses.iter().collect();
+        assert_eq!(
+            unique_addresses.len(),
+            exported_addresses.len(),
+            "All exported addresses should be unique"
+        );
+        
+        // Verify that all exported addresses are from whitelist
+        for address in &exported_addresses {
+            assert!(
+                white_list.contains(address),
+                "Address {} should be in whitelist",
+                address
+            );
+        }
+        
+        println!(
+            "Whitelist test passed: exported {} addresses from whitelist {:?}",
+            exported_addresses.len(),
+            white_list
+        );
+
         Ok(())
     }
 }
