@@ -27,6 +27,7 @@ pub fn calculate_interlink(parent: &BlockHeader) -> Vec<HashValue> {
     );
 
     // determine exact final length
+
     let suffix_len = parent.interlink().len().saturating_sub(parent_level + 1);
 
     let final_len = parent_level + 1 + suffix_len;
@@ -36,7 +37,6 @@ pub fn calculate_interlink(parent: &BlockHeader) -> Vec<HashValue> {
 
     // prefix: copy parent.hash μ+1 times
     interlink.extend(std::iter::repeat(parent.id()).take(parent_level + 1));
-
     // suffix: copy untouched tail from parent
     interlink.extend(
         parent
