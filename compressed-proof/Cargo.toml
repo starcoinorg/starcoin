@@ -4,6 +4,7 @@ starcoin-types = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-chain-api = { workspace = true }
+thiserror = {workspace = true} 
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
