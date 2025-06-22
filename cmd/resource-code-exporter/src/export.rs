@@ -86,7 +86,7 @@ pub fn export_from_statedb<W: Write>(
     let mut processed = 0;
     let mut total_code_size = 0;
     let mut total_resource_size = 0;
-    let mut remaining_white_list = white_list.as_ref().map(|wl| wl.clone());
+    let mut remaining_white_list = white_list.clone();
 
     for (account_address, account_state_set) in global_states {
         // Skip accounts before start index
@@ -236,7 +236,7 @@ mod test {
         }
         let data = buffer.into_inner();
         let data_str = String::from_utf8(data)?;
-        
+
         // Parse CSV data and verify whitelist functionality
         let mut csv_reader = csv::Reader::from_reader(data_str.as_bytes());
         let headers = csv_reader.headers()?;
@@ -247,7 +247,7 @@ mod test {
         assert_eq!(headers.get(4).unwrap(), "resource_blob");
         let mut exported_addresses = Vec::new();
         let mut record_count = 0;
-        
+
         for result in csv_reader.records() {
             let record = result?;
             record_count += 1;
@@ -284,14 +284,14 @@ mod test {
                 }
             }
         }
-        
+
         // Verify that we exported at least one record (excluding header)
         assert!(
             record_count >= 1,
             "Should have exported at least one data record, got {} records",
             record_count
         );
-        
+
         // Verify that all exported addresses are unique
         let unique_addresses: std::collections::HashSet<_> = exported_addresses.iter().collect();
         assert_eq!(
@@ -299,7 +299,7 @@ mod test {
             exported_addresses.len(),
             "All exported addresses should be unique"
         );
-        
+
         // Verify that all exported addresses are from whitelist
         for address in &exported_addresses {
             assert!(
@@ -308,7 +308,7 @@ mod test {
                 address
             );
         }
-        
+
         println!(
             "Whitelist test passed: exported {} addresses from whitelist {:?}",
             exported_addresses.len(),

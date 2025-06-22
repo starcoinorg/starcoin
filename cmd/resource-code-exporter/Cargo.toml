@@ -21,8 +21,11 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-config = { workspace = true }
 
 
 [dev-dependencies]
-starcoin-config = { workspace = true }
 test-helper = { workspace = true }
+starcoin-vm-types = { workspace = true }
+bcs-ext = { workspace = true }

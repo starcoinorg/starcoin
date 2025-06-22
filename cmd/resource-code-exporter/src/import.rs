@@ -4,13 +4,11 @@
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
-use starcoin_types::state_set::StateSet;
 use starcoin_types::{
     account_address::AccountAddress,
-    state_set::{AccountStateSet, ChainStateSet},
+    state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
-use std::path::Path;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 pub fn import(
     csv_path: &Path,
@@ -32,7 +30,7 @@ pub fn import(
         Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
         None,
     );
-    import_from_statedb(&statedb, csv_path, expect_root_hash, start, end)
+    import_from_statedb(&statedb, csv_path, expect_root_hash, start, end, true)
 }
 
 /// Import resources and code from CSV file to a new statedb
@@ -42,6 +40,7 @@ pub fn import_from_statedb(
     expect_state_root_hash: HashValue,
     start: u64,
     end: u64,
+    check_state_root: bool,
 ) -> anyhow::Result<()> {
     println!(
         "Starting import_from_statedb...， start: {}, end: {}",
@@ -112,12 +111,14 @@ pub fn import_from_statedb(
         chain_state_set_data.len()
     );
     statedb.apply(ChainStateSet::new(chain_state_set_data))?;
+    statedb.commit()?;
+    statedb.flush()?;
 
     // Get new state root
     let new_state_root = statedb.state_root();
 
     // Verify state root matches
-    {
+    if check_state_root {
         assert_eq!(
             expect_state_root_hash, new_state_root,
             "Imported state root does not match expected state root"
@@ -131,11 +132,20 @@ pub fn import_from_statedb(
 mod test {
     use super::*;
     use crate::export::export_from_statedb;
+    use starcoin_config::ChainNetwork;
+    use starcoin_genesis::Genesis;
     use starcoin_storage::db_storage::DBStorage;
+    use starcoin_types::{
+        account::Account,
+        account_config::{association_address, core_code_address, stc_type_tag},
+        identifier::Identifier,
+        language_storage::ModuleId,
+        transaction::{ScriptFunction, TransactionPayload},
+    };
     use std::fs::create_dir_all;
     use std::sync::Arc;
     use tempfile::TempDir;
-    use test_helper::executor::prepare_genesis;
+    use test_helper::executor::{association_execute_should_success, get_balance, prepare_genesis};
 
     #[test]
     fn test_import_from_csv() -> anyhow::Result<()> {
@@ -180,8 +190,142 @@ mod test {
             export_state_root,
             0,
             u64::MAX,
+            true,
         )?;
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_import_with_transfer() -> anyhow::Result<()> {
+        //////////////////////////////////////////////////////
+        // Step 1: Initialize test storage with genesis using real storage
+        let temp_dir = TempDir::new()?;
+        let test_db_path = temp_dir.path().join("test_db");
+        if !test_db_path.exists() {
+            create_dir_all(&test_db_path)?;
+        }
+
+        // Create real storage and statedb
+        let db_storage = DBStorage::open_with_cfs(
+            &test_db_path,
+            StorageVersion::current_version()
+                .get_column_family_names()
+                .to_vec(),
+            false,
+            Default::default(),
+            None,
+        )?;
+        let export_chain_statedb = ChainStateDB::new(
+            Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
+            None,
+        );
+
+        // Build and execute genesis
+        let net = ChainNetwork::new_test();
+        let genesis_txn = Genesis::build_genesis_transaction(&net)?;
+        Genesis::execute_genesis_txn(&export_chain_statedb, genesis_txn)?;
+
+        // Create a random account
+        let random_account = Account::new();
+        println!("Created random account: {}", random_account.address());
+
+        // Transfer 1 STC from association to random account
+        let transfer_amount = 1_000_000_000; // 1 STC in nano units
+        let transfer_script = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("TransferScripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
+            vec![stc_type_tag()],
+            vec![
+                bcs_ext::to_bytes(random_account.address()).unwrap(),
+                bcs_ext::to_bytes(&transfer_amount).unwrap(),
+            ],
+        );
+
+        // Execute transfer transaction
+        association_execute_should_success(
+            &net,
+            &export_chain_statedb,
+            TransactionPayload::ScriptFunction(transfer_script),
+        )?;
+        // commit/flush to persist state
+        export_chain_statedb.commit()?;
+        export_chain_statedb.flush()?;
+
+        // Verify the transfer was successful
+        let balance_after_transfer = get_balance(*random_account.address(), &export_chain_statedb);
+        println!(
+            "Balance after transfer: {} nano STC",
+            balance_after_transfer
+        );
+        assert_eq!(
+            balance_after_transfer, transfer_amount,
+            "Transfer should be successful"
+        );
+
+        let export_state_root = export_chain_statedb.state_root();
+
+        //////////////////////////////////////////////////////
+        // Step 2: Export data
+        let export_path = temp_dir.path().join("export_with_transfer.csv");
+        {
+            let mut csv_writer = csv::WriterBuilder::new().from_path(&export_path)?;
+            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, u64::MAX, None)?;
+        }
+
+        //////////////////////////////////////////////////////
+        // Step 3: Import data
+        let import_db_path = temp_dir.path().join("import_db_with_transfer");
+        if !import_db_path.exists() {
+            create_dir_all(&import_db_path)?;
+        }
+        let db_storage = DBStorage::open_with_cfs(
+            &import_db_path,
+            StorageVersion::current_version()
+                .get_column_family_names()
+                .to_vec(),
+            false,
+            Default::default(),
+            None,
+        )?;
+        let imported_statedb = ChainStateDB::new(
+            Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
+            None,
+        );
+        import_from_statedb(
+            &imported_statedb,
+            &export_path,
+            export_state_root,
+            0,
+            u64::MAX,
+            false,
+        )?;
+
+        //////////////////////////////////////////////////////
+        // Step 4: Verify the imported state
+        let balance_after_import = get_balance(*random_account.address(), &imported_statedb);
+        println!("Balance after import: {} nano STC", balance_after_import);
+        assert_eq!(
+            balance_after_import, transfer_amount,
+            "Balance should be preserved after import"
+        );
+
+        // Also verify association account balance is reduced
+        let association_balance_after_import =
+            get_balance(association_address(), &imported_statedb);
+        println!(
+            "Association balance after import: {} nano STC",
+            association_balance_after_import
+        );
+        assert!(
+            association_balance_after_import < 1_000_000_000_000_000_000,
+            "Association balance should be reduced after transfer"
+        );
+
+        // temp_dir will be automatically cleaned up when it goes out of scope
         Ok(())
     }
 }

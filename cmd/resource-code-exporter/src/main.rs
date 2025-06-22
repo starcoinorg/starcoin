@@ -5,8 +5,8 @@ mod export;
 mod import;
 
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
 use starcoin_types::account_address::AccountAddress;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(
@@ -128,7 +128,11 @@ fn parse_white_list(white_list: Option<String>) -> anyhow::Result<Option<Vec<Acc
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
                 .map(|s| {
-                    let s = if s.starts_with("0x") { s.to_string() } else { format!("0x{}", s) };
+                    let s = if s.starts_with("0x") {
+                        s.to_string()
+                    } else {
+                        format!("0x{}", s)
+                    };
                     AccountAddress::from_str(&s)
                 })
                 .collect();
@@ -141,7 +145,10 @@ fn parse_white_list(white_list: Option<String>) -> anyhow::Result<Option<Vec<Acc
                         Ok(Some(addrs))
                     }
                 }
-                Err(e) => Err(anyhow::anyhow!("Failed to parse whitelist addresses: {}", e)),
+                Err(e) => Err(anyhow::anyhow!(
+                    "Failed to parse whitelist addresses: {}",
+                    e
+                )),
             }
         }
     }
