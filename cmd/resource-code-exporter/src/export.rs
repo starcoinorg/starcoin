@@ -186,7 +186,7 @@ mod test {
     use test_helper::executor::prepare_genesis;
 
     #[test]
-    fn test_export_from_statedb() -> anyhow::Result<()> {
+    fn test_export_from_mock_statedb() -> anyhow::Result<()> {
         // Initialize test storage with genesis
         let (chain_statedb, _net) = prepare_genesis();
 
@@ -216,7 +216,7 @@ mod test {
     }
 
     #[test]
-    fn test_export_white_list_from_statedb() -> anyhow::Result<()> {
+    fn test_export_white_list_from_mock_statedb() -> anyhow::Result<()> {
         // Initialize test storage with genesis
         let (chain_statedb, _net) = prepare_genesis();
 
