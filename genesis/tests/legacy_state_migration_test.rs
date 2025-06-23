@@ -70,7 +70,7 @@ pub fn test_legacy_account_state_migration_only_for_0x1() -> anyhow::Result<()> 
     // ));
 
     let (statedb, _, _) = create_test_statedb_with_genesis_custom(Some("testdb"))?;
-    let csv_content = std::fs::read_to_string(&"migration/legecy-state-data-for-0x1.csv")?;
+    let csv_content = std::fs::read_to_string("migration/legecy-state-data-for-0x1.csv")?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
 
     // Skip header and get the first data record
