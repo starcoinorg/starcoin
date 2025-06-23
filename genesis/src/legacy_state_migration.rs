@@ -102,7 +102,7 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
         let record = result?;
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
         assert_eq!(record.len(), 5);
-        
+
         // Skip if account is not in white_lists (when white_lists is provided)
         if let Some(ref white_lists) = white_lists {
             if !white_lists.contains(&account_address) {
@@ -161,7 +161,7 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
             processed
         );
     }
-    
+
     info!(
         "maybe_legacy_account_state_migration_with_statedb | Applying {} state sets to statedb...",
         chain_state_set_data.len()

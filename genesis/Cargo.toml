@@ -35,7 +35,6 @@ test-helper = { workspace = true }
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
-embed_csv = []
 
 [package]
 authors = { workspace = true }
