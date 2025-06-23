@@ -104,8 +104,8 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
         assert_eq!(record.len(), 5);
 
         // Skip if account is not in white_lists (when white_lists is provided)
-        if let Some(ref white_lists) = white_lists {
-            if !white_lists.contains(&account_address) {
+        if let Some(ref list) = remaining_white_list {
+            if !list.contains(&account_address) {
                 continue;
             }
         }

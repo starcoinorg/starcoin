@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_genesis::legacy_state_migration::{
     check_legecy_data_has_migration, maybe_legacy_account_state_migration_with_statedb,
 };
@@ -11,9 +11,11 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
 use starcoin_types::{
     account_address::AccountAddress,
-    state_set::ChainStateSet,
-    state_set::{AccountStateSet, StateSet},
+    identifier::Identifier,
+    language_storage::StructTag,
+    state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
+use starcoin_vm_types::account_config::BalanceResource;
 use starcoin_vm_types::state_view::StateReaderExt;
 use std::fs::create_dir_all;
 use std::sync::Arc;
@@ -65,10 +67,6 @@ fn create_test_statedb_with_genesis_custom(
 pub fn test_legacy_account_state_migration_only_for_0x1() -> anyhow::Result<()> {
     starcoin_logger::init_for_test();
 
-    // let statedb = test_helper::executor::prepare_customized_genesis(&ChainNetwork::new_builtin(
-    //     BuiltinNetworkID::Main,
-    // ));
-
     let (statedb, _, _) = create_test_statedb_with_genesis_custom(Some("testdb"))?;
     let csv_content = std::fs::read_to_string("migration/legecy-state-data-for-0x1.csv")?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
@@ -100,9 +98,17 @@ pub fn test_legacy_account_state_migration_only_for_0x1() -> anyhow::Result<()> 
 pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
     starcoin_logger::init_for_test();
 
-    let statedb = test_helper::executor::prepare_customized_genesis(&ChainNetwork::new_builtin(
-        BuiltinNetworkID::Main,
-    ));
+    let (statedb, _net) = test_helper::executor::prepare_genesis();
+
+    // Check 0xdb2ba632664e1579e6bd949c538405c2 is 0
+    // assert_eq!(
+    //     statedb
+    //         .get_balance(AccountAddress::from_hex_literal(
+    //             "0xdb2ba632664e1579e6bd949c538405c2"
+    //         )?)?
+    //         .unwrap_or(0),
+    //     0
+    // );
 
     // Execute the migration
     maybe_legacy_account_state_migration_with_statedb(
@@ -113,15 +119,52 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
         ]),
     )?;
 
-    let account1 = AccountAddress::from_hex_literal("0x1")?;
-    assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 10000);
-
     // Verify 0xdb2ba632664e1579e6bd949c538405c2 account balance
     let account2 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
     assert_eq!(statedb.get_balance(account2)?.unwrap_or(0), 24453);
 
+    let account1 = AccountAddress::from_hex_literal("0x1")?;
+    assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 10000);
+
     // Verify version is 12
     assert!(check_legecy_data_has_migration(&statedb)?);
 
+    Ok(())
+}
+
+#[test]
+fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
+    let csv_content = std::fs::read_to_string("migration/legecy-state-data-for-0x1.csv")?;
+    let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
+
+    for result in csv_reader.records() {
+        let record = result?;
+        let address_str = &record[0];
+
+        let addr: AccountAddress = serde_json::from_str(address_str)?;
+        let address_hex_literal = addr.to_hex_literal();
+        println!(
+            "address str: {}, addr hex literal: {}",
+            address_str, address_hex_literal
+        );
+
+        if addr != AccountAddress::ONE {
+            continue;
+        }
+        // Deserialize resource_state_set
+        let resource_state_set: StateSet = serde_json::from_str(&record[4])?;
+        for (struct_tag_bcs, blob_bcs) in resource_state_set.iter() {
+            let struct_tag: StructTag = bcs_ext::from_bytes(struct_tag_bcs)?;
+            println!("struct_tag: {:?}, blob: {:?}", struct_tag, blob_bcs);
+            if struct_tag.module == Identifier::new("Account")?
+                && struct_tag.name == Identifier::new("Balance")?
+            {
+                let balance = bcs_ext::from_bytes::<BalanceResource>(blob_bcs)?;
+                println!("balance: {:?}", balance);
+                assert_eq!(balance.token(), 10000);
+                break;
+            }
+        }
+    }
     Ok(())
 }
