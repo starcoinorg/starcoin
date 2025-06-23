@@ -100,8 +100,8 @@ pub fn export_from_statedb<W: Write>(
         }
 
         // Skip if account is not in white_lists (when white_lists is provided)
-        if let Some(ref list) = white_list {
-            if !list.contains(&account_address) {
+        if let Some(ref set) = white_list_set {
+            if !set.contains(&account_address) {
                 continue;
             }
         }
