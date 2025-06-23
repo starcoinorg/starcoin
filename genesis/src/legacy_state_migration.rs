@@ -85,7 +85,7 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
 ) -> anyhow::Result<()> {
     info!("maybe_legacy_account_state_migration_with_statedb | Entered");
 
-    if check_legecy_data_has_migration(&statedb)? {
+    if check_legecy_data_has_migration(statedb)? {
         info!("maybe_legacy_account_state_migration_with_statedb | check_legecy_data_has_migration has done, Exit!");
         return Ok(());
     }
@@ -96,7 +96,7 @@ pub fn maybe_legacy_account_state_migration_with_statedb(
     let mut processed = 0;
 
     // For performance optimization: track remaining white list items
-    let mut remaining_white_list = white_lists.as_ref().map(|wl| wl.clone());
+    let mut remaining_white_list = white_lists.clone();
 
     for result in csv_reader.records() {
         let record = result?;
