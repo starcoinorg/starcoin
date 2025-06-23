@@ -20,6 +20,7 @@ use starcoin_vm_types::state_view::StateReaderExt;
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use tempfile::TempDir;
+use starcoin_vm_types::on_chain_config::Version;
 
 /// Create a ChainStateDB with real storage from a test directory with custom options
 ///
@@ -119,12 +120,13 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
         ]),
     )?;
 
-    // Verify 0xdb2ba632664e1579e6bd949c538405c2 account balance
-    let account2 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
-    assert_eq!(statedb.get_balance(account2)?.unwrap_or(0), 24453);
 
     let account1 = AccountAddress::from_hex_literal("0x1")?;
     assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 10000);
+
+    // Verify 0xdb2ba632664e1579e6bd949c538405c2 account balance
+    let account2 = AccountAddress::from_hex_literal("0xdb2ba632664e1579e6bd949c538405c2")?;
+    assert_eq!(statedb.get_balance(account2)?.unwrap_or(0), 24453);
 
     // Verify version is 12
     assert!(check_legecy_data_has_migration(&statedb)?);
@@ -132,6 +134,10 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
     Ok(())
 }
 
+
+
+
+/// Check the legitimacy and integrity of the data in csv
 #[test]
 fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
     let csv_content = std::fs::read_to_string("migration/legecy-state-data-for-0x1.csv")?;
@@ -151,18 +157,27 @@ fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
         if addr != AccountAddress::ONE {
             continue;
         }
+
         // Deserialize resource_state_set
         let resource_state_set: StateSet = serde_json::from_str(&record[4])?;
         for (struct_tag_bcs, blob_bcs) in resource_state_set.iter() {
             let struct_tag: StructTag = bcs_ext::from_bytes(struct_tag_bcs)?;
-            println!("struct_tag: {:?}, blob: {:?}", struct_tag, blob_bcs);
+            // println!("struct_tag: {:?}, blob: {:?}", struct_tag, blob_bcs);
             if struct_tag.module == Identifier::new("Account")?
                 && struct_tag.name == Identifier::new("Balance")?
             {
                 let balance = bcs_ext::from_bytes::<BalanceResource>(blob_bcs)?;
                 println!("balance: {:?}", balance);
                 assert_eq!(balance.token(), 10000);
-                break;
+                continue;
+            }
+
+            if struct_tag.module == Identifier::new("Version")?
+                && struct_tag.name == Identifier::new("Version")? {
+                let version = bcs_ext::from_bytes::<Version>(blob_bcs)?;
+                println!("version: {:?}", version);
+                assert_eq!(version.major, 12);
+                continue;
             }
         }
     }
