@@ -155,10 +155,10 @@ mod test {
     }
 
     /// Create a ChainStateDB with real storage from a test directory with custom options
-    /// 
+    ///
     /// # Arguments
     /// * `db_name` - Optional custom name for the database directory (default: "test_db")
-    /// 
+    ///
     /// # Returns
     /// * `ChainStateDB` - The initialized state database
     /// * `ChainNetwork` - The test network configuration
@@ -172,7 +172,7 @@ mod test {
         if !test_db_path.exists() {
             create_dir_all(&test_db_path)?;
         }
-        
+
         // Create real storage and statedb
         let db_storage = DBStorage::open_with_cfs(
             &test_db_path,
@@ -187,12 +187,12 @@ mod test {
             Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
             None,
         );
-        
+
         // Build and execute genesis
         let net = ChainNetwork::new_test();
         let genesis_txn = Genesis::build_genesis_transaction(&net)?;
         Genesis::execute_genesis_txn(&statedb, genesis_txn)?;
-        
+
         Ok((statedb, net, temp_dir))
     }
 
@@ -250,11 +250,11 @@ mod test {
         //////////////////////////////////////////////////////
         // Step 1: Initialize test storage with genesis using real storage
         let (export_chain_statedb, net, temp_dir) = create_test_statedb_with_genesis()?;
-        
+
         // Create a random account
         let random_account = Account::new();
         println!("Created random account: {}", random_account.address());
-        
+
         // Transfer 1 STC from association to random account
         let transfer_amount = 1_000_000_000; // 1 STC in nano units
         let transfer_script = ScriptFunction::new(
@@ -269,7 +269,7 @@ mod test {
                 bcs_ext::to_bytes(&transfer_amount).unwrap(),
             ],
         );
-        
+
         // Execute transfer transaction
         association_execute_should_success(
             &net,
@@ -358,20 +358,30 @@ mod test {
     fn test_create_test_statedb_helper() -> anyhow::Result<()> {
         // Example of using the helper function with default settings
         let (statedb, _net, _temp_dir) = create_test_statedb_with_genesis()?;
-        
+
         // Verify that genesis was executed properly
         let association_balance = get_balance(association_address(), &statedb);
-        println!("Association balance after genesis: {} nano STC", association_balance);
-        assert!(association_balance > 0, "Association should have balance after genesis");
-        
+        println!(
+            "Association balance after genesis: {} nano STC",
+            association_balance
+        );
+        assert!(
+            association_balance > 0,
+            "Association should have balance after genesis"
+        );
+
         // Example of using the helper function with custom database name
-        let (statedb2, _net2, _temp_dir2) = create_test_statedb_with_genesis_custom(Some("custom_db"))?;
-        
+        let (statedb2, _net2, _temp_dir2) =
+            create_test_statedb_with_genesis_custom(Some("custom_db"))?;
+
         // Verify that both databases work independently
         let balance1 = get_balance(association_address(), &statedb);
         let balance2 = get_balance(association_address(), &statedb2);
-        assert_eq!(balance1, balance2, "Both databases should have same genesis state");
-        
+        assert_eq!(
+            balance1, balance2,
+            "Both databases should have same genesis state"
+        );
+
         // temp_dir and temp_dir2 will be automatically cleaned up when they go out of scope
         Ok(())
     }
