@@ -16,11 +16,11 @@ use starcoin_types::{
     state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
 use starcoin_vm_types::account_config::BalanceResource;
+use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::state_view::StateReaderExt;
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use tempfile::TempDir;
-use starcoin_vm_types::on_chain_config::Version;
 
 /// Create a ChainStateDB with real storage from a test directory with custom options
 ///
@@ -120,7 +120,6 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
         ]),
     )?;
 
-
     let account1 = AccountAddress::from_hex_literal("0x1")?;
     assert_eq!(statedb.get_balance(account1)?.unwrap_or(0), 10000);
 
@@ -133,9 +132,6 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-
-
 
 /// Check the legitimacy and integrity of the data in csv
 #[test]
@@ -173,7 +169,8 @@ fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
             }
 
             if struct_tag.module == Identifier::new("Version")?
-                && struct_tag.name == Identifier::new("Version")? {
+                && struct_tag.name == Identifier::new("Version")?
+            {
                 let version = bcs_ext::from_bytes::<Version>(blob_bcs)?;
                 println!("version: {:?}", version);
                 assert_eq!(version.major, 12);
