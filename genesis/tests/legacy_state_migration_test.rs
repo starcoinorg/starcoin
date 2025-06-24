@@ -6,7 +6,8 @@ use starcoin_genesis::legacy_state_migration::{
     check_legecy_data_has_migration, maybe_legacy_account_state_migration_with_statedb,
 };
 use starcoin_genesis::Genesis;
-use starcoin_state_api::ChainStateWriter;
+use starcoin_logger::prelude::info;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
 use starcoin_types::{
@@ -15,9 +16,13 @@ use starcoin_types::{
     language_storage::StructTag,
     state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
-use starcoin_vm_types::account_config::BalanceResource;
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::state_view::StateReaderExt;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_config::OnChainConfig;
+use starcoin_vm_types::{
+    account_config::BalanceResource, on_chain_config, on_chain_config::Version,
+    state_view::StateReaderExt,
+};
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -133,20 +138,111 @@ pub fn test_legacy_account_state_migration() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+pub fn test_legacy_account_state_migration_only_for_0x3dd0a058b690062d915163078606e0d5(
+) -> anyhow::Result<()> {
+    starcoin_logger::init_for_test();
+
+    let csv_content = std::fs::read_to_string(
+        "migration/legecy-state-data-for-0x3dd0a058b690062d915163078606e0d5.csv",
+    )?;
+    let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
+
+    let mut account_states = Vec::new();
+    let mut replace_balance = 0;
+    let mut target_addr: AccountAddress = AccountAddress::random();
+
+    for result in csv_reader.records() {
+        let record = result.expect("Failed to read CSV record");
+        let address_str = &record[0];
+
+        target_addr = serde_json::from_str(address_str)?;
+        info!(
+            "test_read_0x1_balance_from_csv | address str: {}, addr hex literal: {}",
+            address_str,
+            target_addr.to_hex_literal()
+        );
+
+        // Deserialize resource_state_set
+        let resource_state_set: StateSet = serde_json::from_str(&record[4])?;
+        // let code_state_set: StateSet = serde_json::from_str(&record[2])?;
+
+        let writeable_account_state_set = AccountStateSet::new(vec![
+            // Some(code_state_set.clone()),
+            None,
+            Some(resource_state_set.clone()),
+        ]);
+
+        // Check the legitimacy and integrity of the data
+        for (struct_tag_bcs, blob_bcs) in resource_state_set.iter() {
+            let struct_tag: StructTag = bcs_ext::from_bytes(struct_tag_bcs)?;
+            // println!("struct_tag: {:?}, blob: {:?}", struct_tag, blob_bcs);
+            if struct_tag.module == Identifier::new("Account")?
+                && struct_tag.name == Identifier::new("Balance")?
+            {
+                let balance = bcs_ext::from_bytes::<BalanceResource>(blob_bcs)?.token();
+                info!("test_legacy_account_state_migration_only_for_0x3dd0a058b690062d915163078606e0d5 | balance: {:?}", balance);
+                assert_eq!(balance, 3890799);
+                replace_balance = balance;
+                break;
+            }
+        }
+
+        // Add to account states for later application
+        account_states.push((target_addr, writeable_account_state_set));
+    }
+
+    // Apply the verified data to statedb
+    let (statedb, _network) = test_helper::executor::prepare_genesis();
+    let before_state_root = statedb.state_root();
+    info!("before_state_root: {:?}", before_state_root);
+    if !account_states.is_empty() {
+        statedb.apply(ChainStateSet::new(account_states))?;
+    }
+    statedb.commit()?;
+    statedb.flush()?;
+
+    let end_state_root = statedb.state_root();
+    info!("end_state_root: {:?}", end_state_root);
+    assert_ne!(before_state_root, end_state_root);
+
+    let balance = statedb.get_balance(target_addr)?;
+    assert_eq!(balance.unwrap_or(0), replace_balance);
+
+    Ok(())
+}
+
 /// Check the legitimacy and integrity of the data in csv
 #[test]
-fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
+pub fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
+    starcoin_logger::init_for_test();
+
     let csv_content = std::fs::read_to_string("migration/legecy-state-data-for-0x1.csv")?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
 
+    let mut account_states = Vec::new();
+    let mut replace_balance = 0;
+    let mut replaced_version = 0;
+
+    let on_chain_version_struct_tag = on_chain_config::access_path_for_config(
+        genesis_address(),
+        Identifier::new("Version")?,
+        Identifier::new("Version")?,
+        vec![],
+    ).path.as_struct_tag().unwrap().clone();
+    info!(
+        "test_read_0x1_balance_from_csv | version struct tag: {:?}",
+        on_chain_version_struct_tag
+    );
+
     for result in csv_reader.records() {
-        let record = result?;
+        let record = result.expect("Failed to read CSV record");
         let address_str = &record[0];
 
         let addr: AccountAddress = serde_json::from_str(address_str)?;
         let address_hex_literal = addr.to_hex_literal();
-        println!(
-            "address str: {}, addr hex literal: {}",
+        info!(
+            "test_read_0x1_balance_from_csv | address str: {}, addr hex literal: {}",
             address_str, address_hex_literal
         );
 
@@ -156,27 +252,63 @@ fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
 
         // Deserialize resource_state_set
         let resource_state_set: StateSet = serde_json::from_str(&record[4])?;
+        let code_state_set: StateSet = serde_json::from_str(&record[2])?;
+
+        let writeable_account_state_set = AccountStateSet::new(vec![
+            Some(code_state_set.clone()),
+            Some(resource_state_set.clone()),
+        ]);
+
+        // Check the legitimacy and integrity of the data
         for (struct_tag_bcs, blob_bcs) in resource_state_set.iter() {
             let struct_tag: StructTag = bcs_ext::from_bytes(struct_tag_bcs)?;
-            // println!("struct_tag: {:?}, blob: {:?}", struct_tag, blob_bcs);
+            info!("struct_tag: {:?}", struct_tag);
             if struct_tag.module == Identifier::new("Account")?
                 && struct_tag.name == Identifier::new("Balance")?
             {
                 let balance = bcs_ext::from_bytes::<BalanceResource>(blob_bcs)?;
-                println!("balance: {:?}", balance);
-                assert_eq!(balance.token(), 10000);
+                info!("test_read_0x1_balance_from_csv | balance: {:?}", balance);
+                replace_balance = balance.token();
+                assert_eq!(replace_balance, 10000);
                 continue;
             }
 
-            if struct_tag.module == Identifier::new("Version")?
-                && struct_tag.name == Identifier::new("Version")?
-            {
+            if struct_tag == on_chain_version_struct_tag {
                 let version = bcs_ext::from_bytes::<Version>(blob_bcs)?;
-                println!("version: {:?}", version);
-                assert_eq!(version.major, 12);
+                info!("version: {:?}", version);
+                replaced_version = version.major;
+                assert_eq!(replaced_version, 12);
                 continue;
             }
         }
+
+        // Add to account states for later application
+        account_states.push((AccountAddress::ONE, writeable_account_state_set));
     }
+
+    // Apply the verified data to statedb
+    let (statedb, _network) = test_helper::executor::prepare_genesis();
+    let before_state_root = statedb.state_root();
+    info!("before_state_root: {:?}", before_state_root);
+    if !account_states.is_empty() {
+        statedb.apply(ChainStateSet::new(account_states))?;
+    }
+    statedb.commit()?;
+    statedb.flush()?;
+
+    let end_state_root = statedb.state_root();
+    info!("end_state_root: {:?}", end_state_root);
+
+    assert_ne!(before_state_root, end_state_root);
+
+    let version = statedb.get_on_chain_config::<Version>()?;
+    assert_eq!(
+        version.unwrap_or(Version { major: 0 }).major,
+        replaced_version
+    );
+
+    let balance = statedb.get_balance(AccountAddress::ONE)?;
+    assert_eq!(balance.unwrap_or(0), replace_balance);
+
     Ok(())
 }
