@@ -84,14 +84,15 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     });
 
     let k: u64 = chain.get_dag().ghost_dag_manager().k().into();
-    let next_block_time_target = next_block_time_target(
-        u64::try_from(total_block_set.len())?,
-        &blue_block_in_order,
-        u64::try_from(selected_blocks.len())?,
-        100,
-        k,
-        11,
-    )?;
+    // let next_block_time_target = next_block_time_target(
+    //     u64::try_from(total_block_set.len())?,
+    //     &blue_block_in_order,
+    //     u64::try_from(selected_blocks.len())?,
+    //     100,
+    //     k,
+    //     11,
+    // )?;
+    let next_block_time_target = epoch.block_time_target();
 
     let target = get_next_target_helper(
         blue_block_in_order
