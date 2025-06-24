@@ -235,7 +235,6 @@ impl ChainApi for MockChainApi {
                 Some(block) => {
                     let mut block_view = BlockView::try_from_block(block, false, raw)?;
                     if decode {
-                        // TODO: check state_root
                         debug_assert!(status.is_some());
                         let state = ChainStateDB::new(
                             storage,
@@ -285,10 +284,8 @@ impl ChainApi for MockChainApi {
                     Some(hash) => match storage.get_block_by_hash(hash)? {
                         Some(block) => {
                             let mut block_view = BlockView::try_from_block(block, false, raw)?;
-                            // TODO: check state_root
                             if decode {
                                 debug_assert!(status.is_some());
-                                // TODO: check state_root
                                 let state = ChainStateDB::new(
                                     storage,
                                     Some(status.unwrap().status.head().state_root()),
@@ -371,7 +368,6 @@ impl ChainApi for MockChainApi {
                     let block = status.clone().unwrap().head;
 
                     let mut txn = TransactionView::new(txn, &block)?;
-                    // TODO: check state_root
                     if decode_payload {
                         let state = ChainStateDB::new(
                             storage,
