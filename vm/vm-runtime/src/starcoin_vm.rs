@@ -964,6 +964,7 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
             parents_hash,
+            red_blocks,
         ) = block_metadata.into_inner();
         let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
@@ -979,6 +980,7 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
+            MoveValue::U64(red_blocks),
         ];
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {

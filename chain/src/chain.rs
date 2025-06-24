@@ -169,6 +169,7 @@ impl BlockChain {
             None,
             genesis_block,
             &chain_id,
+            0,
             None,
         )?;
         dag = Self::init_dag(dag, genesis_header)?;
@@ -425,6 +426,7 @@ impl BlockChain {
             blue_blocks,
             0,
             pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -550,7 +552,15 @@ impl BlockChain {
             .ok_or_else(|| {
                 format_err!("Can not find selected block by hash {:?}", selected_parent)
             })?;
-        let block_metadata = block.to_metadata(selected_head.header().gas_used());
+        let block_metadata = block.to_metadata(
+            selected_head.header().gas_used(),
+            verified_block
+                .ghostdata
+                .as_ref()
+                .ok_or_else(|| format_err!("in dag execution, ghostdata is none"))?
+                .mergeset_reds
+                .len() as u64,
+        );
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header
             .difficulty()
@@ -756,6 +766,7 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         chain_id: &ChainId,
+        red_blocks: u64,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -767,7 +778,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), red_blocks);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -935,6 +946,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        red_blocks: u64,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -946,7 +958,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), red_blocks);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -1336,6 +1348,11 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.block,
+            verified_block
+                .ghostdata
+                .ok_or_else(|| format_err!("in execution without saving, ghostdata is missing"))?
+                .mergeset_reds
+                .len() as u64,
             self.vm_metrics.clone(),
         )
     }

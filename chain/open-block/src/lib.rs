@@ -61,6 +61,7 @@ pub struct OpenedBlock {
 }
 
 impl OpenedBlock {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         storage: Arc<dyn Store>,
         previous_header: BlockHeader,
@@ -75,6 +76,7 @@ impl OpenedBlock {
         blue_blocks: Vec<Block>,
         version: Version,
         pruning_point: HashValue,
+        red_blocks: u64,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -99,6 +101,7 @@ impl OpenedBlock {
             chain_id,
             previous_header.gas_used(),
             tips_hash,
+            red_blocks,
         );
         let mut opened_block = Self {
             previous_block_info: block_info,

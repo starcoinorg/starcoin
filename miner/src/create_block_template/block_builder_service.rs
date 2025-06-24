@@ -351,11 +351,11 @@ where
             previous_header,
             on_chain_block_gas_limit,
             selected_parents,
-            blue_blocks_hash: ghostdata.mergeset_blues.as_ref()[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,
             pruning_point,
+            ghostdata,
         })
     }
 
@@ -363,12 +363,12 @@ where
         let MinerResponse {
             previous_header,
             selected_parents,
-            blue_blocks_hash: blues,
             strategy,
             on_chain_block_gas_limit,
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
+            ghostdata,
         } = self.resolve_block_parents()?;
 
         let block_gas_limit = self
@@ -391,9 +391,11 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
 
-        let blue_blocks = blues
-            .into_iter()
-            .map(|hash| self.storage.get_block_by_hash(hash))
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .iter()
+            .skip(1) // skip the selected parent
+            .map(|hash| self.storage.get_block_by_hash(*hash))
             .collect::<Result<Vec<Option<Block>>>>()?
             .into_iter()
             .map(|op_block_header| {
@@ -438,6 +440,7 @@ where
             blue_blocks,
             header_version,
             pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
         )?;
 
         let excluded_txns = opened_block.push_txns(txns)?;
