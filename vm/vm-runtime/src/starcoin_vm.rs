@@ -980,7 +980,6 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
-            MoveValue::U64(red_blocks),
         ];
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
