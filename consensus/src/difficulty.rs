@@ -50,7 +50,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     }
 
     let mut blue_block_set = HashSet::new();
-    let mut total_block_set = HashSet::new();
 
     selected_blocks.iter().try_for_each(|id| {
         let ghostdata = chain.get_dag().storage.ghost_dag_store.get_data(*id)?;
@@ -68,8 +67,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 })
                 .collect::<Result<Vec<BlockHeader>>>()?,
         );
-        total_block_set.extend(ghostdata.mergeset_blues.iter().cloned());
-        total_block_set.extend(ghostdata.mergeset_reds.iter().cloned());
 
         Ok(())
     })?;
@@ -83,15 +80,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .then_with(|| b.id().cmp(&a.id()))
     });
 
-    // let k: u64 = chain.get_dag().ghost_dag_manager().k().into();
-    // let next_block_time_target = next_block_time_target(
-    //     u64::try_from(total_block_set.len())?,
-    //     &blue_block_in_order,
-    //     u64::try_from(selected_blocks.len())?,
-    //     100,
-    //     k,
-    //     11,
-    // )?;
     let next_block_time_target = epoch.block_time_target();
     info!("next_block_time_target: {:?}", next_block_time_target);
 
