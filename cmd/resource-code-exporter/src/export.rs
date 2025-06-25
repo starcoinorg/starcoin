@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use bcs_ext;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
@@ -9,7 +8,6 @@ use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
     storage::StorageInstance, Storage, StorageVersion,
 };
-use starcoin_types::state_set::ChainStateSet;
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
@@ -81,12 +79,10 @@ pub fn export_from_statedb(statedb: &ChainStateDB, bcs_output_path: &Path) -> an
 #[cfg(test)]
 mod test {
     use super::*;
-    use starcoin_types::language_storage::StructTag;
-    use starcoin_vm_types::account_config::token_code::TokenCode;
+    use starcoin_types::{language_storage::StructTag, state_set::ChainStateSet};
     use starcoin_vm_types::account_config::{
-        association_address, stc_type_tag, BalanceResource, STC_TOKEN_CODE_STR,
+        association_address, token_code::TokenCode, BalanceResource, STC_TOKEN_CODE_STR,
     };
-    use starcoin_vm_types::move_resource::MoveResource;
     use std::str::FromStr;
     use test_helper::executor::prepare_genesis;
 
