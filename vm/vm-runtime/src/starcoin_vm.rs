@@ -980,7 +980,6 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
-            MoveValue::U64(red_blocks),
         ];
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
@@ -988,6 +987,7 @@ impl StarcoinVM {
                     bcs_ext::to_bytes(&parents_hash)
                         .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
                 ));
+                args_vec.push(MoveValue::U64(red_blocks));
                 function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
             }
         }
