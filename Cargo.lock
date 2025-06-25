@@ -10050,7 +10050,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "13.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=da24c86c9335b778edd5f2d49065e5b2d8a58204#da24c86c9335b778edd5f2d49065e5b2d8a58204"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=ef4706901c9cdf5da6edac6ee255c381b0f00551#ef4706901c9cdf5da6edac6ee255c381b0f00551"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10966,6 +10966,7 @@ dependencies = [
  "futures 0.3.26",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-logger",
  "starcoin-service-registry",
  "starcoin-state-api",
