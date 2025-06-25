@@ -105,6 +105,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
+#[allow(dead_code)]
 fn next_block_time_target(
     total_block_count: u64,
     blue_block_headers: &[BlockHeader],
