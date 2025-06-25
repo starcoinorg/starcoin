@@ -93,6 +93,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     //     11,
     // )?;
     let next_block_time_target = epoch.block_time_target();
+    info!("next_block_time_target: {:?}", next_block_time_target);
 
     let target = get_next_target_helper(
         blue_block_in_order
