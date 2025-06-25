@@ -19,11 +19,13 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::OnChainConfig;
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     account_config::BalanceResource, on_chain_config, on_chain_config::Version,
     state_view::StateReaderExt,
 };
 use std::fs::create_dir_all;
+use std::hash::Hash;
 use std::sync::Arc;
 use tempfile::TempDir;
 
@@ -224,15 +226,17 @@ pub fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
     let mut replace_balance = 0;
     let mut replaced_version = 0;
 
-    let on_chain_version_struct_tag = on_chain_config::access_path_for_config(
+    let on_chain_version = on_chain_config::access_path_for_config(
         genesis_address(),
         Identifier::new("Version")?,
         Identifier::new("Version")?,
         vec![],
-    ).path.as_struct_tag().unwrap().clone();
+    );
+
+    let on_chain_version_struct_tag = on_chain_version.path.as_struct_tag().unwrap().clone();
     info!(
         "test_read_0x1_balance_from_csv | version struct tag: {:?}",
-        on_chain_version_struct_tag
+        on_chain_version_struct_tag,
     );
 
     for result in csv_reader.records() {
@@ -302,6 +306,7 @@ pub fn test_read_0x1_balance_from_csv() -> anyhow::Result<()> {
     assert_ne!(before_state_root, end_state_root);
 
     let version = statedb.get_on_chain_config::<Version>()?;
+
     assert_eq!(
         version.unwrap_or(Version { major: 0 }).major,
         replaced_version
