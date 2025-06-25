@@ -41,11 +41,11 @@ enum Commands {
         /// End account index, 0 to process to end of data list
         end: u64,
     },
-    /// Import state data from CSV file
+    /// Import state data from BCS file
     Import {
         #[clap(long, short = 'i', parse(from_os_str))]
-        /// Input CSV file path
-        csv_input: PathBuf,
+        /// Input BCS file path
+        bcs_input: PathBuf,
 
         #[clap(long, short = 'd', parse(from_os_str))]
         /// Output database path
@@ -54,14 +54,6 @@ enum Commands {
         #[clap(long)]
         /// expect state root hash
         state_root: starcoin_crypto::HashValue,
-
-        #[clap(long, short = 's')]
-        /// Start account index
-        start: u64,
-
-        #[clap(long, short = 'e')]
-        /// End account index, 0 to process to end of data list
-        end: u64,
     },
 }
 
@@ -87,14 +79,11 @@ fn main() -> anyhow::Result<()> {
             )?;
         }
         Commands::Import {
-            csv_input,
+            bcs_input,
             db_path,
             state_root,
-            start,
-            end,
         } => {
-            index_check(start, end);
-            import::import(&csv_input, &db_path, state_root, start, end)?;
+            import::import(&bcs_input, &db_path, state_root)?;
         }
     }
 

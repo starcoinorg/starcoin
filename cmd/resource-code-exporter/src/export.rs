@@ -1,12 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use bcs_ext;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
     storage::StorageInstance, Storage, StorageVersion,
 };
+use starcoin_types::state_set::ChainStateSet;
+use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
@@ -14,11 +18,11 @@ pub fn export(
     db: &str,
     output: &Path,
     block_hash: HashValue,
-    start: u64,
-    end: u64,
+    _start: u64,
+    _end: u64,
 ) -> anyhow::Result<()> {
-    println!("Starting export process for block: {}", block_hash);
-    println!("Opening database at: {}", db);
+    info!("Starting export process for block: {}", block_hash);
+    info!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
         db,
         StorageVersion::V3.get_column_family_names().to_vec(),
@@ -27,174 +31,159 @@ pub fn export(
         None,
     )?;
 
-    println!("Initializing storage...");
+    info!("Initializing storage...");
     let storage_instance = StorageInstance::new_db_instance(db_storage);
     let block_storage = BlockInnerStorage::new(storage_instance.clone());
 
-    println!("Fetching block {} from storage...", block_hash);
+    info!("Fetching block {} from storage...", block_hash);
     let block = block_storage
         .get(block_hash)?
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
-    println!("Block found successfully");
+    info!("Block found successfully");
 
     let root = block.header.state_root();
-    println!("State root: {}", root);
-    println!("Initializing ChainStateDB...");
+    info!("State root: {}", root);
+    info!("Initializing ChainStateDB...");
     let storage = Arc::new(Storage::new(storage_instance)?);
     let statedb = ChainStateDB::new(storage, Some(root));
 
-    println!("Creating CSV writer for output: {}", output.display());
-    let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
-    println!("Starting export from StateDB...");
-    export_from_statedb(&statedb, &mut csv_writer, start, end)?;
-    println!("Export completed successfully");
+    info!("Starting export from StateDB to: {}", output.display());
+    export_from_statedb(&statedb, output)?;
+    info!("Export completed successfully");
 
     Ok(())
 }
 
-/// Export resources and code from StateDB to a writer
-pub fn export_from_statedb<W: Write>(
-    statedb: &ChainStateDB,
-    writer: &mut csv::Writer<W>,
-    start: u64,
-    end: u64,
-) -> anyhow::Result<()> {
-    println!(
-        "Starting export_from_statedb...， start: {}, end: {}",
-        start, end
+/// Export ChainStateSet as BCS format to specified path
+pub fn export_from_statedb(statedb: &ChainStateDB, bcs_output_path: &Path) -> anyhow::Result<()> {
+    info!(
+        "Starting export_from_statedb to: {}",
+        bcs_output_path.display()
     );
-    // write csv header
-    {
-        println!("Writing CSV header...");
-        writer.write_field("address")?;
-        writer.write_field("code_blob_hash")?;
-        writer.write_field("code_blob")?;
-        writer.write_field("resource_blob_hash")?;
-        writer.write_field("resource_blob")?;
-        writer.write_record(None::<&[u8]>)?;
-        println!("CSV header written successfully");
-    }
 
-    println!("Dumping global states from StateDB...");
-    let global_states = statedb.dump_iter()?;
+    info!("Dumping global states from StateDB...");
+    let dump_state = statedb.dump()?;
 
-    use std::time::Instant;
-    let now = Instant::now();
-    let mut processed = 0;
-    let mut total_code_size = 0;
-    let mut total_resource_size = 0;
+    // Write dump state as bcs format to file
+    info!(
+        "Writing dump state to BCS file: {}",
+        bcs_output_path.display()
+    );
+    let bcs_bytes = bcs_ext::to_bytes(&dump_state)?;
+    let mut bcs_file = File::create(bcs_output_path)?;
+    bcs_file.write_all(&bcs_bytes)?;
+    info!("Successfully wrote {} bytes to BCS file", bcs_bytes.len());
 
-    for (account_address, account_state_set) in global_states {
-        // Skip accounts before start index
-        if processed < start {
-            processed += 1;
-            continue;
-        }
-        // Stop processing after end index
-        if processed >= end && end > 0 {
-            break;
-        }
-
-        println!("Processing account: {}", account_address);
-
-        // Process codes
-        let (code_state_set_hash, code_state_set) = match account_state_set.code_set() {
-            Some(state_set) => {
-                let code_state_set = serde_json::to_string(&state_set)?;
-                let code_size = code_state_set.len();
-                total_code_size += code_size;
-                println!("  Found code set, size: {} bytes", code_size);
-                (
-                    HashValue::sha3_256_of(code_state_set.as_bytes()).to_hex_literal(),
-                    code_state_set,
-                )
-            }
-            None => {
-                println!("  No code set found for this account");
-                (String::new(), String::new())
-            }
-        };
-
-        // Process resources
-        let (resource_state_set_hash, resource_state_set) = match account_state_set.resource_set() {
-            Some(state_set) => {
-                let resource_state_set = serde_json::to_string(&state_set)?;
-                let resource_size = resource_state_set.len();
-                total_resource_size += resource_size;
-                println!("  Found resource set, size: {} bytes", resource_size);
-                (
-                    HashValue::sha3_256_of(resource_state_set.as_bytes()).to_hex_literal(),
-                    resource_state_set,
-                )
-            }
-            None => {
-                println!("  No resource set found for this account");
-                (String::new(), String::new())
-            }
-        };
-
-        // write csv record
-        let record = vec![
-            serde_json::to_string(&account_address)?,
-            code_state_set_hash,
-            code_state_set,
-            resource_state_set_hash,
-            resource_state_set,
-        ];
-
-        writer.serialize(record)?;
-        processed += 1;
-
-        // if processed % 100 == 0 {
-        println!("Progress: {} accounts processed ", processed);
-        // }
-    }
-
-    println!("Export completed:");
-    println!("  Total accounts processed: {}", processed);
-    println!("  Total code size: {} bytes", total_code_size);
-    println!("  Total resource size: {} bytes", total_resource_size);
-    println!("  Total processing time: {} ms", now.elapsed().as_millis());
-
-    // println!("Flushing CSV writer...");
-    // writer.flush()?;
-    println!("CSV writer flushed successfully");
+    info!("BCS export completed successfully");
     Ok(())
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::io::Cursor;
+    use starcoin_types::language_storage::StructTag;
+    use starcoin_vm_types::account_config::token_code::TokenCode;
+    use starcoin_vm_types::account_config::{
+        association_address, stc_type_tag, BalanceResource, STC_TOKEN_CODE_STR,
+    };
+    use starcoin_vm_types::move_resource::MoveResource;
+    use std::str::FromStr;
     use test_helper::executor::prepare_genesis;
 
     #[test]
     fn test_export_from_statedb() -> anyhow::Result<()> {
+        // Initialize logger for test
+        starcoin_logger::init_for_test();
+
         // Initialize test storage with genesis
         let (chain_statedb, _net) = prepare_genesis();
 
-        // Create a buffer to write CSV data
-        let mut buffer = Cursor::new(Vec::new());
-        {
-            let mut csv_writer = csv::WriterBuilder::new().from_writer(&mut buffer);
-            // Export all accounts (from index 0 to u64::MAX)
-            export_from_statedb(&chain_statedb, &mut csv_writer, 0, u64::MAX)?;
+        // Test BCS export
+        let test_bcs_path = Path::new("test_dump_state.bcs");
+        export_from_statedb(&chain_statedb, test_bcs_path)?;
+
+        // Verify the BCS file was created and contains data
+        assert!(test_bcs_path.exists(), "BCS file should be created");
+        let file_size = std::fs::metadata(test_bcs_path)?.len();
+        assert!(file_size > 0, "BCS file should not be empty");
+
+        // Read back the BCS file and verify data integrity
+        info!("Reading back BCS file for verification...");
+        let bcs_data = std::fs::read(test_bcs_path)?;
+        let deserialized_state: ChainStateSet = bcs_ext::from_bytes(&bcs_data)?;
+
+        // Verify that the deserialized state contains data
+        assert!(
+            !deserialized_state.is_empty(),
+            "Deserialized state should not be empty"
+        );
+        info!(
+            "Successfully deserialized {} account states",
+            deserialized_state.len()
+        );
+
+        // Check if association account exists and has balance
+        let association_addr = association_address();
+        let mut found_association = false;
+        let mut association_balance = None;
+
+        for (address, account_state_set) in deserialized_state.state_sets() {
+            if *address != association_addr {
+                continue;
+            }
+
+            found_association = true;
+            info!("Found association account in exported state");
+
+            let stc_balance_resource = BalanceResource::struct_tag_for_token(
+                TokenCode::from_str(STC_TOKEN_CODE_STR)?.try_into()?,
+            );
+
+            // Check if association account has resource data
+            if let Some(resource_set) = account_state_set.resource_set() {
+                info!("Association account has {} resources", resource_set.len());
+
+                // Look for balance resource in the resource set
+                for (key, value) in resource_set.iter() {
+                    // The balance resource key typically contains "Balance" in the path
+                    let struct_tag: StructTag = bcs_ext::from_bytes::<StructTag>(&key)?;
+
+                    if struct_tag == stc_balance_resource {
+                        info!("Found balance resource for association account");
+                        // Try to deserialize as BalanceResource
+                        match bcs_ext::from_bytes::<BalanceResource>(value) {
+                            Ok(balance_resource) => {
+                                association_balance = Some(balance_resource.token());
+                                info!("Association account balance: {}", balance_resource.token());
+                                break;
+                            }
+                            Err(e) => {
+                                info!("Failed to deserialize balance resource: {}", e);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
         }
 
-        // Get the written data
-        let data = buffer.into_inner();
-        let data_str = String::from_utf8(data)?;
-        // println!("Exported CSV data:\n{}", data_str);
-
-        // Verify the data contains expected content
-        let mut csv_reader = csv::Reader::from_reader(data_str.as_bytes());
-        let mut has_data = false;
-        for result in csv_reader.records() {
-            let _record = result?;
-            // println!("Record: {:?}", record);
-            has_data = true;
+        assert!(
+            found_association,
+            "Association account should exist in exported state"
+        );
+        if let Some(balance) = association_balance {
+            assert!(
+                balance > 0,
+                "Association account should have positive balance, got: {}",
+                balance
+            );
+        } else {
+            info!("Could not verify association account balance, but account exists");
         }
-        assert!(has_data, "CSV should contain exported data");
+
+        // Clean up test file
+        std::fs::remove_file(test_bcs_path)?;
+
         Ok(())
     }
 }

@@ -11,6 +11,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+bcs-ext = { workspace = true }
 clap = { workspace = true }
 csv = { workspace = true }
 serde_json = { workspace = true }
@@ -26,3 +27,5 @@ starcoin-logger = { workspace = true }
 [dev-dependencies]
 starcoin-config = { workspace = true }
 test-helper = { workspace = true }
+starcoin-transaction-builder = { workspace = true}
+starcoin-vm-types = { workspace = true}

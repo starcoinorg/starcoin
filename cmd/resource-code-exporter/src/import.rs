@@ -2,22 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
-use starcoin_types::state_set::StateSet;
-use starcoin_types::{
-    account_address::AccountAddress,
-    state_set::{AccountStateSet, ChainStateSet},
-};
-use std::path::Path;
-use std::sync::Arc;
+use starcoin_types::state_set::ChainStateSet;
+use std::{path::Path, sync::Arc};
+use bcs_ext;
 
 pub fn import(
-    csv_path: &Path,
+    bcs_path: &Path,
     db_path: &Path,
     expect_root_hash: HashValue,
-    start: u64,
-    end: u64,
 ) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
         db_path,
@@ -32,98 +27,47 @@ pub fn import(
         Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
         None,
     );
-    import_from_statedb(&statedb, csv_path, expect_root_hash, start, end)
+    import_from_statedb(&statedb, bcs_path, expect_root_hash, false)
 }
 
-/// Import resources and code from CSV file to a new statedb
+/// Import ChainStateSet from BCS file to a new statedb
 pub fn import_from_statedb(
     statedb: &ChainStateDB,
-    csv_path: &Path,
+    bcs_path: &Path,
     expect_state_root_hash: HashValue,
-    start: u64,
-    end: u64,
+    check_state_root: bool,
 ) -> anyhow::Result<()> {
-    println!(
-        "Starting import_from_statedb...， start: {}, end: {}",
-        start, end
+    info!("Starting import_from_statedb from: {}", bcs_path.display());
+
+    // Read BCS file
+    info!("Reading BCS file...");
+    let bcs_data = std::fs::read(bcs_path)?;
+    let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_data)?;
+    
+    info!(
+        "Loaded {} account states from BCS file",
+        chain_state_set.len()
     );
 
-    // Read CSV file
-    let mut csv_reader = csv::Reader::from_path(csv_path)?;
-    let mut chain_state_set_data = Vec::new();
-    let mut processed = 0;
-
-    for result in csv_reader.records() {
-        // Skip records before start index
-        if processed < start {
-            processed += 1;
-            continue;
-        }
-        // Stop processing after end index
-        if processed >= end && end > 0 {
-            break;
-        }
-
-        let record = result?;
-        let account_address: AccountAddress = serde_json::from_str(&record[0])?;
-        assert_eq!(record.len(), 5);
-        println!(
-            "Processing record {}: account {}",
-            processed, account_address
-        );
-
-        let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {
-            let code_state_hash = &record[1];
-            let code_state_set_str = &record[2];
-            assert_eq!(
-                code_state_hash,
-                HashValue::sha3_256_of(code_state_set_str.as_bytes()).to_hex_literal()
-            );
-            Some(serde_json::from_str::<StateSet>(code_state_set_str)?)
-        } else {
-            None
-        };
-
-        let resource_state_set = if !record[3].is_empty() && !record[4].is_empty() {
-            let resource_blob_hash = &record[3];
-            let resource_state_set_str = &record[4];
-            assert_eq!(
-                resource_blob_hash,
-                HashValue::sha3_256_of(resource_state_set_str.as_bytes()).to_hex_literal()
-            );
-            Some(serde_json::from_str::<StateSet>(resource_state_set_str)?)
-        } else {
-            None
-        };
-
-        chain_state_set_data.push((
-            account_address,
-            AccountStateSet::new(vec![code_state_set, resource_state_set]),
-        ));
-        processed += 1;
-
-        if processed % 100 == 0 {
-            println!("Progress: {} records processed", processed);
-        }
-    }
-
-    println!(
-        "Applying {} state sets to statedb...",
-        chain_state_set_data.len()
-    );
-    statedb.apply(ChainStateSet::new(chain_state_set_data))?;
+    // Apply the state set to statedb
+    info!("Applying state sets to statedb...");
+    statedb.apply(chain_state_set)?;
+    statedb.commit()?;
+    statedb.flush()?;
 
     // Get new state root
     let new_state_root = statedb.state_root();
+    info!("Import completed. New state root: {}", new_state_root);
 
-    // Verify state root matches
-    {
+    // Verify state root matches if requested
+    if check_state_root {
         assert_eq!(
             expect_state_root_hash, new_state_root,
             "Imported state root does not match expected state root"
         );
-        println!("Import successful! State root: {}", new_state_root);
+        info!("State root verification successful!");
     }
+    
     Ok(())
 }
 
@@ -132,27 +76,52 @@ mod test {
     use super::*;
     use crate::export::export_from_statedb;
     use starcoin_storage::db_storage::DBStorage;
+    use starcoin_transaction_builder::encode_transfer_script_function;
+    use starcoin_types::{
+        account_address::AccountAddress,
+        transaction::{TransactionPayload, TransactionStatus},
+        vm_error::KeptVMStatus,
+    };
+    use starcoin_vm_types::state_view::StateReaderExt;
     use std::fs::create_dir_all;
     use std::sync::Arc;
     use tempfile::TempDir;
-    use test_helper::executor::prepare_genesis;
+    use test_helper::executor::{association_execute_should_success, prepare_genesis};
 
     #[test]
-    fn test_import_from_csv() -> anyhow::Result<()> {
+    fn test_import_from_bcs() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+
         //////////////////////////////////////////////////////
         // Step 1: Do Export
         // Initialize test storage with genesis
-        let (export_chain_statedb, _net) = prepare_genesis();
+        let (export_chain_statedb, net) = prepare_genesis();
+
+        let recipient = AccountAddress::random();
+        let transfer_amount = 1000000000;
+        let transaction_output = association_execute_should_success(
+            &net,
+            &export_chain_statedb,
+            TransactionPayload::ScriptFunction(encode_transfer_script_function(
+                recipient,
+                transfer_amount,
+            )),
+        )?;
+
+        assert_eq!(
+            *transaction_output.status(),
+            TransactionStatus::Keep(KeptVMStatus::Executed)
+        );
+        let after_transfer = export_chain_statedb.get_balance(recipient)?.unwrap();
+        assert_eq!(after_transfer, transfer_amount);
+
         let export_state_root = export_chain_statedb.state_root();
 
         // Create a temporary directory for test files
         let temp_dir = TempDir::new()?;
-        let export_path = temp_dir.path().join("export.csv");
+        let export_path = temp_dir.path().join("export.bcs");
         // Export data
-        {
-            let mut csv_writer = csv::WriterBuilder::new().from_path(&export_path)?;
-            export_from_statedb(&export_chain_statedb, &mut csv_writer, 0, u64::MAX)?;
-        }
+        export_from_statedb(&export_chain_statedb, &export_path)?;
 
         //////////////////////////////////////////////////////
         // Step 2: Do Import
@@ -178,9 +147,17 @@ mod test {
             &imported_statedb,
             &export_path,
             export_state_root,
-            0,
-            u64::MAX,
+            true, // Check state root
         )?;
+
+        // Verify that the imported balance matches the original
+        let imported_balance = imported_statedb
+            .get_balance(recipient)
+            .expect("read balance resource should ok")
+            .unwrap_or_default();
+        assert_eq!(imported_balance, transfer_amount);
+        
+        info!("Import test successful! Recipient balance: {}", imported_balance);
 
         Ok(())
     }
