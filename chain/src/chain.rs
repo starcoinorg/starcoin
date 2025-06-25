@@ -496,14 +496,18 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        let selected_chain = Self::new(
-            self.time_service.clone(),
-            block.parent_hash(),
-            self.storage.clone(),
-            self.vm_metrics.clone(),
-            self.dag.clone(),
-        )?;
-        V::verify_block(&selected_chain, block)
+        if self.head_block().header().id() != block.parent_hash() {
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
+            V::verify_block(&selected_chain, block)
+        } else {
+            V::verify_block(self, block)
+        }
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
