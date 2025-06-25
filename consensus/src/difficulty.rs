@@ -83,7 +83,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .then_with(|| b.id().cmp(&a.id()))
     });
 
-    let k: u64 = chain.get_dag().ghost_dag_manager().k().into();
+    // let k: u64 = chain.get_dag().ghost_dag_manager().k().into();
     // let next_block_time_target = next_block_time_target(
     //     u64::try_from(total_block_set.len())?,
     //     &blue_block_in_order,
@@ -111,6 +111,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
+#[allow(dead_code)]
 fn next_block_time_target(
     total_block_count: u64,
     blue_block_headers: &[BlockHeader],
