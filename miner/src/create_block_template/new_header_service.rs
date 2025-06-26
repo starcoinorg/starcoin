@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
-use starcoin_config::NodeConfig;
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
