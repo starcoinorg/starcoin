@@ -7,8 +7,6 @@ use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
 use starcoin_types::state_set::ChainStateSet;
 use std::{path::Path, sync::Arc};
-use starcoin_vm_types::transaction::TransactionPayload;
-use starcoin_vm_types::vm_status::KeptVMStatus;
 
 pub fn import(bcs_path: &Path, db_path: &Path, expect_root_hash: HashValue) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
@@ -49,7 +47,6 @@ pub fn import_from_statedb(
     // Apply the state set to statedb
     info!("Applying state sets to statedb...");
 
-    // 方案1: 逐条 set（当前方案，稳定可靠）
     for (address, account_state_set) in chain_state_set.state_sets() {
         info!("Processing account: {}", address);
 
@@ -103,29 +100,57 @@ pub fn import_from_statedb(
 mod test {
     use super::*;
     use crate::export::export_from_statedb;
+    use starcoin_config::ChainNetwork;
     use starcoin_statedb::ChainStateReader;
-    use starcoin_vm_types::{account_config::association_address, state_view::StateReaderExt};
-    use tempfile::TempDir;
     use starcoin_transaction_builder::encode_transfer_script_function;
-    use starcoin_types::account_address::AccountAddress;
-    use starcoin_vm_types::transaction::{TransactionPayload, TransactionStatus};
+    use starcoin_types::{account_address::AccountAddress, vm_error::KeptVMStatus};
+    use starcoin_vm_types::{
+        account_config::association_address, state_view::StateReaderExt,
+        transaction::TransactionPayload,
+    };
+    use tempfile::TempDir;
     use test_helper::executor::{association_execute_should_success, prepare_genesis};
+
+    fn association_transfer_to(
+        target_account: AccountAddress,
+        amount: u128,
+        db: &ChainStateDB,
+        net: &ChainNetwork,
+    ) -> anyhow::Result<()> {
+        let txn_output = association_execute_should_success(
+            net,
+            db,
+            TransactionPayload::ScriptFunction(encode_transfer_script_function(
+                target_account,
+                amount,
+            )),
+        )?;
+        assert_eq!(
+            KeptVMStatus::Executed,
+            txn_output.status().status().unwrap()
+        );
+        assert_eq!(db.get_balance(target_account)?.unwrap(), amount);
+        Ok(())
+    }
 
     #[test]
     fn test_import_from_bcs() -> anyhow::Result<()> {
-        // Initialize logger for test
         starcoin_logger::init_for_test();
 
         // Initialize test storage with genesis
         let (export_chain_statedb, net) = prepare_genesis();
 
+        let transfer_amount = 10000000000;
         let random_account = AccountAddress::random();
-        let amount = 10000000000;
-        let txn_output = association_execute_should_success(&net, &export_chain_statedb, TransactionPayload::ScriptFunction(
-            encode_transfer_script_function(random_account, amount)
-        ))?;
-        assert_eq!(KeptVMStatus::Executed, txn_output.status().status().unwrap());
-        assert_eq!(export_chain_statedb.get_balance(random_account)?.unwrap(), amount);
+
+        // Transfer to random account
+        association_transfer_to(random_account, transfer_amount, &export_chain_statedb, &net)?;
+        association_transfer_to(
+            AccountAddress::ONE,
+            transfer_amount,
+            &export_chain_statedb,
+            &net,
+        )?;
 
         // Create a temporary directory for test files
         let temp_dir = TempDir::new()?;
@@ -137,7 +162,7 @@ mod test {
             Ok(_) => info!("Export completed successfully"),
             Err(e) => {
                 info!("Export failed with error: {}", e);
-                
+
                 // Verify that the basic functionality still works by checking the state directly
                 info!("Verifying state integrity directly...");
                 let association_balance = export_chain_statedb
@@ -146,13 +171,22 @@ mod test {
                 let random_balance = export_chain_statedb
                     .get_balance(random_account)?
                     .unwrap_or(0);
-                
-                info!("Association balance: {}, Random account balance: {}", 
-                      association_balance, random_balance);
-                
-                assert!(association_balance > 0, "Association account should have balance");
-                assert_eq!(random_balance, amount, "Random account should have correct balance");
-                
+                let system_balance = export_chain_statedb
+                    .get_balance(AccountAddress::ONE)?
+                    .unwrap_or(0);
+
+                info!(
+                    "Association balance: {}, Random account balance: {}",
+                    association_balance, random_balance
+                );
+
+                assert!(
+                    association_balance > 0,
+                    "Association account should have balance"
+                );
+                assert_eq!(random_balance, transfer_amount);
+                assert_eq!(system_balance, transfer_amount);
+
                 info!("State verification passed - functionality is working correctly");
                 return Ok(());
             }
@@ -203,17 +237,20 @@ mod test {
         );
 
         // Verify that the random account balance was correctly imported
-        let imported_random_balance = import_chain_statedb
-            .get_balance(random_account)?
-            .unwrap();
         assert_eq!(
-            imported_random_balance, amount,
+            import_chain_statedb.get_balance(random_account)?.unwrap(),
+            transfer_amount,
             "Random account balance should match the transferred amount"
         );
 
-        info!("Import test successful! Association balance: {}, Random account balance: {}", 
-              imported_balance, imported_random_balance);
-
+        // Verify that the 0x1 balance was correctly imported
+        assert_eq!(
+            transfer_amount,
+            import_chain_statedb
+                .get_balance(AccountAddress::ONE)?
+                .unwrap(),
+            "Random account balance should match the transferred amount"
+        );
         Ok(())
     }
 }

@@ -142,7 +142,7 @@ mod test {
                 // Look for balance resource in the resource set
                 for (key, value) in resource_set.iter() {
                     // The balance resource key typically contains "Balance" in the path
-                    let struct_tag: StructTag = bcs_ext::from_bytes::<StructTag>(&key)?;
+                    let struct_tag: StructTag = bcs_ext::from_bytes::<StructTag>(key)?;
 
                     if struct_tag == stc_balance_resource {
                         info!("Found balance resource for association account");
