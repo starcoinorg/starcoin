@@ -67,7 +67,8 @@ impl ActorService for NewHeaderService {
         &mut self,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        ctx.set_mailbox_capacity(3602); // the merge depth + 2
+        let merge_depth = self.dag.block_depth_manager().merge_depth();
+        ctx.set_mailbox_capacity(usize::try_from(merge_depth.saturating_add(2))?); // the merge depth + 2
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
@@ -191,10 +192,7 @@ impl NewHeaderService {
             {
                 anyhow::Result::Ok(()) => (),
                 Err(e) => {
-                    warn!(
-                        "Failed to send new head block: {:?} in BlockBuilderService",
-                        e
-                    );
+                    warn!("Failed to send new head block: {:?} in NewHeaderService", e);
                 }
             }
         } else {
