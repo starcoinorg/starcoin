@@ -277,15 +277,7 @@ where
                 .calc_mergeset_and_tips(pruning_point, self.main.get_genesis_hash())?;
             info!("after calculate the ghostdata, selected_parents are: {:?}, ghostdata is: {:?}, pruning point is: {:?}", selected_parents, ghostdata, pruning_point);
 
-            if self.main.head_block().header().id() != ghostdata.selected_parent {
-                self.main = BlockChain::new(
-                    self.config.net().time_service(),
-                    ghostdata.selected_parent,
-                    self.storage.clone(),
-                    self.vm_metrics.clone(),
-                    self.main.dag(),
-                )?;
-            }
+            self.update_main_chain(ghostdata.selected_parent)?;
 
             // filter the parent candidates that bring too many ancestors which are not the descendants of the selected parent
             let parents_candidates = self.merge_size_limit_filter(
@@ -307,15 +299,7 @@ where
                 )?;
             info!("after remove the bounded merge breaking parents, selected_parents are: {:?}, ghostdata is: {:?}, pruning point is: {:?}, merge bound hash is: {:?}", selected_parents, ghostdata, pruning_point, merge_bound_hash);
 
-            if self.main.head_block().header().id() != ghostdata.selected_parent {
-                self.main = BlockChain::new(
-                    self.config.net().time_service(),
-                    ghostdata.selected_parent,
-                    self.storage.clone(),
-                    self.vm_metrics.clone(),
-                    self.main.dag(),
-                )?;
-            }
+            self.update_main_chain(ghostdata.selected_parent)?;
 
             MineNewDagBlockInfo {
                 selected_parents,
@@ -601,5 +585,18 @@ where
         Ok(MergesetIncreaseResult::Accepted {
             increase_size: mergeset_increase,
         })
+    }
+
+    fn update_main_chain(&mut self, selected_parent: HashValue) -> Result<()> {
+        if self.main.head_block().header().id() != selected_parent {
+            self.main = BlockChain::new(
+                self.config.net().time_service(),
+                selected_parent,
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.main.dag(),
+            )?;
+        }
+        Ok(())
     }
 }
