@@ -33,8 +33,15 @@ impl GenerateBlockEventPacemaker {
     }
 
     pub fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+        match &self.sync_status {
+            Some(status) => match status.sync_status() {
+                starcoin_types::sync_status::SyncState::Prepare => false,
+                starcoin_types::sync_status::SyncState::Synchronizing {
+                    target: _,
+                    total_difficulty: _,
+                } => false,
+                starcoin_types::sync_status::SyncState::Synchronized => true,
+            },
             None => false,
         }
     }
@@ -97,9 +104,9 @@ impl EventHandler<Self, PropagateTransactions> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
-        let is_synced = msg.0.is_synced();
+        // let is_synced = msg.0.is_synced();
         self.sync_status = Some(msg.0);
-        if is_synced {
+        if self.is_synced() {
             self.send_event(true, ctx);
         }
     }

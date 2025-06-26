@@ -19,12 +19,14 @@ pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
 
-pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
+pub use create_block_template::{
+    new_header_service::NewHeaderChannel, new_header_service::NewHeaderService,
+    BlockBuilderService, BlockTemplateRequest,
+};
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
 use thiserror::Error;
 
 const DEFAULT_TASK_POOL_SIZE: usize = 16;
@@ -51,7 +53,6 @@ pub struct MinerService {
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
     metrics: Option<MinerMetrics>,
-    task_flag: Arc<AtomicBool>,
 }
 
 impl ServiceRequest for SubmitSealRequest {
@@ -121,7 +122,6 @@ impl ServiceFactory<Self> for MinerService {
             create_block_template_service,
             client_subscribers_num: 0,
             metrics,
-            task_flag: Arc::new(AtomicBool::new(false)),
         })
     }
 }
@@ -191,58 +191,29 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        if self.task_flag.load(Ordering::Relaxed) {
-            debug!("Mint task already running, skip dispatch");
-            return Ok(());
-        }
-        self.task_flag.store(true, Ordering::Relaxed);
-
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
-        let flag = self.task_flag.clone();
         ctx.spawn(async move {
-            let timeout_result = tokio::time::timeout(
-                Duration::from_millis(2000),
-                create_block_template_service.send(BlockTemplateRequest),
-            )
-            .await;
-
-            let send_result = match timeout_result {
-                Ok(res) => res,
-                Err(elapsed) => {
-                    warn!(
-                        "Timeout waiting BlockTemplateRequest: {:?}. Retrying.",
-                        elapsed
-                    );
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
-                    return;
-                }
-            };
-
-            let response_future = match send_result {
-                Ok(fut) => fut,
+            let block_template = match create_block_template_service
+                .send(BlockTemplateRequest)
+                .await
+            {
+                Ok(send_result) => match send_result {
+                    Ok(block_template) => block_template,
+                    Err(e) => {
+                        error!("BlockTemplateRequest processing failed: {:?}", e);
+                        return;
+                    }
+                },
                 Err(e) => {
-                    warn!("BlockTemplateRequest delivery failed: {}", e);
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
+                    error!("BlockTemplateRequest delivery failed: {:?}", e);
                     return;
                 }
             };
 
-            let response = match response_future.await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    warn!("BlockTemplateRequest handler failed: {}", e);
-                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
-                    return;
-                }
-            };
-
-            let parent = response.parent;
-            let block_template = response.template;
+            let parent = block_template.parent;
+            let block_template = block_template.template;
             let block_time_gap = block_template.timestamp - parent.timestamp();
 
             let should_skip = !event.skip_empty_block_check
@@ -257,8 +228,6 @@ impl MinerService {
             {
                 warn!("Failed to dispatch block template: {}", e);
             }
-
-            flag.store(false, Ordering::Relaxed);
         });
         Ok(())
     }

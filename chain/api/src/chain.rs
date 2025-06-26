@@ -19,7 +19,7 @@ use starcoin_types::{
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
 
-use crate::{ChainType, TransactionInfoWithProof};
+use crate::TransactionInfoWithProof;
 pub use starcoin_types::block::ExecutedBlock;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
@@ -109,7 +109,6 @@ pub trait ChainReader {
 
     fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
-    fn check_chain_type(&self) -> Result<ChainType>;
     fn verify_and_ghostdata(
         &self,
         uncles: &[BlockHeader],

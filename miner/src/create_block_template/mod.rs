@@ -4,30 +4,32 @@
 use crate::create_block_template::metrics::BlockBuilderMetrics;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
+use new_header_service::NewHeaderChannel;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_consensus::Consensus;
+use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use std::sync::RwLock;
 
-use futures::Future;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
-    ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
-use starcoin_storage::{Storage, Store};
-use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
+use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::{Block, BlockHeader, BlockTemplate, Version};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
-use std::pin::Pin;
 use std::sync::Arc;
 mod metrics;
+pub mod new_header_service;
 //#[cfg(test)]
 //mod test_create_block_template;
 
@@ -35,28 +37,64 @@ mod metrics;
 pub struct BlockTemplateRequest;
 
 impl ServiceRequest for BlockTemplateRequest {
-    type Response = Pin<Box<dyn Future<Output = Result<BlockTemplateResponse>> + Send + 'static>>;
+    type Response = Result<BlockTemplateResponse>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
     pub parent: BlockHeader,
     pub template: BlockTemplate,
 }
 
 pub struct BlockBuilderService {
-    inner: Arc<Inner<TxPoolService, TxPoolService>>,
+    inner: Inner<TxPoolService>,
+    new_header_channel: NewHeaderChannel,
 }
 
-impl BlockBuilderService {}
+impl BlockBuilderService {
+    fn receive_header(&mut self) {
+        info!("receive header in block builder service");
+        match self.new_header_channel.new_header_receiver.try_recv() {
+            Ok(new_header) => {
+                match self
+                    .inner
+                    .set_current_block_header(new_header.as_ref().clone())
+                {
+                    Ok(()) => (),
+                    Err(e) => error!(
+                        "Failed to set current block header: {:?} in BlockBuilderService",
+                        e
+                    ),
+                }
+            }
+            Err(e) => match e {
+                crossbeam::channel::TryRecvError::Empty => (),
+                crossbeam::channel::TryRecvError::Disconnected => {
+                    error!("the new headerchannel is disconnected")
+                }
+            },
+        }
+    }
+}
 
 impl ServiceFactory<Self> for BlockBuilderService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let connector_service = ctx
-            .service_ref::<BlockConnectorService<TxPoolService>>()?
-            .clone();
+        let header_id = storage
+            .get_startup_info()?
+            .ok_or_else(|| {
+                format_err!("failed to get the starup info when creating block builder service.")
+            })?
+            .main;
+        let current_block_header =
+            storage
+                .get_block_header_by_hash(header_id)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "failed to get the block header: {:?} when creating block builder service.",
+                        header_id
+                    )
+                })?;
         //TODO support get service ref by AsyncAPI;
         let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
@@ -64,6 +102,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
                 format_err!("Default account should exist when BlockBuilderService start.")
             })?;
         let txpool = ctx.get_shared::<TxPoolService>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let metrics = config
             .metrics
             .registry()
@@ -71,16 +111,22 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
 
-        let inner = Arc::new(Inner::new(
-            connector_service,
+        let inner = Inner::new(
+            current_block_header,
             storage,
             txpool,
             config.miner.block_gas_limit,
             miner_account,
+            dag,
+            config,
             metrics,
             vm_metrics,
-        )?);
-        Ok(Self { inner })
+        )?;
+        let new_header_channel = ctx.get_shared::<NewHeaderChannel>()?;
+        Ok(Self {
+            inner,
+            new_header_channel,
+        })
     }
 }
 
@@ -112,16 +158,16 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: BlockTemplateRequest,
-        ctx: &mut ServiceContext<Self>,
-    ) -> Pin<Box<dyn Future<Output = Result<BlockTemplateResponse>> + Send + 'static>> {
-        let inner = self.inner.clone();
-        let config = match ctx.get_shared::<Arc<NodeConfig>>() {
-            Ok(cfg) => cfg,
-            Err(e) => return Box::pin(async move { Err(e) }),
-        };
-
-        let header_version = config.net().genesis_config().block_header_version;
-        Box::pin(async move { inner.create_block_template(header_version).await })
+        _ctx: &mut ServiceContext<Self>,
+    ) -> <BlockTemplateRequest as ServiceRequest>::Response {
+        let header_version = self
+            .inner
+            .config
+            .net()
+            .genesis_config()
+            .block_header_version;
+        self.receive_header();
+        self.inner.create_block_template(header_version)
     }
 }
 
@@ -150,43 +196,132 @@ impl TemplateTxProvider for TxPoolService {
     }
 }
 
-pub struct Inner<P, T: TxPoolSyncService + 'static> {
+pub struct Inner<P> {
     storage: Arc<dyn Store>,
-    block_connector_service: ServiceRef<BlockConnectorService<T>>,
     tx_provider: P,
     local_block_gas_limit: Option<u64>,
     miner_account: RwLock<AccountInfo>,
+    main: BlockChain,
+    config: Arc<NodeConfig>,
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
 }
 
-impl<P, T> Inner<P, T>
+impl<P> Inner<P>
 where
     P: TemplateTxProvider + TxPoolSyncService,
-    T: TxPoolSyncService,
 {
     pub fn new(
-        block_connector_service: ServiceRef<BlockConnectorService<T>>,
+        header: BlockHeader,
         storage: Arc<dyn Store>,
         tx_provider: P,
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
+        dag: BlockDAG,
+        config: Arc<NodeConfig>,
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            storage,
-            block_connector_service,
+            storage: storage.clone(),
             tx_provider,
             local_block_gas_limit,
             miner_account: RwLock::new(miner_account),
+            main: BlockChain::new(
+                config.net().time_service(),
+                header.id(),
+                storage,
+                vm_metrics.clone(),
+                dag,
+            )?,
+            config,
             metrics,
             vm_metrics,
         })
     }
 
-    pub async fn create_block_template(&self, version: Version) -> Result<BlockTemplateResponse> {
+    fn resolve_block_parents(&mut self) -> Result<MinerResponse> {
+        let MineNewDagBlockInfo {
+            tips,
+            ghostdata,
+            pruning_point,
+        } = {
+            info!("block template main is {:?}", self.main.current_header());
+            let pruning_point = if self.main.current_header().pruning_point() == HashValue::zero() {
+                self.main.get_genesis_hash()
+            } else {
+                self.main.current_header().pruning_point()
+            };
+
+            let MineNewDagBlockInfo {
+                tips,
+                ghostdata,
+                pruning_point,
+            } = self.main.dag().calc_mergeset_and_tips(
+                pruning_point,
+                self.config.miner.maximum_parents_count(),
+                self.main.get_genesis_hash(),
+            )?;
+            info!("after calculate the ghostdata, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}", tips, ghostdata, pruning_point);
+
+            self.update_main_chain(ghostdata.selected_parent)?;
+
+            let merge_bound_hash = self.main.get_merge_bound_hash(ghostdata.selected_parent)?;
+
+            let (tips, ghostdata) = self.main.dag().remove_bounded_merge_breaking_parents(
+                tips,
+                ghostdata,
+                pruning_point,
+                merge_bound_hash,
+            )?;
+            info!("after remove the bounded merge breaking parents, tips are: {:?}, ghostdata is: {:?}, pruning point is: {:?}, merge bound hash is: {:?}", tips, ghostdata, pruning_point, merge_bound_hash);
+
+            self.update_main_chain(ghostdata.selected_parent)?;
+
+            MineNewDagBlockInfo {
+                tips,
+                ghostdata,
+                pruning_point,
+            }
+        };
+
+        let selected_parent = ghostdata.selected_parent;
+
+        let time_service = self.config.net().time_service();
+        let storage = self.storage.clone();
+        let vm_metrics = self.vm_metrics.clone();
+        let main = BlockChain::new(
+            time_service,
+            selected_parent,
+            storage,
+            vm_metrics,
+            self.main.dag(),
+        )?;
+
+        let epoch = main.epoch().clone();
+        let strategy = epoch.strategy();
+        let on_chain_block_gas_limit = epoch.block_gas_limit();
+        let previous_header = main
+            .get_storage()
+            .get_block_header_by_hash(selected_parent)?
+            .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
+        let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
+        let now_milliseconds = main.time_service().now_millis();
+
+        Ok(MinerResponse {
+            previous_header,
+            on_chain_block_gas_limit,
+            tips_hash: tips,
+            blue_blocks_hash: ghostdata.mergeset_blues.as_ref()[1..].to_vec(),
+            strategy,
+            next_difficulty,
+            now_milliseconds,
+            pruning_point,
+        })
+    }
+
+    pub fn create_block_template(&mut self, version: Version) -> Result<BlockTemplateResponse> {
         let MinerResponse {
             previous_header,
             tips_hash,
@@ -196,10 +331,7 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-        } = *self
-            .block_connector_service
-            .send(MinerRequest { version })
-            .await??;
+        } = self.resolve_block_parents()?;
 
         let block_gas_limit = self
             .local_block_gas_limit
@@ -281,5 +413,32 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
+        if self.main.current_header().id() == header.id() {
+            return Ok(());
+        }
+        self.main = BlockChain::new(
+            self.config.net().time_service(),
+            header.id(),
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.main.dag(),
+        )?;
+        Ok(())
+    }
+
+    fn update_main_chain(&mut self, selected_parent: HashValue) -> Result<()> {
+        if self.main.head_block().header().id() != selected_parent {
+            self.main = BlockChain::new(
+                self.config.net().time_service(),
+                selected_parent,
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.main.dag(),
+            )?;
+        }
+        Ok(())
     }
 }

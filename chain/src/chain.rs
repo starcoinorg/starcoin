@@ -9,9 +9,8 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainType, ChainWriter, ConnectBlockError, EventWithProof,
-    ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock,
-    VerifyBlockField,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
+    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -1073,7 +1072,7 @@ impl BlockChain {
                 )
             })?;
         let merge_depth = self.dag().block_depth_manager().merge_depth();
-        if header.number() < merge_depth {
+        if header.number() <= merge_depth {
             return Ok(self.genesis_hash);
         }
         let merge_depth_index = (header.number().checked_div(merge_depth))
@@ -1456,10 +1455,6 @@ impl ChainReader for BlockChain {
         }
 
         self.dag.has_block_connected(&header)
-    }
-
-    fn check_chain_type(&self) -> Result<ChainType> {
-        Ok(ChainType::Dag)
     }
 
     fn verify_and_ghostdata(
@@ -1847,7 +1842,6 @@ impl BlockChain {
         tips: Vec<HashValue>,
     ) -> Result<()> {
         if parent_header.pruning_point() == tip_header.pruning_point() {
-            info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, tip_header.pruning_point());
             if tip_header.pruning_point() == HashValue::zero() {
                 self.dag
                     .save_dag_state(self.genesis_hash, DagState { tips })?;

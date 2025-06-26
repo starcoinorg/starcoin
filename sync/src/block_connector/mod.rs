@@ -3,7 +3,7 @@
 
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::block::{Block, ExecutedBlock, Version};
+use starcoin_types::block::{Block, ExecutedBlock};
 
 mod block_connector_service;
 mod metrics;
@@ -48,11 +48,6 @@ impl ServiceRequest for ExecuteRequest {
 }
 
 #[derive(Clone, Debug)]
-pub struct MinerRequest {
-    pub version: Version,
-}
-
-#[derive(Clone, Debug)]
 pub struct MinerResponse {
     pub previous_header: BlockHeader,
     pub tips_hash: Vec<HashValue>,
@@ -62,10 +57,6 @@ pub struct MinerResponse {
     pub next_difficulty: U256,
     pub now_milliseconds: u64,
     pub pruning_point: HashValue,
-}
-
-impl ServiceRequest for MinerRequest {
-    type Response = anyhow::Result<Box<MinerResponse>>;
 }
 
 #[cfg(test)]
