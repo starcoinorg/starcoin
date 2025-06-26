@@ -137,10 +137,6 @@ mod test {
             Ok(_) => info!("Export completed successfully"),
             Err(e) => {
                 info!("Export failed with error: {}", e);
-                info!("This is likely due to state tree inconsistency after transaction execution");
-                info!("This is a known issue in test environments with rapid state changes");
-                info!("The export/import functionality works correctly in production environments");
-                info!("Skipping this test as the export functionality works correctly");
                 
                 // Verify that the basic functionality still works by checking the state directly
                 info!("Verifying state integrity directly...");
