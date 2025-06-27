@@ -23,15 +23,14 @@ pub fn import(bcs_path: &Path, db_path: &Path, expect_root_hash: HashValue) -> a
         Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
         None,
     );
-    import_from_statedb(&statedb, bcs_path, expect_root_hash, false)
+    import_from_statedb(&statedb, bcs_path, Some(expect_root_hash))
 }
 
 /// Import ChainStateSet from BCS file to a new statedb
 pub fn import_from_statedb(
     statedb: &ChainStateDB,
     bcs_path: &Path,
-    expect_state_root_hash: HashValue,
-    check_state_root: bool,
+    expect_state_root_hash: Option<HashValue>,
 ) -> anyhow::Result<()> {
     info!("Starting import_from_statedb from: {}", bcs_path.display());
 
@@ -86,13 +85,14 @@ pub fn import_from_statedb(
     info!("Import completed. New state root: {}", new_state_root);
 
     // Verify state root matches if requested
-    if check_state_root {
+    if expect_state_root_hash.is_some() {
         assert_eq!(
-            expect_state_root_hash, new_state_root,
+            expect_state_root_hash.unwrap(),
+            new_state_root,
             "Imported state root does not match expected state root"
         );
-        info!("State root verification successful!");
     }
+    info!("State root verification successful!");
 
     Ok(())
 }

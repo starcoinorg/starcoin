@@ -10232,6 +10232,7 @@ dependencies = [
  "starcoin-transaction-builder 1.13.19",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "stest",
  "tempfile",
  "test-helper",
 ]
