@@ -360,12 +360,12 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
         assert_eq!(
             statedb.get_balance(random_account1)?.unwrap_or(0),
             transfer_amount,
-            "Get balance mut not be 0"
+            "Get balance should not be 0"
         );
         assert_eq!(
             statedb.get_balance(random_account2)?.unwrap_or(0),
             transfer_amount,
-            "Get balance mut not be 0"
+            "Get balance should not be 0"
         );
         statedb
     };
