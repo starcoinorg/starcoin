@@ -1286,22 +1286,22 @@ impl ChainReader for BlockChain {
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
         // if fork block_id is at same epoch, try to reuse uncles cache.
-        let uncles = if head.header().number() >= self.epoch.start_block_number() {
-            Some(
-                self.uncles
-                    .iter()
-                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-            )
-        } else {
-            None
-        };
+        // let uncles = if head.header().number() >= self.epoch.start_block_number() {
+        //     Some(
+        //         self.uncles
+        //             .iter()
+        //             .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
+        //             .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
+        //             .collect::<HashMap<HashValue, MintedUncleNumber>>(),
+        //     )
+        // } else {
+        //     None
+        // };
 
         Self::new_with_uncles(
             self.time_service.clone(),
             head,
-            uncles,
+            None,
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
