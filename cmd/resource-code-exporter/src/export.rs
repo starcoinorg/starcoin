@@ -12,13 +12,7 @@ use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
-pub fn export(
-    db: &str,
-    output: &Path,
-    block_hash: HashValue,
-    _start: u64,
-    _end: u64,
-) -> anyhow::Result<()> {
+pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<()> {
     info!("Starting export process for block: {}", block_hash);
     info!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
@@ -47,6 +41,7 @@ pub fn export(
 
     info!("Starting export from StateDB to: {}", output.display());
     export_from_statedb(&statedb, output)?;
+
     info!("Export completed successfully");
 
     Ok(())

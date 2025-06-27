@@ -32,14 +32,6 @@ enum Commands {
         #[clap(long)]
         /// Block id to export state at
         block_hash: starcoin_crypto::HashValue,
-
-        #[clap(long, short = 's')]
-        /// Start account index
-        start: u64,
-
-        #[clap(long, short = 'e')]
-        /// End account index, 0 to process to end of data list
-        end: u64,
     },
     /// Import state data from BCS file
     Import {
@@ -66,17 +58,8 @@ fn main() -> anyhow::Result<()> {
             output,
             db_path,
             block_hash,
-            start,
-            end,
         } => {
-            index_check(start, end);
-            export::export(
-                db_path.display().to_string().as_str(),
-                &output,
-                block_hash,
-                start,
-                end,
-            )?;
+            export::export(db_path.display().to_string().as_str(), &output, block_hash)?;
         }
         Commands::Import {
             bcs_input,
@@ -88,8 +71,4 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn index_check(start: u64, end: u64) {
-    assert!(start < end && end != 0);
 }
