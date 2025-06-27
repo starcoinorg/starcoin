@@ -2,17 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
-use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
-use starcoin_config::{temp_dir, BuiltinNetworkID, ChainNetwork, RocksdbConfig};
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 
 use starcoin_consensus::Consensus;
-use starcoin_crypto::HashValue;
+
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_storage::{
-    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage, Store,
-};
 use starcoin_transaction_builder::{
     encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
 };
@@ -21,18 +18,11 @@ use starcoin_vm_types::{
     account_config::association_address, state_view::StateReaderExt,
     transaction::TransactionPayload,
 };
-use std::{path::Path, sync::Arc};
 use tempfile::TempDir;
 use test_helper::executor::{association_execute_should_success, prepare_genesis};
 
 use starcoin_chain::verifier::FullVerifier;
 use starcoin_config::upgrade_config::vm1_offline_height;
-use starcoin_vm2_storage::{
-    cache_storage::GCacheStorage,
-    db_storage::{DBStorage as DBStorage2, RocksdbConfig as RocksdbConfig2},
-    storage::StorageInstance as StorageInstance2,
-    Storage as Storage2,
-};
 
 #[test]
 fn test_import_from_bcs() -> anyhow::Result<()> {
@@ -228,7 +218,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
 
     // 1. Create the ChainStateDB with temp path 1
     let net = vm1_testnet()?;
-    let statedb_source = {
+    {
         // 2. Build genesis block into db
         let (mut source_chain, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
 
@@ -346,7 +336,6 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
             let source_statedb2 = statedb.fork_at(block_2_state_root);
             export_from_statedb(&source_statedb2, &export_path2)?;
         };
-        statedb
     };
 
     //
@@ -356,7 +345,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     //  2. Import `account_state2.bcs` AccountStates2 into target statedb
 
     info!("=== II. Construct migration target blockchain storage ===");
-    let statedb_target = {
+    {
         // 1. Build genesis block into db
         let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
 
