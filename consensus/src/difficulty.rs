@@ -81,7 +81,12 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     });
 
     let next_block_time_target = epoch.block_time_target();
-    info!("next_block_time_target: {:?}", next_block_time_target);
+    info!(
+        "next_block_time_target: {:?}, blue block count: {:?}, selected parent id: {:?}",
+        next_block_time_target,
+        blue_block_in_order.len(),
+        current_header.id()
+    );
 
     let target = get_next_target_helper(
         blue_block_in_order

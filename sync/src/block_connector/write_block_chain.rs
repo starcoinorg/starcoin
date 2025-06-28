@@ -190,7 +190,7 @@ where
                     self.dag.clone(),
                 )?)
             }
-        } else if self.block_exist(header.parent_hash())? {
+        } else if self.get_main().has_dag_block(header.parent_hash())? {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
