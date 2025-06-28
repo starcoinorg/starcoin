@@ -408,7 +408,7 @@ pub fn test_from_bcs_zip_file() -> anyhow::Result<()> {
     );
 
     // Import the BCS files
-    let bcs_files = ["24674818.bcs", "24674819.bcs"];
+    let bcs_files = ["24674819.bcs", "24674818.bcs"];
     for bcs_file in &bcs_files {
         let bcs_path = temp_dir.path().join(bcs_file);
         if bcs_path.exists() {
@@ -428,3 +428,24 @@ pub fn test_from_bcs_zip_file() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[stest::test]
+pub fn test_import_state_from_local_mainnet_db_export() -> anyhow::Result<()> {
+    let net = vm1_testnet()?;
+    let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+
+    // Import Height: 64925
+    let data_path = std::path::Path::new("./test-data/64925.bcs");
+    info!("Importing BCS file: {}", data_path.display());
+    import_from_statedb(&statedb, &data_path, None)?;
+
+    Ok(())
+}
+
+// #[stest::test]
+// pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
+//     let net = vm1_testnet()?;
+//     let (chain, _statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+//
+//     Ok(())
+// }
