@@ -44,38 +44,10 @@ pub fn import_from_statedb(
         chain_state_set.len()
     );
 
-    // Apply the state set to statedb
+    // Apply the state set to statedb using the apply method
+    // This method handles account creation more safely than setting resources individually
     info!("Applying state sets to statedb...");
-
-    for (address, account_state_set) in chain_state_set.state_sets() {
-        info!("Processing account: {}", address);
-
-        // Handle resource set
-        if let Some(resource_set) = account_state_set.resource_set() {
-            for (key, value) in resource_set.iter() {
-                let access_path = starcoin_vm_types::access_path::AccessPath::new(
-                    *address,
-                    starcoin_vm_types::access_path::DataPath::Resource(bcs_ext::from_bytes::<
-                        starcoin_vm_types::language_storage::StructTag,
-                    >(key)?),
-                );
-                statedb.set(&access_path, value.clone())?;
-            }
-        }
-
-        // Handle code set
-        if let Some(code_set) = account_state_set.code_set() {
-            for (key, value) in code_set.iter() {
-                let access_path = starcoin_vm_types::access_path::AccessPath::new(
-                    *address,
-                    starcoin_vm_types::access_path::DataPath::Code(bcs_ext::from_bytes::<
-                        starcoin_vm_types::access_path::ModuleName,
-                    >(key)?),
-                );
-                statedb.set(&access_path, value.clone())?;
-            }
-        }
-    }
+    statedb.apply(chain_state_set)?;
 
     // Commit and flush
     info!("Committing changes...");

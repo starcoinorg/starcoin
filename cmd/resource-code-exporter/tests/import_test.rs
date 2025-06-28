@@ -15,14 +15,20 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::{account_address::AccountAddress, vm_error::KeptVMStatus};
 use starcoin_vm_types::{
-    account_config::association_address, state_view::StateReaderExt,
+    account_config::{association_address, genesis_address},
+    on_chain_config,
+    state_view::StateReaderExt,
     transaction::TransactionPayload,
 };
+
 use tempfile::TempDir;
 use test_helper::executor::{association_execute_should_success, prepare_genesis};
 
 use starcoin_chain::verifier::FullVerifier;
 use starcoin_config::upgrade_config::vm1_offline_height;
+use starcoin_logger::{init_with_default_level, LogPattern};
+use starcoin_types::identifier::Identifier;
+use starcoin_vm_types::on_chain_config::Version;
 
 #[test]
 fn test_import_from_bcs() -> anyhow::Result<()> {
@@ -371,5 +377,54 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     };
 
     info!("All balance verifications passed successfully!");
+    Ok(())
+}
+
+#[stest::test]
+pub fn test_from_bcs_zip_file() -> anyhow::Result<()> {
+    init_with_default_level("info", Some(LogPattern::WithLine));
+
+    // 1. vm_testnet
+    let net = vm1_testnet()?;
+
+    // 2. Build genesis block into db
+    let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+
+    // 3. unzip from ./test-data/24674819.tar.gz
+    let temp_dir = TempDir::new()?;
+    let tar_gz_path = std::path::Path::new("./test-data/24674819.tar.gz");
+
+    info!("Extracting tar.gz file from: {}", tar_gz_path.display());
+
+    // Extract the tar.gz file
+    let tar_gz_file = std::fs::File::open(tar_gz_path)?;
+    let tar_file = flate2::read::GzDecoder::new(tar_gz_file);
+    let mut archive = tar::Archive::new(tar_file);
+    archive.unpack(&temp_dir)?;
+
+    info!(
+        "Successfully extracted tar.gz file to: {}",
+        temp_dir.path().display()
+    );
+
+    // Import the BCS files
+    let bcs_files = ["24674818.bcs", "24674819.bcs"];
+    for bcs_file in &bcs_files {
+        let bcs_path = temp_dir.path().join(bcs_file);
+        if bcs_path.exists() {
+            info!("Importing BCS file: {}", bcs_path.display());
+            import_from_statedb(&statedb, &bcs_path, None)?;
+            info!("Successfully imported: {}", bcs_file);
+        } else {
+            info!("BCS file not found: {}", bcs_path.display());
+        }
+    }
+
+    // 4. Check 0x1 version
+    let version = statedb
+        .get_on_chain_config::<Version>()?
+        .unwrap_or(Version { major: 0 });
+    assert_eq!(version.major, 12);
+
     Ok(())
 }
