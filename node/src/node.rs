@@ -267,8 +267,7 @@ impl NodeService {
             "rocksdb max open files {}",
             config.storage.rocksdb_config().max_open_files
         );
-        let mut storage_instance = StorageInstance::new_cache_and_db_instance(
-            CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
+        let mut storage_instance = StorageInstance::new_db_instance(
             DBStorage::new(
                 config.storage.dir(),
                 config.storage.rocksdb_config(),
