@@ -70,6 +70,7 @@ starcoin-vm-runtime = { workspace = true }
 
 # dependencies for Move 2.0
 starcoin-vm2-abi-decoder = { workspace = true }
+starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }

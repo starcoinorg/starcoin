@@ -5,9 +5,9 @@ use clap::Parser;
 use futures::{TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::TypeTagView;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::event::EventKey;
+use starcoin_vm2_types::event::EventKey;
+use starcoin_vm2_types::view::TypeTagView;
 use tokio::io::AsyncBufReadExt;
 
 /// Subscribe chain event.

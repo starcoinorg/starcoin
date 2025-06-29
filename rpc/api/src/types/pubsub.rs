@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventResponse, TypeTagView};
+use crate::types::{BlockView, TransactionEventResponse};
 use jsonrpc_core::error::Error as JsonRpcError;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -10,10 +10,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
+use starcoin_vm2_types::view::TypeTagView;
+use starcoin_vm2_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
 /// Subscription kind.

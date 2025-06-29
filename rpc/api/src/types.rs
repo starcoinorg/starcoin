@@ -33,11 +33,13 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
+use starcoin_types::contract_event::StcContractEvent;
+use starcoin_types::event::StcEventKey;
+use starcoin_types::language_storage::StcTypeTag;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber},
     contract_event::{ContractEvent, ContractEventInfo},
-    event::EventKey,
     genesis_config,
     language_storage::TypeTag,
     multi_transaction::MultiSignedUserTransaction,
@@ -1176,10 +1178,10 @@ pub struct TransactionEventView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
-    pub type_tag: TypeTagView,
+    pub type_tag: StcTypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
-    pub event_key: EventKey,
+    pub event_key: StcEventKey,
     pub event_seq_number: StrView<u64>,
 }
 
@@ -1192,9 +1194,9 @@ impl From<ContractEventInfo> for TransactionEventView {
             transaction_index: Some(info.transaction_index),
             transaction_global_index: Some(info.transaction_global_index.into()),
             data: StrView(info.event.event_data().to_vec()),
-            type_tag: info.event.type_tag().clone().into(),
+            type_tag: StcTypeTag::V1(info.event.type_tag().clone()).into(),
             event_index: Some(info.event_index),
-            event_key: *info.event.key(),
+            event_key: (*info.event.key()).into(),
             event_seq_number: info.event.sequence_number().into(),
         }
     }
@@ -1209,9 +1211,9 @@ impl From<ContractEvent> for TransactionEventView {
             transaction_index: None,
             transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
-            type_tag: event.type_tag().clone().into(),
+            type_tag: StcTypeTag::from(event.type_tag().clone()).into(),
             event_index: None,
-            event_key: *event.key(),
+            event_key: (*event.key()).into(),
             event_seq_number: event.sequence_number().into(),
         }
     }
@@ -1225,7 +1227,7 @@ impl TransactionEventView {
         transaction_index: Option<u32>,
         transaction_global_index: Option<u64>,
         event_index: Option<u32>,
-        contract_event: &ContractEvent,
+        contract_event: &StcContractEvent,
     ) -> Self {
         Self {
             block_hash,
@@ -1236,7 +1238,7 @@ impl TransactionEventView {
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
             event_index,
-            event_key: *contract_event.key(),
+            event_key: contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }
     }
@@ -1670,6 +1672,7 @@ impl std::fmt::Display for SignedMessageView {
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
+pub type StcTypeTagView = StrView<StcTypeTag>;
 pub type StructTagView = StrView<StructTag>;
 pub type TransactionArgumentView = StrView<TransactionArgument>;
 pub type FunctionIdView = StrView<FunctionId>;
@@ -1712,6 +1715,24 @@ impl FromStr for TypeTagView {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let type_tag = parse_type_tag(s)?;
+        Ok(Self(type_tag))
+    }
+}
+
+impl std::fmt::Display for StcTypeTagView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            StcTypeTag::V1(ref tag) => write!(f, "{}", tag),
+            StcTypeTag::V2(ref tag) => write!(f, "{}", tag),
+        }
+    }
+}
+
+impl FromStr for StcTypeTagView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let type_tag = StcTypeTag::from_str(s)?;
         Ok(Self(type_tag))
     }
 }

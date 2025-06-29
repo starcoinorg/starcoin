@@ -9,7 +9,7 @@ use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use starcoin_abi_decoder::decode_move_value;
+use starcoin_abi_decoder::{decode_move_value, DecodedMoveValue};
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_chain_notify::message::{ContractEventNotification, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
@@ -29,6 +29,10 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
+use starcoin_vm2_abi_decoder::decode_move_value as decode_move_value2;
+use starcoin_vm2_abi_resolver::ABIResolver as ABIResolver2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_storage::Storage as Storage2;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -190,10 +194,12 @@ impl ServiceFactory<PubSubService> for PubSubServiceFactory {
     fn create(ctx: &mut ServiceContext<PubSubService>) -> Result<PubSubService> {
         let miner_service = ctx.service_ref::<MinerService>()?.clone();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         Ok(PubSubService::new(
             ctx.get_shared::<TxPoolService>()?,
             miner_service,
             storage,
+            storage2,
         ))
     }
 }
@@ -203,6 +209,7 @@ pub struct PubSubService {
     txpool: TxPoolService,
     miner_service: ServiceRef<MinerService>,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
     new_header_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewHeadNotification>>,
     new_event_subscribers:
         HashMap<SubscriptionId, mpsc::UnboundedSender<ContractEventNotification>>,
@@ -215,6 +222,7 @@ impl PubSubService {
         txpool: TxPoolService,
         miner_service: ServiceRef<MinerService>,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
     ) -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
         Self {
@@ -222,6 +230,7 @@ impl PubSubService {
             txpool,
             miner_service,
             storage,
+            storage2,
             new_event_subscribers: Default::default(),
             new_header_subscribers: Default::default(),
             mint_block_subscribers: Default::default(),
@@ -361,6 +370,7 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
             subscriber_id,
             subscriber,
             ContractEventHandler {
+                storage2: self.storage2.clone(),
                 storage: self.storage.clone(),
                 filter,
                 decode,
@@ -519,17 +529,32 @@ pub struct ContractEventHandler {
     filter: Filter,
     decode: bool,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
 }
 
 impl EventHandler<ContractEventNotification> for ContractEventHandler {
     fn handle(&self, msg: ContractEventNotification) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
-        let Notification((state_root, events, _state_root2, _events2)) = msg;
-        let filtered = events.as_ref().iter().filter(|e| {
-            self.filter.matching(
-                e.block_number,
-                &StcContractEvent::V1(e.contract_event.clone()),
-            )
-        });
+        let Notification((state_root, events, state_root2, events2)) = msg;
+        let filtered = events
+            .as_ref()
+            .iter()
+            .map(|e| (Some(e), None))
+            .chain(events2.iter().map(|e| (None, Some(e))))
+            .filter(|(e1, e2)| {
+                let (block_number, e) = match (e1, e2) {
+                    (Some(e), None) => (
+                        e.block_number,
+                        StcContractEvent::V1(e.contract_event.clone()),
+                    ),
+                    (None, Some(e)) => (
+                        e.block_number,
+                        StcContractEvent::V2(e.contract_event.clone()),
+                    ),
+                    _ => panic!("This should not happen!"),
+                };
+                self.filter.matching(block_number, &e)
+            });
+
         let filtered_events: Vec<_> = match self.filter.limit {
             None => filtered.collect(),
             Some(l) => {
@@ -539,31 +564,74 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
             }
         };
 
-        let state = if self.decode {
-            Some(ChainStateDB::new(self.storage.clone(), Some(state_root)))
+        let (state, state2) = if self.decode {
+            (
+                Some(ChainStateDB::new(self.storage.clone(), Some(state_root))),
+                Some(ChainStateDB2::new(self.storage2.clone(), Some(state_root2))),
+            )
         } else {
-            None
+            (None, None)
         };
         filtered_events
             .into_iter()
-            .map(|e| {
-                let decoded_data = match &state {
-                    Some(s) => {
-                        let abi =
-                            ABIResolver::new(s).resolve_type_tag(e.contract_event.type_tag())?;
-                        Some(decode_move_value(&abi, e.contract_event.event_data())?)
-                    }
-                    None => None,
-                };
-                Ok(TransactionEventResponse {
-                    event: TransactionEventView::new(
-                        Some(e.block_hash),
-                        Some(e.block_number),
-                        Some(e.transaction_hash),
+            .map(|(e1, e2)| {
+                let (
+                    block_hash,
+                    block_number,
+                    transaction_hash,
+                    transaction_index,
+                    transaction_global_index,
+                    event_index,
+                    contract_event,
+                    decoded_data,
+                ) = match (e1, e2) {
+                    (Some(e), None) => (
+                        e.block_hash,
+                        e.block_number,
+                        e.transaction_hash,
                         e.transaction_index,
                         e.transaction_global_index,
                         e.event_index,
-                        &e.contract_event,
+                        StcContractEvent::V1(e.contract_event.clone()),
+                        match &state {
+                            Some(s) => {
+                                let abi = ABIResolver::new(s)
+                                    .resolve_type_tag(e.contract_event.type_tag())?;
+                                Some(decode_move_value(&abi, e.contract_event.event_data())?)
+                            }
+                            None => None,
+                        },
+                    ),
+                    (None, Some(e)) => (
+                        e.block_hash,
+                        e.block_number,
+                        e.transaction_hash,
+                        e.transaction_index,
+                        e.transaction_global_index,
+                        e.event_index,
+                        StcContractEvent::V2(e.contract_event.clone()),
+                        match &state2 {
+                            Some(s) => {
+                                let abi = ABIResolver2::new(s)
+                                    .resolve_type_tag(e.contract_event.type_tag())?;
+                                Some(DecodedMoveValue(
+                                    decode_move_value2(&abi, e.contract_event.event_data())?.0,
+                                ))
+                            }
+                            None => None,
+                        },
+                    ),
+                    _ => panic!("This should not happen!"),
+                };
+                Ok(TransactionEventResponse {
+                    event: TransactionEventView::new(
+                        Some(block_hash),
+                        Some(block_number),
+                        Some(transaction_hash),
+                        transaction_index,
+                        transaction_global_index,
+                        event_index,
+                        &contract_event,
                     ),
                     decode_event_data: decoded_data,
                 })

@@ -256,13 +256,15 @@ impl From<BlockRewardEvent> for EventDataView {
 }
 impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
+        // todo: remove unwrap
+        let type_tag_v1 = event_view.type_tag.0.as_v1().unwrap();
         EventView {
-            key: event_view.event_key,
+            key: event_view.event_key.try_into().unwrap(),
             sequence_number: event_view.event_seq_number.0,
-            data: EventDataView::new(&event_view.type_tag.0, &event_view.data.0).unwrap_or({
+            data: EventDataView::new(type_tag_v1, &event_view.data.0).unwrap_or({
                 EventDataView::Unknown {
                     data: event_view.data.0,
-                    type_tag: event_view.type_tag,
+                    type_tag: type_tag_v1.clone().into(),
                 }
             }),
         }

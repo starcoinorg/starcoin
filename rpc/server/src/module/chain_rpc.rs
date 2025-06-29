@@ -389,8 +389,12 @@ where
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in resp_data.iter_mut() {
                     elem.decode_event_data = Some(
+                        // todo: remove unwrap
                         annotator
-                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
+                            .view_value(
+                                elem.event.type_tag.0.as_v1().unwrap(),
+                                elem.event.data.0.as_slice(),
+                            )?
                             .into(),
                     );
                 }
@@ -508,8 +512,12 @@ where
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in data.iter_mut() {
                     elem.decode_event_data = Some(
+                        // todo: remove unwrap
                         annotator
-                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
+                            .view_value(
+                                elem.event.type_tag.0.as_v1().unwrap(),
+                                elem.event.data.0.as_slice(),
+                            )?
                             .into(),
                     );
                 }
