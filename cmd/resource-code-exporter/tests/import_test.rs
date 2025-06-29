@@ -45,7 +45,7 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::Version;
 
 #[test]
-fn test_import_from_bcs() -> anyhow::Result<()> {
+fn test_migration_from_bcs_for_test_db() -> anyhow::Result<()> {
     starcoin_logger::init_for_test();
 
     // Initialize test storage with genesis
@@ -445,7 +445,7 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
 
 /// State data information of low block height exported from local
 #[stest::test]
-pub fn test_import_state_from_local_mainnet_db_export() -> anyhow::Result<()> {
+pub fn test_import_state_from_local_low_block_height_mainnet_db_export() -> anyhow::Result<()> {
     let net = vm1_testnet()?;
     let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
 
