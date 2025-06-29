@@ -12,22 +12,36 @@ use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_transaction_builder::{
     encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::{account_address::AccountAddress, vm_error::KeptVMStatus};
 use starcoin_vm_types::{
-    account_config::{association_address, genesis_address},
+    account_config::{association_address, core_code_address, genesis_address},
+    language_storage::{ModuleId, TypeTag},
     on_chain_config,
     state_view::StateReaderExt,
-    transaction::TransactionPayload,
+    token::token_code::TokenCode,
+    transaction::{Package, Script, ScriptFunction, Transaction, TransactionPayload},
 };
 
+use bcs_ext;
+use starcoin_crypto::HashValue;
+use starcoin_types::account::Account;
 use tempfile::TempDir;
-use test_helper::executor::{association_execute_should_success, prepare_genesis};
+use test_helper::executor::{
+    association_execute_should_success, compile_modules_with_address, compile_script,
+    execute_and_apply, prepare_genesis,
+};
+use test_helper::txn::create_account_txn_sent_as_association;
 
 use starcoin_chain::verifier::FullVerifier;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_logger::{init_with_default_level, LogPattern};
 use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::StructTag;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_vm_types::account_config::{AccountResource, BalanceResource};
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::Version;
 
 #[test]
@@ -381,7 +395,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
 }
 
 #[stest::test]
-pub fn test_from_bcs_zip_file() -> anyhow::Result<()> {
+pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
     init_with_default_level("info", Some(LogPattern::WithLine));
 
     // 1. vm_testnet
@@ -429,6 +443,7 @@ pub fn test_from_bcs_zip_file() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// State data information of low block height exported from local
 #[stest::test]
 pub fn test_import_state_from_local_mainnet_db_export() -> anyhow::Result<()> {
     let net = vm1_testnet()?;
@@ -442,10 +457,262 @@ pub fn test_import_state_from_local_mainnet_db_export() -> anyhow::Result<()> {
     Ok(())
 }
 
-// #[stest::test]
-// pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
-//     let net = vm1_testnet()?;
-//     let (chain, _statedb) = gen_chain_for_test_and_return_statedb(&net)?;
-//
-//     Ok(())
-// }
+// Helper function：Create a block containing multiple transactions
+fn create_block_with_transactions(
+    chain: &mut BlockChain,
+    net: &ChainNetwork,
+    miner: AccountAddress,
+    transactions: Vec<Transaction>,
+) -> anyhow::Result<HashValue> {
+    let header = chain.current_header();
+    let multi_txns: Vec<MultiSignedUserTransaction> = transactions
+        .into_iter()
+        .map(|txn| MultiSignedUserTransaction::from(txn.as_signed_user_txn().unwrap().clone()))
+        .collect();
+    let (block_template, _) =
+        chain.create_block_template(miner, Some(header.id()), multi_txns, vec![], None)?;
+    let block = chain
+        .consensus()
+        .create_block(block_template, net.time_service().as_ref())?;
+    let executed_block = chain.apply_with_verifier::<FullVerifier>(block.clone())?;
+    assert_ne!(executed_block.block().transactions().len(), 0);
+    Ok(chain.chain_state_reader().state_root())
+}
+
+#[stest::test]
+pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
+    starcoin_logger::init_for_test();
+
+    let net = vm1_testnet()?;
+    let (mut chain1, statedb1) = gen_chain_for_test_and_return_statedb(&net)?;
+
+    // 1. Create accounts for the random addresses
+    let account1 = Account::new();
+    let account2 = Account::new();
+    let mut account1_seq_num = 0;
+    let mut account2_seq_num = 0;
+
+    let miner_account = association_address();
+    let expire_time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+    let mut latest_block_state_root = chain1.chain_state_reader().state_root();
+
+    info!("=== Block1: create account1 === ");
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            create_account_txn_sent_as_association(
+                &account1,
+                account1_seq_num,
+                50_000_000,
+                expire_time,
+                &net,
+            ),
+        )],
+    )?;
+    assert!(chain1
+        .chain_state_reader()
+        .get_account_resource(*account1.address())?
+        .is_some());
+
+    info!("=== Block 2: create account2 === ");
+    account2_seq_num = account2_seq_num + 1;
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            create_account_txn_sent_as_association(
+                &account2,
+                account2_seq_num,
+                50_000_000,
+                expire_time,
+                &net,
+            ),
+        )],
+    )?;
+    assert!(chain1
+        .chain_state_reader()
+        .get_account_resource(*account2.address())?
+        .is_some());
+
+    // 3. Create and deploy a DummyToken module from account1
+    let module_source = r#"
+        module {{sender}}::DummyToken {
+            use StarcoinFramework::Token;
+            use StarcoinFramework::Account;
+            use StarcoinFramework::Signer;
+
+            struct DummyToken has copy, drop, store {}
+
+            public entry fun initialize(account: signer) {
+               Token::register_token<DummyToken>(&account, 9);
+               Account::accept_token<DummyToken>(account);
+            }
+
+            public entry fun mint(account: signer, amount: u128) {
+               Account::deposit<DummyToken>(
+                 Signer::address_of(&account),
+                 Token::mint<DummyToken>(&account, amount)
+               );
+            }
+
+            public entry fun transfer(from: signer, to: address, amount: u128) {
+                let token = Account::withdraw<DummyToken>(&from, amount);
+                Account::deposit<DummyToken>(to, token);
+            }
+        }
+    "#;
+
+    let compiled_module = compile_modules_with_address(*account1.address(), module_source)
+        .pop()
+        .unwrap();
+
+    info!("=== Block 3: deploy contract === ");
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            account1.create_signed_txn_impl(
+                *account1.address(),
+                TransactionPayload::Package(Package::new_with_module(compiled_module).unwrap()),
+                account1_seq_num,
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                expire_time,
+                net.chain_id(),
+            ),
+        )],
+    )?;
+
+    info!("=== Block 4: call DummyToken::initialize === ");
+    account1_seq_num = account1_seq_num + 1;
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            account1.create_signed_txn_impl(
+                *account1.address(),
+                TransactionPayload::ScriptFunction(ScriptFunction::new(
+                    ModuleId::new(*account1.address(), Identifier::new("DummyToken").unwrap()),
+                    Identifier::new("initialize").unwrap(),
+                    vec![],
+                    vec![],
+                )),
+                account1_seq_num,
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                expire_time,
+                net.chain_id(),
+            ),
+        )],
+    )?;
+
+    info!("=== Block 5: Mint DummyToken to account1 by calling  === ");
+    let mint_amount = 10000000000u128;
+    account1_seq_num = account1_seq_num + 1;
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            account1.create_signed_txn_impl(
+                *account1.address(),
+                TransactionPayload::ScriptFunction(ScriptFunction::new(
+                    ModuleId::new(*account1.address(), Identifier::new("DummyToken").unwrap()),
+                    Identifier::new("mint").unwrap(),
+                    vec![],
+                    vec![bcs_ext::to_bytes(&mint_amount).unwrap()],
+                )),
+                account1_seq_num,
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                expire_time,
+                net.chain_id(),
+            ),
+        )],
+    )?;
+
+    info!("=== Block 6: Account2 accept DummyToken ===");
+    let token_code = TokenCode::new(
+        *account1.address(),
+        "DummyToken".to_string(),
+        "DummyToken".to_string(),
+    );
+
+    account2_seq_num = 0;
+    latest_block_state_root = create_block_with_transactions(
+        &mut chain1,
+        &net,
+        miner_account,
+        vec![Transaction::UserTransaction(
+            account2.create_signed_txn_impl(
+                *account2.address(),
+                TransactionPayload::ScriptFunction(ScriptFunction::new(
+                    ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+                    Identifier::new("accept_token").unwrap(),
+                    vec![TypeTag::Struct(Box::new(token_code.clone().try_into()?))],
+                    vec![],
+                )),
+                account2_seq_num,
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                expire_time,
+                net.chain_id(),
+            ),
+        )],
+    )?;
+
+    info!("=== Block 6: Account1 transfer to Account2 for 5 DummyTokens  ===");
+    let transfer_amount = 5_000_000_000u128;
+    account1_seq_num = account1_seq_num + 1;
+    let transfer_txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
+        *account1.address(),
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(*account1.address(), Identifier::new("DummyToken").unwrap()),
+            Identifier::new("transfer").unwrap(),
+            vec![],
+            vec![
+                bcs_ext::to_bytes(&account2.address()).unwrap(),
+                bcs_ext::to_bytes(&transfer_amount).unwrap(),
+            ],
+        )),
+        account1_seq_num,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        expire_time,
+        net.chain_id(),
+    ));
+    latest_block_state_root =
+        create_block_with_transactions(&mut chain1, &net, miner_account, vec![transfer_txn])?;
+
+    let account2_balance = chain1
+        .chain_state_reader()
+        .get_balance_by_token_code(*account2.address(), token_code.clone())?
+        .unwrap_or(0);
+    assert_eq!(account2_balance, transfer_amount);
+
+    info!("=== Export all state data for latest state root ===");
+    // Export block
+    let temp_dir = TempDir::new()?;
+    let export_path = temp_dir.path().join("export_block4.bcs");
+    let source_statedb = statedb1.fork_at(latest_block_state_root);
+    export_from_statedb(&source_statedb, &export_path)?;
+
+    // Import to new chain
+    info!("=== Import state root to new chain ===");
+    let (_, statedb2) = gen_chain_for_test_and_return_statedb(&net)?;
+    import_from_statedb(&statedb2, &export_path, None)?;
+
+    // Check balance of account2
+    info!("=== Check balance for account2 ===");
+    let account2_balance = statedb2
+        .get_balance_by_token_code(*account2.address(), token_code)?
+        .unwrap_or(0);
+    assert_eq!(account2_balance, transfer_amount);
+    info!("Account2 balance verified: {} DummyToken", account2_balance);
+    Ok(())
+}

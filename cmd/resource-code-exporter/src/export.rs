@@ -70,4 +70,3 @@ pub fn export_from_statedb(statedb: &ChainStateDB, bcs_output_path: &Path) -> an
     info!("BCS export completed successfully");
     Ok(())
 }
-
