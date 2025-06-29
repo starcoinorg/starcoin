@@ -153,6 +153,7 @@ impl TryInto<Filter> for EventFilter {
                 .collect(),
             limit: self.limit,
             reverse: true,
+            vm2_only: true,
         })
     }
 }

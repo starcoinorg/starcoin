@@ -37,6 +37,8 @@ pub struct Filter {
     pub limit: Option<usize>,
     /// return events in reverse order.
     pub reverse: bool,
+    /// If ture, only return events from VM2.
+    pub vm2_only: bool,
 }
 
 impl Default for Filter {
@@ -49,12 +51,18 @@ impl Default for Filter {
             addrs: vec![],
             limit: None,
             reverse: true,
+            vm2_only: true,
         }
     }
 }
 
 impl Filter {
     pub fn matching(&self, block_number: BlockNumber, e: &StcContractEvent) -> bool {
+        // quick path for vm2_only filter
+        if self.vm2_only && e.to_v1().is_some() {
+            return false;
+        }
+
         let creator_address = match e {
             StcContractEvent::V1(event) => event.key().get_creator_address(),
             StcContractEvent::V2(event) => {
