@@ -13,6 +13,7 @@ use starcoin_rpc_api::chain::{
     ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
 };
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
+use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
     StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
@@ -25,6 +26,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::{ContractEventInfo, StcContractEventInfo};
+use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
@@ -449,6 +451,81 @@ where
             Ok(resp_data)
         }
         .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn get_events(
+        &self,
+        mut filter: EventFilter,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
+        let event_option = option.unwrap_or_default();
+        let service = self.service.clone();
+        let config = self.config.clone();
+        let storage = self.storage.clone();
+        let fut = async move {
+            if filter.to_block.is_none() {
+                // if user hasn't specify the `to_block`, we use latest block as the to_block.
+                let header_block_number = service.main_head_header().await?.number();
+                filter.to_block = Some(header_block_number);
+            }
+
+            let filter: Filter = filter.try_into()?;
+
+            let max_block_range = config.rpc.block_query_max_range();
+            // if the from~to range is bigger than what we configured, return invalid param error.
+            if filter
+                .to_block
+                .checked_sub(filter.from_block)
+                .filter(|r| *r > max_block_range)
+                .is_some()
+            {
+                return Err(jsonrpc_core::Error::invalid_params(format!(
+                    "from_block is too far, max block range is {} ",
+                    max_block_range
+                ))
+                .into());
+            }
+
+            let state_root = if event_option.decode {
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                Some(multi_state.state_root1())
+            } else {
+                None
+            };
+            let mut data: Vec<_> = service
+                .main_events(filter)
+                .await?
+                .into_iter()
+                .filter_map(|e| {
+                    e.try_into()
+                        .ok()
+                        .map(|e: ContractEventInfo| TransactionEventResponse {
+                            event: e.into(),
+                            decode_event_data: None,
+                        })
+                })
+                .collect();
+            if let Some(state_root) = state_root {
+                let state = ChainStateDB::new(storage, Some(state_root));
+                let annotator = MoveValueAnnotator::new(&state);
+                for elem in data.iter_mut() {
+                    elem.decode_event_data = Some(
+                        // todo: remove unwrap
+                        annotator
+                            .view_value(
+                                elem.event.type_tag.0.as_v1().unwrap(),
+                                elem.event.data.0.as_slice(),
+                            )?
+                            .into(),
+                    );
+                }
+            }
+            Ok(data)
+        }
+        .map_err(map_err);
+
         Box::pin(fut.boxed())
     }
 

@@ -95,8 +95,8 @@ impl ForkBlockChain {
                         .get_chain_client()
                         .get_block_info_by_number(fork_number),
                 )
-                    .map_err(|e| anyhow!("{}", e))?
-                    .map(|view| view.into_info());
+                .map_err(|e| anyhow!("{}", e))?
+                .map(|view| view.into_info());
                 match block_info {
                     Some(block) => MerkleAccumulator::new_with_info(
                         block.txn_accumulator_info,
@@ -476,6 +476,18 @@ impl ChainApi for MockChainApi {
         _txn_hash: HashValue,
         _option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse2>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_events(
+        &self,
+        _filter: starcoin_rpc_api::types::pubsub::EventFilter,
+        _option: Option<starcoin_rpc_api::chain::GetEventOption>,
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
+    {
         let fut = async move {
             bail!("not implemented.");
         };
