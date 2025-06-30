@@ -205,10 +205,6 @@ where
         Ok((block_info, block_chain))
     }
 
-    fn block_exist(&self, block_id: HashValue) -> Result<bool> {
-        Ok(self.storage.get_block_info(block_id)?.is_some())
-    }
-
     pub fn get_main(&self) -> &BlockChain {
         &self.main
     }
@@ -566,7 +562,7 @@ where
         }
 
         if self.main.current_header().id() == block.header().parent_hash()
-            && !self.block_exist(block_id)?
+            && !self.get_main().has_dag_block(block_id)?
         {
             let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];

@@ -599,6 +599,11 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n21");
         let statedb = self.statedb.fork_at(selected_head.header.state_root());
         let epoch = get_epoch_from_statedb(&statedb)?;
+        info!(
+            "execute dag before, block id: {:?}, block time target in epoch: {:?}",
+            selected_head.header().id(),
+            epoch.block_time_target()
+        );
         let executed_data = starcoin_executor::block_execute(
             &statedb,
             transactions.clone(),
@@ -1782,9 +1787,8 @@ impl BlockChain {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
-        if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb)?;
-        } else if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+        self.epoch = get_epoch_from_statedb(&self.statedb)?;
+        if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
             let start_block_id = self
                 .get_block_by_number(self.epoch.start_block_number())?
                 .unwrap_or_else(|| {
