@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as ChainClient;
-use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
@@ -113,13 +112,6 @@ pub trait ChainApi {
         txn_hash: HashValue,
         option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse2>>;
-
-    #[rpc(name = "chain.get_events")]
-    fn get_events(
-        &self,
-        filter: EventFilter,
-        option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>>;
 
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
