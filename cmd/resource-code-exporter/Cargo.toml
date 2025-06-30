@@ -32,5 +32,6 @@ starcoin-vm2-storage = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
+starcoin-state-tree = { workspace = true }
 flate2 = "1.0"
 tar = "0.4"

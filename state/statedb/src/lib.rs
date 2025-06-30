@@ -596,26 +596,74 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
+        let mut processed_count = 0;
+        let total_count = chain_state_set.len();
+        
         for (address, account_state_set) in chain_state_set.state_sets() {
-            let code_root = if let Some(state_set) = account_state_set.code_set() {
-                let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
-                state_tree.apply(state_set.clone())?;
-                state_tree.flush()?;
-                Some(state_tree.root_hash())
-            } else {
-                None
-            };
-            let resource_root = if let Some(state_set) = account_state_set.resource_set() {
-                let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
-                state_tree.apply(state_set.clone())?;
-                state_tree.flush()?;
-                state_tree.root_hash()
-            } else {
-                unreachable!("this should never happened")
-            };
-            let new_account_state = AccountState::new(code_root, resource_root);
-            self.state_tree.put(*address, new_account_state.try_into()?);
+            processed_count += 1;
+            
+            // Add error context for better debugging
+            let result = (|| -> Result<()> {
+                let code_root = if let Some(state_set) = account_state_set.code_set() {
+                    let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
+                    // Apply code state set with error handling
+                    match state_tree.apply(state_set.clone()) {
+                        Ok(_) => {
+                            state_tree.flush()?;
+                            Some(state_tree.root_hash())
+                        }
+                        Err(e) => {
+                            return Err(anyhow::anyhow!(
+                                "Failed to apply code state set for account {}: {}",
+                                address,
+                                e
+                            ));
+                        }
+                    }
+                } else {
+                    None
+                };
+                
+                let resource_root = if let Some(state_set) = account_state_set.resource_set() {
+                    let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+                    // Apply resource state set with error handling
+                    match state_tree.apply(state_set.clone()) {
+                        Ok(_) => {
+                            state_tree.flush()?;
+                            state_tree.root_hash()
+                        }
+                        Err(e) => {
+                            return Err(anyhow::anyhow!(
+                                "Failed to apply resource state set for account {}: {}",
+                                address,
+                                e
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Account {} has no resource state set",
+                        address
+                    ));
+                };
+                
+                let new_account_state = AccountState::new(code_root, resource_root);
+                self.state_tree.put(*address, new_account_state.try_into()?);
+                Ok(())
+            })();
+            
+            if let Err(e) = result {
+                return Err(anyhow::anyhow!(
+                    "Failed to apply account {} ({}/{}): {}",
+                    address,
+                    processed_count,
+                    total_count,
+                    e
+                ));
+            }
         }
+        
+        // Commit and flush all changes
         self.state_tree.commit()?;
         self.state_tree.flush()?;
         Ok(())
