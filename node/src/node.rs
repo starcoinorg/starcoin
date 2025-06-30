@@ -39,6 +39,7 @@ use starcoin_service_registry::{
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::metrics::StorageMetrics;
@@ -266,11 +267,14 @@ impl NodeService {
             "rocksdb max open files {}",
             config.storage.rocksdb_config().max_open_files
         );
-        let mut storage_instance = StorageInstance::new_db_instance(DBStorage::new(
-            config.storage.dir(),
-            config.storage.rocksdb_config(),
-            storage_metrics,
-        )?);
+        let mut storage_instance = StorageInstance::new_cache_and_db_instance(
+            CacheStorage::new_with_capacity(config.storage.cache_size(), storage_metrics.clone()),
+            DBStorage::new(
+                config.storage.dir(),
+                config.storage.rocksdb_config(),
+                storage_metrics,
+            )?,
+        );
 
         let start_time = SystemTime::now();
         storage_instance.check_upgrade()?;
