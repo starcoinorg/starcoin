@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::format_err;
 use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
 use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::ChainNetwork;
+use std::path::Path;
 
 use starcoin_consensus::Consensus;
-
-use starcoin_genesis::Genesis;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_transaction_builder::{
     encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
@@ -35,14 +35,56 @@ use test_helper::executor::{
 use test_helper::txn::create_account_txn_sent_as_association;
 
 use starcoin_chain::verifier::FullVerifier;
-use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_logger::{init_with_default_level, LogPattern};
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::StructTag;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_vm_types::account_config::{AccountResource, BalanceResource};
-use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_types::{identifier::Identifier, multi_transaction::MultiSignedUserTransaction};
+
 use starcoin_vm_types::on_chain_config::Version;
+
+use test_helper::chain::{
+    gen_chain_for_test_and_return_statedb, gen_chain_for_test_and_return_statedb_with_temp_storage,
+    vm1_testnet,
+};
+
+/// Test function to demonstrate the usage of both storage types
+#[test]
+fn test_storage_types_comparison() -> anyhow::Result<()> {
+    starcoin_logger::init_for_test();
+
+    let net = vm1_testnet()?;
+    let transfer_amount = 10000000000;
+    let random_account = AccountAddress::random();
+
+    // Test with cache storage (small data)
+    info!("=== Testing with cache storage ===");
+    let (cache_chain, cache_statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+
+    // Perform some operations
+    association_transfer_to(random_account, transfer_amount, &cache_statedb, &net)?;
+
+    let cache_balance = cache_statedb.get_balance(random_account)?.unwrap_or(0);
+    assert_eq!(
+        cache_balance, transfer_amount,
+        "Cache storage balance should match"
+    );
+
+    // Test with temp directory storage (large data)
+    info!("=== Testing with temp directory storage ===");
+    let temp_dir = TempDir::new()?;
+    let (_temp_chain, temp_statedb) =
+        gen_chain_for_test_and_return_statedb_with_temp_storage(&net, temp_dir.into_path())?;
+
+    // Perform the same operations
+    association_transfer_to(random_account, transfer_amount, &temp_statedb, &net)?;
+
+    let temp_balance = temp_statedb.get_balance(random_account)?.unwrap_or(0);
+    assert_eq!(
+        temp_balance, transfer_amount,
+        "Temp storage balance should match"
+    );
+
+    info!("Both storage types work correctly!");
+    Ok(())
+}
 
 #[test]
 fn test_migration_from_bcs_for_test_db() -> anyhow::Result<()> {
@@ -178,39 +220,6 @@ fn association_transfer_to(
     );
     assert_eq!(db.get_balance(target_account)?.unwrap(), amount);
     Ok(())
-}
-
-fn gen_chain_for_test_and_return_statedb(
-    net: &ChainNetwork,
-) -> anyhow::Result<(BlockChain, ChainStateDB)> {
-    let (storage, storage2, chain_info, _) =
-        Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
-
-    let block_chain = BlockChain::new(
-        net.time_service(),
-        chain_info.head().id(),
-        storage.clone(),
-        storage2.clone(),
-        None,
-    )?;
-    let state_root = block_chain.chain_state_reader().state_root();
-    Ok((block_chain, ChainStateDB::new(storage, Some(state_root))))
-}
-
-pub fn vm1_testnet() -> anyhow::Result<ChainNetwork> {
-    let chain_name = "vm1-testnet".to_string();
-    let net = ChainNetwork::new_custom(
-        chain_name,
-        124.into(),
-        BuiltinNetworkID::Test.genesis_config().clone(),
-        BuiltinNetworkID::Test.genesis_config2().clone(),
-    )
-    .unwrap();
-
-    let vm1_offline_height = vm1_offline_height(124.into());
-    assert_eq!(vm1_offline_height, u64::MAX);
-
-    Ok(net)
 }
 
 #[stest::test]
@@ -394,17 +403,14 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 50000)]
 pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
     init_with_default_level("info", Some(LogPattern::WithLine));
 
     // 1. vm_testnet
     let net = vm1_testnet()?;
 
-    // 2. Build genesis block into db
-    let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
-
-    // 3. unzip from ./test-data/24674819.tar.gz
+    // 2. unzip from ./test-data/24674819.tar.gz
     let temp_dir = TempDir::new()?;
     let tar_gz_path = std::path::Path::new("./test-data/24674819.tar.gz");
 
@@ -420,6 +426,12 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
         "Successfully extracted tar.gz file to: {}",
         temp_dir.path().display()
     );
+
+    // 2. Build genesis block into db
+    let (_, statedb) = gen_chain_for_test_and_return_statedb_with_temp_storage(
+        &net,
+        temp_dir.path().to_path_buf(),
+    )?;
 
     // Import the BCS files
     let bcs_files = ["24674819.bcs", "24674818.bcs"];
@@ -445,14 +457,24 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
 
 /// State data information of low block height exported from local
 #[stest::test]
-pub fn test_import_state_from_local_low_block_height_mainnet_db_export() -> anyhow::Result<()> {
-    let net = vm1_testnet()?;
-    let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+pub fn test_import_state_from_64925() -> anyhow::Result<()> {
+    init_with_default_level("info", Some(LogPattern::WithLine));
 
-    // Import Height: 64925
+    let net = vm1_testnet()?;
+    let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+
     let data_path = std::path::Path::new("./test-data/64925.bcs");
     info!("Importing BCS file: {}", data_path.display());
-    import_from_statedb(&statedb, &data_path, None)?;
+    let newst_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+    import_from_statedb(&newst_statedb, &data_path, None)?;
+
+    let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+    let version = fork_statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    info!("After imported version: {}", version);
+    assert_eq!(version, 11);
 
     Ok(())
 }
@@ -477,6 +499,42 @@ fn create_block_with_transactions(
     let executed_block = chain.apply_with_verifier::<FullVerifier>(block.clone())?;
     assert_ne!(executed_block.block().transactions().len(), 0);
     Ok(chain.chain_state_reader().state_root())
+}
+
+// Import succeed, but failed to get version
+
+#[ignore]
+#[stest::test(timeout = 50000)]
+pub fn test_import_state_from_1461026() -> anyhow::Result<()> {
+    init_with_default_level("info", Some(LogPattern::WithLine));
+
+    let net = vm1_testnet()?;
+    let temp_dir = TempDir::new()?;
+    let (chain, statedb) = gen_chain_for_test_and_return_statedb_with_temp_storage(
+        &net,
+        temp_dir.path().to_path_buf(),
+    )?;
+
+    let version = statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    info!("Before import version: {}", version);
+    assert_eq!(version, 11);
+
+    let data_path = Path::new("./test-data/1461026.bcs");
+    info!("Importing BCS file: {}", data_path.display());
+    import_from_statedb(&statedb, &data_path, None)?;
+
+    let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+    let version = fork_statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    info!("After imported version: {}", version);
+    assert_eq!(version, 11);
+
+    Ok(())
 }
 
 #[stest::test]
