@@ -54,7 +54,7 @@ fn test_storage_types_comparison() -> anyhow::Result<()> {
 
     // Test with cache storage (small data)
     info!("=== Testing with cache storage ===");
-    let (_, cache_statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+    let (_, cache_statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
     // Perform some operations
     association_transfer_to(random_account, transfer_amount, &cache_statedb, &net)?;
@@ -247,7 +247,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     let net = vm1_testnet()?;
     {
         // 2. Build genesis block into db
-        let (mut source_chain, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+        let (mut source_chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // 3. Execute transfer from association to random account 1 peer_to_peer and miner generate block 1 with txn
         let block_1_state_root = {
@@ -374,7 +374,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     info!("=== II. Construct migration target blockchain storage ===");
     {
         // 1. Build genesis block into db
-        let (_, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+        let (_, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // 2. Import `account_state1.bcs` AccountStates1 into target statedb
         info!("Importing account_state1.bcs into target statedb");
@@ -459,7 +459,7 @@ pub fn test_import_state_from_64925() -> anyhow::Result<()> {
     init_with_default_level("info", Some(LogPattern::WithLine));
 
     let net = vm1_testnet()?;
-    let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+    let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
     let data_path = Path::new("./test-data/64925.bcs");
     info!("Importing BCS file: {}", data_path.display());
@@ -540,7 +540,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
     starcoin_logger::init_for_test();
 
     let net = vm1_testnet()?;
-    let (mut chain1, statedb1) = gen_chain_for_test_and_return_statedb(&net)?;
+    let (mut chain1, statedb1) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
     // 1. Create accounts for the random addresses
     let account1 = Account::new();
@@ -759,7 +759,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
 
     // Import to new chain
     info!("=== Import state root to new chain ===");
-    let (_, statedb2) = gen_chain_for_test_and_return_statedb(&net)?;
+    let (_, statedb2) = gen_chain_for_test_and_return_statedb(&net, None)?;
     import_from_statedb(&statedb2, &export_path, None)?;
 
     // Check balance of account2
@@ -769,5 +769,59 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
         .unwrap_or(0);
     assert_eq!(account2_balance, transfer_amount);
     info!("Account2 balance verified: {} DummyToken", account2_balance);
+    Ok(())
+}
+
+#[stest::test]
+pub fn test_check_storage_cache_overflow_error() -> anyhow::Result<()> {
+    use starcoin_config::DEFAULT_CACHE_SIZE;
+    use std::panic;
+    init_with_default_level("info", Some(LogPattern::WithLine));
+    let net = vm1_testnet()?;
+    let data_path = std::path::Path::new("./test-data/64925.bcs");
+
+    // 1. Very small capacity (20): genesis expected to fail
+    info!("=== Test 1: Testing with very small cache capacity (20), genesis should fail ===");
+    {
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            gen_chain_for_test_and_return_statedb(&net, Some(20)).unwrap();
+        }));
+        assert!(result.is_err(), "genesis with capacity 20 should fail");
+    }
+
+    // 2. Medium capacity (100): genesis passes, import should fail (Err or panic)
+    info!("=== Test 2: Testing with medium cache capacity (500), import should fail ===");
+    {
+        let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, Some(500))?;
+        let statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            import_from_statedb(&statedb, data_path, None).unwrap();
+        }));
+        assert!(
+            result.is_err(),
+            "import with CacheStorage capacity 500 should fail"
+        );
+    }
+
+    // 3. Large capacity (larger than default): both genesis and import can pass
+    info!("=== Test 3: Testing with large cache capacity (> default), import should succeed ===");
+    {
+        let large_capacity = DEFAULT_CACHE_SIZE + 5000;
+        let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, Some(large_capacity))?;
+        let statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+        let newst_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
+        import_from_statedb(&newst_statedb, data_path, None)?;
+        let version = newst_statedb
+            .get_on_chain_config::<Version>()?
+            .map(|version| version.major)
+            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+        assert_eq!(version, 4, "Version should be 4 after import");
+        let imported_state = newst_statedb.dump()?;
+        assert!(
+            !imported_state.is_empty(),
+            "Imported state should not be empty"
+        );
+    }
+
     Ok(())
 }

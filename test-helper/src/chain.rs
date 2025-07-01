@@ -24,16 +24,17 @@ use starcoin_vm2_storage::{
 };
 use std::{path::Path, path::PathBuf, sync::Arc};
 
-pub fn gen_chain_for_test_and_return_statedb(
-    net: &ChainNetwork,
-) -> Result<(BlockChain, ChainStateDB)> {
-    gen_chain_for_test_and_return_statedb_with_storage_type(net, StorageType::Cache)
-}
-
 /// Storage type for testing
 enum StorageType {
-    Cache,
+    Cache(Option<usize>),
     TempDir(PathBuf),
+}
+
+pub fn gen_chain_for_test_and_return_statedb(
+    net: &ChainNetwork,
+    capacity: Option<usize>,
+) -> Result<(BlockChain, ChainStateDB)> {
+    gen_chain_for_test_and_return_statedb_with_storage_type(net, StorageType::Cache(capacity))
 }
 
 /// Initialize storage for test with temporary directory (similar to Genesis::init_and_check_storage)
@@ -74,9 +75,10 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
     storage_type: StorageType,
 ) -> Result<(BlockChain, ChainStateDB)> {
     match storage_type {
-        StorageType::Cache => {
+        StorageType::Cache(capacity) => {
             let (storage, storage2, chain_info, _) =
-                Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
+                Genesis::init_cache_storage_for_test(net, capacity)
+                    .expect("init storage by genesis fail.");
 
             let block_chain = BlockChain::new(
                 net.time_service(),
@@ -131,7 +133,7 @@ pub fn gen_chain_for_test_and_return_statedb_with_temp_storage(
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (chain, _) =
-        gen_chain_for_test_and_return_statedb_with_storage_type(net, StorageType::Cache)?;
+        gen_chain_for_test_and_return_statedb_with_storage_type(net, StorageType::Cache(None))?;
     Ok(chain)
 }
 

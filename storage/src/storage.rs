@@ -69,6 +69,12 @@ impl StorageInstance {
             cache: Arc::new(CacheStorage::new(None)),
         }
     }
+    pub fn new_cache_instance_with_capacity(capacity: usize) -> Self {
+        StorageInstance::CACHE {
+            cache: Arc::new(CacheStorage::new_with_capacity(capacity, None)),
+        }
+    }
+
     pub fn new_db_instance(db: DBStorage) -> Self {
         Self::DB { db: Arc::new(db) }
     }
