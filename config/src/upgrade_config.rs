@@ -64,6 +64,8 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
     // custom network height for test
     // vm2-testnet
     update_custom_network(123.into(), 2);
+    // vm1-testnet
+    update_custom_network(124.into(), u64::MAX);
     map
 });
 

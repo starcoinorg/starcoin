@@ -11,6 +11,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
+    DEFAULT_CACHE_SIZE,
 };
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
@@ -437,6 +438,22 @@ impl Genesis {
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let genesis = Genesis::load_or_build(net)?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+        Ok((storage, storage2, chain_info, genesis))
+    }
+
+    pub fn init_cache_storage_for_test(
+        net: &ChainNetwork,
+        capacity: Option<usize>,
+    ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
+        debug!("init storage by genesis for test.");
+        let storage = Arc::new(Storage::new(
+            StorageInstance::new_cache_instance_with_capacity(
+                capacity.unwrap_or(DEFAULT_CACHE_SIZE),
+            ),
+        )?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
