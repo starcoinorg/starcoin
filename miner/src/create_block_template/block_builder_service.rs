@@ -364,7 +364,14 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
+        self.put_red_block_transactions(&ghostdata)?;
+
         let txns = self.tx_provider.get_txns(max_txns);
+
+        txns.iter().for_each(|transaction| {
+            self.tx_provider.remove_txn(transaction.id(), false);
+        });
+
         let author = *self.miner_account.read().unwrap().address();
 
         if now_millis <= previous_header.timestamp() {
@@ -597,6 +604,27 @@ where
                 self.main.dag(),
             )?;
         }
+        Ok(())
+    }
+
+    fn put_red_block_transactions(
+        &self,
+        ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
+    ) -> Result<()> {
+        let transactions = ghostdata
+        .mergeset_reds
+        .iter()
+        .map(|id| self.storage.get_block_by_hash(*id)?
+        .ok_or_else(|| format_err!("cannot find the block by id {:?} in minting for putting red block transaction back to the pool", id))).collect::<Result<Vec<Block>>>()?
+        .into_iter()
+        .flat_map(|block| block.body.transactions).collect::<Vec<_>>();
+
+        self.tx_provider.add_txns(transactions.clone()).iter().zip(transactions).for_each(|(result, transaction)| {
+            if let Err(err) = result {
+                error!("minting for putting red block transaction back to the pool failed: {:?}, transaction id: {:?}", err, transaction.id());
+            }
+        });
+
         Ok(())
     }
 }
