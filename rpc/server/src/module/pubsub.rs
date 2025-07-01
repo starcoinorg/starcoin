@@ -17,7 +17,9 @@ use starcoin_logger::prelude::*;
 use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::Params;
-use starcoin_rpc_api::types::{BlockView, TransactionEventResponse, TransactionEventView};
+use starcoin_rpc_api::types::{
+    BlockView, TransactionEventResponse, TransactionEventResponseV2, TransactionEventViewV2,
+};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
     ActorService, EventHandler as ActorEventHandler, ServiceContext, ServiceFactory,
@@ -368,7 +370,7 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
             subscriber,
             filter,
             decode,
-        } = msg;
+        }: SubscribeEvents = msg;
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.new_event_subscribers
@@ -631,8 +633,8 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
                     ),
                     _ => panic!("This should not happen!"),
                 };
-                Ok(TransactionEventResponse {
-                    event: TransactionEventView::new(
+                Ok(TransactionEventResponseV2 {
+                    event: TransactionEventViewV2::new(
                         Some(block_hash),
                         Some(block_number),
                         Some(transaction_hash),
@@ -645,8 +647,18 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
                 })
             })
             .map(|e| {
-                e.map(|d| pubsub::Result::Event(Box::new(d)))
-                    .map_err(map_err)
+                e.map(|d| {
+                    if d.event.is_v1() {
+                        let d = TransactionEventResponse {
+                            event: d.event.to_v1().unwrap(),
+                            decode_event_data: d.decode_event_data,
+                        };
+                        pubsub::Result::Event(Box::new(d))
+                    } else {
+                        pubsub::Result::EventV2(Box::new(d))
+                    }
+                })
+                .map_err(map_err)
             })
             .collect()
     }

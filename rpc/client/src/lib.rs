@@ -38,15 +38,15 @@ use starcoin_rpc_api::types::{
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionRequest, TransactionView,
+    TransactionEventResponseV2, TransactionEventView, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
     miner::MinerClient, multi_types::MultiSignedUserTransactionView,
     network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
     state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
-    types::TransactionEventView,
+    types::TransactionEventViewV2,
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
@@ -848,7 +848,7 @@ impl RpcClient {
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> anyhow::Result<Vec<TransactionEventResponse>> {
+    ) -> anyhow::Result<Vec<TransactionEventResponseV2>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash, option))
             .map_err(map_err)
     }
@@ -981,7 +981,7 @@ impl RpcClient {
         &self,
         filter: EventFilterV2,
         decode: bool,
-    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventViewV2, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner
                 .pubsub_client

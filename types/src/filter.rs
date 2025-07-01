@@ -12,7 +12,6 @@ use starcoin_vm_types::language_storage::type_tag_match;
 pub enum FilterType {
     VM1,
     VM2,
-    Both,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

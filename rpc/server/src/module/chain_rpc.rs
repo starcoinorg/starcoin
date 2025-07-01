@@ -16,7 +16,7 @@ use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    StrView, TransactionEventResponseV2, TransactionInfoView, TransactionInfoWithProofView,
     TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -358,7 +358,7 @@ where
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
+    ) -> FutureResult<Vec<TransactionEventResponseV2>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let storage = self.storage.clone();
@@ -377,7 +377,7 @@ where
                 .filter_map(|e| {
                     e.try_into()
                         .ok()
-                        .map(|e: ContractEventInfo| TransactionEventResponse {
+                        .map(|e: ContractEventInfo| TransactionEventResponseV2 {
                             event: e.into(),
                             decode_event_data: None,
                         })
@@ -458,7 +458,7 @@ where
         &self,
         mut filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
+    ) -> FutureResult<Vec<TransactionEventResponseV2>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let config = self.config.clone();
@@ -501,7 +501,7 @@ where
                 .filter_map(|e| {
                     e.try_into()
                         .ok()
-                        .map(|e: ContractEventInfo| TransactionEventResponse {
+                        .map(|e: ContractEventInfo| TransactionEventResponseV2 {
                             event: e.into(),
                             decode_event_data: None,
                         })

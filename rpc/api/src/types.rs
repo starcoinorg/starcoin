@@ -55,6 +55,7 @@ use starcoin_types::{
     vm_error::AbortLocation,
     U256,
 };
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
@@ -1178,6 +1179,35 @@ pub struct TransactionEventView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
+    pub type_tag: TypeTagView,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_index: Option<u32>,
+    pub event_key: EventKey,
+    pub event_seq_number: StrView<u64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+pub struct TransactionEventResponseV2 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decode_event_data: Option<DecodedMoveValue>,
+    #[serde(flatten)]
+    pub event: TransactionEventViewV2,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, JsonSchema)]
+pub struct TransactionEventViewV2 {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_hash: Option<HashValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_number: Option<StrView<BlockNumber>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_hash: Option<HashValue>,
+    // txn index in block
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_index: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_global_index: Option<StrView<u64>>,
+    pub data: StrView<Vec<u8>>,
     pub type_tag: StcTypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
@@ -1185,9 +1215,9 @@ pub struct TransactionEventView {
     pub event_seq_number: StrView<u64>,
 }
 
-impl From<ContractEventInfo> for TransactionEventView {
+impl From<ContractEventInfo> for TransactionEventViewV2 {
     fn from(info: ContractEventInfo) -> Self {
-        TransactionEventView {
+        TransactionEventViewV2 {
             block_hash: Some(info.block_hash),
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
@@ -1202,9 +1232,9 @@ impl From<ContractEventInfo> for TransactionEventView {
     }
 }
 
-impl From<ContractEvent> for TransactionEventView {
+impl From<ContractEvent> for TransactionEventViewV2 {
     fn from(event: ContractEvent) -> Self {
-        TransactionEventView {
+        TransactionEventViewV2 {
             block_hash: None,
             block_number: None,
             transaction_hash: None,
@@ -1219,7 +1249,7 @@ impl From<ContractEvent> for TransactionEventView {
     }
 }
 
-impl TransactionEventView {
+impl TransactionEventViewV2 {
     pub fn new(
         block_hash: Option<HashValue>,
         block_number: Option<BlockNumber>,
@@ -1242,6 +1272,31 @@ impl TransactionEventView {
             event_seq_number: contract_event.sequence_number().into(),
         }
     }
+
+    pub fn is_v1(&self) -> bool {
+        matches!(self.event_key, StcEventKey::V1(_))
+    }
+
+    pub fn to_v1(self) -> Option<TransactionEventView> {
+        let event_key = self.event_key.try_into().ok()?;
+        let type_tag = match self.type_tag.0 {
+            StcTypeTag::V1(tag) => Some(TypeTagView::from(tag)),
+            StcTypeTag::V2(_) => None,
+        }?;
+
+        Some(TransactionEventView {
+            block_hash: self.block_hash,
+            block_number: self.block_number,
+            transaction_hash: self.transaction_hash,
+            transaction_index: self.transaction_index,
+            transaction_global_index: self.transaction_global_index,
+            data: self.data.clone(),
+            type_tag,
+            event_index: self.event_index,
+            event_key,
+            event_seq_number: self.event_seq_number,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -1256,7 +1311,7 @@ pub struct TransactionOutputView {
     pub status: TransactionStatusView,
     pub gas_used: StrView<u64>,
     pub write_set: Vec<TransactionOutputAction>,
-    pub events: Vec<TransactionEventView>,
+    pub events: Vec<TransactionEventViewV2>,
     pub table_item_write_set: Vec<TransactionOutputTableItemAction>,
 }
 

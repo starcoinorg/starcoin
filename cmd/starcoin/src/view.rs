@@ -8,8 +8,8 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponse,
-    TransactionEventView, TransactionInfoView, TypeTagView,
+    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponseV2,
+    TransactionEventViewV2, TransactionInfoView, TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
@@ -254,8 +254,8 @@ impl From<BlockRewardEvent> for EventDataView {
         }
     }
 }
-impl From<TransactionEventView> for EventView {
-    fn from(event_view: TransactionEventView) -> Self {
+impl From<TransactionEventViewV2> for EventView {
+    fn from(event_view: TransactionEventViewV2) -> Self {
         // todo: remove unwrap
         let type_tag_v1 = event_view.type_tag.0.as_v1().unwrap();
         EventView {
@@ -320,7 +320,7 @@ impl ExecuteResultView {
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
-    pub events: Option<Vec<TransactionEventResponse>>,
+    pub events: Option<Vec<TransactionEventResponseV2>>,
 }
 
 impl ExecutionOutputView {
@@ -335,7 +335,7 @@ impl ExecutionOutputView {
     pub fn new_with_info(
         txn_hash: HashValue,
         txn_info: TransactionInfoView,
-        events: Vec<TransactionEventResponse>,
+        events: Vec<TransactionEventResponseV2>,
     ) -> Self {
         Self {
             txn_hash,

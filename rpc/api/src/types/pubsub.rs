@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventResponse};
+use crate::types::{BlockView, TransactionEventResponse, TransactionEventResponseV2};
 use jsonrpc_core::error::Error as JsonRpcError;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -17,6 +17,7 @@ use starcoin_vm2_types::view::TypeTagView;
 use starcoin_vm2_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
+
 /// Subscription kind.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
@@ -41,6 +42,7 @@ pub enum Result {
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<TransactionEventResponse>),
+    EventV2(Box<TransactionEventResponseV2>),
     MintBlock(Box<MintBlockEvent>),
 }
 
@@ -52,6 +54,7 @@ impl Serialize for Result {
         match *self {
             Result::Block(ref header) => header.serialize(serializer),
             Result::Event(ref evt) => evt.serialize(serializer),
+            Result::EventV2(ref evt) => evt.serialize(serializer),
             Result::TransactionHash(ref hash) => hash.serialize(serializer),
             Result::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
@@ -173,10 +176,22 @@ pub struct MintBlock {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
 pub struct EventParamsV2 {
+    verstr: String,
     #[serde(flatten)]
     pub filter: EventFilterV2,
     #[serde(default)]
     pub decode: bool,
+}
+
+impl EventParamsV2 {
+    /// Create a new `EventParamsV2` with the given filter and decode option.
+    pub fn new(filter: EventFilterV2, decode: bool) -> Self {
+        Self {
+            verstr: "v2".to_string(),
+            filter,
+            decode,
+        }
+    }
 }
 
 /// Vm2 Events' Filter

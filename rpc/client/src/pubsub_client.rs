@@ -4,7 +4,9 @@
 use jsonrpc_core_client::*;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::pubsub::{EventFilterV2, EventParams, EventParamsV2};
-use starcoin_rpc_api::types::{pubsub::EventFilter, pubsub::Kind, BlockView, TransactionEventView};
+use starcoin_rpc_api::types::{
+    pubsub::EventFilter, pubsub::Kind, BlockView, TransactionEventView, TransactionEventViewV2,
+};
 use starcoin_types::system_events::MintBlockEvent;
 
 const STARCOIN_SUBSCRIPTION: &str = "starcoin_subscription";
@@ -47,10 +49,10 @@ impl PubSubClient {
         &self,
         filter: EventFilterV2,
         decode: bool,
-    ) -> Result<TypedSubscriptionStream<TransactionEventView>, RpcError> {
+    ) -> Result<TypedSubscriptionStream<TransactionEventViewV2>, RpcError> {
         self.client.subscribe(
             STARCOIN_SUBSCRIBE,
-            (Kind::Events, EventParamsV2 { filter, decode }),
+            (Kind::Events, EventParamsV2::new(filter, decode)),
             STARCOIN_SUBSCRIPTION,
             STARCOIN_UNSUBSCRIBE,
             "Event",
