@@ -8,7 +8,7 @@ use starcoin_config::ChainNetwork;
 use std::path::Path;
 
 use starcoin_consensus::Consensus;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_transaction_builder::{
     encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
@@ -16,27 +16,25 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::{account_address::AccountAddress, vm_error::KeptVMStatus};
 use starcoin_vm_types::{
-    account_config::{association_address, core_code_address, genesis_address},
+    account_config::{association_address, core_code_address},
     language_storage::{ModuleId, TypeTag},
-    on_chain_config,
     state_view::StateReaderExt,
     token::token_code::TokenCode,
-    transaction::{Package, Script, ScriptFunction, Transaction, TransactionPayload},
+    transaction::{Package, ScriptFunction, Transaction, TransactionPayload},
 };
 
-use bcs_ext;
 use starcoin_crypto::HashValue;
-use starcoin_types::account::Account;
 use tempfile::TempDir;
-use test_helper::executor::{
-    association_execute_should_success, compile_modules_with_address, compile_script,
-    execute_and_apply, prepare_genesis,
+use test_helper::{
+    executor::{association_execute_should_success, compile_modules_with_address, prepare_genesis},
+    txn::create_account_txn_sent_as_association,
 };
-use test_helper::txn::create_account_txn_sent_as_association;
 
 use starcoin_chain::verifier::FullVerifier;
 use starcoin_logger::{init_with_default_level, LogPattern};
-use starcoin_types::{identifier::Identifier, multi_transaction::MultiSignedUserTransaction};
+use starcoin_types::{
+    account::Account, identifier::Identifier, multi_transaction::MultiSignedUserTransaction,
+};
 
 use starcoin_vm_types::on_chain_config::Version;
 
@@ -56,7 +54,7 @@ fn test_storage_types_comparison() -> anyhow::Result<()> {
 
     // Test with cache storage (small data)
     info!("=== Testing with cache storage ===");
-    let (cache_chain, cache_statedb) = gen_chain_for_test_and_return_statedb(&net)?;
+    let (_, cache_statedb) = gen_chain_for_test_and_return_statedb(&net)?;
 
     // Perform some operations
     association_transfer_to(random_account, transfer_amount, &cache_statedb, &net)?;
@@ -463,10 +461,10 @@ pub fn test_import_state_from_64925() -> anyhow::Result<()> {
     let net = vm1_testnet()?;
     let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net)?;
 
-    let data_path = std::path::Path::new("./test-data/64925.bcs");
+    let data_path = Path::new("./test-data/64925.bcs");
     info!("Importing BCS file: {}", data_path.display());
     let newst_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
-    import_from_statedb(&newst_statedb, &data_path, None)?;
+    import_from_statedb(&newst_statedb, data_path, None)?;
 
     let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
     let version = fork_statedb
@@ -524,7 +522,7 @@ pub fn test_import_state_from_1461026() -> anyhow::Result<()> {
 
     let data_path = Path::new("./test-data/1461026.bcs");
     info!("Importing BCS file: {}", data_path.display());
-    import_from_statedb(&statedb, &data_path, None)?;
+    import_from_statedb(&statedb, data_path, None)?;
 
     let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
     let version = fork_statedb
@@ -552,10 +550,10 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
 
     let miner_account = association_address();
     let expire_time = net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
-    let mut latest_block_state_root = chain1.chain_state_reader().state_root();
+    // let mut latest_block_state_root = chain1.chain_state_reader().state_root();
 
     info!("=== Block1: create account1 === ");
-    latest_block_state_root = create_block_with_transactions(
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -575,8 +573,8 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
         .is_some());
 
     info!("=== Block 2: create account2 === ");
-    account2_seq_num = account2_seq_num + 1;
-    latest_block_state_root = create_block_with_transactions(
+    account2_seq_num += 1;
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -628,7 +626,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
         .unwrap();
 
     info!("=== Block 3: deploy contract === ");
-    latest_block_state_root = create_block_with_transactions(
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -646,8 +644,8 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
     )?;
 
     info!("=== Block 4: call DummyToken::initialize === ");
-    account1_seq_num = account1_seq_num + 1;
-    latest_block_state_root = create_block_with_transactions(
+    account1_seq_num += 1;
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -671,8 +669,8 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
 
     info!("=== Block 5: Mint DummyToken to account1 by calling  === ");
     let mint_amount = 10000000000u128;
-    account1_seq_num = account1_seq_num + 1;
-    latest_block_state_root = create_block_with_transactions(
+    account1_seq_num += 1;
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -702,7 +700,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
     );
 
     account2_seq_num = 0;
-    latest_block_state_root = create_block_with_transactions(
+    create_block_with_transactions(
         &mut chain1,
         &net,
         miner_account,
@@ -726,7 +724,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
 
     info!("=== Block 6: Account1 transfer to Account2 for 5 DummyTokens  ===");
     let transfer_amount = 5_000_000_000u128;
-    account1_seq_num = account1_seq_num + 1;
+    account1_seq_num += 1;
     let transfer_txn = Transaction::UserTransaction(account1.create_signed_txn_impl(
         *account1.address(),
         TransactionPayload::ScriptFunction(ScriptFunction::new(
@@ -744,8 +742,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
         expire_time,
         net.chain_id(),
     ));
-    latest_block_state_root =
-        create_block_with_transactions(&mut chain1, &net, miner_account, vec![transfer_txn])?;
+    create_block_with_transactions(&mut chain1, &net, miner_account, vec![transfer_txn])?;
 
     let account2_balance = chain1
         .chain_state_reader()
@@ -757,7 +754,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
     // Export block
     let temp_dir = TempDir::new()?;
     let export_path = temp_dir.path().join("export_block4.bcs");
-    let source_statedb = statedb1.fork_at(latest_block_state_root);
+    let source_statedb = statedb1.fork_at(chain1.chain_state_reader().state_root());
     export_from_statedb(&source_statedb, &export_path)?;
 
     // Import to new chain

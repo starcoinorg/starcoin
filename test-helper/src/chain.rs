@@ -22,7 +22,7 @@ use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2,
     Storage as Storage2,
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{path::Path, path::PathBuf, sync::Arc};
 
 pub fn gen_chain_for_test_and_return_statedb(
     net: &ChainNetwork,
@@ -40,7 +40,7 @@ enum StorageType {
 /// This function creates a temporary directory and uses it for persistent storage instead of cache
 fn init_storage_for_test_with_temp_dir(
     net: &ChainNetwork,
-    temp_dir: &PathBuf,
+    temp_dir: &Path,
 ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
     debug!("init storage by genesis for test with temp dir.");
 
