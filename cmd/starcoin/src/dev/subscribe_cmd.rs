@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Parser;
 use futures::{TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::pubsub::EventFilterV2;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm2_types::event::EventKey;
 use starcoin_vm2_types::view::TypeTagView;
@@ -55,7 +55,7 @@ impl CommandAction for SubscribeEventCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let filter = EventFilter {
+        let filter = EventFilterV2 {
             from_block: ctx.opt().from_block,
             to_block: ctx.opt().to_block,
             event_keys: ctx.opt().event_key.clone(),
@@ -67,7 +67,7 @@ impl CommandAction for SubscribeEventCommand {
         let event_stream = ctx
             .state()
             .client()
-            .subscribe_events(filter, ctx.opt().decode)?;
+            .subscribe_events_v2(filter, ctx.opt().decode)?;
         println!("Subscribe successful, Press `q` and Enter to quit");
         blocking_display_notification(event_stream, |evt| {
             serde_json::to_string(&evt).expect("should never fail")

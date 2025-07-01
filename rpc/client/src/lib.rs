@@ -31,7 +31,7 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
     GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
 };
-use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::pubsub::{EventFilter, EventFilterV2};
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
@@ -973,6 +973,20 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter, decode).await;
+            res.map(|s| s.map_err(map_err))
+        })
+        .map_err(map_err)
+    }
+    pub fn subscribe_events_v2(
+        &self,
+        filter: EventFilterV2,
+        decode: bool,
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner
+                .pubsub_client
+                .subscribe_events_v2(filter, decode)
+                .await;
             res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)

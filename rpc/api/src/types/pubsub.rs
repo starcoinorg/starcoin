@@ -66,6 +66,7 @@ pub enum Params {
     None,
     /// Log parameters.
     Events(EventParams),
+    EventsV2(EventParamsV2),
 }
 
 impl<'a> Deserialize<'a> for Params {
@@ -76,12 +77,14 @@ impl<'a> Deserialize<'a> for Params {
         let v: Value = Deserialize::deserialize(deserializer)?;
 
         if v.is_null() {
-            return Ok(Params::None);
+            Ok(Params::None)
+        } else if let Ok(params) = from_value::<EventParamsV2>(v.clone()) {
+            Ok(Params::EventsV2(params))
+        } else {
+            from_value::<EventParams>(v)
+                .map(Params::Events)
+                .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
         }
-        // Err(D::Error::custom("Invalid Pub-Sub parameters"));
-        from_value(v)
-            .map(Params::Events)
-            .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
     }
 }
 
@@ -93,7 +96,7 @@ pub struct EventParams {
     pub decode: bool,
 }
 
-/// Filter
+/// Vm1 events' Filter
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventFilter {
@@ -106,7 +109,7 @@ pub struct EventFilter {
     /// Event keys
     /// /// if `event_keys` is empty, event always match.
     #[serde(default)]
-    pub event_keys: Option<Vec<EventKey>>,
+    pub event_keys: Option<Vec<starcoin_vm_types::event::EventKey>>,
     /// Account addresses which event comes from.
     /// match if event belongs to any og the addresses.
     /// if `addrs` is empty, event always match.
@@ -116,7 +119,7 @@ pub struct EventFilter {
     /// match if the event is any type of the type tags.
     /// /// if `type_tags` is empty, event always match.
     #[serde(default)]
-    pub type_tags: Option<Vec<TypeTagView>>,
+    pub type_tags: Option<Vec<crate::types::TypeTagView>>,
     /// Limit: from latest to oldest
     #[serde(default)]
     pub limit: Option<usize>,
@@ -153,7 +156,7 @@ impl TryInto<Filter> for EventFilter {
                 .collect(),
             limit: self.limit,
             reverse: true,
-            filter_type: FilterType::VM2,
+            filter_type: FilterType::VM1,
         })
     }
 }
@@ -166,4 +169,77 @@ pub struct MintBlock {
     pub minting_blob: String,
     pub difficulty: U256,
     pub block_number: u64,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+pub struct EventParamsV2 {
+    #[serde(flatten)]
+    pub filter: EventFilterV2,
+    #[serde(default)]
+    pub decode: bool,
+}
+
+/// Vm2 Events' Filter
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EventFilterV2 {
+    /// From Block
+    #[serde(default)]
+    pub from_block: Option<u64>,
+    /// To Block
+    #[serde(default)]
+    pub to_block: Option<u64>,
+    /// Event keys
+    /// /// if `event_keys` is empty, event always match.
+    #[serde(default)]
+    pub event_keys: Option<Vec<EventKey>>,
+    /// Account addresses which event comes from.
+    /// match if event belongs to any og the addresses.
+    /// if `addrs` is empty, event always match.
+    #[serde(default)]
+    pub addrs: Option<Vec<AccountAddress>>,
+    /// type tags of the event.
+    /// match if the event is any type of the type tags.
+    /// /// if `type_tags` is empty, event always match.
+    #[serde(default)]
+    pub type_tags: Option<Vec<TypeTagView>>,
+    /// Limit: from latest to oldest
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+impl TryInto<Filter> for EventFilterV2 {
+    type Error = JsonRpcError;
+
+    fn try_into(self) -> std::result::Result<Filter, Self::Error> {
+        match (self.from_block, self.to_block) {
+            (Some(f), Some(t)) if f > t => {
+                return Err(errors::invalid_params(
+                    "fromBlock",
+                    "fromBlock should not greater than toBlock",
+                ));
+            }
+            _ => {}
+        }
+        Ok(Filter {
+            from_block: self.from_block.unwrap_or(0),
+            to_block: self.to_block.unwrap_or(u64::MAX),
+            event_keys: self
+                .event_keys
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            addrs: self.addrs.unwrap_or_default(),
+            type_tags: self
+                .type_tags
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| t.0.into())
+                .collect(),
+            limit: self.limit,
+            reverse: true,
+            filter_type: FilterType::VM2,
+        })
+    }
 }

@@ -16,6 +16,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
+use starcoin_rpc_api::types::pubsub::Params;
 use starcoin_rpc_api::types::{BlockView, TransactionEventResponse, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
@@ -110,14 +111,21 @@ impl PubSubImpl {
                 subscriber,
                 errors::invalid_params("newPendingTransactions", "Expected no parameters."),
             )),
-            (pubsub::Kind::Events, Some(pubsub::Params::Events(param))) => {
-                match param.filter.try_into() {
+            (pubsub::Kind::Events, Some(param)) if param != Params::None => {
+                let (decode, filter) = match param {
+                    Params::Events(e) => (e.decode, e.filter.try_into()),
+                    Params::EventsV2(e) => (e.decode, e.filter.try_into()),
+                    _ => {
+                        panic!("This should not happen!")
+                    }
+                };
+                match filter {
                     Ok(f) => self
                         .service
                         .try_send(SubscribeEvents {
                             subscriber,
                             filter: f,
-                            decode: param.decode,
+                            decode,
                         })
                         .map_err(|e| {
                             let msg = map_send_err(&e);
