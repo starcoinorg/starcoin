@@ -789,7 +789,7 @@ pub fn test_check_storage_cache_overflow_error() -> anyhow::Result<()> {
         assert!(result.is_err(), "genesis with capacity 20 should fail");
     }
 
-    // 2. Medium capacity (100): genesis passes, import should fail (Err or panic)
+    // 2. Medium capacity (500): genesis passes, import should fail (Err or panic)
     info!("=== Test 2: Testing with medium cache capacity (500), import should fail ===");
     {
         let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, Some(500))?;
