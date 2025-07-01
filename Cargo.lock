@@ -10966,6 +10966,7 @@ dependencies = [
  "futures 0.3.26",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-logger",
  "starcoin-service-registry",
  "starcoin-state-api",

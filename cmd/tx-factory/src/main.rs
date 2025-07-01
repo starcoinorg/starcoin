@@ -369,9 +369,10 @@ impl TxnMocker {
             Ok(txn) => txn,
         };
         info!(
-            "prepare to submit txn, sender:{},seq:{}",
+            "prepare to submit txn, sender:{},seq:{},id:{}",
             user_txn.sender(),
             user_txn.sequence_number(),
+            user_txn.id(),
         );
         let txn_hash = user_txn.id();
         let result = self.client.submit_transaction(user_txn);
