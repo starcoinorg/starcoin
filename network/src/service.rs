@@ -274,15 +274,12 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
                         .start_timer()
                 });
                 async move {
-                    if network_service
+                    match network_service
                         .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
                         .await
-                        .is_err()
                     {
-                        error!(
-                            "[network] write notification failed on {}, {}",
-                            peer_id, protocol
-                        );
+                        Ok(()) => (),
+                        Err(e) =>  error!("[network] write notification failed on {}, {}, error: {:?} in NotificationMessage", peer_id, protocol, e,),
                     }
                     if let Some(timer) = timer {
                         timer.observe_duration()
@@ -304,15 +301,13 @@ impl EventHandler<Self, PeerMessage> for NetworkActorService {
             .prepare_send_peer_message(peer_id.clone(), notification)
         {
             let fut = async move {
-                if network_service
+                match network_service
                     .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
                     .await
-                    .is_err()
                 {
-                    error!(
-                        "[network] write notification failed on {}, {}",
-                        peer_id, protocol
-                    );
+                        Ok(()) => (),
+                        Err(e) => error!("[network] write notification failed on {}, {}, error: {:?} in peer message", peer_id, protocol, e,),
+
                 }
             };
             ctx.spawn(fut)
