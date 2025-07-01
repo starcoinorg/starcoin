@@ -20,7 +20,6 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
-use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
 use starcoin_dag::service::pruning_point_service::PruningPointMessage;
@@ -80,10 +79,6 @@ where
             Some(sync_status) => sync_status.is_nearly_synced(),
             None => false,
         }
-    }
-
-    pub fn chain_head_id(&self) -> HashValue {
-        self.chain_service.get_main().status().head.id()
     }
 
     pub fn check_disk_space(&mut self) -> Option<Result<u64>> {
@@ -196,7 +191,13 @@ where
 {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         //TODO figure out a more suitable value.
-        ctx.set_mailbox_capacity(1024);
+        let merge_depth = self
+            .chain_service
+            .get_dag()
+            .block_depth_manager()
+            .merge_depth()
+            .saturating_mul(3);
+        ctx.set_mailbox_capacity(merge_depth as usize);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
@@ -352,7 +353,7 @@ where
             )
         });
 
-        let bus = self.chain_service.get_bus();
+        let bus = ctx.bus_ref().clone();
 
         ctx.spawn(async move {
             let verified_block = match chain.verify_with_verifier::<DagVerifier>(new_block.as_ref().clone()) {
