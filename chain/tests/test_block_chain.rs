@@ -12,7 +12,7 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_types::filter::Filter;
+use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::language_storage::{StcTypeTag, TypeTag2};
 use starcoin_vm2_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_vm2_test_helper::build_transfer_from_association;
@@ -48,7 +48,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: None,
             reverse: false,
-            vm2_only: false,
+            filter_type: FilterType::Both,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -67,7 +67,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: false,
-            vm2_only: false,
+            filter_type: FilterType::Both,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -84,7 +84,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: true,
-            vm2_only: false,
+            filter_type: FilterType::Both,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -103,7 +103,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(20),
             reverse: true,
-            vm2_only: false,
+            filter_type: FilterType::Both,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 10);
@@ -122,7 +122,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.into()],
             limit: Some(20),
             reverse: true,
-            vm2_only: false,
+            filter_type: FilterType::Both,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 10);

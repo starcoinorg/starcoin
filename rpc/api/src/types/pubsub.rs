@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::filter::Filter;
+use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
 use starcoin_vm2_types::view::TypeTagView;
@@ -153,7 +153,7 @@ impl TryInto<Filter> for EventFilter {
                 .collect(),
             limit: self.limit,
             reverse: true,
-            vm2_only: true,
+            filter_type: FilterType::VM2,
         })
     }
 }
