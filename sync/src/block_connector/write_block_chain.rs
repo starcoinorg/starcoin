@@ -3,6 +3,7 @@
 
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
+use itertools::Itertools;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
@@ -477,14 +478,44 @@ where
         let block_retracted = self.main.current_header().id();
 
         let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
-        let retracted =
-            self.find_blocks_until(block_retracted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let retracted = self.find_red_blocks(block_enacted, block_retracted)?;
 
         debug!(
             "Commit block count:{}, rollback block count:{}",
             enacted_count, retracted_count,
         );
         Ok((enacted_count, enacted, retracted_count, retracted))
+    }
+
+    fn find_red_blocks(
+        &self,
+        selected_header: HashValue,
+        deselected_header: HashValue,
+    ) -> Result<Vec<Block>> {
+        info!(
+            "find_red_blocks selected_header:{}, deselected_header:{}",
+            selected_header, deselected_header
+        );
+        let ghostdata = self
+            .main
+            .dag()
+            .ghostdata(&[selected_header, deselected_header])?;
+        info!(
+            "find_red_blocks red block count: {:?}",
+            ghostdata.mergeset_reds.len()
+        );
+        let red_blocks = ghostdata
+        .mergeset_reds
+        .iter()
+        .map(|id| Ok(self.main.get_storage().get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
+        .collect::<Result<Vec<Block>>>()?
+        .into_iter().sorted_by(|a, b| {
+            match a.header().number().cmp(&b.header().number()) {
+                std::cmp::Ordering::Equal => a.header().id().cmp(&b.header().id()),
+                other => other,
+            }
+        }).collect();
+        Ok(red_blocks)
     }
 
     fn find_blocks_until(
