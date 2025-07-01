@@ -5,6 +5,8 @@ mod export;
 mod import;
 
 use clap::{Parser, Subcommand};
+use resource_code_exporter::uncle_search;
+use starcoin_crypto::HashValue;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -45,7 +47,21 @@ enum Commands {
 
         #[clap(long)]
         /// expect state root hash
-        state_root: starcoin_crypto::HashValue,
+        state_root: HashValue,
+    },
+    /// Import state data from BCS file
+    UncleSearch {
+        #[clap(long, short = 'd', parse(from_os_str))]
+        /// Output database path
+        db_path: PathBuf,
+
+        #[clap(long)]
+        /// block hash
+        block_hash: HashValue,
+
+        #[clap(long, short = 'c')]
+        /// Max size
+        max_size: Option<usize>,
     },
 }
 
@@ -67,6 +83,13 @@ fn main() -> anyhow::Result<()> {
             state_root,
         } => {
             import::import(&bcs_input, &db_path, state_root)?;
+        }
+        Commands::UncleSearch {
+            db_path,
+            block_hash,
+            max_size,
+        } => {
+            uncle_search::run(&db_path, block_hash, max_size)?;
         }
     }
 
