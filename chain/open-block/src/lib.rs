@@ -176,7 +176,6 @@ impl OpenedBlock {
                 block
                     .transactions()
                     .iter()
-                    .skip(1)
                     .cloned()
                     .map(Transaction::UserTransaction),
             );
