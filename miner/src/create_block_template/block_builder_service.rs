@@ -370,10 +370,6 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
 
-        txns.iter().for_each(|transaction| {
-            self.tx_provider.remove_txn(transaction.id(), false);
-        });
-
         let author = *self.miner_account.read().unwrap().address();
 
         if now_millis <= previous_header.timestamp() {
