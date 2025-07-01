@@ -57,10 +57,9 @@ pub fn import_from_statedb(
     info!("Import completed. New state root: {}", new_state_root);
 
     // Verify state root matches if requested
-    if expect_state_root_hash.is_some() {
+    if let Some(expect_state_root_hash) = expect_state_root_hash {
         assert_eq!(
-            expect_state_root_hash.unwrap(),
-            new_state_root,
+            expect_state_root_hash, new_state_root,
             "Imported state root does not match expected state root"
         );
     }
