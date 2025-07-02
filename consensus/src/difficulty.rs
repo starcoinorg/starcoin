@@ -119,7 +119,7 @@ fn next_block_time_target(
     } else {
         return Ok(time_plan);
     };
-    let end_block_header = if let Some(header) = blue_block_headers.first() {
+    let _end_block_header = if let Some(header) = blue_block_headers.first() {
         header
     } else {
         return Ok(time_plan);
@@ -163,15 +163,9 @@ fn next_block_time_target(
         Ordering::Greater => average_time.saturating_mul(2).saturating_div(1000),
     };
 
-    info!("jacktest: next block time target, start_block_header: {:?}, end_block_header: {:?}, duration: {:?}, total block count: {:?}, blue uncles count: {:?}, blue block count: {:?}, expected blue uncles count: {:?}, average time: {:?}, time plan: {:?}, next block time target: {:?}", 
-                    start_block_header.id(), end_block_header.id(), duration, total_block_count, blue_uncles_count, blue_block_count, expected_blue_uncles_count, average_time, time_plan, next_block_time_target);
-
     next_block_time_target = next_block_time_target.clamp(time_plan, 500);
 
-    info!(
-        "jacktest: final next block time target: {:?}",
-        next_block_time_target
-    );
+    info!("final next block time target: {:?}", next_block_time_target);
 
     Ok(next_block_time_target)
 }

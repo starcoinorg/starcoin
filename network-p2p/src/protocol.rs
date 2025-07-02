@@ -14,7 +14,7 @@ use libp2p::swarm::behaviour::FromSwarm;
 use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
-use log::{debug, error, info, log, trace, warn, Level};
+use log::{debug, error, log, trace, warn, Level};
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -208,12 +208,6 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                     .handshake(peer_id, received_handshake.clone());
                 match result_handshake {
                     Ok(handshake_info) => {
-                        info!(
-                            "jacktest: handshake ok, peer: {:?}, protocol: {:?}, set_id: {:?}",
-                            peer_id,
-                            handshake_info.notif_protocols,
-                            usize::from(set_id)
-                        );
                         debug!(target: "network-p2p", "Connected {}", peer_id);
                         let peer = Peer {
                             info: received_handshake,
@@ -230,10 +224,6 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                         }
                     }
                     Err(err) => {
-                        info!(
-                            "jacktest: handshake err, peer: {:?}, err: {:?}",
-                            peer_id, err
-                        );
                         error!("business layer handle returned a failure: {:?}", err);
                         if err == rep::BAD_MESSAGE {
                             self.bad_handshake_substreams.insert((peer_id, set_id));
@@ -269,23 +259,13 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                 }
             }
             GenericProtoOut::CustomProtocolClosed { peer_id, set_id } => {
-                info!("jacktest: CustomProtocolClosed, peer: {}", peer_id);
                 // TODO: check if disconnect peer
                 if self.bad_handshake_substreams.remove(&(peer_id, set_id)) {
                     // The substream that has just been closed had been opened with a bad
                     // handshake. The outer layers have never received an opening event about this
                     // substream, and consequently shouldn't receive a closing event either.
-                    info!(
-                        "jacktest: Bad handshake substream closed, peer: {}",
-                        peer_id
-                    );
                     CustomMessageOutcome::None
                 } else {
-                    info!(
-                        "jacktest: Good handshake substream closed, peer: {}, protocol: {}",
-                        peer_id,
-                        self.notif_protocols[usize::from(set_id)].clone()
-                    );
                     CustomMessageOutcome::NotificationStreamClosed {
                         remote: peer_id,
                         protocol: self.notif_protocols[usize::from(set_id)].clone(),
@@ -446,10 +426,6 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         peer: PeerId,
         protocol: Cow<'static, str>,
     ) -> CustomMessageOutcome {
-        info!(
-            "jacktest: on_peer_disconnected, peer: {}, protocol: {}",
-            peer, protocol
-        );
         if self.important_peers.contains(&peer) {
             warn!(target: "network-p2p", "Reserved peer {} disconnected", peer);
         } else {

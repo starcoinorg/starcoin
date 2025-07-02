@@ -76,7 +76,7 @@ use libp2p::swarm::{
     ConnectionHandler, ConnectionHandlerEvent, ConnectionHandlerUpgrErr, IntoConnectionHandler,
     KeepAlive, NegotiatedSubstream, SubstreamProtocol,
 };
-use log::{error, info};
+use log::error;
 use parking_lot::{Mutex, RwLock};
 use std::{
     borrow::Cow,
@@ -500,10 +500,8 @@ impl ConnectionHandler for NotifsHandler {
         (): (),
     ) {
         let protocol_info = &mut self.protocols[protocol_index];
-        info!("jacktest: inject_fully_negotiated_inbound, peer_id: {:?}, protocol_index: {:?}, protocol info, name: {:?}, ", self.peer_id, protocol_index, protocol_info.name);
         match protocol_info.state {
             State::Closed { pending_opening } => {
-                info!("jacktest: inject_fully_negotiated_inbound, close");
                 self.events_queue.push_back(ConnectionHandlerEvent::Custom(
                     NotifsHandlerOut::OpenDesiredByRemote { protocol_index },
                 ));
@@ -514,7 +512,6 @@ impl ConnectionHandler for NotifsHandler {
                 };
             }
             State::OpenDesiredByRemote { .. } => {
-                info!("jacktest: inject_fully_negotiated_inbound, OpenDesiredByRemote");
                 // If a substream already exists, silently drop the new one.
                 // Note that we drop the substream, which will send an equivalent to a
                 // TCP "RST" to the remote and force-close the substream. It might
@@ -531,16 +528,13 @@ impl ConnectionHandler for NotifsHandler {
                 ref mut in_substream,
                 ..
             } => {
-                info!("jacktest: inject_fully_negotiated_inbound, Opening or open");
                 if in_substream.is_some() {
                     // Same remark as above.
-                    info!("jacktest: inject_fully_negotiated_inbound, Opening or open return");
                     return;
                 }
 
                 // Create `handshake_message` on a separate line to be sure that the
                 // lock is released as soon as possible.
-                info!("jacktest: inject_fully_negotiated_inbound, send handshake");
                 let handshake_message = protocol_info.handshake.read().clone();
                 new_substream.send_handshake(handshake_message);
                 *in_substream = Some(new_substream);
