@@ -4,7 +4,7 @@ bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 csv = { workspace = true }
 include_dir = { workspace = true }
-#once_cell = { workspace = true }
+flate2 = "1.1.2"
 serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 starcoin-accumulator = { workspace = true }
@@ -20,22 +20,17 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-types = { features = ["fuzzing"], workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
-stdlib = { workspace = true }
 stest = { workspace = true }
+tar = "0.4.44"
+tempfile = { workspace = true }
 thiserror = { workspace = true }
 
 # dependencies for move2
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-genesis = { workspace = true }
-#starcoin-vm2-transaction-builder = { workspace = true }
-#starcoin-vm2-vm-types = { workspace = true }
-#starcoin-vm2-types = { workspace = true }
-#starcoin-vm2-crypto = { workspace = true }
-#starcoin-vm2-statedb = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }
-tempfile = { workspace = true }
 
 [features]
 default = []

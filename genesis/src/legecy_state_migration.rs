@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::hash::Hash;
+use flate2::read::GzDecoder;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_api::ChainStateWriter;
@@ -10,34 +10,58 @@ use starcoin_types::{
     account_address::AccountAddress,
     state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
+use std::{fs::File, path::PathBuf};
+use tar::Archive;
+use tempfile::tempdir;
 
-const CSV_FILE_HASH: &str = "54426e3df888aae87f41d3f5908d406f90a8a25cd1389e3a33f30d0f5217d8c6";
-const CSV_FILE_NAME: &str = "legecy-state-data.csv";
+const CSV_FILE_HASH: &str = "0xab47a1acc0ad8ee89af6222f36828f834cbab5273211aa5b0fbcf1d6f3f19554";
+const CSV_FILE_NAME: &str = "legacy-state-data.csv";
 
-pub fn legecy_account_state_migration(statedb: &ChainStateDB) -> anyhow::Result<()> {
+fn prepare_csv_content() -> anyhow::Result<String> {
+    // 1. Create a temporary directory
+    let dir = tempdir()?;
+    let dir_path = dir.path();
+
+    // 2. Open the original tar.gz file directly
+    let tar_gz_file = File::open("migration/legacy-state-data.csv.tar.gz")?;
+    let decompressed = GzDecoder::new(tar_gz_file);
+    let mut archive = Archive::new(decompressed);
+
+    // 3. unpack it to a temporary directory
+    archive.unpack(&dir_path)?;
+
+    // 4. Read the unpacked csv file
+    let csv_path = dir_path.join(CSV_FILE_NAME);
+    if !csv_path.exists() {
+        anyhow::bail!(
+            "CSV file not found after extraction: {}",
+            csv_path.display()
+        );
+    }
+    let csv_content = std::fs::read_to_string(&csv_path)?;
+
+    // Hash check
+    let csv_file_hash = HashValue::sha3_256_of(csv_content.as_bytes());
+    if csv_file_hash.to_string() != CSV_FILE_HASH {
+        anyhow::bail!(
+            "CSV file hash mismatch: expected {}, got {}",
+            CSV_FILE_HASH,
+            csv_file_hash
+        );
+    }
+    Ok(csv_content)
+}
+
+pub fn legecy_account_state_migration(
+    statedb: &ChainStateDB,
+    maxium_count: Option<u64>,
+) -> anyhow::Result<()> {
     info!("legecy_account_state_migration | entered");
-
-    // Read CSV file content based on compilation mode
-    let csv_content = if cfg!(feature = "embed_csv") {
-        // In production, read from embedded file
-        let csv_file = include_bytes!("../migration/legecy-state-data.csv");
-        // Calculate hash directly from the bytes
-        let csv_file_hash = HashValue::sha3_256_of(csv_file);
-        assert_eq!(csv_file_hash.to_string(), CSV_FILE_HASH);
-        std::str::from_utf8(csv_file)?.to_string()
-    } else {
-        // In development, read from file system
-        let file_path = format!("migration/{}", CSV_FILE_NAME);
-        let csv_file = std::fs::read(&file_path)?;
-        // Calculate hash directly from the bytes
-        let csv_file_hash = HashValue::sha3_256_of(&csv_file);
-        assert_eq!(csv_file_hash.to_string(), CSV_FILE_HASH);
-        String::from_utf8(csv_file)?
-    };
-
+    let csv_content = prepare_csv_content()?;
     let mut csv_reader = csv::Reader::from_reader(csv_content.as_bytes());
     let mut chain_state_set_data = Vec::new();
     let mut processed = 0;
+    let maxium_process_count = maxium_count.unwrap_or(u64::MAX);
 
     for result in csv_reader.records() {
         let record = result?;
@@ -82,6 +106,9 @@ pub fn legecy_account_state_migration(statedb: &ChainStateDB) -> anyhow::Result<
             "legecy_account_state_migration | Progress: {} records processed",
             processed
         );
+        if processed >= maxium_process_count {
+            break;
+        }
     }
     info!(
         "Applying {} state sets to statedb...",

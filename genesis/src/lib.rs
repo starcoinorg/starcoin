@@ -441,7 +441,7 @@ impl Genesis {
                     genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
 
                 // Transfer relevant account data of the old main network
-                legecy_account_state_migration(&ChainStateDB::new(storage.clone(), None))?;
+                legecy_account_state_migration(&ChainStateDB::new(storage.clone(), None), None)?;
 
                 (chain_info, genesis)
             }
