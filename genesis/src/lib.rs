@@ -171,7 +171,9 @@ impl Genesis {
 
             let txn = Self::build_genesis_transaction(net)?;
 
-            let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+            let storage = Arc::new(Storage::new(
+                StorageInstance::new_cache_instance_with_capacity(DEFAULT_CACHE_SIZE * 1000),
+            )?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
             let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
