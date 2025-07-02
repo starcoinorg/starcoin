@@ -4,7 +4,7 @@ use std::borrow::Cow;
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, Ok};
 use bcs_ext::BCSCodec;
-use log::{debug, info, Level};
+use log::{debug, Level};
 use log::{error, log};
 use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
