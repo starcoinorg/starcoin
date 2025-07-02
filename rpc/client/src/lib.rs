@@ -46,7 +46,6 @@ use starcoin_rpc_api::{
     miner::MinerClient, multi_types::MultiSignedUserTransactionView,
     network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
     state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
-    types::TransactionEventViewV2,
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
@@ -66,7 +65,7 @@ use starcoin_vm2_rpc_api::{
 };
 use starcoin_vm2_types::view::{
     TransactionEventResponse as TransactionEventResponse2,
-    TransactionInfoView as TransactionInfoView2,
+    TransactionEventView as TransactionEventView2, TransactionInfoView as TransactionInfoView2,
 };
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
@@ -993,7 +992,7 @@ impl RpcClient {
         &self,
         filter: EventFilterV2,
         decode: bool,
-    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventViewV2, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView2, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner
                 .pubsub_client

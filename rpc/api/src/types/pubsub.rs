@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventResponse, TransactionEventResponseV2};
+use crate::types::{BlockView, TransactionEventResponse};
 use jsonrpc_core::error::Error as JsonRpcError;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -13,7 +13,9 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
-use starcoin_vm2_types::view::TypeTagView;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2, TypeTagView,
+};
 use starcoin_vm2_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
@@ -42,7 +44,7 @@ pub enum Result {
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<TransactionEventResponse>),
-    EventV2(Box<TransactionEventResponseV2>),
+    EventV2(Box<TransactionEventResponse2>),
     MintBlock(Box<MintBlockEvent>),
 }
 

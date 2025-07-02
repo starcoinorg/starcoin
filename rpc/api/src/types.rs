@@ -33,8 +33,6 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
-use starcoin_types::contract_event::StcContractEvent;
-use starcoin_types::event::StcEventKey;
 use starcoin_types::language_storage::StcTypeTag;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -1202,71 +1200,24 @@ impl From<ContractEventInfo> for TransactionEventView {
         }
     }
 }
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
-pub struct TransactionEventResponseV2 {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub decode_event_data: Option<DecodedMoveValue>,
-    #[serde(flatten)]
-    pub event: TransactionEventViewV2,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, JsonSchema)]
-pub struct TransactionEventViewV2 {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_hash: Option<HashValue>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_number: Option<StrView<BlockNumber>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_hash: Option<HashValue>,
-    // txn index in block
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_index: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_global_index: Option<StrView<u64>>,
-    pub data: StrView<Vec<u8>>,
-    pub type_tag: StcTypeTagView,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub event_index: Option<u32>,
-    pub event_key: StcEventKey,
-    pub event_seq_number: StrView<u64>,
-}
-
-impl From<ContractEventInfo> for TransactionEventViewV2 {
-    fn from(info: ContractEventInfo) -> Self {
-        TransactionEventViewV2 {
-            block_hash: Some(info.block_hash),
-            block_number: Some(info.block_number.into()),
-            transaction_hash: Some(info.transaction_hash),
-            transaction_index: Some(info.transaction_index),
-            transaction_global_index: Some(info.transaction_global_index.into()),
-            data: StrView(info.event.event_data().to_vec()),
-            type_tag: StcTypeTag::V1(info.event.type_tag().clone()).into(),
-            event_index: Some(info.event_index),
-            event_key: (*info.event.key()).into(),
-            event_seq_number: info.event.sequence_number().into(),
-        }
-    }
-}
-
-impl From<ContractEvent> for TransactionEventViewV2 {
+impl From<ContractEvent> for TransactionEventView {
     fn from(event: ContractEvent) -> Self {
-        TransactionEventViewV2 {
+        TransactionEventView {
             block_hash: None,
             block_number: None,
             transaction_hash: None,
             transaction_index: None,
             transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
-            type_tag: StcTypeTag::from(event.type_tag().clone()).into(),
+            type_tag: event.type_tag().clone().into(),
             event_index: None,
-            event_key: (*event.key()).into(),
+            event_key: (*event.key()),
             event_seq_number: event.sequence_number().into(),
         }
     }
 }
 
-impl TransactionEventViewV2 {
+impl TransactionEventView {
     pub fn new(
         block_hash: Option<HashValue>,
         block_number: Option<BlockNumber>,
@@ -1274,7 +1225,7 @@ impl TransactionEventViewV2 {
         transaction_index: Option<u32>,
         transaction_global_index: Option<u64>,
         event_index: Option<u32>,
-        contract_event: &StcContractEvent,
+        contract_event: &ContractEvent,
     ) -> Self {
         Self {
             block_hash,
@@ -1285,34 +1236,9 @@ impl TransactionEventViewV2 {
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
             event_index,
-            event_key: contract_event.key(),
+            event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }
-    }
-
-    pub fn is_v1(&self) -> bool {
-        matches!(self.event_key, StcEventKey::V1(_))
-    }
-
-    pub fn to_v1(self) -> Option<TransactionEventView> {
-        let event_key = self.event_key.try_into().ok()?;
-        let type_tag = match self.type_tag.0 {
-            StcTypeTag::V1(tag) => Some(TypeTagView::from(tag)),
-            StcTypeTag::V2(_) => None,
-        }?;
-
-        Some(TransactionEventView {
-            block_hash: self.block_hash,
-            block_number: self.block_number,
-            transaction_hash: self.transaction_hash,
-            transaction_index: self.transaction_index,
-            transaction_global_index: self.transaction_global_index,
-            data: self.data.clone(),
-            type_tag,
-            event_index: self.event_index,
-            event_key,
-            event_seq_number: self.event_seq_number,
-        })
     }
 }
 
@@ -1328,7 +1254,7 @@ pub struct TransactionOutputView {
     pub status: TransactionStatusView,
     pub gas_used: StrView<u64>,
     pub write_set: Vec<TransactionOutputAction>,
-    pub events: Vec<TransactionEventViewV2>,
+    pub events: Vec<TransactionEventView>,
     pub table_item_write_set: Vec<TransactionOutputTableItemAction>,
 }
 

@@ -9,7 +9,7 @@ use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use starcoin_abi_decoder::{decode_move_value, DecodedMoveValue};
+use starcoin_abi_decoder::decode_move_value;
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_chain_notify::message::{ContractEventNotification, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
@@ -17,9 +17,7 @@ use starcoin_logger::prelude::*;
 use starcoin_miner::{MinerService, UpdateSubscriberNumRequest};
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::Params;
-use starcoin_rpc_api::types::{
-    BlockView, TransactionEventResponse, TransactionEventResponseV2, TransactionEventViewV2,
-};
+use starcoin_rpc_api::types::{BlockView, TransactionEventResponse, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::{
     ActorService, EventHandler as ActorEventHandler, ServiceContext, ServiceFactory,
@@ -36,6 +34,10 @@ use starcoin_vm2_abi_decoder::decode_move_value as decode_move_value2;
 use starcoin_vm2_abi_resolver::ABIResolver as ABIResolver2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2,
+    TransactionEventView as TransactionEventView2,
+};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -584,82 +586,57 @@ impl EventHandler<ContractEventNotification> for ContractEventHandler {
         };
         filtered_events
             .into_iter()
-            .map(|(e1, e2)| {
-                let (
-                    block_hash,
-                    block_number,
-                    transaction_hash,
-                    transaction_index,
-                    transaction_global_index,
-                    event_index,
-                    contract_event,
-                    decoded_data,
-                ) = match (e1, e2) {
-                    (Some(e), None) => (
-                        e.block_hash,
-                        e.block_number,
-                        e.transaction_hash,
-                        e.transaction_index,
-                        e.transaction_global_index,
-                        e.event_index,
-                        StcContractEvent::V1(e.contract_event.clone()),
-                        match &state {
-                            Some(s) => {
-                                let abi = ABIResolver::new(s)
-                                    .resolve_type_tag(e.contract_event.type_tag())?;
-                                Some(decode_move_value(&abi, e.contract_event.event_data())?)
-                            }
-                            None => None,
-                        },
-                    ),
-                    (None, Some(e)) => (
-                        e.block_hash,
-                        e.block_number,
-                        e.transaction_hash,
-                        e.transaction_index,
-                        e.transaction_global_index,
-                        e.event_index,
-                        StcContractEvent::V2(e.contract_event.clone()),
-                        match &state2 {
-                            Some(s) => {
-                                let abi = ABIResolver2::new(s)
-                                    .resolve_type_tag(e.contract_event.type_tag())?;
-                                Some(DecodedMoveValue(
-                                    decode_move_value2(&abi, e.contract_event.event_data())?.0,
-                                ))
-                            }
-                            None => None,
-                        },
-                    ),
-                    _ => panic!("This should not happen!"),
-                };
-                Ok(TransactionEventResponseV2 {
-                    event: TransactionEventViewV2::new(
-                        Some(block_hash),
-                        Some(block_number),
-                        Some(transaction_hash),
-                        transaction_index,
-                        transaction_global_index,
-                        event_index,
-                        &contract_event,
-                    ),
-                    decode_event_data: decoded_data,
-                })
+            .map(|(e1, e2)| match (e1, e2) {
+                (Some(e), None) => {
+                    let decoded_data = match &state {
+                        Some(s) => {
+                            let abi = ABIResolver::new(s)
+                                .resolve_type_tag(e.contract_event.type_tag())?;
+                            Some(decode_move_value(&abi, e.contract_event.event_data())?)
+                        }
+                        None => None,
+                    };
+
+                    let d = TransactionEventResponse {
+                        event: TransactionEventView::new(
+                            Some(e.block_hash),
+                            Some(e.block_number),
+                            Some(e.transaction_hash),
+                            e.transaction_index,
+                            e.transaction_global_index,
+                            e.event_index,
+                            &e.contract_event,
+                        ),
+                        decode_event_data: decoded_data,
+                    };
+                    Ok(pubsub::Result::Event(Box::new(d)))
+                }
+                (None, Some(e)) => {
+                    let decoded_data = match &state2 {
+                        Some(s) => {
+                            let abi = ABIResolver2::new(s)
+                                .resolve_type_tag(e.contract_event.type_tag())?;
+                            Some(decode_move_value2(&abi, e.contract_event.event_data())?)
+                        }
+                        None => None,
+                    };
+                    let d = TransactionEventResponse2 {
+                        event: TransactionEventView2::new(
+                            Some(e.block_hash),
+                            Some(e.block_number),
+                            Some(e.transaction_hash),
+                            e.transaction_index,
+                            e.transaction_global_index,
+                            e.event_index,
+                            &e.contract_event,
+                        ),
+                        decode_event_data: decoded_data,
+                    };
+                    Ok(pubsub::Result::EventV2(Box::new(d)))
+                }
+                _ => panic!("This should not happen!"),
             })
-            .map(|e| {
-                e.map(|d| {
-                    if d.event.is_v1() {
-                        let d = TransactionEventResponse {
-                            event: d.event.to_v1().unwrap(),
-                            decode_event_data: d.decode_event_data,
-                        };
-                        pubsub::Result::Event(Box::new(d))
-                    } else {
-                        pubsub::Result::EventV2(Box::new(d))
-                    }
-                })
-                .map_err(map_err)
-            })
+            .map(|r| r.map_err(map_err))
             .collect()
     }
 }
