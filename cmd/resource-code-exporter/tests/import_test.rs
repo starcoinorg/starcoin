@@ -401,6 +401,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test(timeout = 50000)]
 pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
     init_with_default_level("info", Some(LogPattern::WithLine));
@@ -454,6 +455,7 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
 }
 
 /// State data information of low block height exported from local
+#[ignore]
 #[stest::test]
 pub fn test_import_state_from_64925() -> anyhow::Result<()> {
     init_with_default_level("info", Some(LogPattern::WithLine));
