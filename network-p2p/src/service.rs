@@ -629,9 +629,24 @@ impl NetworkService {
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
             let peers_notifications_sinks = self.peers_notifications_sinks.lock();
+            info!(
+                "jacktest: notification_sender for peer {:?} and protocol {:?}",
+                target, protocol_name
+            );
+            for p in peers_notifications_sinks.keys() {
+                info!("jacktest: notification_sender for peer {:?} and protocol {:?} exist, values: {:?}", p.0, p.1, peers_notifications_sinks.get(p));
+            }
             if let Some(sink) = peers_notifications_sinks.get(&(target, protocol_name.clone())) {
+                info!(
+                    "jacktest: sink found for peer {:?} and protocol {:?} exist",
+                    target, protocol_name
+                );
                 sink.clone()
             } else {
+                info!(
+                    "jacktest: sink NOT found for peer {:?} and protocol {:?} exist",
+                    target, protocol_name
+                );
                 return Err(NotificationSenderError::Closed);
             }
         };
