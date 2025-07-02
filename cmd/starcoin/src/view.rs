@@ -8,7 +8,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventViewV2, TransactionInfoView,
+    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventView, TransactionInfoView,
     TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
@@ -255,17 +255,15 @@ impl From<BlockRewardEvent> for EventDataView {
         }
     }
 }
-impl From<TransactionEventViewV2> for EventView {
-    fn from(event_view: TransactionEventViewV2) -> Self {
-        // todo: remove unwrap
-        let type_tag_v1 = event_view.type_tag.0.as_v1().unwrap();
+impl From<TransactionEventView> for EventView {
+    fn from(event_view: TransactionEventView) -> Self {
         EventView {
-            key: event_view.event_key.try_into().unwrap(),
+            key: event_view.event_key,
             sequence_number: event_view.event_seq_number.0,
-            data: EventDataView::new(type_tag_v1, &event_view.data.0).unwrap_or({
+            data: EventDataView::new(&event_view.type_tag.0, &event_view.data.0).unwrap_or({
                 EventDataView::Unknown {
                     data: event_view.data.0,
-                    type_tag: type_tag_v1.clone().into(),
+                    type_tag: event_view.type_tag,
                 }
             }),
         }
