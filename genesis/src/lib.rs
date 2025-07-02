@@ -37,6 +37,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+mod migration;
+
+use crate::migration::migrate_legacy_state_data;
 
 pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -172,6 +175,8 @@ impl Genesis {
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
             let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
+
+            migrate_legacy_state_data(&chain_state_db, &net)?;
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),
@@ -361,6 +366,7 @@ impl Genesis {
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
+        // debug!("Genesis::load_and_check_genesis | network: {:?}, data_dir: {}", net, data_dir.display());
         // todo: how and when upgrade legacy genesis?
         let legacy_genesis = false;
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
@@ -378,9 +384,12 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
+                    // TODO(BobOng): load legacy migration data from bcs files
+
                     let genesis = Genesis::load_or_build(net)?;
                     genesis.save(data_dir, legacy_genesis)?;
                     info!("Build and save new genesis: {}", genesis);
+
                     genesis
                 } else {
                     return Err(GenesisError::GenesisNotExist("data_dir".to_owned()).into());
