@@ -29,7 +29,7 @@ use libp2p::swarm::{
     dial_opts::PeerCondition, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler,
     PollParameters,
 };
-use log::{debug, error, trace, warn};
+use log::{debug, error, info, trace, warn};
 use parking_lot::RwLock;
 use rand::distributions::{Distribution as _, Uniform};
 use sc_peerset::peersstate::PeersState;
@@ -1190,7 +1190,12 @@ impl NetworkBehaviour for GenericProto {
                 connection_id,
                 ..
             }) => {
+                info!(
+                    "jacktest: ConnectionEstablished, peer_id: {:?}, notif_protocols: {:?}",
+                    peer_id, self.notif_protocols
+                );
                 for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
+                    info!("jacktest: ConnectionEstablished, peer_id: {:?}, set_id: {:?}, notif_protocols: {:?}", peer_id, set_id, self.notif_protocols);
                     match self
                         .peers
                         .entry((peer_id, set_id))
@@ -1204,6 +1209,7 @@ impl NetworkBehaviour for GenericProto {
                                    peer_id, set_id, endpoint
                             );
                             debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, connection_id, set_id);
+                            info!("jacktest: pending request, peer_id: {:?}, set_id: {:?}, connection_id: {:?}, notif_protocols: {:?}", peer_id, set_id, connection_id, self.notif_protocols[usize::from(set_id)]);
                             self.events
                                 .push_back(NetworkBehaviourAction::NotifyHandler {
                                     peer_id,
@@ -1232,6 +1238,7 @@ impl NetworkBehaviour for GenericProto {
                            peer_id, set_id, endpoint, connection_id);
 
                             let mut connections = SmallVec::new();
+                            info!("jacktest: close request, peer_id: {:?}, set_id: {:?}, connection_id: {:?}, notif_protocols: {:?}", peer_id, set_id, connection_id, self.notif_protocols[usize::from(set_id)]);
                             connections.push((connection_id, ConnectionState::Closed));
                             *st = PeerState::Disabled {
                                 connections,
@@ -1259,7 +1266,12 @@ impl NetworkBehaviour for GenericProto {
                 ..
             }) => {
                 let handler = self.new_handler();
+                info!(
+                    "jacktest: ConnectionClosed, peer_id: {:?}, notif_protocols: {:?}",
+                    peer_id, self.notif_protocols
+                );
                 for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
+                    info!("jacktest: ConnectionClosed, peer_id: {:?}, set_id: {:?}, notif_protocols: {:?}", peer_id, set_id, self.notif_protocols);
                     let mut entry =
                         if let Entry::Occupied(entry) = self.peers.entry((peer_id, set_id)) {
                             entry
