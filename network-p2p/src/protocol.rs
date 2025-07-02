@@ -208,6 +208,12 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                     .handshake(peer_id, received_handshake.clone());
                 match result_handshake {
                     Ok(handshake_info) => {
+                        info!(
+                            "jacktest: handshake ok, peer: {:?}, protocol: {:?}, set_id: {:?}",
+                            peer_id,
+                            handshake_info.notif_protocols,
+                            usize::from(set_id)
+                        );
                         debug!(target: "network-p2p", "Connected {}", peer_id);
                         let peer = Peer {
                             info: received_handshake,
@@ -224,6 +230,10 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                         }
                     }
                     Err(err) => {
+                        info!(
+                            "jacktest: handshake err, peer: {:?}, err: {:?}",
+                            peer_id, err
+                        );
                         error!("business layer handle returned a failure: {:?}", err);
                         if err == rep::BAD_MESSAGE {
                             self.bad_handshake_substreams.insert((peer_id, set_id));

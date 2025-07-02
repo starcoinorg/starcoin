@@ -4,7 +4,7 @@ use std::borrow::Cow;
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{anyhow, Ok};
 use bcs_ext::BCSCodec;
-use log::{debug, Level};
+use log::{debug, info, Level};
 use log::{error, log};
 use network_p2p::business_layer_handle::HandshakeResult;
 use network_p2p::{business_layer_handle::BusinessLayerHandle, protocol::rep, PeerId};
@@ -55,7 +55,11 @@ impl Networkp2pHandle {
         who: PeerId,
         status: Status,
     ) -> Result<HandshakeResult, ReputationChange> {
-        debug!(target: "network-p2p", "New peer {} {:?}", who, status);
+        debug!(target: "network-p2p", "New peer {} status: {:?}", who, status);
+        info!(
+            "jacktest: handshake, peer: {}, status: {}",
+            who, status.version
+        );
         if status.info.genesis_hash() != self.status.info.genesis_hash() {
             error!(
                 target: "network-p2p",
