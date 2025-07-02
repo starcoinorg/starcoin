@@ -1186,6 +1186,23 @@ pub struct TransactionEventView {
     pub event_seq_number: StrView<u64>,
 }
 
+impl From<ContractEventInfo> for TransactionEventView {
+    fn from(info: ContractEventInfo) -> Self {
+        TransactionEventView {
+            block_hash: Some(info.block_hash),
+            block_number: Some(info.block_number.into()),
+            transaction_hash: Some(info.transaction_hash),
+            transaction_index: Some(info.transaction_index),
+            transaction_global_index: Some(info.transaction_global_index.into()),
+            data: StrView(info.event.event_data().to_vec()),
+            type_tag: info.event.type_tag().clone().into(),
+            event_index: Some(info.event_index),
+            event_key: *info.event.key(),
+            event_seq_number: info.event.sequence_number().into(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct TransactionEventResponseV2 {
     #[serde(skip_serializing_if = "Option::is_none")]

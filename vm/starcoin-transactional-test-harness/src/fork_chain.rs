@@ -463,7 +463,7 @@ impl ChainApi for MockChainApi {
         &self,
         _txn_hash: HashValue,
         _option: Option<starcoin_rpc_api::chain::GetEventOption>,
-    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponseV2>>
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
     {
         let fut = async move {
             bail!("not implemented.");
@@ -486,7 +486,7 @@ impl ChainApi for MockChainApi {
         &self,
         _filter: starcoin_rpc_api::types::pubsub::EventFilter,
         _option: Option<starcoin_rpc_api::chain::GetEventOption>,
-    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponseV2>>
+    ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
     {
         let fut = async move {
             bail!("not implemented.");

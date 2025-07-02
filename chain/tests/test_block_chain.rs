@@ -48,7 +48,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: None,
             reverse: false,
-            filter_type: FilterType::Both,
+            filter_type: FilterType::VM1,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -67,7 +67,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: false,
-            filter_type: FilterType::Both,
+            filter_type: FilterType::VM1,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -84,7 +84,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: true,
-            filter_type: FilterType::Both,
+            filter_type: FilterType::VM1,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -103,7 +103,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.clone().into()],
             limit: Some(20),
             reverse: true,
-            filter_type: FilterType::Both,
+            filter_type: FilterType::VM1,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 10);
@@ -122,7 +122,7 @@ fn test_chain_filter_events() {
             type_tags: vec![event_type_tag.into()],
             limit: Some(20),
             reverse: true,
-            filter_type: FilterType::Both,
+            filter_type: FilterType::VM1,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 10);

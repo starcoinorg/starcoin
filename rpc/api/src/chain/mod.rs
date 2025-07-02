@@ -5,7 +5,7 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
-    TransactionEventResponseV2, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -105,7 +105,7 @@ pub trait ChainApi {
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponseV2>>;
+    ) -> FutureResult<Vec<TransactionEventResponse>>;
 
     #[rpc(name = "chain.get_events_by_txn_hash2")]
     fn get_events_by_txn_hash2(
@@ -119,7 +119,7 @@ pub trait ChainApi {
         &self,
         filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponseV2>>;
+    ) -> FutureResult<Vec<TransactionEventResponse>>;
 
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]

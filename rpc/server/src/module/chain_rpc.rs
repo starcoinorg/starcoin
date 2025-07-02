@@ -16,7 +16,7 @@ use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    StrView, TransactionEventResponseV2, TransactionInfoView, TransactionInfoWithProofView,
+    StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
     TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -358,7 +358,7 @@ where
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponseV2>> {
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let storage = self.storage.clone();
@@ -377,7 +377,7 @@ where
                 .filter_map(|e| {
                     e.try_into()
                         .ok()
-                        .map(|e: ContractEventInfo| TransactionEventResponseV2 {
+                        .map(|e: ContractEventInfo| TransactionEventResponse {
                             event: e.into(),
                             decode_event_data: None,
                         })
@@ -389,12 +389,8 @@ where
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in resp_data.iter_mut() {
                     elem.decode_event_data = Some(
-                        // todo: remove unwrap
                         annotator
-                            .view_value(
-                                elem.event.type_tag.0.as_v1().unwrap(),
-                                elem.event.data.0.as_slice(),
-                            )?
+                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
                             .into(),
                     );
                 }
@@ -458,7 +454,7 @@ where
         &self,
         mut filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponseV2>> {
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let config = self.config.clone();
@@ -501,7 +497,7 @@ where
                 .filter_map(|e| {
                     e.try_into()
                         .ok()
-                        .map(|e: ContractEventInfo| TransactionEventResponseV2 {
+                        .map(|e: ContractEventInfo| TransactionEventResponse {
                             event: e.into(),
                             decode_event_data: None,
                         })
@@ -512,12 +508,8 @@ where
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in data.iter_mut() {
                     elem.decode_event_data = Some(
-                        // todo: remove unwrap
                         annotator
-                            .view_value(
-                                elem.event.type_tag.0.as_v1().unwrap(),
-                                elem.event.data.0.as_slice(),
-                            )?
+                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
                             .into(),
                     );
                 }
