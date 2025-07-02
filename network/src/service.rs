@@ -278,7 +278,7 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
                         .write_notification_async(peer_id.clone().into(), protocol.clone(), data)
                         .await
                     {
-                        Ok(()) => (),
+                        Ok(()) => info!("[network] jacktest: write notification success on {}, {}", peer_id, protocol),
                         Err(e) =>  error!("[network] write notification failed on {}, {}, error: {:?} in NotificationMessage", peer_id, protocol, e,),
                     }
                     if let Some(timer) = timer {
