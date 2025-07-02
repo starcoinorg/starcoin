@@ -1249,6 +1249,10 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     }
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
+                        info!(
+                            "jacktest: Peer {} opened notification stream for protocol {}",
+                            remote, protocol
+                        );
                         peers_notifications_sinks
                             .insert((remote, protocol.clone()), notifications_sink);
                     }
@@ -1313,6 +1317,10 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         protocol: protocol.clone(),
                     });
                     {
+                        info!(
+                            "jacktest: NotificationStreamClosed, peer: {}, protocol: {}",
+                            remote, protocol
+                        );
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
                         peers_notifications_sinks.remove(&(remote, protocol));
                     }
