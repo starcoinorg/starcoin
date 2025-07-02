@@ -522,6 +522,9 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         for peer_id in peer_ids {
             self.peerset_handle
                 .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+
+            self.peerset_handle
+                .add_to_peers_set(sc_peerset::SetId::from(1), peer_id);
         }
     }
 }
