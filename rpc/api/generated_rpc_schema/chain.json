@@ -4585,49 +4585,8 @@
                 "minimum": 0.0
               },
               "event_key": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "V1"
-                    ],
-                    "properties": {
-                      "V1": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "V2"
-                    ],
-                    "properties": {
-                      "V2": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "object",
-                        "required": [
-                          "account_address",
-                          "creation_number"
-                        ],
-                        "properties": {
-                          "account_address": {
-                            "type": "string",
-                            "format": "AccountAddress"
-                          },
-                          "creation_number": {
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
-                          }
-                        }
-                      }
-                    },
-                    "additionalProperties": false
-                  }
-                ]
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
               },
               "event_seq_number": {
                 "type": "string"
@@ -4790,7 +4749,7 @@
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": "EventFilter",
-            "description": "Filter",
+            "description": "Vm1 events' Filter",
             "type": "object",
             "properties": {
               "addrs": {
@@ -4814,22 +4773,7 @@
                 ],
                 "items": {
                   "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                  "type": "object",
-                  "required": [
-                    "account_address",
-                    "creation_number"
-                  ],
-                  "properties": {
-                    "account_address": {
-                      "type": "string",
-                      "format": "AccountAddress"
-                    },
-                    "creation_number": {
-                      "type": "integer",
-                      "format": "uint64",
-                      "minimum": 0.0
-                    }
-                  }
+                  "type": "string"
                 }
               },
               "from_block": {
@@ -4936,49 +4880,8 @@
                 "minimum": 0.0
               },
               "event_key": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "V1"
-                    ],
-                    "properties": {
-                      "V1": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "V2"
-                    ],
-                    "properties": {
-                      "V2": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "object",
-                        "required": [
-                          "account_address",
-                          "creation_number"
-                        ],
-                        "properties": {
-                          "account_address": {
-                            "type": "string",
-                            "format": "AccountAddress"
-                          },
-                          "creation_number": {
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
-                          }
-                        }
-                      }
-                    },
-                    "additionalProperties": false
-                  }
-                ]
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
               },
               "event_seq_number": {
                 "type": "string"
