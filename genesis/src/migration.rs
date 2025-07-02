@@ -15,34 +15,37 @@ const MIGRATION_FILE_NAME: &str = "24674819.bcs";
 const MIGRATION_FILE_HASH: &str =
     "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f";
 
+// Include the migration tar.gz file at compile time
+const MIGRATION_TAR_GZ: &[u8] = include_bytes!("../migration/24674819.tar.gz");
+
 pub fn migrate_legacy_state_data(
     statedb: &ChainStateDB,
     _net: &ChainNetwork,
 ) -> anyhow::Result<()> {
-    let tar_gz_path = std::path::Path::new("migration/24674819.tar.gz");
-    info!(
-        "migrate_legacy_state_data | Entered, Extracting tar.gz file from: {}",
-        tar_gz_path.display()
-    );
+    info!("migrate_legacy_state_data | Entered, Extracting tar.gz file from embedded data");
 
     let temp_dir = TempDir::new()?;
 
-    // Extract the tar.gz file
-    let tar_gz_file = std::fs::File::open(tar_gz_path)?;
-    let tar_file = flate2::read::GzDecoder::new(tar_gz_file);
+    // Extract the tar.gz file from embedded data
+    let tar_file = flate2::read::GzDecoder::new(MIGRATION_TAR_GZ);
     let mut archive = tar::Archive::new(tar_file);
     archive.unpack(&temp_dir)?;
 
     let bcs_path = temp_dir.path().join(MIGRATION_FILE_NAME);
-    let bcs_content = std::fs::read_to_string(&bcs_path)?;
+    assert!(
+        bcs_path.exists(),
+        "{:?} does not exist",
+        MIGRATION_FILE_NAME
+    );
+    let bcs_content = std::fs::read(bcs_path)?;
 
     assert_eq!(
-        HashValue::sha3_256_of(bcs_content.as_bytes()),
+        HashValue::sha3_256_of(&bcs_content),
         HashValue::from_hex_literal(MIGRATION_FILE_HASH)?,
         "Content hash should be the same"
     );
 
-    let chain_state_set: ChainStateSet = bcs_ext::from_bytes(bcs_content.as_bytes())?;
+    let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_content)?;
     statedb.apply(chain_state_set)?;
 
     let stdlib_version = statedb
