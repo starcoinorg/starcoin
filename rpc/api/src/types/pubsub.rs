@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
-use crate::types::{BlockView, TransactionEventResponse, TypeTagView};
+use crate::types::{BlockView, TransactionEventResponse};
 use jsonrpc_core::error::Error as JsonRpcError;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -10,12 +10,16 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::event::EventKey;
-use starcoin_types::filter::Filter;
+use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2, TypeTagView,
+};
+use starcoin_vm2_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
+
 /// Subscription kind.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
@@ -40,6 +44,7 @@ pub enum Result {
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<TransactionEventResponse>),
+    EventV2(Box<TransactionEventResponse2>),
     MintBlock(Box<MintBlockEvent>),
 }
 
@@ -51,6 +56,7 @@ impl Serialize for Result {
         match *self {
             Result::Block(ref header) => header.serialize(serializer),
             Result::Event(ref evt) => evt.serialize(serializer),
+            Result::EventV2(ref evt) => evt.serialize(serializer),
             Result::TransactionHash(ref hash) => hash.serialize(serializer),
             Result::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
@@ -65,6 +71,7 @@ pub enum Params {
     None,
     /// Log parameters.
     Events(EventParams),
+    EventsV2(EventParamsV2),
 }
 
 impl<'a> Deserialize<'a> for Params {
@@ -75,12 +82,14 @@ impl<'a> Deserialize<'a> for Params {
         let v: Value = Deserialize::deserialize(deserializer)?;
 
         if v.is_null() {
-            return Ok(Params::None);
+            Ok(Params::None)
+        } else if let Ok(params) = from_value::<EventParamsV2>(v.clone()) {
+            Ok(Params::EventsV2(params))
+        } else {
+            from_value::<EventParams>(v)
+                .map(Params::Events)
+                .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
         }
-        // Err(D::Error::custom("Invalid Pub-Sub parameters"));
-        from_value(v)
-            .map(Params::Events)
-            .map_err(|e| D::Error::custom(format!("Invalid Pub-Sub parameters: {}", e)))
     }
 }
 
@@ -92,7 +101,7 @@ pub struct EventParams {
     pub decode: bool,
 }
 
-/// Filter
+/// Vm1 events' Filter
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventFilter {
@@ -105,7 +114,7 @@ pub struct EventFilter {
     /// Event keys
     /// /// if `event_keys` is empty, event always match.
     #[serde(default)]
-    pub event_keys: Option<Vec<EventKey>>,
+    pub event_keys: Option<Vec<starcoin_vm_types::event::EventKey>>,
     /// Account addresses which event comes from.
     /// match if event belongs to any og the addresses.
     /// if `addrs` is empty, event always match.
@@ -115,7 +124,7 @@ pub struct EventFilter {
     /// match if the event is any type of the type tags.
     /// /// if `type_tags` is empty, event always match.
     #[serde(default)]
-    pub type_tags: Option<Vec<TypeTagView>>,
+    pub type_tags: Option<Vec<crate::types::TypeTagView>>,
     /// Limit: from latest to oldest
     #[serde(default)]
     pub limit: Option<usize>,
@@ -152,6 +161,7 @@ impl TryInto<Filter> for EventFilter {
                 .collect(),
             limit: self.limit,
             reverse: true,
+            filter_type: FilterType::VM1,
         })
     }
 }
@@ -164,4 +174,89 @@ pub struct MintBlock {
     pub minting_blob: String,
     pub difficulty: U256,
     pub block_number: u64,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
+pub struct EventParamsV2 {
+    verstr: String,
+    #[serde(flatten)]
+    pub filter: EventFilterV2,
+    #[serde(default)]
+    pub decode: bool,
+}
+
+impl EventParamsV2 {
+    /// Create a new `EventParamsV2` with the given filter and decode option.
+    pub fn new(filter: EventFilterV2, decode: bool) -> Self {
+        Self {
+            verstr: "v2".to_string(),
+            filter,
+            decode,
+        }
+    }
+}
+
+/// Vm2 Events' Filter
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EventFilterV2 {
+    /// From Block
+    #[serde(default)]
+    pub from_block: Option<u64>,
+    /// To Block
+    #[serde(default)]
+    pub to_block: Option<u64>,
+    /// Event keys
+    /// /// if `event_keys` is empty, event always match.
+    #[serde(default)]
+    pub event_keys: Option<Vec<EventKey>>,
+    /// Account addresses which event comes from.
+    /// match if event belongs to any og the addresses.
+    /// if `addrs` is empty, event always match.
+    #[serde(default)]
+    pub addrs: Option<Vec<AccountAddress>>,
+    /// type tags of the event.
+    /// match if the event is any type of the type tags.
+    /// /// if `type_tags` is empty, event always match.
+    #[serde(default)]
+    pub type_tags: Option<Vec<TypeTagView>>,
+    /// Limit: from latest to oldest
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+impl TryInto<Filter> for EventFilterV2 {
+    type Error = JsonRpcError;
+
+    fn try_into(self) -> std::result::Result<Filter, Self::Error> {
+        match (self.from_block, self.to_block) {
+            (Some(f), Some(t)) if f > t => {
+                return Err(errors::invalid_params(
+                    "fromBlock",
+                    "fromBlock should not greater than toBlock",
+                ));
+            }
+            _ => {}
+        }
+        Ok(Filter {
+            from_block: self.from_block.unwrap_or(0),
+            to_block: self.to_block.unwrap_or(u64::MAX),
+            event_keys: self
+                .event_keys
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            addrs: self.addrs.unwrap_or_default(),
+            type_tags: self
+                .type_tags
+                .unwrap_or_default()
+                .into_iter()
+                .map(|t| t.0.into())
+                .collect(),
+            limit: self.limit,
+            reverse: true,
+            filter_type: FilterType::VM2,
+        })
+    }
 }

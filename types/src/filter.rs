@@ -9,6 +9,12 @@ use starcoin_vm2_vm_types::language_storage::type_tag_match as type_tag_match_v2
 use starcoin_vm_types::language_storage::type_tag_match;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FilterType {
+    VM1,
+    VM2,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filter {
     /// Blockchain will be searched from this block.
     pub from_block: BlockNumber,
@@ -37,6 +43,8 @@ pub struct Filter {
     pub limit: Option<usize>,
     /// return events in reverse order.
     pub reverse: bool,
+    /// return events of certain type.
+    pub filter_type: FilterType,
 }
 
 impl Default for Filter {
@@ -49,12 +57,20 @@ impl Default for Filter {
             addrs: vec![],
             limit: None,
             reverse: true,
+            filter_type: FilterType::VM2,
         }
     }
 }
 
 impl Filter {
     pub fn matching(&self, block_number: BlockNumber, e: &StcContractEvent) -> bool {
+        // quick path for vm2_only or vm1_only filter
+        match self.filter_type {
+            FilterType::VM1 if e.is_v2() => return false,
+            FilterType::VM2 if e.is_v1() => return false,
+            _ => {}
+        }
+
         let creator_address = match e {
             StcContractEvent::V1(event) => event.key().get_creator_address(),
             StcContractEvent::V2(event) => {

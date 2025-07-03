@@ -8,7 +8,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetEventOption;
-use starcoin_rpc_api::types::TransactionEventResponse;
+use starcoin_vm2_types::view::TransactionEventResponse as TransactionEventResponse2;
 
 /// Get chain's events by txn hash
 #[derive(Debug, Parser)]
@@ -25,7 +25,7 @@ impl CommandAction for GetEventsCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetEventsOpt;
-    type ReturnItem = Vec<TransactionEventResponse>;
+    type ReturnItem = Vec<TransactionEventResponse2>;
 
     fn run(
         &self,
@@ -33,8 +33,8 @@ impl CommandAction for GetEventsCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let events =
-            client.chain_get_events_by_txn_hash(opt.hash, Some(GetEventOption { decode: true }))?;
+        let events = client
+            .chain_get_events_by_txn_hash_v2(opt.hash, Some(GetEventOption { decode: true }))?;
         Ok(events)
     }
 }

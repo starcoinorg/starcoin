@@ -102,6 +102,7 @@ pub mod language_storage {
     pub use starcoin_vm_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
+    use std::str::FromStr;
 
     pub use starcoin_vm2_vm_types::language_storage::{ModuleId as ModuleId2, TypeTag as TypeTag2};
 
@@ -120,6 +121,20 @@ pub mod language_storage {
     impl From<TypeTag2> for StcTypeTag {
         fn from(tag: TypeTag2) -> Self {
             StcTypeTag::V2(tag)
+        }
+    }
+
+    impl FromStr for StcTypeTag {
+        type Err = anyhow::Error;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            if let Ok(tag) = TypeTag2::from_str(s) {
+                Ok(StcTypeTag::V2(tag))
+            } else if let Ok(tag) = TypeTag::from_str(s) {
+                Ok(StcTypeTag::V1(tag))
+            } else {
+                Err(anyhow::anyhow!("Invalid TypeTag string: {}", s))
+            }
         }
     }
 

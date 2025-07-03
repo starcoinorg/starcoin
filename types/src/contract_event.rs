@@ -78,4 +78,12 @@ impl StcContractEvent {
             Self::V2(event) => Some(event.clone()),
         }
     }
+
+    pub fn is_v1(&self) -> bool {
+        matches!(self, Self::V1(_))
+    }
+
+    pub fn is_v2(&self) -> bool {
+        matches!(self, Self::V2(_))
+    }
 }

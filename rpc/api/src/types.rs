@@ -33,11 +33,11 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
+use starcoin_types::language_storage::StcTypeTag;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber},
     contract_event::{ContractEvent, ContractEventInfo},
-    event::EventKey,
     genesis_config,
     language_storage::TypeTag,
     multi_transaction::MultiSignedUserTransaction,
@@ -53,6 +53,7 @@ use starcoin_types::{
     vm_error::AbortLocation,
     U256,
 };
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::{
     access_path::AccessPath,
     block_metadata::BlockMetadata,
@@ -1199,7 +1200,6 @@ impl From<ContractEventInfo> for TransactionEventView {
         }
     }
 }
-
 impl From<ContractEvent> for TransactionEventView {
     fn from(event: ContractEvent) -> Self {
         TransactionEventView {
@@ -1211,7 +1211,7 @@ impl From<ContractEvent> for TransactionEventView {
             data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
             event_index: None,
-            event_key: *event.key(),
+            event_key: (*event.key()),
             event_seq_number: event.sequence_number().into(),
         }
     }
@@ -1670,6 +1670,7 @@ impl std::fmt::Display for SignedMessageView {
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
+pub type StcTypeTagView = StrView<StcTypeTag>;
 pub type StructTagView = StrView<StructTag>;
 pub type TransactionArgumentView = StrView<TransactionArgument>;
 pub type FunctionIdView = StrView<FunctionId>;
@@ -1712,6 +1713,24 @@ impl FromStr for TypeTagView {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let type_tag = parse_type_tag(s)?;
+        Ok(Self(type_tag))
+    }
+}
+
+impl std::fmt::Display for StcTypeTagView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            StcTypeTag::V1(ref tag) => write!(f, "{}", tag),
+            StcTypeTag::V2(ref tag) => write!(f, "{}", tag),
+        }
+    }
+}
+
+impl FromStr for StcTypeTagView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let type_tag = StcTypeTag::from_str(s)?;
         Ok(Self(type_tag))
     }
 }

@@ -8,13 +8,14 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 pub use starcoin_rpc_api::types::TransactionOutputView;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventResponse,
-    TransactionEventView, TransactionInfoView, TypeTagView,
+    DryRunOutputView, RawUserTransactionView, StrView, TransactionEventView, TransactionInfoView,
+    TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_vm2_types::view::TransactionEventResponse as TransactionEventResponse2;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
@@ -318,7 +319,7 @@ impl ExecuteResultView {
 pub struct ExecutionOutputView {
     pub txn_hash: HashValue,
     pub txn_info: Option<TransactionInfoView>,
-    pub events: Option<Vec<TransactionEventResponse>>,
+    pub events: Option<Vec<TransactionEventResponse2>>,
 }
 
 impl ExecutionOutputView {
@@ -333,7 +334,7 @@ impl ExecutionOutputView {
     pub fn new_with_info(
         txn_hash: HashValue,
         txn_info: TransactionInfoView,
-        events: Vec<TransactionEventResponse>,
+        events: Vec<TransactionEventResponse2>,
     ) -> Self {
         Self {
             txn_hash,

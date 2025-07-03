@@ -4749,7 +4749,7 @@
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": "EventFilter",
-            "description": "Filter",
+            "description": "Vm1 events' Filter",
             "type": "object",
             "properties": {
               "addrs": {

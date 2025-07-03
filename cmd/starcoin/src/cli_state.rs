@@ -207,7 +207,7 @@ impl CliState {
         };
         let events = self
             .client
-            .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
+            .chain_get_events_by_txn_hash_v2(txn_hash, Some(GetEventOption { decode: true }))?;
 
         Ok(ExecutionOutputView::new_with_info(
             txn_hash, txn_info, events,

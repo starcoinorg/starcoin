@@ -31,22 +31,21 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
     GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
 };
-use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::pubsub::{EventFilter, EventFilterV2};
 use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionRequest, TransactionView,
+    TransactionEventResponse, TransactionEventView, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
     miner::MinerClient, multi_types::MultiSignedUserTransactionView,
     network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
     state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
-    types::TransactionEventView,
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
@@ -64,7 +63,10 @@ use starcoin_vm2_rpc_api::{
     account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
     state_api::StateClient as StateClient2,
 };
-use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2,
+    TransactionEventView as TransactionEventView2, TransactionInfoView as TransactionInfoView2,
+};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -853,6 +855,15 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn chain_get_events_by_txn_hash_v2(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> anyhow::Result<Vec<TransactionEventResponse2>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash2(txn_hash, option))
+            .map_err(map_err)
+    }
+
     pub fn chain_get_block_txn_infos(
         &self,
         block_id: HashValue,
@@ -981,6 +992,20 @@ impl RpcClient {
     ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter, decode).await;
+            res.map(|s| s.map_err(map_err))
+        })
+        .map_err(map_err)
+    }
+    pub fn subscribe_events_v2(
+        &self,
+        filter: EventFilterV2,
+        decode: bool,
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView2, Error = anyhow::Error>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner
+                .pubsub_client
+                .subscribe_events_v2(filter, decode)
+                .await;
             res.map(|s| s.map_err(map_err))
         })
         .map_err(map_err)
