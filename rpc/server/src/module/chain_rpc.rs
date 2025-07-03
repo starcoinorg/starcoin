@@ -16,8 +16,8 @@ use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionView,
+    MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -683,6 +683,16 @@ where
         }
         .map_err(map_err);
 
+        Box::pin(fut.boxed())
+    }
+
+    fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let multi_state = service.get_multi_state_by_hash(block_hash).await?;
+            Ok(multi_state.map(Into::into))
+        }
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 }

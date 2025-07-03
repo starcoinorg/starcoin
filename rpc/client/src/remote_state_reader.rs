@@ -46,16 +46,26 @@ impl<'a> RemoteStateReader<'a> {
         let state_root = match state_root_opt {
             StateRootOption::Latest => client.state_get_state_root()?,
             StateRootOption::BlockHash(block_hash) => {
-                let block = client
-                    .chain_get_block_by_hash(block_hash, None)?
-                    .ok_or_else(|| format_err!("Can not find block by hash:{}", block_hash))?;
-                block.header.state_root
+                let multi_state =
+                    client
+                        .chain_get_vm_multi_state(block_hash)?
+                        .ok_or_else(|| {
+                            format_err!("Can not find vm multi_state by hash:{}", block_hash)
+                        })?;
+                multi_state.state_root1
             }
             StateRootOption::BlockNumber(block_number) => {
                 let block = client
                     .chain_get_block_by_number(block_number, None)?
                     .ok_or_else(|| format_err!("Can not find block by number: {}", block_number))?;
-                block.header.state_root
+                let block_hash = block.header.block_hash;
+                let multi_state =
+                    client
+                        .chain_get_vm_multi_state(block_hash)?
+                        .ok_or_else(|| {
+                            format_err!("Can not find vm multi_state by hash:{}", block_hash)
+                        })?;
+                multi_state.state_root1
             }
         };
 

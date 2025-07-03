@@ -36,7 +36,7 @@ use starcoin_rpc_api::types::{
     AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
-    MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+    MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
     TransactionRequest, TransactionView,
@@ -922,6 +922,14 @@ impl RpcClient {
             )
         })
         .map_err(map_err)
+    }
+
+    pub fn chain_get_vm_multi_state(
+        &self,
+        block_hash: HashValue,
+    ) -> anyhow::Result<Option<MultiStateView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_vm_multi_state(block_hash))
+            .map_err(map_err)
     }
 
     pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<DryRunOutputView> {

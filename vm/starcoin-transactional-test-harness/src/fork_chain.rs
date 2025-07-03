@@ -15,8 +15,8 @@ use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, TransactionInfoView,
-    TransactionView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, MultiStateView,
+    TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
@@ -569,6 +569,10 @@ impl ChainApi for MockChainApi {
         _event_index: Option<u64>,
         _access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
+        todo!()
+    }
+
+    fn get_vm_multi_state(&self, _block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
         todo!()
     }
 }
