@@ -371,7 +371,11 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
 
-        let author = *self.miner_account.read().unwrap().address();
+        let author = *self
+            .miner_account
+            .read()
+            .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
+            .address();
 
         if now_millis <= previous_header.timestamp() {
             info!(
@@ -478,6 +482,9 @@ where
             //
             // Inspired by rand::partial_shuffle (which lacks the guarantee on chosen elements location).
             for i in max_block_parents / 2..max_candidates {
+                if i >= slice.len() {
+                    break;
+                }
                 let j = rand::thread_rng().gen_range(i..slice.len()); // i < max_candidates < slice.len()
                 slice.swap(i, j);
             }
