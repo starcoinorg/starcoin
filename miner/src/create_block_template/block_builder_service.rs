@@ -154,10 +154,11 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     fn handle_event(&mut self, msg: DefaultAccountChangeEvent, _ctx: &mut ServiceContext<Self>) {
         info!("Miner account change to {}", msg.new_account.address);
 
-        if let Ok(mut account) = self.inner.miner_account.write() {
-            *account = msg.new_account;
-        } else {
-            warn!("Failed to acquire write lock for miner_account");
+        match self.inner.miner_account.write() {
+            Ok(mut account) => *account = msg.new_account,
+            Err(e) => {
+                error!("Failed to acquire write lock for miner_account: {:?}. Miner may use outdated account!", e);
+            }
         }
     }
 }
@@ -609,6 +610,9 @@ where
         &self,
         ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
     ) -> Result<()> {
+        if ghostdata.mergeset_reds.is_empty() {
+            return Ok(());
+        }
         let transactions = ghostdata
         .mergeset_reds
         .iter()
@@ -619,7 +623,7 @@ where
 
         self.tx_provider.add_txns(transactions.clone()).iter().zip(transactions).for_each(|(result, transaction)| {
             if let Err(err) = result {
-                error!("minting for putting red block transaction back to the pool failed: {:?}, transaction id: {:?}", err, transaction.id());
+                warn!("minting for putting red block transaction back to the pool failed: {:?}, transaction id: {:?}", err, transaction.id());
             }
         });
 
