@@ -373,6 +373,10 @@ impl ChainNetworkID {
         matches!(self, Self::Builtin(BuiltinNetworkID::Main))
     }
 
+    pub fn is_proxima(&self) -> bool {
+        matches!(self, Self::Builtin(BuiltinNetworkID::Proxima))
+    }
+
     pub fn is_halley(&self) -> bool {
         matches!(self, Self::Builtin(BuiltinNetworkID::Halley))
     }
@@ -523,6 +527,10 @@ impl ChainNetwork {
 
     pub fn is_main(&self) -> bool {
         self.id.is_main()
+    }
+
+    pub fn is_proxima(&self) -> bool {
+        self.id.is_proxima()
     }
 
     pub fn is_custom(&self) -> bool {

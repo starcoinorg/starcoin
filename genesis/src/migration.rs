@@ -7,10 +7,9 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_types::state_set::ChainStateSet;
+use starcoin_types::{account_address::AccountAddress, state_set::ChainStateSet};
 use starcoin_vm_types::{on_chain_config::Version, state_view::StateReaderExt};
 use tempfile::TempDir;
-use starcoin_types::account_address::AccountAddress;
 
 const MIGRATION_FILE_NAME: &str = "24674819.bcs";
 const MIGRATION_FILE_HASH: &str =
@@ -50,7 +49,7 @@ pub fn migrate_legacy_state_data(
     statedb.apply(chain_state_set)?;
     let new_state_root = statedb.commit()?;
     statedb.flush()?;
-    
+
     let new_statedb = statedb.fork_at(new_state_root);
 
     let stdlib_version = new_statedb
@@ -62,14 +61,18 @@ pub fn migrate_legacy_state_data(
         stdlib_version
     );
 
+    let balance = new_statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0);
     info!(
         "check_legecy_data_has_migration | 0x1 balance = {}",
-        new_statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0)
+        balance
     );
     assert_eq!(stdlib_version, 12, "Replaced version should 12");
+    assert_eq!(balance, 10000, "Replaced 0x1 balance should 10000");
 
-
-    info!("migrate_legacy_state_data | Exited");
+    info!(
+        "migrate_legacy_state_data | Exited, the state root of after migration is: {:?}",
+        new_statedb.state_root()
+    );
 
     Ok(())
 }

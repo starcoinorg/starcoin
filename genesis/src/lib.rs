@@ -13,8 +13,9 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
     DEFAULT_CACHE_SIZE,
 };
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_state_api::ChainStateWriter;
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
@@ -158,12 +159,24 @@ impl Genesis {
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
         let genesis_config = net.genesis_config();
         let genesis_config2 = net.genesis_config2();
+
+        let parent_hash2 = genesis_config2
+            .genesis_block_parameter()
+            .expect("failed to get genesis block parameter")
+            .parent_hash;
+
         if let Some(GenesisBlockParameter {
-            parent_hash,
+            parent_hash: parent_hash1,
             timestamp,
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            let parent_hash = HashValue::sha3_256_of(
+                [parent_hash1.clone().to_vec(), parent_hash2.to_vec()]
+                    .concat()
+                    .as_slice(),
+            );
+
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
                 genesis_config2,
@@ -176,9 +189,16 @@ impl Genesis {
             )?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
-            let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
+            let (_, mut txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
-            migrate_legacy_state_data(&chain_state_db, &net)?;
+            // Migrate the legacy state data that exported from mainnet
+            if net.is_main() || net.is_proxima() {
+                migrate_legacy_state_data(&chain_state_db, &net)?;
+
+                // Since we applied new state data, the stateroot has changed,
+                // so we need to update the execution result.
+                txn_info.state_root_hash = chain_state_db.state_root();
+            }
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),
@@ -202,7 +222,7 @@ impl Genesis {
             accumulator.flush()?;
 
             Ok(Block::genesis_block(
-                *parent_hash,
+                parent_hash,
                 *timestamp,
                 accumulator_root,
                 state_root,
@@ -368,7 +388,6 @@ impl Genesis {
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        // debug!("Genesis::load_and_check_genesis | network: {:?}, data_dir: {}", net, data_dir.display());
         // todo: how and when upgrade legacy genesis?
         let legacy_genesis = false;
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
@@ -386,8 +405,6 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
-                    // TODO(BobOng): load legacy migration data from bcs files
-
                     let genesis = Genesis::load_or_build(net)?;
                     genesis.save(data_dir, legacy_genesis)?;
                     info!("Build and save new genesis: {}", genesis);
