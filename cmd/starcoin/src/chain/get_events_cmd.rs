@@ -34,7 +34,7 @@ impl CommandAction for GetEventsCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let events = client
-            .chain_get_events_by_txn_hash_v2(opt.hash, Some(GetEventOption { decode: true }))?;
+            .chain_get_events_by_txn_hash2(opt.hash, Some(GetEventOption { decode: true }))?;
         Ok(events)
     }
 }
