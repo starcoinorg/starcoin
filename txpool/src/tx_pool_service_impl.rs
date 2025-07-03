@@ -18,7 +18,6 @@ use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
@@ -29,6 +28,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
 };
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
@@ -271,8 +271,8 @@ impl Inner {
             .storage
             .get_vm_multi_state(self.chain_header.read().id())?;
         Ok(ChainStateDB::new(
-            self.storage.clone().into_super_arc(),
-            Some(multi_state.state_root1()),
+            self.storage2.clone().into_super_arc(),
+            Some(multi_state.state_root2()),
         ))
     }
 
