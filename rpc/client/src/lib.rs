@@ -64,7 +64,6 @@ use starcoin_vm2_rpc_api::{
     state_api::StateClient as StateClient2,
 };
 use starcoin_vm2_types::view::{
-    TransactionEventResponse as TransactionEventResponse2,
     TransactionEventView as TransactionEventView2, TransactionInfoView as TransactionInfoView2,
 };
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -852,15 +851,6 @@ impl RpcClient {
         option: Option<GetEventOption>,
     ) -> anyhow::Result<Vec<TransactionEventResponse>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash, option))
-            .map_err(map_err)
-    }
-
-    pub fn chain_get_events_by_txn_hash_v2(
-        &self,
-        txn_hash: HashValue,
-        option: Option<GetEventOption>,
-    ) -> anyhow::Result<Vec<TransactionEventResponse2>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_events_by_txn_hash2(txn_hash, option))
             .map_err(map_err)
     }
 
