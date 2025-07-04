@@ -498,9 +498,15 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         for peer_id in peer_ids {
             self.peerset_handle
                 .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+        }
+    }
 
-            self.peerset_handle
-                .add_to_peers_set(sc_peerset::SetId::from(1), peer_id);
+    pub fn add_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
+        for peer_id in peer_ids {
+            for (set_id, _) in self.notif_protocols.iter().enumerate() {
+                self.peerset_handle
+                    .add_to_peers_set(SetId::from(set_id), peer_id);
+            }
         }
     }
 }
