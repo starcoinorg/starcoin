@@ -2334,6 +2334,7 @@
                 "parent_gas_used",
                 "parent_hash",
                 "parents_hash",
+                "red_blocks",
                 "timestamp",
                 "uncles"
               ],
@@ -2371,6 +2372,11 @@
                     "type": "string",
                     "format": "HashValue"
                   }
+                },
+                "red_blocks": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
                 },
                 "timestamp": {
                   "type": "string"
