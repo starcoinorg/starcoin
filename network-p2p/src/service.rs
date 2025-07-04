@@ -1136,7 +1136,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     this.network_service
                         .behaviour_mut()
                         .user_protocol_mut()
-                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                        .add_set_discovered_nodes(iter::once(peer_id));
                 }
 
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::ReputationChanges {
@@ -1525,7 +1525,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     this.network_service
                         .behaviour_mut()
                         .user_protocol_mut()
-                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                        .add_set_discovered_nodes(iter::once(peer_id));
                 }
             };
         }
