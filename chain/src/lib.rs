@@ -4,6 +4,7 @@
 mod chain;
 mod fixed_blocks;
 pub mod verifier;
+pub mod migration;
 
 pub use chain::BlockChain;
 pub use starcoin_chain_api::{ChainReader, ChainWriter};

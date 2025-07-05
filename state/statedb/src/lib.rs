@@ -606,6 +606,9 @@ impl ChainStateWriter for ChainStateDB {
                 None
             };
             let resource_root = if let Some(state_set) = account_state_set.resource_set() {
+                if *address == AccountAddress::ONE {
+                    debug!("ChainStateWriter::apply | 0x1 state write");
+                }
                 let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
                 state_tree.apply(state_set.clone())?;
                 state_tree.flush()?;

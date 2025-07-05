@@ -46,7 +46,7 @@ use test_helper::chain::{
 /// Test function to demonstrate the usage of both storage types
 #[test]
 fn test_storage_types_comparison() -> anyhow::Result<()> {
-    starcoin_logger::init_for_test();
+    starcoin_logger::init();
 
     let net = vm1_testnet()?;
     let transfer_amount = 10000000000;
@@ -86,7 +86,7 @@ fn test_storage_types_comparison() -> anyhow::Result<()> {
 
 #[test]
 fn test_migration_from_bcs_for_test_db() -> anyhow::Result<()> {
-    starcoin_logger::init_for_test();
+    starcoin_logger::init();
 
     // Initialize test storage with genesis
     let (export_chain_statedb, net) = prepare_genesis();
@@ -222,7 +222,7 @@ fn association_transfer_to(
 
 #[stest::test]
 pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
-    starcoin_logger::init_for_test();
+    starcoin_logger::init();
 
     // I. Construct migration source blockchain storage
     //  1. Create the ChainStateDB with temp path 1
@@ -404,7 +404,7 @@ pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
 #[ignore]
 #[stest::test(timeout = 50000)]
 pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
-    init_with_default_level("info", Some(LogPattern::WithLine));
+    starcoin_logger::init();
 
     // 1. vm_testnet
     let net = vm1_testnet()?;
@@ -458,7 +458,7 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
 #[ignore]
 #[stest::test]
 pub fn test_import_state_from_64925() -> anyhow::Result<()> {
-    init_with_default_level("info", Some(LogPattern::WithLine));
+    starcoin_logger::init();
 
     let net = vm1_testnet()?;
     let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
@@ -506,7 +506,7 @@ fn create_block_with_transactions(
 #[ignore]
 #[stest::test(timeout = 50000)]
 pub fn test_import_state_from_1461026() -> anyhow::Result<()> {
-    init_with_default_level("info", Some(LogPattern::WithLine));
+    starcoin_logger::init();
 
     let net = vm1_testnet()?;
     let temp_dir = TempDir::new()?;
@@ -539,7 +539,7 @@ pub fn test_import_state_from_1461026() -> anyhow::Result<()> {
 
 #[stest::test]
 pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
-    starcoin_logger::init_for_test();
+    starcoin_logger::init();
 
     let net = vm1_testnet()?;
     let (mut chain1, statedb1) = gen_chain_for_test_and_return_statedb(&net, None)?;
@@ -778,7 +778,8 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
 pub fn test_check_storage_cache_overflow_error() -> anyhow::Result<()> {
     use starcoin_config::DEFAULT_CACHE_SIZE;
     use std::panic;
-    init_with_default_level("info", Some(LogPattern::WithLine));
+
+    starcoin_logger::init();
     let net = vm1_testnet()?;
     let data_path = std::path::Path::new("./test-data/64925.bcs");
 

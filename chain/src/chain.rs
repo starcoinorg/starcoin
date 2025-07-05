@@ -466,6 +466,12 @@ impl BlockChain {
         block: Block,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
+        debug!(
+            "BlockChain::execute_block_and_save | Entered, block id: {:?}, is_genesis: {:?}",
+            block.id(),
+            block.header().is_genesis()
+        );
+
         let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -514,6 +520,7 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
+
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
@@ -521,6 +528,11 @@ impl BlockChain {
             vm_metrics,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
+
+        // TODO(BobOng): [migration] add migration processing here
+        // if block.header().is_genesis() {
+        //     executed_data.state_root = migrate_data_to_statedb(&statedb)?;
+        // }
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
@@ -724,6 +736,12 @@ impl BlockChain {
         storage.save_table_infos(txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
+
+        debug!(
+            "BlockChain::execute_block_and_save | Exited, block id: {:?}",
+            block.id()
+        );
+
         Ok(ExecutedBlock::new(block, block_info, multi_state))
     }
 

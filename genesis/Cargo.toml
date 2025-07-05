@@ -4,9 +4,6 @@ bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 include_dir = { workspace = true }
 serde = { workspace = true }
-flate2 = "1.0"
-tar = "0.4"
-tempfile = { workspace = true }
 
 starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
@@ -28,6 +25,7 @@ thiserror = { workspace = true }
 # dependencies for move2
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-genesis = { workspace = true }
+
 
 [dev-dependencies]
 test-helper = { workspace = true }
