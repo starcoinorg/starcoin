@@ -26,6 +26,7 @@ use starcoin_vm_types::{
 use starcoin_crypto::HashValue;
 use tempfile::TempDir;
 use test_helper::{
+    create_block_with_transactions,
     executor::{association_execute_should_success, compile_modules_with_address, prepare_genesis},
     txn::create_account_txn_sent_as_association,
 };
@@ -478,30 +479,6 @@ pub fn test_import_state_from_64925() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// Helper function：Create a block containing multiple transactions
-fn create_block_with_transactions(
-    chain: &mut BlockChain,
-    net: &ChainNetwork,
-    miner: AccountAddress,
-    transactions: Vec<Transaction>,
-) -> anyhow::Result<HashValue> {
-    let header = chain.current_header();
-    let multi_txns: Vec<MultiSignedUserTransaction> = transactions
-        .into_iter()
-        .map(|txn| MultiSignedUserTransaction::from(txn.as_signed_user_txn().unwrap().clone()))
-        .collect();
-    let (block_template, _) =
-        chain.create_block_template(miner, Some(header.id()), multi_txns, vec![], None)?;
-    let block = chain
-        .consensus()
-        .create_block(block_template, net.time_service().as_ref())?;
-    let executed_block = chain.apply_with_verifier::<FullVerifier>(block.clone())?;
-    assert_ne!(executed_block.block().transactions().len(), 0);
-    Ok(chain.chain_state_reader().state_root())
-}
-
-// Import succeed, but failed to get version
 
 #[ignore]
 #[stest::test(timeout = 50000)]
