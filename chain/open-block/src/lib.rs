@@ -8,6 +8,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
+use starcoin_data_migration::{migrate_main_data_to_statedb, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -213,7 +214,6 @@ impl OpenedBlock {
             });
         }
 
-        let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
@@ -229,6 +229,7 @@ impl OpenedBlock {
             .collect();
 
         let txn_outputs = {
+            let (state, _state2) = &self.state;
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
                     "block gas_used {} exceed block gas_limit:{}",
@@ -270,6 +271,12 @@ impl OpenedBlock {
                     discard_txns.push(txn.try_into().expect("user txn"));
                 }
             };
+        }
+
+        // Execute migration after all transactions are processed
+        {
+            let (state, _state2) = &self.state;
+            Self::execute_extra_for_vm1_migration(self.block_number(), self.chain_id, state)?;
         }
 
         Ok(ExcludedTxns {
@@ -461,6 +468,18 @@ impl OpenedBlock {
             }
         };
 
+        Ok(())
+    }
+
+    /// Do extra state data migration for vm1 from mainnet
+    fn execute_extra_for_vm1_migration(
+        block_number: u64,
+        chain_id: ChainId,
+        statedb: &ChainStateDB,
+    ) -> Result<()> {
+        if should_do_migration(block_number, chain_id) {
+            migrate_main_data_to_statedb(statedb)?;
+        }
         Ok(())
     }
 }

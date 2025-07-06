@@ -8,6 +8,7 @@ use anyhow::{Error, Result};
 use lru::LruCache;
 use parking_lot::Mutex;
 use starcoin_config::DEFAULT_CACHE_SIZE;
+
 pub struct CacheStorage {
     cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
     metrics: Option<StorageMetrics>,

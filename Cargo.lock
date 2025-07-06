@@ -3534,9 +3534,9 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flate2"
-version = "1.1.0"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11faaf5a5236997af9848be0bef4db95824b1d534ebc64d0f0c6cf3e67bd38dc"
+checksum = "4a3d7db9596fecd151c5f638c0ee5d5bd487b6e0ea232e5dc96d5250f6f94b1d"
 dependencies = [
  "crc32fast",
  "libz-sys",
@@ -11867,7 +11867,6 @@ dependencies = [
  "anyhow",
  "bcs-ext 1.13.19",
  "clap 3.2.25",
- "flate2",
  "log 0.4.27",
  "once_cell",
  "proptest",
@@ -11884,6 +11883,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-data-migration",
  "starcoin-executor",
  "starcoin-force-upgrade",
  "starcoin-genesis",
@@ -11906,8 +11906,6 @@ dependencies = [
  "starcoin-vm2-chain",
  "starcoin-vm2-test-helper",
  "stest",
- "tar",
- "tempfile",
  "test-helper",
  "thiserror 1.0.69",
 ]
@@ -12216,6 +12214,25 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "starcoin-data-migration"
+version = "1.13.19"
+dependencies = [
+ "anyhow",
+ "bcs-ext 1.13.19",
+ "flate2",
+ "log 0.4.27",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-logger 1.13.19",
+ "starcoin-state-api 1.13.19",
+ "starcoin-statedb 1.13.19",
+ "starcoin-types 1.13.19",
+ "starcoin-vm-types 1.13.19",
+ "tar",
+ "tempfile",
 ]
 
 [[package]]
@@ -13199,6 +13216,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-data-migration",
  "starcoin-executor",
  "starcoin-force-upgrade",
  "starcoin-genesis",

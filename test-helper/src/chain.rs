@@ -39,7 +39,7 @@ pub fn gen_chain_for_test_and_return_statedb(
 
 /// Initialize storage for test with temporary directory (similar to Genesis::init_and_check_storage)
 /// This function creates a temporary directory and uses it for persistent storage instead of cache
-fn init_storage_for_test_with_temp_dir(
+pub fn init_storage_for_test_with_temp_dir(
     net: &ChainNetwork,
     temp_dir: &Path,
 ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {

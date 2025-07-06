@@ -3,15 +3,10 @@
 
 #[cfg(test)]
 mod migration_tests {
-    const TEST_MIGRATION_FILE_NAME: &str = "64925.bcs";
-    const TEST_MIGRATION_FILE_HASH: &str =
-        "0xb450ae07116c9a38fd44b93ce1d7ddbc5cbb8639e7cd30d2921be793905fb5b1";
-    const TEST_MIGRATION_TAR_GZ: &[u8] = include_bytes!("../migration/64925.tar.gz");
-
     use log::debug;
-    use starcoin_chain::migration::migrate_legacy_state_data;
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
+    use starcoin_data_migration::migrate_test_data_to_statedb;
     use starcoin_state_api::{ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
@@ -31,15 +26,6 @@ mod migration_tests {
         Ok((net, storage, chain_state_db))
     }
 
-    fn migrate_legacy_state_data_for_test(statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
-        migrate_legacy_state_data(
-            &statedb,
-            TEST_MIGRATION_TAR_GZ,
-            TEST_MIGRATION_FILE_NAME,
-            TEST_MIGRATION_FILE_HASH,
-        )
-    }
-
     /// Helper function to verify migration results
     fn verify_migration_results(statedb: &ChainStateDB) -> anyhow::Result<()> {
         let stdlib_version = statedb
@@ -50,14 +36,23 @@ mod migration_tests {
             stdlib_version, 4,
             "stdlib version should be 12 after migration"
         );
-
-        // let balance = statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0);
-        // assert_eq!(
-        //     balance, 10000,
-        //     "0x1 balance should be 10000 after migration"
-        // );
-
         Ok(())
+    }
+
+    #[stest::test]
+    pub fn test_migration_with_genesis_storage() -> anyhow::Result<()> {
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
+        let temp_dir = starcoin_config::temp_dir();
+        let (_block_chain, statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+                &net,
+                temp_dir.path().to_path_buf(),
+            )?;
+
+        // Execute migration (this will verify file hash and basic functionality)
+        migrate_test_data_to_statedb(&statedb)?;
+
+        verify_migration_results(&statedb)
     }
 
     /// Test basic migration functionality and file integrity
@@ -65,13 +60,14 @@ mod migration_tests {
     fn test_migration_basic_functionality_and_integrity() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
+        let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Dev)?;
 
         // Execute migration (this will verify file hash and basic functionality)
-        migrate_legacy_state_data_for_test(&chain_state_db)?;
+        migrate_test_data_to_statedb(&chain_state_db)?;
 
         // Verify post-migration state
         let new_statedb = chain_state_db.fork_at(chain_state_db.state_root());
+
         verify_migration_results(&new_statedb)?;
 
         Ok(())
@@ -85,7 +81,7 @@ mod migration_tests {
         let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        migrate_legacy_state_data_for_test(&chain_state_db)?;
+        migrate_test_data_to_statedb(&chain_state_db)?;
 
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
@@ -105,7 +101,7 @@ mod migration_tests {
         let before_migration_root = chain_state_db2.state_root();
 
         // Execute migration again
-        migrate_legacy_state_data_for_test(&chain_state_db2)?;
+        migrate_test_data_to_statedb(&chain_state_db2)?;
 
         // Verify post-migration state
         let after_migration_root = chain_state_db2.state_root();
@@ -150,7 +146,7 @@ mod migration_tests {
         let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // Execute migration again
-        migrate_legacy_state_data_for_test(&chain_state_db)?;
+        migrate_test_data_to_statedb(&chain_state_db)?;
         let first_root = chain_state_db.state_root();
         let first_statedb = chain_state_db.fork_at(first_root);
 
@@ -161,7 +157,7 @@ mod migration_tests {
         let first_balance = first_statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0);
 
         // Second migration execution
-        migrate_legacy_state_data_for_test(&chain_state_db)?;
+        migrate_test_data_to_statedb(&chain_state_db)?;
         let second_root = chain_state_db.state_root();
         let second_statedb = chain_state_db.fork_at(second_root);
 
@@ -198,12 +194,12 @@ mod migration_tests {
         // Test mainnet
         let (_main_net, _storage_main, chain_state_db_main) =
             create_test_environment(BuiltinNetworkID::Main)?;
-        migrate_legacy_state_data_for_test(&chain_state_db_main)?;
+        migrate_test_data_to_statedb(&chain_state_db_main)?;
 
         // Test proxima network
         let (_proxima_net, _storage_proxima, chain_state_db_proxima) =
             create_test_environment(BuiltinNetworkID::Proxima)?;
-        migrate_legacy_state_data_for_test(&chain_state_db_proxima)?;
+        migrate_test_data_to_statedb(&chain_state_db_proxima)?;
 
         // Verify post-migration state for both networks
         let main_statedb = chain_state_db_main.fork_at(chain_state_db_main.state_root());
@@ -238,7 +234,7 @@ mod migration_tests {
 
         // Build genesis (this will call migrate_legacy_state_data)
         let genesis = starcoin_genesis::Genesis::build(&net)?;
-        
+
         // Verify genesis block state
         let genesis_block = genesis.block();
         assert_eq!(
@@ -266,7 +262,7 @@ mod migration_tests {
         let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // Should succeed under normal conditions
-        let result = migrate_legacy_state_data_for_test(&chain_state_db)?;
+        let result = migrate_test_data_to_statedb(&chain_state_db)?;
 
         debug!("result: {:?}", result);
 
@@ -283,7 +279,7 @@ mod migration_tests {
         let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        migrate_legacy_state_data_for_test(&chain_state_db)?;
+        migrate_test_data_to_statedb(&chain_state_db)?;
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
 
@@ -308,7 +304,7 @@ mod migration_tests {
         let before_migration_root = chain_state_db2.state_root();
 
         // Execute migration
-        migrate_legacy_state_data_for_test(&chain_state_db2)?;
+        migrate_test_data_to_statedb(&chain_state_db2)?;
 
         // Verify post-migration state
         let after_migration_root = chain_state_db2.state_root();

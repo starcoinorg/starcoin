@@ -529,11 +529,6 @@ impl BlockChain {
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
 
-        // TODO(BobOng): [migration] add migration processing here
-        // if block.header().is_genesis() {
-        //     executed_data.state_root = migrate_data_to_statedb(&statedb)?;
-        // }
-
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
             let state_root1 = executed_data.state_root;
