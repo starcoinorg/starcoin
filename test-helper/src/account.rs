@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use network_p2p_core::export::log::debug;
-use starcoin_crypto::HashValue;
 use starcoin_dev::playground;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -112,7 +111,11 @@ pub fn print_bcs_decoded_resources(bcs_content: Vec<u8>) -> anyhow::Result<()> {
                     }
                 }
                 Err(e) => {
-                    debug!("Failed to decode struct tag: Raw key (hex): {}, error: {:?}, ", hex::encode(key), e);
+                    debug!(
+                        "Failed to decode struct tag: Raw key (hex): {}, error: {:?}, ",
+                        hex::encode(key),
+                        e
+                    );
                 }
             }
         }

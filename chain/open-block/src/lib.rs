@@ -4,11 +4,12 @@
 mod vm2;
 
 use anyhow::{bail, ensure, format_err, Result};
+use log::debug;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
-use starcoin_data_migration::{migrate_main_data_to_statedb, should_do_migration};
+use starcoin_data_migration::{migrate_test_data_to_statedb, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -287,6 +288,10 @@ impl OpenedBlock {
 
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
+        debug!(
+            "OpenedBlock::initialize | Entered, block id: {}",
+            self.block_meta.number()
+        );
         let (state, _state2) = &self.state;
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
@@ -313,6 +318,10 @@ impl OpenedBlock {
                 );
             }
         };
+        debug!(
+            "OpenedBlock::initialize | Exit, block id: {}",
+            self.block_meta.number()
+        );
         Ok(())
     }
 
@@ -330,6 +339,10 @@ impl OpenedBlock {
         output: TransactionOutput,
         is_extra_txn: bool,
     ) -> Result<(HashValue, HashValue)> {
+        debug!(
+            "OpenedBlock::push_txn_and_state_opt | Entered, txn hash: {:?}",
+            txn_hash
+        );
         let (state, _state2) = &mut self.state;
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
@@ -367,23 +380,38 @@ impl OpenedBlock {
             status,
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
+
+        debug!(
+            "OpenedBlock::push_txn_and_state_opt | Exited, txn hash: {:?}",
+            txn_hash
+        );
         Ok((txn_state_root, accumulator_root))
     }
 
     /// Construct a block template for mining.
     pub fn finalize(mut self) -> Result<BlockTemplate> {
+        debug!("OpenedBlock::finalize | Entered");
         // if vm2 is not initialized, we need to execute vm2 block_meta txn first
         if !self.vm2_initialized {
             self.initialize_v2()?;
         }
         debug_assert!(self.vm2_initialized);
         let accumulator_root = self.txn_accumulator.root_hash();
+
         // update state_root accumulator, state_root order is important
         let state_root = {
             self.vm_state_accumulator
                 .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
         };
+
+        debug!(
+            "OpenedBlock::finalize | vm1 stateroot: {:?},  vm2 stateroot: {:?}, root state_root: {}",
+            self.state.0.state_root(),
+            self.state.1.state_root(),
+            state_root
+        );
+
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {
@@ -403,6 +431,7 @@ impl OpenedBlock {
             self.strategy,
             self.block_meta,
         );
+        debug!("OpenedBlock::finalize | Exit");
         Ok(block_template)
     }
 
@@ -472,13 +501,13 @@ impl OpenedBlock {
     }
 
     /// Do extra state data migration for vm1 from mainnet
-    fn execute_extra_for_vm1_migration(
+    pub fn execute_extra_for_vm1_migration(
         block_number: u64,
         chain_id: ChainId,
         statedb: &ChainStateDB,
     ) -> Result<()> {
         if should_do_migration(block_number, chain_id) {
-            migrate_main_data_to_statedb(statedb)?;
+            migrate_test_data_to_statedb(statedb)?;
         }
         Ok(())
     }

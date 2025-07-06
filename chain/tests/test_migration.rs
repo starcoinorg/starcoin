@@ -4,6 +4,7 @@
 #[cfg(test)]
 mod migration_tests {
     use log::debug;
+    use starcoin_chain::ChainReader;
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
     use starcoin_data_migration::migrate_test_data_to_statedb;
@@ -11,8 +12,12 @@ mod migration_tests {
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
     use starcoin_types::{account_address::AccountAddress, state_set::ChainStateSet};
-    use starcoin_vm_types::{on_chain_config::Version, state_view::StateReaderExt};
+    use starcoin_vm_types::{
+        account_config::association_address, on_chain_config::Version, state_view::StateReaderExt,
+    };
     use std::sync::Arc;
+    use tempfile::TempDir;
+    use test_helper::{create_block_with_transactions, print_bcs_decoded_resources};
 
     /// Helper function to create a test environment for migration
     fn create_test_environment(
@@ -27,21 +32,55 @@ mod migration_tests {
     }
 
     /// Helper function to verify migration results
-    fn verify_migration_results(statedb: &ChainStateDB) -> anyhow::Result<()> {
+    fn verify_migration_results(statedb: &ChainStateDB, expect_version: u64) -> anyhow::Result<()> {
         let stdlib_version = statedb
             .get_on_chain_config::<Version>()?
             .map(|version| version.major)
             .unwrap_or(0);
         assert_eq!(
-            stdlib_version, 4,
-            "stdlib version should be 12 after migration"
+            stdlib_version, expect_version,
+            "stdlib version should be {:?} after migration",
+            expect_version
         );
+        Ok(())
+    }
+
+    /// Test function to demonstrate BCS resource printing
+    #[stest::test]
+    fn test_print_bcs_decoded_resources() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+
+        // Use the test snapshot data
+        let (file_name, data_hash, snapshot_pack) =
+            starcoin_data_migration::get_migration_test_snapshot()?;
+
+        // Extract BCS content from tar.gz (same as migrate_legacy_state_data)
+        let temp_dir = tempfile::TempDir::new()?;
+        let tar_file = flate2::read::GzDecoder::new(snapshot_pack);
+        let mut archive = tar::Archive::new(tar_file);
+        archive.unpack(&temp_dir)?;
+
+        let bcs_path = temp_dir.path().join(file_name);
+        assert!(bcs_path.exists(), "{:?} does not exist", file_name);
+
+        let bcs_content = std::fs::read(bcs_path)?;
+
+        // Verify hash
+        assert_eq!(
+            HashValue::sha3_256_of(&bcs_content),
+            data_hash,
+            "Content hash should be the same"
+        );
+
+        // Print the decoded resources
+        print_bcs_decoded_resources(bcs_content)?;
+
         Ok(())
     }
 
     #[stest::test]
     pub fn test_migration_with_genesis_storage() -> anyhow::Result<()> {
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
         let temp_dir = starcoin_config::temp_dir();
         let (_block_chain, statedb) =
             test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
@@ -52,7 +91,7 @@ mod migration_tests {
         // Execute migration (this will verify file hash and basic functionality)
         migrate_test_data_to_statedb(&statedb)?;
 
-        verify_migration_results(&statedb)
+        verify_migration_results(&statedb, 4)
     }
 
     /// Test basic migration functionality and file integrity
@@ -68,7 +107,7 @@ mod migration_tests {
         // Verify post-migration state
         let new_statedb = chain_state_db.fork_at(chain_state_db.state_root());
 
-        verify_migration_results(&new_statedb)?;
+        verify_migration_results(&new_statedb, 4)?;
 
         Ok(())
     }
@@ -115,7 +154,7 @@ mod migration_tests {
         );
 
         // Verify migration results
-        verify_migration_results(&after_statedb)?;
+        verify_migration_results(&after_statedb, 4)?;
 
         // Test state consistency by creating multiple forks
         let fork1 = chain_state_db2.fork_at(after_migration_root);
@@ -205,8 +244,8 @@ mod migration_tests {
         let main_statedb = chain_state_db_main.fork_at(chain_state_db_main.state_root());
         let proxima_statedb = chain_state_db_proxima.fork_at(chain_state_db_proxima.state_root());
 
-        verify_migration_results(&main_statedb)?;
-        verify_migration_results(&proxima_statedb)?;
+        verify_migration_results(&main_statedb, 4)?;
+        verify_migration_results(&proxima_statedb, 4)?;
 
         Ok(())
     }
@@ -259,7 +298,7 @@ mod migration_tests {
     fn test_migration_error_handling() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
+        let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Proxima)?;
 
         // Should succeed under normal conditions
         let result = migrate_test_data_to_statedb(&chain_state_db)?;
@@ -270,7 +309,6 @@ mod migration_tests {
     }
 
     /// Test migration with 0x1 account state data specifically
-
     #[ignore]
     #[stest::test]
     fn test_migration_with_0x1_account_data() -> anyhow::Result<()> {
@@ -318,7 +356,7 @@ mod migration_tests {
         );
 
         // Verify migration results
-        verify_migration_results(&after_statedb)?;
+        verify_migration_results(&after_statedb, 4)?;
 
         // Verify that 0x1 account still has the expected state
         let final_0x1_state_set = after_statedb.get_account_state_set(&AccountAddress::ONE)?;
@@ -332,6 +370,58 @@ mod migration_tests {
             final_balance, 10000,
             "0x1 balance should be 10000 after migration"
         );
+
+        Ok(())
+    }
+
+    /// Test block mining simulation with data migration in memory
+    /// This test simulates the process of building a blockchain in memory,
+    /// mining an empty block, and verifying data migration results:
+    /// 1. 0x1 account version should be 12
+    /// 2. 0x1 account balance should be 10000
+    #[stest::test(timeout = 6000)]
+    fn test_block_migration_with_blockchain_mining() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+
+        // Create a test network (using Main to trigger migration)
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let temp = TempDir::new()?;
+
+        // Initialize blockchain with genesis in memory
+        let (mut block_chain, statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+                &net,
+                temp.path().to_path_buf(),
+            )?;
+
+        // Get current header (genesis block)
+        let genesis_header = block_chain.current_header();
+        assert_eq!(
+            genesis_header.number(),
+            0,
+            "Should start with genesis block"
+        );
+
+        // Create N blocks (empty block)
+        for _ in 0..3 {
+            // Create block template for the first block (block #1) - empty block
+            let (executed_block, stateroot) = create_block_with_transactions(
+                &mut block_chain,
+                &net,
+                association_address(),
+                vec![],
+            )?;
+
+            debug!(
+                "After create_block_with_transactions, Get Version: {}, Block number: {:?}, State root{}",
+                statedb
+                    .get_on_chain_config::<Version>()?
+                    .map(|v| v.major)
+                    .unwrap_or(0),
+                executed_block.block().header().number(),
+                stateroot
+            );
+        }
 
         Ok(())
     }

@@ -43,19 +43,19 @@ pub fn get_migration_test_snapshot() -> anyhow::Result<(&'static str, HashValue,
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
-    block_id == 1
+    block_id == 3
         && (chain_id == ChainId::new(BuiltinNetworkID::Main.chain_id().id())
             || chain_id == ChainId::new(BuiltinNetworkID::Proxima.chain_id().id()))
 }
 
 pub fn migrate_main_data_to_statedb(statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
     let (file_name, data_hash, snapshot_pack) = get_migration_main_snapshot()?;
-    migrate_legacy_state_data(&statedb, snapshot_pack, file_name, data_hash)
+    migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
 }
 
 pub fn migrate_test_data_to_statedb(statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
     let (file_name, data_hash, snapshot_pack) = get_migration_test_snapshot()?;
-    migrate_legacy_state_data(&statedb, snapshot_pack, file_name, data_hash)
+    migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
 }
 
 pub fn migrate_legacy_state_data(

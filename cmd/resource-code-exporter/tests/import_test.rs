@@ -754,7 +754,7 @@ pub fn test_check_storage_cache_overflow_error() -> anyhow::Result<()> {
 
     starcoin_logger::init();
     let net = vm1_testnet()?;
-    let data_path = std::path::Path::new("./test-data/64925.bcs");
+    let data_path = Path::new("./test-data/64925.bcs");
 
     // 1. Very small capacity (20): genesis expected to fail
     info!("=== Test 1: Testing with very small cache capacity (20), genesis should fail ===");
