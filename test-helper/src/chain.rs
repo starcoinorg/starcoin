@@ -114,8 +114,7 @@ pub fn vm1_testnet() -> Result<ChainNetwork> {
         124.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
         BuiltinNetworkID::Test.genesis_config2().clone(),
-    )
-    .unwrap();
+    )?;
 
     let vm1_offline_height = vm1_offline_height(124.into());
     assert_eq!(vm1_offline_height, u64::MAX);

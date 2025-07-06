@@ -3,7 +3,7 @@
 
 use anyhow::format_err;
 use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::ChainReader;
 use starcoin_config::ChainNetwork;
 use std::path::Path;
 
@@ -23,7 +23,6 @@ use starcoin_vm_types::{
     transaction::{Package, ScriptFunction, Transaction, TransactionPayload},
 };
 
-use starcoin_crypto::HashValue;
 use tempfile::TempDir;
 use test_helper::{
     create_block_with_transactions,
@@ -32,10 +31,7 @@ use test_helper::{
 };
 
 use starcoin_chain::verifier::FullVerifier;
-use starcoin_logger::{init_with_default_level, LogPattern};
-use starcoin_types::{
-    account::Account, identifier::Identifier, multi_transaction::MultiSignedUserTransaction,
-};
+use starcoin_types::{account::Account, identifier::Identifier};
 
 use starcoin_vm_types::on_chain_config::Version;
 
@@ -222,7 +218,7 @@ fn association_transfer_to(
 }
 
 #[stest::test]
-pub fn test_with_miner_for_import_check_uncle_block() -> anyhow::Result<()> {
+pub fn test_with_miner_step_by_step() -> anyhow::Result<()> {
     starcoin_logger::init();
 
     // I. Construct migration source blockchain storage
@@ -481,7 +477,7 @@ pub fn test_import_state_from_64925() -> anyhow::Result<()> {
 }
 
 #[ignore]
-#[stest::test(timeout = 50000)]
+#[stest::test]
 pub fn test_import_state_from_1461026() -> anyhow::Result<()> {
     starcoin_logger::init();
 
