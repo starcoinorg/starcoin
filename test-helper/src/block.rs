@@ -18,6 +18,7 @@ pub fn create_block_with_transactions(
     transactions: Vec<Transaction>,
 ) -> anyhow::Result<(ExecutedBlock, HashValue)> {
     let header = chain.current_header();
+    let input_txn_len = transactions.len();
     let multi_txns: Vec<MultiSignedUserTransaction> = transactions
         .into_iter()
         .map(|txn| MultiSignedUserTransaction::from(txn.as_signed_user_txn().unwrap().clone()))
@@ -28,6 +29,9 @@ pub fn create_block_with_transactions(
         .consensus()
         .create_block(block_template, net.time_service().as_ref())?;
     let executed_block = chain.apply_with_verifier::<FullVerifier>(block.clone())?;
-    assert_ne!(executed_block.block().transactions().len(), 0);
+
+    // Check all txn valid
+    assert_eq!(executed_block.block().transactions().len(), input_txn_len);
+
     Ok((executed_block, chain.chain_state_reader().state_root()))
 }
