@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::format_err;
-use bcs_ext;
 use log::{debug, error};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_crypto::HashValue;
