@@ -371,6 +371,10 @@ where
 
         let txns = self.tx_provider.get_txns(max_txns);
 
+        txns.iter().for_each(|transactiion| {
+            self.tx_provider.remove_txn(transactiion.id(), false);
+        });
+
         let author = *self
             .miner_account
             .read()
