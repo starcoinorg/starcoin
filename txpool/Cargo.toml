@@ -30,6 +30,7 @@ trace-time = { workspace = true }
 transaction-pool = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
+chrono = { workspace = true }
 
 # dependencies for Move 2.0
 starcoin-vm2-executor = { workspace = true }

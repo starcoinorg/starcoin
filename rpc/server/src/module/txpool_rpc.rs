@@ -49,10 +49,16 @@ where
     }
 
     fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
+        let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
+        let local_peer_id = if bypass_vm1_limit {
+            Some("local-rpc".to_string())
+        } else {
+            None
+        };
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self
             .service
-            .add_txns_multi_signed(vec![txn])
+            .add_txns_multi_signed(vec![txn], bypass_vm1_limit, local_peer_id)
             .pop()
             .expect("txpool should return result")
             .map_err(convert_to_rpc_error);
@@ -85,7 +91,7 @@ where
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)])
+                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)], false, None)
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)

@@ -14,6 +14,7 @@ use crate::metrics::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
 use futures_channel::mpsc;
+use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
@@ -104,6 +105,8 @@ impl TxPoolSyncService for TxPoolService {
     fn add_txns_multi_signed(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
@@ -113,7 +116,7 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["add_txns"])
                 .start_timer()
         });
-        self.inner.import_txns(txns)
+        self.inner.import_txns(txns, bypass_vm1_limit, peer_id)
     }
 
     fn remove_txn(
@@ -288,11 +291,14 @@ impl Inner {
     pub(crate) fn import_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>> {
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
-        self.queue.import(self.get_pool_client(), txns)
+        self.queue
+            .import(self.get_pool_client(), txns, bypass_vm1_limit, peer_id)
     }
     pub(crate) fn remove_txn(
         &self,
@@ -364,7 +370,7 @@ impl Inner {
                 txns.into_iter()
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let results = self.queue.import(self.get_pool_client(), txns);
+        let results = self.queue.import(self.get_pool_client(), txns, true, None);
         for result in results {
             if let Err(err) = result {
                 debug!("retracted transaction fail: {}", err);

@@ -32,8 +32,9 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         &self,
         txns: Vec<SignedUserTransaction>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
+        let local_peer_id = Some("local-rpc".to_string());
         let multi_txns = txns.into_iter().map(|txn| txn.into()).collect();
-        let rets = self.add_txns_multi_signed(multi_txns);
+        let rets = self.add_txns_multi_signed(multi_txns, false, local_peer_id);
         let mut results = vec![];
         for ret in rets {
             match ret {
@@ -50,6 +51,8 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns_multi_signed(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>>;
 
     /// Removes transaction from the pool.
