@@ -321,11 +321,12 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, _startup_info, _, _) =
+        let (storage, _startup_info, _, dag) =
             test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
+        registry.put_shared(dag).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
         let account_state = service_ref.get_account_state(genesis_address()).await?;
         assert!(account_state.is_some());
