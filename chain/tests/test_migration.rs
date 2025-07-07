@@ -402,8 +402,18 @@ mod migration_tests {
             "Should start with genesis block"
         );
 
+        const MAX_TEST_BLOCKS: usize = 10;
+        let picked_account =
+            AccountAddress::from_hex_literal("0x7c047eb38e1aa9b33c8ba0f568bc547b").unwrap();
+
+        let before_balance = block_chain
+            .chain_state_reader()
+            .get_balance(picked_account)?
+            .unwrap_or(0);
+        assert_eq!(before_balance, 0);
+
         // Create N blocks (empty block)
-        for _ in 0..3 {
+        for _ in 0..MAX_TEST_BLOCKS {
             // Create block template for the first block (block #1) - empty block
             let (executed_block, stateroot) = create_block_with_transactions(
                 &mut block_chain,
@@ -422,6 +432,13 @@ mod migration_tests {
                 stateroot
             );
         }
+
+        // Pick an account at random and check it balance
+        let after_balance = block_chain
+            .chain_state_reader()
+            .get_balance(picked_account)?
+            .unwrap_or(0);
+        assert_ne!(after_balance, 0);
 
         Ok(())
     }

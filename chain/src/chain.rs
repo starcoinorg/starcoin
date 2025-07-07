@@ -20,6 +20,7 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_data_migration;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -477,6 +478,11 @@ impl BlockChain {
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
+
+        // Check if this is a migration block
+        let is_migration_block =
+            starcoin_data_migration::should_do_migration(header.number(), header.chain_id());
+
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let (vm1_offline, mut t) = match &parent_status {
@@ -531,8 +537,17 @@ impl BlockChain {
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
-            let state_root1 = executed_data.state_root;
+            let mut state_root1 = executed_data.state_root;
             let state_root2 = executed_data2.state_root;
+
+            // Apply migration data if this is a migration block
+            if is_migration_block {
+                debug!("Applying migration data for block {}", header.number());
+                starcoin_data_migration::migrate_test_data_to_statedb(&statedb)?;
+                // After migration, get the updated state root
+                state_root1 = statedb.state_root();
+            }
+
             vm_state_accumulator.append(&[state_root1, state_root2])?;
             (
                 vm_state_accumulator.root_hash(),
@@ -543,6 +558,7 @@ impl BlockChain {
         let vec_transaction_info = &executed_data.txn_infos;
         let vm2_txn_infos = &executed_data2.txn_infos;
 
+        // State root verification - now works for both migration and non-migration blocks
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -552,6 +568,7 @@ impl BlockChain {
             header.state_root(),
             multi_state
         );
+
         let vm1_block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
@@ -560,6 +577,7 @@ impl BlockChain {
                 .iter()
                 .fold(0u64, |acc, i| acc.saturating_add(i.gas_used())),
         );
+
         verify_block!(
             VerifyBlockField::State,
             block_gas_used == header.gas_used(),
