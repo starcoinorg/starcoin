@@ -179,6 +179,7 @@ fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
     Ok(())
 }
 
+#[ignore = "dag will be from the scratch. no update"]
 #[stest::test(timeout = 300)]
 fn test_stdlib_upgrade() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
