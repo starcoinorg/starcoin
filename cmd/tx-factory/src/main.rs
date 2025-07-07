@@ -69,7 +69,7 @@ pub struct TxFactoryOpt {
         default_value = "20",
         help = "count of round number"
     )]
-    pub round_num: u32,
+    pub round_num: u64,
     #[clap(long, short = 'w', default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
     #[clap(
@@ -538,58 +538,101 @@ impl TxnMocker {
         Ok(result)
     }
 
-    fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
-        //check node status
-        let sync_status: SyncStatus = self.client.sync_status()?.into();
-        if sync_status.is_syncing() {
-            info!("node syncing, pause stress");
-            return Ok(());
+    fn stress_generate_txn(
+        &self,
+        sender_index: usize,
+        sequences: &[u64],
+        accounts: &[AccountInfo],
+        expiration_timestamp: u64,
+    ) -> Result<()> {
+        let mut receiver_index = sender_index + 1;
+        if receiver_index >= accounts.len() {
+            receiver_index = 0;
         }
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
-        //unlock all account and get sequence
+        let result = self.gen_and_submit_transfer_txn(
+            accounts[sender_index].address,
+            accounts[receiver_index].address,
+            1,
+            1,
+            sequences[sender_index],
+            false,
+            expiration_timestamp,
+        );
+
+        //handle result
+        match result {
+            Ok(_) => {
+                info!(
+                    "sumbit txn ok. account: {}, seq: {}",
+                    accounts[sender_index].address, sequences[sender_index]
+                );
+            }
+            Err(err) => {
+                info!(
+                    "Submit txn failed with error: {:?}. Try again after 500ms.",
+                    err
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    fn refresh_seq_and_submit_transactions(&self, accounts: &[AccountInfo]) -> Result<()> {
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        // get latest sequences for each account
         let mut sequences = vec![];
-        for account in &accounts {
+        for account in accounts {
             sequences.push(
                 self.sequence_number(&state_reader, account.address)
                     .unwrap()
                     .unwrap(),
             );
         }
-        //get  of all account
+
         let expiration_timestamp = self.fetch_expiration_time();
-        let count = accounts.len();
-        (0..round_num).for_each(|_| {
-            (0..count).for_each(|index| {
-                let mut j = index + 1;
-                if j >= count {
-                    j = 0;
-                }
-                let result = self.gen_and_submit_transfer_txn(
-                    accounts[index].address,
-                    accounts[j].address,
-                    1,
-                    1,
-                    sequences[index],
-                    false,
-                    expiration_timestamp,
-                );
-                //handle result
-                match result {
-                    Ok(_) => {
-                        // sequence add
-                        sequences[index] += 1;
-                    }
-                    Err(err) => {
-                        info!(
-                            "Submit txn failed with error: {:?}. Try again after 500ms.",
-                            err
-                        );
-                        std::thread::sleep(Duration::from_millis(500));
-                    }
-                }
-            });
+
+        // unlock and submit the transaction for each account
+        (0..accounts.len()).for_each(|sender_index| {
+            match self.stress_generate_txn(sender_index, &sequences, accounts, expiration_timestamp)
+            {
+                Ok(_) => (),
+                Err(e) => error!("stress_generate_txn error: {:?}", e),
+            }
         });
+        Ok(())
+    }
+
+    fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u64) -> Result<()> {
+        //check node status
+        let sync_status: SyncStatus = self.client.sync_status()?.into();
+        if sync_status.is_syncing() {
+            info!("node syncing, pause stress");
+            return Ok(());
+        }
+
+        let sleep = 100; // ms
+
+        let start = Instant::now();
+
+        // loop the round number in each interval
+        (0..round_num).for_each(|_| {
+            match self.refresh_seq_and_submit_transactions(&accounts) {
+                Ok(_) => (),
+                Err(e) => error!("recheck_sequence_number error: {:?}", e),
+            }
+            std::thread::sleep(Duration::from_millis(sleep));
+        });
+
+        let duration =
+            (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));
+
+        info!(
+            "tps is {:.2}.",
+            round_num as f64 * accounts.len() as f64 / duration as f64
+        );
+
         Ok(())
     }
 }
