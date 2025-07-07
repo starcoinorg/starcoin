@@ -11,7 +11,6 @@ use crate::pool::ready::Expiration;
 use crate::{pool, pool::PoolTransaction};
 use chrono::Utc;
 use futures_channel::mpsc;
-use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
@@ -27,7 +26,7 @@ use std::{
         Arc,
     },
 };
-use tx_pool::{self, VerifiedTransaction, Verifier};
+use tx_pool::{self, Verifier};
 
 type Listener = (
     LocalTransactionsList,
@@ -338,7 +337,7 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
-        let mut existing_vm1 = self.existing_vm1_txns();
+        let existing_vm1 = self.existing_vm1_txns();
         for transaction in transactions.into_iter() {
             // ----- VM1 limit and abuse counter logic -----
             if !bypass_vm1_limit

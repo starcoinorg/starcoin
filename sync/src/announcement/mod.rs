@@ -98,7 +98,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
 
                             if !fresh_txns.is_empty() {
                                 // todo: double check for announcement msg, if vm1 txn limit should be triggered.
-                                txpool.add_txns_multi_signed(fresh_txns, false, None)
+                                txpool.add_txns_multi_signed(fresh_txns, true, None);
                             }
                         }
                     }

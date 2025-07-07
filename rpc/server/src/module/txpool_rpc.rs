@@ -91,7 +91,7 @@ where
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)], false, None)
+                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)], true, None)
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)

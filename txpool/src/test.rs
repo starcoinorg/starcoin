@@ -155,7 +155,7 @@ async fn test_pool_pending() -> Result<()> {
         .map(|index| generate_txn(node_config.clone(), index).into())
         .collect::<Vec<_>>();
 
-    let _ = txpool_service.add_txns_multi_signed(txn_vec.clone());
+    let _ = txpool_service.add_txns_multi_signed(txn_vec.clone(), true, None);
     let pending = txpool_service.get_pending_txns(Some(pool_size), None);
     assert!(!pending.is_empty());
 
@@ -303,7 +303,7 @@ async fn test_vm1_auto_cull() -> Result<()> {
     let txns: Vec<_> = (0..120)
         .map(|i| generate_txn(config.clone(), i).into())
         .collect();
-    let results = txpool_service.add_txns_multi_signed(txns);
+    let results = txpool_service.add_txns_multi_signed(txns, true, None);
 
     assert!(results.iter().all(|r| r.is_ok()));
 

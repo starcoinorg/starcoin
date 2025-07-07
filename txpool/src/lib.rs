@@ -220,7 +220,7 @@ impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
             // JUST need to keep at most once delivery.
             let _ = self
                 .inner
-                .import_txns(msg.message.txns, false, Some(msg.peer_id));
+                .import_txns(msg.message.txns, false, Some(msg.peer_id.to_string()));
         } else {
             //TODO should keep txn in a buffer, then execute after sync finished.
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");

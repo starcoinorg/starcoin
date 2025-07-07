@@ -14,7 +14,6 @@ use crate::metrics::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
 use anyhow::Result;
 use futures_channel::mpsc;
-use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
@@ -64,6 +63,9 @@ impl TxPoolService {
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
+            pool_config.max_vm1_txn_count.unwrap_or(200),
+            pool_config.max_vm1_rejections_per_peer.unwrap_or(50),
+            pool_config.vm1_peer_blacklist_duration_secs.unwrap_or(600),
         );
         let queue = Arc::new(queue);
         let inner = Inner {
