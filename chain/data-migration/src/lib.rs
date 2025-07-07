@@ -2,15 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::format_err;
-use log::debug;
+use bcs_ext;
+use log::{debug, error};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::state_set::ChainStateSet;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::{on_chain_config::Version, state_view::StateReaderExt};
+use starcoin_vm_types::{
+    account_config::{BalanceResource, STC_TOKEN_CODE_STR},
+    genesis_config::ChainId,
+    language_storage::StructTag,
+    on_chain_config::Version,
+    state_view::StateReaderExt,
+    token::token_code::TokenCode,
+};
+use std::{collections::HashMap, str::FromStr};
 use tempfile::TempDir;
 
 /// Description: This implementation used for multi-move vm upgrade that
@@ -97,7 +105,7 @@ pub fn migrate_legacy_state_data(
 
     let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_content)?;
     debug!("migrate_legacy_state_data | start applying data ...");
-    statedb.apply(chain_state_set)?;
+    statedb.apply(chain_state_set.clone())?;
     let new_state_root = statedb.commit()?;
     statedb.flush()?;
 
@@ -119,5 +127,108 @@ pub fn migrate_legacy_state_data(
         "migrate_legacy_state_data | Exited, the stdlib_version: {:?}, new state root is: {:?}",
         stdlib_version, new_state_root
     );
+
+    verify_token_state_is_complete(&new_statedb, &chain_state_set, STC_TOKEN_CODE_STR)?;
+
     Ok(new_state_root)
+}
+
+pub fn verify_token_state_is_complete(
+    statedb: &ChainStateDB,
+    original_chain_state_set: &ChainStateSet,
+    token_code: &str,
+) -> anyhow::Result<()> {
+    info!("verify_state_is_complete | Starting STC balance verification...");
+
+    let stc_token_code = TokenCode::from_str(token_code)?;
+    let stc_balance_struct_tag =
+        BalanceResource::struct_tag_for_token(stc_token_code.clone().try_into()?);
+
+    // Extract STC balances from original data
+    let mut original_balances = HashMap::new();
+    let mut total_original = 0u128;
+
+    debug!(
+        "verify_state_is_complete | stc_balance_struct_tag: {:?}",
+        stc_balance_struct_tag
+    );
+
+    for (address, account_state_set) in original_chain_state_set.state_sets() {
+        if let Some(resource_set) = account_state_set.resource_set() {
+            for (key, value) in resource_set.iter() {
+                if let Ok(struct_tag) = bcs_ext::from_bytes::<StructTag>(key) {
+                    if struct_tag != stc_balance_struct_tag {
+                        // Ignore the tag that not balance type
+                        continue;
+                    }
+                    if let Ok(balance_resource) = bcs_ext::from_bytes::<BalanceResource>(value) {
+                        let balance = balance_resource.token();
+                        original_balances.insert(*address, balance);
+                        total_original += balance;
+                    }
+                }
+            }
+        }
+    }
+
+    info!(
+        "verify_state_is_complete | Found {} accounts with STC balances, total: {}",
+        original_balances.len(),
+        total_original
+    );
+
+    // Verify balances in current state
+    let mut errors = Vec::new();
+    let mut total_current = 0u128;
+
+    for (address, expected_balance) in &original_balances {
+        match statedb.get_balance_by_token_code(*address, stc_token_code.clone()) {
+            Ok(Some(actual_balance)) => {
+                if actual_balance != *expected_balance {
+                    errors.push(format!(
+                        "Balance mismatch for {}: expected {}, got {}",
+                        address, expected_balance, actual_balance
+                    ));
+                } else {
+                    total_current += actual_balance;
+                }
+            }
+            Ok(None) => {
+                errors.push(format!(
+                    "Balance not found for {}: expected {}",
+                    address, expected_balance
+                ));
+            }
+            Err(e) => {
+                errors.push(format!("Error reading balance for {}: {}", address, e));
+            }
+        }
+    }
+
+    // Check total balance consistency
+    if total_original != total_current {
+        errors.push(format!(
+            "Total balance mismatch: original {}, current {}",
+            total_original, total_current
+        ));
+    }
+
+    if errors.is_empty() {
+        debug!(
+            "STC balance verification passed! {} accounts, total: {}",
+            original_balances.len(),
+            total_current
+        );
+        debug!("verify_state_is_complete | Exited");
+        Ok(())
+    } else {
+        error!(
+            "STC balance verification failed with {} errors:",
+            errors.len()
+        );
+        for error in &errors {
+            error!("  {}", error);
+        }
+        Err(format_err!("STC balance verification failed"))
+    }
 }

@@ -7,11 +7,11 @@ mod migration_tests {
     use starcoin_chain::ChainReader;
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
-    use starcoin_data_migration::migrate_test_data_to_statedb;
+    use starcoin_data_migration::{migrate_main_data_to_statedb, migrate_test_data_to_statedb};
     use starcoin_state_api::{ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
-    use starcoin_types::{account_address::AccountAddress, state_set::ChainStateSet};
+    use starcoin_types::account_address::AccountAddress;
     use starcoin_vm_types::{
         account_config::association_address, on_chain_config::Version, state_view::StateReaderExt,
     };
@@ -309,67 +309,23 @@ mod migration_tests {
     }
 
     /// Test migration with 0x1 account state data specifically
-    #[ignore]
-    #[stest::test]
-    fn test_migration_with_0x1_account_data() -> anyhow::Result<()> {
+    #[stest::test(timeout = 5000)]
+    fn test_migration_main_data() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
         let (_net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        migrate_test_data_to_statedb(&chain_state_db)?;
+        migrate_main_data_to_statedb(&chain_state_db)?;
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
 
         // Export only the 0x1 account state data
-        let account_0x1_state_set = expected_statedb.get_account_state_set(&AccountAddress::ONE)?;
-        assert!(
-            account_0x1_state_set.is_some(),
-            "0x1 account should exist after migration"
-        );
-
-        // Create a fresh test environment
-        let (_net2, _storage2, chain_state_db2) = create_test_environment(BuiltinNetworkID::Main)?;
-
-        // Apply only the 0x1 account state data to simulate a minimal existing state
-        let minimal_state_data =
-            ChainStateSet::new(vec![(AccountAddress::ONE, account_0x1_state_set.unwrap())]);
-        chain_state_db2.apply(minimal_state_data)?;
-        chain_state_db2.commit()?;
-        chain_state_db2.flush()?;
-
-        // Record pre-migration state
-        let before_migration_root = chain_state_db2.state_root();
-
-        // Execute migration
-        migrate_test_data_to_statedb(&chain_state_db2)?;
-
-        // Verify post-migration state
-        let after_migration_root = chain_state_db2.state_root();
-        let after_statedb = chain_state_db2.fork_at(after_migration_root);
-
-        // Since we're applying only 0x1 account data which already contains migrated data,
-        // the state root should remain the same (idempotency)
-        assert_eq!(
-            before_migration_root, after_migration_root,
-            "State root should remain the same when applying already migrated 0x1 account data"
-        );
-
-        // Verify migration results
-        verify_migration_results(&after_statedb, 4)?;
-
-        // Verify that 0x1 account still has the expected state
-        let final_0x1_state_set = after_statedb.get_account_state_set(&AccountAddress::ONE)?;
-        assert!(
-            final_0x1_state_set.is_some(),
-            "0x1 account should still exist after migration"
-        );
-
-        let final_balance = after_statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0);
-        assert_eq!(
-            final_balance, 10000,
-            "0x1 balance should be 10000 after migration"
-        );
+        let version = expected_statedb
+            .get_on_chain_config::<Version>()?
+            .map(|v| v.major)
+            .unwrap_or(0);
+        assert_eq!(version, 12, "0x1 account should exist after migration");
 
         Ok(())
     }
