@@ -618,8 +618,7 @@ impl TxnMocker {
             return Ok(());
         }
 
-        let sleep = 100; // ms
-
+        let sleep = 4000; // ms
 
         let current_sequences = self.fetch_account_sequences(&accounts)?;
 
