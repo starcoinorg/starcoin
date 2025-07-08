@@ -29,7 +29,7 @@ pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBloc
 use std::fmt;
 use thiserror::Error;
 
-const DEFAULT_TASK_POOL_SIZE: usize = 16;
+// const DEFAULT_TASK_POOL_SIZE: usize = 16;
 #[derive(Debug, Error)]
 pub enum MinerError {
     #[error("Mint task is empty Error")]
@@ -247,6 +247,7 @@ impl MinerService {
         self.task_pool.retain(|t| t.minting_blob != mining_blob);
         self.manage_task_pool();
         self.task_pool.push(task);
+        info!("jacktest: dispatch_mint_block_event");
         ctx.broadcast(MintBlockEvent::new(
             parent_hash,
             strategy,
@@ -298,9 +299,9 @@ impl MinerService {
         !self.task_pool.is_empty()
     }
     fn manage_task_pool(&mut self) {
-        if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
-            self.task_pool.remove(0);
-        }
+        // if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
+        //     self.task_pool.remove(0);
+        // }
     }
     pub fn task_pool_len(&self) -> usize {
         self.task_pool.len()
