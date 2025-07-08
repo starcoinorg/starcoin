@@ -65,9 +65,7 @@ impl TxPoolService {
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
-            pool_config
-                .max_vm1_txn_count
-                .unwrap_or(VM1_TXN_POOL_LIMIT),
+            pool_config.max_vm1_txn_count.unwrap_or(VM1_TXN_POOL_LIMIT),
             pool_config.max_vm1_rejections_per_peer.unwrap_or(10),
             pool_config.vm1_peer_blacklist_duration_secs.unwrap_or(120),
         );
