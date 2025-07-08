@@ -107,7 +107,7 @@ fn test_migration_from_bcs_for_test_db() -> anyhow::Result<()> {
     // Export data - use a more robust approach
     info!("Starting export from test statedb...");
 
-    match export_from_statedb(&export_chain_statedb, &export_path) {
+    match export_from_statedb(&export_chain_statedb, &export_path, None) {
         Ok(_) => info!("Export completed successfully"),
         Err(e) => {
             info!("Export failed with error: {}", e);
@@ -355,10 +355,10 @@ pub fn test_with_miner_step_by_step() -> anyhow::Result<()> {
             // Create temporary directory for test files
             info!("Start Export with block 1 and block 2");
             let source_statedb1 = statedb.fork_at(block_1_state_root);
-            export_from_statedb(&source_statedb1, &export_path1)?;
+            export_from_statedb(&source_statedb1, &export_path1, None)?;
 
             let source_statedb2 = statedb.fork_at(block_2_state_root);
-            export_from_statedb(&source_statedb2, &export_path2)?;
+            export_from_statedb(&source_statedb2, &export_path2, None)?;
         };
     };
 
@@ -729,7 +729,7 @@ pub fn test_apply_dependencies_contract_state_data() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let export_path = temp_dir.path().join("export_block4.bcs");
     let source_statedb = statedb1.fork_at(chain1.chain_state_reader().state_root());
-    export_from_statedb(&source_statedb, &export_path)?;
+    export_from_statedb(&source_statedb, &export_path, None)?;
 
     // Import to new chain
     info!("=== Import state root to new chain ===");
