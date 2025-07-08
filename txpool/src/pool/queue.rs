@@ -289,19 +289,21 @@ impl TransactionQueue {
         C: client::AccountSeqNumberClient + client::Client,
     {
         // ----- Blacklist check -----
-        if let Some(peer) = &peer_id {
-            let now_ts = Utc::now().timestamp() as u64;
-            let mut bl = self.vm1_blacklist.write();
-            if let Some(&expiry) = bl.get(peer) {
-                if now_ts < expiry {
-                    // Peer is still blacklisted: reject all transactions
-                    return transactions
-                        .into_iter()
-                        .map(|_| Err(TransactionError::LimitReached.into()))
-                        .collect();
-                } else {
-                    // Blacklist entry expired: remove peer
-                    bl.remove(peer);
+        if !bypass_vm1_limit {
+            if let Some(peer) = &peer_id {
+                let now_ts = Utc::now().timestamp() as u64;
+                let mut bl = self.vm1_blacklist.write();
+                if let Some(&expiry) = bl.get(peer) {
+                    if now_ts < expiry {
+                        // Peer is still blacklisted: reject all transactions
+                        return transactions
+                            .into_iter()
+                            .map(|_| Err(TransactionError::LimitReached.into()))
+                            .collect();
+                    } else {
+                        // Blacklist entry expired: remove peer
+                        bl.remove(peer);
+                    }
                 }
             }
         }
