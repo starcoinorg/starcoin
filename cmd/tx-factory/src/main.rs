@@ -16,10 +16,16 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::RawUserTransaction;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+
+struct NextTransaction {
+    seq: u64,
+    receiver: AccountAddress,
+}
 
 #[derive(Debug, Clone, Parser, Default)]
 #[clap(name = "txfactory", about = "tx generator for starcoin")]
@@ -539,6 +545,7 @@ impl TxnMocker {
         Ok(result)
     }
 
+    #[allow(dead_code)]
     fn stress_generate_txn(
         &self,
         sender_index: usize,
@@ -580,29 +587,61 @@ impl TxnMocker {
         Ok(())
     }
 
-    fn refresh_seq_and_submit_transactions(&self, accounts: &[AccountInfo]) -> Result<()> {
-        // get latest sequences for each account
-        let sequences = self.fetch_account_sequences(accounts)?;
+    fn submit_transaction_for_dag(
+        &self,
+        sequences: &HashMap<AccountAddress, NextTransaction>,
+    ) -> Result<()> {
+        sequences.iter().for_each(|(address, next_transaction)| {
+            let expiration_timestamp = self.fetch_expiration_time();
 
-        let expiration_timestamp = self.fetch_expiration_time();
+            let result = self.gen_and_submit_transfer_txn(
+                *address,
+                next_transaction.receiver,
+                1,
+                1,
+                next_transaction.seq,
+                false,
+                expiration_timestamp,
+            );
 
-        // unlock and submit the transaction for each account
-        (0..accounts.len()).for_each(|sender_index| {
-            match self.stress_generate_txn(sender_index, &sequences, accounts, expiration_timestamp)
-            {
-                Ok(_) => (),
-                Err(e) => error!("stress_generate_txn error: {:?}", e),
+            //handle result
+            match result {
+                Ok(_) => {
+                    info!(
+                        "sumbit txn ok. account: {}, seq: {}",
+                        address, next_transaction.seq
+                    );
+                }
+                Err(err) => {
+                    info!(
+                        "Submit txn failed with error: {:?}. Try again after 500ms.",
+                        err
+                    );
+                }
             }
         });
+
+        // unlock and submit the transaction for each account
+        // (0..accounts.len()).for_each(|sender_index| {
+        //     match self.stress_generate_txn(sender_index, &sequences, accounts, expiration_timestamp)
+        //     {
+        //         Ok(_) => (),
+        //         Err(e) => error!("stress_generate_txn error: {:?}", e),
+        //     }
+        // });
 
         Ok(())
     }
 
-    fn fetch_account_sequences(&self, accounts: &[AccountInfo]) -> Result<Vec<u64>> {
+    fn fetch_account_sequences(
+        &self,
+        accounts: &[AccountInfo],
+    ) -> Result<HashMap<AccountAddress, u64>> {
         let state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        let mut sequences = vec![];
+        let mut sequences = HashMap::new();
         for account in accounts {
-            sequences.push(
+            sequences.insert(
+                account.address,
                 self.sequence_number(&state_reader, account.address)
                     .unwrap()
                     .unwrap(),
@@ -614,15 +653,20 @@ impl TxnMocker {
     fn current_transaction_count(
         &self,
         accounts: &[AccountInfo],
-        last_sequence: &[u64],
+        last_sequence: HashMap<AccountAddress, u64>,
     ) -> Result<u64> {
         let sequences = self.fetch_account_sequences(accounts)?;
 
-        Ok(sequences
+        let total = sequences
             .iter()
-            .zip(last_sequence)
-            .map(|(curr, last)| curr.saturating_sub(*last))
-            .sum())
+            .filter_map(|(addr, current_seq)| {
+                last_sequence
+                    .get(addr)
+                    .map(|last_seq| current_seq.saturating_sub(*last_seq))
+            })
+            .sum();
+
+        Ok(total)
     }
 
     fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u64) -> Result<()> {
@@ -635,25 +679,64 @@ impl TxnMocker {
 
         let sleep = 4000; // ms
 
-        let current_sequences = self.fetch_account_sequences(&accounts)?;
+        let statistic_sequences = self.fetch_account_sequences(&accounts)?; // for statistic
+
+        // get latest sequences for each account
+        let mut all_sequences = self.fetch_account_sequences(&accounts)?;
+        let mut current_sequences = HashMap::new();
+        accounts
+            .iter()
+            .enumerate()
+            .for_each(|(index, account_info)| {
+                let receiver = accounts.get((index + 1) % accounts.len()).unwrap();
+                current_sequences.insert(
+                    account_info.address,
+                    NextTransaction {
+                        seq: all_sequences
+                            .get(account_info.address())
+                            .unwrap()
+                            .saturating_add(1),
+                        receiver: receiver.address,
+                    },
+                );
+            });
 
         let start = Instant::now();
 
         // loop the round number in each interval
         (0..round_num).for_each(|_| {
-            match self.refresh_seq_and_submit_transactions(&accounts) {
+            match self.submit_transaction_for_dag(&current_sequences) {
                 Ok(_) => (),
                 Err(e) => error!("recheck_sequence_number error: {:?}", e),
             }
 
-            std::thread::sleep(Duration::from_millis(sleep));
+            current_sequences.clear();
+
+            let refresh_sequences = self.fetch_account_sequences(&accounts).unwrap();
+
+            accounts.iter().enumerate().for_each(|(index, account)| {
+                let last_seq = all_sequences.get(account.address()).unwrap();
+                let next_seq = refresh_sequences.get(account.address()).unwrap();
+                let receiver = accounts.get((index + 1) % accounts.len()).unwrap();
+                if *next_seq > *last_seq {
+                    current_sequences.insert(
+                        account.address,
+                        NextTransaction {
+                            seq: (*next_seq).saturating_add(1),
+                            receiver: receiver.address,
+                        },
+                    );
+                }
+            });
+
+            all_sequences = refresh_sequences;
         });
 
         let duration =
             (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));
 
         let total_transaction_process =
-            self.current_transaction_count(&accounts, &current_sequences)?;
+            self.current_transaction_count(&accounts, statistic_sequences)?;
 
         info!(
             "tps is {:.2}.",
