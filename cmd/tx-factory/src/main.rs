@@ -448,6 +448,11 @@ impl TxnMocker {
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance(self.account_address)?;
+            info!(
+                "jacktest: balance: {:?}, start_balance: {:?}",
+                balance.unwrap(),
+                start_balance
+            );
             while balance.unwrap() < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = state_reader.get_balance(self.account_address)?;
@@ -522,12 +527,13 @@ impl TxnMocker {
             Some(n) => Some(n),
             None => {
                 let account_resource = state_reader.get_account_resource(address)?;
-                match account_resource {
-                    None => None,
-                    Some(resource) => {
-                        Some(resource.sequence_number())
-                    }
-                }
+                account_resource.map(|resource| resource.sequence_number())
+                // match account_resource {
+                //     None => None,
+                //     Some(resource) => {
+                //         Some(resource.sequence_number())
+                //     }
+                // }
             }
         };
         Ok(result)
@@ -588,6 +594,7 @@ impl TxnMocker {
                 Err(e) => error!("stress_generate_txn error: {:?}", e),
             }
         });
+
         Ok(())
     }
 
@@ -604,10 +611,18 @@ impl TxnMocker {
         Ok(sequences)
     }
 
-    fn current_transaction_count(&self, accounts: &[AccountInfo], last_sequence: &[u64]) -> Result<u64> {
+    fn current_transaction_count(
+        &self,
+        accounts: &[AccountInfo],
+        last_sequence: &[u64],
+    ) -> Result<u64> {
         let sequences = self.fetch_account_sequences(accounts)?;
 
-        Ok(sequences.iter().zip(last_sequence).map(|(curr, last)| curr.saturating_sub(*last)).sum())
+        Ok(sequences
+            .iter()
+            .zip(last_sequence)
+            .map(|(curr, last)| curr.saturating_sub(*last))
+            .sum())
     }
 
     fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u64) -> Result<()> {
@@ -630,13 +645,15 @@ impl TxnMocker {
                 Ok(_) => (),
                 Err(e) => error!("recheck_sequence_number error: {:?}", e),
             }
+
             std::thread::sleep(Duration::from_millis(sleep));
         });
 
         let duration =
             (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));
-        
-        let total_transaction_process = self.current_transaction_count(&accounts, &current_sequences)?;
+
+        let total_transaction_process =
+            self.current_transaction_count(&accounts, &current_sequences)?;
 
         info!(
             "tps is {:.2}.",
