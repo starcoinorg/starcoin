@@ -436,8 +436,12 @@ where
         info!("jacktest: txns len: {}", txns.len());
         let excluded_txns = opened_block.push_txns(txns)?;
 
+        info!(
+            "jacktest: excluded_txns len: {}, included txns len: {}",
+            excluded_txns.discarded_txns.len(),
+            opened_block.included_user_txns().len()
+        );
         let template = opened_block.finalize()?;
-        info!("jacktest: excluded_txns len: {}, included txns len: {}", excluded_txns.discarded_txns.len(), opened_block.included_user_txns().len());
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
