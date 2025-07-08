@@ -297,7 +297,7 @@ async fn test_txpool_actor_service() {
 }
 
 #[stest::test]
-async fn test_vm1_early_reject() -> Result<()> {
+async fn test_vm1_txn_early_reject() -> Result<()> {
     let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
 
     let txns: Vec<_> = (0..101)
@@ -307,6 +307,7 @@ async fn test_vm1_early_reject() -> Result<()> {
         txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()));
 
     assert!(results.iter().take(100).all(|r| r.is_ok()));
+    assert!(results.iter().skip(100).all(|r| r.is_err()));
 
     let pendings = txpool_service.get_pending_txns(None, None);
 

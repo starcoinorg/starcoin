@@ -380,6 +380,9 @@ impl TransactionQueue {
 
             results.push(match imported {
                 Ok(_) => {
+                    // TODO: how to tracking VM1 transactions?
+                    // 1. what if a vm1 txn has been replaced?
+                    // 2. concurrent vm1 txns from different peers?
                     if is_v1_txn {
                         existing_vm1 += 1
                     };

@@ -40,17 +40,17 @@ pub struct TxPoolConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-max-vm1-txn-count", long)]
-    /// Max number of VM1 transactions allowed in the pool.
+    /// Max number of VM1 transactions allowed in the pool. default to 100.
     pub max_vm1_txn_count: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-max-vm1-rejections-per-peer", long)]
-    /// Max number of VM1 rejections per peer before blacklisting.
+    /// Max number of VM1 rejections per peer before blacklisting. default to 10.
     pub max_vm1_rejections_per_peer: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-vm1-peer-blacklist-duration-secs", long)]
-    /// Duration (in seconds) for which a peer remains blacklisted.
+    /// Duration (in seconds) for which a peer remains blacklisted. default to 120.
     pub vm1_peer_blacklist_duration_secs: Option<u64>,
 }
 

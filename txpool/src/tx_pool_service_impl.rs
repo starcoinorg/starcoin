@@ -33,8 +33,6 @@ use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 
-const VM1_TXN_POOL_LIMIT: usize = 100;
-
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
     inner: Inner,
@@ -65,7 +63,7 @@ impl TxPoolService {
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
-            pool_config.max_vm1_txn_count.unwrap_or(VM1_TXN_POOL_LIMIT),
+            pool_config.max_vm1_txn_count.unwrap_or(100),
             pool_config.max_vm1_rejections_per_peer.unwrap_or(10),
             pool_config.vm1_peer_blacklist_duration_secs.unwrap_or(120),
         );
