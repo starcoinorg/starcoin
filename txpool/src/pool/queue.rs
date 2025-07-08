@@ -389,7 +389,7 @@ impl TransactionQueue {
                     // TODO: how to tracking VM1 transactions?
                     // 1. what if a vm1 txn has been replaced?
                     // 2. concurrent vm1 txns from different peers?
-                    if is_v1_txn {
+                    if !bypass_vm1_limit && is_v1_txn {
                         existing_vm1 += 1
                     };
                     Ok(())
@@ -640,8 +640,6 @@ impl TransactionQueue {
         self.cached_pending.read().pending.is_some()
     }
 
-    /// Automatic cleanup: When the number of VM1 transactions exceeds the threshold,
-    /// remove the oldest transactions up to the threshold.
     fn existing_vm1_txns(&self) -> usize {
         let pool = self.pool.read();
         let mut vm1_txs = 0;
