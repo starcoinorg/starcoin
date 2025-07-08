@@ -82,13 +82,7 @@ pub fn print_bcs_decoded_resources(bcs_content: Vec<u8>) -> anyhow::Result<()> {
             // Decode the struct tag from the key
             match bcs_ext::from_bytes::<StructTag>(key.as_slice()) {
                 Ok(struct_tag) => {
-                    debug!("  Resource type: {}", struct_tag);
-                    debug!("  Resource size: {} bytes", value.len());
-
-                    // Try to decode and print the resource value
-                    // Note: We can't use view_resource here since we don't have a StateView
-                    // But we can print the raw bytes and attempt basic BCS decoding
-                    debug!("  Raw value (hex): {}", hex::encode(value));
+                    debug!("  Resource type: {}, size: {} bytes, Raw value (hex): {}", struct_tag, value.len(), hex::encode(value));
 
                     // Try to decode as some common resource types
                     if let Ok(version) = bcs_ext::from_bytes::<
@@ -106,6 +100,11 @@ pub fn print_bcs_decoded_resources(bcs_content: Vec<u8>) -> anyhow::Result<()> {
                     >(value.as_slice())
                     {
                         debug!("  Decoded as AccountResource: {:?}", account);
+                    } else if let Ok(token_info) = bcs_ext::from_bytes::<
+                        starcoin_vm_types::account_config::TokenInfo,
+                    >(value.as_slice())
+                    {
+                        debug!("  Decoded as TokenInfo: {:?}", token_info);
                     } else {
                         debug!("  Could not decode as common resource types");
                     }
