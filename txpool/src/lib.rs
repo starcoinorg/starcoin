@@ -218,9 +218,16 @@ impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactionsMessage, _ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
             // JUST need to keep at most once delivery.
-            let _ = self
-                .inner
-                .import_txns(msg.message.txns, false, Some(msg.peer_id.to_string()));
+            let bypass_vm1_limit = msg
+                .message
+                .txns
+                .iter()
+                .all(|txn| matches!(txn, MultiSignedUserTransaction::VM2(_)));
+            let _ = self.inner.import_txns(
+                msg.message.txns,
+                bypass_vm1_limit,
+                Some(msg.peer_id.to_string()),
+            );
         } else {
             //TODO should keep txn in a buffer, then execute after sync finished.
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
