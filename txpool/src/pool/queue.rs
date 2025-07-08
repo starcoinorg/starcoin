@@ -337,7 +337,11 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
-        let mut existing_vm1 = self.existing_vm1_txns();
+        let mut existing_vm1 = if !bypass_vm1_limit {
+            self.existing_vm1_txns()
+        } else {
+            0
+        };
         for transaction in transactions.into_iter() {
             let is_v1_txn = transaction.signed().is_v1();
             // ----- VM1 limit and abuse counter logic -----
