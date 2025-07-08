@@ -518,10 +518,6 @@ impl TxnMocker {
         R: ChainStateReader,
     {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
-        info!(
-            "seq_number_in_pool for address {:?} is {:?}",
-            address, seq_number_in_pool
-        );
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
@@ -529,7 +525,6 @@ impl TxnMocker {
                 match account_resource {
                     None => None,
                     Some(resource) => {
-                        info!("read from state {:?}", resource.sequence_number());
                         Some(resource.sequence_number())
                     }
                 }
@@ -580,16 +575,8 @@ impl TxnMocker {
     }
 
     fn refresh_seq_and_submit_transactions(&self, accounts: &[AccountInfo]) -> Result<()> {
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
         // get latest sequences for each account
-        let mut sequences = vec![];
-        for account in accounts {
-            sequences.push(
-                self.sequence_number(&state_reader, account.address)
-                    .unwrap()
-                    .unwrap(),
-            );
-        }
+        let sequences = self.fetch_account_sequences(accounts)?;
 
         let expiration_timestamp = self.fetch_expiration_time();
 
@@ -604,6 +591,25 @@ impl TxnMocker {
         Ok(())
     }
 
+    fn fetch_account_sequences(&self, accounts: &[AccountInfo]) -> Result<Vec<u64>> {
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        let mut sequences = vec![];
+        for account in accounts {
+            sequences.push(
+                self.sequence_number(&state_reader, account.address)
+                    .unwrap()
+                    .unwrap(),
+            );
+        }
+        Ok(sequences)
+    }
+
+    fn current_transaction_count(&self, accounts: &[AccountInfo], last_sequence: &[u64]) -> Result<u64> {
+        let sequences = self.fetch_account_sequences(accounts)?;
+
+        Ok(sequences.iter().zip(last_sequence).map(|(curr, last)| curr.saturating_sub(*last)).sum())
+    }
+
     fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u64) -> Result<()> {
         //check node status
         let sync_status: SyncStatus = self.client.sync_status()?.into();
@@ -613,6 +619,9 @@ impl TxnMocker {
         }
 
         let sleep = 100; // ms
+
+
+        let current_sequences = self.fetch_account_sequences(&accounts)?;
 
         let start = Instant::now();
 
@@ -627,10 +636,12 @@ impl TxnMocker {
 
         let duration =
             (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));
+        
+        let total_transaction_process = self.current_transaction_count(&accounts, &current_sequences)?;
 
         info!(
             "tps is {:.2}.",
-            round_num as f64 * accounts.len() as f64 / duration as f64
+            total_transaction_process as f64 / (duration as f64 / 1000.0)
         );
 
         Ok(())
