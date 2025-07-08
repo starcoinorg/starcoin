@@ -29,7 +29,7 @@ pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBloc
 use std::fmt;
 use thiserror::Error;
 
-// const DEFAULT_TASK_POOL_SIZE: usize = 16;
+const DEFAULT_TASK_POOL_SIZE: usize = 16;
 #[derive(Debug, Error)]
 pub enum MinerError {
     #[error("Mint task is empty Error")]
