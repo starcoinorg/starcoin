@@ -27,7 +27,7 @@ pub struct ConsensusConfig {
     pub base_max_uncles_per_block: u64,
     pub base_block_gas_limit: u64,
     pub strategy: u8,
- }
+}
 
 impl OnChainConfig for ConsensusConfig {
     const MODULE_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
