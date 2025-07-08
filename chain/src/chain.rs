@@ -541,6 +541,20 @@ impl BlockChain {
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.block.header().id());
+        verified_block
+            .block
+            .body
+            .transactions
+            .iter()
+            .for_each(|transaction| {
+                info!(
+                    "jacktest: block id: {:?}, sender: {:?}, tx:{:?}, seq number: {:?}",
+                    verified_block.block.header().id(),
+                    transaction.sender(),
+                    transaction.id(),
+                    transaction.sequence_number()
+                )
+            });
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
