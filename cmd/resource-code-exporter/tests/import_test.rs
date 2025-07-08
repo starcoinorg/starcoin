@@ -452,7 +452,6 @@ pub fn test_from_bcs_zip_of_mainnet_exported_file() -> anyhow::Result<()> {
 }
 
 /// State data information of low block height exported from local
-#[ignore]
 #[stest::test]
 pub fn test_import_state_from_64925() -> anyhow::Result<()> {
     starcoin_logger::init();
@@ -465,13 +464,13 @@ pub fn test_import_state_from_64925() -> anyhow::Result<()> {
     let newst_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
     import_from_statedb(&newst_statedb, data_path, None)?;
 
-    let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
-    let version = fork_statedb
+    // Check version on the same statedb instance that was imported to
+    let version = newst_statedb
         .get_on_chain_config::<Version>()?
         .map(|version| version.major)
         .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
     info!("After imported version: {}", version);
-    assert_eq!(version, 11);
+    assert_eq!(version, 4);
 
     Ok(())
 }
