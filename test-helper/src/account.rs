@@ -82,7 +82,12 @@ pub fn print_bcs_decoded_resources(bcs_content: Vec<u8>) -> anyhow::Result<()> {
             // Decode the struct tag from the key
             match bcs_ext::from_bytes::<StructTag>(key.as_slice()) {
                 Ok(struct_tag) => {
-                    debug!("  Resource type: {}, size: {} bytes, Raw value (hex): {}", struct_tag, value.len(), hex::encode(value));
+                    debug!(
+                        "  Resource type: {}, size: {} bytes, Raw value (hex): {}",
+                        struct_tag,
+                        value.len(),
+                        hex::encode(value)
+                    );
 
                     // Try to decode as some common resource types
                     if let Ok(version) = bcs_ext::from_bytes::<

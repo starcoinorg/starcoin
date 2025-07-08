@@ -11,21 +11,18 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
 use starcoin_data_migration::{migrate_test_data_to_statedb, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
-    account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
     block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
     genesis_config::{ChainId, ConsensusStrategy},
-    identifier::Identifier,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
@@ -36,17 +33,7 @@ use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
-};
-use starcoin_vm_types::{
-    access_path::AccessPath,
-    account_config::{genesis_address, ModuleUpgradeStrategy},
-    move_resource::MoveResource,
-    on_chain_config,
-    state_store::state_key::StateKey,
-    state_view::{StateReaderExt, StateView},
-};
+
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -453,7 +440,6 @@ impl AddressFilter {
 
 #[cfg(test)]
 mod tests {
-    use starcoin_state_api::StateReaderExt;
     use starcoin_vm_runtime::force_upgrade_management::create_account;
     use test_helper::executor::prepare_genesis;
 

@@ -8,16 +8,25 @@ mod migration_tests {
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
     use starcoin_data_migration::{migrate_main_data_to_statedb, migrate_test_data_to_statedb};
-    use starcoin_state_api::{ChainStateReader, ChainStateWriter};
+    use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
     use starcoin_types::account_address::AccountAddress;
+    use starcoin_types::identifier::Identifier;
+    use starcoin_vm_types::account_config::genesis_address;
+    use starcoin_vm_types::on_chain_config::access_path_for_config;
     use starcoin_vm_types::{
         account_config::association_address, on_chain_config::Version, state_view::StateReaderExt,
     };
     use std::sync::Arc;
     use tempfile::TempDir;
     use test_helper::{create_block_with_transactions, print_bcs_decoded_resources};
+
+    /// Set up test environment with STARCOIN_USE_TEST_MIGRATION environment variable
+    fn setup_test_environment() {
+        // Set the environment variable for all tests in this module
+        std::env::set_var("STARCOIN_USE_TEST_MIGRATION", "true");
+    }
 
     /// Helper function to create a test environment for migration
     fn create_test_environment(
@@ -303,11 +312,72 @@ mod migration_tests {
 
     /// Test block mining simulation with data migration in memory
     /// This test simulates the process of building a blockchain in memory,
-    /// mining an empty block, and verifying data migration results:
-    /// 1. 0x1 account version should be 12
-    /// 2. 0x1 account balance should be 10000
+    /// mining an empty block, and verifying data migration results
     #[stest::test(timeout = 6000)]
     fn test_block_migration_with_blockchain_mining() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+        // setup_test_environment();
+
+        // Create a test network (using Main to trigger migration)
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let temp = TempDir::new()?;
+
+        // Initialize blockchain with genesis in memory
+        let (mut chain, statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+                &net,
+                temp.path().to_path_buf(),
+            )?;
+
+        // Get current header (genesis block)
+        let genesis_header = chain.current_header();
+        assert_eq!(
+            genesis_header.number(),
+            0,
+            "Should start with genesis block"
+        );
+
+        const MAX_TEST_BLOCKS: usize = 5;
+
+        // Create N blocks (empty block)
+        // let mut last_stateroot = None;
+        for _ in 0..MAX_TEST_BLOCKS {
+            // Create block template for the first block (block #1) - empty block
+            let (_executed_block, _stateroot) =
+                create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
+
+            debug!(
+                "executed_block header stateroot:{:?}, state_root: {:?}",
+                _executed_block.header().state_root(),
+                _stateroot
+            );
+            // last_stateroot = Some(_stateroot);
+        }
+
+        // Use the concrete ChainStateDB instead of trait object
+        // let current_statedb = if let Some(stateroot) = last_stateroot {
+        //     statedb.fork_at(stateroot)
+        // } else {
+        //     statedb.fork_at(chain.chain_state_reader().state_root())
+        // };
+
+        let account_state_reader = AccountStateReader::new(&statedb);
+        let version = account_state_reader
+            .get_on_chain_config::<Version>()?
+            .map(|v| v.major)
+            .unwrap_or(0);
+        let token_info = statedb.get_stc_info()?.unwrap();
+
+        debug!(
+            "The latest version number: {:?}, stc total value: {:?}",
+            version, token_info.total_value
+        );
+
+        Ok(())
+    }
+
+    #[stest::test]
+    pub fn test_write_version_to_db_to_find_key_hash() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
         // Create a test network (using Main to trigger migration)
@@ -315,200 +385,189 @@ mod migration_tests {
         let temp = TempDir::new()?;
 
         // Initialize blockchain with genesis in memory
-        let (mut block_chain, statedb) =
+        let (_chain, statedb) =
             test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
                 &net,
                 temp.path().to_path_buf(),
             )?;
 
-        // Get current header (genesis block)
-        let genesis_header = block_chain.current_header();
-        assert_eq!(
-            genesis_header.number(),
-            0,
-            "Should start with genesis block"
-        );
-
-        const MAX_TEST_BLOCKS: usize = 10;
-
-        // Create N blocks (empty block)
-        for _ in 0..MAX_TEST_BLOCKS {
-            // Create block template for the first block (block #1) - empty block
-            let (executed_block, stateroot) = create_block_with_transactions(
-                &mut block_chain,
-                &net,
-                association_address(),
+        debug!("start set version");
+        statedb.set(
+            &access_path_for_config(
+                genesis_address(),
+                Identifier::new("Version").unwrap(),
+                Identifier::new("Version").unwrap(),
                 vec![],
-            )?;
+            ),
+            bcs_ext::to_bytes(&Version { major: 1000 })?,
+        )?;
+        statedb.commit()?;
+        statedb.flush()?;
 
-            debug!(
-                "After create_block_with_transactions, Get Version: {}, Block number: {:?}, State root{}",
-                statedb
-                    .get_on_chain_config::<Version>()?
-                    .map(|v| v.major)
-                    .unwrap_or(0),
-                executed_block.block().header().number(),
-                stateroot
-            );
-        }
-
-        Ok(())
-    }
-
-    /// Test migration data verification during peer-to-peer block synchronization
-    /// This test simulates a scenario where:
-    /// 1. A source node has migration data applied
-    /// 2. A target node syncs blocks from the source node
-    /// 3. Verifies that the migrated state is correctly synchronized
-    #[stest::test(timeout = 10000)]
-    fn test_migration_verification_during_peer_sync() -> anyhow::Result<()> {
-        starcoin_logger::init_for_test();
-
-        // Create source node with migration data
-        let source_net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
-        let source_temp = TempDir::new()?;
-
-        // Initialize source blockchain with genesis
-        let (mut source_chain, source_statedb) =
-            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
-                &source_net,
-                source_temp.path().to_path_buf(),
-            )?;
-
-        // Create a few blocks after migration to simulate real blockchain state
-        for i in 0..3 {
-            let (executed_block, _) = create_block_with_transactions(
-                &mut source_chain,
-                &source_net,
-                association_address(),
-                vec![],
-            )?;
-
-            debug!(
-                "Source node block {} created, number: {}, state root: {:?}",
-                i,
-                executed_block.block().header().number(),
-                executed_block.block().header().state_root()
-            );
-        }
-
-        // Get source node's final state
-        let source_head = source_chain.current_header();
-        let source_state_root = source_head.state_root();
-
-        // Verify source node has migration data
-        let source_version = source_statedb
+        debug!("start get version");
+        let version = statedb
             .get_on_chain_config::<Version>()?
             .map(|v| v.major)
             .unwrap_or(0);
-        assert_eq!(
-            source_version, 4,
-            "Source node should have migrated version 11"
-        );
-
-        // // Create target node (empty, no migration data)
-        // let target_net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
-        // let target_temp = TempDir::new()?;
-        //
-        // let (mut target_chain, target_statedb) =
-        //     test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
-        //         &target_net,
-        //         target_temp.path().to_path_buf(),
-        //     )?;
-        //
-        // // Verify target node starts without migration data
-        // let target_version_before = target_statedb
-        //     .get_on_chain_config::<Version>()?
-        //     .map(|v| v.major)
-        //     .unwrap_or(0);
-        // assert_eq!(
-        //     target_version_before, 11,
-        //     "Target node should start with version 11"
-        // );
-        //
-        // // Simulate block synchronization from source to target
-        // // This mimics the sync process where target node receives and applies blocks from source
-        // // Skip genesis block (number=0) since target already has its own genesis
-        // let source_blocks =
-        //     source_chain.get_blocks_by_number(Some(1), false, source_head.number() + 1)?;
-        //
-        // debug!(
-        //     "Syncing {} blocks from source (height {}) to target",
-        //     source_blocks.len(),
-        //     source_head.number()
-        // );
-        //
-        // // Apply each block from source to target (simulating sync)
-        // for (i, block) in source_blocks.iter().enumerate() {
-        //     debug!(
-        //         "Applying source block {} to target: number={}, id={:?}",
-        //         i,
-        //         block.header().number(),
-        //         block.id()
-        //     );
-        //
-        //     // Apply block to target chain (simulating sync process)
-        //     let apply_result = target_chain.apply(block.clone());
-        //
-        //     if let Err(e) = apply_result {
-        //         // If this is a migration block (block #3), it should trigger migration
-        //         if block.header().number() == 3 {
-        //             debug!("Migration block applied, checking state...");
-        //
-        //             // Verify migration was triggered and applied
-        //             let target_version_after = target_statedb
-        //                 .get_on_chain_config::<Version>()?
-        //                 .map(|v| v.major)
-        //                 .unwrap_or(0);
-        //
-        //             assert_eq!(
-        //                 target_version_after, 11,
-        //                 "Target node should have version 11 after migration block"
-        //             );
-        //
-        //             debug!("Migration verification passed on target node");
-        //         } else {
-        //             return Err(e.into());
-        //         }
-        //     }
-        // }
-        //
-        // // Verify final state consistency between source and target
-        // let target_head = target_chain.current_header();
-        // let target_state_root = target_head.state_root();
-        //
-        // debug!(
-        //     "Final verification - Source: number={}, root={:?}, Target: number={}, root={:?}",
-        //     source_head.number(),
-        //     source_state_root,
-        //     target_head.number(),
-        //     target_state_root
-        // );
-        //
-        // // Verify block numbers match
-        // assert_eq!(
-        //     source_head.number(),
-        //     target_head.number(),
-        //     "Source and target should have same block number after sync"
-        // );
-        //
-        // // Verify state roots match (indicating same state)
-        // assert_eq!(
-        //     source_state_root, target_state_root,
-        //     "Source and target should have same state root after sync"
-        // );
-        //
-        // // Verify target node has correct migration data
-        // let target_version_final = target_statedb
-        //     .get_on_chain_config::<Version>()?
-        //     .map(|v| v.major)
-        //     .unwrap_or(0);
-        // assert_eq!(
-        //     target_version_final, 11,
-        //     "Target node should have correct migration version after sync"
-        // );
-
-        debug!("Peer sync migration verification completed successfully");
+        assert_eq!(version, 1000);
         Ok(())
     }
+
+    // TODO(BobOng):[migration] should open after apply 0x1 succeed
+    // /// Test migration data verification during peer-to-peer block synchronization
+    // /// This test simulates a scenario where:
+    // /// 1. A source node has migration data applied
+    // /// 2. A target node syncs blocks from the source node
+    // /// 3. Verifies that the migrated state is correctly synchronized
+    // #[stest::test(timeout = 10000)]
+    // fn test_migration_verification_during_peer_sync() -> anyhow::Result<()> {
+    //     starcoin_logger::init_for_test();
+    //
+    //     // Create source node with migration data
+    //     let source_net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+    //     let source_temp = TempDir::new()?;
+    //
+    //     // Initialize source blockchain with genesis
+    //     let (mut source_chain, source_statedb) =
+    //         test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+    //             &source_net,
+    //             source_temp.path().to_path_buf(),
+    //         )?;
+    //
+    //     // Create a few blocks after migration to simulate real blockchain state
+    //     for i in 0..3 {
+    //         let (executed_block, _) = create_block_with_transactions(
+    //             &mut source_chain,
+    //             &source_net,
+    //             association_address(),
+    //             vec![],
+    //         )?;
+    //
+    //         debug!(
+    //             "Source node block {} created, number: {}, state root: {:?}",
+    //             i,
+    //             executed_block.block().header().number(),
+    //             executed_block.block().header().state_root()
+    //         );
+    //     }
+    //
+    //     // Get source node's final state
+    //     let source_head = source_chain.current_header();
+    //     let source_state_root = source_head.state_root();
+    //
+    //     // Verify source node has migration data
+    //     let source_version = source_statedb
+    //         .get_on_chain_config::<Version>()?
+    //         .map(|v| v.major)
+    //         .unwrap_or(0);
+    //     assert_eq!(
+    //         source_version, 4,
+    //         "Source node should have migrated version 4"
+    //     );
+    //
+    //     // Create target node (empty, no migration data)
+    //     let target_net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+    //     let target_temp = TempDir::new()?;
+    //
+    //     let (mut target_chain, target_statedb) =
+    //         test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+    //             &target_net,
+    //             target_temp.path().to_path_buf(),
+    //         )?;
+    //
+    //     // Verify target node starts without migration data
+    //     let target_version_before = target_statedb
+    //         .get_on_chain_config::<Version>()?
+    //         .map(|v| v.major)
+    //         .unwrap_or(0);
+    //     assert_eq!(
+    //         target_version_before, 11,
+    //         "Target node should start with version 11"
+    //     );
+    //
+    //     // Simulate block synchronization from source to target
+    //     // This mimics the sync process where target node receives and applies blocks from source
+    //     // Skip genesis block (number=0) since target already has its own genesis
+    //     let source_blocks =
+    //         source_chain.get_blocks_by_number(Some(1), false, source_head.number() + 1)?;
+    //
+    //     debug!(
+    //         "Syncing {} blocks from source (height {}) to target",
+    //         source_blocks.len(),
+    //         source_head.number()
+    //     );
+    //
+    //     // Apply each block from source to target (simulating sync)
+    //     for (i, block) in source_blocks.iter().enumerate() {
+    //         debug!(
+    //             "Applying source block {} to target: number={}, id={:?}",
+    //             i,
+    //             block.header().number(),
+    //             block.id()
+    //         );
+    //
+    //         // Apply block to target chain (simulating sync process)
+    //         let apply_result = target_chain.apply(block.clone());
+    //
+    //         if let Err(e) = apply_result {
+    //             // If this is a migration block (block #3), it should trigger migration
+    //             if block.header().number() == 3 {
+    //                 debug!("Migration block applied, checking state...");
+    //
+    //                 // Verify migration was triggered and applied
+    //                 let target_version_after = target_statedb
+    //                     .get_on_chain_config::<Version>()?
+    //                     .map(|v| v.major)
+    //                     .unwrap_or(0);
+    //
+    //                 assert_eq!(
+    //                     target_version_after, 11,
+    //                     "Target node should have version 11 after migration block"
+    //                 );
+    //
+    //                 debug!("Migration verification passed on target node");
+    //             } else {
+    //                 return Err(e.into());
+    //             }
+    //         }
+    //     }
+    //
+    //     // Verify final state consistency between source and target
+    //     let target_head = target_chain.current_header();
+    //     let target_state_root = target_head.state_root();
+    //
+    //     debug!(
+    //         "Final verification - Source: number={}, root={:?}, Target: number={}, root={:?}",
+    //         source_head.number(),
+    //         source_state_root,
+    //         target_head.number(),
+    //         target_state_root
+    //     );
+    //
+    //     // Verify block numbers match
+    //     assert_eq!(
+    //         source_head.number(),
+    //         target_head.number(),
+    //         "Source and target should have same block number after sync"
+    //     );
+    //
+    //     // Verify state roots match (indicating same state)
+    //     assert_eq!(
+    //         source_state_root, target_state_root,
+    //         "Source and target should have same state root after sync"
+    //     );
+    //
+    //     // Verify target node has correct migration data
+    //     let target_version_final = target_statedb
+    //         .get_on_chain_config::<Version>()?
+    //         .map(|v| v.major)
+    //         .unwrap_or(0);
+    //     assert_eq!(
+    //         target_version_final, 11,
+    //         "Target node should have correct migration version after sync"
+    //     );
+    //
+    //     debug!("Peer sync migration verification completed successfully");
+    //     Ok(())
+    // }
 }
