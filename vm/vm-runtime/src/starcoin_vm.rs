@@ -666,6 +666,7 @@ impl StarcoinVM {
                 )
                 .map_err(|e| e.into_vm_status())?;
             }
+
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
             gas_meter.set_metering(false);
@@ -757,7 +758,6 @@ impl StarcoinVM {
             &args,
             &loaded_func,
         )?;
-
         let final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
             func,
             args.into_iter().map(|b| b.borrow().to_vec()).collect(),

@@ -119,7 +119,6 @@ impl Genesis {
         }) = genesis_config.genesis_block_parameter()
         {
             let txn = Self::build_genesis_transaction(net)?;
-
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
