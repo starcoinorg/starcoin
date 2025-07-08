@@ -53,8 +53,6 @@ const TIMESTAMP_CACHE: u64 = 1000;
 /// This parameter controls how many (best) senders at once will be processed.
 const CULL_SENDERS_CHUNK: usize = 1024;
 
-const VM1_TXN_CULL_THRESHOLD: usize = 100;
-
 /// Transaction queue status.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Status {
@@ -337,13 +335,11 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
-        let existing_vm1 = self.existing_vm1_txns();
+        let mut existing_vm1 = self.existing_vm1_txns();
         for transaction in transactions.into_iter() {
+            let is_v1_txn = transaction.signed().is_v1();
             // ----- VM1 limit and abuse counter logic -----
-            if !bypass_vm1_limit
-                && transaction.signed().is_v1()
-                && existing_vm1 >= self.max_vm1_txn_count
-            {
+            if !bypass_vm1_limit && is_v1_txn && existing_vm1 >= self.max_vm1_txn_count {
                 let now_ts = Utc::now().timestamp() as u64;
                 // Increment rejection count for peer
                 if let Some(peer) = &peer_id {
@@ -383,7 +379,12 @@ impl TransactionQueue {
                 });
 
             results.push(match imported {
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    if is_v1_txn {
+                        existing_vm1 += 1
+                    };
+                    Ok(())
+                }
                 Err(err) => {
                     self.recently_rejected.insert(hash, &err);
                     Err(err)
