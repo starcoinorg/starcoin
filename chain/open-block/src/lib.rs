@@ -330,14 +330,13 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
-        self.push_txn_and_state_opt(txn_hash, output, false)
+        self.push_txn_and_state_opt(txn_hash, output)
     }
 
     fn push_txn_and_state_opt(
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput,
-        is_extra_txn: bool,
     ) -> Result<(HashValue, HashValue)> {
         debug!(
             "OpenedBlock::push_txn_and_state_opt | Entered, txn hash: {:?}",
@@ -355,19 +354,7 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        if is_extra_txn {
-            // update stdlib version to 12 directly
-            let version_path = on_chain_config::access_path_for_config(
-                genesis_address(),
-                Identifier::new("Version")?,
-                Identifier::new("Version")?,
-                vec![],
-            );
-            let version = on_chain_config::Version { major: 12 };
-            state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
 
-            assert_eq!(gas_used, 0);
-        }
         let txn_state_root = state
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -433,71 +420,6 @@ impl OpenedBlock {
         );
         debug!("OpenedBlock::finalize | Exit");
         Ok(block_template)
-    }
-
-    /// The logic for handling the forced upgrade will be processed.
-    /// First, set the account policy in `0x1::PackageTxnManager` to 100,
-    /// Second, after the contract deployment is successful, revert it back.
-    #[allow(unused)]
-    fn execute_extra_txn(&mut self) -> Result<()> {
-        let (state, _state2) = &self.state;
-        let extra_txn =
-            if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
-                let account = get_force_upgrade_account(&self.chain_id)?;
-                let sequence_number = state.get_sequence_number(*account.address())?;
-                let extra_txn = ForceUpgrade::force_deploy_txn(
-                    account,
-                    sequence_number,
-                    self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
-                    &self.chain_id,
-                )?;
-                info!("extra txn in opened block ({:?})", extra_txn.id());
-                Transaction::UserTransaction(extra_txn)
-            } else {
-                return Ok(());
-            };
-        let extra_txn_hash = extra_txn.id();
-
-        let strategy_path = AccessPath::resource_access_path(
-            genesis_address(),
-            ModuleUpgradeStrategy::struct_tag(),
-        );
-
-        // retrieve old strategy value
-        let old_val = state
-            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
-            .expect("module upgrade strategy should exist");
-        // Set strategy to 100 to execute force-deploy-txn directly
-        state.set(&strategy_path, vec![100])?;
-
-        // execute this special txn without gas limit
-        let mut results =
-            execute_transactions(state, vec![extra_txn.clone()], self.vm_metrics.clone())
-                .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-
-        // Restore the old value
-        state.set(&strategy_path, old_val)?;
-
-        let output = results.pop().expect("executed txn should has output");
-        match output.status() {
-            TransactionStatus::Discard(status) => {
-                bail!(
-                    "extra txn {:?} is discarded, vm status: {:?}",
-                    extra_txn,
-                    status
-                );
-            }
-            TransactionStatus::Keep(_) => {
-                // Do not add extra_txn to included_user_txns
-                // treat it like Genesis txn
-                let _ = self.push_txn_and_state_opt(extra_txn_hash, output, true)?;
-            }
-            TransactionStatus::Retry => {
-                bail!("extra txn {:?} is impossible to retry", extra_txn);
-            }
-        };
-
-        Ok(())
     }
 
     /// Do extra state data migration for vm1 from mainnet
