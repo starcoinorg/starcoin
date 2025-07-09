@@ -70,16 +70,16 @@ impl<C: JobClient> ServiceFactory<Self> for MinerClientService<C> {
 impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> {
     fn handle_event(&mut self, event: MintBlockEvent, ctx: &mut ServiceContext<Self>) {
         let (stop_tx, stop_rx) = unbounded();
-        if let Some(mut task) = self.inner.current_task.take() {
-            ctx.wait(async move {
-                if let Err(e) = task.send(true).await {
-                    error!(
-                        "Failed to send stop event to current task, may be finished:{:?}",
-                        e
-                    );
-                }
-            });
-        }
+        // if let Some(mut task) = self.inner.current_task.take() {
+        //     ctx.wait(async move {
+        //         if let Err(e) = task.send(true).await {
+        //             error!(
+        //                 "Failed to send stop event to current task, may be finished:{:?}",
+        //                 e
+        //             );
+        //         }
+        //     });
+        // }
         self.inner.current_task = Some(stop_tx);
         let nonce_tx = self.inner.nonce_tx.clone();
         let mut solver = dyn_clone::clone_box(&*self.inner.solver);
