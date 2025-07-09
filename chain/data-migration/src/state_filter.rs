@@ -4,15 +4,19 @@
 use bcs_ext;
 use log::debug;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet, StateSet};
-use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::{account_config::AccountResource, language_storage::StructTag};
 
-/// Resource paths that should be filtered during migration
+/// Resource paths that should be completely filtered during migration
 pub const FILTERED_RESOURCE_PATHS: &[&str] = &[
     // ChainId resource - contains network identifier
     "0x00000000000000000000000000000001::ChainId::ChainId",
     // BlockMetadata resource - contains block-specific information
     "0x00000000000000000000000000000001::Block::BlockMetadata",
-    // Account sequence_number - should be reset for new network
+];
+
+/// Resource paths that should be modified (not filtered) during migration
+pub const MODIFIED_RESOURCE_PATHS: &[&str] = &[
+    // Account resource - sequence_number should be reset to 0
     "0x00000000000000000000000000000001::Account::Account",
 ];
 
@@ -30,44 +34,55 @@ pub fn should_filter_resource(struct_tag: &StructTag) -> bool {
     FILTERED_RESOURCE_PATHS.contains(&struct_tag_str.as_str())
 }
 
-/// Filter ChainStateSet by removing filtered resources
-pub fn filter_chain_state_set(chain_state_set: ChainStateSet) -> ChainStateSet {
-    let mut filtered_state_sets = Vec::new();
-    for (address, account_state_set) in chain_state_set.state_sets() {
-        let mut filtered_account_state_set = account_state_set.clone();
-        // Filter resources if they exist
-        if let Some(resource_set) = account_state_set.resource_set() {
-            let mut filtered_resources = Vec::new();
-            for (key, value) in resource_set.iter() {
-                if let Ok(struct_tag) = bcs_ext::from_bytes::<StructTag>(key) {
-                    if !should_filter_resource(&struct_tag) {
-                        filtered_resources.push((key.clone(), value.clone()));
-                    } else {
-                        debug!("Filtering resource {} for address {}", struct_tag, address);
-                    }
-                } else {
-                    // If we can't parse the struct tag, keep it to be safe
-                    filtered_resources.push((key.clone(), value.clone()));
-                }
-            }
-            // Create new StateSet with filtered resources
-            let filtered_state_set = StateSet::new(filtered_resources);
-            filtered_account_state_set = AccountStateSet::new(vec![
-                Some(filtered_state_set),              // Resource set
-                account_state_set.code_set().cloned(), // Code set
-            ]);
-        }
-        filtered_state_sets.push((*address, filtered_account_state_set));
-    }
-    ChainStateSet::new(filtered_state_sets)
+/// Check if a resource should be modified (not filtered) based on its struct tag
+pub fn should_modify_resource(struct_tag: &StructTag) -> bool {
+    let struct_tag_str = format!(
+        "{}::{}::{}",
+        struct_tag.address, struct_tag.module, struct_tag.name
+    );
+    MODIFIED_RESOURCE_PATHS.contains(&struct_tag_str.as_str())
 }
 
-/// Add a new resource path to the filter list
-/// Note: This is a placeholder for future extensibility
-pub fn add_filtered_resource_path(_path: &'static str) {
-    // Note: This is a placeholder for future extensibility
-    // In a real implementation, you might want to use a mutable static or configuration
-    debug!("Adding new filtered resource path: {}", _path);
+/// Modify AccountResource by resetting sequence_number to 0
+/// Uses the clone_with_zero_seq_number method to properly handle all fields
+fn modify_account_resource(blob: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let resource = bcs_ext::from_bytes::<AccountResource>(blob)?;
+    Ok(bcs_ext::to_bytes(&resource.clone_with_zero_seq_number())?)
+}
+
+/// Filter ChainStateSet by removing filtered resources and modifying specific resources
+pub fn filter_chain_state_set(chain_state_set: ChainStateSet) -> anyhow::Result<ChainStateSet> {
+    let mut filtered_state_set_vec = Vec::new();
+    for (address, account_state_set) in chain_state_set.state_sets() {
+        debug!("filtered_state_sets | address: {:?}", address);
+        let mut filtered_resource_state_set = vec![];
+
+        if let Some(resource_set) = account_state_set.resource_set() {
+            for (key, blob) in resource_set.iter() {
+                let struct_tag = bcs_ext::from_bytes::<StructTag>(key)?;
+                if should_filter_resource(&struct_tag) {
+                    debug!("Filtering resource {} for address {}", struct_tag, address);
+                    continue;
+                }
+
+                // For now, keep all resources as-is (Account modification is commented out)
+                let filtered_blob = if should_modify_resource(&struct_tag) {
+                    modify_account_resource(blob)?
+                } else {
+                    blob.clone()
+                };
+                filtered_resource_state_set.push((key.clone(), filtered_blob));
+            }
+        }
+
+        let new_account_state_set = AccountStateSet::new(vec![
+            account_state_set.code_set().cloned(),
+            Some(StateSet::new(filtered_resource_state_set)),
+        ]);
+
+        filtered_state_set_vec.push((*address, new_account_state_set));
+    }
+    Ok(ChainStateSet::new(filtered_state_set_vec))
 }
 
 #[cfg(test)]
@@ -84,30 +99,32 @@ mod tests {
     fn test_should_filter_resource() {
         // Test ChainId resource
         let chain_id_tag = ChainId::struct_tag();
-        println!("ChainId struct_tag: {}", chain_id_tag);
         println!(
-            "ChainId should be filtered: {}",
+            "ChainId struct_tag: {}, should be filtered: {}",
+            chain_id_tag,
             should_filter_resource(&chain_id_tag)
         );
         assert!(should_filter_resource(&chain_id_tag));
 
         // Test BlockMetadata resource (on-chain resource)
         let block_metadata_tag = starcoin_vm_types::on_chain_resource::BlockMetadata::struct_tag();
-        println!("BlockMetadata struct_tag: {}", block_metadata_tag);
         println!(
-            "BlockMetadata should be filtered: {}",
+            "BlockMetadata struct_tag: {}, should be filtered: {}",
+            block_metadata_tag,
             should_filter_resource(&block_metadata_tag)
         );
         assert!(should_filter_resource(&block_metadata_tag));
 
         // Test Account resource
         let account_tag = starcoin_vm_types::account_config::AccountResource::struct_tag();
-        println!("Account struct_tag: {}", account_tag);
         println!(
-            "Account should be filtered: {}",
-            should_filter_resource(&account_tag)
+            "Account struct_tag: {}, should be filtered: {}, should be modified: {}",
+            account_tag,
+            should_filter_resource(&account_tag),
+            should_modify_resource(&account_tag)
         );
-        assert!(should_filter_resource(&account_tag));
+        assert!(!should_filter_resource(&account_tag));
+        assert!(should_modify_resource(&account_tag));
 
         // Test a resource that should not be filtered
         let balance_tag = BalanceResource::struct_tag_for_token(
@@ -116,9 +133,9 @@ mod tests {
                 .try_into()
                 .unwrap(),
         );
-        println!("Balance struct_tag: {}", balance_tag);
         println!(
-            "Balance should be filtered: {}",
+            "Balance struct_tag: {}, should be filtered: {}",
+            balance_tag,
             should_filter_resource(&balance_tag)
         );
         assert!(!should_filter_resource(&balance_tag));
@@ -145,11 +162,8 @@ mod tests {
         let balance_bytes = bcs_ext::to_bytes(&balance_resource).unwrap();
         test_resources.push((bcs_ext::to_bytes(&balance_tag).unwrap(), balance_bytes));
 
-        let state_set = starcoin_types::state_set::StateSet::new(test_resources);
-        let account_state_set = starcoin_types::state_set::AccountStateSet::new(vec![
-            Some(state_set), // Resource set
-            None,            // Code set
-        ]);
+        let state_set = StateSet::new(test_resources);
+        let account_state_set = AccountStateSet::new(vec![Some(state_set), None]);
 
         let chain_state_set = ChainStateSet::new(vec![(genesis_address(), account_state_set)]);
 
@@ -157,7 +171,7 @@ mod tests {
         let filtered_set = filter_chain_state_set(chain_state_set);
 
         // Verify that the filtered set contains only non-filtered resources
-        for (_address, account_state_set) in filtered_set.state_sets() {
+        for (_address, account_state_set) in filtered_set.unwrap().state_sets() {
             if let Some(resource_set) = account_state_set.resource_set() {
                 for (key, _value) in resource_set.iter() {
                     if let Ok(struct_tag) = bcs_ext::from_bytes::<StructTag>(key) {
@@ -179,6 +193,7 @@ mod tests {
         assert!(!paths.is_empty());
         assert!(paths.contains(&"0x00000000000000000000000000000001::ChainId::ChainId"));
         assert!(paths.contains(&"0x00000000000000000000000000000001::Block::BlockMetadata"));
-        assert!(paths.contains(&"0x00000000000000000000000000000001::Account::Account"));
+        // Account is now in MODIFIED_RESOURCE_PATHS, not FILTERED_RESOURCE_PATHS
+        assert!(!paths.contains(&"0x00000000000000000000000000000001::Account::Account"));
     }
 }

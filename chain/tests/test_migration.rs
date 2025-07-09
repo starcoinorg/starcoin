@@ -7,12 +7,15 @@ mod migration_tests {
     use starcoin_chain::ChainReader;
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
-    use starcoin_data_migration::{migrate_main_data_to_statedb, migrate_test_data_to_statedb};
+    use starcoin_data_migration::{
+        filter_chain_state_set, migrate_main_data_to_statedb, migrate_test_data_to_statedb,
+    };
     use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
     use starcoin_types::account_address::AccountAddress;
     use starcoin_types::identifier::Identifier;
+    use starcoin_types::state_set::ChainStateSet;
     use starcoin_vm_types::account_config::genesis_address;
     use starcoin_vm_types::on_chain_config::access_path_for_config;
     use starcoin_vm_types::{
@@ -406,6 +409,28 @@ mod migration_tests {
             .map(|v| v.major)
             .unwrap_or(0);
         assert_eq!(version, 1000);
+        Ok(())
+    }
+
+    #[stest::test]
+    pub fn test_filter_account_state_set_basic() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+        log::set_max_level(log::LevelFilter::Debug);
+
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+
+        let (_chain, statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb(&net, None)?;
+
+        let address = AccountAddress::ONE;
+
+        let account_state = statedb
+            .get_account_state_set(&address)?
+            .expect("get account state set should successfully");
+        let chain_state_set = ChainStateSet::new(vec![(address, account_state)]);
+        let filtered_chain_state_set = filter_chain_state_set(chain_state_set)?;
+        statedb.apply(filtered_chain_state_set)?;
+
         Ok(())
     }
 

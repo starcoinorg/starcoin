@@ -24,8 +24,8 @@ use tempfile::TempDir;
 
 mod state_filter;
 pub use state_filter::{
-    add_filtered_resource_path, filter_chain_state_set, get_filtered_resource_paths,
-    should_filter_resource,
+    filter_chain_state_set, get_filtered_resource_paths,
+    should_filter_resource, should_modify_resource,
 };
 
 /// Description: This implementation used for multi-move vm upgrade that
@@ -194,7 +194,7 @@ pub fn migrate_legacy_state_data(
         "migrate_legacy_state_data | Filtering state data, original accounts: {}",
         chain_state_set.len()
     );
-    let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone());
+    let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone())?;
     info!(
         "migrate_legacy_state_data | State filtering completed, filtered accounts: {}",
         filtered_chain_state_set.len()
