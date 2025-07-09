@@ -54,7 +54,6 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
@@ -307,8 +306,8 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn submit_transaction(&self, txn: MultiSignedUserTransaction) -> anyhow::Result<HashValue> {
-        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction_multi(txn))
+    pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
             .map_err(map_err)
     }
 

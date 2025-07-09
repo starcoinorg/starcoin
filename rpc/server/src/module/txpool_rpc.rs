@@ -34,19 +34,6 @@ where
     pub fn new(service: S) -> Self {
         Self { service }
     }
-}
-
-impl<S> TxPoolApi for TxPoolRpcImpl<S>
-where
-    S: TxPoolSyncService,
-{
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
-        self.submit_transaction_multi(MultiSignedUserTransaction::VM1(txn))
-    }
-
-    fn submit_transaction2(&self, txn: SignedUserTransaction2) -> FutureResult<HashValue> {
-        self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
-    }
 
     fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
         let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
@@ -64,6 +51,19 @@ where
             .map_err(convert_to_rpc_error);
 
         Box::pin(futures::future::ready(result.map(|_| txn_hash)))
+    }
+}
+
+impl<S> TxPoolApi for TxPoolRpcImpl<S>
+where
+    S: TxPoolSyncService,
+{
+    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM1(txn))
+    }
+
+    fn submit_transaction2(&self, txn: SignedUserTransaction2) -> FutureResult<HashValue> {
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
     }
 
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
