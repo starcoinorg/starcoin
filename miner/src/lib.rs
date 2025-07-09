@@ -212,6 +212,12 @@ impl MinerService {
                 }
             };
 
+            block_template.template.body.transactions.iter().for_each(|t| {
+                info!(
+                    "jacktest: block_template with transactions: {:?}", t.id()
+                )
+            });
+
             let parent = block_template.parent;
             let block_template = block_template.template;
             let block_time_gap = block_template.timestamp - parent.timestamp();
@@ -242,6 +248,11 @@ impl MinerService {
         let strategy = block_template.strategy;
         let number = block_template.number;
         let parent_hash = block_template.parent_hash;
+        block_template.template.body.transactions.iter().for_each(|t| {
+                info!(
+                    "jacktest: in the dispatch, block_template with transactions: {:?}", t.id()
+                )
+            });
         let task = MintTask::new(block_template, self.metrics.clone());
         let mining_blob = task.minting_blob.clone();
         self.task_pool.retain(|t| t.minting_blob != mining_blob);
@@ -299,7 +310,13 @@ impl MinerService {
     }
     fn manage_task_pool(&mut self) {
         if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
-            self.task_pool.remove(0);
+            info!("jacktest: task_pool len: {}, and the 0 will be remove", self.task_pool.len());
+            let s = self.task_pool.remove(0);
+            s.block_template.template.body.transactions.iter().for_each(|t| {
+                info!(
+                    "jacktest: block_template with transactions will be removed: {:?}", t.id()
+                )
+            });
         }
     }
     pub fn task_pool_len(&self) -> usize {
