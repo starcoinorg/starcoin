@@ -98,7 +98,10 @@ pub fn export_from_statedb(
     let bcs_bytes = bcs_ext::to_bytes(&dump_state)?;
     let mut bcs_file = File::create(bcs_output_path)?;
     bcs_file.write_all(&bcs_bytes)?;
-    info!("BCS export completed successfully, wrote {} bytes to BCS file", bcs_bytes.len());
+    info!(
+        "BCS export completed successfully, wrote {} bytes to BCS file",
+        bcs_bytes.len()
+    );
 
     Ok(())
 }

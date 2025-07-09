@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::format_err;
+use bcs_ext;
 use log::{debug, error};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_crypto::HashValue;
@@ -10,13 +11,16 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_vm_types::{
-    account_config::{BalanceResource, STC_TOKEN_CODE_STR},
+    access_path::AccessPath,
+    account_config::{BalanceResource, TokenInfo, G_STC_TOKEN_CODE, STC_TOKEN_CODE_STR},
     genesis_config::ChainId,
     language_storage::StructTag,
+    move_resource::MoveResource,
     on_chain_config::Version,
     state_view::StateReaderExt,
     token::token_code::TokenCode,
 };
+use std::path::Path;
 use std::{collections::HashMap, str::FromStr};
 use tempfile::TempDir;
 
@@ -36,6 +40,18 @@ pub fn get_migration_main_snapshot() -> anyhow::Result<(&'static str, HashValue,
             "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f",
         )?,
         include_bytes!("../snapshot/24674819.tar.gz"),
+    ))
+}
+
+pub fn get_migration_main_0x1_snapshot() -> anyhow::Result<(&'static str, HashValue, &'static [u8])>
+{
+    // TODO(BobOng): The specified height to be confirm
+    Ok((
+        "24674819-0x1.bcs",
+        HashValue::from_hex_literal(
+            "5efc1f27548fc1d46a2c86272f1fbc567a32746e04a1b1a608c17f60cf58771d",
+        )?,
+        include_bytes!("../snapshot/24674819-0x1.tar.gz"),
     ))
 }
 
@@ -61,12 +77,6 @@ pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
 /// 2. If specific environment variable is set
 /// 3. If chain_id indicates test network
 pub fn should_use_test_migration(_chain_id: ChainId) -> bool {
-    // Check if we're in test environment
-    #[cfg(test)]
-    {
-        return true;
-    }
-
     // Check for environment variable override
     if let Ok(env_value) = std::env::var("STARCOIN_USE_TEST_MIGRATION") {
         if env_value == "true" || env_value == "1" {
@@ -78,60 +88,81 @@ pub fn should_use_test_migration(_chain_id: ChainId) -> bool {
     let test_networks = [
         BuiltinNetworkID::Test.chain_id(),
         BuiltinNetworkID::Dev.chain_id(),
-        BuiltinNetworkID::Halley.chain_id(),
-        BuiltinNetworkID::Proxima.chain_id(),
     ];
     test_networks.contains(&_chain_id)
 }
 
-pub fn migrate_main_data_to_statedb(statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
+pub fn migrate_main_data_to_statedb(
+    statedb: &ChainStateDB,
+) -> anyhow::Result<(HashValue, ChainStateSet)> {
     let (file_name, data_hash, snapshot_pack) = get_migration_main_snapshot()?;
     migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
 }
 
-pub fn migrate_test_data_to_statedb(statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
+pub fn migrate_main_0x1_data_to_statedb(
+    statedb: &ChainStateDB,
+) -> anyhow::Result<(HashValue, ChainStateSet)> {
+    let (file_name, data_hash, snapshot_pack) = get_migration_main_0x1_snapshot()?;
+    migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
+}
+
+pub fn migrate_test_data_to_statedb(
+    statedb: &ChainStateDB,
+) -> anyhow::Result<(HashValue, ChainStateSet)> {
     let (file_name, data_hash, snapshot_pack) = get_migration_test_snapshot()?;
     migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
 }
 
 pub fn do_migration(statedb: &ChainStateDB, chain_id: ChainId) -> anyhow::Result<HashValue> {
-    if should_use_test_migration(chain_id) {
+    let (state_root, stateset_bcs_from_file) = if should_use_test_migration(chain_id) {
         migrate_test_data_to_statedb(&statedb)
     } else {
-        migrate_main_data_to_statedb(&statedb)
-    }
+        migrate_main_0x1_data_to_statedb(&statedb)
+    }?;
+
+    let statedb = statedb.fork_at(state_root);
+
+    debug!(
+        "do_migration | appying data completed, state root: {:?}, version: {}",
+        statedb.state_root(),
+        get_version_from_statedb(&statedb)?,
+    );
+
+    let stdlib_version = statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+    debug!(
+        "do_migration | Exited, the stdlib_version: {:?}, stc_token_info: {:?}",
+        stdlib_version,
+        statedb.get_stc_info()?.unwrap()
+    );
+    // Verify STC should
+    let state_root =
+        verify_token_state_is_complete(&statedb, &stateset_bcs_from_file, STC_TOKEN_CODE_STR)?;
+    maybe_replace_chain_id_after_migration(&statedb.fork_at(state_root), chain_id)
+}
+
+pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
+    Ok(statedb
+        .get_on_chain_config::<Version>()?
+        .map(|version| version.major)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?)
 }
 
 pub fn migrate_legacy_state_data(
     statedb: &ChainStateDB,
-    snapshot_pack: &[u8],
+    snapshot_tar_pack: &[u8],
     migration_file_name: &str,
     migration_file_expect_hash: HashValue,
-) -> anyhow::Result<HashValue> {
+) -> anyhow::Result<(HashValue, ChainStateSet)> {
     debug!(
         "migrate_legacy_state_data | Entered, origin state_root:{:?}",
         statedb.state_root()
     );
 
     let temp_dir = TempDir::new()?;
-
-    // Extract the tar.gz file from embedded data
-    let tar_file = flate2::read::GzDecoder::new(snapshot_pack);
-    let mut archive = tar::Archive::new(tar_file);
-    archive.unpack(&temp_dir)?;
-
-    let bcs_path = temp_dir.path().join(migration_file_name);
-    assert!(
-        bcs_path.exists(),
-        "{:?} does not exist",
-        migration_file_name
-    );
-
-    debug!(
-        "migrate_legacy_state_data | Read bcs from path: {:?}",
-        bcs_path
-    );
-    let bcs_content = std::fs::read(bcs_path)?;
+    let bcs_content = unpack_from_tar(snapshot_tar_pack, temp_dir.path(), migration_file_name)?;
 
     assert_eq!(
         HashValue::sha3_256_of(&bcs_content),
@@ -140,40 +171,20 @@ pub fn migrate_legacy_state_data(
     );
 
     let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_content)?;
+
     debug!("migrate_legacy_state_data | start applying data ...");
     statedb.apply(chain_state_set.clone())?;
-    let new_state_root = statedb.commit()?;
+    let state_root = statedb.commit()?;
     statedb.flush()?;
 
-    debug!(
-        "migrate_legacy_state_data | applying data completed, new state root is: {:?}",
-        new_state_root
-    );
-
-    let new_statedb = statedb.fork_at(new_state_root);
-
-    let stdlib_version = new_statedb
-        .get_on_chain_config::<Version>()?
-        .map(|version| version.major)
-        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
-
-    let new_state_root = statedb.state_root();
-
-    info!(
-        "migrate_legacy_state_data | Exited, the stdlib_version: {:?}, new state root is: {:?}",
-        stdlib_version, new_state_root
-    );
-
-    verify_token_state_is_complete(&new_statedb, &chain_state_set, STC_TOKEN_CODE_STR)?;
-
-    Ok(new_state_root)
+    Ok((state_root, chain_state_set))
 }
 
 pub fn verify_token_state_is_complete(
     statedb: &ChainStateDB,
     original_chain_state_set: &ChainStateSet,
     token_code: &str,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<HashValue> {
     info!("verify_state_is_complete | Starting STC balance verification...");
 
     let stc_token_code = TokenCode::from_str(token_code)?;
@@ -183,6 +194,7 @@ pub fn verify_token_state_is_complete(
     // Extract STC balances from original data
     let mut original_balances = HashMap::new();
     let mut total_original = 0u128;
+    let mut state_root = statedb.state_root();
 
     debug!(
         "verify_state_is_complete | stc_balance_struct_tag: {:?}",
@@ -242,7 +254,10 @@ pub fn verify_token_state_is_complete(
     }
 
     // Check total balance consistency
-    if total_original != total_current {
+    if total_original == total_current {
+        debug!("verify_token_state_is_complete | Update total token issue count of statistic to TokenInfo, current: {:?}", total_current);
+        state_root = replace_chain_stc_token_amount(&statedb, total_current)?;
+    } else {
         errors.push(format!(
             "Total balance mismatch: original {}, current {}",
             total_original, total_current
@@ -256,7 +271,7 @@ pub fn verify_token_state_is_complete(
             total_current
         );
         debug!("verify_state_is_complete | Exited");
-        Ok(())
+        Ok(state_root)
     } else {
         error!(
             "STC balance verification failed with {} errors:",
@@ -267,4 +282,80 @@ pub fn verify_token_state_is_complete(
         }
         Err(format_err!("STC balance verification failed"))
     }
+}
+
+/// Extract the tar.gz file from embedded data
+fn unpack_from_tar(
+    snapshot_tar_pack: &[u8],
+    extract_dir: &Path,
+    file_name: &str,
+) -> anyhow::Result<Vec<u8>> {
+    let tar_file = flate2::read::GzDecoder::new(snapshot_tar_pack);
+    let mut archive = tar::Archive::new(tar_file);
+    archive.unpack(extract_dir)?;
+
+    let bcs_path = extract_dir.join(file_name);
+    assert!(bcs_path.exists(), "{:?} does not exist", file_name);
+
+    debug!("unpack_from_tar | Read bcs from path: {:?}", bcs_path);
+    Ok(std::fs::read(bcs_path)?)
+}
+fn replace_chain_stc_token_amount(
+    statedb: &ChainStateDB,
+    total_current: u128,
+) -> anyhow::Result<HashValue> {
+    let mut stc_info = statedb.get_stc_info()?.unwrap();
+    stc_info.total_value = total_current;
+    statedb.set(
+        &TokenInfo::resource_path_for(G_STC_TOKEN_CODE.clone().try_into()?),
+        bcs_ext::to_bytes(&stc_info)?,
+    )?;
+    let state_root = statedb.commit()?;
+    statedb.flush()?;
+    Ok(state_root)
+}
+
+/// Since the imported data is the main network,
+/// if it is not modified to the context network id after applying the data,
+/// it will fail when checking block_meta.
+fn maybe_replace_chain_id_after_migration(
+    statedb: &ChainStateDB,
+    chain_id: ChainId,
+) -> anyhow::Result<HashValue> {
+    debug!(
+        "replace_chain_id_after_migration | Entered, replacing chain_id to: {}",
+        chain_id
+    );
+
+    // Get the current ChainId resource from genesis address
+    let current_chain_id = statedb.get_chain_id()?;
+    debug!(
+        "replace_chain_id_after_migration | Current chain_id: {}, new chain_id: {}",
+        current_chain_id, chain_id
+    );
+
+    // If the chain_id is already correct, no need to change
+    if current_chain_id == chain_id {
+        debug!("replace_chain_id_after_migration | ChainId already matches, no change needed");
+        return Ok(statedb.state_root());
+    }
+
+    // Create the access path for ChainId resource at genesis address
+    statedb.set(
+        &AccessPath::resource_access_path(
+            starcoin_vm_types::account_config::genesis_address(),
+            ChainId::struct_tag(),
+        ),
+        bcs_ext::to_bytes(&chain_id)?,
+    )?;
+
+    // Commit the changes and get new state root
+    let new_state_root = statedb.commit()?;
+    statedb.flush()?;
+
+    debug!(
+        "replace_chain_id_after_migration | Exited, ChainId replaced successfully, new state_root: {:?}",
+        new_state_root
+    );
+    Ok(new_state_root)
 }

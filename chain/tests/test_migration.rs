@@ -20,7 +20,9 @@ mod migration_tests {
     };
     use std::sync::Arc;
     use tempfile::TempDir;
-    use test_helper::{create_block_with_transactions, print_bcs_decoded_resources};
+    use test_helper::{
+        create_block_with_transactions, print_account_resource_set, print_bcs_decoded_resources,
+    };
 
     /// Set up test environment with STARCOIN_USE_TEST_MIGRATION environment variable
     fn setup_test_environment() {
@@ -337,29 +339,24 @@ mod migration_tests {
             "Should start with genesis block"
         );
 
-        const MAX_TEST_BLOCKS: usize = 5;
+        const MAX_TEST_BLOCKS: usize = 4;
 
         // Create N blocks (empty block)
-        // let mut last_stateroot = None;
         for _ in 0..MAX_TEST_BLOCKS {
             // Create block template for the first block (block #1) - empty block
             let (_executed_block, _stateroot) =
                 create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
 
             debug!(
-                "executed_block header stateroot:{:?}, state_root: {:?}",
+                "test_block_migration_with_blockchain_mining | executed_block header stateroot:{:?}, state_root: {:?}, chain id: {:?}",
                 _executed_block.header().state_root(),
-                _stateroot
+                _stateroot,
+                statedb.get_chain_id()?,
             );
-            // last_stateroot = Some(_stateroot);
         }
 
-        // Use the concrete ChainStateDB instead of trait object
-        // let current_statedb = if let Some(stateroot) = last_stateroot {
-        //     statedb.fork_at(stateroot)
-        // } else {
-        //     statedb.fork_at(chain.chain_state_reader().state_root())
-        // };
+        let statedb = statedb.fork_at(chain.current_header().state_root());
+        print_account_resource_set(&statedb, &AccountAddress::ONE)?;
 
         let account_state_reader = AccountStateReader::new(&statedb);
         let version = account_state_reader
@@ -372,7 +369,6 @@ mod migration_tests {
             "The latest version number: {:?}, stc total value: {:?}",
             version, token_info.total_value
         );
-
         Ok(())
     }
 

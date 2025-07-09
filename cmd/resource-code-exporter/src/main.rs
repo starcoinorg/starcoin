@@ -5,9 +5,9 @@ mod export;
 mod import;
 
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-use std::fs;
 use starcoin_types::account_address::AccountAddress;
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(
@@ -71,7 +71,7 @@ fn parse_account_addresses(addresses: &[String]) -> anyhow::Result<Vec<AccountAd
 fn read_whitelist_file(file_path: &PathBuf) -> anyhow::Result<Vec<AccountAddress>> {
     let content = fs::read_to_string(file_path)?;
     let mut addresses = Vec::new();
-    
+
     for line in content.lines() {
         let line = line.trim();
         if !line.is_empty() && !line.starts_with('#') {
@@ -79,7 +79,7 @@ fn read_whitelist_file(file_path: &PathBuf) -> anyhow::Result<Vec<AccountAddress
             addresses.push(addr);
         }
     }
-    
+
     Ok(addresses)
 }
 
@@ -96,22 +96,32 @@ fn main() -> anyhow::Result<()> {
             addresses,
         } => {
             let mut white_list = None;
-            
+
             if !addresses.is_empty() {
                 let parsed_addresses = parse_account_addresses(&addresses)?;
                 white_list = Some(parsed_addresses);
-                println!("Using {} addresses from command line arguments", addresses.len());
+                println!(
+                    "Using {} addresses from command line arguments",
+                    addresses.len()
+                );
             } else if let Some(whitelist_file_path) = whitelist_file {
                 let file_addresses = read_whitelist_file(&whitelist_file_path)?;
                 white_list = Some(file_addresses);
-                println!("Using {} addresses from whitelist file: {}", 
-                    white_list.as_ref().unwrap().len(), 
-                    whitelist_file_path.display());
+                println!(
+                    "Using {} addresses from whitelist file: {}",
+                    white_list.as_ref().unwrap().len(),
+                    whitelist_file_path.display()
+                );
             } else {
                 println!("No whitelist provided, will export all accounts");
             }
-            
-            export::export(db_path.display().to_string().as_str(), &output, block_hash, white_list)?;
+
+            export::export(
+                db_path.display().to_string().as_str(),
+                &output,
+                block_hash,
+                white_list,
+            )?;
         }
         Commands::Import {
             bcs_input,

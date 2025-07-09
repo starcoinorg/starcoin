@@ -596,8 +596,22 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
+        debug!(
+            "ChainStateDB::apply | Entered, Applying ChainStateSet with {} accounts",
+            chain_state_set.len()
+        );
+
         for (address, account_state_set) in chain_state_set.state_sets() {
-            // debug!("ChainStateDB::apply | {:?}", address);
+            debug!("ChainStateDB::apply | Start apply address: {:?}", address);
+
+            // Add address to updates
+            let mut locks = self.updates.write();
+            locks.insert(*address);
+
+            // Remove it cache
+            let mut cache_lock = self.cache.lock();
+            cache_lock.pop(address);
+
             let code_root = if let Some(state_set) = account_state_set.code_set() {
                 let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
                 state_tree.apply(state_set.clone())?;
@@ -608,6 +622,16 @@ impl ChainStateWriter for ChainStateDB {
             };
             let resource_root = if let Some(state_set) = account_state_set.resource_set() {
                 let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+
+                // for (idx, (key, value)) in state_set.iter().enumerate() {
+                //     // Try to decode StructTag from bytes
+                //     debug!(
+                //         "Resource[{}]: key={}, value_len={}",
+                //         idx,
+                //         StructTag::decode(key.as_slice())?,
+                //         value.len()
+                //     );
+                // }
                 state_tree.apply(state_set.clone())?;
                 state_tree.flush()?;
                 state_tree.root_hash()
@@ -616,6 +640,10 @@ impl ChainStateWriter for ChainStateDB {
             };
             let new_account_state = AccountState::new(code_root, resource_root);
             self.state_tree.put(*address, new_account_state.try_into()?);
+            debug!(
+                "ChainStateDB::apply | Exit, code root: {:?}, resource root: {:?}",
+                code_root, resource_root
+            );
         }
         self.state_tree.commit()?;
         self.state_tree.flush()?;
@@ -725,6 +753,8 @@ impl ChainStateWriter for ChainStateDB {
 
         let mut locks = self.updates.write();
         for address in locks.iter() {
+            debug!("ChainStateDB::flush | handle address: {}", address);
+
             let account_state_object = self.get_account_state_object(address, false)?;
             account_state_object.flush()?;
         }
