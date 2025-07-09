@@ -704,7 +704,8 @@ impl TxnMocker {
         let start = Instant::now();
 
         // loop the round number in each interval
-        (0..round_num).for_each(|_| {
+        // (0..round_num).for_each(|_| {
+        loop {
             match self.submit_transaction_for_dag(&current_sequences) {
                 Ok(_) => (),
                 Err(e) => error!("recheck_sequence_number error: {:?}", e),
@@ -730,7 +731,9 @@ impl TxnMocker {
             });
 
             all_sequences = refresh_sequences;
-        });
+
+            std::thread::sleep(Duration::from_millis(sleep));
+        }
 
         let duration =
             (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));

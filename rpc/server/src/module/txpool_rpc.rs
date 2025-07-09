@@ -89,6 +89,16 @@ where
         Box::pin(futures::future::ready(txn))
     }
 
+    fn pending_txns_by_count(&self, count: u64) -> FutureResult<Vec<SignedUserTransactionView>> {
+        let txns: Result<Vec<SignedUserTransactionView>, _> = self
+            .service
+            .get_pending_txns(Some(count), None)
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect();
+        Box::pin(futures::future::ready(txns.map_err(map_err)))
+    }
+
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
         let result = self.service.next_sequence_number(address);
         Box::pin(futures::future::ok(result))

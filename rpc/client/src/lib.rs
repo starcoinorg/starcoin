@@ -315,6 +315,14 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn get_pending_txn_by_count(
+        &self,
+        count: u64,
+    ) -> anyhow::Result<Vec<SignedUserTransactionView>> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns_by_count(count))
+            .map_err(map_err)
+    }
+
     pub fn get_pending_txns_of_sender(
         &self,
         sender: AccountAddress,

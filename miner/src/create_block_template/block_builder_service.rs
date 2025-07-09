@@ -364,6 +364,10 @@ where
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
+        info!(
+            "jacktest: max_txns: {:?}, block_gas_limit: {:?}",
+            max_txns, block_gas_limit
+        );
 
         self.put_red_block_transactions(&ghostdata)?;
 
