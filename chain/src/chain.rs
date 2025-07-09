@@ -479,10 +479,6 @@ impl BlockChain {
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
 
-        // Check if this is a migration block
-        let is_migration_block =
-            starcoin_data_migration::should_do_migration(header.number(), header.chain_id());
-
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let (vm1_offline, mut t) = match &parent_status {
@@ -541,9 +537,8 @@ impl BlockChain {
             let state_root2 = executed_data2.state_root;
 
             // Apply migration data if this is a migration block
-            if is_migration_block {
+            if starcoin_data_migration::should_do_migration(header.number(), header.chain_id()) {
                 debug!("Applying migration data for block {}", header.number());
-
                 starcoin_data_migration::do_migration(&statedb, header.chain_id())?;
 
                 // After migration, get the updated state root
