@@ -692,10 +692,9 @@ impl TxnMocker {
                 current_sequences.insert(
                     account_info.address,
                     NextTransaction {
-                        seq: all_sequences
+                        seq: *all_sequences
                             .get(account_info.address())
-                            .unwrap()
-                            .saturating_add(1),
+                            .unwrap(),
                         receiver: receiver.address,
                     },
                 );
@@ -723,7 +722,7 @@ impl TxnMocker {
                     current_sequences.insert(
                         account.address,
                         NextTransaction {
-                            seq: (*next_seq).saturating_add(1),
+                            seq: *next_seq,
                             receiver: receiver.address,
                         },
                     );
