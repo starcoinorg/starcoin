@@ -88,3 +88,29 @@ impl CommandAction for TxPoolStatusCommand {
         client.txpool_status()
     }
 }
+
+/// Get pending txns of sender
+#[derive(Debug, Parser)]
+#[clap(name = "pending-txns-by-count")]
+pub struct PendingTxnsByCountOpt {
+    #[clap(name = "max-len", long = "max", help = "max num to return")]
+    max_len: u64,
+}
+
+pub struct TxPoolGetPendingTxnsCommand;
+
+impl CommandAction for TxPoolGetPendingTxnsCommand {
+    type State = CliState;
+    type GlobalOpt = StarcoinOpt;
+    type Opt = PendingTxnsByCountOpt;
+    type ReturnItem = Vec<SignedUserTransactionView>;
+
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
+        let count = ctx.opt().max_len;
+        let client = ctx.state().client();
+        client.get_pending_txn_by_count(count)
+    }
+}

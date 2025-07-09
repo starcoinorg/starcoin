@@ -43,6 +43,10 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.state")]
     fn state(&self) -> FutureResult<TxPoolStatus>;
+
+    /// get pending txn in txpool
+    #[rpc(name = "txpool.pending_txns_by_count")]
+    fn pending_txns_by_count(&self, count: u64) -> FutureResult<Vec<SignedUserTransactionView>>;
 }
 #[test]
 fn test() {

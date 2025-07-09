@@ -136,6 +136,10 @@ impl TxPoolSyncService for TxPoolService {
         });
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
+        info!(
+            "jacktest: current_timestamp_secs: {:?}",
+            current_timestamp_secs
+        );
         let r = self
             .inner
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
@@ -296,6 +300,7 @@ impl Inner {
         };
         self.queue
             .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
+        info!("jacktest: pending_settings: {:?}", pending_settings);
         self.queue.pending(self.get_pool_client(), pending_settings)
     }
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
