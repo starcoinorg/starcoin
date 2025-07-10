@@ -163,9 +163,7 @@ impl From<BlockHeader> for BlockIdAndNumber {
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
-#[derive(
-    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
-)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct BlockHeader {
     #[serde(skip)]
     id: Option<HashValue>,
@@ -499,6 +497,57 @@ impl BlockHeader {
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {
         BlockHeaderBuilder::new_with(self.clone())
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "BlockHeader")]
+        struct BlockHeaderData {
+            parent_hash: HashValue,
+            timestamp: u64,
+            number: BlockNumber,
+            author: AccountAddress,
+            author_auth_key: Option<AuthenticationKey>,
+            txn_accumulator_root: HashValue,
+            block_accumulator_root: HashValue,
+            state_root: HashValue,
+            gas_used: u64,
+            difficulty: U256,
+            body_hash: HashValue,
+            chain_id: ChainId,
+            nonce: u32,
+            extra: BlockHeaderExtra,
+            parents_hash: Vec<HashValue>,
+            version: Version,
+            pruning_point: HashValue,
+        }
+
+        let header_data = BlockHeaderData::deserialize(deserializer)?;
+        let block_header = Self::new_with_auth_key(
+            header_data.parent_hash,
+            header_data.timestamp,
+            header_data.number,
+            header_data.author,
+            header_data.author_auth_key,
+            header_data.txn_accumulator_root,
+            header_data.block_accumulator_root,
+            header_data.state_root,
+            header_data.gas_used,
+            header_data.difficulty,
+            header_data.body_hash,
+            header_data.chain_id,
+            header_data.nonce,
+            header_data.extra,
+            header_data.parents_hash,
+            header_data.version,
+            header_data.pruning_point,
+        );
+        Ok(block_header)
     }
 }
 
