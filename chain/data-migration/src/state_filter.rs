@@ -1,17 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use bcs_ext;
 use log::debug;
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet, StateSet};
-use starcoin_vm_types::{
-    account_config::AccountResource, genesis_config::ChainId, language_storage::StructTag,
-    state_view::StateReaderExt,
-};
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::{
+    account_config::AccountResource, language_storage::StructTag, state_view::StateReaderExt,
+};
 
 const BLOCK_METADATA_PATH: &str = "0x00000000000000000000000000000001::Block::BlockMetadata";
 const CHAIN_ID_PATH: &str = "0x00000000000000000000000000000001::ChainId::ChainId";
@@ -44,7 +42,10 @@ pub fn filter_chain_state_set(
                     bcs_ext::to_bytes(&statedb.get_block_metadata()?)?
                 } else if BLOCK_REWARD_QUEUE == struct_tag_str {
                     // Get local block reward queue data from current state
-                    let access_path = AccessPath::new(*address, starcoin_types::access_path::DataPath::Resource(struct_tag));
+                    let access_path = AccessPath::new(
+                        *address,
+                        starcoin_types::access_path::DataPath::Resource(struct_tag),
+                    );
                     let state_key = StateKey::AccessPath(access_path);
                     match statedb.get_state_value(&state_key)? {
                         Some(local_data) => local_data.to_vec(),

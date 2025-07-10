@@ -9,7 +9,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
-use starcoin_data_migration::{do_migration, should_do_migration, MigrationDataSet};
+use starcoin_data_migration::{do_migration, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};

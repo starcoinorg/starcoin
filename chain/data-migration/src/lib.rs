@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::format_err;
-use bcs_ext;
 use log::{debug, error};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_crypto::HashValue;
@@ -130,19 +129,9 @@ impl MigrationExecutor {
         let statedb = self.statedb.fork_at(state_root);
 
         debug!(
-            "Migration data applied, state root: {:?}, version: {}",
+            "Migration data apply completed, state root: {:?}, version: {}",
             statedb.state_root(),
             get_version_from_statedb(&statedb)?,
-        );
-
-        let stdlib_version = statedb
-            .get_on_chain_config::<Version>()?
-            .map(|version| version.major)
-            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
-        debug!(
-            "Migration completed, stdlib_version: {:?}, stc_token_info: {:?}",
-            stdlib_version,
-            statedb.get_stc_info()?.unwrap()
         );
 
         // Verify STC balance consistency
@@ -293,8 +282,7 @@ impl MigrationExecutor {
         // Check total balance consistency
         if total_original == total_current {
             debug!("verify_token_state_is_complete | Update total token issue count of statistic to TokenInfo, current: {:?}", total_current);
-            state_root =
-                Self::replace_statistic_amount_with_actual_amount(&statedb, total_current)?;
+            state_root = Self::replace_statistic_amount_with_actual_amount(statedb, total_current)?;
         } else {
             errors.push(format!(
                 "Total balance mismatch: original {}, current {}",
@@ -357,10 +345,10 @@ pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
 }
 
 pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
-    Ok(statedb
+    statedb
         .get_on_chain_config::<Version>()?
         .map(|version| version.major)
-        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?)
+        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))
 }
 
 /// Extract the tar.gz file from embedded data

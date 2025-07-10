@@ -21,9 +21,7 @@ mod migration_tests {
     };
     use std::sync::Arc;
     use tempfile::TempDir;
-    use test_helper::{
-        create_block_with_transactions, print_account_resource_set, print_bcs_decoded_resources,
-    };
+    use test_helper::{create_block_with_transactions, print_bcs_decoded_resources};
 
     /// Helper function to create a test environment for migration
     fn create_test_environment(
@@ -292,7 +290,11 @@ mod migration_tests {
         let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        do_migration(&chain_state_db, net.chain_id(), Some(MigrationDataSet::main()))?;
+        do_migration(
+            &chain_state_db,
+            net.chain_id(),
+            Some(MigrationDataSet::main()),
+        )?;
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
 
@@ -335,7 +337,7 @@ mod migration_tests {
         const MAX_TEST_BLOCKS: usize = 4;
 
         // Create N blocks (empty block)
-        let mut state_root = genesis_header.state_root().clone();
+        let mut state_root = genesis_header.state_root();
         for _ in 0..MAX_TEST_BLOCKS {
             // Create block template for the first block (block #1) - empty block
             let (_executed_block, _stateroot) =
