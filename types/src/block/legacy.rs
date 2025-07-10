@@ -1,7 +1,4 @@
-use super::{
-    block_header_data::BlockHeaderDataInVega, AccountAddress, BlockHeaderExtra, BlockNumber,
-    ChainId, SignedUserTransaction, U256,
-};
+use super::{AccountAddress, BlockHeaderExtra, BlockNumber, ChainId, SignedUserTransaction, U256};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::{
@@ -140,30 +137,6 @@ impl From<BlockHeader> for crate::block::BlockHeader {
             version: 0,
             pruning_point: HashValue::zero(),
         }
-    }
-}
-
-impl From<BlockHeaderDataInVega> for BlockHeader {
-    fn from(val: BlockHeaderDataInVega) -> Self {
-        let mut header = Self {
-            id: None,
-            parent_hash: val.parent_hash,
-            timestamp: val.timestamp,
-            number: val.number,
-            author: val.author,
-            author_auth_key: val.author_auth_key,
-            txn_accumulator_root: val.txn_accumulator_root,
-            block_accumulator_root: val.block_accumulator_root,
-            state_root: val.state_root,
-            gas_used: val.gas_used,
-            difficulty: val.difficulty,
-            body_hash: val.body_hash,
-            chain_id: val.chain_id,
-            nonce: val.nonce,
-            extra: val.extra,
-        };
-        header.id = Some(header.crypto_hash());
-        header
     }
 }
 

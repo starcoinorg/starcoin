@@ -346,7 +346,7 @@ where
         })
     }
 
-    pub fn create_block_template(&mut self, version: Version) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
         let MinerResponse {
             previous_header,
             selected_parents,
@@ -412,13 +412,7 @@ where
             now_millis,
         );
 
-        let header_version =
-            if BlockHeader::check_upgrade(previous_header.number() + 1, previous_header.chain_id())
-            {
-                version
-            } else {
-                0
-            };
+        let header_version = 1;
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),

@@ -231,28 +231,6 @@ fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
         crate::block::BlockHeader::decode(&header.encode()?)?
     );
 
-    let header_in_vega = crate::block::BlockHeaderDataInVega {
-        parent_hash: header.parent_hash,
-        timestamp: header.timestamp,
-        number: header.number,
-        author: header.author,
-        author_auth_key: header.author_auth_key(),
-        txn_accumulator_root: header.txn_accumulator_root,
-        block_accumulator_root: header.block_accumulator_root,
-        state_root: header.state_root,
-        gas_used: header.gas_used,
-        difficulty: header.difficulty,
-        body_hash: header.body_hash,
-        chain_id: header.chain_id,
-        nonce: header.nonce,
-        extra: header.extra,
-        parents_hash: Some(header.parents_hash.clone()),
-    };
-    let vega_data = header_in_vega.encode()?;
-    let read_from_vega_header = crate::block::BlockHeader::decode(&vega_data)?;
-
-    assert_eq!(header, read_from_vega_header);
-
     anyhow::Ok(())
 }
 

@@ -15,14 +15,14 @@ use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
-use block_header_data::{BlockHeaderDataInVega, BlockHeaderDataLatest};
+use block_header_data::BlockHeaderDataLatest;
 use lazy_static::lazy_static;
 pub use legacy::{
     Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
 };
 use raw_block_header::RawBlockHeader;
 use schemars::{self, JsonSchema};
-use serde::de::{self, Error, SeqAccess, Visitor};
+use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
@@ -32,7 +32,7 @@ use starcoin_crypto::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use std::fmt::{self, Formatter};
+use std::fmt::Formatter;
 use std::hash::Hash;
 use std::sync::Mutex;
 
@@ -163,7 +163,9 @@ impl From<BlockHeader> for BlockIdAndNumber {
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, CryptoHasher, CryptoHash, JsonSchema)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
 pub struct BlockHeader {
     #[serde(skip)]
     id: Option<HashValue>,
@@ -280,7 +282,7 @@ impl BlockHeader {
             body_hash,
             chain_id,
             extra,
-            parents_hash: Some(parents_hash),
+            parents_hash,
             version,
             pruning_point,
         };
@@ -300,10 +302,7 @@ impl BlockHeader {
             chain_id: header.chain_id,
             nonce: header.nonce,
             extra: header.extra,
-            parents_hash: header
-                .parents_hash
-                .clone()
-                .expect("parents hash should not be none, use [] instead if it is"),
+            parents_hash: header.parents_hash.clone(),
             version: header.version,
             pruning_point: header.pruning_point,
         };
@@ -501,162 +500,6 @@ impl BlockHeader {
     pub fn as_builder(&self) -> BlockHeaderBuilder {
         BlockHeaderBuilder::new_with(self.clone())
     }
-
-    fn upgrade(&self) -> bool {
-        Self::check_upgrade(self.number(), self.chain_id())
-    }
-    // legacy: only main block need upgrade?
-    pub fn check_upgrade(number: BlockNumber, chain_id: ChainId) -> bool {
-        if number == 0 {
-            false
-        } else if chain_id.is_vega() {
-            number >= 3300000
-        } else {
-            true
-        }
-    }
-}
-
-impl Serialize for BlockHeader {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if !self.upgrade() {
-            // for vega no pruning point
-            let header_data: BlockHeaderDataInVega = self.clone().into();
-            header_data.serialize(serializer)
-        } else {
-            let header_data: BlockHeaderDataLatest = self.clone().into();
-            header_data.serialize(serializer)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for BlockHeader {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct BlockHeaderVisitor;
-
-        impl<'de> Visitor<'de> for BlockHeaderVisitor {
-            type Value = BlockHeader;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct BlockHeader")
-            }
-
-            fn visit_seq<V>(self, mut seq: V) -> Result<BlockHeader, V::Error>
-            where
-                V: SeqAccess<'de>,
-            {
-                let parent_hash: HashValue = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let timestamp: u64 = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let number: BlockNumber = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let author: AccountAddress = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let author_auth_key: Option<AuthenticationKey> = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let txn_accumulator_root: HashValue = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let block_accumulator_root: HashValue = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let state_root: HashValue = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let gas_used: u64 = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let difficulty: U256 = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let body_hash: HashValue = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let chain_id: ChainId = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let nonce: u32 = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let extra: BlockHeaderExtra = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let parents_hash: Option<ParentsHash> =
-                    seq.next_element().map_or(Some(vec![]), |value| {
-                        value.map_or(Some(vec![]), |value| value)
-                    });
-
-                // legacy
-                let (version, pruning_point) = if !BlockHeader::check_upgrade(number, chain_id) {
-                    (0, HashValue::zero())
-                } else {
-                    let version: Version = seq
-                        .next_element()?
-                        .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                    let pruning_point: HashValue =
-                        seq.next_element().map_or(HashValue::zero(), |value| {
-                            value.map_or(HashValue::zero(), |value| value)
-                        });
-                    (version, pruning_point)
-                };
-
-                let header = BlockHeader::new_with_auth_key(
-                    parent_hash,
-                    timestamp,
-                    number,
-                    author,
-                    author_auth_key,
-                    txn_accumulator_root,
-                    block_accumulator_root,
-                    state_root,
-                    gas_used,
-                    difficulty,
-                    body_hash,
-                    chain_id,
-                    nonce,
-                    extra,
-                    parents_hash.map_or(vec![], |value| value),
-                    version,
-                    pruning_point,
-                );
-                Ok(header)
-            }
-        }
-
-        const BLOCK_HEADER_FIELDS: &[&str] = &[
-            "parent_hash",
-            "timestamp",
-            "number",
-            "author",
-            "author_auth_key",
-            "txn_accumulator_root",
-            "block_accumulator_root",
-            "state_root",
-            "gas_used",
-            "difficulty",
-            "body_hash",
-            "chain_id",
-            "nonce",
-            "extra",
-            "parents_hash",
-            "version",
-            "pruning_point",
-        ];
-
-        deserializer.deserialize_struct("BlockHeader", BLOCK_HEADER_FIELDS, BlockHeaderVisitor)
-    }
 }
 
 impl Default for BlockHeader {
@@ -853,10 +696,7 @@ impl BlockHeaderBuilder {
             chain_id: crypto_data.chain_id,
             nonce: crypto_data.nonce,
             extra: crypto_data.extra,
-            parents_hash: crypto_data
-                .parents_hash
-                .clone()
-                .expect("parents hash should not be none, use [] instead if it is"),
+            parents_hash: crypto_data.parents_hash.clone(),
             version: crypto_data.version,
             pruning_point: crypto_data.pruning_point,
         };
@@ -866,50 +706,14 @@ impl BlockHeaderBuilder {
     }
 }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
+#[derive(
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+)]
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
-}
-
-impl<'de> Deserialize<'de> for BlockBody {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct BlockBodyVisitor;
-
-        impl<'de> Visitor<'de> for BlockBodyVisitor {
-            type Value = BlockBody;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct BlockBody")
-            }
-
-            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
-            where
-                V: SeqAccess<'de>,
-            {
-                let transactions: Vec<SignedUserTransaction> = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let uncles: Option<Vec<BlockHeader>> = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-
-                Ok(BlockBody {
-                    transactions,
-                    uncles,
-                })
-            }
-        }
-
-        const BLOCK_BODY_FIELDS: &[&str] = &["transactions", "uncles"];
-
-        deserializer.deserialize_struct("BlockBody", BLOCK_BODY_FIELDS, BlockBodyVisitor)
-    }
 }
 
 impl BlockBody {
@@ -963,7 +767,7 @@ impl Sample for BlockBody {
 }
 
 /// A block, encoded as it is on the block chain.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize, Serialize, CryptoHasher, CryptoHash)]
 pub struct Block {
     /// The header of this block.
     pub header: BlockHeader,
@@ -1110,47 +914,6 @@ impl Block {
             .build();
 
         Self { header, body }
-    }
-}
-
-impl<'de> Deserialize<'de> for Block {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct BlockVisitor;
-
-        impl<'de> Visitor<'de> for BlockVisitor {
-            type Value = Block;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct Block")
-            }
-
-            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
-            where
-                V: SeqAccess<'de>,
-            {
-                let header: BlockHeader = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let body: BlockBody = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-
-                if body.hash() != header.body_hash {
-                    return std::result::Result::Err(serde::de::Error::custom(
-                        "Block body hash does not match header body hash",
-                    ));
-                }
-
-                Ok(Block { header, body })
-            }
-        }
-
-        const BLOCK_FIELDS: &[&str] = &["header", "body"];
-
-        deserializer.deserialize_struct("Block", BLOCK_FIELDS, BlockVisitor)
     }
 }
 
@@ -1317,7 +1080,6 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            // for an upgraded binary, parents_hash should never be None.
             parents_hash,
             version,
             pruning_point,
