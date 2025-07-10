@@ -7,9 +7,7 @@ mod migration_tests {
     use starcoin_chain::ChainReader;
     use starcoin_config::{BuiltinNetworkID, ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_crypto::HashValue;
-    use starcoin_data_migration::{
-        filter_chain_state_set, migrate_main_data_to_statedb, migrate_test_data_to_statedb,
-    };
+    use starcoin_data_migration::{do_migration, filter_chain_state_set, migrate_main_data_to_statedb, migrate_test_data_to_statedb};
     use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
@@ -28,9 +26,9 @@ mod migration_tests {
     };
 
     /// Set up test environment with STARCOIN_USE_TEST_MIGRATION environment variable
-    fn setup_test_environment() {
+    fn setup_main_environment() {
         // Set the environment variable for all tests in this module
-        std::env::set_var("STARCOIN_USE_TEST_MIGRATION", "true");
+        std::env::set_var("STARCOIN_MIGRATION_DATASET", "main");
     }
 
     /// Helper function to create a test environment for migration
@@ -66,7 +64,7 @@ mod migration_tests {
 
         // Use the test snapshot data
         let (file_name, data_hash, snapshot_pack) =
-            starcoin_data_migration::get_migration_test_snapshot()?;
+            starcoin_data_migration::MigrationDataSet::test().as_tuple()?;
 
         // Extract BCS content from tar.gz (same as migrate_legacy_state_data)
         let temp_dir = tempfile::TempDir::new()?;
@@ -103,7 +101,7 @@ mod migration_tests {
             )?;
 
         // Execute migration (this will verify file hash and basic functionality)
-        migrate_test_data_to_statedb(&statedb, net.chain_id())?;
+        do_migration(&statedb, net.chain_id())?;
 
         verify_migration_results(&statedb, 4)
     }
@@ -116,7 +114,7 @@ mod migration_tests {
         let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Dev)?;
 
         // Execute migration (this will verify file hash and basic functionality)
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        do_migration(&chain_state_db, net.chain_id())?;
 
         // Verify post-migration state
         let new_statedb = chain_state_db.fork_at(chain_state_db.state_root());
@@ -134,7 +132,7 @@ mod migration_tests {
         let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        do_migration(&chain_state_db, net.chain_id())?;
 
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
@@ -154,7 +152,7 @@ mod migration_tests {
         let before_migration_root = chain_state_db2.state_root();
 
         // Execute migration again
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        do_migration(&chain_state_db, net.chain_id())?;
 
         // Verify post-migration state
         let after_migration_root = chain_state_db2.state_root();
@@ -199,7 +197,7 @@ mod migration_tests {
         let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // Execute migration again
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        do_migration(&chain_state_db, net.chain_id())?;
         let first_root = chain_state_db.state_root();
         let first_statedb = chain_state_db.fork_at(first_root);
 
@@ -210,7 +208,7 @@ mod migration_tests {
         let first_balance = first_statedb.get_balance(AccountAddress::ONE)?.unwrap_or(0);
 
         // Second migration execution
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        do_migration(&chain_state_db, net.chain_id())?;
         let second_root = chain_state_db.state_root();
         let second_statedb = chain_state_db.fork_at(second_root);
 
@@ -247,12 +245,12 @@ mod migration_tests {
         // Test mainnet
         let (main_net, _storage_main, chain_state_db_main) =
             create_test_environment(BuiltinNetworkID::Main)?;
-        migrate_test_data_to_statedb(&chain_state_db_main, main_net.chain_id())?;
+        do_migration(&chain_state_db_main, main_net.chain_id())?;
 
         // Test proxima network
         let (_proxima_net, _storage_proxima, chain_state_db_proxima) =
             create_test_environment(BuiltinNetworkID::Proxima)?;
-        migrate_test_data_to_statedb(&chain_state_db_proxima, main_net.chain_id())?;
+        do_migration(&chain_state_db_proxima, main_net.chain_id())?;
 
         // Verify post-migration state for both networks
         let main_statedb = chain_state_db_main.fork_at(chain_state_db_main.state_root());
@@ -301,7 +299,8 @@ mod migration_tests {
         let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
 
         // First, execute migration to get the expected state
-        migrate_test_data_to_statedb(&chain_state_db, net.chain_id())?;
+        setup_main_environment();
+        do_migration(&chain_state_db, net.chain_id())?;
         let expected_state_root = chain_state_db.state_root();
         let expected_statedb = chain_state_db.fork_at(expected_state_root);
 
@@ -321,10 +320,9 @@ mod migration_tests {
     #[stest::test(timeout = 6000)]
     fn test_block_migration_with_blockchain_mining() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
-        // setup_test_environment();
 
         // Create a test network (using Main to trigger migration)
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
         let temp = TempDir::new()?;
 
         // Initialize blockchain with genesis in memory
@@ -345,24 +343,35 @@ mod migration_tests {
         const MAX_TEST_BLOCKS: usize = 4;
 
         // Create N blocks (empty block)
+        let mut state_root = genesis_header.state_root().clone();
         for _ in 0..MAX_TEST_BLOCKS {
             // Create block template for the first block (block #1) - empty block
             let (_executed_block, _stateroot) =
                 create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
 
             debug!(
-                "test_block_migration_with_blockchain_mining | executed_block header stateroot:{:?}, state_root: {:?}, chain id: {:?}",
+                "test_block_migration_with_blockchain_mining | executed_block header stateroot:{:?}, state_root1: {:?}, chain id: {:?}",
                 _executed_block.header().state_root(),
-                _stateroot,
+                _executed_block.multi_state().state_root1(),
                 statedb.get_chain_id()?,
             );
+            state_root = _stateroot;
         }
 
-        let statedb = statedb.fork_at(chain.current_header().state_root());
-        print_account_resource_set(&statedb, &AccountAddress::ONE)?;
+        let statedb = statedb.fork_at(state_root);
+        assert!(
+            statedb
+                .get_account_state_set(&genesis_address())
+                .unwrap()
+                .unwrap()
+                .resource_set()
+                .unwrap()
+                .len()
+                > 400,
+            "New genesis resource count should bigger than 400"
+        );
 
-        let account_state_reader = AccountStateReader::new(&statedb);
-        let version = account_state_reader
+        let version = statedb
             .get_on_chain_config::<Version>()?
             .map(|v| v.major)
             .unwrap_or(0);

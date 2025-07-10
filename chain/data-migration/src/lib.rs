@@ -33,37 +33,96 @@ pub use state_filter::filter_chain_state_set;
 ///   3. After starting the node, the block is generated normally.
 ///     When the first block is reached, `migrate_data_to_statedb` is automatically executed to write the state data to the state storage
 
-pub fn get_migration_main_snapshot() -> anyhow::Result<(&'static str, HashValue, &'static [u8])> {
-    // TODO(BobOng): The specified height to be confirm
-    Ok((
-        "24674819.bcs",
-        HashValue::from_hex_literal(
-            "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f",
-        )?,
-        include_bytes!("../snapshot/24674819.tar.gz"),
-    ))
+//
+#[derive(Debug)]
+pub enum MigrationDataSet {
+    Main(&'static str, HashValue, &'static [u8]),
+    Main0x1(&'static str, HashValue, &'static [u8]),
+    Test(&'static str, HashValue, &'static [u8]),
 }
 
-pub fn get_migration_main_0x1_snapshot() -> anyhow::Result<(&'static str, HashValue, &'static [u8])>
-{
-    // TODO(BobOng): The specified height to be confirm
-    Ok((
-        "24674819-0x1.bcs",
-        HashValue::from_hex_literal(
-            "5efc1f27548fc1d46a2c86272f1fbc567a32746e04a1b1a608c17f60cf58771d",
-        )?,
-        include_bytes!("../snapshot/24674819-0x1.tar.gz"),
-    ))
-}
+impl MigrationDataSet {
+    pub fn from_env() -> Option<Self> {
+        std::env::var("STARCOIN_MIGRATION_DATASET")
+            .ok()
+            .and_then(|value| match value.to_lowercase().as_str() {
+                "main0x1" | "main_0x1" => Some(MigrationDataSet::main_0x1()),
+                "main" => Some(MigrationDataSet::main()),
+                "test" => Some(MigrationDataSet::test()),
+                _ => None,
+            })
+    }
 
-pub fn get_migration_test_snapshot() -> anyhow::Result<(&'static str, HashValue, &'static [u8])> {
-    Ok((
-        "64925.bcs",
-        HashValue::from_hex_literal(
-            "0xb450ae07116c9a38fd44b93ce1d7ddbc5cbb8639e7cd30d2921be793905fb5b1",
-        )?,
-        include_bytes!("../snapshot/64925.tar.gz"),
-    ))
+    pub fn from_chain_id(chain_id: ChainId) -> Self {
+        match chain_id {
+            id if id == BuiltinNetworkID::Main.chain_id() => MigrationDataSet::main(),
+            id if id == BuiltinNetworkID::Proxima.chain_id() => MigrationDataSet::main(),
+            id if id == BuiltinNetworkID::Test.chain_id()
+                || id == BuiltinNetworkID::Dev.chain_id() =>
+            {
+                MigrationDataSet::test()
+            }
+            _ => MigrationDataSet::test(),
+        }
+    }
+
+    pub fn main() -> Self {
+        MigrationDataSet::Main(
+            "24674819.bcs",
+            HashValue::from_hex_literal(
+                "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f",
+            )
+            .unwrap(),
+            include_bytes!("../snapshot/24674819.tar.gz"),
+        )
+    }
+
+    pub fn main_0x1() -> Self {
+        MigrationDataSet::Main0x1(
+            "24674819-0x1.bcs",
+            HashValue::from_hex_literal(
+                "5efc1f27548fc1d46a2c86272f1fbc567a32746e04a1b1a608c17f60cf58771d",
+            )
+            .unwrap(),
+            include_bytes!("../snapshot/24674819-0x1.tar.gz"),
+        )
+    }
+
+    pub fn test() -> Self {
+        MigrationDataSet::Test(
+            "64925.bcs",
+            HashValue::from_hex_literal(
+                "0xb450ae07116c9a38fd44b93ce1d7ddbc5cbb8639e7cd30d2921be793905fb5b1",
+            )
+            .unwrap(),
+            include_bytes!("../snapshot/64925.tar.gz"),
+        )
+    }
+
+    pub fn as_tuple(&self) -> Option<(&'static str, HashValue, &'static [u8])> {
+        match self {
+            MigrationDataSet::Main(f, h, d) => Some((f, *h, d)),
+            MigrationDataSet::Main0x1(f, h, d) => Some((f, *h, d)),
+            MigrationDataSet::Test(f, h, d) => Some((f, *h, d)),
+        }
+    }
+
+    pub fn data_set_from_contexts(chain_id: ChainId) -> Self {
+        // First check environment variable
+        if let Some(data_set) = MigrationDataSet::from_env() {
+            info!("Using migration dataset from environment: {:?}", data_set);
+            return data_set;
+        }
+
+        if let Some(id) = chain_id {
+            return Self::from_chain_id(id);
+        }
+
+        // Fallback to default based on current context
+        // For now, we'll use a default, but this could be enhanced to detect the current chain
+        let default_data_set = MigrationDataSet::test();
+        default_data_set
+    }
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
@@ -72,62 +131,36 @@ pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
             || chain_id == ChainId::new(BuiltinNetworkID::Proxima.chain_id().id()))
 }
 
-/// Determine whether to use test migration data instead of main migration data
-/// This function checks various conditions to decide which migration data to use:
-/// 1. If running in test environment (cfg(test))
-/// 2. If specific environment variable is set
-/// 3. If chain_id indicates test network
-pub fn should_use_test_migration(_chain_id: ChainId) -> bool {
-    // Check for environment variable override
-    if let Ok(env_value) = std::env::var("STARCOIN_USE_TEST_MIGRATION") {
-        if env_value == "true" || env_value == "1" {
-            return true;
-        }
-    }
-
-    // Check if this is a test network
-    let test_networks = [
-        BuiltinNetworkID::Test.chain_id(),
-        BuiltinNetworkID::Dev.chain_id(),
-    ];
-    test_networks.contains(&_chain_id)
-}
-
-pub fn migrate_main_data_to_statedb(
+fn do_migration_with_dataset(
     statedb: &ChainStateDB,
-    chain_id: ChainId,
+    data_set: MigrationDataSet,
 ) -> anyhow::Result<(HashValue, ChainStateSet)> {
-    let (file_name, data_hash, snapshot_pack) = get_migration_main_snapshot()?;
-    migrate_legacy_state_data(statedb, chain_id, snapshot_pack, file_name, data_hash)
-}
+    info!(
+        "migrate_data_to_statedb_with_data_set | Using dataset: {:?}",
+        data_set
+    );
 
-pub fn migrate_main_0x1_data_to_statedb(
-    statedb: &ChainStateDB,
-    chain_id: ChainId,
-) -> anyhow::Result<(HashValue, ChainStateSet)> {
-    let (file_name, data_hash, snapshot_pack) = get_migration_main_0x1_snapshot()?;
-    migrate_legacy_state_data(statedb, chain_id, snapshot_pack, file_name, data_hash)
-}
-
-pub fn migrate_test_data_to_statedb(
-    statedb: &ChainStateDB,
-    chain_id: ChainId,
-) -> anyhow::Result<(HashValue, ChainStateSet)> {
-    let (file_name, data_hash, snapshot_pack) = get_migration_test_snapshot()?;
-    migrate_legacy_state_data(statedb, chain_id, snapshot_pack, file_name, data_hash)
+    let Some((file_name, data_hash, snapshot_pack)) = data_set.as_tuple();
+    migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
 }
 
 pub fn do_migration(statedb: &ChainStateDB, chain_id: ChainId) -> anyhow::Result<HashValue> {
-    let (state_root, stateset_bcs_from_file) = if should_use_test_migration(chain_id) {
-        migrate_test_data_to_statedb(&statedb, chain_id)
-    } else {
-        migrate_main_0x1_data_to_statedb(&statedb, chain_id)
-    }?;
+    info!(
+        "do_migration | Starting migration for chain_id: {:?}",
+        chain_id
+    );
+
+    // Get migration dataset from environment or context
+    let data_set = MigrationDataSet::data_set_from_contexts(chain_id);
+    info!("do_migration | Selected migration dataset: {:?}", data_set);
+
+    // Perform migration based on selected dataset
+    let (state_root, stateset_bcs_from_file) = do_migration_with_dataset(statedb, data_set)?;
 
     let statedb = statedb.fork_at(state_root);
 
     debug!(
-        "do_migration | appying data completed, state root: {:?}, version: {}",
+        "do_migration | applying data completed, state root: {:?}, version: {}",
         statedb.state_root(),
         get_version_from_statedb(&statedb)?,
     );
@@ -141,19 +174,31 @@ pub fn do_migration(statedb: &ChainStateDB, chain_id: ChainId) -> anyhow::Result
         stdlib_version,
         statedb.get_stc_info()?.unwrap()
     );
-    // Verify STC should
-    let state_root =
-        verify_token_state_is_complete(&statedb, &stateset_bcs_from_file, STC_TOKEN_CODE_STR)?;
 
-    let statedb = statedb.fork_at(state_root);
+    // Verify STC should only be done for non-empty state sets
+    let final_state_root = if !stateset_bcs_from_file.state_sets().is_empty() {
+        verify_token_state_is_complete(&statedb, &stateset_bcs_from_file, STC_TOKEN_CODE_STR)?
+    } else {
+        state_root
+    };
+
+    let statedb = statedb.fork_at(final_state_root);
     assert_eq!(
         statedb.get_chain_id()?,
         chain_id,
         "it should be target chain id"
     );
-    assert_eq!(state_root, statedb.state_root(), "it should be state root");
+    assert_eq!(
+        final_state_root,
+        statedb.state_root(),
+        "it should be state root"
+    );
 
-    Ok(state_root)
+    info!(
+        "do_migration | Migration completed successfully with state root: {:?}",
+        final_state_root
+    );
+    Ok(final_state_root)
 }
 
 pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
@@ -165,7 +210,6 @@ pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
 
 pub fn migrate_legacy_state_data(
     statedb: &ChainStateDB,
-    chain_id: ChainId,
     snapshot_tar_pack: &[u8],
     migration_file_name: &str,
     migration_file_expect_hash: HashValue,
@@ -282,7 +326,7 @@ pub fn verify_token_state_is_complete(
     // Check total balance consistency
     if total_original == total_current {
         debug!("verify_token_state_is_complete | Update total token issue count of statistic to TokenInfo, current: {:?}", total_current);
-        state_root = replace_chain_stc_token_amount(&statedb, total_current)?;
+        state_root = replace_statistic_amount_with_actual_amount(&statedb, total_current)?;
     } else {
         errors.push(format!(
             "Total balance mismatch: original {}, current {}",
@@ -326,7 +370,7 @@ fn unpack_from_tar(
     debug!("unpack_from_tar | Read bcs from path: {:?}", bcs_path);
     Ok(std::fs::read(bcs_path)?)
 }
-fn replace_chain_stc_token_amount(
+fn replace_statistic_amount_with_actual_amount(
     statedb: &ChainStateDB,
     total_current: u128,
 ) -> anyhow::Result<HashValue> {

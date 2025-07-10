@@ -538,7 +538,6 @@ impl BlockChain {
 
             // Apply migration data if this is a migration block
             if starcoin_data_migration::should_do_migration(header.number(), header.chain_id()) {
-                debug!("Applying migration data for block {}", header.number());
                 starcoin_data_migration::do_migration(&statedb, header.chain_id())?;
 
                 // After migration, get the updated state root
