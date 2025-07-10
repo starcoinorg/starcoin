@@ -9,13 +9,12 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
-use starcoin_data_migration::{do_migration, should_do_migration, MigrationDataSet};
+use starcoin_data_migration::{do_migration, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     account_address::AccountAddress,
     block::BlockNumber,
@@ -23,6 +22,7 @@ use starcoin_types::{
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
     genesis_config::{ChainId, ConsensusStrategy},
+    multi_transaction::MultiSignedUserTransaction,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
@@ -372,7 +372,7 @@ impl OpenedBlock {
         // Do migration in finalize
         let (statedb, _) = &self.state;
         let state_root1 = if should_do_migration(self.block_number(), self.chain_id) {
-            do_migration(&statedb, self.chain_id, None)?
+            do_migration(statedb, self.chain_id, None)?
         } else {
             statedb.state_root()
         };
