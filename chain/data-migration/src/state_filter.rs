@@ -42,16 +42,15 @@ pub fn filter_chain_state_set(
                     bcs_ext::to_bytes(&statedb.get_block_metadata()?)?
                 } else if BLOCK_REWARD_QUEUE == struct_tag_str {
                     // Get local block reward queue data from current state
-                    let access_path = AccessPath::new(
+                    let state_key = StateKey::AccessPath(AccessPath::new(
                         *address,
                         starcoin_types::access_path::DataPath::Resource(struct_tag),
-                    );
-                    let state_key = StateKey::AccessPath(access_path);
+                    ));
                     match statedb.get_state_value(&state_key)? {
                         Some(local_data) => local_data.to_vec(),
                         None => {
                             debug!("No local block reward queue data found, using empty data");
-                            vec![] // Return empty data if no local state exists
+                            blob.clone()
                         }
                     }
                 } else if CHAIN_ID_PATH == struct_tag_str {

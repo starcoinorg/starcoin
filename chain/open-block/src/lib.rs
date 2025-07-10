@@ -264,7 +264,11 @@ impl OpenedBlock {
         // Execute migration after all transactions are processed
         {
             let (state, _state2) = &self.state;
-            Self::execute_extra_for_vm1_migration(self.block_number(), self.chain_id, state)?;
+            Self::execute_extra_for_vm1_migration(
+                self.block_number(),
+                self.chain_id,
+                state,
+            )?;
         }
 
         Ok(ExcludedTxns {
@@ -416,7 +420,7 @@ impl OpenedBlock {
         statedb: &ChainStateDB,
     ) -> Result<()> {
         if should_do_migration(block_number, chain_id) {
-            do_migration(statedb, chain_id, None)?;
+            do_migration(&statedb, chain_id, None)?;
         }
         Ok(())
     }

@@ -33,11 +33,39 @@ pub use state_filter::filter_chain_state_set;
 ///     When the first block is reached, `migrate_data_to_statedb` is automatically executed to write the state data to the state storage
 
 //
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum MigrationDataSet {
     Main(&'static str, HashValue, &'static [u8]),
     Main0x1(&'static str, HashValue, &'static [u8]),
     Test(&'static str, HashValue, &'static [u8]),
+}
+
+impl std::fmt::Debug for MigrationDataSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Main(file_name, hash, _) => {
+                write!(
+                    f,
+                    "MigrationDataSet::Main(file: {}, hash: {})",
+                    file_name, hash
+                )
+            }
+            Self::Main0x1(file_name, hash, _) => {
+                write!(
+                    f,
+                    "MigrationDataSet::Main0x1(file: {}, hash: {})",
+                    file_name, hash
+                )
+            }
+            Self::Test(file_name, hash, _) => {
+                write!(
+                    f,
+                    "MigrationDataSet::Test(file: {}, hash: {})",
+                    file_name, hash
+                )
+            }
+        }
+    }
 }
 
 impl MigrationDataSet {
@@ -115,11 +143,17 @@ impl MigrationExecutor {
 
     /// Execute the migration process
     pub fn execute(&self, data_set: Option<MigrationDataSet>) -> anyhow::Result<HashValue> {
-        info!("Starting migration for chain_id: {:?}", self.chain_id);
+        info!(
+            "MigrationExecutor::execute | Starting migration for chain_id: {:?}",
+            self.chain_id
+        );
 
         // Get migration dataset from contexts
         let data_set = data_set.unwrap_or(MigrationDataSet::from_chain_id(self.chain_id));
-        info!("Selected migration dataset: {:?}", data_set);
+        info!(
+            "MigrationExecutor::execute | Selected migration dataset: {:?}",
+            data_set
+        );
 
         // Apply migration
         let (file, hash, pack) = data_set.as_tuple();
@@ -154,7 +188,7 @@ impl MigrationExecutor {
         );
 
         info!(
-            "Migration completed successfully with state root: {:?}",
+            "MigrationExecutor::execute | Exited, migration completed successfully with state root: {:?}",
             final_state_root
         );
         Ok(final_state_root)
@@ -332,9 +366,7 @@ pub fn do_migration(
     chain_id: ChainId,
     data_set: Option<MigrationDataSet>,
 ) -> anyhow::Result<HashValue> {
-    // Create a fork of the statedb for migration
-    let statedb_fork = statedb.fork();
-    let executor = MigrationExecutor::new(statedb_fork, chain_id);
+    let executor = MigrationExecutor::new(statedb.fork(), chain_id);
     executor.execute(data_set)
 }
 

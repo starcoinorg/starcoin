@@ -602,8 +602,6 @@ impl ChainStateWriter for ChainStateDB {
         );
 
         for (address, account_state_set) in chain_state_set.state_sets() {
-            debug!("ChainStateDB::apply | Start apply address: {:?}", address);
-
             // Add address to updates
             let mut locks = self.updates.write();
             locks.insert(*address);
@@ -640,10 +638,6 @@ impl ChainStateWriter for ChainStateDB {
             };
             let new_account_state = AccountState::new(code_root, resource_root);
             self.state_tree.put(*address, new_account_state.try_into()?);
-            debug!(
-                "ChainStateDB::apply | Exit, code root: {:?}, resource root: {:?}",
-                code_root, resource_root
-            );
         }
         self.state_tree.commit()?;
         self.state_tree.flush()?;
@@ -753,8 +747,6 @@ impl ChainStateWriter for ChainStateDB {
 
         let mut locks = self.updates.write();
         for address in locks.iter() {
-            debug!("ChainStateDB::flush | handle address: {}", address);
-
             let account_state_object = self.get_account_state_object(address, false)?;
             account_state_object.flush()?;
         }

@@ -489,6 +489,10 @@ impl ChainNetwork {
         Self::new_builtin(BuiltinNetworkID::Test)
     }
 
+    pub fn new_dev() -> Self {
+        Self::new_builtin(BuiltinNetworkID::Dev)
+    }
+
     pub fn id(&self) -> &ChainNetworkID {
         &self.id
     }

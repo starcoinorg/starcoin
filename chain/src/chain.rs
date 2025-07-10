@@ -532,16 +532,15 @@ impl BlockChain {
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
-            let mut state_root1 = executed_data.state_root;
+            let state_root1 =
+                if starcoin_data_migration::should_do_migration(header.number(), header.chain_id())
+                {
+                    // Apply migration data if this is a migration block
+                    starcoin_data_migration::do_migration(&statedb, header.chain_id(), None)?
+                } else {
+                    executed_data.state_root
+                };
             let state_root2 = executed_data2.state_root;
-
-            // Apply migration data if this is a migration block
-            if starcoin_data_migration::should_do_migration(header.number(), header.chain_id()) {
-                starcoin_data_migration::do_migration(&statedb, header.chain_id(), None)?;
-
-                // After migration, get the updated state root
-                state_root1 = statedb.state_root();
-            }
 
             vm_state_accumulator.append(&[state_root1, state_root2])?;
             (
