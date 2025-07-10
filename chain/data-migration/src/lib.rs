@@ -34,7 +34,7 @@ pub use state_filter::filter_chain_state_set;
 ///     When the first block is reached, `migrate_data_to_statedb` is automatically executed to write the state data to the state storage
 
 //
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MigrationDataSet {
     Main(&'static str, HashValue, &'static [u8]),
     Main0x1(&'static str, HashValue, &'static [u8]),
@@ -42,32 +42,23 @@ pub enum MigrationDataSet {
 }
 
 impl MigrationDataSet {
-    pub fn from_env() -> Option<Self> {
-        std::env::var("STARCOIN_MIGRATION_DATASET")
-            .ok()
-            .and_then(|value| match value.to_lowercase().as_str() {
-                "main0x1" | "main_0x1" => Some(MigrationDataSet::main_0x1()),
-                "main" => Some(MigrationDataSet::main()),
-                "test" => Some(MigrationDataSet::test()),
-                _ => None,
-            })
-    }
-
+    /// Create a migration dataset based on chain ID
     pub fn from_chain_id(chain_id: ChainId) -> Self {
         match chain_id {
-            id if id == BuiltinNetworkID::Main.chain_id() => MigrationDataSet::main(),
-            id if id == BuiltinNetworkID::Proxima.chain_id() => MigrationDataSet::main(),
+            id if id == BuiltinNetworkID::Main.chain_id() => Self::main(),
+            id if id == BuiltinNetworkID::Proxima.chain_id() => Self::main(),
             id if id == BuiltinNetworkID::Test.chain_id()
                 || id == BuiltinNetworkID::Dev.chain_id() =>
             {
-                MigrationDataSet::test()
+                Self::test()
             }
-            _ => MigrationDataSet::test(),
+            _ => Self::test(),
         }
     }
 
+    /// Create Main network migration dataset
     pub fn main() -> Self {
-        MigrationDataSet::Main(
+        Self::Main(
             "24674819.bcs",
             HashValue::from_hex_literal(
                 "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f",
@@ -77,8 +68,9 @@ impl MigrationDataSet {
         )
     }
 
+    /// Create Main0x1 network migration dataset
     pub fn main_0x1() -> Self {
-        MigrationDataSet::Main0x1(
+        Self::Main0x1(
             "24674819-0x1.bcs",
             HashValue::from_hex_literal(
                 "5efc1f27548fc1d46a2c86272f1fbc567a32746e04a1b1a608c17f60cf58771d",
@@ -88,8 +80,9 @@ impl MigrationDataSet {
         )
     }
 
+    /// Create Test network migration dataset
     pub fn test() -> Self {
-        MigrationDataSet::Test(
+        Self::Test(
             "64925.bcs",
             HashValue::from_hex_literal(
                 "0xb450ae07116c9a38fd44b93ce1d7ddbc5cbb8639e7cd30d2921be793905fb5b1",
@@ -99,30 +92,262 @@ impl MigrationDataSet {
         )
     }
 
-    pub fn as_tuple(&self) -> Option<(&'static str, HashValue, &'static [u8])> {
+    /// Extract the migration data tuple
+    pub fn as_tuple(&self) -> (&'static str, HashValue, &'static [u8]) {
         match self {
-            MigrationDataSet::Main(f, h, d) => Some((f, *h, d)),
-            MigrationDataSet::Main0x1(f, h, d) => Some((f, *h, d)),
-            MigrationDataSet::Test(f, h, d) => Some((f, *h, d)),
+            Self::Main(f, h, d) => (f, *h, d),
+            Self::Main0x1(f, h, d) => (f, *h, d),
+            Self::Test(f, h, d) => (f, *h, d),
+        }
+    }
+}
+
+/// Migration executor that handles the complete migration process
+pub struct MigrationExecutor {
+    statedb: ChainStateDB,
+    chain_id: ChainId,
+}
+
+impl MigrationExecutor {
+    /// Create a new migration executor
+    pub fn new(statedb: ChainStateDB, chain_id: ChainId) -> Self {
+        Self { statedb, chain_id }
+    }
+
+    /// Execute the migration process
+    pub fn execute(&self, data_set: Option<MigrationDataSet>) -> anyhow::Result<HashValue> {
+        info!("Starting migration for chain_id: {:?}", self.chain_id);
+
+        // Get migration dataset from contexts
+        let data_set = data_set.unwrap_or(MigrationDataSet::from_chain_id(self.chain_id));
+        info!("Selected migration dataset: {:?}", data_set);
+
+        // Apply migration
+        let (file, hash, pack) = data_set.as_tuple();
+        let (state_root, stateset_bcs_from_file) =
+            self.migrate_legacy_state_data(file, hash, pack)?;
+
+        let statedb = self.statedb.fork_at(state_root);
+
+        debug!(
+            "Migration data applied, state root: {:?}, version: {}",
+            statedb.state_root(),
+            get_version_from_statedb(&statedb)?,
+        );
+
+        let stdlib_version = statedb
+            .get_on_chain_config::<Version>()?
+            .map(|version| version.major)
+            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+        debug!(
+            "Migration completed, stdlib_version: {:?}, stc_token_info: {:?}",
+            stdlib_version,
+            statedb.get_stc_info()?.unwrap()
+        );
+
+        // Verify STC balance consistency
+        let final_state_root = if !stateset_bcs_from_file.state_sets().is_empty() {
+            self.verify_token_state_is_complete(&stateset_bcs_from_file, STC_TOKEN_CODE_STR)?
+        } else {
+            state_root
+        };
+
+        let statedb = statedb.fork_at(final_state_root);
+        assert_eq!(
+            statedb.get_chain_id()?,
+            self.chain_id,
+            "it should be target chain id"
+        );
+        assert_eq!(
+            final_state_root,
+            statedb.state_root(),
+            "it should be state root"
+        );
+
+        info!(
+            "Migration completed successfully with state root: {:?}",
+            final_state_root
+        );
+        Ok(final_state_root)
+    }
+
+    pub fn migrate_legacy_state_data(
+        &self,
+        migration_file_name: &str,
+        migration_file_expect_hash: HashValue,
+        snapshot_tar_pack: &[u8],
+    ) -> anyhow::Result<(HashValue, ChainStateSet)> {
+        let statedb = &self.statedb;
+        debug!(
+            "migrate_legacy_state_data | Entered, origin state_root:{:?}",
+            statedb.state_root()
+        );
+
+        let temp_dir = TempDir::new()?;
+        let bcs_content = unpack_from_tar(snapshot_tar_pack, temp_dir.path(), migration_file_name)?;
+
+        assert_eq!(
+            HashValue::sha3_256_of(&bcs_content),
+            migration_file_expect_hash,
+            "Content hash should be the same"
+        );
+
+        let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_content)?;
+
+        // Apply state filtering before migration
+        info!(
+            "migrate_legacy_state_data | Filtering state data, original accounts: {}",
+            chain_state_set.len()
+        );
+        let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone(), statedb)?;
+        info!(
+            "migrate_legacy_state_data | State filtering completed, filtered accounts: {}",
+            filtered_chain_state_set.len()
+        );
+
+        debug!("migrate_legacy_state_data | start applying filtered data ...");
+        statedb.apply(filtered_chain_state_set.clone())?;
+
+        let state_root = statedb.commit()?;
+        statedb.flush()?;
+
+        Ok((state_root, chain_state_set))
+    }
+
+    pub fn verify_token_state_is_complete(
+        &self,
+        original_chain_state_set: &ChainStateSet,
+        token_code: &str,
+    ) -> anyhow::Result<HashValue> {
+        info!("verify_state_is_complete | Starting STC balance verification...");
+
+        let statedb = &self.statedb;
+
+        let stc_token_code = TokenCode::from_str(token_code)?;
+        let stc_balance_struct_tag =
+            BalanceResource::struct_tag_for_token(stc_token_code.clone().try_into()?);
+
+        // Extract STC balances from original data
+        let mut original_balances = HashMap::new();
+        let mut total_original = 0u128;
+        let mut state_root = statedb.state_root();
+
+        debug!(
+            "verify_state_is_complete | stc_balance_struct_tag: {:?}",
+            stc_balance_struct_tag
+        );
+
+        for (address, account_state_set) in original_chain_state_set.state_sets() {
+            if let Some(resource_set) = account_state_set.resource_set() {
+                for (key, value) in resource_set.iter() {
+                    if let Ok(struct_tag) = bcs_ext::from_bytes::<StructTag>(key) {
+                        if struct_tag != stc_balance_struct_tag {
+                            // Ignore the tag that not balance type
+                            continue;
+                        }
+                        if let Ok(balance_resource) = bcs_ext::from_bytes::<BalanceResource>(value)
+                        {
+                            let balance = balance_resource.token();
+                            original_balances.insert(*address, balance);
+                            total_original += balance;
+                        }
+                    }
+                }
+            }
+        }
+
+        info!(
+            "verify_state_is_complete | Found {} accounts with STC balances, total: {}",
+            original_balances.len(),
+            total_original
+        );
+
+        // Verify balances in current state
+        let mut errors = Vec::new();
+        let mut total_current = 0u128;
+
+        for (address, expected_balance) in &original_balances {
+            match statedb.get_balance_by_token_code(*address, stc_token_code.clone()) {
+                Ok(Some(actual_balance)) => {
+                    if actual_balance != *expected_balance {
+                        errors.push(format!(
+                            "Balance mismatch for {}: expected {}, got {}",
+                            address, expected_balance, actual_balance
+                        ));
+                    } else {
+                        total_current += actual_balance;
+                    }
+                }
+                Ok(None) => {
+                    errors.push(format!(
+                        "Balance not found for {}: expected {}",
+                        address, expected_balance
+                    ));
+                }
+                Err(e) => {
+                    errors.push(format!("Error reading balance for {}: {}", address, e));
+                }
+            }
+        }
+
+        // Check total balance consistency
+        if total_original == total_current {
+            debug!("verify_token_state_is_complete | Update total token issue count of statistic to TokenInfo, current: {:?}", total_current);
+            state_root =
+                Self::replace_statistic_amount_with_actual_amount(&statedb, total_current)?;
+        } else {
+            errors.push(format!(
+                "Total balance mismatch: original {}, current {}",
+                total_original, total_current
+            ));
+        }
+
+        if errors.is_empty() {
+            debug!(
+                "STC balance verification passed! {} accounts, total: {}",
+                original_balances.len(),
+                total_current
+            );
+            debug!("verify_state_is_complete | Exited");
+            Ok(state_root)
+        } else {
+            error!(
+                "STC balance verification failed with {} errors:",
+                errors.len()
+            );
+            for error in &errors {
+                error!("  {}", error);
+            }
+            Err(format_err!("STC balance verification failed"))
         }
     }
 
-    pub fn data_set_from_contexts(chain_id: ChainId) -> Self {
-        // First check environment variable
-        if let Some(data_set) = MigrationDataSet::from_env() {
-            info!("Using migration dataset from environment: {:?}", data_set);
-            return data_set;
-        }
-
-        if let Some(id) = chain_id {
-            return Self::from_chain_id(id);
-        }
-
-        // Fallback to default based on current context
-        // For now, we'll use a default, but this could be enhanced to detect the current chain
-        let default_data_set = MigrationDataSet::test();
-        default_data_set
+    fn replace_statistic_amount_with_actual_amount(
+        statedb: &ChainStateDB,
+        total_current: u128,
+    ) -> anyhow::Result<HashValue> {
+        let mut stc_info = statedb.get_stc_info()?.unwrap();
+        stc_info.total_value = total_current;
+        statedb.set(
+            &TokenInfo::resource_path_for(G_STC_TOKEN_CODE.clone().try_into()?),
+            bcs_ext::to_bytes(&stc_info)?,
+        )?;
+        let state_root = statedb.commit()?;
+        statedb.flush()?;
+        Ok(state_root)
     }
+}
+
+/// Legacy function for backward compatibility
+pub fn do_migration(
+    statedb: &ChainStateDB,
+    chain_id: ChainId,
+    data_set: Option<MigrationDataSet>,
+) -> anyhow::Result<HashValue> {
+    // Create a fork of the statedb for migration
+    let statedb_fork = statedb.fork();
+    let executor = MigrationExecutor::new(statedb_fork, chain_id);
+    executor.execute(data_set)
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
@@ -131,227 +356,11 @@ pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
             || chain_id == ChainId::new(BuiltinNetworkID::Proxima.chain_id().id()))
 }
 
-fn do_migration_with_dataset(
-    statedb: &ChainStateDB,
-    data_set: MigrationDataSet,
-) -> anyhow::Result<(HashValue, ChainStateSet)> {
-    info!(
-        "migrate_data_to_statedb_with_data_set | Using dataset: {:?}",
-        data_set
-    );
-
-    let Some((file_name, data_hash, snapshot_pack)) = data_set.as_tuple();
-    migrate_legacy_state_data(statedb, snapshot_pack, file_name, data_hash)
-}
-
-pub fn do_migration(statedb: &ChainStateDB, chain_id: ChainId) -> anyhow::Result<HashValue> {
-    info!(
-        "do_migration | Starting migration for chain_id: {:?}",
-        chain_id
-    );
-
-    // Get migration dataset from environment or context
-    let data_set = MigrationDataSet::data_set_from_contexts(chain_id);
-    info!("do_migration | Selected migration dataset: {:?}", data_set);
-
-    // Perform migration based on selected dataset
-    let (state_root, stateset_bcs_from_file) = do_migration_with_dataset(statedb, data_set)?;
-
-    let statedb = statedb.fork_at(state_root);
-
-    debug!(
-        "do_migration | applying data completed, state root: {:?}, version: {}",
-        statedb.state_root(),
-        get_version_from_statedb(&statedb)?,
-    );
-
-    let stdlib_version = statedb
-        .get_on_chain_config::<Version>()?
-        .map(|version| version.major)
-        .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
-    debug!(
-        "do_migration | Exited, the stdlib_version: {:?}, stc_token_info: {:?}",
-        stdlib_version,
-        statedb.get_stc_info()?.unwrap()
-    );
-
-    // Verify STC should only be done for non-empty state sets
-    let final_state_root = if !stateset_bcs_from_file.state_sets().is_empty() {
-        verify_token_state_is_complete(&statedb, &stateset_bcs_from_file, STC_TOKEN_CODE_STR)?
-    } else {
-        state_root
-    };
-
-    let statedb = statedb.fork_at(final_state_root);
-    assert_eq!(
-        statedb.get_chain_id()?,
-        chain_id,
-        "it should be target chain id"
-    );
-    assert_eq!(
-        final_state_root,
-        statedb.state_root(),
-        "it should be state root"
-    );
-
-    info!(
-        "do_migration | Migration completed successfully with state root: {:?}",
-        final_state_root
-    );
-    Ok(final_state_root)
-}
-
 pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
     Ok(statedb
         .get_on_chain_config::<Version>()?
         .map(|version| version.major)
         .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?)
-}
-
-pub fn migrate_legacy_state_data(
-    statedb: &ChainStateDB,
-    snapshot_tar_pack: &[u8],
-    migration_file_name: &str,
-    migration_file_expect_hash: HashValue,
-) -> anyhow::Result<(HashValue, ChainStateSet)> {
-    debug!(
-        "migrate_legacy_state_data | Entered, origin state_root:{:?}",
-        statedb.state_root()
-    );
-
-    let temp_dir = TempDir::new()?;
-    let bcs_content = unpack_from_tar(snapshot_tar_pack, temp_dir.path(), migration_file_name)?;
-
-    assert_eq!(
-        HashValue::sha3_256_of(&bcs_content),
-        migration_file_expect_hash,
-        "Content hash should be the same"
-    );
-
-    let chain_state_set: ChainStateSet = bcs_ext::from_bytes(&bcs_content)?;
-
-    // Apply state filtering before migration
-    info!(
-        "migrate_legacy_state_data | Filtering state data, original accounts: {}",
-        chain_state_set.len()
-    );
-    let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone(), &statedb)?;
-    info!(
-        "migrate_legacy_state_data | State filtering completed, filtered accounts: {}",
-        filtered_chain_state_set.len()
-    );
-
-    debug!("migrate_legacy_state_data | start applying filtered data ...");
-    statedb.apply(filtered_chain_state_set.clone())?;
-
-    let state_root = statedb.commit()?;
-    statedb.flush()?;
-
-    Ok((state_root, chain_state_set))
-}
-
-pub fn verify_token_state_is_complete(
-    statedb: &ChainStateDB,
-    original_chain_state_set: &ChainStateSet,
-    token_code: &str,
-) -> anyhow::Result<HashValue> {
-    info!("verify_state_is_complete | Starting STC balance verification...");
-
-    let stc_token_code = TokenCode::from_str(token_code)?;
-    let stc_balance_struct_tag =
-        BalanceResource::struct_tag_for_token(stc_token_code.clone().try_into()?);
-
-    // Extract STC balances from original data
-    let mut original_balances = HashMap::new();
-    let mut total_original = 0u128;
-    let mut state_root = statedb.state_root();
-
-    debug!(
-        "verify_state_is_complete | stc_balance_struct_tag: {:?}",
-        stc_balance_struct_tag
-    );
-
-    for (address, account_state_set) in original_chain_state_set.state_sets() {
-        if let Some(resource_set) = account_state_set.resource_set() {
-            for (key, value) in resource_set.iter() {
-                if let Ok(struct_tag) = bcs_ext::from_bytes::<StructTag>(key) {
-                    if struct_tag != stc_balance_struct_tag {
-                        // Ignore the tag that not balance type
-                        continue;
-                    }
-                    if let Ok(balance_resource) = bcs_ext::from_bytes::<BalanceResource>(value) {
-                        let balance = balance_resource.token();
-                        original_balances.insert(*address, balance);
-                        total_original += balance;
-                    }
-                }
-            }
-        }
-    }
-
-    info!(
-        "verify_state_is_complete | Found {} accounts with STC balances, total: {}",
-        original_balances.len(),
-        total_original
-    );
-
-    // Verify balances in current state
-    let mut errors = Vec::new();
-    let mut total_current = 0u128;
-
-    for (address, expected_balance) in &original_balances {
-        match statedb.get_balance_by_token_code(*address, stc_token_code.clone()) {
-            Ok(Some(actual_balance)) => {
-                if actual_balance != *expected_balance {
-                    errors.push(format!(
-                        "Balance mismatch for {}: expected {}, got {}",
-                        address, expected_balance, actual_balance
-                    ));
-                } else {
-                    total_current += actual_balance;
-                }
-            }
-            Ok(None) => {
-                errors.push(format!(
-                    "Balance not found for {}: expected {}",
-                    address, expected_balance
-                ));
-            }
-            Err(e) => {
-                errors.push(format!("Error reading balance for {}: {}", address, e));
-            }
-        }
-    }
-
-    // Check total balance consistency
-    if total_original == total_current {
-        debug!("verify_token_state_is_complete | Update total token issue count of statistic to TokenInfo, current: {:?}", total_current);
-        state_root = replace_statistic_amount_with_actual_amount(&statedb, total_current)?;
-    } else {
-        errors.push(format!(
-            "Total balance mismatch: original {}, current {}",
-            total_original, total_current
-        ));
-    }
-
-    if errors.is_empty() {
-        debug!(
-            "STC balance verification passed! {} accounts, total: {}",
-            original_balances.len(),
-            total_current
-        );
-        debug!("verify_state_is_complete | Exited");
-        Ok(state_root)
-    } else {
-        error!(
-            "STC balance verification failed with {} errors:",
-            errors.len()
-        );
-        for error in &errors {
-            error!("  {}", error);
-        }
-        Err(format_err!("STC balance verification failed"))
-    }
 }
 
 /// Extract the tar.gz file from embedded data
@@ -369,18 +378,4 @@ fn unpack_from_tar(
 
     debug!("unpack_from_tar | Read bcs from path: {:?}", bcs_path);
     Ok(std::fs::read(bcs_path)?)
-}
-fn replace_statistic_amount_with_actual_amount(
-    statedb: &ChainStateDB,
-    total_current: u128,
-) -> anyhow::Result<HashValue> {
-    let mut stc_info = statedb.get_stc_info()?.unwrap();
-    stc_info.total_value = total_current;
-    statedb.set(
-        &TokenInfo::resource_path_for(G_STC_TOKEN_CODE.clone().try_into()?),
-        bcs_ext::to_bytes(&stc_info)?,
-    )?;
-    let state_root = statedb.commit()?;
-    statedb.flush()?;
-    Ok(state_root)
 }
