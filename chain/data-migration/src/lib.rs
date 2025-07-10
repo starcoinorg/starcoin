@@ -23,10 +23,7 @@ use std::{collections::HashMap, str::FromStr};
 use tempfile::TempDir;
 
 mod state_filter;
-pub use state_filter::{
-    filter_chain_state_set, get_filtered_resource_paths,
-    should_filter_resource, should_modify_resource,
-};
+pub use state_filter::filter_chain_state_set;
 
 /// Description: This implementation used for multi-move vm upgrade that
 /// migration state data of specification height from mainnet
@@ -168,7 +165,7 @@ pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {
 
 pub fn migrate_legacy_state_data(
     statedb: &ChainStateDB,
-    _chain_id: ChainId,
+    chain_id: ChainId,
     snapshot_tar_pack: &[u8],
     migration_file_name: &str,
     migration_file_expect_hash: HashValue,
@@ -194,7 +191,7 @@ pub fn migrate_legacy_state_data(
         "migrate_legacy_state_data | Filtering state data, original accounts: {}",
         chain_state_set.len()
     );
-    let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone())?;
+    let filtered_chain_state_set = filter_chain_state_set(chain_state_set.clone(), &statedb)?;
     info!(
         "migrate_legacy_state_data | State filtering completed, filtered accounts: {}",
         filtered_chain_state_set.len()

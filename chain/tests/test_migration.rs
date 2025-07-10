@@ -428,7 +428,7 @@ mod migration_tests {
             .get_account_state_set(&address)?
             .expect("get account state set should successfully");
         let chain_state_set = ChainStateSet::new(vec![(address, account_state)]);
-        let filtered_chain_state_set = filter_chain_state_set(chain_state_set)?;
+        let filtered_chain_state_set = filter_chain_state_set(chain_state_set, &statedb)?;
         statedb.apply(filtered_chain_state_set)?;
 
         Ok(())
