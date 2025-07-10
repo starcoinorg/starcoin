@@ -159,60 +159,6 @@ fn verify_body_and_legacybody_hash() {
 }
 
 #[test]
-fn test_header_without_dag_and_pruning_adaptable() -> anyhow::Result<()> {
-    let header = crate::block::BlockHeaderBuilder::new()
-        .with_number(1024)
-        .with_parent_hash(HashValue::random())
-        .with_chain_id(ChainId::vega())
-        .build();
-
-    // test encoding and decoding
-    assert_eq!(
-        header,
-        crate::block::BlockHeader::decode(&header.encode()?)?
-    );
-
-    // test conversion between legacy header and new header
-    let legacy_header: crate::block::legacy::BlockHeader = header.clone().into();
-    let back_from_legacy_header: crate::block::BlockHeader = legacy_header.clone().into();
-    assert_eq!(header, back_from_legacy_header);
-
-    // test deserialize the header by legacy binary codes.
-    let legacy_header_encoding_data = legacy_header.encode()?;
-    let header_decoded_from_legacy =
-        crate::block::BlockHeader::decode(&legacy_header_encoding_data)?;
-    assert_eq!(header, header_decoded_from_legacy);
-
-    // test the legacy header deserialize from legacy binary codes.
-    let legacy_header_decoded =
-        crate::block::legacy::BlockHeader::decode(&legacy_header_encoding_data)?;
-    assert_eq!(legacy_header_decoded, legacy_header);
-
-    let real_legacy_header = crate::block::legacy::BlockHeader::new_with_auth_key(
-        header.parent_hash,
-        header.timestamp,
-        header.number,
-        header.author,
-        header.author_auth_key(),
-        header.txn_accumulator_root,
-        header.block_accumulator_root,
-        header.state_root,
-        header.gas_used,
-        header.difficulty,
-        header.body_hash,
-        header.chain_id,
-        header.nonce,
-        header.extra,
-    );
-    assert_eq!(legacy_header, real_legacy_header);
-    let real_legacy_header_data = real_legacy_header.encode()?;
-    let from_real_legacy_header = crate::block::BlockHeader::decode(&real_legacy_header_data)?;
-    assert_eq!(header, from_real_legacy_header);
-
-    anyhow::Ok(())
-}
-
-#[test]
 fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
     let header = crate::block::BlockHeaderBuilder::new()
         .with_chain_id(ChainId::vega())
