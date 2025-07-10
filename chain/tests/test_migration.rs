@@ -104,7 +104,8 @@ mod migration_tests {
     fn test_migration_basic_functionality_and_integrity() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Dev)?;
+        let net = ChainNetwork::new_dev();
+        let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // Execute migration (this will verify file hash and basic functionality)
         let state_root = do_migration(&chain_state_db, net.chain_id(), None)?;
@@ -154,7 +155,8 @@ mod migration_tests {
     fn test_migration_idempotency() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Main)?;
+        let net = ChainNetwork::new_dev();
+        let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // Execute migration again
         let first_state_root = do_migration(&chain_state_db, net.chain_id(), None)?;

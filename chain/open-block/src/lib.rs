@@ -372,7 +372,7 @@ impl OpenedBlock {
         // Do migration in finalize
         let (statedb, _) = &self.state;
         let state_root1 = if should_do_migration(self.block_number(), self.chain_id) {
-            do_migration(&statedb, self.chain_id, Some(MigrationDataSet::main_0x1()))?
+            do_migration(&statedb, self.chain_id, None)?
         } else {
             statedb.state_root()
         };

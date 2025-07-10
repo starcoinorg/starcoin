@@ -540,7 +540,7 @@ impl BlockChain {
                     starcoin_data_migration::do_migration(
                         &statedb,
                         header.chain_id(),
-                        Some(MigrationDataSet::main_0x1()),
+                        None,
                     )?
                 } else {
                     executed_data.state_root
