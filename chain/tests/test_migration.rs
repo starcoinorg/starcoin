@@ -120,7 +120,8 @@ mod migration_tests {
     fn test_migration_with_comparing_two_chains() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let (net, _storage, chain_state_db) = create_test_environment(BuiltinNetworkID::Dev)?;
+        let net = ChainNetwork::new_dev();
+        let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // First, execute migration to get the expected state
         let state_root1 = do_migration(&chain_state_db, net.chain_id(), None)?;
@@ -250,7 +251,7 @@ mod migration_tests {
             "Should start with genesis block"
         );
 
-        const MAX_TEST_BLOCKS: usize = 4;
+        const MAX_TEST_BLOCKS: usize = 7;
 
         // Create N blocks (empty block)
         let mut latest_state_root = genesis_header.state_root();
