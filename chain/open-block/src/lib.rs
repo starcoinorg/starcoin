@@ -9,7 +9,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
-use starcoin_data_migration::{do_migration, should_do_migration};
+use starcoin_data_migration::{do_migration, should_do_migration, MigrationDataSet};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -98,6 +98,10 @@ impl OpenedBlock {
                     .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
             )
         };
+        debug!(
+            "OpenedBlock::new | state_root1: {:?}, state_root2: {:?}",
+            state_root1, state_root2
+        );
 
         let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
@@ -261,16 +265,6 @@ impl OpenedBlock {
             };
         }
 
-        // Execute migration after all transactions are processed
-        {
-            let (state, _state2) = &self.state;
-            Self::execute_extra_for_vm1_migration(
-                self.block_number(),
-                self.chain_id,
-                state,
-            )?;
-        }
-
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
@@ -374,18 +368,27 @@ impl OpenedBlock {
             self.initialize_v2()?;
         }
         debug_assert!(self.vm2_initialized);
+
+        // Do migration in finalize
+        let (statedb, _) = &self.state;
+        let state_root1 = if should_do_migration(self.block_number(), self.chain_id) {
+            do_migration(&statedb, self.chain_id, Some(MigrationDataSet::main_0x1()))?
+        } else {
+            statedb.state_root()
+        };
+
         let accumulator_root = self.txn_accumulator.root_hash();
 
         // update state_root accumulator, state_root order is important
         let state_root = {
             self.vm_state_accumulator
-                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
+                .append(&[state_root1, self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
         };
 
         debug!(
             "OpenedBlock::finalize | vm1 stateroot: {:?},  vm2 stateroot: {:?}, root state_root: {}",
-            self.state.0.state_root(),
+            state_root1,
             self.state.1.state_root(),
             state_root
         );
@@ -411,18 +414,6 @@ impl OpenedBlock {
         );
         debug!("OpenedBlock::finalize | Exit");
         Ok(block_template)
-    }
-
-    /// Do extra state data migration for vm1 from mainnet
-    pub fn execute_extra_for_vm1_migration(
-        block_number: u64,
-        chain_id: ChainId,
-        statedb: &ChainStateDB,
-    ) -> Result<()> {
-        if should_do_migration(block_number, chain_id) {
-            do_migration(&statedb, chain_id, None)?;
-        }
-        Ok(())
     }
 }
 

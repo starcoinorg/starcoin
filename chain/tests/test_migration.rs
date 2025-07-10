@@ -253,8 +253,13 @@ mod migration_tests {
         const MAX_TEST_BLOCKS: usize = 4;
 
         // Create N blocks (empty block)
-        let mut state_root = genesis_header.state_root();
-        for _ in 0..MAX_TEST_BLOCKS {
+        let mut latest_state_root = genesis_header.state_root();
+        for i in 0..MAX_TEST_BLOCKS {
+            debug!(
+                "=== test_block_migration_with_blockchain_mining begin block {} ===",
+                i
+            );
+
             // Create block template for the first block (block #1) - empty block
             let (_executed_block, _stateroot) =
                 create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
@@ -265,10 +270,15 @@ mod migration_tests {
                 _executed_block.multi_state().state_root1(),
                 statedb.get_chain_id()?,
             );
-            state_root = _stateroot;
+            latest_state_root = _stateroot;
+
+            debug!(
+                "=== test_block_migration_with_blockchain_mining end block {} ===",
+                i
+            );
         }
 
-        let statedb = statedb.fork_at(state_root);
+        let statedb = statedb.fork_at(latest_state_root);
         assert!(
             statedb
                 .get_account_state_set(&genesis_address())
@@ -337,9 +347,7 @@ mod migration_tests {
         log::set_max_level(log::LevelFilter::Debug);
 
         let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
-
-        let (_chain, statedb) =
-            test_helper::chain::gen_chain_for_test_and_return_statedb(&net, None)?;
+        let (_chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         let address = AccountAddress::ONE;
 

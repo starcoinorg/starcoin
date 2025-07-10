@@ -20,6 +20,7 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_data_migration::MigrationDataSet;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -536,7 +537,11 @@ impl BlockChain {
                 if starcoin_data_migration::should_do_migration(header.number(), header.chain_id())
                 {
                     // Apply migration data if this is a migration block
-                    starcoin_data_migration::do_migration(&statedb, header.chain_id(), None)?
+                    starcoin_data_migration::do_migration(
+                        &statedb,
+                        header.chain_id(),
+                        Some(MigrationDataSet::main_0x1()),
+                    )?
                 } else {
                     executed_data.state_root
                 };
@@ -745,8 +750,10 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n26");
 
         debug!(
-            "BlockChain::execute_block_and_save | Exited, block id: {:?}",
-            block.id()
+            "BlockChain::execute_block_and_save | Exited, block id: {:?}, state_root1: {:?}, state_root2: {:?}",
+            block.id(),
+            multi_state.state_root1(),
+            multi_state.state_root2(),
         );
 
         Ok(ExecutedBlock::new(block, block_info, multi_state))

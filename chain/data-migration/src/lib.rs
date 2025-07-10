@@ -131,18 +131,21 @@ impl MigrationDataSet {
 
 /// Migration executor that handles the complete migration process
 pub struct MigrationExecutor {
-    statedb: ChainStateDB,
     chain_id: ChainId,
 }
 
 impl MigrationExecutor {
     /// Create a new migration executor
-    pub fn new(statedb: ChainStateDB, chain_id: ChainId) -> Self {
-        Self { statedb, chain_id }
+    pub fn new(chain_id: ChainId) -> Self {
+        Self { chain_id }
     }
 
     /// Execute the migration process
-    pub fn execute(&self, data_set: Option<MigrationDataSet>) -> anyhow::Result<HashValue> {
+    pub fn execute(
+        &self,
+        statedb: &ChainStateDB,
+        data_set: Option<MigrationDataSet>,
+    ) -> anyhow::Result<HashValue> {
         info!(
             "MigrationExecutor::execute | Starting migration for chain_id: {:?}",
             self.chain_id
@@ -158,9 +161,9 @@ impl MigrationExecutor {
         // Apply migration
         let (file, hash, pack) = data_set.as_tuple();
         let (state_root, stateset_bcs_from_file) =
-            self.migrate_legacy_state_data(file, hash, pack)?;
+            Self::migrate_legacy_state_data(statedb, file, hash, pack)?;
 
-        let statedb = self.statedb.fork_at(state_root);
+        let statedb = statedb.fork_at(state_root);
 
         debug!(
             "Migration data apply completed, state root: {:?}, version: {}",
@@ -170,7 +173,11 @@ impl MigrationExecutor {
 
         // Verify STC balance consistency
         let final_state_root = if !stateset_bcs_from_file.state_sets().is_empty() {
-            self.verify_token_state_is_complete(&stateset_bcs_from_file, STC_TOKEN_CODE_STR)?
+            Self::verify_token_state_is_complete(
+                &statedb,
+                &stateset_bcs_from_file,
+                STC_TOKEN_CODE_STR,
+            )?
         } else {
             state_root
         };
@@ -195,12 +202,11 @@ impl MigrationExecutor {
     }
 
     pub fn migrate_legacy_state_data(
-        &self,
+        statedb: &ChainStateDB,
         migration_file_name: &str,
         migration_file_expect_hash: HashValue,
         snapshot_tar_pack: &[u8],
     ) -> anyhow::Result<(HashValue, ChainStateSet)> {
-        let statedb = &self.statedb;
         debug!(
             "migrate_legacy_state_data | Entered, origin state_root:{:?}",
             statedb.state_root()
@@ -238,13 +244,11 @@ impl MigrationExecutor {
     }
 
     pub fn verify_token_state_is_complete(
-        &self,
+        statedb: &ChainStateDB,
         original_chain_state_set: &ChainStateSet,
         token_code: &str,
     ) -> anyhow::Result<HashValue> {
         info!("verify_state_is_complete | Starting STC balance verification...");
-
-        let statedb = &self.statedb;
 
         let stc_token_code = TokenCode::from_str(token_code)?;
         let stc_balance_struct_tag =
@@ -366,8 +370,15 @@ pub fn do_migration(
     chain_id: ChainId,
     data_set: Option<MigrationDataSet>,
 ) -> anyhow::Result<HashValue> {
-    let executor = MigrationExecutor::new(statedb.fork(), chain_id);
-    executor.execute(data_set)
+    debug!(
+        "do_migration | Entered, statedb current state root: {:?}",
+        statedb.state_root()
+    );
+    let executor = MigrationExecutor::new(chain_id);
+    let ret = executor.execute(statedb, data_set);
+
+    debug!("do_migration | Executed");
+    ret
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {

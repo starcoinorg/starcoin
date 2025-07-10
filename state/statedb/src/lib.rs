@@ -268,6 +268,7 @@ impl ChainStateDB {
                     .push(StateTree::new(store.clone(), None)),
             };
         }
+        debug!("ChainStateDB::new | root_hash: {:?}", root_hash);
         chain_statedb
     }
 
@@ -620,16 +621,6 @@ impl ChainStateWriter for ChainStateDB {
             };
             let resource_root = if let Some(state_set) = account_state_set.resource_set() {
                 let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
-
-                // for (idx, (key, value)) in state_set.iter().enumerate() {
-                //     // Try to decode StructTag from bytes
-                //     debug!(
-                //         "Resource[{}]: key={}, value_len={}",
-                //         idx,
-                //         StructTag::decode(key.as_slice())?,
-                //         value.len()
-                //     );
-                // }
                 state_tree.apply(state_set.clone())?;
                 state_tree.flush()?;
                 state_tree.root_hash()
@@ -686,6 +677,7 @@ impl ChainStateWriter for ChainStateDB {
     }
     /// Commit
     fn commit(&self) -> Result<HashValue> {
+        debug!("ChainStateDB::commit | Entered");
         // cache commit
         for handle in self.updates_table_handle.read().iter() {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
@@ -726,7 +718,14 @@ impl ChainStateWriter for ChainStateDB {
             let state = account_state_object.commit()?;
             self.state_tree.put(*address, state.try_into()?);
         }
-        self.state_tree.commit()
+        let state_root = self.state_tree.commit();
+
+        debug!(
+            "ChainStateDB::commit | Exited, state_root = {:?}",
+            state_root
+        );
+
+        state_root
     }
 
     /// flush data to db.
