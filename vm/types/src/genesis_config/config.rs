@@ -779,7 +779,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 //]
 //});
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(LATEST_STDLIB_VERSION);
+    let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
@@ -1024,7 +1024,7 @@ mod tests {
         });
         //assert_eq!(_entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), EXPECTED_STDLIB_VERSION);
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 13);
         assert_eq!(
             gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
