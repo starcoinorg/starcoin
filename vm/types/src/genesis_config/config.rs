@@ -4,14 +4,13 @@
 //use network_p2p_types::MultiaddrWithPeerId;
 use crate::{
     gas_schedule::{
-        G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_LATEST_GAS_CONSTANTS,
-        G_TEST_GAS_CONSTANTS,
+        G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_CONSTANTS, G_TEST_GAS_CONSTANTS,
     },
     genesis_config::{ChainId, StdlibVersion},
     on_chain_config::{
-        instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
-        v4_native_table, ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption,
-        VMConfig, Version, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
+        instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
+        GasSchedule, TransactionPublishOption, VMConfig, Version, G_LATEST_INSTRUCTION_TABLE,
+        G_LATEST_NATIVE_TABLE,
     },
     token::stc::STCUnit,
     token::token_value::TokenValue,
@@ -662,9 +661,9 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
             gas_schedule: GasSchedule::from(&CostTable {
-                instruction_table: instruction_table_v2(),
-                native_table: v4_native_table(),
-                gas_constants: G_GAS_CONSTANTS_V3.clone(),
+                instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+                native_table: G_LATEST_NATIVE_TABLE.clone(),
+                gas_constants: G_LATEST_GAS_CONSTANTS.clone(),
             }),
         },
         publishing_option: TransactionPublishOption::open(),
