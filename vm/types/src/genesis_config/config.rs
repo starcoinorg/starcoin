@@ -4,13 +4,14 @@
 //use network_p2p_types::MultiaddrWithPeerId;
 use crate::{
     gas_schedule::{
-        G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
+        G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_LATEST_GAS_CONSTANTS,
+        G_TEST_GAS_CONSTANTS,
     },
     genesis_config::{ChainId, StdlibVersion},
     on_chain_config::{
         instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
         v4_native_table, ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption,
-        VMConfig, Version,
+        VMConfig, Version, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
     },
     token::stc::STCUnit,
     token::token_value::TokenValue,
@@ -794,9 +795,9 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: GasSchedule::from(&CostTable {
-                instruction_table: instruction_table_v1(),
-                native_table: native_table_v2(),
-                gas_constants: G_GAS_CONSTANTS_V2.clone(),
+                instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+                native_table: G_LATEST_NATIVE_TABLE.clone(),
+                gas_constants: G_LATEST_GAS_CONSTANTS.clone(),
             }),
         },
         publishing_option,
@@ -882,16 +883,17 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
+    use crate::gas_schedule::G_LATEST_GAS_CONSTANTS;
+    use crate::on_chain_config::{G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE};
     use crate::{
         gas_schedule::{
-            latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
-            G_TEST_GAS_CONSTANTS,
+            latest_cost_table, G_GAS_CONSTANTS_V1, G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
         },
         on_chain_config::{
             instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
             native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4,
-            native_table_v1, native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1,
-            txn_gas_schedule_v2, txn_gas_schedule_v3, GasSchedule,
+            native_table_v1, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
+            txn_gas_schedule_v3, GasSchedule,
         },
     };
     use starcoin_gas_algebra::CostTable;
@@ -1017,13 +1019,13 @@ mod tests {
         );
 
         let gas_schedule = GasSchedule::from(&CostTable {
-            instruction_table: instruction_table_v1(),
-            native_table: native_table_v2(),
-            gas_constants: G_GAS_CONSTANTS_V2.clone(),
+            instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+            native_table: G_LATEST_NATIVE_TABLE.clone(),
+            gas_constants: G_LATEST_GAS_CONSTANTS.clone(),
         });
         //assert_eq!(_entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 13);
         assert_eq!(
             gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
