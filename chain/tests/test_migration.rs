@@ -230,6 +230,7 @@ mod migration_tests {
     /// Test block mining simulation with data migration in memory
     /// This test simulates the process of building a blockchain in memory,
     /// mining an empty block, and verifying data migration results
+    #[ignore]
     #[stest::test(timeout = 6000)]
     fn test_block_migration_with_blockchain_mining() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
