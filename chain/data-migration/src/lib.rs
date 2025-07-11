@@ -382,7 +382,7 @@ pub fn do_migration(
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
-    block_id == 3
+    block_id == MIGRATION_BLOCK_NUMBER
         && (chain_id == ChainId::new(BuiltinNetworkID::Main.chain_id().id())
             || chain_id == ChainId::new(BuiltinNetworkID::Proxima.chain_id().id()))
 }
