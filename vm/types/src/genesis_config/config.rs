@@ -1024,7 +1024,7 @@ mod tests {
         });
         //assert_eq!(_entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 13);
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), EXPECTED_STDLIB_VERSION);
         assert_eq!(
             gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
