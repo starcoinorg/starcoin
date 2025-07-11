@@ -110,6 +110,23 @@ pub trait BlockVerifier {
         Ok(ghostdata)
     }
 
+    fn verify_blue_blocks<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
+    where
+        R: ChainReader,
+    {
+        let ghostdata = current_chain.verify_and_ghostdata(uncles, header)?;
+        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+            Ok(()) => (),
+            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+        }
+
+        Ok(ghostdata)
+    }
+
     fn verify_uncles<R>(
         current_chain: &R,
         uncles: &[BlockHeader],
