@@ -21,6 +21,8 @@ use std::path::Path;
 use std::{collections::HashMap, str::FromStr};
 use tempfile::TempDir;
 
+const MIGRATION_BLOCK_NUMBER: u64 = 3;
+
 mod state_filter;
 pub use state_filter::filter_chain_state_set;
 

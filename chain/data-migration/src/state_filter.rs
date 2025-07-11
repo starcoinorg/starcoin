@@ -4,17 +4,12 @@
 use log::debug;
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet, StateSet};
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::{
-    account_config::AccountResource, language_storage::StructTag, state_view::StateReaderExt,
+    access_path::AccessPath, account_config::AccountResource, identifier::Identifier,
+    language_storage::StructTag, state_store::state_key::StateKey, state_view::StateReaderExt,
+    state_view::StateView,
 };
-
-const BLOCK_METADATA_PATH: &str = "0x00000000000000000000000000000001::Block::BlockMetadata";
-const CHAIN_ID_PATH: &str = "0x00000000000000000000000000000001::ChainId::ChainId";
-const ACCOUNT_RESOURCE_PATH: &str = "0x00000000000000000000000000000001::Account::Account";
-const BLOCK_REWARD_QUEUE: &str = "0x00000000000000000000000000000001::BlockReward::RewardQueue";
 
 /// Filter ChainStateSet by removing filtered resources and modifying specific resources
 pub fn filter_chain_state_set(
@@ -30,21 +25,21 @@ pub fn filter_chain_state_set(
             for (key, blob) in resource_set.iter() {
                 let struct_tag = bcs_ext::from_bytes::<StructTag>(key)?;
 
-                let filtered_blob = if struct_tag.address == "0x00000000000000000000000000000001"
-                    && struct_tag.module == "Account"
-                    && struct_tag.name == "Account"
+                let filtered_blob = if struct_tag.address == genesis_address()
+                    && struct_tag.module == Identifier::new("Account")?
+                    && struct_tag.name == Identifier::new("Account")?
                 {
                     bcs_ext::to_bytes(
                         &bcs_ext::from_bytes::<AccountResource>(blob)?.clone_with_zero_seq_number(),
                     )?
-                } else if struct_tag.address == "0x00000000000000000000000000000001"
-                    && struct_tag.module == "Block"
-                    && struct_tag.name == "BlockMetadata"
+                } else if struct_tag.address == genesis_address()
+                    && struct_tag.module == Identifier::new("Block")?
+                    && struct_tag.name == Identifier::new("BlockMetadata")?
                 {
                     bcs_ext::to_bytes(&statedb.get_block_metadata()?)?
-                } else if struct_tag.address == "0x00000000000000000000000000000001"
-                    && struct_tag.module == "BlockReward"
-                    && struct_tag.name == "RewardQueue"
+                } else if struct_tag.address == genesis_address()
+                    && struct_tag.module == Identifier::new("BlockReward")?
+                    && struct_tag.name == Identifier::new("RewardQueue")?
                 {
                     // Get local block reward queue data from current state
                     let state_key = StateKey::AccessPath(AccessPath::new(
@@ -58,7 +53,10 @@ pub fn filter_chain_state_set(
                             blob.clone()
                         }
                     }
-                } else if CHAIN_ID_PATH == struct_tag_str {
+                } else if struct_tag.address == genesis_address()
+                    && struct_tag.module == Identifier::new("ChainId").unwrap()
+                    && struct_tag.name == Identifier::new("ChainId").unwrap()
+                {
                     bcs_ext::to_bytes(&statedb.get_chain_id()?)?
                 } else {
                     blob.clone()
