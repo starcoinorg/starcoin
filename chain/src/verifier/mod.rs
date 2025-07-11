@@ -102,6 +102,23 @@ pub trait BlockVerifier {
         Ok(())
     }
 
+    fn verify_blue_blocks<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
+    where
+        R: ChainReader,
+    {
+        let ghostdata = current_chain.verify_and_ghostdata(uncles, header)?;
+        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+            Ok(()) => (),
+            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+        }
+
+        Ok(ghostdata)
+    }
+
     fn verify_uncles<R>(
         current_chain: &R,
         uncles: &[BlockHeader],
@@ -110,79 +127,14 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
-        let epoch = current_chain.epoch();
 
-        let switch_epoch = header.number() == epoch.end_block_number();
-        // epoch first block's uncles should empty.
-        if switch_epoch {
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncles.is_empty(),
-                "Invalid block: first block of epoch's uncles must be empty."
-            );
-        }
-
-        if uncles.is_empty() {
-            return Ok(None);
-        }
-        verify_block!(
-            VerifyBlockField::Uncle,
-            uncles.len() as u64 <= epoch.max_uncles_per_block(),
-            "too many uncles {} in block {}",
-            uncles.len(),
-            header.id()
-        );
-
-        let mut uncle_ids = HashSet::new();
-        for uncle in uncles {
-            let uncle_id = uncle.id();
-            verify_block!(
-                VerifyBlockField::Uncle,
-                !uncle_ids.contains(&uncle.id()),
-                "repeat uncle {:?} in current block {:?}",
-                uncle_id,
-                header.id()
-            );
-
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncle.number() < header.number() ,
-               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-            );
-
-            verify_block!(
-                VerifyBlockField::Uncle,
-                Self::can_be_uncle(current_chain, uncle)?,
-                "invalid block: block {} can not be uncle.",
-                uncle_id
-            );
-            debug!(
-                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
-                header.number(),
-                header.id(),
-                uncle.number(),
-                uncle.id()
-            );
-            // uncle's parent exists in current chain is checked in `can_be_uncle`, so this fork should success.
-            let uncle_branch = current_chain.fork(uncle.parent_hash())?;
-            Self::verify_header(&uncle_branch, uncle)?;
-            uncle_ids.insert(uncle_id);
-        }
-        Ok(None)
     }
 
     fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
     where
         R: ChainReader,
     {
-        let epoch = current_chain.epoch();
-        let uncles = current_chain.epoch_uncles();
-        Ok(epoch.start_block_number() <= block_header.number()
-            && epoch.end_block_number() > block_header.number()
-            && current_chain.exist_block(block_header.parent_hash())?
-            && !current_chain.exist_block(block_header.id())?
-            && uncles.get(&block_header.id()).is_none()
-            && block_header.number() <= current_chain.current_header().number())
+
     }
 }
 
@@ -270,8 +222,82 @@ impl BlockVerifier for BasicVerifier {
             new_block_header.block_accumulator_root(),
         );
 
+        Self::verify_dag(current_chain, new_block_header)?;
+
         Ok(())
     }
+}
+
+impl BasicVerifier {
+    fn verify_dag<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()> where R: ChainReader {
+        let parents_hash = new_block_header.parents_hash();
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
+            "The dag block contains repeated hash values, block header: {:?}",
+            new_block_header,
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            parents_hash.contains(&new_block_header.parent_hash()),
+            "header: {:?}, tips {:?} do not contain the selected parent {:?}",
+            new_block_header,
+            parents_hash,
+            new_block_header.parent_hash()
+        );
+
+        parents_hash.iter().try_for_each(|parent_hash| {
+            verify_block!(
+                VerifyBlockField::Header,
+                current_chain.has_dag_block(*parent_hash).map_err(|e| {
+                    ConnectBlockError::VerifyBlockFailed(
+                        VerifyBlockField::Header,
+                        anyhow::anyhow!(
+                            "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
+                            new_block_header.id(),
+                            parent_hash,
+                            e
+                        ),
+                    )
+                })?,
+                "Invalid block: parent {} might not exist.",
+                parent_hash
+            );
+            Ok::<(), ConnectBlockError>(())
+        })?;
+
+        // verify the pruning point
+        let parent_header = current_chain.current_header();
+        if parent_header.pruning_point() != HashValue::zero() {
+            // the chain had pruning point already checking the descendants of the pruning point is a must
+            // check the parents are the descendants of the pruning point
+            parents_hash.iter().try_for_each(|parent_hash| {
+                verify_block!(
+                    VerifyBlockField::Header,
+                    current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), *parent_hash).map_err(|e| {
+                        ConnectBlockError::VerifyBlockFailed(
+                            VerifyBlockField::Header,
+                            anyhow::anyhow!(
+                                "the block {:?} 's parent: {:?} is not the descendant of pruning point {:?}, error: {:?}",
+                                new_block_header.id(),
+                                parent_hash,
+                                new_block_header.pruning_point(),
+                                e
+                            ),
+                        )
+                    })?,
+                    "Invalid block: parent {:?} is not the descendant of pruning point: {:?}",
+                    parent_hash, new_block_header.pruning_point()
+                );
+                Ok::<(), ConnectBlockError>(())
+            })?;
+        }
+
+        Ok(())
+    }
+
+
 }
 
 pub struct ConsensusVerifier;
@@ -338,143 +364,5 @@ impl BlockVerifier for NoneVerifier {
         R: ChainReader,
     {
         Ok(None)
-    }
-}
-
-struct BasicDagVerifier;
-impl BasicDagVerifier {
-    pub fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        let parents_hash = new_block_header.parents_hash();
-        verify_block!(
-            VerifyBlockField::Header,
-            parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
-            "The dag block contains repeated hash values, block header: {:?}",
-            new_block_header,
-        );
-
-        verify_block!(
-            VerifyBlockField::Header,
-            parents_hash.contains(&new_block_header.parent_hash()),
-            "header: {:?}, tips {:?} do not contain the selected parent {:?}",
-            new_block_header,
-            parents_hash,
-            new_block_header.parent_hash()
-        );
-
-        parents_hash.iter().try_for_each(|parent_hash| {
-            verify_block!(
-                VerifyBlockField::Header,
-                current_chain.has_dag_block(*parent_hash).map_err(|e| {
-                    ConnectBlockError::VerifyBlockFailed(
-                        VerifyBlockField::Header,
-                        anyhow::anyhow!(
-                            "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
-                            new_block_header.id(),
-                            parent_hash,
-                            e
-                        ),
-                    )
-                })?,
-                "Invalid block: parent {} might not exist.",
-                parent_hash
-            );
-            Ok::<(), ConnectBlockError>(())
-        })?;
-
-        // verify the pruning point
-        let parent_header = current_chain.current_header();
-        if parent_header.pruning_point() != HashValue::zero() {
-            // the chain had pruning point already checking the descendants of the pruning point is a must
-            // check the parents are the descendants of the pruning point
-            parents_hash.iter().try_for_each(|parent_hash| {
-                verify_block!(
-                    VerifyBlockField::Header,
-                    current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), *parent_hash).map_err(|e| {
-                        ConnectBlockError::VerifyBlockFailed(
-                            VerifyBlockField::Header,
-                            anyhow::anyhow!(
-                                "the block {:?} 's parent: {:?} is not the descendant of pruning point {:?}, error: {:?}",
-                                new_block_header.id(),
-                                parent_hash,
-                                new_block_header.pruning_point(),
-                                e
-                            ),
-                        )
-                    })?,
-                    "Invalid block: parent {:?} is not the descendant of pruning point: {:?}",
-                    parent_hash, new_block_header.pruning_point()
-                );
-                Ok::<(), ConnectBlockError>(())
-            })?;
-        }
-
-        ConsensusVerifier::verify_header(current_chain, new_block_header)
-    }
-
-    fn verify_blue_blocks<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<GhostdagData>
-    where
-        R: ChainReader,
-    {
-        current_chain.verify_and_ghostdata(uncles, header)
-    }
-}
-
-pub struct DagVerifier;
-impl BlockVerifier for DagVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        BasicDagVerifier::verify_header(current_chain, new_block_header)
-    }
-
-    fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
-    where
-        R: ChainReader,
-    {
-        Ok(Some(BasicDagVerifier::verify_blue_blocks(
-            current_chain,
-            uncles,
-            header,
-        )?))
-    }
-}
-
-pub struct DagVerifierWithGhostData;
-impl BlockVerifier for DagVerifierWithGhostData {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        BasicDagVerifier::verify_header(current_chain, new_block_header)
-    }
-
-    fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
-    where
-        R: ChainReader,
-    {
-        let ghostdata = BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?;
-
-        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
-            Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
-        }
-
-        Ok(Some(ghostdata))
     }
 }
