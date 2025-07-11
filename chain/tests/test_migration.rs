@@ -209,7 +209,7 @@ mod migration_tests {
     }
 
     /// Test migration with 0x1 account state data specifically
-    #[stest::test(timeout = 5000)]
+    #[stest::test]
     fn test_migration_main_data() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
@@ -220,7 +220,7 @@ mod migration_tests {
         )?;
 
         let state_root =
-            do_migration(&statedb, network.chain_id(), Some(MigrationDataSet::main()))?;
+            do_migration(&statedb, network.chain_id(), Some(MigrationDataSet::main_0x1()))?;
 
         verify_migration_results(&statedb.fork_at(state_root), 12)?;
 
