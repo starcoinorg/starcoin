@@ -219,10 +219,30 @@ mod migration_tests {
             Some(DEFAULT_CACHE_SIZE * 50000),
         )?;
 
-        let state_root =
-            do_migration(&statedb, network.chain_id(), Some(MigrationDataSet::main_0x1()))?;
+        let state_root = do_migration(
+            &statedb,
+            network.chain_id(),
+            Some(MigrationDataSet::main_0x1()),
+        )?;
 
         verify_migration_results(&statedb.fork_at(state_root), 12)?;
+
+        Ok(())
+    }
+
+    #[stest::test]
+    fn test_mainnet_gas_table() -> anyhow::Result<()> {
+        starcoin_logger::init_for_test();
+
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let temp = TempDir::new()?;
+        let (mut chain, _statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+                &net,
+                temp.path().to_path_buf(),
+            )?;
+        let (_executed_block, _stateroot) =
+            create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
 
         Ok(())
     }
@@ -236,7 +256,7 @@ mod migration_tests {
         starcoin_logger::init_for_test();
 
         // Create a test network (using Main to trigger migration)
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
         let temp = TempDir::new()?;
 
         // Initialize blockchain with genesis in memory

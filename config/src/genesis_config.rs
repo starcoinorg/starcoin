@@ -1047,7 +1047,7 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(4);
+    let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
