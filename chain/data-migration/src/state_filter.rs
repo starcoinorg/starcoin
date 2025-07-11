@@ -29,18 +29,23 @@ pub fn filter_chain_state_set(
         if let Some(resource_set) = account_state_set.resource_set() {
             for (key, blob) in resource_set.iter() {
                 let struct_tag = bcs_ext::from_bytes::<StructTag>(key)?;
-                let struct_tag_str = format!(
-                    "{}::{}::{}",
-                    struct_tag.address, struct_tag.module, struct_tag.name
-                );
 
-                let filtered_blob = if ACCOUNT_RESOURCE_PATH == struct_tag_str {
+                let filtered_blob = if struct_tag.address == "0x00000000000000000000000000000001"
+                    && struct_tag.module == "Account"
+                    && struct_tag.name == "Account"
+                {
                     bcs_ext::to_bytes(
                         &bcs_ext::from_bytes::<AccountResource>(blob)?.clone_with_zero_seq_number(),
                     )?
-                } else if BLOCK_METADATA_PATH == struct_tag_str {
+                } else if struct_tag.address == "0x00000000000000000000000000000001"
+                    && struct_tag.module == "Block"
+                    && struct_tag.name == "BlockMetadata"
+                {
                     bcs_ext::to_bytes(&statedb.get_block_metadata()?)?
-                } else if BLOCK_REWARD_QUEUE == struct_tag_str {
+                } else if struct_tag.address == "0x00000000000000000000000000000001"
+                    && struct_tag.module == "BlockReward"
+                    && struct_tag.name == "RewardQueue"
+                {
                     // Get local block reward queue data from current state
                     let state_key = StateKey::AccessPath(AccessPath::new(
                         *address,
