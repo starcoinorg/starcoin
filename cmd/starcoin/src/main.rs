@@ -129,7 +129,7 @@ fn run() -> Result<()> {
             }
         },
     );
-    add_command(context).exec()
+    add_command_legacy(add_command(context)).exec()
 }
 
 #[rustfmt::skip]

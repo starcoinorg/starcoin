@@ -22,7 +22,7 @@ use scmd::{CmdContext, CustomCommand};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
-use subcommand_vm2::{account as account2, contract as contract2, dev as dev2};
+use subcommand_vm2::{account as account2, contract as contract2, dev as dev2, state as state2};
 
 pub fn add_command(
     context: CmdContext<CliState, StarcoinOpt>,
@@ -57,10 +57,10 @@ pub fn add_command(
         )
         .command(
             CustomCommand::with_name("state")
-                .subcommand(state::ListCmd)
-                .subcommand(state::GetCommand)
-                .subcommand(state::GetProofCommand)
-                .subcommand(state::GetRootCommand),
+                .subcommand(state2::ListCmd)
+                .subcommand(state2::GetCommand)
+                .subcommand(state2::GetProofCommand)
+                .subcommand(state2::GetRootCommand),
         )
         .command(
             CustomCommand::with_name("node")
@@ -220,5 +220,12 @@ pub fn add_command_legacy(
                 .subcommand(dev::SetLoggerBalanceAmoutCommand)
                 .subcommand(dev::GetLoggerBalanceAmountCommand),
         )
-        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
+        .command(CustomCommand::with_name("contract1").subcommand(contract::GetContractDataCommand))
+        .command(
+            CustomCommand::with_name("state1")
+                .subcommand(state::ListCmd)
+                .subcommand(state::GetCommand)
+                .subcommand(state::GetProofCommand)
+                .subcommand(state::GetRootCommand),
+        )
 }
