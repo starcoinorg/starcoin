@@ -221,11 +221,8 @@ mod migration_tests {
                 temp_dir.path().to_path_buf(),
             )?;
 
-        let state_root = do_migration(
-            &statedb,
-            net.chain_id(),
-            Some(MigrationDataSet::main_0x1()),
-        )?;
+        let state_root =
+            do_migration(&statedb, net.chain_id(), Some(MigrationDataSet::main_0x1()))?;
 
         verify_migration_results(&statedb.fork_at(state_root), 12)?;
 
