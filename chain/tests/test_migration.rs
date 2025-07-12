@@ -213,15 +213,17 @@ mod migration_tests {
     fn test_migration_main_data() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let network = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
-        let (_chain, statedb) = gen_chain_for_test_and_return_statedb(
-            &ChainNetwork::new_builtin(BuiltinNetworkID::Main),
-            Some(DEFAULT_CACHE_SIZE * 50000),
-        )?;
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
+        let temp_dir = starcoin_config::temp_dir();
+        let (_block_chain, statedb) =
+            test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
+                &net,
+                temp_dir.path().to_path_buf(),
+            )?;
 
         let state_root = do_migration(
             &statedb,
-            network.chain_id(),
+            net.chain_id(),
             Some(MigrationDataSet::main_0x1()),
         )?;
 
