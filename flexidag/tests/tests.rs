@@ -391,7 +391,7 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
             .build();
         parents_hash = vec![header.id()];
         parent_hash = header.id();
-        let ghostdata = dag.ghostdata(&parents_hash).unwrap();
+        let ghostdata = dag.ghostdata(&header.parents()).unwrap();
         dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata.clone()))?;
         if header.number() == 6 {
             dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata.clone()))?;
