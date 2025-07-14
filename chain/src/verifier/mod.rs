@@ -75,7 +75,7 @@ pub trait BlockVerifier {
         watch(CHAIN_WATCH_NAME, "n11");
         //verify header
         let new_block_header = new_block.header();
-        Self::verify_blacklisted_txns(&new_block)?;
+        // Self::verify_blacklisted_txns(&new_block)?;
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
@@ -93,17 +93,17 @@ pub trait BlockVerifier {
         })
     }
 
-    fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
-        let block_number = new_block.header().number();
-        for txn in new_block.transactions() {
-            verify_block!(
-                VerifyBlockField::Body,
-                !AddressFilter::is_blacklisted(txn, block_number),
-                "Invalid block: the sender of transaction in block must be not blacklisted"
-            );
-        }
-        Ok(())
-    }
+    // fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
+    //     let block_number = new_block.header().number();
+    //     for txn in new_block.transactions() {
+    //         verify_block!(
+    //             VerifyBlockField::Body,
+    //             !AddressFilter::is_blacklisted(txn, block_number),
+    //             "Invalid block: the sender of transaction in block must be not blacklisted"
+    //         );
+    //     }
+    //     Ok(())
+    // }
 
     fn verify_blue_blocks<R>(
         current_chain: &R,
