@@ -470,7 +470,7 @@ impl CliState {
             serde_json::to_string_pretty(&signed_txn_view)?
         );
         let txn_hash = signed_txn.id();
-        self.client().submit_transaction(signed_txn.into())?;
+        self.client().submit_transaction(signed_txn)?;
 
         eprintln!("txn {:#x} submitted.", txn_hash);
 

@@ -179,6 +179,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn submit_transaction2(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction2(txn))
+            .map_err(map_err)
+    }
+
     // State client APIs.
     pub fn state_reader2(
         &self,

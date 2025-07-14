@@ -37,6 +37,21 @@ pub struct TxPoolConfig {
     #[clap(name = "txpool-min-gas-price", long)]
     /// reject transaction whose gas_price is less than the min_gas_price. default to 1.
     min_gas_price: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-max-vm1-txn-count", long)]
+    /// Max number of VM1 transactions allowed in the pool. default to 100.
+    max_vm1_txn_count: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-max-vm1-rejections-per-peer", long)]
+    /// Max number of VM1 rejections per peer before blacklisting. default to 10.
+    max_vm1_rejections_per_peer: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-vm1-peer-blacklist-duration-secs", long)]
+    /// Duration (in seconds) for which a peer remains blacklisted. default to 120.
+    vm1_peer_blacklist_duration_secs: Option<u64>,
 }
 
 impl TxPoolConfig {
@@ -68,6 +83,15 @@ impl TxPoolConfig {
     pub fn min_gas_price(&self) -> u64 {
         self.min_gas_price.unwrap_or(1)
     }
+    pub fn max_vm1_txn_count(&self) -> usize {
+        self.max_vm1_txn_count.unwrap_or(100)
+    }
+    pub fn max_vm1_rejections_per_peer(&self) -> usize {
+        self.max_vm1_rejections_per_peer.unwrap_or(10)
+    }
+    pub fn vm1_peer_blacklist_duration_secs(&self) -> u64 {
+        self.vm1_peer_blacklist_duration_secs.unwrap_or(120)
+    }
 }
 
 impl ConfigModule for TxPoolConfig {
@@ -87,6 +111,15 @@ impl ConfigModule for TxPoolConfig {
         }
         if let Some(m) = txpool_opt.min_gas_price.as_ref() {
             self.min_gas_price = Some(*m);
+        }
+        if let Some(m) = txpool_opt.max_vm1_txn_count.as_ref() {
+            self.max_vm1_txn_count = Some(*m);
+        }
+        if let Some(m) = txpool_opt.max_vm1_rejections_per_peer.as_ref() {
+            self.max_vm1_rejections_per_peer = Some(*m);
+        }
+        if let Some(m) = txpool_opt.vm1_peer_blacklist_duration_secs.as_ref() {
+            self.vm1_peer_blacklist_duration_secs = Some(*m);
         }
         Ok(())
     }

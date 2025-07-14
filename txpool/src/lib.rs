@@ -14,11 +14,11 @@ pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_state_api::AccountStateReader;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
+use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -218,7 +218,16 @@ impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactionsMessage, _ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
             // JUST need to keep at most once delivery.
-            let _ = self.inner.import_txns(msg.message.txns);
+            let bypass_vm1_limit = msg
+                .message
+                .txns
+                .iter()
+                .all(|txn| matches!(txn, MultiSignedUserTransaction::VM2(_)));
+            let _ = self.inner.import_txns(
+                msg.message.txns,
+                bypass_vm1_limit,
+                Some(msg.peer_id.to_string()),
+            );
         } else {
             //TODO should keep txn in a buffer, then execute after sync finished.
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");

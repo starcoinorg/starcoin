@@ -3,7 +3,6 @@
 
 use crate::FutureResult;
 use openrpc_derive::openrpc;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
 use crate::multi_types::MultiSignedUserTransactionView;
@@ -23,9 +22,6 @@ pub trait TxPoolApi {
 
     #[rpc(name = "txpool.submit_transaction2")]
     fn submit_transaction2(&self, tx: SignedUserTransaction2) -> FutureResult<HashValue>;
-
-    #[rpc(name = "txpool.submit_transaction_multi")]
-    fn submit_transaction_multi(&self, tx: MultiSignedUserTransaction) -> FutureResult<HashValue>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;

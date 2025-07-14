@@ -155,7 +155,7 @@ async fn test_pool_pending() -> Result<()> {
         .map(|index| generate_txn(node_config.clone(), index).into())
         .collect::<Vec<_>>();
 
-    let _ = txpool_service.add_txns_multi_signed(txn_vec.clone());
+    let _ = txpool_service.add_txns_multi_signed(txn_vec.clone(), true, None);
     let pending = txpool_service.get_pending_txns(Some(pool_size), None);
     assert!(!pending.is_empty());
 
@@ -294,6 +294,28 @@ async fn test_txpool_actor_service() {
         .unwrap();
 
     sleep(Duration::from_millis(300)).await;
+}
+
+#[stest::test]
+async fn test_vm1_txn_early_reject() -> Result<()> {
+    let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
+
+    let txns: Vec<_> = (0..101)
+        .map(|i| generate_txn(config.clone(), i).into())
+        .collect();
+    let results =
+        txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()));
+
+    assert!(results.iter().take(100).all(|r| r.is_ok()));
+    assert!(results.iter().skip(100).all(|r| r.is_err()));
+
+    let pendings = txpool_service.get_pending_txns(None, None);
+
+    let vm1: Vec<_> = pendings.into_iter().filter(|txn| txn.is_v1()).collect();
+
+    assert_eq!(vm1.len(), 100, "should keep 100 VM1 txns");
+
+    Ok(())
 }
 
 fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {

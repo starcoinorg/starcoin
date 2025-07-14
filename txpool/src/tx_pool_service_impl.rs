@@ -18,7 +18,6 @@ use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
@@ -29,6 +28,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
 };
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
@@ -63,6 +63,9 @@ impl TxPoolService {
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
+            pool_config.max_vm1_txn_count(),
+            pool_config.max_vm1_rejections_per_peer(),
+            pool_config.vm1_peer_blacklist_duration_secs(),
         );
         let queue = Arc::new(queue);
         let inner = Inner {
@@ -104,6 +107,8 @@ impl TxPoolSyncService for TxPoolService {
     fn add_txns_multi_signed(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
@@ -113,7 +118,7 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["add_txns"])
                 .start_timer()
         });
-        self.inner.import_txns(txns)
+        self.inner.import_txns(txns, bypass_vm1_limit, peer_id)
     }
 
     fn remove_txn(
@@ -271,8 +276,8 @@ impl Inner {
             .storage
             .get_vm_multi_state(self.chain_header.read().id())?;
         Ok(ChainStateDB::new(
-            self.storage.clone().into_super_arc(),
-            Some(multi_state.state_root1()),
+            self.storage2.clone().into_super_arc(),
+            Some(multi_state.state_root2()),
         ))
     }
 
@@ -288,11 +293,14 @@ impl Inner {
     pub(crate) fn import_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>> {
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
-        self.queue.import(self.get_pool_client(), txns)
+        self.queue
+            .import(self.get_pool_client(), txns, bypass_vm1_limit, peer_id)
     }
     pub(crate) fn remove_txn(
         &self,
@@ -364,7 +372,7 @@ impl Inner {
                 txns.into_iter()
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let results = self.queue.import(self.get_pool_client(), txns);
+        let results = self.queue.import(self.get_pool_client(), txns, true, None);
         for result in results {
             if let Err(err) = result {
                 debug!("retracted transaction fail: {}", err);

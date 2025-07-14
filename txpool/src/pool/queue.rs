@@ -9,12 +9,14 @@ use super::{
 };
 use crate::pool::ready::Expiration;
 use crate::{pool, pool::PoolTransaction};
+use chrono::Utc;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionError};
 use starcoin_types::transaction;
+use starcoin_types::transaction::TransactionError;
 use std::{
     cmp,
     collections::{BTreeMap, HashMap},
@@ -224,6 +226,12 @@ pub struct TransactionQueue {
     options: RwLock<verifier::Options>,
     cached_pending: RwLock<CachedPending>,
     recently_rejected: RecentlyRejected,
+
+    max_vm1_txn_count: usize,
+    max_vm1_rejections_per_peer: usize,
+    vm1_peer_blacklist_duration_secs: u64,
+    vm1_reject_count: RwLock<HashMap<String, usize>>,
+    vm1_blacklist: RwLock<HashMap<String, u64>>,
 }
 
 impl TransactionQueue {
@@ -232,6 +240,9 @@ impl TransactionQueue {
         limits: tx_pool::Options,
         verification_options: verifier::Options,
         strategy: PrioritizationStrategy,
+        max_vm1_txn_count: usize,
+        max_vm1_rejections_per_peer: usize,
+        vm1_peer_blacklist_duration_secs: u64,
     ) -> Self {
         let max_count = limits.max_count;
         TransactionQueue {
@@ -247,6 +258,11 @@ impl TransactionQueue {
                 MIN_REJECTED_CACHE_SIZE,
                 max_count / 4,
             )),
+            max_vm1_txn_count,
+            max_vm1_rejections_per_peer,
+            vm1_peer_blacklist_duration_secs,
+            vm1_reject_count: RwLock::new(HashMap::new()),
+            vm1_blacklist: RwLock::new(HashMap::new()),
         }
     }
 
@@ -261,11 +277,43 @@ impl TransactionQueue {
     ///
     /// Given blockchain and state access (Client)
     /// verifies and imports transactions to the pool.
-    pub fn import<T, C>(&self, client: C, transactions: T) -> Vec<Result<(), MultiTransactionError>>
+    pub fn import<T, C>(
+        &self,
+        client: C,
+        transactions: T,
+        bypass_vm1_limit: bool,
+        peer_id: Option<String>,
+    ) -> Vec<Result<(), MultiTransactionError>>
     where
         T: IntoIterator<Item = PoolTransaction>,
         C: client::AccountSeqNumberClient + client::Client,
     {
+        // ----- Blacklist check -----
+        if !bypass_vm1_limit {
+            if let Some(peer) = &peer_id {
+                let now_ts = Utc::now().timestamp() as u64;
+                let mut bl = self.vm1_blacklist.write();
+                if let Some(&expiry) = bl.get(peer) {
+                    if now_ts < expiry {
+                        // Peer is still blacklisted: reject all transactions
+                        return transactions
+                            .into_iter()
+                            .map(|_| {
+                                Err(TransactionError::LimitReached(format!(
+                                    "peer blacked {peer}, time left {}",
+                                    expiry - now_ts
+                                ))
+                                .into())
+                            })
+                            .collect();
+                    } else {
+                        // Blacklist entry expired: remove peer
+                        bl.remove(peer);
+                    }
+                }
+            }
+        }
+
         // Run verification
         trace_time!("pool::verify_and_import");
         let options = self.options.read().clone();
@@ -295,7 +343,36 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
+        let mut existing_vm1 = if !bypass_vm1_limit {
+            self.existing_vm1_txns()
+        } else {
+            0
+        };
         for transaction in transactions.into_iter() {
+            let is_v1_txn = transaction.signed().is_v1();
+            // ----- VM1 limit and abuse counter logic -----
+            if !bypass_vm1_limit && is_v1_txn && existing_vm1 >= self.max_vm1_txn_count {
+                let now_ts = Utc::now().timestamp() as u64;
+                // Increment rejection count for peer
+                if let Some(peer) = &peer_id {
+                    let mut count_map = self.vm1_reject_count.write();
+                    let c = count_map.entry(peer.clone()).or_default();
+                    *c += 1;
+                    // Blacklist peer if over threshold
+                    if *c >= self.max_vm1_rejections_per_peer {
+                        let mut bl = self.vm1_blacklist.write();
+                        bl.insert(peer.clone(), now_ts + self.vm1_peer_blacklist_duration_secs);
+                        // Reset count to prevent unbounded growth
+                        *c = 0;
+                    }
+                }
+                results.push(Err(TransactionError::LimitReached(
+                    "vm1 txn threshold".to_string(),
+                )
+                .into()));
+                continue;
+            }
+
             let hash = transaction.hash();
 
             if self.pool.read().find(&hash).is_some() {
@@ -317,7 +394,15 @@ impl TransactionQueue {
                 });
 
             results.push(match imported {
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    // TODO: how to tracking VM1 transactions?
+                    // 1. what if a vm1 txn has been replaced?
+                    // 2. concurrent vm1 txns from different peers?
+                    if !bypass_vm1_limit && is_v1_txn {
+                        existing_vm1 += 1
+                    };
+                    Ok(())
+                }
                 Err(err) => {
                     self.recently_rejected.insert(hash, &err);
                     Err(err)
@@ -331,6 +416,7 @@ impl TransactionQueue {
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }
+
         results
     }
 
@@ -562,6 +648,23 @@ impl TransactionQueue {
     pub fn is_pending_cached(&self) -> bool {
         self.cached_pending.read().pending.is_some()
     }
+
+    fn existing_vm1_txns(&self) -> usize {
+        let pool = self.pool.read();
+        let mut vm1_txs = 0;
+        for sender in pool.senders() {
+            if let MultiAccountAddress::VM2(_) = sender {
+                continue;
+            }
+            let txs = pool.pending_from_sender(Expiration::new(0), sender);
+            for tx in txs {
+                if tx.signed().is_v1() {
+                    vm1_txs += 1;
+                }
+            }
+        }
+        vm1_txs
+    }
 }
 
 fn convert_error<H: fmt::Debug + fmt::LowerHex>(err: tx_pool::Error<H>) -> MultiTransactionError {
@@ -569,7 +672,9 @@ fn convert_error<H: fmt::Debug + fmt::LowerHex>(err: tx_pool::Error<H>) -> Multi
 
     match err {
         Error::AlreadyImported(..) => transaction::TransactionError::AlreadyImported,
-        Error::TooCheapToEnter(..) => transaction::TransactionError::LimitReached,
+        Error::TooCheapToEnter(h, e) => {
+            transaction::TransactionError::LimitReached(format!("{h:?}, {e}"))
+        }
         Error::TooCheapToReplace(..) => transaction::TransactionError::TooCheapToReplace {
             prev: None,
             new: None,

@@ -36,6 +36,8 @@ impl TxPoolSyncService for MockTxPoolService {
     fn add_txns_multi_signed(
         &self,
         mut txns: Vec<MultiSignedUserTransaction>,
+        _bypass_vm1_limit: bool,
+        _peer_id: Option<String>,
     ) -> Vec<Result<(), MultiTransactionError>> {
         let len = txns.len();
         self.pool.lock().unwrap().append(&mut txns);

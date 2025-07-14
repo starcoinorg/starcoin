@@ -34,6 +34,24 @@ where
     pub fn new(service: S) -> Self {
         Self { service }
     }
+
+    fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
+        let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
+        let local_peer_id = if bypass_vm1_limit {
+            None
+        } else {
+            Some("local-rpc".to_string())
+        };
+        let txn_hash = txn.id();
+        let result: Result<(), jsonrpc_core::Error> = self
+            .service
+            .add_txns_multi_signed(vec![txn], bypass_vm1_limit, local_peer_id)
+            .pop()
+            .expect("txpool should return result")
+            .map_err(convert_to_rpc_error);
+
+        Box::pin(futures::future::ready(result.map(|_| txn_hash)))
+    }
 }
 
 impl<S> TxPoolApi for TxPoolRpcImpl<S>
@@ -46,18 +64,6 @@ where
 
     fn submit_transaction2(&self, txn: SignedUserTransaction2) -> FutureResult<HashValue> {
         self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
-    }
-
-    fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
-        let txn_hash = txn.id();
-        let result: Result<(), jsonrpc_core::Error> = self
-            .service
-            .add_txns_multi_signed(vec![txn])
-            .pop()
-            .expect("txpool should return result")
-            .map_err(convert_to_rpc_error);
-
-        Box::pin(futures::future::ready(result.map(|_| txn_hash)))
     }
 
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
@@ -85,7 +91,7 @@ where
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
-                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)])
+                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)], true, None)
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)
