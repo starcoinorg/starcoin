@@ -35,6 +35,7 @@ pub fn test_open_block() -> Result<()> {
             vec![],
             0,
             HashValue::zero(),
+            0,
         )?
     };
 

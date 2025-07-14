@@ -169,6 +169,7 @@ impl BlockChain {
             None,
             genesis_block,
             &chain_id,
+            0,
             None,
         )?;
         dag = Self::init_dag(dag, genesis_header)?;
@@ -362,12 +363,12 @@ impl BlockChain {
         };
 
         let MineNewDagBlockInfo {
-            tips,
+            selected_parents,
             ghostdata,
             pruning_point: _,
         } = {
             MineNewDagBlockInfo {
-                tips,
+                selected_parents: tips,
                 ghostdata,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
@@ -421,10 +422,11 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            tips,
+            selected_parents,
             blue_blocks,
             0,
             pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -494,14 +496,18 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        let selected_chain = Self::new(
-            self.time_service.clone(),
-            block.parent_hash(),
-            self.storage.clone(),
-            self.vm_metrics.clone(),
-            self.dag.clone(),
-        )?;
-        V::verify_block(&selected_chain, block)
+        if self.head_block().header().id() != block.parent_hash() {
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
+            V::verify_block(&selected_chain, block)
+        } else {
+            V::verify_block(self, block)
+        }
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
@@ -534,7 +540,7 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        info!("execute dag block:{:?}", verified_block.block);
+        info!("execute dag block:{:?}", verified_block.block.header().id());
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
@@ -550,7 +556,15 @@ impl BlockChain {
             .ok_or_else(|| {
                 format_err!("Can not find selected block by hash {:?}", selected_parent)
             })?;
-        let block_metadata = block.to_metadata(selected_head.header().gas_used());
+        let block_metadata = block.to_metadata(
+            selected_head.header().gas_used(),
+            verified_block
+                .ghostdata
+                .as_ref()
+                .ok_or_else(|| format_err!("in dag execution, ghostdata is none"))?
+                .mergeset_reds
+                .len() as u64,
+        );
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header
             .difficulty()
@@ -585,6 +599,11 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n21");
         let statedb = self.statedb.fork_at(selected_head.header.state_root());
         let epoch = get_epoch_from_statedb(&statedb)?;
+        info!(
+            "execute dag before, block id: {:?}, block time target in epoch: {:?}",
+            selected_head.header().id(),
+            epoch.block_time_target()
+        );
         let executed_data = starcoin_executor::block_execute(
             &statedb,
             transactions.clone(),
@@ -756,6 +775,7 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         chain_id: &ChainId,
+        red_blocks: u64,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -767,7 +787,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), red_blocks);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -935,6 +955,7 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        red_blocks: u64,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -946,7 +967,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), red_blocks);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -1270,22 +1291,22 @@ impl ChainReader for BlockChain {
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
         // if fork block_id is at same epoch, try to reuse uncles cache.
-        let uncles = if head.header().number() >= self.epoch.start_block_number() {
-            Some(
-                self.uncles
-                    .iter()
-                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-            )
-        } else {
-            None
-        };
+        // let uncles = if head.header().number() >= self.epoch.start_block_number() {
+        //     Some(
+        //         self.uncles
+        //             .iter()
+        //             .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
+        //             .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
+        //             .collect::<HashMap<HashValue, MintedUncleNumber>>(),
+        //     )
+        // } else {
+        //     None
+        // };
 
         Self::new_with_uncles(
             self.time_service.clone(),
             head,
-            uncles,
+            None,
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
@@ -1336,6 +1357,11 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.block,
+            verified_block
+                .ghostdata
+                .ok_or_else(|| format_err!("in execution without saving, ghostdata is missing"))?
+                .mergeset_reds
+                .len() as u64,
             self.vm_metrics.clone(),
         )
     }
@@ -1761,9 +1787,8 @@ impl BlockChain {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
-        if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb)?;
-        } else if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+        self.epoch = get_epoch_from_statedb(&self.statedb)?;
+        if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
             let start_block_id = self
                 .get_block_by_number(self.epoch.start_block_number())?
                 .unwrap_or_else(|| {

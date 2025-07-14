@@ -320,6 +320,7 @@ pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunctio
             bcs_ext::to_bytes(&1000000u64).unwrap(),
             bcs_ext::to_bytes(&strategy).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
+            bcs_ext::to_bytes(&1u64).unwrap(),
         ],
     )
 }

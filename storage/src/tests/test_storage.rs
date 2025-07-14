@@ -342,7 +342,7 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
     let block = Block::new(block_header.clone(), body);
     let mut txn_inf_ids = vec![];
     let mut txn_ids = vec![];
-    let block_metadata: LegacyBlockMetadata = block.to_metadata(0).into();
+    let block_metadata: LegacyBlockMetadata = block.to_metadata(0, 0).into();
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
         HashValue::random(),

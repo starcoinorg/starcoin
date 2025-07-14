@@ -854,7 +854,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             e
         })?;
 
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash, _) =
             new_block_meta.clone().into_inner();
         let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(

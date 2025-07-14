@@ -3,13 +3,15 @@
 
 use anyhow::{ensure, Result};
 use bcs_ext::Sample;
-use network_api::messages::TransactionsMessage;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::BlockInfo;
+use starcoin_network::{CompactBlockMessage, TransactionsMessage};
+use starcoin_types::block::{Block, BlockHeader, BlockInfo};
+use starcoin_types::compact_block::CompactBlock;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
@@ -33,15 +35,15 @@ fn check_types() {
     check_data_and_hash::<TransactionInfo>().unwrap();
 
     //Block
-    // check_data_and_hash::<BlockHeader>().unwrap();
-    // check_data_and_hash::<Block>().unwrap();
+    check_data_and_hash::<BlockHeader>().unwrap();
+    check_data_and_hash::<Block>().unwrap();
     check_data_and_hash::<BlockInfo>().unwrap();
 
     //Network
-    // check_data::<ChainStatus>().unwrap();
-    // check_data::<CompactBlock>().unwrap();
+    check_data::<ChainStatus>().unwrap();
+    check_data::<CompactBlock>().unwrap();
     check_data::<TransactionsMessage>().unwrap();
-    // check_data::<CompactBlockMessage>().unwrap();
+    check_data::<CompactBlockMessage>().unwrap();
 }
 
 const DATA_DIR: &str = "data";
@@ -77,9 +79,9 @@ fn read_and_check_data<T: Serialize + DeserializeOwned + PartialEq>() -> Result<
     let json_path = json_file::<T>();
     if data_path.exists() && json_path.exists() {
         debug!("Read data from {:?}", data_path);
+        let json_t = serde_json::from_str::<T>(std::fs::read_to_string(json_path)?.as_str())?;
         let data = hex::decode(std::fs::read_to_string(data_path)?.as_str())?;
         let data_t = bcs_ext::from_bytes::<T>(data.as_slice())?;
-        let json_t = serde_json::from_str::<T>(std::fs::read_to_string(json_path)?.as_str())?;
         ensure!(
             data_t == json_t,
             "{}'s bcs and json serialize data is not equals.",

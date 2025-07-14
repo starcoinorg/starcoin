@@ -16,6 +16,10 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfo;
+use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfoWriter;
+use starcoin_dag::consensusdb::consensus_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagStateStore;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -115,7 +119,6 @@ impl Genesis {
         }) = genesis_config.genesis_block_parameter()
         {
             let txn = Self::build_genesis_transaction(net)?;
-
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
@@ -265,10 +268,22 @@ impl Genesis {
             storage.clone(),
             net.genesis_epoch(),
             self.block.clone(),
-            dag,
+            dag.clone(),
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
+        dag.storage
+            .pruning_point_store
+            .write()
+            .insert(PruningPointInfo {
+                pruning_point: self.block.id(),
+            })?;
+        dag.storage.state_store.write().insert(
+            self.block.id(),
+            DagState {
+                tips: vec![self.block.id()],
+            },
+        )?;
         storage
             .get_chain_info()?
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))

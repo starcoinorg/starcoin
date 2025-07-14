@@ -16,7 +16,9 @@
     },
     "nonce": 0,
     "extra": "0x00000000",
-    "parents_hash": null
+    "parents_hash": [], 
+    "version": 0,
+    "pruning_point": "0x0000000000000000000000000000000000000000000000000000000000000000"
   },
   "short_ids": [],
   "prefilled_txn": [],

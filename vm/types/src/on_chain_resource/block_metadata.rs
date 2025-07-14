@@ -37,6 +37,7 @@ pub struct BlockMetadataV2 {
     pub author: AccountAddress,
     pub uncles: u64,
     pub parents_hash: Vec<u8>,
+    pub red_blocks: u64,
     // Handle where events with the time of new blocks are emitted
     pub new_block_events: EventHandle,
 }
