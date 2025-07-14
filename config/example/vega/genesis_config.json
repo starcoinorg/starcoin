@@ -394,7 +394,7 @@
   ],
   "genesis_key_pair": null,
   "stdlib_version": {
-    "Version": "Latest"
+    "Version": 13
   },
   "dao_config": {
     "voting_delay": 3600000,
