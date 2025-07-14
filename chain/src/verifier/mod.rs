@@ -10,6 +10,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::warn;
+use starcoin_open_block::AddressFilter;
 use starcoin_types::{
     block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME},
     consensus_header::ConsensusHeader,
@@ -74,6 +75,7 @@ pub trait BlockVerifier {
         watch(CHAIN_WATCH_NAME, "n11");
         //verify header
         let new_block_header = new_block.header();
+        // Self::verify_blacklisted_txns(&new_block)?;
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
@@ -91,24 +93,17 @@ pub trait BlockVerifier {
         })
     }
 
-    fn verify_blue_blocks<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<GhostdagData>
-    where
-        R: ChainReader,
-    {
-        let ghostdata = current_chain.calc_ghostdata_and_check_bounded_merge_depth(header)?;
-        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
-            Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
-        }
-
-        Self::can_be_uncle(header, uncles, &ghostdata)?;
-
-        Ok(ghostdata)
-    }
+    // fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
+    //     let block_number = new_block.header().number();
+    //     for txn in new_block.transactions() {
+    //         verify_block!(
+    //             VerifyBlockField::Body,
+    //             !AddressFilter::is_blacklisted(txn, block_number),
+    //             "Invalid block: the sender of transaction in block must be not blacklisted"
+    //         );
+    //     }
+    //     Ok(())
+    // }
 
     fn verify_blue_blocks<R>(
         current_chain: &R,
