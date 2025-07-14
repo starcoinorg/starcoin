@@ -38,9 +38,9 @@ where
     fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
         let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
         let local_peer_id = if bypass_vm1_limit {
-            Some("local-rpc".to_string())
-        } else {
             None
+        } else {
+            Some("local-rpc".to_string())
         };
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self

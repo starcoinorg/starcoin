@@ -133,7 +133,7 @@ impl From<TransactionError> for RpcError {
             | TransactionError::InvalidSignature(..)
             | TransactionError::NotAllowed
             | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
-            TransactionError::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
+            TransactionError::LimitReached(..) => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
             TransactionError::CallErr(call_err) => match call_err {
                 CallError::TransactionNotFound => (ErrorCode::InvalidParams, None),
                 CallError::StatePruned | CallError::StateCorrupt => {

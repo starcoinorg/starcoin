@@ -298,7 +298,13 @@ impl TransactionQueue {
                         // Peer is still blacklisted: reject all transactions
                         return transactions
                             .into_iter()
-                            .map(|_| Err(TransactionError::LimitReached.into()))
+                            .map(|_| {
+                                Err(TransactionError::LimitReached(format!(
+                                    "peer blacked {peer}, time left {}",
+                                    expiry - now_ts
+                                ))
+                                .into())
+                            })
                             .collect();
                     } else {
                         // Blacklist entry expired: remove peer
@@ -360,7 +366,10 @@ impl TransactionQueue {
                         *c = 0;
                     }
                 }
-                results.push(Err(TransactionError::LimitReached.into()));
+                results.push(Err(TransactionError::LimitReached(
+                    "vm1 txn threshold".to_string(),
+                )
+                .into()));
                 continue;
             }
 
@@ -663,7 +672,9 @@ fn convert_error<H: fmt::Debug + fmt::LowerHex>(err: tx_pool::Error<H>) -> Multi
 
     match err {
         Error::AlreadyImported(..) => transaction::TransactionError::AlreadyImported,
-        Error::TooCheapToEnter(..) => transaction::TransactionError::LimitReached,
+        Error::TooCheapToEnter(h, e) => {
+            transaction::TransactionError::LimitReached(format!("{h:?}, {e}"))
+        }
         Error::TooCheapToReplace(..) => transaction::TransactionError::TooCheapToReplace {
             prev: None,
             new: None,
