@@ -14,6 +14,7 @@ starcoin-types = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }

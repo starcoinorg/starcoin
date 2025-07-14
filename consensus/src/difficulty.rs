@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use crate::difficult_to_target;
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, format_err, Ok, Result};
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
@@ -28,7 +28,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .checked_add(1)
             .ok_or_else(|| format_err!("block number overflow"))?
     };
-    let blocks = (start_window_num
+    let selected_blocks = (start_window_num
         ..current_header
             .number()
             .checked_add(1)
@@ -44,47 +44,57 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 
     if start_window_num != 0 {
         debug_assert!(
-            blocks.len() == epoch.block_difficulty_window() as usize,
+            selected_blocks.len() == epoch.block_difficulty_window() as usize,
             "block difficulty count should eq block_difficulty_window"
         );
     }
 
-    let mut block_set = HashSet::new();
-    block_set.extend(
-        blocks
-            .into_iter()
-            .flat_map(|id| {
-                chain
-                    .get_dag()
-                    .storage
-                    .ghost_dag_store
-                    .get_mergeset_blues(id)
-                    .into_iter()
-                    .flat_map(|blue_id| blue_id.as_ref().clone())
-            })
-            .map(|id| {
-                chain.get_header_by_hash(id)?.ok_or_else(|| {
-                    format_err!("failed to get the block header when getting next work required")
+    let mut blue_block_set = HashSet::new();
+
+    selected_blocks.iter().try_for_each(|id| {
+        let ghostdata = chain.get_dag().storage.ghost_dag_store.get_data(*id)?;
+
+        blue_block_set.extend(
+            ghostdata
+                .mergeset_blues
+                .iter()
+                .map(|id| {
+                    chain.get_header_by_hash(*id)?.ok_or_else(|| {
+                        format_err!(
+                            "failed to get the block header when getting next work required"
+                        )
+                    })
                 })
-            })
-            .collect::<Result<Vec<BlockHeader>>>()?,
-    );
+                .collect::<Result<Vec<BlockHeader>>>()?,
+        );
 
-    let mut block_in_order: Vec<BlockHeader> = block_set.into_iter().collect();
+        Ok(())
+    })?;
 
-    block_in_order.sort_by(|a, b| {
+    let mut blue_block_in_order: Vec<BlockHeader> = blue_block_set.into_iter().collect();
+
+    blue_block_in_order.sort_by(|a, b| {
         b.number()
             .cmp(&a.number())
             .then_with(|| b.timestamp().cmp(&a.timestamp()))
             .then_with(|| b.id().cmp(&a.id()))
     });
 
+    let next_block_time_target = epoch.block_time_target();
+    info!(
+        "next_block_time_target: {:?}, blue block count: {:?}, selected parent id: {:?}",
+        next_block_time_target,
+        blue_block_in_order.len(),
+        current_header.id()
+    );
+
     let target = get_next_target_helper(
-        block_in_order
+        blue_block_in_order
             .into_iter()
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
-        200,
+        // 200,
+        next_block_time_target,
     )?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",

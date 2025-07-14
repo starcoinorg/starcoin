@@ -1,23 +1,25 @@
 {
   "header": {
-    "parent_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "timestamp": 1610110515000,
-    "number": 0,
-    "author": "0x00000000000000000000000000000001",
-    "author_auth_key": null,
-    "txn_accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
-    "block_accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
-    "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
-    "gas_used": 0,
-    "difficulty": "0x01",
-    "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
-    "chain_id": {
-      "id": 255
-    },
-    "nonce": 0,
-    "extra": "0x00000000",
-    "parents_hash": null
+  "parent_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "timestamp": 1610110515000,
+  "number": 0,
+  "author": "0x00000000000000000000000000000001",
+  "author_auth_key": null,
+  "txn_accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+  "block_accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+  "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+  "gas_used": 0,
+  "difficulty": "0x01",
+  "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+  "chain_id": {
+    "id": 255
   },
+  "nonce": 0,
+  "extra": "0x00000000",
+  "parents_hash": [],
+  "version": 0,
+  "pruning_point": "0x0000000000000000000000000000000000000000000000000000000000000000"
+},
   "body": {
     "transactions": [],
     "uncles": null

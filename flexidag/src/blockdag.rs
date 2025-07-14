@@ -61,7 +61,7 @@ pub type BlockDepthManager =
     BlockDepthManagerT<DbBlockDepthInfoStore, DbReachabilityStore, DbGhostdagStore>;
 
 pub struct MineNewDagBlockInfo {
-    pub tips: Vec<HashValue>,
+    pub selected_parents: Vec<HashValue>,
     pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
 }
@@ -732,7 +732,6 @@ impl BlockDAG {
     pub fn calc_mergeset_and_tips(
         &self,
         previous_pruning_point: HashValue,
-        max_parents_count: u64,
         genesis_id: HashValue,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
@@ -761,45 +760,45 @@ impl BlockDAG {
         dag_state.tips = pruned_tips;
 
         // filter
-        if dag_state.tips.len() > max_parents_count as usize {
-            dag_state.tips = dag_state
-                .tips
-                .into_iter()
-                .sorted_by(|a, b| {
-                    let a_blue_work = self
-                        .storage
-                        .ghost_dag_store
-                        .get_blue_work(*a)
-                        .unwrap_or_else(|e| {
-                            panic!(
-                                "the ghostdag data should be existed for {:?}, e: {:?}",
-                                a, e
-                            )
-                        });
-                    let b_blue_work = self
-                        .storage
-                        .ghost_dag_store
-                        .get_blue_work(*b)
-                        .unwrap_or_else(|e| {
-                            panic!(
-                                "the ghostdag data should be existed for {:?}, e: {:?}",
-                                b, e
-                            )
-                        });
-                    if a_blue_work == b_blue_work {
-                        a.cmp(b)
-                    } else {
-                        b_blue_work.cmp(&a_blue_work)
+        dag_state.tips = dag_state
+            .tips
+            .into_iter()
+            .sorted_by(|a, b| {
+                let compact_a_data = self
+                    .storage
+                    .ghost_dag_store
+                    .get_compact_data(*a)
+                    .unwrap_or_else(|e| {
+                        panic!(
+                            "the ghostdag data should be existed for {:?}, e: {:?}",
+                            a, e
+                        )
+                    });
+                let compact_b_data = self
+                    .storage
+                    .ghost_dag_store
+                    .get_compact_data(*b)
+                    .unwrap_or_else(|e| {
+                        panic!(
+                            "the ghostdag data should be existed for {:?}, e: {:?}",
+                            b, e
+                        )
+                    });
+                match compact_b_data.blue_work.cmp(&compact_a_data.blue_work) {
+                    std::cmp::Ordering::Equal => {
+                        match compact_b_data.blue_score.cmp(&compact_a_data.blue_score) {
+                            std::cmp::Ordering::Equal => b.cmp(a),
+                            other => other,
+                        }
                     }
-                })
-                .take(max_parents_count as usize)
-                .collect();
-        }
+                    other => other,
+                }
+            })
+            .collect();
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
         match self.storage.ghost_dag_store.insert(
-            self.ghost_dag_manager()
-                .find_selected_parent(dag_state.tips.iter().cloned())?,
+            next_ghostdata.selected_parent,
             Arc::new(next_ghostdata.clone()),
         ) {
             std::result::Result::Ok(_) => (),
@@ -814,7 +813,7 @@ impl BlockDAG {
         }
 
         anyhow::Ok(MineNewDagBlockInfo {
-            tips: dag_state.tips,
+            selected_parents: dag_state.tips,
             ghostdata: next_ghostdata,
             pruning_point: next_pruning_point,
         })
@@ -1319,5 +1318,10 @@ impl BlockDAG {
         drop(writer);
 
         Ok(())
+    }
+
+    pub fn mergeset_size_limit(&self) -> u64 {
+        let val = (self.ghost_dag_manager().k() as u64) << 1;
+        val.clamp(180, 512)
     }
 }

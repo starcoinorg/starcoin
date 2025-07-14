@@ -55,7 +55,7 @@ impl Networkp2pHandle {
         who: PeerId,
         status: Status,
     ) -> Result<HandshakeResult, ReputationChange> {
-        debug!(target: "network-p2p", "New peer {} {:?}", who, status);
+        debug!(target: "network-p2p", "New peer {} status: {:?}", who, status);
         if status.info.genesis_hash() != self.status.info.genesis_hash() {
             error!(
                 target: "network-p2p",

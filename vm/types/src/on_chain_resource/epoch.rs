@@ -187,6 +187,7 @@ pub struct EpochData {
     uncles: u64,
     total_reward: u128,
     total_gas: u128,
+    red_blocks: u64,
 }
 
 impl MoveResource for EpochData {
@@ -195,11 +196,12 @@ impl MoveResource for EpochData {
 }
 
 impl EpochData {
-    pub fn new(uncles: u64, total_reward: u128, total_gas: u128) -> Self {
+    pub fn new(uncles: u64, total_reward: u128, total_gas: u128, red_blocks: u64) -> Self {
         Self {
             uncles,
             total_reward,
             total_gas,
+            red_blocks,
         }
     }
 
@@ -213,6 +215,10 @@ impl EpochData {
 
     pub fn total_reward(&self) -> u128 {
         self.total_reward
+    }
+
+    pub fn red_blocks(&self) -> u64 {
+        self.red_blocks
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

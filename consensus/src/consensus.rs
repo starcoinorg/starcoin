@@ -57,6 +57,12 @@ pub trait Consensus {
     }
 
     fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        info!(
+            "current selected parent is: {:?}, header parent: {:?}, verify header: {:?}",
+            reader.current_header().id(),
+            header.parent_hash(),
+            header.id()
+        );
         let difficulty = self.calculate_next_difficulty(reader)?;
         self.verify_header_difficulty(difficulty, header)
     }

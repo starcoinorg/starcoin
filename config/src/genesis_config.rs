@@ -727,12 +727,11 @@ impl GenesisConfig {
     }
 }
 
-static G_UNCLE_RATE_TARGET: u64 = 240;
-static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
+static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 100;
 static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static G_MIN_BLOCK_TIME_TARGET: u64 = 2000;
-static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
+static G_MIN_BLOCK_TIME_TARGET: u64 = 100;
+static G_MAX_BLOCK_TIME_TARGET: u64 = 2000;
 pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
@@ -781,7 +780,7 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
@@ -834,7 +833,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
@@ -890,7 +889,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
@@ -950,7 +949,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 11,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -989,7 +988,7 @@ pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(12);
+    let stdlib_version = StdlibVersion::Version(13);
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -1011,7 +1010,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -1075,7 +1074,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: 500,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: STCUnit::STC.value_of(1).scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -1149,13 +1148,13 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option,
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
             base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
             base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: 5000,
+            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
             max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
@@ -1185,7 +1184,7 @@ pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
 });
 
 pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(12);
+    let stdlib_version = StdlibVersion::Version(13);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
@@ -1207,7 +1206,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option,
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 1,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,

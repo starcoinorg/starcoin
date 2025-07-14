@@ -491,13 +491,13 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         }
         out
     }
-    /// Notify the protocol that we have learned about the existence of nodes on the default set.
-    ///
-    /// Can be called multiple times with the same `PeerId`s.
-    pub fn add_default_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
+
+    pub fn add_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         for peer_id in peer_ids {
-            self.peerset_handle
-                .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+            for (set_id, _) in self.notif_protocols.iter().enumerate() {
+                self.peerset_handle
+                    .add_to_peers_set(SetId::from(set_id), peer_id);
+            }
         }
     }
 }

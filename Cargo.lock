@@ -10050,7 +10050,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "13.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=31ce4015833d8527ea2f4e6b5a7c0c8dadcbe84a#31ce4015833d8527ea2f4e6b5a7c0c8dadcbe84a"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=ef4706901c9cdf5da6edac6ee255c381b0f00551#ef4706901c9cdf5da6edac6ee255c381b0f00551"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10274,6 +10274,7 @@ dependencies = [
  "hex",
  "once_cell",
  "parking_lot 0.12.1",
+ "rand 0.8.5",
  "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-account-service",
@@ -10965,6 +10966,7 @@ dependencies = [
  "futures 0.3.26",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-logger",
  "starcoin-service-registry",
  "starcoin-state-api",

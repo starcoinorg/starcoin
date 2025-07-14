@@ -666,6 +666,7 @@ impl StarcoinVM {
                 )
                 .map_err(|e| e.into_vm_status())?;
             }
+
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
             gas_meter.set_metering(false);
@@ -757,7 +758,6 @@ impl StarcoinVM {
             &args,
             &loaded_func,
         )?;
-
         let final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
             func,
             args.into_iter().map(|b| b.borrow().to_vec()).collect(),
@@ -964,6 +964,7 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
             parents_hash,
+            red_blocks,
         ) = block_metadata.into_inner();
         let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
@@ -986,6 +987,7 @@ impl StarcoinVM {
                     bcs_ext::to_bytes(&parents_hash)
                         .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
                 ));
+                args_vec.push(MoveValue::U64(red_blocks));
                 function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
             }
         }
