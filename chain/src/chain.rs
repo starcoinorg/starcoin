@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, DagVerifier, DagVerifierWithGhostData, FullVerifier};
+use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -488,10 +488,6 @@ impl BlockChain {
         self.storage.clone()
     }
 
-    pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
-        FullVerifier::can_be_uncle(self, block_header)
-    }
-
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
     where
         V: BlockVerifier,
@@ -558,12 +554,7 @@ impl BlockChain {
             })?;
         let block_metadata = block.to_metadata(
             selected_head.header().gas_used(),
-            verified_block
-                .ghostdata
-                .as_ref()
-                .ok_or_else(|| format_err!("in dag execution, ghostdata is none"))?
-                .mergeset_reds
-                .len() as u64,
+            verified_block.ghostdata.mergeset_reds.len() as u64,
         );
         let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
         let mut total_difficulty = header
@@ -745,13 +736,10 @@ impl BlockChain {
         self.dag()
             .ghost_dag_manager()
             .update_k(epoch.max_uncles_per_block().try_into().unwrap());
-        let result = match verified_block.ghostdata {
-            Some(trusted_ghostdata) => self
-                .dag
-                .commit_trusted_block(header.to_owned(), Arc::new(trusted_ghostdata)),
-            None => self.dag.commit(header.to_owned()),
-        };
-        match result {
+        match self
+            .dag()
+            .commit_trusted_block(header.to_owned(), Arc::new(verified_block.ghostdata))
+        {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
             Err(e) => {
                 if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
@@ -1342,7 +1330,7 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        DagVerifier::verify_block(self, block)
+        FullVerifier::verify_block(self, block)
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
@@ -1357,11 +1345,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.block,
-            verified_block
-                .ghostdata
-                .ok_or_else(|| format_err!("in execution without saving, ghostdata is missing"))?
-                .mergeset_reds
-                .len() as u64,
+            verified_block.ghostdata.mergeset_reds.len() as u64,
             self.vm_metrics.clone(),
         )
     }
@@ -1483,32 +1467,13 @@ impl ChainReader for BlockChain {
         self.dag.has_block_connected(&header)
     }
 
-    fn verify_and_ghostdata(
+    fn calc_ghostdata_and_check_bounded_merge_depth(
         &self,
-        uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
-        let latest_pruning_point = {
-            match self.storage.get_startup_info().unwrap_or(None) {
-                Some(startup_info) => self
-                    .storage
-                    .get_block_header_by_hash(startup_info.main)
-                    .unwrap_or(None)
-                    .map(|head_block| head_block.pruning_point()),
-                None => None,
-            }
-        };
-
         let dag = self.dag();
 
-        let ghostdata = dag.verify_and_ghostdata(uncles, header, latest_pruning_point)?;
-
-        // it should check in the future
-        // let pruning_point = if header.pruning_point() == HashValue::zero() {
-        //     self.genesis_hash
-        // } else {
-        //     header.pruning_point()
-        // };
+        let ghostdata = dag.calc_ghostdata(header)?;
 
         dag.check_bounded_merge_depth(
             &ghostdata,
@@ -1916,14 +1881,14 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<DagVerifier>(block)
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
     }
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<DagVerifierWithGhostData>(block)
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 }
 

@@ -9,9 +9,12 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_logger::prelude::{debug, warn};
+use starcoin_logger::prelude::warn;
 use starcoin_open_block::AddressFilter;
-use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::{
+    block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME},
+    consensus_header::ConsensusHeader,
+};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -110,11 +113,13 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
-        let ghostdata = current_chain.verify_and_ghostdata(uncles, header)?;
+        let ghostdata = current_chain.calc_ghostdata_and_check_bounded_merge_depth(header)?;
         match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
             Ok(()) => (),
             Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
         }
+
+        Self::can_be_uncle(header, uncles, &ghostdata)?;
 
         Ok(ghostdata)
     }
@@ -123,18 +128,48 @@ pub trait BlockVerifier {
         current_chain: &R,
         uncles: &[BlockHeader],
         header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
+    ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
-
+        Self::verify_blue_blocks(current_chain, uncles, header)
     }
 
-    fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
-    where
-        R: ChainReader,
-    {
+    fn can_be_uncle(
+        header: &BlockHeader,
+        uncles: &[BlockHeader],
+        ghostdata: &GhostdagData,
+    ) -> Result<()> {
+        let uncles_set = uncles
+            .iter()
+            .map(|header| header.id())
+            .collect::<HashSet<_>>();
+        let blue_set = ghostdata
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>();
+        verify_block!(
+            VerifyBlockField::Uncle,
+            uncles_set == blue_set,
+            "Uncles in header are not the same as ghostdata, uncles: {:?}, ghostdata blue set: {:?}.",
+            uncles,
+            blue_set,
+        );
 
+        let selected_parent = *ghostdata.mergeset_blues.first().ok_or_else(|| {
+            format_err!("no selected parent in blue set in ghostdata.mergeset_blues")
+        })?;
+        verify_block!(
+            VerifyBlockField::Uncle,
+            header.parent_hash() == selected_parent,
+            "The selected parent is not the same as the parent in header, the first one in ghostdata.mergeset_blues: {:?}, selected parent in header: {:?}.",
+            selected_parent,
+            header.parent_hash(),
+        );
+
+        Ok(())
     }
 }
 
@@ -229,7 +264,10 @@ impl BlockVerifier for BasicVerifier {
 }
 
 impl BasicVerifier {
-    fn verify_dag<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()> where R: ChainReader {
+    fn verify_dag<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
         let parents_hash = new_block_header.parents_hash();
         verify_block!(
             VerifyBlockField::Header,
@@ -296,8 +334,6 @@ impl BasicVerifier {
 
         Ok(())
     }
-
-
 }
 
 pub struct ConsensusVerifier;
@@ -345,24 +381,30 @@ impl BlockVerifier for NoneVerifier {
         Ok(())
     }
 
-    fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
+    fn verify_block<R>(current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
     where
         R: ChainReader,
     {
+        let ghostdata = Self::verify_uncles(
+            current_chain,
+            new_block.uncles().unwrap_or_default(),
+            new_block.header(),
+        )?;
         Ok(VerifiedBlock {
             block: new_block,
-            ghostdata: None,
+            ghostdata,
         })
     }
 
     fn verify_uncles<R>(
-        _current_chain: &R,
+        current_chain: &R,
         _uncles: &[BlockHeader],
-        _header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
-        Ok(None)
+        let ghostdata = current_chain.get_dag().ghostdata(&header.parents())?;
+        Ok(ghostdata)
     }
 }

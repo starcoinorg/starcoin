@@ -15,7 +15,7 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain::verifier::DagVerifier;
+use starcoin_chain::verifier::FullVerifier;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
@@ -356,7 +356,7 @@ where
         let bus = ctx.bus_ref().clone();
 
         ctx.spawn(async move {
-            let verified_block = match chain.verify_with_verifier::<DagVerifier>(new_block.as_ref().clone()) {
+            let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
                 anyhow::Result::Ok(verified_block) => verified_block,
                 Err(e) => {
                     error!("when verifying the mined block, failed to verify block error: {:?}, id: {:?}", e, new_block.id());
