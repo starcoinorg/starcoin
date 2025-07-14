@@ -41,17 +41,17 @@ pub struct TxPoolConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-max-vm1-txn-count", long)]
     /// Max number of VM1 transactions allowed in the pool. default to 100.
-    pub max_vm1_txn_count: Option<usize>,
+    max_vm1_txn_count: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-max-vm1-rejections-per-peer", long)]
     /// Max number of VM1 rejections per peer before blacklisting. default to 10.
-    pub max_vm1_rejections_per_peer: Option<usize>,
+    max_vm1_rejections_per_peer: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-vm1-peer-blacklist-duration-secs", long)]
     /// Duration (in seconds) for which a peer remains blacklisted. default to 120.
-    pub vm1_peer_blacklist_duration_secs: Option<u64>,
+    vm1_peer_blacklist_duration_secs: Option<u64>,
 }
 
 impl TxPoolConfig {
@@ -82,6 +82,15 @@ impl TxPoolConfig {
     }
     pub fn min_gas_price(&self) -> u64 {
         self.min_gas_price.unwrap_or(1)
+    }
+    pub fn max_vm1_txn_count(&self) -> usize {
+        self.max_vm1_txn_count.unwrap_or(100)
+    }
+    pub fn max_vm1_rejections_per_peer(&self) -> usize {
+        self.max_vm1_rejections_per_peer.unwrap_or(10)
+    }
+    pub fn vm1_peer_blacklist_duration_secs(&self) -> u64 {
+        self.vm1_peer_blacklist_duration_secs.unwrap_or(120)
     }
 }
 

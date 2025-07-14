@@ -63,9 +63,9 @@ impl TxPoolService {
             },
             verifier_options,
             PrioritizationStrategy::GasPriceOnly,
-            pool_config.max_vm1_txn_count.unwrap_or(100),
-            pool_config.max_vm1_rejections_per_peer.unwrap_or(10),
-            pool_config.vm1_peer_blacklist_duration_secs.unwrap_or(120),
+            pool_config.max_vm1_txn_count(),
+            pool_config.max_vm1_rejections_per_peer(),
+            pool_config.vm1_peer_blacklist_duration_secs(),
         );
         let queue = Arc::new(queue);
         let inner = Inner {
