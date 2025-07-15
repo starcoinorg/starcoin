@@ -127,7 +127,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
     )?
-    .checked_div(U256::from(average_diff_count))
+    .checked_mul(U256::from(average_diff_count))
     {
         target
     } else {
