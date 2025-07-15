@@ -209,11 +209,6 @@ impl MigrationExecutor {
         migration_file_expect_hash: HashValue,
         snapshot_tar_pack: &[u8],
     ) -> anyhow::Result<(HashValue, ChainStateSet)> {
-        debug!(
-            "migrate_legacy_state_data | Entered, origin state_root:{:?}",
-            statedb.state_root()
-        );
-
         let temp_dir = TempDir::new()?;
         let bcs_content = unpack_from_tar(snapshot_tar_pack, temp_dir.path(), migration_file_name)?;
 
@@ -365,6 +360,19 @@ impl MigrationExecutor {
         Ok(state_root)
     }
 }
+pub fn maybe_migration_data(
+    statedb: &ChainStateDB,
+    header_number: u64,
+    chain_id: ChainId,
+    default_hash: HashValue,
+) -> anyhow::Result<HashValue> {
+    if should_do_migration(header_number, chain_id) {
+        // Apply migration data if this is a migration block
+        do_migration(statedb, chain_id, None)
+    } else {
+        Ok(default_hash)
+    }
+}
 
 /// Legacy function for backward compatibility
 pub fn do_migration(
@@ -372,10 +380,6 @@ pub fn do_migration(
     chain_id: ChainId,
     data_set: Option<MigrationDataSet>,
 ) -> anyhow::Result<HashValue> {
-    debug!(
-        "do_migration | Entered, statedb current state root: {:?}",
-        statedb.state_root()
-    );
     let executor = MigrationExecutor::new(chain_id);
     let ret = executor.execute(statedb, data_set);
 
