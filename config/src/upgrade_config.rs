@@ -49,7 +49,7 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
                 update_height(x, None);
             }
             BuiltinNetworkID::Test => {
-                update_height(x, Some(1));
+                update_height(x, Some(2));
             }
             _ => {
                 update_height(x, Some(u64::MAX));

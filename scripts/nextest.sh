@@ -23,8 +23,7 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
 cargo nextest run --workspace \
 -E "\
-not (test(module::pubsub::tests::test_subscribe_to_events)) \
-and not (test(tests::test_storage::test_db_upgrade)) \
+not (test(tests::test_storage::test_db_upgrade)) \
 and not (test(test_force_upgrade_1)) \
 and not (test(test_force_upgrade_2)) \
 and not (test(test_frozen_account)) \
