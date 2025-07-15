@@ -8,6 +8,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
+use starcoin_data_migration::{do_migration, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -280,6 +281,10 @@ impl OpenedBlock {
 
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
+        debug!(
+            "OpenedBlock::initialize | Entered, block id: {}",
+            self.block_meta.number()
+        );
         let (state, _state2) = &self.state;
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
@@ -306,6 +311,10 @@ impl OpenedBlock {
                 );
             }
         };
+        debug!(
+            "OpenedBlock::initialize | Exit, block id: {}",
+            self.block_meta.number()
+        );
         Ok(())
     }
 
@@ -365,18 +374,36 @@ impl OpenedBlock {
 
     /// Construct a block template for mining.
     pub fn finalize(mut self) -> Result<BlockTemplate> {
+        debug!("OpenedBlock::finalize | Entered");
         // if vm2 is not initialized, we need to execute vm2 block_meta txn first
         if !self.vm2_initialized {
             self.initialize_v2()?;
         }
         debug_assert!(self.vm2_initialized);
+
+        // Do migration in finalize
+        let (statedb, _) = &self.state;
+        let state_root1 = if should_do_migration(self.block_number(), self.chain_id) {
+            do_migration(statedb, self.chain_id, None)?
+        } else {
+            statedb.state_root()
+        };
+
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
         let state_root = {
             self.vm_state_accumulator
-                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
+                .append(&[state_root1, self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
         };
+
+        debug!(
+            "OpenedBlock::finalize | vm1 stateroot: {:?},  vm2 stateroot: {:?}, root state_root: {}",
+            state_root1,
+            self.state.1.state_root(),
+            state_root
+        );
+
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {

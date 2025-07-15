@@ -12,8 +12,12 @@ pub mod starcoin_dao;
 pub mod txn;
 pub mod txpool;
 
+mod account;
+pub mod block;
 mod utils;
 
+pub use account::*;
+pub use block::*;
 pub use chain::{gen_blockchain_for_test, gen_blockchain_with_blocks_for_test};
 pub use dummy_network_service::DummyNetworkService;
 pub use network::{build_network, build_network_cluster, build_network_pair};

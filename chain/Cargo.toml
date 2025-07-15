@@ -23,6 +23,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
+starcoin-data-migration = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
 once_cell = { workspace = true }
@@ -35,6 +36,7 @@ starcoin-vm2-types = { workspace = true }
 starcoin-vm2-chain = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
+log = "0.4.27"
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -48,10 +50,12 @@ starcoin-types = { features = [
 ], workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
+tempfile = "3.2.0"
+flate2 = "1.0"
+tar = "0.4"
 
 [features]
 default = []

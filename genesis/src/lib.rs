@@ -13,6 +13,7 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
     DEFAULT_CACHE_SIZE,
 };
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -123,6 +124,7 @@ impl Genesis {
 
     /// Load Load pre generated genesis, only support builtin network.
     pub fn load(net: &ChainNetwork) -> Result<Option<Self>> {
+        debug!("Genesis::load | {:?}", net.id());
         match net.id() {
             ChainNetworkID::Builtin(id) => Self::load_generated(*id),
             _ => Ok(None),
@@ -131,6 +133,7 @@ impl Genesis {
 
     /// Load pre generated genesis.
     pub fn load_or_build(net: &ChainNetwork) -> Result<Self> {
+        debug!("Genesis::load_or_build | net: {:?}", net.id());
         // test and dev always use Fresh genesis.
         if net.is_test() || net.is_dev() {
             Self::build(net)
@@ -144,23 +147,42 @@ impl Genesis {
 
     /// Build fresh genesis
     pub fn build(net: &ChainNetwork) -> Result<Self> {
-        debug!("Init genesis for {}", net);
+        debug!("Genesis::build | Entered, genesis for {:?}", net.id());
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
         debug!("Genesis block id : {:?}", block.header().id());
         let genesis = Self { block };
+        debug!("Genesis::build | End");
         Ok(genesis)
     }
 
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
+        debug!(
+            "Genesis::build_genesis_block | Entered, network: {:?}",
+            net.id()
+        );
+
         let genesis_config = net.genesis_config();
         let genesis_config2 = net.genesis_config2();
+
+        let parent_hash2 = genesis_config2
+            .genesis_block_parameter()
+            .expect("failed to get genesis block parameter")
+            .parent_hash;
+
         if let Some(GenesisBlockParameter {
-            parent_hash,
+            parent_hash: parent_hash1,
             timestamp,
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            // Merge the parent hashes of vm1 and vm2 into the final genesis parent hash
+            let parent_hash = HashValue::sha3_256_of(
+                [parent_hash1.clone().to_vec(), parent_hash2.to_vec()]
+                    .concat()
+                    .as_slice(),
+            );
+
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
                 genesis_config2,
@@ -168,7 +190,9 @@ impl Genesis {
 
             let txn = Self::build_genesis_transaction(net)?;
 
-            let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+            let storage = Arc::new(Storage::new(
+                StorageInstance::new_cache_instance_with_capacity(DEFAULT_CACHE_SIZE * 1000),
+            )?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
             let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
@@ -194,8 +218,13 @@ impl Genesis {
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
 
+            debug!(
+                "Genesis::build_genesis_block | Exited, accumulator_root: {:?}, state_root: {:?}",
+                accumulator_root, state_root,
+            );
+
             Ok(Block::genesis_block(
-                *parent_hash,
+                parent_hash,
                 *timestamp,
                 accumulator_root,
                 state_root,
@@ -306,6 +335,10 @@ impl Genesis {
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
+        info!(
+            "Genesis::genesis_bytes | net id: {:?}, ",
+            net.chain_id().id()
+        );
         let path = PathBuf::from(net.to_string()).join("genesis");
         GENESIS_DIR
             .get_file(path.as_path())
@@ -313,6 +346,10 @@ impl Genesis {
     }
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
+        info!(
+            "Genesis::load_generated | net id: {:?}, ",
+            net.chain_id().id()
+        );
         Ok(match Self::genesis_bytes(net) {
             Some(bytes) => Some(bcs_ext::from_bytes::<Genesis>(bytes)?),
             None => None,
@@ -325,6 +362,8 @@ impl Genesis {
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
     ) -> Result<ChainInfo> {
+        debug!("Genesis::execute_genesis_block | Entered, {:?}", net.id());
+
         storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
@@ -335,6 +374,9 @@ impl Genesis {
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
+
+        debug!("Genesis::execute_genesis_block | Exited");
+
         storage
             .get_chain_info()?
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
@@ -344,6 +386,8 @@ impl Genesis {
     where
         P: AsRef<Path>,
     {
+        debug!("Genesis::save | Entered");
+
         let data_dir = data_dir.as_ref();
         if !data_dir.exists() {
             create_dir_all(data_dir)?;
@@ -357,14 +401,24 @@ impl Genesis {
             bcs_ext::to_bytes(self)?
         };
         file.write_all(&contents)?;
+
+        debug!("Genesis::save | Exited");
         Ok(())
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
+        debug!(
+            "Genesis::load_and_check_genesis | Entered, network: {:?}, dir_path: {:?}, init: {}",
+            net.id(),
+            data_dir,
+            init
+        );
+
         // todo: how and when upgrade legacy genesis?
         let legacy_genesis = false;
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
+                debug!("Genesis::load_and_check_genesis | Genesis::load_from_dir");
                 let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
@@ -377,16 +431,24 @@ impl Genesis {
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
+                debug!(
+                    "Genesis::load_and_check_genesis | Genesis::load_from_dir didnt got genesis"
+                );
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
                     genesis.save(data_dir, legacy_genesis)?;
-                    info!("Build and save new genesis: {}", genesis);
+                    info!(
+                        "Genesis::load_and_check_genesis | Build and save new genesis: {}",
+                        genesis
+                    );
+
                     genesis
                 } else {
                     return Err(GenesisError::GenesisNotExist("data_dir".to_owned()).into());
                 }
             }
         };
+        debug!("Genesis::load_and_check_genesis | Exited");
         Ok(genesis)
     }
 
@@ -396,11 +458,13 @@ impl Genesis {
         storage2: Arc<Storage2>,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
-        debug!("load startup_info.");
+        debug!("Genesis::init_and_check_storage | Entered, load startup_info, network: {:?}, dir_path: {:?}", net.id(), data_dir);
         let (chain_info, genesis) = match storage.get_chain_info() {
             Ok(Some(chain_info)) => {
-                debug!("Get chain info {:?} from db", chain_info);
-                info!("Check genesis file.");
+                debug!(
+                    "init_and_check_storage | Loaded chain info from db, genesis hash: {:?}",
+                    chain_info.genesis_hash()
+                );
                 let genesis = Self::load_and_check_genesis(net, data_dir, false)?;
                 match storage.get_block(genesis.block().header().id()) {
                     Ok(Some(block)) => {
@@ -422,25 +486,40 @@ impl Genesis {
                 (chain_info, genesis)
             }
             Ok(None) => {
+                debug!("init_and_check_storage | Cannot found from db, reconstruct chain info");
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let chain_info =
                     genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
                 (chain_info, genesis)
             }
-            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
+            Err(e) => {
+                debug!(
+                    "init_and_check_storage | Exited, failed to load startup_info: {:?}",
+                    e
+                );
+                return Err(GenesisError::GenesisLoadFailure(e).into());
+            }
         };
         //TODO add init time for TimeService
+        debug!(
+            "init_and_check_storage | Exited succeed, chain info: {:?}",
+            chain_info
+        );
         Ok((chain_info, genesis))
     }
 
     pub fn init_storage_for_test(
         net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
-        debug!("init storage by genesis for test.");
+        debug!("Genesis::init_storage_for_test | Entered: {:?}", net.id());
+
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+
+        debug!("Genesis::init_storage_for_test | Exited");
+
         Ok((storage, storage2, chain_info, genesis))
     }
 
@@ -448,7 +527,11 @@ impl Genesis {
         net: &ChainNetwork,
         capacity: Option<usize>,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
-        debug!("init storage by genesis for test.");
+        debug!(
+            "Genesis::init_cache_storage_for_test | Entered: {:?}",
+            net.id()
+        );
+
         let storage = Arc::new(Storage::new(
             StorageInstance::new_cache_instance_with_capacity(
                 capacity.unwrap_or(DEFAULT_CACHE_SIZE),
@@ -457,6 +540,9 @@ impl Genesis {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+
+        debug!("Genesis::init_cache_storage_for_test | Exit");
+
         Ok((storage, storage2, chain_info, genesis))
     }
 }
@@ -527,11 +613,19 @@ mod tests {
     }
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path, legacy: bool) -> Result<()> {
+        debug!(
+            "do_test_genesis | Entered, network: {:?}, data_dir: {:?}",
+            net.id(),
+            data_dir
+        );
+
+        debug!("do_test_genesis | genesis check on storage 1");
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info1, genesis1) =
             Genesis::init_and_check_storage(net, storage1.clone(), storage2, data_dir)?;
 
+        debug!("do_test_genesis | genesis check on storage 2");
         let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2_2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info2, genesis2) =
@@ -683,6 +777,8 @@ mod tests {
         assert!(epoch.is_some(), "Epoch resource should exist.");
 
         // test_gas_schedule_in_genesis(net, &state_db)?;
+
+        debug!("do_test_genesis | Exited, net: {:?}", net.id());
 
         Ok(())
     }

@@ -373,6 +373,10 @@ impl ChainNetworkID {
         matches!(self, Self::Builtin(BuiltinNetworkID::Main))
     }
 
+    pub fn is_proxima(&self) -> bool {
+        matches!(self, Self::Builtin(BuiltinNetworkID::Proxima))
+    }
+
     pub fn is_halley(&self) -> bool {
         matches!(self, Self::Builtin(BuiltinNetworkID::Halley))
     }
@@ -485,6 +489,10 @@ impl ChainNetwork {
         Self::new_builtin(BuiltinNetworkID::Test)
     }
 
+    pub fn new_dev() -> Self {
+        Self::new_builtin(BuiltinNetworkID::Dev)
+    }
+
     pub fn id(&self) -> &ChainNetworkID {
         &self.id
     }
@@ -523,6 +531,10 @@ impl ChainNetwork {
 
     pub fn is_main(&self) -> bool {
         self.id.is_main()
+    }
+
+    pub fn is_proxima(&self) -> bool {
+        self.id.is_proxima()
     }
 
     pub fn is_custom(&self) -> bool {
@@ -1035,7 +1047,7 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(4);
+    let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
