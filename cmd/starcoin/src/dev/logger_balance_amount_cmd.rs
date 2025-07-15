@@ -29,7 +29,7 @@ impl CommandAction for SetLoggerBalanceAmoutCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         client.set_logger_balance_amount(opt.balance_amount)?;
         Ok(format!(
             "set logger balance amount {} STC",
@@ -55,7 +55,7 @@ impl CommandAction for GetLoggerBalanceAmountCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         let balance_amount = client.get_logger_balance_amount()?;
         info!("client get logger balance amount {}", balance_amount);
         Ok(format!("get logger balance amount is {}", balance_amount))

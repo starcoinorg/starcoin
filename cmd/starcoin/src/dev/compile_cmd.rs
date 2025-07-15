@@ -1,23 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::{bail, ensure, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_move_compiler::move_command_line_common::files::{
-    MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+use starcoin_vm2_move_compiler::{
+    compile_source_string_no_report, diagnostics,
+    move_command_line_common::files::{MOVE_COMPILED_EXTENSION, MOVE_EXTENSION},
+    shared::Flags,
+    starcoin_framework_named_addresses, Compiler,
 };
-use starcoin_move_compiler::shared::Flags;
-use starcoin_move_compiler::{
-    compile_source_string_no_report, starcoin_framework_named_addresses, Compiler,
-};
-use starcoin_vm_types::account_address::AccountAddress;
-use std::fs::File;
-use std::io::Write;
-use std::path::PathBuf;
-use stdlib::stdlib_files;
+use starcoin_vm2_types::account_address::AccountAddress;
+use std::{fs::File, io::Write, path::PathBuf};
 
 /// Compile module or script, support compile source dir.
 #[derive(Debug, Parser)]
@@ -39,7 +34,7 @@ pub struct CompileOpt {
     )]
     deps: Option<Vec<String>>,
 
-    #[clap(short = 'o', name = "out_dir", help = "out dir", parse(from_os_str))]
+    #[clap(short = 'o', name = "out_dir", help = "out dir")]
     out_dir: Option<PathBuf>,
 
     #[clap(name = "source_file_or_dir", help = "source file path")]
@@ -63,11 +58,9 @@ impl CommandAction for CompileCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         eprintln!("WARNING: the command is deprecated in favor of move-package-manager, will be removed in next release.");
-        let sender = if let Some(sender) = ctx.opt().sender {
-            sender
-        } else {
-            ctx.state().default_account()?.address
-        };
+        let sender = ctx.opt().sender.unwrap_or(AccountAddress::new(
+            ctx.state().default_account()?.address.into_bytes(),
+        ));
         let source_file_or_dir = ctx.opt().source_file_or_dir.as_path();
 
         ensure!(
@@ -76,7 +69,7 @@ impl CommandAction for CompileCommand {
             source_file_or_dir
         );
 
-        let mut deps = stdlib_files();
+        let mut deps = starcoin_vm2_cached_packages::head_release_bundle().files()?;
 
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
@@ -99,9 +92,14 @@ impl CommandAction for CompileCommand {
             )?
         } else {
             let targets = vec![source_file_or_dir.to_string_lossy().to_string()];
-            Compiler::from_files(targets, deps, starcoin_framework_named_addresses())
-                .set_flags(Flags::empty().set_sources_shadow_deps(true))
-                .build()?
+            Compiler::from_files(
+                targets,
+                deps,
+                starcoin_framework_named_addresses(),
+                Flags::empty().set_sources_shadow_deps(true),
+                starcoin_vm2_framework::extended_checks::get_all_attribute_names(),
+            )
+            .build()?
         };
 
         let compile_result = if ctx.opt().no_verify {
@@ -137,10 +135,7 @@ impl CommandAction for CompileCommand {
                 eprintln!(
                     "{}",
                     String::from_utf8_lossy(
-                        starcoin_move_compiler::diagnostics::report_diagnostics_to_color_buffer(
-                            &sources, e,
-                        )
-                        .as_slice()
+                        diagnostics::report_diagnostics_to_color_buffer(&sources, e,).as_slice()
                     )
                 );
                 bail!("compile error")
@@ -156,7 +151,7 @@ impl CommandAction for CompileCommand {
             std::fs::create_dir_all(out_dir.as_path())
                 .map_err(|e| format_err!("make out_dir({:?}) error: {:?}", out_dir, e))?;
         }
-        ensure!(out_dir.is_dir(), "out_dir should is a dir.");
+        ensure!(out_dir.is_dir(), "out_dir should be a directory.");
         let mut results = vec![];
         for unit in compile_units {
             let unit = unit.into_compiled_unit();

@@ -1,27 +1,29 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::{bail, ensure, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::HashValue;
-use starcoin_move_compiler::dependency_order::sort_by_dependency_order;
-use starcoin_rpc_api::types::FunctionIdView;
-use starcoin_types::transaction::{parse_transaction_argument_advance, TransactionArgument};
-use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::transaction::ScriptFunction;
-use starcoin_vm_types::transaction::{Module, Package};
-use starcoin_vm_types::transaction_argument::convert_txn_args;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-use std::env::current_dir;
-use std::fs::File;
-use std::io::Read;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_vm2_move_compiler::dependency_order::sort_by_dependency_order;
+use starcoin_vm2_types::{
+    transaction::{parse_transaction_argument_advance, TransactionArgument},
+    view::FunctionIdView,
+};
+use starcoin_vm2_vm_types::{
+    file_format::CompiledModule,
+    transaction::{EntryFunction, Module, Package},
+    transaction_argument::convert_txn_args,
+};
+use starcoin_vm2_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use std::{
+    env::current_dir,
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
 
 /// Build a modules package.
 #[derive(Debug, Parser)]
@@ -113,7 +115,7 @@ impl CommandAction for PackageCmd {
                 let type_tags = opt.type_tags.clone().unwrap_or_default();
                 let args = opt.args.clone().unwrap_or_default();
                 let script_function = script.clone().0;
-                Some(ScriptFunction::new(
+                Some(EntryFunction::new(
                     script_function.module,
                     script_function.function,
                     type_tags,

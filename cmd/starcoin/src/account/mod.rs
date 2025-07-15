@@ -32,7 +32,8 @@ pub mod import_multisig_cmd;
 pub mod import_readonly_cmd;
 mod list_cmd;
 mod lock_cmd;
-pub mod nft_cmd;
+// TODO(BobOng): [vm2] These commands currently only support VM1
+// pub mod nft_cmd;
 pub mod receipt_identifier_cmd;
 pub mod remove_cmd;
 pub mod rotate_auth_key_cmd;

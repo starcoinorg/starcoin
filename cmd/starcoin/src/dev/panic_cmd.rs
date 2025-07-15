@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
@@ -29,8 +28,8 @@ impl CommandAction for PanicCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
-        let net = ctx.state().net();
+        let client = ctx.state().vm2()?.client();
+        let net = ctx.state().vm2()?.net();
         net.assert_test_or_dev()?;
         if opt.remote {
             client.debug_panic()?;
