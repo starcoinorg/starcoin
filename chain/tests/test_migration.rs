@@ -52,6 +52,17 @@ mod migration_tests {
         Ok(())
     }
 
+    fn verify_migration_0x1_balance(
+        statedb: &ChainStateDB,
+        expect_balance: u128,
+    ) -> anyhow::Result<()> {
+        assert_eq!(
+            statedb.get_balance(genesis_address())?.unwrap_or(0),
+            expect_balance
+        );
+        Ok(())
+    }
+
     /// Test function to demonstrate BCS resource printing
     #[stest::test]
     fn test_print_bcs_decoded_resources() -> anyhow::Result<()> {
@@ -111,7 +122,8 @@ mod migration_tests {
         let state_root = do_migration(&chain_state_db, net.chain_id(), None)?;
 
         // Verify post-migration state
-        verify_migration_results(&chain_state_db.fork_at(state_root), 4)?;
+        let statedb = chain_state_db.fork_at(state_root);
+        verify_migration_results(&statedb, 4)?;
 
         Ok(())
     }
@@ -225,6 +237,7 @@ mod migration_tests {
             do_migration(&statedb, net.chain_id(), Some(MigrationDataSet::main_0x1()))?;
 
         verify_migration_results(&statedb.fork_at(state_root), 12)?;
+        verify_migration_0x1_balance(&statedb, 10000)?;
 
         Ok(())
     }
