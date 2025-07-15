@@ -601,7 +601,7 @@ impl ChainStateWriter for ChainStateDB {
             let mut locks = self.updates.write();
             locks.insert(*address);
 
-            // Remove it cache
+            // Remove it from cache
             let mut cache_lock = self.cache.lock();
             cache_lock.pop(address);
 
