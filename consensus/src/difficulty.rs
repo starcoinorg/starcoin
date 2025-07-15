@@ -151,6 +151,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
     if avg_time == 0 {
         avg_time = 1
     }
+     info!("jacktest: avg_target: {:?}, avg_time: {:?}, time_plan: {:?}, block len: {:?}", avg_target, avg_time, time_plan, block_n);
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target = if let Some(new_target) = avg_target
