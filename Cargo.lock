@@ -9757,6 +9757,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-types",
+ "thiserror",
 ]
 
 [[package]]

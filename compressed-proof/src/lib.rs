@@ -1,5 +1,6 @@
 pub mod interlink;
 mod proof;
+mod tests;
 
 //consensus const
 
