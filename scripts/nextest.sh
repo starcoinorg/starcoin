@@ -30,8 +30,6 @@ and not (test(test_frozen_account)) \
 and not (test(test_frozen_for_global_frozen)) \
 and not (test(test::test_rollback)) \
 and not (test(block_connector::test_illegal_block::test_verify_illegal_uncle_consensus_failed)) \
-and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
-and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
 and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
 and not (test(service_test::test_handshake_message))" \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
