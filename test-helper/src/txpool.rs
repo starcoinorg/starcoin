@@ -10,6 +10,9 @@ use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_vm2_account_service::{
+    AccountService as AccountService2, AccountStorage as AccountStorage2,
+};
 use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 use std::time::Duration;
@@ -63,14 +66,27 @@ pub async fn start_txpool_with_miner(
         .unwrap();
     registry.register::<AccountService>().await.unwrap();
 
+    let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig::new(
+        node_config.storage.rocksdb_config().max_open_files,
+        node_config.storage.rocksdb_config().max_total_wal_size,
+        node_config.storage.rocksdb_config().bytes_per_sync,
+        node_config.storage.rocksdb_config().wal_bytes_per_sync,
+    );
+    let account_storage2 = AccountStorage2::create_from_path(vault_config.dir2(), config2).unwrap();
+    registry
+        .put_shared::<AccountStorage2>(account_storage2.clone())
+        .await
+        .unwrap();
+    registry.register::<AccountService2>().await.unwrap();
+
+    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
+    Delay::new(Duration::from_secs(1)).await;
+    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
+
     if enable_miner {
         registry.register::<BlockBuilderService>().await.unwrap();
         registry.register::<MinerService>().await.unwrap();
     }
-    //registry.register::<MinerService>().await.unwrap();
-    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
-    Delay::new(Duration::from_secs(1)).await;
-    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
     (
         txpool_service,
