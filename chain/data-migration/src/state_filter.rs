@@ -16,7 +16,6 @@ pub fn filter_chain_state_set(
     chain_state_set: ChainStateSet,
     statedb: &ChainStateDB,
 ) -> anyhow::Result<ChainStateSet> {
-    debug!("filtered_state_sets | Entered");
     let mut filtered_state_set_vec = Vec::new();
     for (address, account_state_set) in chain_state_set.state_sets() {
         let mut filtered_resource_state_set = vec![];

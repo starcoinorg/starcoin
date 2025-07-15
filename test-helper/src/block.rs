@@ -5,7 +5,6 @@ use starcoin_chain::{verifier::FullVerifier, BlockChain, ChainReader};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::debug;
 use starcoin_types::{
     account_address::AccountAddress, block::ExecutedBlock,
     multi_transaction::MultiSignedUserTransaction,
@@ -18,7 +17,6 @@ pub fn create_block_with_transactions(
     miner: AccountAddress,
     transactions: Vec<Transaction>,
 ) -> anyhow::Result<(ExecutedBlock, HashValue)> {
-    debug!("create_block_with_transactions | Entered");
     let header = chain.current_header();
     let input_txn_len = transactions.len();
     let multi_txns: Vec<MultiSignedUserTransaction> = transactions
@@ -34,8 +32,6 @@ pub fn create_block_with_transactions(
 
     // Check all txn valid
     assert_eq!(executed_block.block().transactions().len(), input_txn_len);
-
-    debug!("create_block_with_transactions | Exited");
 
     Ok((executed_block, chain.chain_state_reader().state_root()))
 }
