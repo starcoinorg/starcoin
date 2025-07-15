@@ -1,18 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::AccountWithStateView;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, view_vm2::AccountWithStateView, StarcoinOpt};
 use anyhow::{format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::BalanceResource;
-use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
+use starcoin_vm2_statedb::ChainStateReader;
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress, account_config::BalanceResource, state_view::StateReaderExt,
+    token::token_code::TokenCode,
+};
 use std::collections::HashMap;
 
 /// Show a account info, only the accounts managed by the current node are supported
@@ -42,7 +41,7 @@ impl CommandAction for ShowCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let rpc_client = ctx.state().client();
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
         let opt = ctx.opt();
         let account_address = if let Some(address_or_receipt) = opt.address_or_receipt {
             address_or_receipt
@@ -54,14 +53,17 @@ impl CommandAction for ShowCommand {
         };
         let account = account_client
             .get_account(account_address)?
-            .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
+            .ok_or_else(|| {
+                format_err!("Account with address {} does not exist.", account_address)
+            })?;
 
-        let chain_state_reader = rpc_client.state_reader(opt.state_root.unwrap_or_default())?;
+        let chain_state_reader = rpc_client.state_reader2(opt.state_root.unwrap_or_default())?;
         let sequence_number = chain_state_reader
-            .get_account_resource(*account.address())?
-            .map(|res| res.sequence_number());
+            .get_account_resource(*account.address())
+            .map(|r| r.sequence_number())
+            .ok();
 
-        let resources = rpc_client.state_list_resource(
+        let resources = rpc_client.state_list_resource2(
             *account.address(),
             false,
             Some(chain_state_reader.state_root()),
@@ -69,6 +71,7 @@ impl CommandAction for ShowCommand {
             usize::MAX,
             None,
         )?;
+
         let balances: HashMap<TokenCode, u128> = resources
             .resources
             .into_iter()

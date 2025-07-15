@@ -9,24 +9,29 @@ use anyhow::{bail, Result};
 use clap::Parser;
 
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountPublicKey;
-use starcoin_rpc_api::types::{
-    FunctionIdView, RawUserTransactionView, TransactionPayloadView, TransactionStatusView,
-};
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::StateReaderExt;
-use starcoin_types::transaction::{
+use starcoin_vm2_account_api::AccountPublicKey;
+use starcoin_vm2_state_api::StateReaderExt;
+use starcoin_vm2_types::transaction::{
     parse_transaction_argument_advance, DryRunTransaction, RawUserTransaction, TransactionArgument,
 };
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
-use starcoin_vm_types::transaction_argument::convert_txn_args;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use starcoin_vm2_types::view::{
+    FunctionIdView, RawUserTransactionView, TransactionPayloadView,
+    TransactionStatusView as TransactionStatusView2,
+};
 
-use crate::cli_state::CliState;
-use crate::mutlisig_transaction::read_multisig_existing_signatures;
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, mutlisig_transaction_vm2::read_multisig_existing_signatures, StarcoinOpt,
+};
+use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress,
+    language_storage::TypeTag,
+    parser::parse_type_tag,
+    token::stc::STC_TOKEN_CODE_STR,
+    transaction::{EntryFunction, TransactionPayload},
+    transaction_argument::convert_txn_args,
+};
 
 #[derive(Debug, Parser)]
 #[clap(name = "sign-multisig-txn")]
@@ -104,7 +109,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let rpc_client = ctx.state().client();
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
 
         let type_tags = opt.type_tags.clone().unwrap_or_default();
         let args = opt.args.clone().unwrap_or_default();
@@ -113,22 +118,18 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let (raw_txn, existing_signatures) =
             if let Some(function_id) = opt.script_function.clone().map(|t| t.0) {
                 let sender = ctx.opt().sender.expect("sender address should be provided");
-                let script_function = ScriptFunction::new(
+                let script_function = EntryFunction::new(
                     function_id.module,
                     function_id.function,
                     type_tags,
                     convert_txn_args(&args),
                 );
-                let payload = TransactionPayload::ScriptFunction(script_function);
+                let payload = TransactionPayload::EntryFunction(script_function);
 
                 let node_info = rpc_client.node_info()?;
-                let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
+                let chain_state_reader = rpc_client.state_reader2(StateRootOption::Latest)?;
                 let account_resource = chain_state_reader.get_account_resource(sender)?;
 
-                if account_resource.is_none() {
-                    bail!("address {} not exists on chain", &sender);
-                }
-                let account_resource = account_resource.unwrap();
                 let expiration_time = opt.expiration_time + node_info.now_seconds;
                 let raw_txn = RawUserTransaction::new(
                     sender,
@@ -137,7 +138,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
                     opt.max_gas_amount,
                     opt.gas_price,
                     expiration_time,
-                    ctx.state().net().chain_id(),
+                    ChainId::new(ctx.state().vm2()?.net().chain_id().id()),
                     STC_TOKEN_CODE_STR.to_string(),
                 );
                 (raw_txn, None)
@@ -149,7 +150,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             };
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
         raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
-            ctx.state().decode_txn_payload(raw_txn.payload())?,
+            ctx.state().vm2()?.decode_txn_payload(raw_txn.payload())?,
         ));
         // Use `eprintln` instead of `println`, for keep the cli stdout's format(such as json) is not broken by print.
         eprintln!(
@@ -169,17 +170,21 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
         // pre-run the txn when first generation.
         if opt.multisig_txn_file.is_none() {
-            let output = ctx.state().client().dry_run_raw(DryRunTransaction {
-                public_key: AccountPublicKey::Multi(account_public_key.clone()),
-                raw_txn: raw_txn.clone(),
-            })?;
+            let output = ctx
+                .state()
+                .vm2()?
+                .client()
+                .dry_run_raw2(DryRunTransaction {
+                    public_key: AccountPublicKey::Multi(account_public_key.clone()),
+                    raw_txn: raw_txn.clone(),
+                })?;
 
             eprintln!(
                 "Transaction dry run execute output: \n {}",
                 serde_json::to_string_pretty(&output)?
             );
             match &output.txn_output.status {
-                TransactionStatusView::Discard {
+                TransactionStatusView2::Discard {
                     status_code,
                     status_code_name,
                 } => {
@@ -189,7 +194,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
                         status_code_name
                     )
                 }
-                TransactionStatusView::Executed => {}
+                TransactionStatusView2::Executed => {}
                 s => {
                     bail!("pre-run failed, status: {:?}", s);
                 }
@@ -197,7 +202,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         }
 
         let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
-        let _ = ctx.state().sign_multisig_txn_to_file_or_submit(
+        let _ = ctx.state().vm2()?.sign_multisig_txn_to_file_or_submit(
             raw_txn.sender(),
             account_public_key,
             existing_signatures,

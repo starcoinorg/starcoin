@@ -1,20 +1,23 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::Result;
 use clap::Parser;
 use itertools::Itertools;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::{AccountInfo, AccountPrivateKey};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
-use starcoin_crypto::{PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_crypto::{
+    ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+    multi_ed25519::multi_shard::MultiEd25519KeyShard,
+    PrivateKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt,
+};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use std::path::PathBuf;
 
-/// Import multisin account.
+/// Import multisig account.
 #[derive(Debug, Parser)]
 #[clap(name = "import-multisig")]
 pub struct ImportMultisigOpt {
@@ -55,7 +58,7 @@ impl CommandAction for ImportMultisigCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &ImportMultisigOpt = ctx.opt();
 
         let mut private_keys = vec![];

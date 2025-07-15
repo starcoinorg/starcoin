@@ -8,7 +8,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::account_address::AccountAddress;
 
 /// Encode or decode the receipt_identifier
 #[derive(Debug, Parser)]

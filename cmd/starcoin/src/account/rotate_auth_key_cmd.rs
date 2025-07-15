@@ -5,22 +5,24 @@ use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 use clap::Parser;
-use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
+use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
 
+use crate::{cli_state::CliState, view::TransactionOptions, StarcoinOpt};
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_rpc_api::types::TransactionStatusView;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::ModuleId;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionArgument, TransactionPayload};
-use starcoin_vm_types::value::MoveValue;
-
-use crate::cli_state::CliState;
-use crate::view::TransactionOptions;
-use crate::StarcoinOpt;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_crypto::ValidCryptoMaterial;
+use starcoin_vm2_types::{
+    identifier::Identifier, language_storage::ModuleId,
+    view::TransactionStatusView as TransactionStatusView2,
+};
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress as AccountAddress2,
+    account_config::core_code_address,
+    transaction::authenticator::{AccountPrivateKey, AccountPublicKey},
+    transaction::{EntryFunction, TransactionArgument, TransactionPayload},
+    value::MoveValue,
+};
 
 /// Rotate account's authentication key by specific private key. Return AccountInfo if Ok.
 #[derive(Debug, Parser)]
@@ -33,7 +35,7 @@ pub struct RotateAuthKeyOpt {
         name = "account_address",
         help = "The wallet account address which will be rotated, the default account can not be rotated."
     )]
-    account_address: AccountAddress,
+    account_address: AccountAddress2,
 
     #[clap(flatten)]
     transaction_opts: TransactionOptions,
@@ -65,7 +67,7 @@ impl CommandAction for RotateAuthenticationKeyCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &RotateAuthKeyOpt = ctx.opt();
 
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
@@ -92,12 +94,12 @@ impl CommandAction for RotateAuthenticationKeyCommand {
         let auth_key = account_public_key.authentication_key();
         let mut txn_opt = opt.transaction_opts.clone();
         txn_opt.blocking = true;
-        txn_opt.sender = Option::from(opt.account_address);
-        let result = ctx.state().build_and_execute_transaction(
+        txn_opt.sender = Option::from(AccountAddress::new(opt.account_address.into_bytes()));
+        let result = ctx.state().vm2()?.build_and_execute_transaction(
             txn_opt,
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-                Identifier::new("rotate_authentication_key").unwrap(),
+            TransactionPayload::EntryFunction(EntryFunction::new(
+                ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
+                Identifier::new("rotate_authentication_key_call").unwrap(),
                 vec![],
                 vec![
                     MoveValue::from(TransactionArgument::U8Vector(auth_key.to_vec()))
@@ -109,7 +111,7 @@ impl CommandAction for RotateAuthenticationKeyCommand {
 
         if matches!(
             result.dry_run_output.txn_output.status,
-            TransactionStatusView::Executed
+            TransactionStatusView2::Executed
         ) {
             client.remove_account(opt.account_address, Option::from(opt.password.clone()))?;
 
