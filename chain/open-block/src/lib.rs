@@ -4,26 +4,25 @@
 mod vm2;
 
 use anyhow::{bail, ensure, format_err, Result};
+use log::debug;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
+use starcoin_data_migration::{do_migration, should_do_migration};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
-use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
-    account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
     block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
     genesis_config::{ChainId, ConsensusStrategy},
-    identifier::Identifier,
+    multi_transaction::MultiSignedUserTransaction,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
@@ -34,17 +33,7 @@ use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
-};
-use starcoin_vm_types::{
-    access_path::AccessPath,
-    account_config::{genesis_address, ModuleUpgradeStrategy},
-    move_resource::MoveResource,
-    on_chain_config,
-    state_store::state_key::StateKey,
-    state_view::{StateReaderExt, StateView},
-};
+
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -109,6 +98,10 @@ impl OpenedBlock {
                     .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
             )
         };
+        debug!(
+            "OpenedBlock::new | state_root1: {:?}, state_root2: {:?}",
+            state_root1, state_root2
+        );
 
         let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
@@ -213,7 +206,6 @@ impl OpenedBlock {
             });
         }
 
-        let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
@@ -229,6 +221,7 @@ impl OpenedBlock {
             .collect();
 
         let txn_outputs = {
+            let (state, _state2) = &self.state;
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
                     "block gas_used {} exceed block gas_limit:{}",
@@ -280,6 +273,10 @@ impl OpenedBlock {
 
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
+        debug!(
+            "OpenedBlock::initialize | Entered, block id: {}",
+            self.block_meta.number()
+        );
         let (state, _state2) = &self.state;
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
@@ -306,6 +303,10 @@ impl OpenedBlock {
                 );
             }
         };
+        debug!(
+            "OpenedBlock::initialize | Exit, block id: {}",
+            self.block_meta.number()
+        );
         Ok(())
     }
 
@@ -314,15 +315,18 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
-        self.push_txn_and_state_opt(txn_hash, output, false)
+        self.push_txn_and_state_opt(txn_hash, output)
     }
 
     fn push_txn_and_state_opt(
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput,
-        is_extra_txn: bool,
     ) -> Result<(HashValue, HashValue)> {
+        debug!(
+            "OpenedBlock::push_txn_and_state_opt | Entered, txn hash: {:?}",
+            txn_hash
+        );
         let (state, _state2) = &mut self.state;
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
@@ -335,19 +339,7 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        if is_extra_txn {
-            // update stdlib version to 12 directly
-            let version_path = on_chain_config::access_path_for_config(
-                genesis_address(),
-                Identifier::new("Version")?,
-                Identifier::new("Version")?,
-                vec![],
-            );
-            let version = on_chain_config::Version { major: 12 };
-            state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
 
-            assert_eq!(gas_used, 0);
-        }
         let txn_state_root = state
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -360,23 +352,47 @@ impl OpenedBlock {
             status,
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
+
+        debug!(
+            "OpenedBlock::push_txn_and_state_opt | Exited, txn hash: {:?}",
+            txn_hash
+        );
         Ok((txn_state_root, accumulator_root))
     }
 
     /// Construct a block template for mining.
     pub fn finalize(mut self) -> Result<BlockTemplate> {
+        debug!("OpenedBlock::finalize | Entered");
         // if vm2 is not initialized, we need to execute vm2 block_meta txn first
         if !self.vm2_initialized {
             self.initialize_v2()?;
         }
         debug_assert!(self.vm2_initialized);
+
+        // Do migration in finalize
+        let (statedb, _) = &self.state;
+        let state_root1 = if should_do_migration(self.block_number(), self.chain_id) {
+            do_migration(statedb, self.chain_id, None)?
+        } else {
+            statedb.state_root()
+        };
+
         let accumulator_root = self.txn_accumulator.root_hash();
+
         // update state_root accumulator, state_root order is important
         let state_root = {
             self.vm_state_accumulator
-                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
+                .append(&[state_root1, self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
         };
+
+        debug!(
+            "OpenedBlock::finalize | vm1 stateroot: {:?},  vm2 stateroot: {:?}, root state_root: {}",
+            state_root1,
+            self.state.1.state_root(),
+            state_root
+        );
+
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {
@@ -396,72 +412,8 @@ impl OpenedBlock {
             self.strategy,
             self.block_meta,
         );
+        debug!("OpenedBlock::finalize | Exit");
         Ok(block_template)
-    }
-
-    /// The logic for handling the forced upgrade will be processed.
-    /// First, set the account policy in `0x1::PackageTxnManager` to 100,
-    /// Second, after the contract deployment is successful, revert it back.
-    #[allow(unused)]
-    fn execute_extra_txn(&mut self) -> Result<()> {
-        let (state, _state2) = &self.state;
-        let extra_txn =
-            if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
-                let account = get_force_upgrade_account(&self.chain_id)?;
-                let sequence_number = state.get_sequence_number(*account.address())?;
-                let extra_txn = ForceUpgrade::force_deploy_txn(
-                    account,
-                    sequence_number,
-                    self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
-                    &self.chain_id,
-                )?;
-                info!("extra txn in opened block ({:?})", extra_txn.id());
-                Transaction::UserTransaction(extra_txn)
-            } else {
-                return Ok(());
-            };
-        let extra_txn_hash = extra_txn.id();
-
-        let strategy_path = AccessPath::resource_access_path(
-            genesis_address(),
-            ModuleUpgradeStrategy::struct_tag(),
-        );
-
-        // retrieve old strategy value
-        let old_val = state
-            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
-            .expect("module upgrade strategy should exist");
-        // Set strategy to 100 to execute force-deploy-txn directly
-        state.set(&strategy_path, vec![100])?;
-
-        // execute this special txn without gas limit
-        let mut results =
-            execute_transactions(state, vec![extra_txn.clone()], self.vm_metrics.clone())
-                .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-
-        // Restore the old value
-        state.set(&strategy_path, old_val)?;
-
-        let output = results.pop().expect("executed txn should has output");
-        match output.status() {
-            TransactionStatus::Discard(status) => {
-                bail!(
-                    "extra txn {:?} is discarded, vm status: {:?}",
-                    extra_txn,
-                    status
-                );
-            }
-            TransactionStatus::Keep(_) => {
-                // Do not add extra_txn to included_user_txns
-                // treat it like Genesis txn
-                let _ = self.push_txn_and_state_opt(extra_txn_hash, output, true)?;
-            }
-            TransactionStatus::Retry => {
-                bail!("extra txn {:?} is impossible to retry", extra_txn);
-            }
-        };
-
-        Ok(())
     }
 }
 
@@ -478,23 +430,5 @@ impl AddressFilter {
             .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
             .any(|x| x == raw_txn.sender())
         */
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use starcoin_state_api::StateReaderExt;
-    use starcoin_vm_runtime::force_upgrade_management::create_account;
-    use test_helper::executor::prepare_genesis;
-
-    // the test related fn execute_extra_txn
-    #[test]
-    fn test_execute_extra_txn_seq() {
-        let account =
-            create_account("70ec43d39c812e0c0f7b7b83e22fd0c70cf136f74c29bded7379e0d9589e4485")
-                .unwrap();
-        let (chain_state, _net) = prepare_genesis();
-        let sequence_num = chain_state.get_sequence_number(*account.address());
-        assert!(sequence_num.is_err());
     }
 }

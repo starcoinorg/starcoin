@@ -632,7 +632,7 @@ impl StarcoinVM {
                     txn_data.sender
                 };
                 debug!(
-                    "execute init script({}::{}) by account {:?}",
+                    "StarcoinVM::execute_package | execute init script({}::{}) by account {:?}",
                     init_script.module(),
                     init_script.function(),
                     sender

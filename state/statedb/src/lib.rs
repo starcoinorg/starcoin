@@ -268,6 +268,7 @@ impl ChainStateDB {
                     .push(StateTree::new(store.clone(), None)),
             };
         }
+        debug!("ChainStateDB::new | root_hash: {:?}", root_hash);
         chain_statedb
     }
 
@@ -596,7 +597,20 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
+        debug!(
+            "ChainStateDB::apply | Entered, Applying ChainStateSet with {} accounts",
+            chain_state_set.len()
+        );
+
         for (address, account_state_set) in chain_state_set.state_sets() {
+            // Add address to updates
+            let mut locks = self.updates.write();
+            locks.insert(*address);
+
+            // Remove it cache
+            let mut cache_lock = self.cache.lock();
+            cache_lock.pop(address);
+
             let code_root = if let Some(state_set) = account_state_set.code_set() {
                 let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
                 state_tree.apply(state_set.clone())?;
@@ -663,6 +677,7 @@ impl ChainStateWriter for ChainStateDB {
     }
     /// Commit
     fn commit(&self) -> Result<HashValue> {
+        debug!("ChainStateDB::commit | Entered");
         // cache commit
         for handle in self.updates_table_handle.read().iter() {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
@@ -703,7 +718,14 @@ impl ChainStateWriter for ChainStateDB {
             let state = account_state_object.commit()?;
             self.state_tree.put(*address, state.try_into()?);
         }
-        self.state_tree.commit()
+        let state_root = self.state_tree.commit();
+
+        debug!(
+            "ChainStateDB::commit | Exited, state_root = {:?}",
+            state_root
+        );
+
+        state_root
     }
 
     /// flush data to db.

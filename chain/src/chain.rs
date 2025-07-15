@@ -466,11 +466,18 @@ impl BlockChain {
         block: Block,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
+        debug!(
+            "BlockChain::execute_block_and_save | Entered, block id: {:?}, is_genesis: {:?}",
+            block.id(),
+            block.header().is_genesis()
+        );
+
         let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
+
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let (vm1_offline, mut t) = match &parent_status {
@@ -514,6 +521,7 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
+
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
@@ -524,8 +532,16 @@ impl BlockChain {
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
-            let state_root1 = executed_data.state_root;
+            let state_root1 =
+                if starcoin_data_migration::should_do_migration(header.number(), header.chain_id())
+                {
+                    // Apply migration data if this is a migration block
+                    starcoin_data_migration::do_migration(&statedb, header.chain_id(), None)?
+                } else {
+                    executed_data.state_root
+                };
             let state_root2 = executed_data2.state_root;
+
             vm_state_accumulator.append(&[state_root1, state_root2])?;
             (
                 vm_state_accumulator.root_hash(),
@@ -536,6 +552,7 @@ impl BlockChain {
         let vec_transaction_info = &executed_data.txn_infos;
         let vm2_txn_infos = &executed_data2.txn_infos;
 
+        // State root verification - now works for both migration and non-migration blocks
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -545,6 +562,7 @@ impl BlockChain {
             header.state_root(),
             multi_state
         );
+
         let vm1_block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
@@ -553,6 +571,7 @@ impl BlockChain {
                 .iter()
                 .fold(0u64, |acc, i| acc.saturating_add(i.gas_used())),
         );
+
         verify_block!(
             VerifyBlockField::State,
             block_gas_used == header.gas_used(),
@@ -724,6 +743,14 @@ impl BlockChain {
         storage.save_table_infos(txn_table_infos)?;
 
         watch(CHAIN_WATCH_NAME, "n26");
+
+        debug!(
+            "BlockChain::execute_block_and_save | Exited, block id: {:?}, state_root1: {:?}, state_root2: {:?}",
+            block.id(),
+            multi_state.state_root1(),
+            multi_state.state_root2(),
+        );
+
         Ok(ExecutedBlock::new(block, block_info, multi_state))
     }
 

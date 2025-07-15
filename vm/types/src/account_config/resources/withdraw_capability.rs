@@ -5,7 +5,7 @@ use crate::move_resource::MoveResource;
 use crate::{account_address::AccountAddress, account_config::constants::ACCOUNT_MODULE_NAME};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WithdrawCapabilityResource {
     account_address: AccountAddress,
 }
