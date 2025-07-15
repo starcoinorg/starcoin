@@ -17,6 +17,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
+starcoin-data-migration = { workspace = true }
 
 # dependencies for move2
 starcoin-vm2-statedb = { workspace = true }
@@ -25,6 +26,7 @@ starcoin-vm2-types = { workspace = true }
 starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
+log = "0.4.27"
 
 [dev-dependencies]
 starcoin-genesis = { workspace = true }

@@ -21,7 +21,7 @@ fn test_export_from_statedb() -> anyhow::Result<()> {
 
     // Test BCS export
     let test_bcs_path = Path::new("test_dump_state.bcs");
-    export_from_statedb(&chain_statedb, test_bcs_path)?;
+    export_from_statedb(&chain_statedb, test_bcs_path, None)?;
 
     // Verify the BCS file was created and contains data
     assert!(test_bcs_path.exists(), "BCS file should be created");

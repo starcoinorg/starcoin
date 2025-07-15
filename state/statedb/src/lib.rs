@@ -597,6 +597,14 @@ impl ChainStateWriter for ChainStateDB {
 
     fn apply(&self, chain_state_set: ChainStateSet) -> Result<()> {
         for (address, account_state_set) in chain_state_set.state_sets() {
+            // Add address to updates
+            let mut locks = self.updates.write();
+            locks.insert(*address);
+
+            // Remove it cache
+            let mut cache_lock = self.cache.lock();
+            cache_lock.pop(address);
+
             let code_root = if let Some(state_set) = account_state_set.code_set() {
                 let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
                 state_tree.apply(state_set.clone())?;
