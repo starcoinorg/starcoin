@@ -12,8 +12,6 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 
-const G_MAX_PARENTS_COUNT: u64 = 10;
-
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let epoch = chain.epoch();
@@ -94,28 +92,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         current_header.id()
     );
 
-    let selectd_count = epoch
-        .end_block_number()
-        .saturating_sub(epoch.start_block_number());
-    let expected_count = selectd_count.saturating_mul(G_MAX_PARENTS_COUNT);
-    let real_count = blue_block_in_order.len() as u64;
-    let average_diff_count = if expected_count <= real_count {
-        1
-    } else if let Some(diff) = real_count.saturating_mul(1000).checked_div(selectd_count) {
-        std::cmp::max(
-            diff.saturating_div(1000).saturating_mul(2),
-            G_MAX_PARENTS_COUNT,
-        )
-    } else {
-        1
-    };
-
-    info!(
-        "jacktest: selectd_count: {}, expected_count: {}, real_count: {}, average_diff_count: {}",
-        selectd_count, expected_count, real_count, average_diff_count
-    );
-
-    let target = if let Some(target) = get_next_target_helper(
+    let target = get_next_target_helper(
         blue_block_in_order
             .into_iter()
             .map(|header| header.try_into())
@@ -126,14 +103,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .into_iter()
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
-    )?
-    .checked_mul(U256::from(average_diff_count))
-    {
-        target
-    } else {
-        warn!("target large than max value, set to 1_difficulty due to average diff count");
-        U256::MAX
-    };
+    )?;
 
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
