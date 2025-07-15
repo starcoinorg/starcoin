@@ -372,10 +372,14 @@ impl OpenedBlock {
         debug_assert!(self.vm2_initialized);
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
-        let state_root = {
+        let (state_root, state_root1, state_root2) = {
             self.vm_state_accumulator
                 .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
-            self.vm_state_accumulator.root_hash()
+            (
+                self.vm_state_accumulator.root_hash(),
+                self.state.0.state_root(),
+                self.state.1.state_root(),
+            )
         };
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
@@ -389,6 +393,8 @@ impl OpenedBlock {
                 .accumulator_root,
             accumulator_root,
             state_root,
+            state_root1,
+            state_root2,
             self.gas_used,
             body,
             self.chain_id,
