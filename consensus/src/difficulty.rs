@@ -97,7 +97,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .into_iter()
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
-        // 200,
         next_block_time_target,
         selected_chain
             .into_iter()
