@@ -335,10 +335,10 @@ pub async fn test_full_sync_continue() -> Result<()> {
 }
 
 #[stest::test]
-pub async fn test_full_sync_cancel() -> Result<()> {
+pub async fn test_full_syn_cancel() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
-    node1.produce_block(10)?;
+    node1.produce_block(50)?;
 
     let arc_node1 = Arc::new(node1);
 

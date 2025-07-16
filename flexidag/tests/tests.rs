@@ -21,6 +21,7 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
+    consensus_header::ConsensusHeader,
 };
 
 use std::{
@@ -48,7 +49,8 @@ fn test_dag_commit() -> Result<()> {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned())?;
+        let ghostdata = dag.ghostdata(&header.parents())?;
+        dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))?;
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("{:?},{:?}", header, ghostdata);
     }
@@ -96,13 +98,27 @@ fn test_dag_1() -> Result<()> {
     let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
     let _origin = dag.init_with_genesis(genesis.clone())?;
 
-    dag.commit(block1)?;
-    dag.commit(block2)?;
-    dag.commit(block3_1)?;
-    dag.commit(block3)?;
-    dag.commit(block4)?;
-    dag.commit(block5)?;
-    dag.commit(block6)?;
+    let ghostdata = dag.ghostdata(&block1.parents())?;
+    dag.commit_trusted_block(block1, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block2.parents())?;
+    dag.commit_trusted_block(block2, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block3_1.parents())?;
+    dag.commit_trusted_block(block3_1, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block3.parents())?;
+    dag.commit_trusted_block(block3, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block4.parents())?;
+    dag.commit_trusted_block(block4, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block5.parents())?;
+    dag.commit_trusted_block(block5, Arc::new(ghostdata))?;
+
+    let ghostdata = dag.ghostdata(&block6.parents())?;
+    dag.commit_trusted_block(block6, Arc::new(ghostdata))?;
+
     let mut count = 0;
     while latest_id != genesis_id && count < 4 {
         let ghostdata = dag
@@ -134,8 +150,16 @@ async fn test_with_spawn() {
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let _origin = dag.init_with_genesis(genesis.clone()).unwrap();
 
-    dag.commit(block1.clone()).unwrap();
-    dag.commit(block2.clone()).unwrap();
+    dag.commit_trusted_block(
+        block1.clone(),
+        Arc::new(dag.ghostdata(&block1.parents()).unwrap()),
+    )
+    .unwrap();
+    dag.commit_trusted_block(
+        block2.clone(),
+        Arc::new(dag.ghostdata(&block2.parents()).unwrap()),
+    )
+    .unwrap();
     let block3 = BlockHeaderBuilder::random()
         .with_difficulty(3.into())
         .with_parents_hash(vec![block1.id(), block2.id()])
@@ -147,7 +171,8 @@ async fn test_with_spawn() {
         let handle = tokio::task::spawn_blocking(move || {
             let mut count = 10;
             loop {
-                match dag_clone.commit(block_clone.clone()) {
+                let ghostdata = dag_clone.ghostdata(&block_clone.parents()).unwrap();
+                match dag_clone.commit_trusted_block(block_clone.clone(), Arc::new(ghostdata)) {
                     std::result::Result::Ok(_) => break,
                     Err(e) => {
                         debug!("failed to commit error: {:?}, i: {:?}", e, i);
@@ -264,7 +289,9 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned()).unwrap();
+        let ghostdata = dag.ghostdata(&header.parents()).unwrap();
+        dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))
+            .unwrap();
         let _ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     }
 
@@ -287,7 +314,9 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(old_parents_hash.clone())
             .build();
         old_parents_hash = vec![header.id()];
-        dag.commit(header.to_owned()).unwrap();
+        let ghostdata = dag.ghostdata(&header.parents()).unwrap();
+        dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))
+            .unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a old header: {:?}, tips: {:?}", header, ghostdata);
     }
@@ -299,7 +328,9 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned()).unwrap();
+        let ghostdata = dag.ghostdata(&header.parents()).unwrap();
+        dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))
+            .unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
     }
@@ -308,7 +339,9 @@ fn test_dag_genesis_fork() {
     parents_hash.append(&mut old_parents_hash);
     let header = header_builder.with_parents_hash(parents_hash).build();
     // parents_hash = vec![header.id()];
-    dag.commit(header.to_owned()).unwrap();
+    let ghostdata = dag.ghostdata(&header.parents()).unwrap();
+    dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))
+        .unwrap();
     let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
 }
@@ -358,10 +391,11 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
             .build();
         parents_hash = vec![header.id()];
         parent_hash = header.id();
-        dag.commit(header.to_owned())?;
+        let ghostdata = dag.ghostdata(&header.parents()).unwrap();
+        dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata.clone()))?;
         if header.number() == 6 {
-            dag.commit(header.to_owned())?;
-            dag.commit(header.to_owned())?;
+            dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata.clone()))?;
+            dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata.clone()))?;
         }
         let ghostdata = dag.ghostdata(&parents_hash).unwrap();
         println!("add a header: {:?}, tips: {:?}", header, ghostdata);
@@ -825,7 +859,8 @@ fn add_and_print_with_pruning_point(
         .with_pruning_point(pruning_point)
         .build();
     let start = Instant::now();
-    dag.commit(header.to_owned())?;
+    let ghostdata = dag.ghostdata(&header.parents())?;
+    dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))?;
     let duration = start.elapsed();
     println!(
         "commit header: {:?}, number: {:?}, duration: {:?}",
