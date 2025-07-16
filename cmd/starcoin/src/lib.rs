@@ -12,7 +12,6 @@ pub mod mutlisig_transaction;
 pub mod mutlisig_transaction_vm2;
 pub mod node;
 pub mod state;
-pub mod subcommand_vm2;
 pub mod txpool;
 pub mod view;
 pub mod view_vm2;
