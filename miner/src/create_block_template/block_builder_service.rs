@@ -276,8 +276,6 @@ where
                 .main
                 .dag()
                 .calc_mergeset_and_tips(pruning_point, self.main.get_genesis_hash())?;
-            info!("after calculate the ghostdata, selected_parents are: {:?}, ghostdata selected parent: {:?}, blue score: {:?}, blue blocks: {:?}, red blocks: {:?}pruning point is: {:?}", 
-            selected_parents, ghostdata.blue_score, ghostdata.selected_parent, ghostdata.mergeset_blues, ghostdata.mergeset_reds.len(), pruning_point);
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
