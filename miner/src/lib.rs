@@ -13,7 +13,7 @@ use starcoin_service_registry::{
 };
 use starcoin_types::block::BlockTemplate;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -92,6 +92,19 @@ impl SubmitSealRequest {
     }
 }
 
+#[derive(Clone, Debug)]
+struct CheckWaitingTask;
+
+impl ServiceRequest for CheckWaitingTask {
+    type Response = Result<()>;
+}
+
+impl ServiceHandler<Self, CheckWaitingTask> for MinerService {
+    fn handle(&mut self, _req: CheckWaitingTask, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        self.check_task(ctx)
+    }
+}
+
 impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     fn handle(
         &mut self,
@@ -136,6 +149,17 @@ impl ServiceFactory<Self> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
+
+        ctx.run_interval(std::time::Duration::from_secs(2), |ctx| {
+            let self_ref = ctx.self_ref();
+            ctx.spawn(async move {
+                match self_ref.send(CheckWaitingTask).await {
+                    std::result::Result::Ok(_) => (),
+                    Err(e) => error!("send CheckWaitingTask failed: {:?}", e),
+                }
+            });
+        });
+
         Ok(())
     }
 
@@ -285,10 +309,7 @@ impl MinerService {
 
         if task.minting_blob != minting_blob {
             // invoke the next task
-            if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
-                Self::send_task(ctx, &task);
-                self.current_task = Some(task);
-            }
+            self.dispatch_first_task(ctx);
 
             return Err(MinerError::TaskMisMatchError {
                 current: hex::encode(&task.minting_blob),
@@ -306,12 +327,17 @@ impl MinerService {
         }
 
         // invoke the next task
+        self.dispatch_first_task(ctx);
+
+        Ok(block_hash)
+    }
+
+    fn dispatch_first_task(&mut self, ctx: &mut ServiceContext<Self>) {
+        // invoke the next task
         if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
             Self::send_task(ctx, &task);
             self.current_task = Some(task);
         }
-
-        Ok(block_hash)
     }
 
     pub fn is_minting(&self) -> bool {
@@ -333,6 +359,19 @@ impl MinerService {
     }
     pub fn get_task_pool(&self) -> &IndexMap<Vec<u8>, MintTask> {
         &self.task_pool
+    }
+
+    fn check_task(&mut self, ctx: &mut ServiceContext<'_, Self>) -> Result<()> {
+        if let Some(task) = &self.current_task {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_millis() as u64;
+            if now > task.block_template.timestamp + 2000 {
+                self.dispatch_first_task(ctx);
+            }
+        }
+        Ok(())
     }
 }
 
