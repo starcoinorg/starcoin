@@ -4,6 +4,7 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
+use indexmap::IndexMap;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -36,6 +37,8 @@ pub enum MinerError {
     TaskEmptyError,
     #[error("Mint task is mismatch Error, current blob: {current}, got blob: {real}")]
     TaskMisMatchError { current: String, real: String },
+    #[error("Current mint task is None")]
+    TaskNone,
 }
 
 #[derive(Debug)]
@@ -49,9 +52,10 @@ impl ServiceRequest for UpdateSubscriberNumRequest {
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
-    task_pool: Vec<MintTask>,
+    task_pool: IndexMap<Vec<u8>, MintTask>,
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
+    current_task: Option<MintTask>,
     metrics: Option<MinerMetrics>,
 }
 
@@ -97,14 +101,16 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
         }
-        self.task_pool.last().map(|task| MintBlockEvent {
-            parent_hash: task.block_template.parent_hash,
-            strategy: task.block_template.strategy,
-            minting_blob: task.minting_blob.clone(),
-            difficulty: task.block_template.difficulty,
-            block_number: task.block_template.number,
-            extra: None,
-        })
+        self.task_pool
+            .last()
+            .map(|(_mint_blob, task)| MintBlockEvent {
+                parent_hash: task.block_template.parent_hash,
+                strategy: task.block_template.strategy,
+                minting_blob: task.minting_blob.clone(),
+                difficulty: task.block_template.difficulty,
+                block_number: task.block_template.number,
+                extra: None,
+            })
     }
 }
 
@@ -118,9 +124,10 @@ impl ServiceFactory<Self> for MinerService {
             .and_then(|registry| MinerMetrics::register(registry).ok());
         Ok(Self {
             config,
-            task_pool: Vec::new(),
+            task_pool: IndexMap::new(),
             create_block_template_service,
             client_subscribers_num: 0,
+            current_task: None,
             metrics,
         })
     }
@@ -238,24 +245,29 @@ impl MinerService {
         block_template: BlockTemplate,
     ) -> Result<()> {
         debug!("Mint block template: {:?}", block_template);
-        let difficulty = block_template.difficulty;
-        let strategy = block_template.strategy;
-        let number = block_template.number;
-        let parent_hash = block_template.parent_hash;
         let task = MintTask::new(block_template, self.metrics.clone());
         let mining_blob = task.minting_blob.clone();
-        self.task_pool.retain(|t| t.minting_blob != mining_blob);
         self.manage_task_pool();
-        self.task_pool.push(task);
+        if self.task_pool.is_empty() {
+            // no task, send directly
+            Self::send_task(ctx, &task);
+            self.current_task = Some(task);
+        } else {
+            // there is a running task, push to task pool waiting for the running task to finish
+            self.task_pool.insert(mining_blob, task);
+        }
+        Ok(())
+    }
+
+    fn send_task(ctx: &mut ServiceContext<Self>, task: &MintTask) {
         ctx.broadcast(MintBlockEvent::new(
-            parent_hash,
-            strategy,
-            mining_blob,
-            difficulty,
-            number,
+            task.block_template.parent_hash,
+            task.block_template.strategy,
+            task.minting_blob.clone(),
+            task.block_template.difficulty,
+            task.block_template.number,
             None,
         ));
-        Ok(())
     }
 
     pub fn finish_task(
@@ -265,47 +277,61 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        if self.task_pool.is_empty() {
-            return Err(MinerError::TaskEmptyError.into());
-        }
-        if let Some(index) = self
-            .task_pool
-            .iter()
-            .position(|t| t.minting_blob == minting_blob)
-        {
-            let task = self.task_pool.remove(index);
+        let task = if let Some(task) = self.current_task.take() {
+            task
+        } else {
+            return Err(MinerError::TaskNone.into());
+        };
 
-            let block = task.finish(nonce, extra);
-            let block_hash: HashValue = block.id();
-            info!(target: "miner", "Minted new block: {}", block);
-            ctx.broadcast(MinedBlock(Arc::new(block)));
-            if let Some(metrics) = self.metrics.as_ref() {
-                metrics.block_mint_count.inc();
+        if task.minting_blob != minting_blob {
+            // invoke the next task
+            if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
+                Self::send_task(ctx, &task);
+                self.current_task = Some(task);
             }
 
-            Ok(block_hash)
-        } else {
-            // TODO:: Refactor TaskMisMatchError,remove current @sanlee
-            Err(MinerError::TaskMisMatchError {
-                current: "None".to_string(),
+            return Err(MinerError::TaskMisMatchError {
+                current: hex::encode(&task.minting_blob),
                 real: hex::encode(&minting_blob),
             }
-            .into())
+            .into());
         }
+
+        let block = task.finish(nonce, extra);
+        let block_hash: HashValue = block.id();
+        info!(target: "miner", "Minted new block: {}", block);
+        ctx.broadcast(MinedBlock(Arc::new(block)));
+        if let Some(metrics) = self.metrics.as_ref() {
+            metrics.block_mint_count.inc();
+        }
+
+        // invoke the next task
+        if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
+            Self::send_task(ctx, &task);
+            self.current_task = Some(task);
+        }
+
+        Ok(block_hash)
     }
 
     pub fn is_minting(&self) -> bool {
         !self.task_pool.is_empty()
     }
+
     fn manage_task_pool(&mut self) {
         if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
-            self.task_pool.remove(0);
+            if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
+                debug!(
+                    "Remove task from task pool, its block template parents are: {:?}",
+                    task.block_template.parents_hash
+                );
+            }
         }
     }
     pub fn task_pool_len(&self) -> usize {
         self.task_pool.len()
     }
-    pub fn get_task_pool(&self) -> &Vec<MintTask> {
+    pub fn get_task_pool(&self) -> &IndexMap<Vec<u8>, MintTask> {
         &self.task_pool
     }
 }

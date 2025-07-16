@@ -33,6 +33,7 @@ starcoin-sync = { workspace = true }
 starcoin-genesis = { workspace = true }
 crossbeam = { workspace = true }
 rand = { workspace = true }
+indexmap = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }
