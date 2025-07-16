@@ -11,7 +11,7 @@ use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
-use starcoin_chain::verifier::DagVerifier;
+use starcoin_chain::verifier::FullVerifier;
 use starcoin_chain::{BlockChain, ChainWriter};
 use starcoin_chain_api::{ChainReader, ExecutedBlock};
 use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
@@ -363,7 +363,7 @@ impl SyncService {
                     });
                     continue;
                 }
-                match chain.verify_with_verifier::<DagVerifier>(block.clone()) {
+                match chain.verify_with_verifier::<FullVerifier>(block.clone()) {
                     Ok(verified_executed_block) => match chain.execute(verified_executed_block) {
                         Ok(_) => {
                             waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {

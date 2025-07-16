@@ -26,7 +26,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 
 pub struct VerifiedBlock {
     pub block: Block,
-    pub ghostdata: Option<GhostdagData>,
+    pub ghostdata: GhostdagData,
 }
 pub type MintedUncleNumber = u64;
 
@@ -109,9 +109,8 @@ pub trait ChainReader {
 
     fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
-    fn verify_and_ghostdata(
+    fn calc_ghostdata_and_check_bounded_merge_depth(
         &self,
-        uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<GhostdagData>;
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool>;

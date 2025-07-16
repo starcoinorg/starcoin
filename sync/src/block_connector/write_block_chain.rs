@@ -253,8 +253,8 @@ where
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
-        use starcoin_chain::verifier::DagVerifier;
-        let verified_block = self.main.verify_with_verifier::<DagVerifier>(block)?;
+        use starcoin_chain::verifier::FullVerifier;
+        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
         let _executed_block = self.main.execute(verified_block)?;
         bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }

@@ -9,9 +9,11 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_logger::prelude::{debug, warn};
-use starcoin_open_block::AddressFilter;
-use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_logger::prelude::warn;
+use starcoin_types::{
+    block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME},
+    consensus_header::ConsensusHeader,
+};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -72,7 +74,6 @@ pub trait BlockVerifier {
         watch(CHAIN_WATCH_NAME, "n11");
         //verify header
         let new_block_header = new_block.header();
-        Self::verify_blacklisted_txns(&new_block)?;
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
@@ -90,99 +91,71 @@ pub trait BlockVerifier {
         })
     }
 
-    fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
-        let block_number = new_block.header().number();
-        for txn in new_block.transactions() {
-            verify_block!(
-                VerifyBlockField::Body,
-                !AddressFilter::is_blacklisted(txn, block_number),
-                "Invalid block: the sender of transaction in block must be not blacklisted"
-            );
+    fn verify_blue_blocks<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
+    where
+        R: ChainReader,
+    {
+        let ghostdata = current_chain.calc_ghostdata_and_check_bounded_merge_depth(header)?;
+        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+            Ok(()) => (),
+            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
         }
-        Ok(())
+
+        Self::can_be_uncle(header, uncles, &ghostdata)?;
+
+        Ok(ghostdata)
     }
 
     fn verify_uncles<R>(
         current_chain: &R,
         uncles: &[BlockHeader],
         header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
+    ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
-        let epoch = current_chain.epoch();
-
-        let switch_epoch = header.number() == epoch.end_block_number();
-        // epoch first block's uncles should empty.
-        if switch_epoch {
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncles.is_empty(),
-                "Invalid block: first block of epoch's uncles must be empty."
-            );
-        }
-
-        if uncles.is_empty() {
-            return Ok(None);
-        }
-        verify_block!(
-            VerifyBlockField::Uncle,
-            uncles.len() as u64 <= epoch.max_uncles_per_block(),
-            "too many uncles {} in block {}",
-            uncles.len(),
-            header.id()
-        );
-
-        let mut uncle_ids = HashSet::new();
-        for uncle in uncles {
-            let uncle_id = uncle.id();
-            verify_block!(
-                VerifyBlockField::Uncle,
-                !uncle_ids.contains(&uncle.id()),
-                "repeat uncle {:?} in current block {:?}",
-                uncle_id,
-                header.id()
-            );
-
-            verify_block!(
-                VerifyBlockField::Uncle,
-                uncle.number() < header.number() ,
-               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-            );
-
-            verify_block!(
-                VerifyBlockField::Uncle,
-                Self::can_be_uncle(current_chain, uncle)?,
-                "invalid block: block {} can not be uncle.",
-                uncle_id
-            );
-            debug!(
-                "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
-                header.number(),
-                header.id(),
-                uncle.number(),
-                uncle.id()
-            );
-            // uncle's parent exists in current chain is checked in `can_be_uncle`, so this fork should success.
-            let uncle_branch = current_chain.fork(uncle.parent_hash())?;
-            Self::verify_header(&uncle_branch, uncle)?;
-            uncle_ids.insert(uncle_id);
-        }
-        Ok(None)
+        Self::verify_blue_blocks(current_chain, uncles, header)
     }
 
-    fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
-    where
-        R: ChainReader,
-    {
-        let epoch = current_chain.epoch();
-        let uncles = current_chain.epoch_uncles();
-        Ok(epoch.start_block_number() <= block_header.number()
-            && epoch.end_block_number() > block_header.number()
-            && current_chain.exist_block(block_header.parent_hash())?
-            && !current_chain.exist_block(block_header.id())?
-            && uncles.get(&block_header.id()).is_none()
-            && block_header.number() <= current_chain.current_header().number())
+    fn can_be_uncle(
+        header: &BlockHeader,
+        uncles: &[BlockHeader],
+        ghostdata: &GhostdagData,
+    ) -> Result<()> {
+        let uncles_set = uncles
+            .iter()
+            .map(|header| header.id())
+            .collect::<HashSet<_>>();
+        let blue_set = ghostdata
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>();
+        verify_block!(
+            VerifyBlockField::Uncle,
+            uncles_set == blue_set,
+            "Uncles in header are not the same as ghostdata, uncles: {:?}, ghostdata blue set: {:?}.",
+            uncles,
+            blue_set,
+        );
+
+        let selected_parent = *ghostdata.mergeset_blues.first().ok_or_else(|| {
+            format_err!("no selected parent in blue set in ghostdata.mergeset_blues")
+        })?;
+        verify_block!(
+            VerifyBlockField::Uncle,
+            header.parent_hash() == selected_parent,
+            "The selected parent is not the same as the parent in header, the first one in ghostdata.mergeset_blues: {:?}, selected parent in header: {:?}.",
+            selected_parent,
+            header.parent_hash(),
+        );
+
+        Ok(())
     }
 }
 
@@ -270,80 +243,14 @@ impl BlockVerifier for BasicVerifier {
             new_block_header.block_accumulator_root(),
         );
 
+        Self::verify_dag(current_chain, new_block_header)?;
+
         Ok(())
     }
 }
 
-pub struct ConsensusVerifier;
-
-impl BlockVerifier for ConsensusVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        let epoch = current_chain.epoch();
-        let consensus = epoch.strategy();
-        if let Err(e) = consensus.verify(current_chain, new_block_header) {
-            return match e.downcast::<ConsensusVerifyError>() {
-                Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(
-                    VerifyBlockField::Consensus,
-                    e.into(),
-                )
-                .into()),
-                Err(e) => Err(e),
-            };
-        }
-        Ok(())
-    }
-}
-
-pub struct FullVerifier;
-
-impl BlockVerifier for FullVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        BasicVerifier::verify_header(current_chain, new_block_header)?;
-        ConsensusVerifier::verify_header(current_chain, new_block_header)
-    }
-}
-
-pub struct NoneVerifier;
-
-impl BlockVerifier for NoneVerifier {
-    fn verify_header<R>(_current_chain: &R, _new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        Ok(())
-    }
-
-    fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
-    where
-        R: ChainReader,
-    {
-        Ok(VerifiedBlock {
-            block: new_block,
-            ghostdata: None,
-        })
-    }
-
-    fn verify_uncles<R>(
-        _current_chain: &R,
-        _uncles: &[BlockHeader],
-        _header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
-    where
-        R: ChainReader,
-    {
-        Ok(None)
-    }
-}
-
-struct BasicDagVerifier;
-impl BasicDagVerifier {
-    pub fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+impl BasicVerifier {
+    fn verify_dag<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,
     {
@@ -411,70 +318,79 @@ impl BasicDagVerifier {
             })?;
         }
 
+        Ok(())
+    }
+}
+
+pub struct ConsensusVerifier;
+
+impl BlockVerifier for ConsensusVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        let epoch = current_chain.epoch();
+        let consensus = epoch.strategy();
+        if let Err(e) = consensus.verify(current_chain, new_block_header) {
+            return match e.downcast::<ConsensusVerifyError>() {
+                Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Consensus,
+                    e.into(),
+                )
+                .into()),
+                Err(e) => Err(e),
+            };
+        }
+        Ok(())
+    }
+}
+
+pub struct FullVerifier;
+
+impl BlockVerifier for FullVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        BasicVerifier::verify_header(current_chain, new_block_header)?;
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
+}
 
-    fn verify_blue_blocks<R>(
+pub struct NoneVerifier;
+
+impl BlockVerifier for NoneVerifier {
+    fn verify_header<R>(_current_chain: &R, _new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        Ok(())
+    }
+
+    fn verify_block<R>(current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
+    where
+        R: ChainReader,
+    {
+        let ghostdata = Self::verify_uncles(
+            current_chain,
+            new_block.uncles().unwrap_or_default(),
+            new_block.header(),
+        )?;
+        Ok(VerifiedBlock {
+            block: new_block,
+            ghostdata,
+        })
+    }
+
+    fn verify_uncles<R>(
         current_chain: &R,
-        uncles: &[BlockHeader],
+        _uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
-        current_chain.verify_and_ghostdata(uncles, header)
-    }
-}
-
-pub struct DagVerifier;
-impl BlockVerifier for DagVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        BasicDagVerifier::verify_header(current_chain, new_block_header)
-    }
-
-    fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
-    where
-        R: ChainReader,
-    {
-        Ok(Some(BasicDagVerifier::verify_blue_blocks(
-            current_chain,
-            uncles,
-            header,
-        )?))
-    }
-}
-
-pub struct DagVerifierWithGhostData;
-impl BlockVerifier for DagVerifierWithGhostData {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
-    where
-        R: ChainReader,
-    {
-        BasicDagVerifier::verify_header(current_chain, new_block_header)
-    }
-
-    fn verify_uncles<R>(
-        current_chain: &R,
-        uncles: &[BlockHeader],
-        header: &BlockHeader,
-    ) -> Result<Option<GhostdagData>>
-    where
-        R: ChainReader,
-    {
-        let ghostdata = BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?;
-
-        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
-            Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
-        }
-
-        Ok(Some(ghostdata))
+        let ghostdata = current_chain.get_dag().ghostdata(&header.parents())?;
+        Ok(ghostdata)
     }
 }

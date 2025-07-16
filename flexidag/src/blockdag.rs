@@ -273,7 +273,8 @@ impl BlockDAG {
             .write()
             .insert(origin, BlockHashes::new(vec![]))?;
 
-        self.commit(genesis)?;
+        let ghostdata = self.ghost_dag_manager().genesis_ghostdag_data(&genesis);
+        self.commit_trusted_block(genesis, Arc::new(ghostdata))?;
         self.save_dag_state(
             genesis_id,
             DagState {
@@ -479,144 +480,6 @@ impl BlockDAG {
 
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
-            header.id(),
-            Arc::new(header.clone()),
-            1,
-        ))
-        .expect("failed to insert header in batch");
-
-        // the read lock will be updated to the write lock
-        // and then write the batch
-        // and then release the lock
-        let stage_write = stage
-            .commit(&mut batch)
-            .expect("failed to write the stage reachability in batch");
-
-        // write the data just one time
-        self.storage
-            .write_batch(batch)
-            .expect("failed to write dag data in batch");
-
-        info!("finish writing the batch, head id: {:?}", header.id());
-
-        drop(stage_write);
-        drop(relations_write);
-        drop(lock_guard);
-
-        Ok(())
-    }
-
-    pub fn commit(&mut self, header: BlockHeader) -> anyhow::Result<()> {
-        info!(
-            "start to commit header: {:?}, number: {:?}",
-            header.id(),
-            header.number()
-        );
-        // Generate ghostdag data
-        let parents = header.parents();
-
-        let ghostdata = match self.ghostdata_by_hash(header.id())? {
-            None => {
-                // It must be the dag genesis if header is a format for a single chain
-                if header.is_genesis() {
-                    Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
-                } else {
-                    let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
-                    Arc::new(ghostdata)
-                }
-            }
-            Some(ghostdata) => ghostdata,
-        };
-
-        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
-            && header.pruning_point() != HashValue::zero()
-            && self
-                .storage
-                .reachability_store
-                .read()
-                .has(header.pruning_point())?
-        {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            let hint_result = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.parent_hash(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(),
-                hint_result
-            );
-        }
-
-        info!("start to commit via batch, header id: {:?}", header.id());
-
-        // Create a DB batch writer
-        let mut batch = WriteBatch::default();
-
-        info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_guard = self.commit_lock.lock();
-
-        // lock the dag data to write in batch, read lock.
-        // the cache will be written at the same time
-        // when the batch is written before flush to the disk and
-        // if the writing process abort the starcoin process will/should restart.
-        let mut stage = StagingReachabilityStore::new(
-            self.storage.db.clone(),
-            self.storage.reachability_store.upgradable_read(),
-        );
-
-        // Store ghostdata
-        process_key_already_error(self.storage.ghost_dag_store.insert_batch(
-            &mut batch,
-            header.id(),
-            ghostdata.clone(),
-        ))
-        .expect("failed to ghostdata in batch");
-
-        // Update reachability store
-        debug!(
-            "start to update reachability data for block: {:?}, number: {:?}",
-            header.id(),
-            header.number()
-        );
-
-        let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
-
-        match inquirer::add_block(
-            &mut stage,
-            header.id(),
-            ghostdata.selected_parent,
-            &mut merge_set,
-        ) {
-            std::result::Result::Ok(_) => {}
-            Err(e) => match e {
-                ReachabilityError::DataInconsistency => {
-                    info!(
-                        "the key {:?} was already processed, original error message: {:?}",
-                        header.id(),
-                        ReachabilityError::DataInconsistency
-                    );
-                }
-                _ => {
-                    panic!("failed to add block in batch for error: {:?}", e);
-                }
-            },
-        }
-
-        let mut relations_write = self.storage.relations_store.write();
-        process_key_already_error(relations_write.insert_batch(
-            &mut batch,
-            header.id(),
-            BlockHashes::new(parents),
-        ))
-        .expect("failed to insert relations in batch");
-
-        // Store header store
-        process_key_already_error(self.storage.header_store.insert_batch(
-            &mut batch,
             header.id(),
             Arc::new(header.clone()),
             1,
@@ -1023,77 +886,8 @@ impl BlockDAG {
         self.pruning_point_manager().reachability_service()
     }
 
-    // return true the block processing will be going into the single chain logic,
-    // which means that this is a historical block that converge to the next pruning point
-    // return false it will be going into the ghost logic,
-    // which means that this is a new block that will be added by the ghost protocol that enhance the parallelism of the block processing.
-    // for vega, the special situation is:
-    // the pruning logic was delivered after vega running for a long time, so the historical block will be processed by the single chain logic.
-    fn check_historical_block(
-        &self,
-        header: &BlockHeader,
-        latest_pruning_point: Option<HashValue>,
-    ) -> Result<bool, anyhow::Error> {
-        if let Some(pruning_point) = latest_pruning_point {
-            match (
-                header.pruning_point() == HashValue::zero(),
-                pruning_point == HashValue::zero(),
-            ) {
-                (true, true) => {
-                    if header.chain_id().is_vega() {
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    }
-                }
-                (true, false) => Ok(true),
-                (false, true) => Ok(false),
-                (false, false) => {
-                    if header.pruning_point() == pruning_point {
-                        Ok(false)
-                    } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
-                        Ok(true)
-                    } else {
-                        Ok(false)
-                    }
-                }
-            }
-        } else {
-            Ok(false)
-        }
-    }
-
-    pub fn verify_and_ghostdata(
-        &self,
-        blue_blocks: &[BlockHeader],
-        header: &BlockHeader,
-        latest_pruning_point: Option<HashValue>,
-    ) -> Result<GhostdagData, anyhow::Error> {
-        info!(
-            "checking historical block: header pruning point: {:?}, latest pruning point: {:?}",
-            header.pruning_point(),
-            latest_pruning_point
-        );
-
-        // 3500000 is the block number that the pruning logic was delivered in vega
-        // when the logic is delivered onto the vega,  we should check a number larger than 3500000 to ignore this logic
-        if header.chain_id().is_vega()
-            && header.number() < 3500000
-            && self.check_historical_block(header, latest_pruning_point)?
-        {
-            info!(
-                "the block is a historical block, the header id: {:?}",
-                header.id()
-            );
-            self.ghost_dag_manager()
-                .build_ghostdata(blue_blocks, header)
-        } else {
-            info!(
-                "the block is not a historical block, the header id: {:?}",
-                header.id()
-            );
-            self.ghost_dag_manager().ghostdag(&header.parents())
-        }
+    pub fn calc_ghostdata(&self, header: &BlockHeader) -> Result<GhostdagData, anyhow::Error> {
+        self.ghost_dag_manager().ghostdag(&header.parents())
     }
 
     pub fn check_upgrade(
