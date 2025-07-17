@@ -439,12 +439,16 @@ where
             "jacktest: finish to create block template with transactions: {:?}",
             txns.iter().map(|t| t.id()).collect::<Vec<_>>()
         );
-        let excluded_txns = opened_block.push_txns(txns)?;
+        let excluded_txns = opened_block.push_txns(txns.clone())?;
 
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
+
+        txns.into_iter().for_each(|transaction| {
+            let _ = self.tx_provider.remove_txn(transaction.id(), false);
+        });
 
         Ok(BlockTemplateResponse {
             parent: previous_header,
