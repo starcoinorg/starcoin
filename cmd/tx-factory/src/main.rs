@@ -16,16 +16,10 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::RawUserTransaction;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-struct NextTransaction {
-    seq: u64,
-    receiver: AccountAddress,
-}
 
 #[derive(Debug, Clone, Parser, Default)]
 #[clap(name = "txfactory", about = "tx generator for starcoin")]
@@ -75,7 +69,7 @@ pub struct TxFactoryOpt {
         default_value = "20",
         help = "count of round number"
     )]
-    pub round_num: u64,
+    pub round_num: u32,
     #[clap(long, short = 'w', default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
     #[clap(
@@ -454,11 +448,6 @@ impl TxnMocker {
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance(self.account_address)?;
-            info!(
-                "jacktest: balance: {:?}, start_balance: {:?}",
-                balance.unwrap(),
-                start_balance
-            );
             while balance.unwrap() < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = state_reader.get_balance(self.account_address)?;
@@ -529,220 +518,78 @@ impl TxnMocker {
         R: ChainStateReader,
     {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
+        info!(
+            "seq_number_in_pool for address {:?} is {:?}",
+            address, seq_number_in_pool
+        );
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
                 let account_resource = state_reader.get_account_resource(address)?;
-                account_resource.map(|resource| resource.sequence_number())
-                // match account_resource {
-                //     None => None,
-                //     Some(resource) => {
-                //         Some(resource.sequence_number())
-                //     }
-                // }
+                match account_resource {
+                    None => None,
+                    Some(resource) => {
+                        info!("read from state {:?}", resource.sequence_number());
+                        Some(resource.sequence_number())
+                    }
+                }
             }
         };
         Ok(result)
     }
 
-    #[allow(dead_code)]
-    fn stress_generate_txn(
-        &self,
-        sender_index: usize,
-        sequences: &[u64],
-        accounts: &[AccountInfo],
-        expiration_timestamp: u64,
-    ) -> Result<()> {
-        let mut receiver_index = sender_index + 1;
-        if receiver_index >= accounts.len() {
-            receiver_index = 0;
-        }
-
-        let result = self.gen_and_submit_transfer_txn(
-            accounts[sender_index].address,
-            accounts[receiver_index].address,
-            1,
-            1,
-            sequences[sender_index],
-            false,
-            expiration_timestamp,
-        );
-
-        //handle result
-        match result {
-            Ok(_) => {
-                info!(
-                    "sumbit txn ok. account: {}, seq: {}",
-                    accounts[sender_index].address, sequences[sender_index]
-                );
-            }
-            Err(err) => {
-                info!(
-                    "Submit txn failed with error: {:?}. Try again after 500ms.",
-                    err
-                );
-            }
-        }
-
-        Ok(())
-    }
-
-    fn submit_transaction_for_dag(
-        &self,
-        sequences: &HashMap<AccountAddress, NextTransaction>,
-    ) -> Result<()> {
-        sequences.iter().for_each(|(address, next_transaction)| {
-            let expiration_timestamp = self.fetch_expiration_time();
-
-            let result = self.gen_and_submit_transfer_txn(
-                *address,
-                next_transaction.receiver,
-                1,
-                1,
-                next_transaction.seq,
-                false,
-                expiration_timestamp,
-            );
-
-            //handle result
-            match result {
-                Ok(_) => {
-                    info!(
-                        "sumbit txn ok. account: {}, seq: {}",
-                        address, next_transaction.seq
-                    );
-                }
-                Err(err) => {
-                    info!(
-                        "Submit txn failed with error: {:?}. Try again after 500ms.",
-                        err
-                    );
-                }
-            }
-        });
-
-        // unlock and submit the transaction for each account
-        // (0..accounts.len()).for_each(|sender_index| {
-        //     match self.stress_generate_txn(sender_index, &sequences, accounts, expiration_timestamp)
-        //     {
-        //         Ok(_) => (),
-        //         Err(e) => error!("stress_generate_txn error: {:?}", e),
-        //     }
-        // });
-
-        Ok(())
-    }
-
-    fn fetch_account_sequences(
-        &self,
-        accounts: &[AccountInfo],
-    ) -> Result<HashMap<AccountAddress, u64>> {
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        let mut sequences = HashMap::new();
-        for account in accounts {
-            sequences.insert(
-                account.address,
-                self.sequence_number(&state_reader, account.address)
-                    .unwrap()
-                    .unwrap(),
-            );
-        }
-        Ok(sequences)
-    }
-
-    fn current_transaction_count(
-        &self,
-        accounts: &[AccountInfo],
-        last_sequence: HashMap<AccountAddress, u64>,
-    ) -> Result<u64> {
-        let sequences = self.fetch_account_sequences(accounts)?;
-
-        let total = sequences
-            .iter()
-            .filter_map(|(addr, current_seq)| {
-                last_sequence
-                    .get(addr)
-                    .map(|last_seq| current_seq.saturating_sub(*last_seq))
-            })
-            .sum();
-
-        Ok(total)
-    }
-
-    fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u64) -> Result<()> {
+    fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
         //check node status
         let sync_status: SyncStatus = self.client.sync_status()?.into();
         if sync_status.is_syncing() {
             info!("node syncing, pause stress");
             return Ok(());
         }
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
-        let sleep = 4000; // ms
-
-        let statistic_sequences = self.fetch_account_sequences(&accounts)?; // for statistic
-
-        // get latest sequences for each account
-        let mut all_sequences = self.fetch_account_sequences(&accounts)?;
-        let mut current_sequences = HashMap::new();
-        accounts
-            .iter()
-            .enumerate()
-            .for_each(|(index, account_info)| {
-                let receiver = accounts.get((index + 1) % accounts.len()).unwrap();
-                current_sequences.insert(
-                    account_info.address,
-                    NextTransaction {
-                        seq: *all_sequences.get(account_info.address()).unwrap(),
-                        receiver: receiver.address,
-                    },
+        //unlock all account and get sequence
+        let mut sequences = vec![];
+        for account in &accounts {
+            sequences.push(
+                self.sequence_number(&state_reader, account.address)
+                    .unwrap()
+                    .unwrap(),
+            );
+        }
+        //get  of all account
+        let expiration_timestamp = self.fetch_expiration_time();
+        let count = accounts.len();
+        (0..round_num).for_each(|_| {
+            (0..count).for_each(|index| {
+                let mut j = index + 1;
+                if j >= count {
+                    j = 0;
+                }
+                let result = self.gen_and_submit_transfer_txn(
+                    accounts[index].address,
+                    accounts[j].address,
+                    1,
+                    1,
+                    sequences[index],
+                    false,
+                    expiration_timestamp,
                 );
-            });
-
-        let start = Instant::now();
-
-        // loop the round number in each interval
-        // (0..round_num).for_each(|_| {
-        loop {
-            match self.submit_transaction_for_dag(&current_sequences) {
-                Ok(_) => (),
-                Err(e) => error!("recheck_sequence_number error: {:?}", e),
-            }
-
-            current_sequences.clear();
-
-            let refresh_sequences = self.fetch_account_sequences(&accounts).unwrap();
-
-            accounts.iter().enumerate().for_each(|(index, account)| {
-                let last_seq = all_sequences.get(account.address()).unwrap();
-                let next_seq = refresh_sequences.get(account.address()).unwrap();
-                let receiver = accounts.get((index + 1) % accounts.len()).unwrap();
-                if *next_seq > *last_seq {
-                    current_sequences.insert(
-                        account.address,
-                        NextTransaction {
-                            seq: *next_seq,
-                            receiver: receiver.address,
-                        },
-                    );
+                //handle result
+                match result {
+                    Ok(_) => {
+                        // sequence add
+                        sequences[index] += 1;
+                    }
+                    Err(err) => {
+                        info!(
+                            "Submit txn failed with error: {:?}. Try again after 500ms.",
+                            err
+                        );
+                        std::thread::sleep(Duration::from_millis(500));
+                    }
                 }
             });
-
-            all_sequences = refresh_sequences;
-
-            std::thread::sleep(Duration::from_millis(sleep));
-        }
-
-        let duration =
-            (start.elapsed().as_millis() as u64).saturating_sub(round_num.saturating_mul(sleep));
-
-        let total_transaction_process =
-            self.current_transaction_count(&accounts, statistic_sequences)?;
-
-        info!(
-            "tps is {:.2}.",
-            total_transaction_process as f64 / (duration as f64 / 1000.0)
-        );
-
+        });
         Ok(())
     }
 }
