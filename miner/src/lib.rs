@@ -4,7 +4,6 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use indexmap::IndexMap;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -12,8 +11,9 @@ use starcoin_service_registry::{
     ServiceRequest,
 };
 use starcoin_types::block::BlockTemplate;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -37,8 +37,8 @@ pub enum MinerError {
     TaskEmptyError,
     #[error("Mint task is mismatch Error, current blob: {current}, got blob: {real}")]
     TaskMisMatchError { current: String, real: String },
-    #[error("Current mint task is None")]
-    TaskNone,
+    #[error("No task in running task pool, got blob: {real}")]
+    TaskNotFoundRuningTask { real: String },
 }
 
 #[derive(Debug)]
@@ -52,10 +52,10 @@ impl ServiceRequest for UpdateSubscriberNumRequest {
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
-    task_pool: IndexMap<Vec<u8>, MintTask>,
+    task_pool: VecDeque<MintTask>,
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
-    current_task: Option<MintTask>,
+    current_task: HashMap<Vec<u8>, MintTask>,
     metrics: Option<MinerMetrics>,
 }
 
@@ -114,16 +114,14 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
         }
-        self.task_pool
-            .last()
-            .map(|(_mint_blob, task)| MintBlockEvent {
-                parent_hash: task.block_template.parent_hash,
-                strategy: task.block_template.strategy,
-                minting_blob: task.minting_blob.clone(),
-                difficulty: task.block_template.difficulty,
-                block_number: task.block_template.number,
-                extra: None,
-            })
+        self.task_pool.back().map(|task| MintBlockEvent {
+            parent_hash: task.block_template.parent_hash,
+            strategy: task.block_template.strategy,
+            minting_blob: task.minting_blob.clone(),
+            difficulty: task.block_template.difficulty,
+            block_number: task.block_template.number,
+            extra: None,
+        })
     }
 }
 
@@ -137,10 +135,10 @@ impl ServiceFactory<Self> for MinerService {
             .and_then(|registry| MinerMetrics::register(registry).ok());
         Ok(Self {
             config,
-            task_pool: IndexMap::new(),
+            task_pool: VecDeque::new(),
             create_block_template_service,
             client_subscribers_num: 0,
-            current_task: None,
+            current_task: HashMap::new(),
             metrics,
         })
     }
@@ -275,10 +273,10 @@ impl MinerService {
         if self.task_pool.is_empty() {
             // no task, send directly
             Self::send_task(ctx, &task);
-            self.current_task = Some(task);
+            self.current_task.insert(mining_blob, task);
         } else {
             // there is a running task, push to task pool waiting for the running task to finish
-            self.task_pool.insert(mining_blob, task);
+            self.task_pool.push_back(task);
         }
         Ok(())
     }
@@ -301,22 +299,17 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        let task = if let Some(task) = self.current_task.take() {
+        let task = if let Some(task) = self.current_task.remove(&minting_blob) {
             task
         } else {
-            return Err(MinerError::TaskNone.into());
-        };
-
-        if task.minting_blob != minting_blob {
             // invoke the next task
             self.dispatch_first_task(ctx);
 
-            return Err(MinerError::TaskMisMatchError {
-                current: hex::encode(&task.minting_blob),
+            return Err(MinerError::TaskNotFoundRuningTask {
                 real: hex::encode(&minting_blob),
             }
             .into());
-        }
+        };
 
         let block = task.finish(nonce, extra);
         let block_hash: HashValue = block.id();
@@ -334,9 +327,9 @@ impl MinerService {
 
     fn dispatch_first_task(&mut self, ctx: &mut ServiceContext<Self>) {
         // invoke the next task
-        if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
+        if let Some(task) = self.task_pool.pop_front() {
             Self::send_task(ctx, &task);
-            self.current_task = Some(task);
+            self.current_task.insert(task.minting_blob.clone(), task);
         }
     }
 
@@ -346,7 +339,7 @@ impl MinerService {
 
     fn manage_task_pool(&mut self) {
         if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
-            if let Some((_mint_blob, task)) = self.task_pool.shift_remove_index(0) {
+            if let Some(task) = self.task_pool.pop_front() {
                 debug!(
                     "Remove task from task pool, its block template parents are: {:?}",
                     task.block_template.parents_hash
@@ -357,20 +350,21 @@ impl MinerService {
     pub fn task_pool_len(&self) -> usize {
         self.task_pool.len()
     }
-    pub fn get_task_pool(&self) -> &IndexMap<Vec<u8>, MintTask> {
+    pub fn get_task_pool(&self) -> &VecDeque<MintTask> {
         &self.task_pool
     }
 
     fn check_task(&mut self, ctx: &mut ServiceContext<'_, Self>) -> Result<()> {
-        if let Some(task) = &self.current_task {
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_millis() as u64;
-            if now > task.block_template.timestamp + 2000 {
-                self.dispatch_first_task(ctx);
-            }
-        }
+        self.task_pool.retain(|task| {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("failed to get the current time in checking the minting task")
+                .as_millis();
+
+            let task_timeout = task.block_template.timestamp as u128 + 2000;
+            now <= task_timeout
+        });
+        self.dispatch_first_task(ctx);
         Ok(())
     }
 }
