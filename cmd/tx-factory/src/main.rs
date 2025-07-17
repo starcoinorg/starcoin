@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_state_api::StateReaderExt;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
@@ -513,10 +513,7 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn sequence_number<R>(&self, state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
-    where
-        R: ChainStateReader,
-    {
+    fn sequence_number(&self, address: AccountAddress) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
         info!(
             "seq_number_in_pool for address {:?} is {:?}",
@@ -525,6 +522,7 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
+                let state_reader = self.client.state_reader(StateRootOption::Latest)?;
                 let account_resource = state_reader.get_account_resource(address)?;
                 match account_resource {
                     None => None,
@@ -545,16 +543,11 @@ impl TxnMocker {
             info!("node syncing, pause stress");
             return Ok(());
         }
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
         //unlock all account and get sequence
         let mut sequences = vec![];
         for account in &accounts {
-            sequences.push(
-                self.sequence_number(&state_reader, account.address)
-                    .unwrap()
-                    .unwrap(),
-            );
+            sequences.push(self.sequence_number(account.address).unwrap().unwrap());
         }
         //get  of all account
         let expiration_timestamp = self.fetch_expiration_time();
