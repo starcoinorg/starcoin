@@ -49,6 +49,7 @@ starcoin-transaction-builder = { workspace = true }
 stdlib = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
+starcoin-chain = { workspace = true }
 
 [features]
 default = []
