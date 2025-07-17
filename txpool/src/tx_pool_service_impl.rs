@@ -27,7 +27,7 @@ use starcoin_types::{
     transaction,
     transaction::SignedUserTransaction,
 };
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
@@ -335,14 +335,29 @@ impl Inner {
         // remove outdated txns.
         self.cull();
 
-        // import retracted txns.
-        let txns = retracted
+        let txns_in_retracted_chain = retracted.into_iter().flat_map(|b| {
+            let txns: Vec<SignedUserTransaction> = b.into_inner().1.into();
+            txns.into_iter()
+        });
+
+        let txns_in_selected_chain = enacted
             .into_iter()
-            .flat_map(|b| {
-                let txns: Vec<SignedUserTransaction> = b.into_inner().1.into();
-                txns.into_iter()
+            .flat_map(|block| {
+                block
+                    .body
+                    .transactions
+                    .into_iter()
+                    .map(|transaction| transaction.id())
             })
+            .collect::<HashSet<_>>();
+
+        // filter the transaction in selected chain and import retracted txns.
+        let txns = txns_in_retracted_chain
+            .filter(|transaction| !txns_in_selected_chain.contains(&transaction.id()))
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
+
+        let _ = self.queue.remove(&txns_in_selected_chain, false);
+
         let results = self.queue.import(self.get_pool_client(), txns);
         for result in results {
             if let Err(err) = result {
