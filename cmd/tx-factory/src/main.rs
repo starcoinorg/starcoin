@@ -583,6 +583,20 @@ impl TxnMocker {
                 }
             });
         });
+
+        loop {
+            let mut lastest_sequences = vec![];
+            for account in &accounts {
+                lastest_sequences.push(self.sequence_number(account.address).unwrap().unwrap());
+            }
+
+            if lastest_sequences == sequences {
+                info!("sequence confirm.");
+                break;
+            }
+
+            std::thread::sleep(Duration::from_millis(500));
+        }
         Ok(())
     }
 }
