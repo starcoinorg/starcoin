@@ -269,8 +269,8 @@ impl MinerService {
         debug!("Mint block template: {:?}", block_template);
         let task = MintTask::new(block_template, self.metrics.clone());
         let mining_blob = task.minting_blob.clone();
-        self.manage_task_pool();
-        if self.task_pool.is_empty() {
+        // self.manage_task_pool();
+        if self.current_task.is_empty() {
             // no task, send directly
             Self::send_task(ctx, &task);
             self.current_task.insert(mining_blob, task);

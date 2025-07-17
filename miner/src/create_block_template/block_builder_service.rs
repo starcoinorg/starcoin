@@ -364,11 +364,16 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        info!("jacktest: max_txns: {:?}, local_block_gas_limit: {:?}, on_chain_block_gas_limit: {:?}", max_txns, self.local_block_gas_limit, on_chain_block_gas_limit);
+        info!(
+            "jacktest: max_txns: {:?}, local_block_gas_limit: {:?}, on_chain_block_gas_limit: {:?}",
+            max_txns, self.local_block_gas_limit, on_chain_block_gas_limit
+        );
 
         self.put_red_block_transactions(&ghostdata)?;
 
         let txns = self.tx_provider.get_txns(max_txns);
+
+        info!("jacktest: get transction length: {}", txns.len());
 
         let author = *self
             .miner_account
@@ -430,6 +435,10 @@ where
             ghostdata.mergeset_reds.len() as u64,
         )?;
 
+        info!(
+            "jacktest: finish to create block template with transactions: {:?}",
+            txns.iter().map(|t| t.id()).collect::<Vec<_>>()
+        );
         let excluded_txns = opened_block.push_txns(txns)?;
 
         let template = opened_block.finalize()?;
@@ -437,7 +446,6 @@ where
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
-        info!("jacktest: finish to create block template");
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
