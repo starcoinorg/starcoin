@@ -343,6 +343,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+        info!("jacktest: start to create block template");
         let MinerResponse {
             previous_header,
             selected_parents,
@@ -362,6 +363,8 @@ where
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
+
+        info!("jacktest: max_txns: {:?}, local_block_gas_limit: {:?}, on_chain_block_gas_limit: {:?}", max_txns, self.local_block_gas_limit, on_chain_block_gas_limit);
 
         self.put_red_block_transactions(&ghostdata)?;
 
@@ -434,6 +437,7 @@ where
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
+        info!("jacktest: finish to create block template");
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
