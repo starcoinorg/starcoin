@@ -484,7 +484,7 @@ mod import_test {
             .map(|version| version.major)
             .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
         info!("Before import version: {}", version);
-        assert_eq!(version, 11);
+        assert_eq!(version, 12);
 
         let data_path = Path::new("./test-data/1461026.bcs");
         info!("Importing BCS file: {}", data_path.display());
@@ -496,7 +496,7 @@ mod import_test {
             .map(|version| version.major)
             .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
         info!("After imported version: {}", version);
-        assert_eq!(version, 11);
+        assert_eq!(version, 12);
 
         Ok(())
     }
