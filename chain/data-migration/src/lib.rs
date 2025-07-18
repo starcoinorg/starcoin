@@ -370,7 +370,7 @@ pub fn maybe_migration_data(
         header_number, chain_id, default_hash
     );
 
-    let ret =if should_do_migration(header_number, chain_id) {
+    let ret = if should_do_migration(header_number, chain_id) {
         // Apply migration data if this is a migration block
         do_migration(statedb, chain_id, None)
     } else {
@@ -405,7 +405,7 @@ fn is_allow_chain(chain_id: &ChainId) -> bool {
     .into_iter()
     .collect();
 
-    allowed_chain_ids.contains(&chain_id)
+    allowed_chain_ids.contains(chain_id)
 }
 
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
