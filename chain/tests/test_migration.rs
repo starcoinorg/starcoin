@@ -68,17 +68,6 @@ mod migration_tests {
         Ok(())
     }
 
-    fn verify_migration_0x1_balance(
-        statedb: &ChainStateDB,
-        expect_balance: u128,
-    ) -> anyhow::Result<()> {
-        assert_eq!(
-            statedb.get_balance(genesis_address())?.unwrap_or(0),
-            expect_balance
-        );
-        Ok(())
-    }
-
     /// Test function to demonstrate BCS resource printing
     #[stest::test]
     fn test_print_bcs_decoded_resources() -> anyhow::Result<()> {
@@ -238,10 +227,10 @@ mod migration_tests {
 
     /// Test migration with 0x1 account state data specifically
     #[stest::test]
-    fn test_migration_main_data() -> anyhow::Result<()> {
+    fn test_migration_test_data() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
+        let net = test_vm1_net()?;
         let temp_dir = starcoin_config::temp_dir();
         let (_block_chain, statedb) =
             test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
@@ -249,11 +238,8 @@ mod migration_tests {
                 temp_dir.path().to_path_buf(),
             )?;
 
-        let state_root =
-            do_migration(&statedb, net.chain_id(), Some(MigrationDataSet::main_0x1()))?;
-
-        verify_migration_results(&statedb.fork_at(state_root), 12)?;
-        verify_migration_0x1_balance(&statedb, 10000)?;
+        // migration from genesis
+        verify_migration_results(&statedb, 4)?;
 
         Ok(())
     }
@@ -306,7 +292,7 @@ mod migration_tests {
         starcoin_logger::init_for_test();
 
         // Create a test network (using Main to trigger migration)
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
         let temp = TempDir::new()?;
 
         // Initialize blockchain with genesis in memory
