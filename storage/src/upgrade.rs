@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{
-    legacy, BlockStorage, FailedBlock, StcBlockInnerStorage, StcFailedBlockStorage,
-};
+use crate::block::{legacy, BlockStorage, StcBlockInnerStorage};
 use crate::block_info::{legacy::BlockInfoStorage, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::{legacy::ContractEventStorage, StcContractEventStorage};
@@ -53,6 +51,12 @@ impl DBUpgrade {
             let chain_info_storage = ChainInfoStorage::new(instance.clone());
             chain_info_storage.get_storage_version()?
         };
+        ensure!(
+            version_in_db < StorageVersion::V4,
+            "Legacy storage before V4 is not supported, current version in db: {:?}",
+            version_in_db
+        );
+
         // make sure Arc::strong_count(&instance) == 1
         let version_in_code = StorageVersion::current_version();
         match version_in_db.cmp(&version_in_code) {
@@ -210,11 +214,6 @@ impl DBUpgrade {
         let new_block = StcBlockInnerStorage::new(instance.clone());
         let num = upgrade_store(old_block, new_block, batch_size)?;
         info!("upgrade block storage, total items: {}", num);
-
-        let failed_block = legacy::FailedBlockStorage::new(instance.clone());
-        let new_failed_block = StcFailedBlockStorage::new(instance.clone());
-        let num = upgrade_failed_block(failed_block, new_failed_block)?;
-        info!("upgrade old failed blocks in storage, total items: {}", num);
 
         let unused_cfs = StorageVersion::V4.cfs_to_be_dropped_since_last_version();
         instance
@@ -422,38 +421,4 @@ where
             to_put = Some(CodecWriteBatch::new());
         }
     }
-}
-
-// TODO: support batch upgrade
-fn upgrade_failed_block(
-    old: legacy::FailedBlockStorage,
-    new: StcFailedBlockStorage,
-) -> Result<usize> {
-    let mut item_count = 0;
-    let db = old
-        .get_store()
-        .storage()
-        .db()
-        .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
-    let mut iter = db.iter::<HashValue, Vec<u8>>(old.get_store().prefix_name)?;
-    iter.seek_to_first();
-    loop {
-        let Some(item) = iter.next() else { break };
-        let (key, value) = item?;
-        let nfb = match legacy::FailedBlock::decode_value(value.as_slice()) {
-            Ok(fb) => {
-                let nfb: FailedBlock = (fb.block.into(), fb.peer_id, fb.failed, fb.version).into();
-                nfb
-            }
-            _ => {
-                let ofb = legacy::OldFailedBlock::decode_value(value.as_slice())?;
-                let nfb: FailedBlock =
-                    (ofb.block.into(), ofb.peer_id, ofb.failed, "".to_string()).into();
-                nfb
-            }
-        };
-        item_count += 1;
-        new.put(key, nfb)?
-    }
-    Ok(item_count)
 }
