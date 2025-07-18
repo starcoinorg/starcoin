@@ -5,7 +5,7 @@ extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{CodecKVStore, InnerStore, KVStore, StorageInstance, ValueCodec};
+use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
 use crate::table_info::TableInfoStore;
 use crate::tests::{random_txn_info, random_txn_info2};
 use crate::{

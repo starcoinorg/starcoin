@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod legacy;
-
 use crate::define_storage;
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::{ContractEventStore, CONTRACT_EVENT_PREFIX_NAME_V2};
