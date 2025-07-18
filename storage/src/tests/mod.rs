@@ -7,6 +7,8 @@ use starcoin_types::vm_error::KeptVMStatus;
 mod test_accumulator;
 mod test_batch;
 mod test_block;
+// disable this test on purpose.
+//mod test_db_upgrade;
 mod test_storage;
 
 fn random_txn_info2(block_number: u64, gas_used: u64) -> StcRichTransactionInfo {
