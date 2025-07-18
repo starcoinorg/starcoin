@@ -74,7 +74,7 @@ mod migration_tests {
         starcoin_logger::init_for_test();
 
         // Use the test snapshot data
-        let (file_name, data_hash, snapshot_pack) = MigrationDataSet::test().as_tuple();
+        let (file_name, data_hash, snapshot_pack) = MigrationDataSet::main_0x1().as_tuple();
 
         // Extract BCS content from tar.gz (same as migrate_legacy_state_data)
         let temp_dir = tempfile::TempDir::new()?;
@@ -258,7 +258,10 @@ mod migration_tests {
                 temp.path().to_path_buf(),
             )?;
 
-        debug!("test_dev_basic_peer_2_peer_after_migration_genesis | block_meta data: {:?}, timestamp: {:?}", statedb.get_block_metadata(), chain.time_service().now_secs());
+        debug!("test_dev_basic_peer_2_peer_after_migration_genesis | block_meta data: {:?}, timestamp: {:?}",
+            statedb.get_block_metadata(),
+            chain.time_service().now_secs(),
+        );
 
         let random_account = Account::new();
         let p2p_txn = create_account_txn_sent_as_association(

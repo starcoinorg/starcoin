@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::format_err;
+use anyhow::{ensure, format_err};
 use log::{debug, error};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_crypto::HashValue;
@@ -38,7 +38,6 @@ pub use state_filter::filter_chain_state_set;
 pub enum MigrationDataSet {
     Main(&'static str, HashValue, &'static [u8]),
     Main0x1(&'static str, HashValue, &'static [u8]),
-    Test(&'static str, HashValue, &'static [u8]),
 }
 
 impl std::fmt::Debug for MigrationDataSet {
@@ -58,13 +57,6 @@ impl std::fmt::Debug for MigrationDataSet {
                     file_name, hash
                 )
             }
-            Self::Test(file_name, hash, _) => {
-                write!(
-                    f,
-                    "MigrationDataSet::Test(file: {}, hash: {})",
-                    file_name, hash
-                )
-            }
         }
     }
 }
@@ -74,17 +66,13 @@ impl MigrationDataSet {
     pub fn from_chain_id(chain_id: ChainId) -> Self {
         match chain_id {
             id if id == BuiltinNetworkID::Main.chain_id() => Self::main(),
-            id if id == BuiltinNetworkID::Proxima.chain_id() => Self::main_0x1(),
-            id if id == BuiltinNetworkID::Test.chain_id()
-                || id == BuiltinNetworkID::Dev.chain_id() =>
-            {
-                Self::test()
-            }
-            _ => Self::test(),
+            _ => Self::main_0x1(),
         }
     }
 
     /// Create Main network migration dataset
+    /// This is all the resource data on height 24674819,
+    /// it takes about 5 minutes per calling ChainStateDB::apply
     pub fn main() -> Self {
         Self::Main(
             "24674819.bcs",
@@ -97,26 +85,16 @@ impl MigrationDataSet {
     }
 
     /// Create Main0x1 network migration dataset
+    /// Here to save testing time, the snapshot data is simplified to 3 accounts,
+    /// they are 0x1, 0xA550C18, 0x707d8fc016acae0a1a859769ad0c4fcf, with the height of 24674819
     pub fn main_0x1() -> Self {
         Self::Main0x1(
             "24674819-0x1.bcs",
             HashValue::from_hex_literal(
-                "5efc1f27548fc1d46a2c86272f1fbc567a32746e04a1b1a608c17f60cf58771d",
+                "0x9576de4c29396937abe057d36681362840fbd10e9eb4ccec774c98e9569edef8",
             )
             .unwrap(),
             include_bytes!("../snapshot/24674819-0x1.tar.gz"),
-        )
-    }
-
-    /// Create Test network migration dataset
-    pub fn test() -> Self {
-        Self::Test(
-            "64925.bcs",
-            HashValue::from_hex_literal(
-                "0xb450ae07116c9a38fd44b93ce1d7ddbc5cbb8639e7cd30d2921be793905fb5b1",
-            )
-            .unwrap(),
-            include_bytes!("../snapshot/64925.tar.gz"),
         )
     }
 
@@ -125,7 +103,6 @@ impl MigrationDataSet {
         match self {
             Self::Main(f, h, d) => (f, *h, d),
             Self::Main0x1(f, h, d) => (f, *h, d),
-            Self::Test(f, h, d) => (f, *h, d),
         }
     }
 }
@@ -184,14 +161,12 @@ impl MigrationExecutor {
         };
 
         let statedb = statedb.fork_at(final_state_root);
-        assert_eq!(
-            statedb.get_chain_id()?,
-            self.chain_id,
+        ensure!(
+            statedb.get_chain_id()? == self.chain_id,
             "it should be target chain id"
         );
-        assert_eq!(
-            final_state_root,
-            statedb.state_root(),
+        ensure!(
+            final_state_root == statedb.state_root(),
             "it should be state root"
         );
 
@@ -211,9 +186,8 @@ impl MigrationExecutor {
         let temp_dir = TempDir::new()?;
         let bcs_content = unpack_from_tar(snapshot_tar_pack, temp_dir.path(), migration_file_name)?;
 
-        assert_eq!(
-            HashValue::sha3_256_of(&bcs_content),
-            migration_file_expect_hash,
+        ensure!(
+            HashValue::sha3_256_of(&bcs_content) == migration_file_expect_hash,
             "Content hash should be the same"
         );
 
