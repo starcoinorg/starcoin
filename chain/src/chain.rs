@@ -751,13 +751,21 @@ impl BlockChain {
         }
         watch(CHAIN_WATCH_NAME, "n26");
         info!(
-            "jacktest: transaction len: {:?}, executed: {:?}",
+            "jacktest: block id: {:?}, transaction len: {:?}, executed: {:?}",
+            block.id(),
             block.transactions().len(),
             block
                 .transactions()
                 .iter()
-                .map(|transaction| transaction.id())
+                .map(|transaction| (
+                    transaction.id(),
+                    transaction.sender(),
+                    transaction.sequence_number()
+                ))
                 .collect::<Vec<_>>()
+                .sort_by(|(id1, sender1, seq1), (id2, sender2, seq2)| sender1
+                    .cmp(sender2)
+                    .then(seq1.cmp(seq2).then(id1.cmp(id2)))),
         );
         Ok(ExecutedBlock { block, block_info })
     }
