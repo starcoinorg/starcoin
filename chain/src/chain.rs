@@ -750,6 +750,15 @@ impl BlockChain {
             }
         }
         watch(CHAIN_WATCH_NAME, "n26");
+        info!(
+            "jacktest: transaction len: {:?}, executed: {:?}",
+            block.transactions().len(),
+            block
+                .transactions()
+                .iter()
+                .map(|transaction| transaction.id())
+                .collect::<Vec<_>>()
+        );
         Ok(ExecutedBlock { block, block_info })
     }
 
