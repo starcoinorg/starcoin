@@ -750,24 +750,35 @@ impl BlockChain {
             }
         }
         watch(CHAIN_WATCH_NAME, "n26");
-        info!(
-            "jacktest: block id: {:?}, transaction len: {:?}, executed: {:?}",
-            block.id(),
-            block.transactions().len(),
-            block
-                .transactions()
-                .iter()
-                .map(|transaction| (
+
+        Self::print_transaction_execution_info(&block);
+
+        Ok(ExecutedBlock { block, block_info })
+    }
+
+    fn print_transaction_execution_info(block: &Block) {
+        let mut txn = block
+            .transactions()
+            .iter()
+            .map(|transaction| {
+                (
                     transaction.id(),
                     transaction.sender(),
-                    transaction.sequence_number()
-                ))
-                .collect::<Vec<_>>()
-                .sort_by(|(id1, sender1, seq1), (id2, sender2, seq2)| sender1
-                    .cmp(sender2)
-                    .then(seq1.cmp(seq2).then(id1.cmp(id2)))),
+                    transaction.sequence_number(),
+                )
+            })
+            .collect::<Vec<_>>();
+        txn.sort_by(|(id1, sender1, seq1), (id2, sender2, seq2)| {
+            sender1.cmp(sender2).then(seq1.cmp(seq2).then(id1.cmp(id2)))
+        });
+        info!(
+            "jacktest: block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}, executed: {:?}",
+            block.id(),
+            block.header().number(),
+            block.header().timestamp(),
+            block.transactions().len(),
+            txn,
         );
-        Ok(ExecutedBlock { block, block_info })
     }
 
     //TODO consider move this logic to BlockExecutor
