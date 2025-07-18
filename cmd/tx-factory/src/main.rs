@@ -590,6 +590,25 @@ impl TxnMocker {
                 }
             });
         });
+
+        loop {
+            let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+            let mut lastest_sequences = vec![];
+            for account in &accounts {
+                lastest_sequences.push(
+                    self.sequence_number(&state_reader, account.address)
+                        .unwrap()
+                        .unwrap(),
+                );
+            }
+            if lastest_sequences == sequences {
+                info!("sequence confirmed.");
+                break;
+            }
+
+            info!("sequence not confirmed.");
+            std::thread::sleep(Duration::from_millis(1000));
+        }
         Ok(())
     }
 }
