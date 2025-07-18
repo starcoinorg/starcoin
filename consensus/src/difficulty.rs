@@ -50,6 +50,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     }
 
     let mut blue_block_set = HashSet::new();
+    let mut selected_chain = Vec::new();
 
     selected_blocks.iter().try_for_each(|id| {
         let ghostdata = chain.get_dag().storage.ghost_dag_store.get_data(*id)?;
@@ -67,9 +68,12 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 })
                 .collect::<Result<Vec<BlockHeader>>>()?,
         );
-
+        selected_chain.push(chain.get_header_by_hash(*id)?.ok_or_else(|| {
+            format_err!("failed to get the block header when getting next work required")
+        })?);
         Ok(())
     })?;
+    selected_chain.reverse();
 
     let mut blue_block_in_order: Vec<BlockHeader> = blue_block_set.into_iter().collect();
 
@@ -93,9 +97,13 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .into_iter()
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
-        // 200,
         next_block_time_target,
+        selected_chain
+            .into_iter()
+            .map(|header| header.try_into())
+            .collect::<Result<Vec<BlockDiffInfo>>>()?,
     )?;
+
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),
@@ -105,7 +113,11 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
+pub fn get_next_target_helper(
+    blocks: Vec<BlockDiffInfo>,
+    time_plan: u64,
+    selected_chain: Vec<BlockDiffInfo>,
+) -> Result<U256> {
     if blocks.is_empty() {
         bail!("block diff info is empty")
     }
@@ -134,7 +146,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
             let latest_timestamp = blocks[0].timestamp;
             let mut total_v_block_time: u64 = 0;
             let mut v_blocks: usize = 0;
-            for (idx, diff_info) in blocks.iter().enumerate() {
+            for (idx, diff_info) in selected_chain.iter().enumerate() {
                 if idx == 0 {
                     continue;
                 }
@@ -151,6 +163,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
     if avg_time == 0 {
         avg_time = 1
     }
+
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target = if let Some(new_target) = avg_target
