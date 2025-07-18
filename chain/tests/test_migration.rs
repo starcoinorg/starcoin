@@ -68,6 +68,19 @@ mod migration_tests {
         Ok(())
     }
 
+    fn verify_migration_genesis_balance(
+        statedb: &ChainStateDB,
+        expect_balance: u128,
+    ) -> anyhow::Result<()> {
+        assert_eq!(
+            statedb.get_balance(genesis_address())?.unwrap_or(0),
+            expect_balance,
+            "genesis balance should be {:?} after migration",
+            expect_balance
+        );
+        Ok(())
+    }
+
     /// Test function to demonstrate BCS resource printing
     #[stest::test]
     fn test_print_bcs_decoded_resources() -> anyhow::Result<()> {
@@ -102,17 +115,21 @@ mod migration_tests {
 
     #[stest::test]
     pub fn test_migration_with_genesis_storage() -> anyhow::Result<()> {
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
         let temp_dir = starcoin_config::temp_dir();
         let (_block_chain, statedb) =
             test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
-                &net,
+                &test_vm1_net()?,
                 temp_dir.path().to_path_buf(),
             )?;
 
-        // Execute migration (this will verify file hash and basic functionality)
-        let final_state_root = do_migration(&statedb, net.chain_id(), None)?;
-        verify_migration_results(&statedb.fork_at(final_state_root), 4)
+        assert_eq!(
+            _block_chain
+                .chain_state_reader()
+                .get_balance(genesis_address())?
+                .unwrap_or(0),
+            10000
+        );
+        verify_migration_results(&statedb, 12)
     }
 
     /// Test basic migration functionality and file integrity
@@ -128,7 +145,8 @@ mod migration_tests {
 
         // Verify post-migration state
         let statedb = chain_state_db.fork_at(state_root);
-        verify_migration_results(&statedb, 4)?;
+        verify_migration_results(&statedb, 12)?;
+        verify_migration_genesis_balance(&statedb, 10000)?;
 
         Ok(())
     }
@@ -161,8 +179,11 @@ mod migration_tests {
         );
 
         // Verify migration results
-        verify_migration_results(&statedb1, 4)?;
-        verify_migration_results(&statedb2, 4)?;
+        verify_migration_results(&statedb1, 12)?;
+        verify_migration_results(&statedb2, 12)?;
+
+        verify_migration_genesis_balance(&statedb1, 10000)?;
+        verify_migration_genesis_balance(&statedb2, 10000)?;
 
         Ok(())
     }
@@ -219,8 +240,8 @@ mod migration_tests {
         let state_root = do_migration(&statedb, test_net.chain_id(), None)?;
         let statedb_test = statedb.fork_at(state_root);
 
-        verify_migration_results(&statedb_dev, 4)?;
-        verify_migration_results(&statedb_test, 4)?;
+        verify_migration_results(&statedb_dev, 12)?;
+        verify_migration_results(&statedb_test, 12)?;
 
         Ok(())
     }
@@ -239,7 +260,7 @@ mod migration_tests {
             )?;
 
         // migration from genesis
-        verify_migration_results(&statedb, 4)?;
+        verify_migration_results(&statedb, 12)?;
 
         Ok(())
     }
