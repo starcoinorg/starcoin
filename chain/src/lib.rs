@@ -7,3 +7,5 @@ pub mod verifier;
 
 pub use chain::BlockChain;
 pub use starcoin_chain_api::{ChainReader, ChainWriter};
+
+pub use starcoin_data_migration::*;
