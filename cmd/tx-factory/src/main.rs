@@ -552,8 +552,8 @@ impl TxnMocker {
         //get  of all account
         let expiration_timestamp = self.fetch_expiration_time();
         let count = accounts.len();
-        (0..round_num).for_each(|_| {
-            (0..count).for_each(|index| {
+        for _ in 0..round_num {
+            for (index, _) in accounts.iter().enumerate() {
                 let mut j = index + 1;
                 if j >= count {
                     j = 0;
@@ -574,16 +574,12 @@ impl TxnMocker {
                         sequences[index] += 1;
                     }
                     Err(err) => {
-                        info!(
-                            "Submit txn failed with error: {:?}. Try again after 500ms.",
-                            err
-                        );
-                        std::thread::sleep(Duration::from_millis(500));
+                        info!("error: {}", err);
+                        return Err(err);
                     }
                 }
-            });
-        });
-
+            }
+        }
         Ok(())
     }
 }
