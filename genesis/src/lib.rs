@@ -196,8 +196,14 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::VMState),
             );
+
             let (state_root, txn_info_hash_vec) = {
-                let state_root1 = txn_info.state_root_hash();
+                let state_root1 = if starcoin_chain::should_do_migration(0, net.chain_id()) {
+                    starcoin_chain::do_migration(&chain_state_db, net.chain_id(), None)?
+                } else {
+                    txn_info.state_root_hash
+                };
+
                 let state_root2 = txn2_info.state_root_hash();
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (

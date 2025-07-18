@@ -13,18 +13,34 @@ mod migration_tests {
     use starcoin_state_api::{ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
     use starcoin_storage::{storage::StorageInstance, Storage};
+    use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
+    use starcoin_types::account::Account;
     use starcoin_types::{
         account_address::AccountAddress, identifier::Identifier, state_set::ChainStateSet,
     };
+
     use starcoin_vm_types::{
         account_config::{association_address, genesis_address},
         on_chain_config::{access_path_for_config, Version},
         state_view::StateReaderExt,
+        transaction::Transaction,
     };
     use std::sync::Arc;
     use tempfile::TempDir;
-    use test_helper::chain::gen_chain_for_test_and_return_statedb;
-    use test_helper::{create_block_with_transactions, print_bcs_decoded_resources};
+    use test_helper::{
+        chain::gen_chain_for_test_and_return_statedb, create_block_with_transactions,
+        print_bcs_decoded_resources, txn::create_account_txn_sent_as_association,
+    };
+
+    fn test_vm1_net() -> anyhow::Result<ChainNetwork> {
+        let chain_name = "vm1-testnet".to_string();
+        ChainNetwork::new_custom(
+            chain_name,
+            124.into(),
+            BuiltinNetworkID::Test.genesis_config().clone(),
+            BuiltinNetworkID::Test.genesis_config2().clone(),
+        )
+    }
 
     /// Helper function to create a test environment for migration
     fn create_test_environment(
@@ -242,20 +258,42 @@ mod migration_tests {
         Ok(())
     }
 
+    const TRANSAFER_AMOUNT: u128 = 1000000000;
+
     #[stest::test]
-    fn test_mainnet_gas_table() -> anyhow::Result<()> {
+    fn test_dev_basic_peer_2_peer_after_migration_genesis() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let net = test_vm1_net()?;
         let temp = TempDir::new()?;
-        let (mut chain, _statedb) =
+        let (mut chain, statedb) =
             test_helper::chain::gen_chain_for_test_and_return_statedb_with_temp_storage(
                 &net,
                 temp.path().to_path_buf(),
             )?;
-        let (_executed_block, _stateroot) =
-            create_block_with_transactions(&mut chain, &net, association_address(), vec![])?;
 
+        debug!("test_dev_basic_peer_2_peer_after_migration_genesis | block_meta data: {:?}, timestamp: {:?}", statedb.get_block_metadata(), chain.time_service().now_secs());
+
+        let random_account = Account::new();
+        let p2p_txn = create_account_txn_sent_as_association(
+            &random_account,
+            0,
+            TRANSAFER_AMOUNT,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            &net,
+        );
+        let (_executed_block, state_root) = create_block_with_transactions(
+            &mut chain,
+            &net,
+            association_address(),
+            vec![Transaction::UserTransaction(p2p_txn)],
+        )?;
+
+        let statedb = statedb.fork_at(state_root);
+        assert_eq!(
+            statedb.get_balance(*random_account.address())?.unwrap_or(0),
+            TRANSAFER_AMOUNT
+        );
         Ok(())
     }
 
@@ -340,7 +378,7 @@ mod migration_tests {
         Ok(())
     }
 
-    #[stest::test]
+    #[stest::test(timeout = 6000)]
     pub fn test_write_version_to_db_to_find_key_hash() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
 
@@ -380,9 +418,8 @@ mod migration_tests {
     #[stest::test]
     pub fn test_filter_account_state_set_basic() -> anyhow::Result<()> {
         starcoin_logger::init_for_test();
-        log::set_max_level(log::LevelFilter::Debug);
 
-        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
         let (_chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         let address = AccountAddress::ONE;

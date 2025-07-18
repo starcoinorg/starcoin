@@ -477,6 +477,7 @@ impl BlockChain {
                 None => (false, vec![]),
                 Some(parent) => {
                     let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
+                    debug!("BlockChain::execute_block_and_save | VM1 offline height: {:?} ", vm1_offline);
                     if header.number() < vm1_offline {
                         let block_metadata = block.to_metadata(parent.head().gas_used());
                         (false, vec![Transaction::BlockMetadata(block_metadata)])
@@ -514,6 +515,8 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
+        debug!("BlockChain::execute_block_and_save | vm1 block transactions: {:?}", block.transactions().len());
+
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),

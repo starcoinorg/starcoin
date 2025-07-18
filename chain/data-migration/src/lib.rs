@@ -17,11 +17,10 @@ use starcoin_vm_types::{
     state_view::StateReaderExt,
     token::token_code::TokenCode,
 };
-use std::path::Path;
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, collections::HashSet, path::Path, str::FromStr};
 use tempfile::TempDir;
 
-const MIGRATION_BLOCK_NUMBER: u64 = 3;
+const MIGRATION_BLOCK_NUMBER: u64 = 0;
 
 mod state_filter;
 pub use state_filter::filter_chain_state_set;
@@ -75,7 +74,7 @@ impl MigrationDataSet {
     pub fn from_chain_id(chain_id: ChainId) -> Self {
         match chain_id {
             id if id == BuiltinNetworkID::Main.chain_id() => Self::main(),
-            id if id == BuiltinNetworkID::Proxima.chain_id() => Self::main(),
+            id if id == BuiltinNetworkID::Proxima.chain_id() => Self::main_0x1(),
             id if id == BuiltinNetworkID::Test.chain_id()
                 || id == BuiltinNetworkID::Dev.chain_id() =>
             {
@@ -366,12 +365,19 @@ pub fn maybe_migration_data(
     chain_id: ChainId,
     default_hash: HashValue,
 ) -> anyhow::Result<HashValue> {
-    if should_do_migration(header_number, chain_id) {
+    debug!(
+        "maybe_migration_data | Entered, header_number: {}, chain_id: {}, default_hash: {}",
+        header_number, chain_id, default_hash
+    );
+
+    let ret =if should_do_migration(header_number, chain_id) {
         // Apply migration data if this is a migration block
         do_migration(statedb, chain_id, None)
     } else {
         Ok(default_hash)
-    }
+    };
+    debug!("maybe_migration_data | Exitd");
+    ret
 }
 
 /// Legacy function for backward compatibility
@@ -380,17 +386,30 @@ pub fn do_migration(
     chain_id: ChainId,
     data_set: Option<MigrationDataSet>,
 ) -> anyhow::Result<HashValue> {
+    debug!("do_migration | Entered");
+
     let executor = MigrationExecutor::new(chain_id);
     let ret = executor.execute(statedb, data_set);
 
-    debug!("do_migration | Executed");
+    debug!("do_migration | Exited");
     ret
 }
 
+fn is_allow_chain(chain_id: &ChainId) -> bool {
+    let allowed_chain_ids: HashSet<ChainId> = [
+        BuiltinNetworkID::Main.chain_id(),
+        BuiltinNetworkID::Proxima.chain_id(),
+        BuiltinNetworkID::Dev.chain_id(),
+        ChainId::new(124),
+    ]
+    .into_iter()
+    .collect();
+
+    allowed_chain_ids.contains(&chain_id)
+}
+
 pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
-    block_id == MIGRATION_BLOCK_NUMBER
-        && (chain_id == ChainId::new(BuiltinNetworkID::Main.chain_id().id())
-            || chain_id == ChainId::new(BuiltinNetworkID::Proxima.chain_id().id()))
+    block_id == MIGRATION_BLOCK_NUMBER && is_allow_chain(&chain_id)
 }
 
 pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {

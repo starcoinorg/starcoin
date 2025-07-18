@@ -8,7 +8,6 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
-use starcoin_data_migration::maybe_migration_data;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -372,30 +371,14 @@ impl OpenedBlock {
         }
         debug_assert!(self.vm2_initialized);
 
-        // Do migration in finalize
-        let (statedb, _) = &self.state;
-
-        let state_root1 = maybe_migration_data(
-            statedb,
-            self.block_number(),
-            self.chain_id,
-            statedb.state_root(),
-        )?;
         let accumulator_root = self.txn_accumulator.root_hash();
 
         // update state_root accumulator, state_root order is important
         let state_root = {
             self.vm_state_accumulator
-                .append(&[state_root1, self.state.1.state_root()])?;
+                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
         };
-
-        debug!(
-            "OpenedBlock::finalize | vm1 stateroot: {:?},  vm2 stateroot: {:?}, root state_root: {}",
-            state_root1,
-            self.state.1.state_root(),
-            state_root
-        );
 
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
