@@ -65,7 +65,11 @@ impl MigrationDataSet {
     /// Create a migration dataset based on chain ID
     pub fn from_chain_id(chain_id: ChainId) -> Self {
         match chain_id {
-            id if id == BuiltinNetworkID::Main.chain_id() => Self::main(),
+            id if id == BuiltinNetworkID::Main.chain_id()
+                || id == BuiltinNetworkID::Proxima.chain_id() =>
+            {
+                Self::main()
+            }
             _ => Self::main_0x1(),
         }
     }

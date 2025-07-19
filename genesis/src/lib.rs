@@ -542,7 +542,7 @@ mod tests {
     pub fn test_builtin_genesis() -> Result<()> {
         for id in BuiltinNetworkID::networks() {
             // TODO(BobOng): [migration] Skipping the main network is to ensure that the test runs at a normal speed
-            if !id.genesis_config().is_ready() || id.is_main() {
+            if !id.genesis_config().is_ready() || id.is_main() || id.is_proxima() {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
