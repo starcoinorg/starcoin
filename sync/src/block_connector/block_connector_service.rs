@@ -355,7 +355,6 @@ where
 
         let bus = ctx.bus_ref().clone();
 
-        ctx.spawn(async move {
             let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
                 anyhow::Result::Ok(verified_block) => verified_block,
                 Err(e) => {
@@ -381,7 +380,6 @@ where
             let _ = bus.broadcast(NewDagBlock {
                 executed_block: Arc::new(executed_block.clone()),
             });
-        });
     }
 }
 
