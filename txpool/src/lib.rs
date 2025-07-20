@@ -147,11 +147,11 @@ impl ActorService for TxPoolActorService {
         ctx.add_stream(self.inner.subscribe_txns());
 
         // every x seconds, we tick a txn propagation.
-        let myself = self.clone();
-        let interval = self.inner.node_config.tx_pool.tx_propagate_interval();
-        ctx.run_interval(Duration::from_secs(interval), move |ctx| {
-            myself.try_propagate_txns(ctx)
-        });
+        // let myself = self.clone();
+        // let interval = self.inner.node_config.tx_pool.tx_propagate_interval();
+        // ctx.run_interval(Duration::from_secs(interval), move |ctx| {
+        //     myself.try_propagate_txns(ctx)
+        // });
 
         Ok(())
     }

@@ -1781,72 +1781,72 @@ impl BlockChain {
             head: block.clone(),
         };
         self.epoch = get_epoch_from_statedb(&self.statedb)?;
-        if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
-            let start_block_id = self
-                .get_block_by_number(self.epoch.start_block_number())?
-                .unwrap_or_else(|| {
-                    panic!(
-                        "the block: {:?} should exist",
-                        self.epoch.start_block_number()
-                    )
-                });
-            let end_block_id = block.id();
-            let epoch_info = self.chain_state().get_epoch_info()?;
-            let total_selectd_chain_blocks = block
-                .header()
-                .number()
-                .saturating_sub(self.epoch.start_block_number())
-                .saturating_add(1);
-            let total_blocks = epoch_info
-                .uncles()
-                .saturating_add(total_selectd_chain_blocks);
+        // if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+        //     let start_block_id = self
+        //         .get_block_by_number(self.epoch.start_block_number())?
+        //         .unwrap_or_else(|| {
+        //             panic!(
+        //                 "the block: {:?} should exist",
+        //                 self.epoch.start_block_number()
+        //             )
+        //         });
+        //     let end_block_id = block.id();
+        //     let epoch_info = self.chain_state().get_epoch_info()?;
+        //     let total_selectd_chain_blocks = block
+        //         .header()
+        //         .number()
+        //         .saturating_sub(self.epoch.start_block_number())
+        //         .saturating_add(1);
+        //     let total_blocks = epoch_info
+        //         .uncles()
+        //         .saturating_add(total_selectd_chain_blocks);
 
-            let mut block_set = HashSet::new();
-            let blocks = (self.epoch.start_block_number()..=block.header().number())
-                .map(|block_number| {
-                    self.get_block_by_number(block_number)
-                        .unwrap_or_else(|e| {
-                            panic!(
-                                "the block: {:?} should exist, for error: {:?}",
-                                block_number, e
-                            )
-                        })
-                        .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
-                })
-                .collect::<Vec<_>>();
-            block_set.extend(blocks.iter().map(|block| block.header()).cloned());
-            block_set.extend(blocks.iter().flat_map(|block| {
-                if let Some(uncles) = &block.body.uncles {
-                    uncles.clone()
-                } else {
-                    vec![]
-                }
-            }));
-            let total_difficulty: U256 = block_set
-                .iter()
-                .map(|block_header| block_header.difficulty())
-                .sum();
-            let avg_total_difficulty = if let Some(avg_total_difficulty) =
-                total_difficulty.checked_div(U256::from(total_blocks))
-            {
-                info!("avg_total_difficulty overflow");
-                avg_total_difficulty
-            } else {
-                U256::MAX
-            };
+        //     let mut block_set = HashSet::new();
+        //     let blocks = (self.epoch.start_block_number()..=block.header().number())
+        //         .map(|block_number| {
+        //             self.get_block_by_number(block_number)
+        //                 .unwrap_or_else(|e| {
+        //                     panic!(
+        //                         "the block: {:?} should exist, for error: {:?}",
+        //                         block_number, e
+        //                     )
+        //                 })
+        //                 .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
+        //         })
+        //         .collect::<Vec<_>>();
+        //     block_set.extend(blocks.iter().map(|block| block.header()).cloned());
+        //     block_set.extend(blocks.iter().flat_map(|block| {
+        //         if let Some(uncles) = &block.body.uncles {
+        //             uncles.clone()
+        //         } else {
+        //             vec![]
+        //         }
+        //     }));
+        //     let total_difficulty: U256 = block_set
+        //         .iter()
+        //         .map(|block_header| block_header.difficulty())
+        //         .sum();
+        //     let avg_total_difficulty = if let Some(avg_total_difficulty) =
+        //         total_difficulty.checked_div(U256::from(total_blocks))
+        //     {
+        //         info!("avg_total_difficulty overflow");
+        //         avg_total_difficulty
+        //     } else {
+        //         U256::MAX
+        //     };
 
-            let eclapse_time = {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis();
-                now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
-            };
-            let bps = (total_blocks as f64) / eclapse_time;
+        //     let eclapse_time = {
+        //         let now = SystemTime::now()
+        //             .duration_since(UNIX_EPOCH)
+        //             .unwrap()
+        //             .as_millis();
+        //         now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
+        //     };
+        //     let bps = (total_blocks as f64) / eclapse_time;
 
-            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
-                total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
-        }
+        //     info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
+        //         total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
+        // }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
 
