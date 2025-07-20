@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
