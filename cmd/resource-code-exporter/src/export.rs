@@ -72,8 +72,17 @@ pub fn export_from_statedb(
         info!("Using whitelist with {} accounts", white_list.len());
         for address in white_list {
             if let Some(account_state_set) = statedb.get_account_state_set(&address)? {
+                let code_count = account_state_set.code_set().map(|s| s.len()).unwrap_or(0);
+                let resource_code = account_state_set
+                    .resource_set()
+                    .map(|s| s.len())
+                    .unwrap_or(0);
+                info!(
+                    "Exporting: account {:?}, Code count: {}, Resource count: {:?}",
+                    address, code_count, resource_code
+                );
                 filtered_account_states.push((address, account_state_set));
-                info!("Added account {} to export", address);
+                info!("Added account {} to export, ", address);
             } else {
                 info!("Account {} not found in state, skipping", address);
             }
