@@ -434,6 +434,10 @@ where
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
+        template.body.transactions.iter().for_each(|txn| {
+            self.tx_provider.remove_txn(txn.id(), false);
+        });
+
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
