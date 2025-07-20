@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
@@ -82,6 +82,15 @@ pub fn export_from_statedb(
         info!("No whitelist provided, exporting all accounts");
         let global_states_iter = statedb.dump_iter()?;
         for (account_address, account_state_set) in global_states_iter {
+            let code_count = account_state_set.code_set().map(|s| s.len()).unwrap_or(0);
+            let resource_code = account_state_set
+                .resource_set()
+                .map(|s| s.len())
+                .unwrap_or(0);
+            info!(
+                "Exporting: account {:?}, Code count: {}, Resource count: {:?}",
+                account_address, code_count, resource_code
+            );
             filtered_account_states.push((account_address, account_state_set));
         }
     }
