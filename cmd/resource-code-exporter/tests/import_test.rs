@@ -792,7 +792,7 @@ mod import_test {
         let chain_state = bcs_ext::from_bytes::<ChainStateSet>(&bcs_data)?;
         assert!(!chain_state.is_empty(), "Chain state set is empty");
 
-        let swap_account = AccountAddress::from_hex_literal("0x4783d08fb16990bd35d83f3e23bf93b8")?;
+        let swap_account = AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
         let mut code_count = 0;
         let mut swap_code_count = 0;
         for (account, state_set) in chain_state.state_sets() {
