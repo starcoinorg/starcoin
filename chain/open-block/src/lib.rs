@@ -182,19 +182,7 @@ impl OpenedBlock {
         }
 
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
-        txns.extend(
-            user_txns
-                .into_iter()
-                .filter(|txn| {
-                    let is_blacklisted = AddressFilter::is_blacklisted(txn, self.block_number());
-                    // Discard the txns send by the account in black list after a block number.
-                    if is_blacklisted {
-                        discard_txns.push(txn.clone());
-                    }
-                    !is_blacklisted
-                })
-                .map(Transaction::UserTransaction),
-        );
+        txns.extend(user_txns.into_iter().map(Transaction::UserTransaction),);
 
         let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
@@ -243,9 +231,6 @@ impl OpenedBlock {
                 }
             };
         }
-
-        self.execute_extra_txn()
-            .expect("Extra txn must be executed successfully");
 
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
