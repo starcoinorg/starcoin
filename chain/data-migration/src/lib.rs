@@ -20,8 +20,6 @@ use starcoin_vm_types::{
 use std::{collections::HashMap, collections::HashSet, path::Path, str::FromStr};
 use tempfile::TempDir;
 
-const MIGRATION_BLOCK_NUMBER: u64 = 0;
-
 mod state_filter;
 pub use state_filter::filter_chain_state_set;
 
@@ -209,7 +207,7 @@ impl MigrationExecutor {
         );
 
         debug!("migrate_legacy_state_data | start applying filtered data ...");
-        statedb.apply(filtered_chain_state_set.clone())?;
+        statedb.apply_and_clean_cache(filtered_chain_state_set.clone())?;
 
         let state_root = statedb.commit()?;
         statedb.flush()?;
@@ -351,26 +349,6 @@ impl MigrationExecutor {
         Ok(state_root)
     }
 }
-pub fn maybe_migration_data(
-    statedb: &ChainStateDB,
-    header_number: u64,
-    chain_id: ChainId,
-    default_hash: HashValue,
-) -> anyhow::Result<HashValue> {
-    debug!(
-        "maybe_migration_data | Entered, header_number: {}, chain_id: {}, default_hash: {}",
-        header_number, chain_id, default_hash
-    );
-
-    let ret = if should_do_migration(header_number, chain_id) {
-        // Apply migration data if this is a migration block
-        do_migration(statedb, chain_id, None)
-    } else {
-        Ok(default_hash)
-    };
-    debug!("maybe_migration_data | Exitd");
-    ret
-}
 
 /// Legacy function for backward compatibility
 pub fn do_migration(
@@ -400,8 +378,8 @@ fn is_allow_chain(chain_id: &ChainId) -> bool {
     allowed_chain_ids.contains(chain_id)
 }
 
-pub fn should_do_migration(block_id: u64, chain_id: ChainId) -> bool {
-    block_id == MIGRATION_BLOCK_NUMBER && is_allow_chain(&chain_id)
+pub fn should_do_migration(chain_id: ChainId) -> bool {
+    is_allow_chain(&chain_id)
 }
 
 pub fn get_version_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<u64> {

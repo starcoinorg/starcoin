@@ -112,6 +112,13 @@ where
         }
     }
 
+    fn apply_and_clean_cache(&self, chain_state_set: ChainStateSet) -> Result<()> {
+        match self {
+            SelectableStateView::A(a) => a.apply_and_clean_cache(chain_state_set),
+            SelectableStateView::B(b) => b.apply_and_clean_cache(chain_state_set),
+        }
+    }
+
     fn commit(&self) -> Result<HashValue> {
         match self {
             SelectableStateView::A(a) => a.commit(),
