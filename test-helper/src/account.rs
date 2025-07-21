@@ -2,59 +2,112 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use network_p2p_core::export::log::debug;
-use starcoin_dev::playground;
-use starcoin_state_api::ChainStateReader;
-use starcoin_statedb::ChainStateDB;
-use starcoin_types::state_set::ChainStateSet;
-use starcoin_types::{account_address::AccountAddress, language_storage::StructTag};
+use starcoin_types::{
+    account_address::AccountAddress,
+    language_storage::StructTag,
+    state_set::{AccountStateSet, ChainStateSet, StateSet},
+};
 
-/// Helper function to print account resource set
-pub fn print_account_resource_set(
-    statedb: &ChainStateDB,
-    address: &AccountAddress,
+pub fn print_chain_state_set(
+    chain_state_set: &ChainStateSet,
+    match_address: Option<AccountAddress>,
 ) -> anyhow::Result<()> {
-    debug!("=== Printing resource set for account {} ===", address);
+    debug!(
+        "print_chain_state_set | Entered, chain_state_set accounts: {:?}",
+        chain_state_set.len()
+    );
 
-    let account_state_set = statedb.get_account_state_set(address)?;
-    match account_state_set {
-        None => {
-            debug!("Account {} does not exist", address);
-            return Ok(());
-        }
-        Some(state_set) => {
-            if let Some(resource_set) = state_set.resource_set() {
-                debug!(
-                    "Found {} resources for account {}",
-                    resource_set.len(),
-                    address
-                );
-
-                for (key, value) in resource_set.iter() {
-                    // Decode the struct tag from the key
-                    let struct_tag = bcs_ext::from_bytes::<StructTag>(key.as_slice())?;
-                    debug!("Resource type: {}", struct_tag);
-
-                    // Try to decode and print the resource value
-                    match playground::view_resource(statedb, struct_tag.clone(), value.as_slice()) {
-                        Ok(annotated_struct) => {
-                            debug!("Resource value: {:#?}", annotated_struct);
-                        }
-                        Err(e) => {
-                            debug!("Failed to decode resource {}: {:?}", struct_tag, e);
-                            debug!("Raw value (hex): {}", hex::encode(value));
-                        }
-                    }
-                    debug!("---");
-                }
-            } else {
-                debug!("No resource set found for account {}", address);
+    for (account_address, account_state_set) in chain_state_set.state_sets() {
+        if let Some(match_address) = match_address {
+            if match_address != *account_address {
+                continue;
             }
         }
+        print_account_state_set(account_address, account_state_set)?;
     }
-
-    debug!("=== End of resource set for account {} ===", address);
     Ok(())
 }
+
+pub fn print_account_state_set(
+    address: &AccountAddress,
+    account_state_set: &AccountStateSet,
+) -> anyhow::Result<()> {
+    debug!("print_account_state_set | Entered: {:?}", address);
+
+    if let Some(code_set) = account_state_set.code_set() {
+        print_code_state_set(code_set)?;
+    } else {
+        debug!("no code found in account_state_set");
+    }
+
+    if let Some(resource_state) = account_state_set.resource_set() {
+        print_resource_state_set(resource_state)?;
+    } else {
+        debug!("no resource found in account_state_set");
+    }
+
+    debug!("print_account_state_set | Exited: {:?}", address);
+
+    Ok(())
+}
+
+pub fn print_resource_state_set(state_set: &StateSet) -> anyhow::Result<()> {
+    debug!("print_resource_state_set | count: {:?}", state_set.len());
+    Ok(())
+}
+
+pub fn print_code_state_set(state_set: &StateSet) -> anyhow::Result<()> {
+    debug!("print_code_state_set | count: {:?}", state_set.len());
+    Ok(())
+}
+//
+// /// Helper function to print account resource set
+// pub fn print_account_resource_set(
+//     statedb: &ChainStateDB,
+//     address: &AccountAddress,
+// ) -> anyhow::Result<()> {
+//     debug!("=== Printing resource set for account {} ===", address);
+//
+//     let account_state_set = statedb.get_account_state_set(address)?;
+//     match account_state_set {
+//         None => {
+//             debug!("Account {} does not exist", address);
+//             return Ok(());
+//         }
+//         Some(state_set) => {
+//             if let Some(resource_set) = state_set.resource_set() {
+//                 debug!(
+//                     "Found {} resources for account {}",
+//                     resource_set.len(),
+//                     address
+//                 );
+//
+//                 for (key, value) in resource_set.iter() {
+//                     // Decode the struct tag from the key
+//                     let struct_tag = bcs_ext::from_bytes::<StructTag>(key.as_slice())?;
+//                     debug!("Resource type: {}", struct_tag);
+//
+//                     // Try to decode and print the resource value
+//                     match playground::view_resource(statedb, struct_tag.clone(), value.as_slice()) {
+//                         Ok(annotated_struct) => {
+//                             debug!("Resource value: {:#?}", annotated_struct);
+//                         }
+//                         Err(e) => {
+//                             debug!("Failed to decode resource {}: {:?}", struct_tag, e);
+//                             debug!("Raw value (hex): {}", hex::encode(value));
+//                         }
+//                     }
+//                     debug!("---");
+//                 }
+//             } else {
+//                 debug!("No resource set found for account {}", address);
+//             }
+//         }
+//     }
+//
+//     debug!("=== End of resource set for account {} ===", address);
+//     Ok(())
+// }
 
 /// Utility function to print BCS decoded resource information
 /// This function mimics the process in migrate_legacy_state_data but focuses on printing

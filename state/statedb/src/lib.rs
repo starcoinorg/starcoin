@@ -511,7 +511,6 @@ impl ChainStateReader for ChainStateDB {
                     }
                     None => None,
                 };
-
                 state_sets.push(state_set);
             }
             let account_state_set = AccountStateSet::new(state_sets);

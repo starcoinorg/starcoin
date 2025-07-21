@@ -9,6 +9,7 @@ mod migration_tests {
     use starcoin_crypto::HashValue;
     use starcoin_data_migration::{
         do_migration, filter_chain_state_set, get_version_from_statedb, MigrationDataSet,
+        MigrationExecutor,
     };
     use starcoin_state_api::{ChainStateReader, ChainStateWriter};
     use starcoin_statedb::ChainStateDB;
@@ -29,7 +30,8 @@ mod migration_tests {
     use tempfile::TempDir;
     use test_helper::{
         chain::gen_chain_for_test_and_return_statedb, create_block_with_transactions,
-        print_bcs_decoded_resources, txn::create_account_txn_sent_as_association,
+        print_bcs_decoded_resources, print_chain_state_set,
+        txn::create_account_txn_sent_as_association,
     };
 
     fn test_vm1_net() -> anyhow::Result<ChainNetwork> {
@@ -440,6 +442,19 @@ mod migration_tests {
         let chain_state_set = ChainStateSet::new(vec![(address, account_state)]);
         let filtered_chain_state_set = filter_chain_state_set(chain_state_set, &statedb)?;
         statedb.apply(filtered_chain_state_set)?;
+
+        Ok(())
+    }
+
+    #[stest::test]
+    pub fn test_print_account_state_set() -> anyhow::Result<()> {
+        let data_set = MigrationExecutor::read_chain_stateset_from_migration_dataset(
+            MigrationDataSet::main(),
+        )?;
+
+        let account_address =
+            AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
+        print_chain_state_set(&data_set, Some(account_address))?;
 
         Ok(())
     }

@@ -7,8 +7,6 @@ mod import_test {
     use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
     use starcoin_chain::ChainReader;
     use starcoin_config::{ChainNetwork, DEFAULT_CACHE_SIZE};
-    use std::path::Path;
-
     use starcoin_consensus::Consensus;
     use starcoin_logger::prelude::info;
     use starcoin_statedb::{ChainStateDB, ChainStateReader};
@@ -24,6 +22,7 @@ mod import_test {
         token::token_code::TokenCode,
         transaction::{Package, ScriptFunction, Transaction, TransactionPayload},
     };
+    use std::path::Path;
 
     use tempfile::TempDir;
     use test_helper::{
@@ -35,8 +34,7 @@ mod import_test {
     };
 
     use starcoin_chain::verifier::FullVerifier;
-    use starcoin_types::{account::Account, identifier::Identifier};
-
+    use starcoin_types::{account::Account, identifier::Identifier, state_set::ChainStateSet};
     use starcoin_vm_types::on_chain_config::Version;
 
     use test_helper::chain::{
@@ -772,6 +770,46 @@ mod import_test {
                 .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
             assert_eq!(version, 12, "Version should be 4 after import");
         }
+        Ok(())
+    }
+
+    #[stest::test]
+    pub fn test_verify_account_code_state_count() -> anyhow::Result<()> {
+        // unzip from ./test-data/24674819.tar.gz
+        let temp_dir = TempDir::new()?;
+        let tar_gz_path = Path::new("./test-data/24674819.tar.gz");
+
+        info!("Extracting tar.gz file from: {}", tar_gz_path.display());
+
+        // Extract the tar.gz file
+        let tar_gz_file = std::fs::File::open(tar_gz_path)?;
+        let tar_file = flate2::read::GzDecoder::new(tar_gz_file);
+        let mut archive = tar::Archive::new(tar_file);
+        archive.unpack(&temp_dir)?;
+
+        let bcs_path = temp_dir.path().join("24674819.bcs");
+        let bcs_data = std::fs::read(bcs_path)?;
+        let chain_state = bcs_ext::from_bytes::<ChainStateSet>(&bcs_data)?;
+        assert!(!chain_state.is_empty(), "Chain state set is empty");
+
+        let swap_account = AccountAddress::from_hex_literal("0x4783d08fb16990bd35d83f3e23bf93b8")?;
+        let mut code_count = 0;
+        let mut swap_code_count = 0;
+        for (account, state_set) in chain_state.state_sets() {
+            if *account == AccountAddress::ONE {
+                if let Some(code) = state_set.code_set() {
+                    code_count = code.len();
+                }
+            };
+
+            if *account == swap_account {
+                if let Some(code) = state_set.code_set() {
+                    swap_code_count = code.len();
+                }
+            };
+        }
+        assert_ne!(swap_code_count, 0, "Code count should not 0");
+        assert_eq!(code_count, 85, "Code should eq 85");
         Ok(())
     }
 }

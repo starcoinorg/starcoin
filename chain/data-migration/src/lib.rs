@@ -217,6 +217,20 @@ impl MigrationExecutor {
         Ok((state_root, chain_state_set))
     }
 
+    pub fn read_chain_stateset_from_migration_dataset(
+        data_set: MigrationDataSet,
+    ) -> anyhow::Result<ChainStateSet> {
+        let (file, hash, pack) = data_set.as_tuple();
+        let temp_dir = TempDir::new()?;
+        let bcs_content = unpack_from_tar(pack, temp_dir.path(), file)?;
+
+        ensure!(
+            HashValue::sha3_256_of(&bcs_content) == hash,
+            "Content hash should be the same"
+        );
+        bcs_ext::from_bytes(&bcs_content)
+    }
+
     pub fn verify_token_state_is_complete(
         statedb: &ChainStateDB,
         original_chain_state_set: &ChainStateSet,
