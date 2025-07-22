@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::{cmp::min, sync::Arc};
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -61,7 +61,7 @@ pub struct BlockBuilderService {
 }
 
 impl BlockBuilderService {
-    fn receive_header(&mut self) {
+    fn receive_header(&mut self) -> bool {
         info!("receive header in block builder service");
         match self.new_header_channel.new_header_receiver.try_recv() {
             Ok(new_header) => {
@@ -69,17 +69,20 @@ impl BlockBuilderService {
                     .inner
                     .set_current_block_header(new_header.as_ref().clone())
                 {
-                    Ok(()) => (),
-                    Err(e) => error!(
+                    Ok(()) => true,
+                    Err(e) => panic!(
                         "Failed to set current block header: {:?} in BlockBuilderService",
                         e
                     ),
                 }
             }
             Err(e) => match e {
-                crossbeam::channel::TryRecvError::Empty => (),
+                crossbeam::channel::TryRecvError::Empty => {
+                    info!("jacktest: receive_header returns false");
+                    false
+                }
                 crossbeam::channel::TryRecvError::Disconnected => {
-                    error!("the new headerchannel is disconnected")
+                    panic!("the new headerchannel is disconnected")
                 }
             },
         }
@@ -176,7 +179,9 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        self.receive_header();
+        if !self.receive_header() {
+            bail!("Failed to receive header in block builder service");
+        }
         self.inner.create_block_template(header_version)
     }
 }
