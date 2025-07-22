@@ -5,13 +5,14 @@ use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_storage::storage::InnerStore;
-use starcoin_storage::{
-    db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion, BLOCK_PREFIX_NAME,
-};
-use starcoin_types::block::Block;
+use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
+use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage};
+use starcoin_types::block::legacy::Block;
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
+
+const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
+const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 
 /// Export resources and code from storage for a specific block
 pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<()> {
@@ -19,7 +20,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     info!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
         db,
-        StorageVersion::V3.get_column_family_names().to_vec(),
+        vec![BLOCK_PREFIX_NAME, STATE_NODE_PREFIX_NAME],
         true,
         Default::default(),
         None,
@@ -30,7 +31,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
 
     info!("Fetching block {} from storage...", block_hash);
     let block = storage_instance
-        .get(BLOCK_PREFIX_NAME, block_hash.encode()?)?
+        .get(BLOCK_PREFIX_NAME, block_hash.to_vec())?
         .map(|data| Block::decode(&data))
         .transpose()?
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;

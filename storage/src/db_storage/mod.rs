@@ -58,7 +58,7 @@ impl DBStorage {
                 "Duplicate column family name found.",
             );
         }
-        if Self::db_exists(path) {
+        if Self::db_exists(path) && !readonly {
             let cf_vec = Self::list_cf(path)?;
             let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
             #[allow(clippy::unnecessary_to_owned)]
