@@ -17,7 +17,12 @@ use starcoin_vm_types::{
     state_view::StateReaderExt,
     token::token_code::TokenCode,
 };
-use std::{collections::HashMap, collections::HashSet, path::Path, str::FromStr};
+use std::{
+    collections::HashMap,
+    collections::HashSet,
+    path::Path,
+    str::FromStr,
+};
 use tempfile::TempDir;
 
 mod state_filter;
