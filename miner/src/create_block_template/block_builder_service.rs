@@ -15,7 +15,7 @@ use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info, warn};
+use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
@@ -363,8 +363,6 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = 50; // (block_gas_limit / 200) * 2;
 
-        self.put_red_block_transactions(&ghostdata)?;
-
         let author = *self
             .miner_account
             .read()
@@ -444,20 +442,12 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let mut pending_transactions = self
+        let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
 
-        pending_transactions.extend(
-            blue_blocks
-                .iter()
-                .flat_map(|block| block.transactions())
-                .cloned(),
-        );
-
         let mut pending_transaction_map =
             HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-
         pending_transactions.into_iter().for_each(|transaction| {
             pending_transaction_map
                 .entry(transaction.sender())
@@ -465,39 +455,43 @@ where
                 .push(transaction);
         });
 
-        pending_transaction_map
-            .iter_mut()
-            .for_each(|(_sender, transactions)| {
-                transactions.sort_by(|a, b| {
-                    a.raw_txn()
-                        .sequence_number()
-                        .cmp(&b.raw_txn().sequence_number())
-                })
-            });
+        let mut uncle_transaction_map =
+            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+        blue_blocks.iter().for_each(|block| {
+            block.transactions().iter().for_each(|transaction| {
+                uncle_transaction_map
+                    .entry(transaction.sender())
+                    .or_default()
+                    .push(transaction.clone());
+            })
+        });
 
-        let mut user_transactions = Vec::new();
-        for sender in pending_transaction_map.keys() {
-            let transactions = pending_transaction_map
-                .get(sender)
-                .expect("sender not found");
-            if transactions.is_empty() {
-                continue;
-            }
-            user_transactions.push(transactions.first().expect("transaction not found").clone());
-            for transaction in transactions.iter().skip(1) {
-                if transaction.sequence_number()
-                    != user_transactions
-                        .last()
-                        .expect("transaction not found")
-                        .sequence_number()
-                        .saturating_add(1)
+        for (sender, uncle_transactions) in uncle_transaction_map.iter() {
+            if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
+                let pending_last_seq = pending_transactions
+                    .last()
+                    .expect("transaction not found in pending transactions")
+                    .sequence_number();
+                if let Some(index) = uncle_transactions
+                    .iter()
+                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
                 {
-                    break;
+                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
                 }
-                user_transactions.push(transaction.clone());
+            } else if let Some(next_seq) = self.tx_provider.next_sequence_number(*sender) {
+                if let Some(index) = uncle_transactions
+                    .iter()
+                    .position(|transaction| transaction.sequence_number() == next_seq)
+                {
+                    pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
+                }
             }
         }
-        Ok(user_transactions)
+
+        Ok(pending_transaction_map
+            .iter()
+            .flat_map(|(_sender, transactions)| transactions.clone())
+            .collect())
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
@@ -660,30 +654,6 @@ where
                 self.main.dag(),
             )?;
         }
-        Ok(())
-    }
-
-    fn put_red_block_transactions(
-        &self,
-        ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
-    ) -> Result<()> {
-        if ghostdata.mergeset_reds.is_empty() {
-            return Ok(());
-        }
-        let transactions = ghostdata
-        .mergeset_reds
-        .iter()
-        .map(|id| self.storage.get_block_by_hash(*id)?
-        .ok_or_else(|| format_err!("cannot find the block by id {:?} in minting for putting red block transaction back to the pool", id))).collect::<Result<Vec<Block>>>()?
-        .into_iter()
-        .flat_map(|block| block.body.transactions).collect::<Vec<_>>();
-
-        self.tx_provider.add_txns(transactions.clone()).iter().zip(transactions).for_each(|(result, transaction)| {
-            if let Err(err) = result {
-                warn!("minting for putting red block transaction back to the pool failed: {:?}, transaction id: {:?}", err, transaction.id());
-            }
-        });
-
         Ok(())
     }
 }
