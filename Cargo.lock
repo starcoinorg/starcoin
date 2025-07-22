@@ -10877,6 +10877,7 @@ dependencies = [
  "sysinfo",
  "test-helper",
  "thiserror",
+ "timeout-join-handler",
  "tokio",
 ]
 

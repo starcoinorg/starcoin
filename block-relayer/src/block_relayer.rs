@@ -203,7 +203,9 @@ impl BlockRelayer {
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+        let block_connector_service = ctx
+            .service_ref::<BlockConnectorService<TxPoolService>>()?
+            .clone();
         let txpool = self.txpool.clone();
         let metrics = self.metrics.clone();
         let fut = async move {
