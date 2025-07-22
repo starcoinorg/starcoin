@@ -20,10 +20,11 @@ use starcoin_vm2_types::{
         DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
         ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
         StructTagView, TableInfoView, TransactionEventResponse as TransactionEventResponse2,
-        TransactionRequest,
+        TransactionInfoView, TransactionRequest, TransactionInfoWithProofView
     },
 };
 use starcoin_vm2_vm_types::{
+    access_path::AccessPath,
     account_config::token_code::TokenCode,
     sign_message::SigningMessage,
     state_store::{state_key::StateKey, table::TableHandle},
@@ -445,5 +446,76 @@ impl RpcClient {
     pub fn submit_hex_transaction2(&self, txn: String) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_hex_transaction2(txn))
             .map_err(map_err)
+    }
+
+    pub fn chain_get_txn_info_by_block_and_index2(
+        &self,
+        block_id: HashValue,
+        idx: u64,
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .chain_client
+                .get_txn_info_by_block_and_index2(block_id, idx)
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_infos2(
+        &self,
+        start_global_index: u64,
+        reverse: bool,
+        max_size: u64,
+    ) -> anyhow::Result<Vec<TransactionInfoView>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .chain_client
+                .get_transaction_infos2(start_global_index, reverse, max_size)
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_block_txn_infos2(
+        &self,
+        block_id: HashValue,
+    ) -> anyhow::Result<Vec<TransactionInfoView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_txn_infos2(block_id))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_proof2(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> anyhow::Result<Option<TransactionInfoWithProofView>> {
+        self.call_rpc_blocking(|inner| {
+            inner.chain_client.get_transaction_proof2(
+                block_hash,
+                transaction_global_index,
+                event_index,
+                access_path.map(Into::into),
+            )
+        })
+        .map_err(map_err)
+    }
+
+    pub fn chain_get_transaction_proof2_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath>,
+    ) -> anyhow::Result<Option<StrView<Vec<u8>>>> {
+        self.call_rpc_blocking(|inner| {
+            inner.chain_client.get_transaction_proof2_raw(
+                block_hash,
+                transaction_global_index,
+                event_index,
+                access_path.map(Into::into),
+            )
+        })
+        .map_err(map_err)
     }
 }

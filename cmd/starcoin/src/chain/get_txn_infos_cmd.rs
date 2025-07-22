@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::TransactionInfoView;
+use starcoin_vm2_types::view::TransactionInfoView;
 
 /// Get transaction infos by block hash.
 #[derive(Debug, Parser)]
@@ -31,7 +31,7 @@ impl CommandAction for GetTxnInfosCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info = client.chain_get_block_txn_infos(opt.block_hash)?;
+        let vec_transaction_info = client.chain_get_block_txn_infos2(opt.block_hash)?;
 
         Ok(vec_transaction_info)
     }

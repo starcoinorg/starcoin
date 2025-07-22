@@ -38,8 +38,7 @@ use starcoin_vm2_types::view::{
     TransactionInfoView as TransactionInfoView2,
     TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm2_vm_types::StateView as StateView2;
+use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView as StateView2};
 use std::convert::TryInto;
 use std::sync::Arc;
 
@@ -229,7 +228,7 @@ where
                             )
                         })?;
 
-                    let mut txn = TransactionView::new(t, &block)?;
+                    let mut txn = TransactionView::new(t.to_v1().unwrap(), &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
                         let multi_state = storage.get_vm_multi_state(header.id())?;
