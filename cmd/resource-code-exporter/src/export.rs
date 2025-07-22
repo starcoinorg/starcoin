@@ -1,13 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
+use starcoin_storage::storage::InnerStore;
 use starcoin_storage::{
-    block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
-    storage::StorageInstance, Storage, StorageVersion,
+    db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion, BLOCK_PREFIX_NAME,
 };
+use starcoin_types::block::Block;
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
@@ -25,11 +27,12 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
 
     info!("Initializing storage...");
     let storage_instance = StorageInstance::new_db_instance(db_storage);
-    let block_storage = BlockInnerStorage::new(storage_instance.clone());
 
     info!("Fetching block {} from storage...", block_hash);
-    let block = block_storage
-        .get(block_hash)?
+    let block = storage_instance
+        .get(BLOCK_PREFIX_NAME, block_hash.encode()?)?
+        .map(|data| Block::decode(&data))
+        .transpose()?
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
     info!("Block found successfully");
 

@@ -14,8 +14,6 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockHeader};
 
-pub mod legacy;
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
     block: Block,

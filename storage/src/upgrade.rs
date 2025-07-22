@@ -5,10 +5,7 @@ use crate::block::BlockStorage;
 use crate::block_info::StcBlockInfoStorage;
 use crate::chain_info::ChainInfoStorage;
 use crate::storage::{CodecWriteBatch, ColumnFamily, KeyCodec, SchemaStorage, ValueCodec};
-use crate::{
-    CodecKVStore, StorageInstance, StorageVersion, BLOCK_BODY_PREFIX_NAME,
-    TRANSACTION_INFO_PREFIX_NAME,
-};
+use crate::{CodecKVStore, StorageInstance, StorageVersion};
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
