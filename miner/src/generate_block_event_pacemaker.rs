@@ -75,6 +75,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
+            info!("jacketst: 5");
             self.send_event(false, ctx)
         } else {
             debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
@@ -85,6 +86,7 @@ impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
 impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
+            info!("jacketst: 4");
             self.send_event(true, ctx)
         } else {
             debug!("[pacemaker] Ignore NewHeadBlock event because the node has not been synchronized yet.")
@@ -95,6 +97,7 @@ impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
 impl EventHandler<Self, PropagateTransactions> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: PropagateTransactions, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
+            info!("jacketst: 3");
             self.send_event(false, ctx)
         } else {
             debug!("[pacemaker] Ignore PropagateNewTransactions event because the node has not been synchronized yet.")
@@ -107,6 +110,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
         // let is_synced = msg.0.is_synced();
         self.sync_status = Some(msg.0);
         if self.is_synced() {
+            info!("jacketst: 1");
             self.send_event(true, ctx);
         }
     }
@@ -114,6 +118,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
+        info!("jacketst: 2");
         self.send_event(false, ctx);
     }
 }
