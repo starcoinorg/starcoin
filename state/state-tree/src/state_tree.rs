@@ -8,6 +8,7 @@ use forkable_jellyfish_merkle::{
 };
 use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
+use starcoin_logger::prelude::debug;
 use starcoin_state_store_api::*;
 use starcoin_types::access_path::DataType;
 use starcoin_types::account_address::AccountAddress;
@@ -208,7 +209,7 @@ where
             cache_guard.change_set_list.clone()
         };
 
-        // debug!("change_set_list len {}", change_set_list.len());
+        debug!("change_set_list len {}", change_set_list.len());
         // when self::commit call self::updates(&self, updates: Vec<(K, Option<Blob>)>)
         // the param updates is empty cause this situation
         if change_set_list.is_empty() {

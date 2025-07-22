@@ -514,10 +514,6 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
-        debug!(
-            "BlockChain::execute_block_and_save | vm1 block transactions: {:?}",
-            block.transactions().len()
-        );
 
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,

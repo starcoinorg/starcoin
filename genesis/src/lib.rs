@@ -492,9 +492,6 @@ impl Genesis {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
-
-        debug!("Genesis::init_cache_storage_for_test | Exit");
-
         Ok((storage, storage2, chain_info, genesis))
     }
 }
@@ -647,7 +644,6 @@ mod tests {
             consensus_config.is_some(),
             "ConsensusConfig on_chain_config should exist."
         );
-
         assert_eq!(
             consensus_config.as_ref().unwrap(),
             &net.genesis_config().consensus_config
@@ -721,8 +717,6 @@ mod tests {
         assert!(epoch.is_some(), "Epoch resource should exist.");
 
         // test_gas_schedule_in_genesis(net, &state_db)?;
-
-        debug!("do_test_genesis | Exited, net: {:?}", net.id());
 
         Ok(())
     }
