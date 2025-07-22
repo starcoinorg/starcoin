@@ -7,6 +7,7 @@ use anyhow::Result;
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_crypto::keygen::KeyGen;
 // use starcoin_executor::{
@@ -14,15 +15,13 @@ use starcoin_crypto::keygen::KeyGen;
 //     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 // };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::ChainStateWriter;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::BlockStore;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     account_address, account_config,
     multi_transaction::MultiAccountAddress,
-    transaction::{SignedUserTransaction, Transaction, TransactionPayload},
+    transaction::{SignedUserTransaction, TransactionPayload},
     U256,
 };
 use std::time::Duration;
@@ -234,36 +233,32 @@ async fn test_rollback() -> Result<()> {
         assert_eq!(excluded_txns.untouched_txns.len(), 0);
 
         let block_template = open_block.finalize()?;
+        let (_, root1, _) = block_template.state_roots();
         let block =
             block_template.into_block(0, starcoin_types::block::BlockHeaderExtra::new([0u8; 4]));
-        Ok::<_, anyhow::Error>(block)
+        Ok::<_, anyhow::Error>((block, root1))
     };
 
-    let retracted_block = pack_txn_to_block(retracted_txn)?;
-    let enacted_block = pack_txn_to_block(enacted_txn)?;
+    let (retracted_block, _) = pack_txn_to_block(retracted_txn)?;
+    let (enacted_block, root1) = pack_txn_to_block(enacted_txn)?;
 
-    // flush the state, to make txpool happy
+    // Apply enacted block, make the txpool state right
+    // BlockInfo is needed for multi-vm chain, It's easier to execute the block to update vm1 chain state
     {
         let main = storage.get_startup_info()?.unwrap().main;
-        let block_header = storage.get_block_header_by_hash(main)?.unwrap();
-        let chain_state = ChainStateDB::new(storage.clone(), Some(block_header.state_root()));
-        let mut txns: Vec<_> = enacted_block
-            .transactions()
-            .iter()
-            .map(|t| Transaction::UserTransaction(t.clone()))
-            .collect();
-        let parent_block_header = storage
-            .get_block_header_by_hash(enacted_block.header().parent_hash())
-            .unwrap()
-            .unwrap();
-        txns.insert(
-            0,
-            Transaction::BlockMetadata(enacted_block.to_metadata(parent_block_header.gas_used())),
-        );
-        let root = starcoin_executor::block_execute(&chain_state, txns, u64::MAX, None)?.state_root;
+        let mut chain = BlockChain::new(
+            config.net().time_service(),
+            main,
+            storage.clone(),
+            storage2.clone(),
+            None,
+        )?;
+        config.net().time_service().sleep(60 * 10 * 1000);
 
-        assert_eq!(root, enacted_block.header().state_root());
-        chain_state.flush()?;
+        chain.apply(enacted_block.clone())?;
+        let root = chain.chain_state_reader().state_root();
+
+        assert_eq!(root, root1);
     }
     pool.chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();

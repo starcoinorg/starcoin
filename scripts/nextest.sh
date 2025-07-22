@@ -23,17 +23,12 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
 cargo nextest run --workspace \
 -E "\
-not (test(module::pubsub::tests::test_subscribe_to_pending_transactions)) \
-and not (test(module::pubsub::tests::test_subscribe_to_events)) \
-and not (test(tests::test_storage::test_db_upgrade)) \
+not (test(tests::test_storage::test_db_upgrade)) \
 and not (test(test_force_upgrade_1)) \
 and not (test(test_force_upgrade_2)) \
 and not (test(test_frozen_account)) \
 and not (test(test_frozen_for_global_frozen)) \
-and not (test(test::test_rollback)) \
 and not (test(block_connector::test_illegal_block::test_verify_illegal_uncle_consensus_failed)) \
-and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
-and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
 and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
 and not (test(service_test::test_handshake_message))" \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final

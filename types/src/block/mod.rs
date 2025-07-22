@@ -941,6 +941,8 @@ pub struct BlockTemplate {
     pub block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
+    state_root1: HashValue,
+    state_root2: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: u64,
     /// hash for block body
@@ -960,6 +962,8 @@ impl BlockTemplate {
         parent_block_accumulator_root: HashValue,
         accumulator_root: HashValue,
         state_root: HashValue,
+        state_root1: HashValue,
+        state_root2: HashValue,
         gas_used: u64,
         body: BlockBody,
         chain_id: ChainId,
@@ -977,6 +981,8 @@ impl BlockTemplate {
             author,
             txn_accumulator_root: accumulator_root,
             state_root,
+            state_root1,
+            state_root2,
             gas_used,
             body_hash: body.hash(),
             body,
@@ -1055,6 +1061,10 @@ impl BlockTemplate {
             nonce,
             extra,
         )
+    }
+
+    pub fn state_roots(&self) -> (HashValue, HashValue, HashValue) {
+        (self.state_root, self.state_root1, self.state_root2)
     }
 }
 
