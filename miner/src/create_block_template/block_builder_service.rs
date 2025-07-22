@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -25,6 +25,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
@@ -181,23 +182,22 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
+    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+    fn get_txns_with_header(&self, _max: u64, _header: &BlockHeader) -> Vec<SignedUserTransaction> {
         vec![]
     }
-
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
-        self.get_pending_txns(Some(max), None)
+    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction> {
+        self.get_pending_with_header(max, None, header)
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
@@ -361,11 +361,9 @@ where
 
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = 50;// (block_gas_limit / 200) * 2;
+        let max_txns = 50; // (block_gas_limit / 200) * 2;
 
         self.put_red_block_transactions(&ghostdata)?;
-
-        let txns = self.tx_provider.get_txns(max_txns);
 
         let author = *self
             .miner_account
@@ -393,17 +391,18 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
+        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+
         let uncles = blue_blocks
             .iter()
             .map(|block| block.header().clone())
             .collect::<Vec<_>>();
 
         info!(
-            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
+            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, uncles len: {}, timestamp: {}",
             previous_header,
             block_gas_limit,
             max_txns,
-            txns.len(),
             uncles.len(),
             now_millis,
         );
@@ -421,13 +420,12 @@ where
             strategy,
             self.vm_metrics.clone(),
             selected_parents,
-            blue_blocks,
             header_version,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
         )?;
 
-        let excluded_txns = opened_block.push_txns(txns)?;
+        let excluded_txns = opened_block.push_txns(txn)?;
 
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
@@ -438,6 +436,68 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    fn fetch_transactions(
+        &self,
+        selected_header: &BlockHeader,
+        blue_blocks: &[Block],
+        max_txns: u64,
+    ) -> Result<Vec<SignedUserTransaction>> {
+        let mut pending_transactions = self
+            .tx_provider
+            .get_txns_with_header(max_txns, selected_header);
+
+        pending_transactions.extend(
+            blue_blocks
+                .iter()
+                .flat_map(|block| block.transactions())
+                .cloned(),
+        );
+
+        let mut pending_transaction_map =
+            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+
+        pending_transactions.into_iter().for_each(|transaction| {
+            pending_transaction_map
+                .entry(transaction.sender())
+                .or_default()
+                .push(transaction);
+        });
+
+        pending_transaction_map
+            .iter_mut()
+            .for_each(|(_sender, transactions)| {
+                transactions.sort_by(|a, b| {
+                    a.raw_txn()
+                        .sequence_number()
+                        .cmp(&b.raw_txn().sequence_number())
+                })
+            });
+
+        let mut user_transactions = Vec::new();
+        for sender in pending_transaction_map.keys() {
+            let transactions = pending_transaction_map
+                .get(sender)
+                .expect("sender not found");
+            if transactions.is_empty() {
+                continue;
+            }
+            user_transactions.push(transactions.first().expect("transaction not found").clone());
+            for transaction in transactions.iter().skip(1) {
+                if transaction.sequence_number()
+                    != user_transactions
+                        .last()
+                        .expect("transaction not found")
+                        .sequence_number()
+                        .saturating_add(1)
+                {
+                    break;
+                }
+                user_transactions.push(transaction.clone());
+            }
+        }
+        Ok(user_transactions)
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

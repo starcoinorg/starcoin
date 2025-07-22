@@ -23,7 +23,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -47,11 +47,9 @@ use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, sync::Arc};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
@@ -423,7 +421,6 @@ impl BlockChain {
             strategy,
             None,
             selected_parents,
-            blue_blocks,
             0,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
@@ -1844,7 +1841,7 @@ impl BlockChain {
         //     };
         //     let bps = (total_blocks as f64) / eclapse_time;
 
-        //     info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
+        //     info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}",
         //         total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
         // }
 

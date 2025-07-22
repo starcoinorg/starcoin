@@ -101,6 +101,15 @@ impl TxPoolSyncService for MockTxPoolService {
     ) -> Vec<SignedUserTransaction> {
         todo!()
     }
+
+    fn get_pending_with_header(
+        &self,
+        _max_len: u64,
+        _current_timestamp_secs: Option<u64>,
+        _header: &starcoin_types::block::BlockHeader,
+    ) -> Vec<SignedUserTransaction> {
+        todo!()
+    }
 }
 
 #[cfg(test)]
