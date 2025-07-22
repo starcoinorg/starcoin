@@ -355,31 +355,40 @@ where
 
         let bus = ctx.bus_ref().clone();
 
-            let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
+        let verified_block =
+            match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
                 anyhow::Result::Ok(verified_block) => verified_block,
                 Err(e) => {
-                    error!("when verifying the mined block, failed to verify block error: {:?}, id: {:?}", e, new_block.id());
+                    error!(
+                    "when verifying the mined block, failed to verify block error: {:?}, id: {:?}",
+                    e,
+                    new_block.id()
+                );
                     return;
                 }
             };
-            let executed_block = match chain.execute(verified_block) {
-                    std::result::Result::Ok(executed_block) => executed_block,
-                    Err(e) => {
-                        error!("when executing the mined block, failed to execute block error: {:?}, id: {:?}", e, new_block.id());
-                        return;
-                    },
-                };
-            match chain.connect(executed_block.clone()) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => {
-                    error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
-                    return;
-                },
+        let executed_block = match chain.execute(verified_block) {
+            std::result::Result::Ok(executed_block) => executed_block,
+            Err(e) => {
+                error!(
+                    "when executing the mined block, failed to execute block error: {:?}, id: {:?}",
+                    e,
+                    new_block.id()
+                );
+                return;
             }
+        };
+        match chain.connect(executed_block.clone()) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
+                return;
+            }
+        }
 
-            let _ = bus.broadcast(NewDagBlock {
-                executed_block: Arc::new(executed_block.clone()),
-            });
+        let _ = bus.broadcast(NewDagBlock {
+            executed_block: Arc::new(executed_block.clone()),
+        });
     }
 }
 

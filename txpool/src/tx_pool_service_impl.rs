@@ -142,6 +142,33 @@ impl TxPoolSyncService for TxPoolService {
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 
+    fn get_pending_with_header(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: Option<u64>,
+        header: &BlockHeader,
+    ) -> Vec<SignedUserTransaction> {
+        let _timer: Option<starcoin_metrics::HistogramTimer> =
+            self.inner.metrics.as_ref().map(|metrics| {
+                metrics
+                    .txpool_service_time
+                    .with_label_values(&["get_pending_with_pool_client"])
+                    .start_timer()
+            });
+        let current_timestamp_secs = current_timestamp_secs
+            .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
+        let pool_client = PoolClient::new(
+            header.clone(),
+            self.inner.storage.clone(),
+            self.inner.sequence_number_cache.clone(),
+            self.inner.vm_metrics.clone(),
+        );
+        let r =
+            self.inner
+                .get_pending_with_pool_client(max_len, current_timestamp_secs, pool_client);
+        r.into_iter().map(|t| t.signed().clone()).collect()
+    }
+
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
@@ -288,16 +315,36 @@ impl Inner {
         max_len: u64,
         current_timestamp_secs: u64,
     ) -> Vec<Arc<VerifiedTransaction>> {
+        // let pending_settings = PendingSettings {
+        //     block_number: u64::MAX,
+        //     current_timestamp: current_timestamp_secs,
+        //     max_len: max_len as usize,
+        //     ordering: PendingOrdering::Priority,
+        // };
+        // self.queue
+        //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
+        // self.queue.pending(self.get_pool_client(), pending_settings)
+        self.get_pending_with_pool_client(max_len, current_timestamp_secs, self.get_pool_client())
+    }
+
+    pub fn get_pending_with_pool_client(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: u64,
+        pool_client: PoolClient,
+    ) -> Vec<Arc<VerifiedTransaction>> {
         let pending_settings = PendingSettings {
             block_number: u64::MAX,
             current_timestamp: current_timestamp_secs,
             max_len: max_len as usize,
             ordering: PendingOrdering::Priority,
         };
-        self.queue
-            .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
-        self.queue.pending(self.get_pool_client(), pending_settings)
+        // why here calls inner_status???
+        // self.queue
+        //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
+        self.queue.pending(pool_client, pending_settings)
     }
+
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
             .next_sequence_number(self.get_pool_client(), &address)

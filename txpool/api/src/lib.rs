@@ -6,6 +6,7 @@ use futures_channel::mpsc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
 };
@@ -42,6 +43,14 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         &self,
         max_len: Option<u64>,
         now: Option<u64>,
+    ) -> Vec<SignedUserTransaction>;
+
+    /// alike get_pending_txns, it needs the pool client with the specific account state
+    fn get_pending_with_header(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: Option<u64>,
+        header: &BlockHeader,
     ) -> Vec<SignedUserTransaction>;
 
     /// Returns next valid sequence number for given sender

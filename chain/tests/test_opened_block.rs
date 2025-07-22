@@ -32,7 +32,6 @@ pub fn test_open_block() -> Result<()> {
             chain.consensus(),
             None,
             vec![],
-            vec![],
             0,
             HashValue::zero(),
             0,

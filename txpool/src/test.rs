@@ -227,7 +227,6 @@ async fn test_rollback() -> Result<()> {
             config.net().genesis_config().consensus(),
             None,
             vec![],
-            vec![],
             0,
             HashValue::zero(),
             0,
