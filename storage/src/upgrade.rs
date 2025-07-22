@@ -71,65 +71,16 @@ impl DBUpgrade {
         Ok(())
     }
 
-    fn db_upgrade_v1_v2(_instance: &mut StorageInstance) -> Result<()> {
-        todo!()
-    }
-
-    fn db_upgrade_v2_v3(instance: &mut StorageInstance) -> Result<()> {
-        // https://github.com/facebook/rocksdb/issues/1295
-        instance
-            .db_mut()
-            .unwrap()
-            .drop_unused_cfs(vec![BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME])?;
-        info!(
-            "remove unused column {}, column {}",
-            BLOCK_BODY_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME
-        );
-        Ok(())
-    }
-
-    fn db_upgrade_v3_v4(_instance: &mut StorageInstance, _batch_size: usize) -> Result<()> {
-        todo!()
-    }
-
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
-        instance: &mut StorageInstance,
-        batch_size: usize,
+        _instance: &mut StorageInstance,
+        _batch_size: usize,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",
             version_in_db, version_in_code
         );
-        match (version_in_db, version_in_code) {
-            (StorageVersion::V1, StorageVersion::V2) => {
-                Self::db_upgrade_v1_v2(instance)?;
-            }
-
-            (StorageVersion::V1, StorageVersion::V3) => {
-                Self::db_upgrade_v1_v2(instance)?;
-                Self::db_upgrade_v2_v3(instance)?;
-            }
-
-            (StorageVersion::V2, StorageVersion::V3) => {
-                Self::db_upgrade_v2_v3(instance)?;
-            }
-
-            (StorageVersion::V1, StorageVersion::V4) => {
-                Self::db_upgrade_v1_v2(instance)?;
-                Self::db_upgrade_v2_v3(instance)?;
-                Self::db_upgrade_v3_v4(instance, batch_size)?;
-            }
-            (StorageVersion::V3, StorageVersion::V4) => {
-                Self::db_upgrade_v3_v4(instance, batch_size)?;
-            }
-            _ => bail!(
-                "Can not upgrade db from {:?} to {:?}",
-                version_in_db,
-                version_in_code
-            ),
-        }
         Ok(())
     }
 
