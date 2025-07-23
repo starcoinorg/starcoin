@@ -58,6 +58,7 @@ pub struct MinerResponse {
     pub now_milliseconds: u64,
     pub pruning_point: HashValue,
     pub ghostdata: GhostdagData,
+    pub max_transaction_per_block: u64,
 }
 
 #[cfg(test)]
