@@ -10,8 +10,8 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
 
-use starcoin_vm2_vm_types::StateView;
 use starcoin_vm2_vm_runtime::VMExecutor;
+use starcoin_vm2_vm_types::StateView;
 
 pub fn do_execute_block_transactions<S: StateView + Sync>(
     chain_state: &S,
