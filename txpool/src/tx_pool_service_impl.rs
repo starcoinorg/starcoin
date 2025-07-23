@@ -160,7 +160,7 @@ impl TxPoolSyncService for TxPoolService {
         let pool_client = PoolClient::new(
             header.clone(),
             self.inner.storage.clone(),
-            self.inner.sequence_number_cache.clone(),
+            NonceCache::new(0),
             self.inner.vm_metrics.clone(),
         );
         let r =
@@ -372,7 +372,7 @@ impl Inner {
         let pool_client = PoolClient::new(
             header.clone(),
             self.storage.clone(),
-            self.sequence_number_cache.clone(),
+            NonceCache::new(0),
             self.vm_metrics.clone(),
         );
         self.queue.next_sequence_number(pool_client, &address)
