@@ -327,6 +327,7 @@ where
 
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
+        let max_transaction_per_block = epoch.max_transaction_per_block();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let previous_header = main
             .get_storage()
@@ -344,6 +345,7 @@ where
             now_milliseconds,
             pruning_point,
             ghostdata,
+            max_transaction_per_block,
         })
     }
 
@@ -357,6 +359,7 @@ where
             now_milliseconds: mut now_millis,
             pruning_point,
             ghostdata,
+            max_transaction_per_block,
         } = self.resolve_block_parents()?;
 
         let block_gas_limit = self
@@ -366,7 +369,7 @@ where
 
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = 50; // (block_gas_limit / 200) * 2;
+        let max_txns = min((block_gas_limit / 200) * 2, max_transaction_per_block);
 
         let author = *self
             .miner_account
