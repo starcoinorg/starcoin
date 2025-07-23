@@ -19,10 +19,8 @@ use starcoin_network_rpc_api::gen_server::NetworkRpc;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
-use starcoin_state_service::ChainStateService;
 use starcoin_storage::{Storage, Store};
 use starcoin_txpool::TxPoolService;
-use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
 use std::sync::Arc;
 
 mod rpc;
@@ -52,10 +50,9 @@ impl NetworkRpcService {
         storage: Arc<dyn Store>,
         chain_service: ServiceRef<ChainReaderService>,
         txpool_service: TxPoolService,
-        state_service: ServiceRef<ChainStateService>,
         quotas: NetworkRpcQuotaConfiguration,
     ) -> Self {
-        let rpc_impl = NetworkRpcImpl::new(storage, chain_service, txpool_service, state_service);
+        let rpc_impl = NetworkRpcImpl::new(storage, chain_service, txpool_service);
         let rpc_server = NetworkRpcServer::new(rpc_impl.to_delegate());
 
         let limiters = ApiLimiters::new(
@@ -84,18 +81,9 @@ impl ServiceFactory<Self> for NetworkRpcService {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
-        let state_service = ctx.service_ref::<ChainStateService>()?.clone();
-        // todo: register state_service2
-        let _state_service2 = ctx.service_ref::<ChainStateService2>()?.clone();
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let quotas = node_config.network.network_rpc_quotas.clone();
-        Ok(Self::new(
-            storage,
-            chain_service,
-            txpool_service,
-            state_service,
-            quotas,
-        ))
+        Ok(Self::new(storage, chain_service, txpool_service, quotas))
     }
 }
 

@@ -14,7 +14,6 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
-use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::Transaction;
@@ -195,6 +194,7 @@ impl VerifiedRpcClient {
         }
     }
 
+    // TODO
     pub async fn get_txns(
         &self,
         peer_id: Option<PeerId>,
@@ -308,19 +308,6 @@ impl VerifiedRpcClient {
             .await?;
         let resp = G_BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
-    }
-
-    pub async fn get_state_node_by_node_hash(
-        &self,
-        node_key: HashValue,
-    ) -> Result<(PeerId, Option<StateNode>)> {
-        let peer_id = self.select_a_peer()?;
-        Ok((
-            peer_id.clone(),
-            self.client
-                .get_state_node_by_node_hash(peer_id, node_key)
-                .await?,
-        ))
     }
 
     pub async fn get_accumulator_node_by_node_hash(
