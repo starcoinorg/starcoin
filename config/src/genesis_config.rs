@@ -585,7 +585,9 @@ impl ChainNetwork {
                 .base_max_uncles_per_block,
             self.genesis_config.consensus_config.base_block_gas_limit,
             self.genesis_config.consensus_config.strategy,
-            self.genesis_config.consensus_config.max_transaction_per_block,
+            self.genesis_config
+                .consensus_config
+                .max_transaction_per_block,
             //TODO conform new Epoch events salt value.
             EventHandle::new_from_address(&genesis_address(), 0),
         )
