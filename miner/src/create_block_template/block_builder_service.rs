@@ -43,7 +43,9 @@ enum MergesetIncreaseResult {
 }
 
 #[derive(Debug)]
-pub struct BlockTemplateRequest;
+pub struct BlockTemplateRequest {
+    pub force: bool,
+}
 
 impl ServiceRequest for BlockTemplateRequest {
     type Response = Result<BlockTemplateResponse>;
@@ -170,7 +172,7 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
-        _msg: BlockTemplateRequest,
+        msg: BlockTemplateRequest,
         _ctx: &mut ServiceContext<Self>,
     ) -> <BlockTemplateRequest as ServiceRequest>::Response {
         let header_version = self
@@ -179,7 +181,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        if !self.receive_header() {
+        if !self.receive_header() && !msg.force {
             bail!("Failed to receive header in block builder service");
         }
         self.inner.create_block_template(header_version)

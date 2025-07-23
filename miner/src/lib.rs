@@ -196,7 +196,9 @@ impl MinerService {
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
             let block_template = match create_block_template_service
-                .send(BlockTemplateRequest)
+                .send(BlockTemplateRequest {
+                    force: event.break_current_task,
+                })
                 .await
             {
                 Ok(send_result) => match send_result {
