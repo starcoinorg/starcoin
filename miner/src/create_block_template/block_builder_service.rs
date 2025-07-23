@@ -451,6 +451,10 @@ where
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
 
+        if pending_transactions.len() >= max_txns as usize {
+            return Ok(pending_transactions);
+        }
+
         let mut pending_transaction_map =
             HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
         pending_transactions.into_iter().for_each(|transaction| {
@@ -499,6 +503,7 @@ where
         Ok(pending_transaction_map
             .iter()
             .flat_map(|(_sender, transactions)| transactions.clone())
+            .take(max_txns as usize)
             .collect())
     }
 
