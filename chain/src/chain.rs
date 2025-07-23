@@ -528,7 +528,7 @@ impl BlockChain {
             let state_root1 = if header.is_genesis()
                 && starcoin_data_migration::should_do_migration(header.chain_id())
             {
-                starcoin_data_migration::do_migration(&statedb, header.chain_id(), None)?
+                starcoin_data_migration::do_migration(&statedb, header.chain_id())?
             } else {
                 executed_data.state_root
             };

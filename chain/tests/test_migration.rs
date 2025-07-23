@@ -143,7 +143,7 @@ mod migration_tests {
         let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // Execute migration (this will verify file hash and basic functionality)
-        let state_root = do_migration(&chain_state_db, net.chain_id(), None)?;
+        let state_root = do_migration(&chain_state_db, net.chain_id())?;
 
         // Verify post-migration state
         let statedb = chain_state_db.fork_at(state_root);
@@ -162,7 +162,7 @@ mod migration_tests {
         let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // First, execute migration to get the expected state
-        let state_root1 = do_migration(&chain_state_db, net.chain_id(), None)?;
+        let state_root1 = do_migration(&chain_state_db, net.chain_id())?;
         let statedb1 = chain_state_db.fork_at(state_root1);
         let exported_state_data = statedb1.dump()?;
 
@@ -199,13 +199,13 @@ mod migration_tests {
         let (_, chain_state_db) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
         // Execute migration again
-        let first_state_root = do_migration(&chain_state_db, net.chain_id(), None)?;
+        let first_state_root = do_migration(&chain_state_db, net.chain_id())?;
         let first_statedb = chain_state_db.fork_at(first_state_root);
         let first_version = get_version_from_statedb(&first_statedb)?;
         let first_balance = first_statedb.get_balance(genesis_address())?.unwrap_or(0);
 
         // Second migration execution
-        let second_state_root = do_migration(&first_statedb, net.chain_id(), None)?;
+        let second_state_root = do_migration(&first_statedb, net.chain_id())?;
         let second_statedb = first_statedb.fork_at(second_state_root);
         let second_version = get_version_from_statedb(&second_statedb)?;
         let second_balance = first_statedb.get_balance(genesis_address())?.unwrap_or(0);
@@ -234,12 +234,12 @@ mod migration_tests {
 
         let dev_net = ChainNetwork::new_dev();
         let (_chain, statedb) = gen_chain_for_test_and_return_statedb(&dev_net, None)?;
-        let state_root = do_migration(&statedb, dev_net.chain_id(), None)?;
+        let state_root = do_migration(&statedb, dev_net.chain_id())?;
         let statedb_dev = statedb.fork_at(state_root);
 
         let test_net = ChainNetwork::new_test();
         let (_chain, statedb) = gen_chain_for_test_and_return_statedb(&test_net, None)?;
-        let state_root = do_migration(&statedb, test_net.chain_id(), None)?;
+        let state_root = do_migration(&statedb, test_net.chain_id())?;
         let statedb_test = statedb.fork_at(state_root);
 
         verify_migration_results(&statedb_dev, 12)?;

@@ -124,7 +124,6 @@ impl MigrationExecutor {
     pub fn execute(
         &self,
         statedb: &ChainStateDB,
-        data_set: Option<MigrationDataSet>,
     ) -> anyhow::Result<HashValue> {
         info!(
             "MigrationExecutor::execute | Starting migration for chain_id: {:?}",
@@ -132,7 +131,7 @@ impl MigrationExecutor {
         );
 
         // Get migration dataset from contexts
-        let data_set = data_set.unwrap_or(MigrationDataSet::from_chain_id(self.chain_id));
+        let data_set = MigrationDataSet::from_chain_id(self.chain_id);
         info!(
             "MigrationExecutor::execute | Selected migration dataset: {:?}",
             data_set
@@ -354,12 +353,11 @@ impl MigrationExecutor {
 pub fn do_migration(
     statedb: &ChainStateDB,
     chain_id: ChainId,
-    data_set: Option<MigrationDataSet>,
 ) -> anyhow::Result<HashValue> {
     debug!("do_migration | Entered");
 
     let executor = MigrationExecutor::new(chain_id);
-    let ret = executor.execute(statedb, data_set);
+    let ret = executor.execute(statedb);
 
     debug!("do_migration | Exited");
     ret

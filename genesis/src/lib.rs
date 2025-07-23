@@ -200,7 +200,7 @@ impl Genesis {
 
             let (state_root, txn_info_hash_vec) = {
                 let state_root1 = if starcoin_chain::should_do_migration(net.chain_id()) {
-                    starcoin_chain::do_migration(&chain_state_db, net.chain_id(), None)?
+                    starcoin_chain::do_migration(&chain_state_db, net.chain_id())?
                 } else {
                     txn_info.state_root_hash
                 };

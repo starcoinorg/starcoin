@@ -60,54 +60,6 @@ pub fn print_code_state_set(state_set: &StateSet) -> anyhow::Result<()> {
     debug!("print_code_state_set | count: {:?}", state_set.len());
     Ok(())
 }
-//
-// /// Helper function to print account resource set
-// pub fn print_account_resource_set(
-//     statedb: &ChainStateDB,
-//     address: &AccountAddress,
-// ) -> anyhow::Result<()> {
-//     debug!("=== Printing resource set for account {} ===", address);
-//
-//     let account_state_set = statedb.get_account_state_set(address)?;
-//     match account_state_set {
-//         None => {
-//             debug!("Account {} does not exist", address);
-//             return Ok(());
-//         }
-//         Some(state_set) => {
-//             if let Some(resource_set) = state_set.resource_set() {
-//                 debug!(
-//                     "Found {} resources for account {}",
-//                     resource_set.len(),
-//                     address
-//                 );
-//
-//                 for (key, value) in resource_set.iter() {
-//                     // Decode the struct tag from the key
-//                     let struct_tag = bcs_ext::from_bytes::<StructTag>(key.as_slice())?;
-//                     debug!("Resource type: {}", struct_tag);
-//
-//                     // Try to decode and print the resource value
-//                     match playground::view_resource(statedb, struct_tag.clone(), value.as_slice()) {
-//                         Ok(annotated_struct) => {
-//                             debug!("Resource value: {:#?}", annotated_struct);
-//                         }
-//                         Err(e) => {
-//                             debug!("Failed to decode resource {}: {:?}", struct_tag, e);
-//                             debug!("Raw value (hex): {}", hex::encode(value));
-//                         }
-//                     }
-//                     debug!("---");
-//                 }
-//             } else {
-//                 debug!("No resource set found for account {}", address);
-//             }
-//         }
-//     }
-//
-//     debug!("=== End of resource set for account {} ===", address);
-//     Ok(())
-// }
 
 /// Utility function to print BCS decoded resource information
 /// This function mimics the process in migrate_legacy_state_data but focuses on printing
