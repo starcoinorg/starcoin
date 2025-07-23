@@ -41,7 +41,7 @@ impl DBUpgrade {
             chain_info_storage.get_storage_version()?
         };
         ensure!(
-            version_in_db < StorageVersion::V4,
+            version_in_db >= StorageVersion::V4,
             "Legacy storage before V4 is not supported, current version in db: {:?}",
             version_in_db
         );

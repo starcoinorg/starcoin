@@ -60,6 +60,7 @@ impl ChainInfoStorage {
         )
     }
 
+    // The default and minimum storage version is V4 since dual-vm version.
     pub fn get_storage_version(&self) -> Result<StorageVersion> {
         Ok(self
             .get(Self::STORAGE_VERSION_KEY.as_bytes())
@@ -73,7 +74,7 @@ impl ChainInfoStorage {
                 }
                 None => Ok(None),
             })?
-            .unwrap_or(StorageVersion::V1))
+            .unwrap_or(StorageVersion::V4))
     }
 
     pub fn set_storage_version(&self, version: StorageVersion) -> Result<()> {
