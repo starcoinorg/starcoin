@@ -16,7 +16,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::transaction::{StcTransactionInfo, Transaction};
+use starcoin_types::transaction::{StcTransaction, StcTransactionInfo};
 use starcoin_vm_types::state_store::table::TableHandle;
 
 pub use network_p2p_core::RawRpcClient;
@@ -206,12 +206,11 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         req: GetTxnsWithHash,
     ) -> BoxFuture<Result<Vec<Option<MultiSignedUserTransaction>>>>;
 
-    // TODO
     fn get_txns(
         &self,
         peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<Transaction>>>>;
+    ) -> BoxFuture<Result<Vec<Option<StcTransaction>>>>;
 
     fn get_txn_infos(
         &self,

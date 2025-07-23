@@ -16,10 +16,9 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::StcTransactionInfo,
+    transaction::{StcTransaction, StcTransactionInfo},
 };
 use std::fmt::Debug;
 use std::time::Instant;
@@ -194,17 +193,16 @@ impl VerifiedRpcClient {
         }
     }
 
-    // TODO
     pub async fn get_txns(
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
-    ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
+    ) -> Result<(Vec<HashValue>, Vec<StcTransaction>)> {
         let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
         let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
-            let mut verified_txns: Vec<Transaction> = Vec::new();
+            let mut verified_txns = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {

@@ -1,4 +1,5 @@
 use crate::account_address::AccountAddress;
+use crate::transaction::StcTransaction;
 use anyhow::{format_err, Error};
 use bcs_ext::Sample;
 use schemars::JsonSchema;
@@ -53,6 +54,16 @@ impl MultiSignatureCheckedTransaction {
                 MultiSignedUserTransaction::VM2(txn.into_inner())
             }
         }
+    }
+}
+
+impl TryFrom<StcTransaction> for MultiSignedUserTransaction {
+    type Error = Error;
+    fn try_from(txn: StcTransaction) -> Result<Self, Self::Error> {
+        Ok(match txn {
+            StcTransaction::V1(txn) => MultiSignedUserTransaction::VM1(txn.try_into()?),
+            StcTransaction::V2(txn) => MultiSignedUserTransaction::VM2(txn.try_into()?),
+        })
     }
 }
 

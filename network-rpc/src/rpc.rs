@@ -22,7 +22,7 @@ use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::{StcTransactionInfo, Transaction},
+    transaction::{StcTransaction, StcTransactionInfo},
 };
 use std::sync::Arc;
 
@@ -82,14 +82,11 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
+    ) -> BoxFuture<Result<Vec<Option<StcTransaction>>>> {
         let storage = self.storage.clone();
         let fut = async move {
             let txns = storage.get_transactions(req.ids)?;
-            Ok(txns
-                .into_iter()
-                .map(|txn| txn.and_then(|t| t.to_v1()))
-                .collect::<Vec<_>>())
+            Ok(txns.into_iter().collect::<Vec<_>>())
         };
         Box::pin(fut)
     }
