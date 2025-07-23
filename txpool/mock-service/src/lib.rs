@@ -110,6 +110,14 @@ impl TxPoolSyncService for MockTxPoolService {
     ) -> Vec<SignedUserTransaction> {
         todo!()
     }
+
+    fn next_sequence_number_with_header(
+        &self,
+        _address: AccountAddress,
+        _header: &starcoin_types::block::BlockHeader,
+    ) -> Option<u64> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

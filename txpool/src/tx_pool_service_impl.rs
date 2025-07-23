@@ -181,6 +181,20 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.next_sequence_number(address)
     }
 
+    fn next_sequence_number_with_header(
+        &self,
+        address: AccountAddress,
+        header: &BlockHeader,
+    ) -> Option<u64> {
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_time
+                .with_label_values(&["next_sequence_number_with_header"])
+                .start_timer()
+        });
+        self.inner.next_sequence_number_with_header(address, header)
+    }
+
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
@@ -348,6 +362,20 @@ impl Inner {
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
             .next_sequence_number(self.get_pool_client(), &address)
+    }
+
+    pub(crate) fn next_sequence_number_with_header(
+        &self,
+        address: AccountAddress,
+        header: &BlockHeader,
+    ) -> Option<u64> {
+        let pool_client = PoolClient::new(
+            header.clone(),
+            self.storage.clone(),
+            self.sequence_number_cache.clone(),
+            self.vm_metrics.clone(),
+        );
+        self.queue.next_sequence_number(pool_client, &address)
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
