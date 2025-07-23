@@ -483,7 +483,10 @@ where
                 {
                     pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
                 }
-            } else if let Some(next_seq) = self.tx_provider.next_sequence_number(*sender) {
+            } else if let Some(next_seq) = self
+                .tx_provider
+                .next_sequence_number_with_header(*sender, selected_header)
+            {
                 if let Some(index) = uncle_transactions
                     .iter()
                     .position(|transaction| transaction.sequence_number() == next_seq)
