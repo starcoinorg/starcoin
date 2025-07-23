@@ -57,6 +57,13 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64>;
 
+    /// alike next_sequence_number, it needs the pool client with the specific account state
+    fn next_sequence_number_with_header(
+        &self,
+        address: AccountAddress,
+        header: &BlockHeader,
+    ) -> Option<u64>;
+
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
 
