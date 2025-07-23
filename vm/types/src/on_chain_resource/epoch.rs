@@ -24,6 +24,7 @@ pub struct Epoch {
     max_uncles_per_block: u64,
     block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
     new_epoch_events: EventHandle,
 }
 
@@ -41,6 +42,7 @@ impl Epoch {
         max_uncles_per_block: u64,
         block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {
@@ -55,6 +57,7 @@ impl Epoch {
             max_uncles_per_block,
             block_gas_limit,
             strategy,
+            max_transaction_per_block,
             new_epoch_events,
         }
     }
@@ -101,6 +104,10 @@ impl Epoch {
 
     pub fn strategy(&self) -> ConsensusStrategy {
         ConsensusStrategy::try_from(self.strategy).expect("epoch consensus strategy must exist.")
+    }
+
+    pub fn max_transaction_per_block(&self) -> u64 {
+        self.max_transaction_per_block
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
