@@ -20,7 +20,7 @@ use starcoin_vm2_types::{
         DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
         ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
         StructTagView, TableInfoView, TransactionEventResponse as TransactionEventResponse2,
-        TransactionInfoView, TransactionRequest, TransactionInfoWithProofView
+        TransactionInfoView, TransactionInfoWithProofView, TransactionRequest,
     },
 };
 use starcoin_vm2_vm_types::{
