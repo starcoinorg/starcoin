@@ -480,6 +480,23 @@ where
             })
         });
 
+        for transactions in uncle_transaction_map.values_mut() {
+            if transactions.len() <= 1 {
+                continue;
+            }
+
+            let mut index = 1;
+            while index < transactions.len() {
+                if transactions[index].sequence_number()
+                    != transactions[index - 1].sequence_number() + 1
+                {
+                    break;
+                }
+                index += 1;
+            }
+            transactions.truncate(index);
+        }
+
         for (sender, uncle_transactions) in uncle_transaction_map.iter() {
             if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
                 let pending_last_seq = pending_transactions
