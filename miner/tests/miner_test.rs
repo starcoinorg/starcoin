@@ -56,7 +56,7 @@ async fn test_miner_service() {
     registry.register::<NewHeaderService>().await.unwrap();
     let template = registry.register::<BlockBuilderService>().await.unwrap();
     let response = template
-        .send(BlockTemplateRequest)
+        .send(BlockTemplateRequest { force: true })
         .await
         .unwrap()
         .unwrap()
