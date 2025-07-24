@@ -121,10 +121,7 @@ impl MigrationExecutor {
     }
 
     /// Execute the migration process
-    pub fn execute(
-        &self,
-        statedb: &ChainStateDB,
-    ) -> anyhow::Result<HashValue> {
+    pub fn execute(&self, statedb: &ChainStateDB) -> anyhow::Result<HashValue> {
         info!(
             "MigrationExecutor::execute | Starting migration for chain_id: {:?}",
             self.chain_id
@@ -350,10 +347,7 @@ impl MigrationExecutor {
 }
 
 /// Legacy function for backward compatibility
-pub fn do_migration(
-    statedb: &ChainStateDB,
-    chain_id: ChainId,
-) -> anyhow::Result<HashValue> {
+pub fn do_migration(statedb: &ChainStateDB, chain_id: ChainId) -> anyhow::Result<HashValue> {
     debug!("do_migration | Entered");
 
     let executor = MigrationExecutor::new(chain_id);
