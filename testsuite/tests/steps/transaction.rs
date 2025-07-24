@@ -4,17 +4,20 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
-use starcoin_state_api::StateReaderExt;
-use starcoin_transaction_builder::{
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_state_api::StateReaderExt;
+use starcoin_vm2_transaction_builder::{
     build_transfer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::{
+    account_address::AccountAddress, account_config, transaction::SignedUserTransaction,
+};
+use starcoin_vm2_vm_types::{
+    account_config::G_STC_TOKEN_CODE, genesis_config::ChainId, transaction::RawUserTransaction,
+};
 use std::time::Duration;
 
 pub fn steps() -> Steps<MyWorld> {
@@ -27,8 +30,14 @@ pub fn steps() -> Steps<MyWorld> {
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
             std::thread::sleep(Duration::from_millis(3000));
-            let chain_state_reader = client.state_reader(StateRootOption::Latest).unwrap();
-            let balances = chain_state_reader.get_balance(*to.address());
+            let chain_state_reader = client.state_reader2(StateRootOption::Latest).unwrap();
+            let balances = chain_state_reader.get_balance_by_type(
+                *to.address(),
+                G_STC_TOKEN_CODE
+                    .clone()
+                    .try_into()
+                    .expect("Should convert 0x1::starcoin_coin::STC"),
+            );
             assert!(balances.is_ok());
             info!("charge into default account ok:{:?}", balances.unwrap());
         })
@@ -52,13 +61,16 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<HashValue, Error> {
-    let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
-    let account_resource = chain_state_reader
-        .get_account_resource(from)
-        .unwrap()
-        .unwrap();
+    let chain_state_reader = client.state_reader2(StateRootOption::Latest)?;
+    let account_resource = chain_state_reader.get_account_resource(from)?;
     let node_info = client.node_info()?;
-    let balance = chain_state_reader.get_balance(from).unwrap().unwrap();
+    let balance = chain_state_reader.get_balance_by_type(
+        from,
+        G_STC_TOKEN_CODE
+            .clone()
+            .try_into()
+            .expect("Should convert 0x1::starcoin_coin::STC"),
+    )?;
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = build_transfer_txn(
         from,
@@ -68,16 +80,16 @@ fn transfer_txn(
         1,
         DEFAULT_MAX_GAS_AMOUNT,
         node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
-        node_info.net.chain_id(),
+        ChainId::new(node_info.net.chain_id().id()),
     );
 
-    let txn = sign_txn(client, raw_txn).unwrap();
-    client.submit_transaction(txn.clone().into())
+    let txn = sig_txn(client, raw_txn)?;
+    client.submit_transaction2(txn.clone())
 }
-fn sign_txn(
+fn sig_txn(
     client: &RpcClient,
     raw_txn: RawUserTransaction,
 ) -> Result<SignedUserTransaction, Error> {
-    client.account_unlock(raw_txn.sender(), "".to_string(), Duration::from_secs(300))?;
-    Ok(client.account_sign_txn(raw_txn).unwrap())
+    client.account_unlock2(raw_txn.sender(), "".to_string(), Duration::from_secs(300))?;
+    client.account_sign_txn2(raw_txn)
 }
