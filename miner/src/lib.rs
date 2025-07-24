@@ -4,6 +4,7 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
+use create_block_template::block_builder_service::BlockTemplateError;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -196,15 +197,20 @@ impl MinerService {
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
             let block_template = match create_block_template_service
-                .send(BlockTemplateRequest {
-                    force: event.break_current_task,
-                })
+                .send(BlockTemplateRequest)
                 .await
             {
                 Ok(send_result) => match send_result {
                     Ok(block_template) => block_template,
-                    Err(e) => {
-                        error!("BlockTemplateRequest processing failed: {:?}", e);
+                    Err(block_template_error) => {
+                        match block_template_error {
+                            BlockTemplateError::NoReceivedHeader => {
+                                return;
+                            }
+                            BlockTemplateError::Other(e) => {
+                                error!("BlockTemplateRequest processing failed: {:?}", e);
+                            }
+                        }
                         return;
                     }
                 },

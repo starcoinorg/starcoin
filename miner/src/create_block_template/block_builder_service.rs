@@ -1,7 +1,8 @@
 use std::collections::{HashMap, VecDeque};
+use std::time::Duration;
 use std::{cmp::min, sync::Arc};
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -27,6 +28,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
+use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -43,12 +45,16 @@ enum MergesetIncreaseResult {
 }
 
 #[derive(Debug)]
-pub struct BlockTemplateRequest {
-    pub force: bool,
+pub enum BlockTemplateError {
+    NoReceivedHeader,
+    Other(anyhow::Error),
 }
 
+#[derive(Debug)]
+pub struct BlockTemplateRequest;
+
 impl ServiceRequest for BlockTemplateRequest {
-    type Response = Result<BlockTemplateResponse>;
+    type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
 }
 
 #[derive(Debug, Clone)]
@@ -62,8 +68,13 @@ pub struct BlockBuilderService {
     new_header_channel: NewHeaderChannel,
 }
 
+enum ReceiveHeader {
+    Received,
+    NotReceived,
+}
+
 impl BlockBuilderService {
-    fn receive_header(&mut self) -> bool {
+    fn receive_header(&mut self) -> ReceiveHeader {
         info!("receive header in block builder service");
         match self.new_header_channel.new_header_receiver.try_recv() {
             Ok(new_header) => {
@@ -71,7 +82,7 @@ impl BlockBuilderService {
                     .inner
                     .set_current_block_header(new_header.as_ref().clone())
                 {
-                    Ok(()) => true,
+                    Ok(()) => ReceiveHeader::Received,
                     Err(e) => panic!(
                         "Failed to set current block header: {:?} in BlockBuilderService",
                         e
@@ -79,10 +90,7 @@ impl BlockBuilderService {
                 }
             }
             Err(e) => match e {
-                crossbeam::channel::TryRecvError::Empty => {
-                    info!("jacktest: receive_header returns false");
-                    false
-                }
+                crossbeam::channel::TryRecvError::Empty => ReceiveHeader::NotReceived,
                 crossbeam::channel::TryRecvError::Disconnected => {
                     panic!("the new headerchannel is disconnected")
                 }
@@ -172,8 +180,8 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
-        msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<Self>,
+        _msg: BlockTemplateRequest,
+        ctx: &mut ServiceContext<Self>,
     ) -> <BlockTemplateRequest as ServiceRequest>::Response {
         let header_version = self
             .inner
@@ -181,10 +189,18 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        if !self.receive_header() && !msg.force {
-            bail!("Failed to receive header in block builder service");
+        match self.receive_header() {
+            ReceiveHeader::Received => self
+                .inner
+                .create_block_template(header_version)
+                .map_err(BlockTemplateError::Other),
+            ReceiveHeader::NotReceived => {
+                ctx.run_later(Duration::from_secs(2), |ctx| {
+                    ctx.broadcast(GenerateBlockEvent::default())
+                });
+                Err(BlockTemplateError::NoReceivedHeader)
+            }
         }
-        self.inner.create_block_template(header_version)
     }
 }
 
