@@ -1,15 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::GenerateBlockEvent;
+use crate::{GenerateBlockEvent, NewHeaderChannel};
 use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
+    startup_info::StartupInfo,
     sync_status::SyncStatus,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{
+        NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted,
+    },
 };
 use std::sync::Arc;
 
@@ -53,6 +57,7 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
         ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<SystemStarted>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -65,10 +70,44 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewDagBlockFromPeer>();
         ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<SystemStarted>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
+        let config = ctx
+            .get_shared::<Arc<NodeConfig>>()
+            .expect("config should exist");
+        if config.miner.is_disable_mint_empty_block()
+            || config.net().is_dev()
+            || config.net().is_dag_test()
+            || config.net().is_test()
+        {
+            return;
+        }
+        let channel = ctx
+            .get_shared::<NewHeaderChannel>()
+            .expect("new header channel should exist");
+        let startup_info = ctx
+            .get_shared::<StartupInfo>()
+            .expect("startup info should exist");
+        let storage = ctx
+            .get_shared::<Arc<Storage>>()
+            .expect("storage should exist");
+        let header = storage
+            .get_block_header_by_hash(startup_info.main)
+            .expect("failed to get the header for startup info")
+            .expect("the block in storage should exist");
+        match channel.new_header_sender.send(Arc::new(header)) {
+            Ok(_) => (),
+            Err(e) => panic!("Failed to send header to new header channel: {:?}", e),
+        }
+        self.send_event(true, ctx);
     }
 }
 
