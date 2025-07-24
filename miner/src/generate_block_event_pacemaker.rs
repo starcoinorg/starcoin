@@ -6,20 +6,17 @@ use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
-    startup_info::StartupInfo,
     sync_status::SyncStatus,
-    system_events::{
-        NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted,
-    },
+    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent},
 };
 use std::sync::Arc;
 
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
+    new_header_channel: NewHeaderChannel,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
@@ -27,6 +24,7 @@ impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
         Ok(Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
+            new_header_channel: ctx.get_shared::<NewHeaderChannel>()?,
         })
     }
 }
@@ -57,7 +55,6 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
         ctx.subscribe::<NewDagBlock>();
-        ctx.subscribe::<SystemStarted>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -70,44 +67,10 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewDagBlockFromPeer>();
         ctx.unsubscribe::<NewDagBlock>();
-        ctx.unsubscribe::<SystemStarted>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
         Ok(())
-    }
-}
-
-impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        let config = ctx
-            .get_shared::<Arc<NodeConfig>>()
-            .expect("config should exist");
-        if config.miner.is_disable_mint_empty_block()
-            || config.net().is_dev()
-            || config.net().is_dag_test()
-            || config.net().is_test()
-        {
-            return;
-        }
-        let channel = ctx
-            .get_shared::<NewHeaderChannel>()
-            .expect("new header channel should exist");
-        let startup_info = ctx
-            .get_shared::<StartupInfo>()
-            .expect("startup info should exist");
-        let storage = ctx
-            .get_shared::<Arc<Storage>>()
-            .expect("storage should exist");
-        let header = storage
-            .get_block_header_by_hash(startup_info.main)
-            .expect("failed to get the header for startup info")
-            .expect("the block in storage should exist");
-        match channel.new_header_sender.send(Arc::new(header)) {
-            Ok(_) => (),
-            Err(e) => panic!("Failed to send header to new header channel: {:?}", e),
-        }
-        self.send_event(true, ctx);
     }
 }
 
@@ -146,6 +109,25 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
         // let is_synced = msg.0.is_synced();
         self.sync_status = Some(msg.0);
         if self.is_synced() {
+            let _consume = self
+                .new_header_channel
+                .new_header_receiver
+                .try_iter()
+                .count();
+            match self.new_header_channel.new_header_sender.send(Arc::new(
+                self.sync_status
+                    .as_ref()
+                    .unwrap()
+                    .chain_status()
+                    .head()
+                    .clone(),
+            )) {
+                Ok(_) => (),
+                Err(e) => {
+                    error!("Failed to send header to new header channel: {:?}", e);
+                    return;
+                }
+            }
             self.send_event(true, ctx);
         }
     }
