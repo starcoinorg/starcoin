@@ -1,5 +1,4 @@
 use std::collections::{HashMap, VecDeque};
-use std::time::Duration;
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -28,7 +27,6 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
-use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -181,7 +179,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: BlockTemplateRequest,
-        ctx: &mut ServiceContext<Self>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <BlockTemplateRequest as ServiceRequest>::Response {
         let header_version = self
             .inner
@@ -194,12 +192,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
                 .inner
                 .create_block_template(header_version)
                 .map_err(BlockTemplateError::Other),
-            ReceiveHeader::NotReceived => {
-                ctx.run_later(Duration::from_secs(2), |ctx| {
-                    ctx.broadcast(GenerateBlockEvent::default())
-                });
-                Err(BlockTemplateError::NoReceivedHeader)
-            }
+            ReceiveHeader::NotReceived => Err(BlockTemplateError::NoReceivedHeader),
         }
     }
 }
