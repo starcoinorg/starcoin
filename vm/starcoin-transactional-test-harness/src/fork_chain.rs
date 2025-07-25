@@ -408,7 +408,7 @@ impl ChainApi for MockChainApi {
                 .and_then(|t| t.to_v2())
             {
                 Some(txn) => {
-                    // WATNING: the txn here is not in any blocks, use head block instead.
+                    // WARNING: the txn here is not in any blocks, use head block instead.
                     // TODO: How to handle the txns not in any blocks.
                     let block = status.clone().unwrap().head;
                     let mut txn = TransactionView2::new(txn, &block)?;
