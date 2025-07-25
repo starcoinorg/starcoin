@@ -22,7 +22,7 @@ use scmd::{CmdContext, CustomCommand};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
-use subcommand_vm2::{account as account2, contract as contract2, dev as dev2};
+use subcommand_vm2::{account as account2, chain as chain2, contract as contract2, dev as dev2};
 
 pub fn add_command(
     context: CmdContext<CliState, StarcoinOpt>,
@@ -100,13 +100,13 @@ pub fn add_command(
                 .subcommand(chain::InfoCommand)
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::ListBlockCommand)
-                .subcommand(chain::GetTransactionCommand)
-                .subcommand(chain::GetTxnInfosCommand)
-                .subcommand(chain::GetTransactionInfoCommand)
-                .subcommand(chain::GetEventsCommand)
+                .subcommand(chain2::GetTransactionCommand)
+                .subcommand(chain2::GetTxnInfosCommand)
+                .subcommand(chain2::GetTransactionInfoCommand)
+                .subcommand(chain2::GetEventsCommand)
                 .subcommand(chain::EpochInfoCommand)
-                .subcommand(chain::GetTransactionInfoListCommand)
-                .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
+                .subcommand(chain2::GetTransactionInfoListCommand)
+                .subcommand(chain2::get_txn_proof_cmd::GetTransactionProofCommand)
                 .subcommand(chain::GetBlockInfoCommand),
         )
         .command(

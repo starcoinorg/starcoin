@@ -30,6 +30,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
+use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
@@ -38,8 +39,7 @@ use starcoin_vm2_types::view::{
     TransactionInfoView as TransactionInfoView2,
     TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm2_vm_types::StateView as StateView2;
+use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView as StateView2};
 use std::convert::TryInto;
 use std::sync::Arc;
 
@@ -229,7 +229,7 @@ where
                             )
                         })?;
 
-                    let mut txn = TransactionView::new(t, &block)?;
+                    let mut txn = TransactionView::new(t.to_v1().unwrap(), &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
                         let multi_state = storage.get_vm_multi_state(header.id())?;
@@ -238,6 +238,54 @@ where
                         let state2 = ChainStateDB2::new(storage2, Some(multi_state.state_root2()));
                         if let Some(txn) = txn.user_transaction.as_mut() {
                             try_decode_txn_payload(&state, &state2, txn)?;
+                        }
+                    }
+                    Ok(Some(txn))
+                }
+            }
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_transaction2(
+        &self,
+        transaction_hash: HashValue,
+        option: Option<GetTransactionOption>,
+    ) -> FutureResult<Option<TransactionView2>> {
+        let service = self.service.clone();
+        let decode_payload = option.unwrap_or_default().decode;
+        let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
+        let fut = async move {
+            let transaction = service.get_transaction(transaction_hash).await?;
+            match transaction {
+                None => Ok(None),
+                Some(t) => {
+                    let block = service
+                        .get_transaction_block(transaction_hash)
+                        .await?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "cannot find block which includes the txn {}",
+                                transaction_hash
+                            )
+                        })?;
+
+                    let mut txn = TransactionView2::new(t.to_v2().unwrap(), &block)?;
+                    if decode_payload {
+                        let header = service.main_head_header().await?;
+                        let multi_state = storage.get_vm_multi_state(header.id())?;
+                        let state =
+                            ChainStateDB::new(storage.clone(), Some(multi_state.state_root1()));
+                        let state2 = ChainStateDB2::new(storage2, Some(multi_state.state_root2()));
+                        if let Some(txn) = txn.user_transaction.as_mut() {
+                            try_decode_txn_payload(
+                                &state,
+                                &state2,
+                                &mut MultiSignedUserTransactionView::VM2(txn.clone()),
+                            )?;
                         }
                     }
                     Ok(Some(txn))

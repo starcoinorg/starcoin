@@ -1114,12 +1114,10 @@ impl ChainReader for BlockChain {
         self.block_accumulator.get_leaf(number)
     }
 
-    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>> {
         let (storage, _) = &self.storage;
         //TODO check txn should exist on current chain.
-        Ok(storage
-            .get_transaction(txn_hash)?
-            .and_then(|txn| txn.to_v1()))
+        storage.get_transaction(txn_hash)
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>> {
