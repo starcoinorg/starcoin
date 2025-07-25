@@ -273,7 +273,10 @@ where
                             )
                         })?;
 
-                    let mut txn = TransactionView2::new(t.to_v2().unwrap(), &block)?;
+                    let t_v2 = t.to_v2().map_err(|e| {
+                        anyhow::anyhow!("Failed to convert transaction to v2: {}", e)
+                    })?;
+                    let mut txn = TransactionView2::new(t_v2, &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
                         let multi_state = storage.get_vm_multi_state(header.id())?;
