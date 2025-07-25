@@ -12,23 +12,15 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{StateWithProof, StateWithTableItemProof};
-use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::transaction::{StcTransactionInfo, Transaction};
-use starcoin_vm_types::state_store::table::TableInfo;
-
-mod remote_chain_state;
+use starcoin_types::transaction::{StcTransaction, StcTransactionInfo};
+use starcoin_vm_types::state_store::table::TableHandle;
 
 pub use network_p2p_core::RawRpcClient;
-pub use remote_chain_state::RemoteChainStateReader;
-
 pub use starcoin_types::block::BlockBody;
-use starcoin_vm_types::state_store::table::TableHandle;
 
 pub const MAX_BLOCK_REQUEST_SIZE: u64 = 50;
 pub const MAX_BLOCK_HEADER_REQUEST_SIZE: u64 = 1000;
@@ -218,7 +210,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<Transaction>>>>;
+    ) -> BoxFuture<Result<Vec<Option<StcTransaction>>>>;
 
     fn get_txn_infos(
         &self,
@@ -250,29 +242,11 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<BlockHeader>>>>;
 
-    fn get_state_node_by_node_hash(
-        &self,
-        peer_id: PeerId,
-        node_key: HashValue,
-    ) -> BoxFuture<Result<Option<StateNode>>>;
-
     fn get_accumulator_node_by_node_hash(
         &self,
         peer_id: PeerId,
         request: GetAccumulatorNodeByNodeHash,
     ) -> BoxFuture<Result<Option<AccumulatorNode>>>;
-
-    fn get_state_with_proof(
-        &self,
-        peer_id: PeerId,
-        req: GetStateWithProof,
-    ) -> BoxFuture<Result<StateWithProof>>;
-
-    fn get_account_state(
-        &self,
-        peer_id: PeerId,
-        req: GetAccountState,
-    ) -> BoxFuture<Result<Option<AccountState>>>;
 
     fn get_block_ids(&self, peer_id: PeerId, req: GetBlockIds)
         -> BoxFuture<Result<Vec<HashValue>>>;
@@ -282,19 +256,6 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<Option<Block>>>>;
-
-    fn get_state_with_table_item_proof(
-        &self,
-        peer_id: PeerId,
-        request: GetStateWithTableItemProof,
-    ) -> BoxFuture<Result<StateWithTableItemProof>>;
-
-    fn get_state_table_info(
-        &self,
-        peer_id: PeerId,
-        request: GetTableInfo,
-    ) -> BoxFuture<Result<Option<TableInfo>>>;
-
     fn get_vm_state_roots(
         &self,
         peer_id: PeerId,

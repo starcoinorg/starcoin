@@ -14,13 +14,11 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
-use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::StcTransactionInfo,
+    transaction::{StcTransaction, StcTransactionInfo},
 };
 use std::fmt::Debug;
 use std::time::Instant;
@@ -199,12 +197,12 @@ impl VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
-    ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
+    ) -> Result<(Vec<HashValue>, Vec<StcTransaction>)> {
         let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
         let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
-            let mut verified_txns: Vec<Transaction> = Vec::new();
+            let mut verified_txns = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {
@@ -308,19 +306,6 @@ impl VerifiedRpcClient {
             .await?;
         let resp = G_BLOCK_INFO_VERIFIER.verify(peer_id, req, resp)?;
         Ok(resp)
-    }
-
-    pub async fn get_state_node_by_node_hash(
-        &self,
-        node_key: HashValue,
-    ) -> Result<(PeerId, Option<StateNode>)> {
-        let peer_id = self.select_a_peer()?;
-        Ok((
-            peer_id.clone(),
-            self.client
-                .get_state_node_by_node_hash(peer_id, node_key)
-                .await?,
-        ))
     }
 
     pub async fn get_accumulator_node_by_node_hash(

@@ -4,17 +4,9 @@
 use anyhow::Result;
 use futures::executor::block_on;
 use starcoin_config::*;
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::{
-    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,
-    Ping,
-};
+use starcoin_network_rpc_api::{gen_client as starcoin_gen_client, GetBlockIds, Ping};
 use starcoin_node::NodeHandle;
-use starcoin_state_api::StateWithProof;
-use starcoin_types::{access_path, account_config::genesis_address};
-use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_resource::Epoch;
 use std::sync::Arc;
 
 #[stest::test]
@@ -38,8 +30,6 @@ fn test_network_rpc() {
     // network rpc client for chain 1
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
 
-    let access_path = access_path::AccessPath::new(genesis_address(), Epoch::resource_path());
-
     //ping ok
     let req = Ping {
         msg: "ping_test".to_string(),
@@ -62,38 +52,6 @@ fn test_network_rpc() {
             .await
     });
     assert!(ping.is_err(), "expect return err, but return ok");
-
-    let req = GetBlockHeadersByNumber::new(1, 1, 1);
-    let resp: Option<Vec<HashValue>> = block_on(async {
-        let headers = client
-            .get_headers_by_number(peer_id_2.clone(), req)
-            .await
-            .unwrap();
-        let block_id = headers[0].as_ref().unwrap().id();
-        client
-            .get_vm_state_roots(peer_id_2.clone(), block_id)
-            .await
-            .unwrap()
-    });
-    let state_root = resp.unwrap()[0];
-
-    let state_req = GetStateWithProof {
-        state_root,
-        access_path: access_path.clone(),
-    };
-    let state_with_proof: StateWithProof = block_on(async {
-        client
-            .get_state_with_proof(peer_id_2.clone(), state_req)
-            .await
-            .unwrap()
-    });
-    let state = state_with_proof.state.unwrap();
-    let epoch = bcs_ext::from_bytes::<Epoch>(state.as_slice()).unwrap();
-    state_with_proof
-        .proof
-        .verify(state_root, access_path, Some(&state))
-        .unwrap();
-    debug!("{:?}", epoch);
 
     let rpc_info = starcoin_gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);

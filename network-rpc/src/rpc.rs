@@ -10,33 +10,26 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
-    GetBlockIds, GetStateWithProof, GetStateWithTableItemProof, GetTableInfo, GetTxnsWithHash,
-    GetTxnsWithSize, Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE,
-    MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
+    gen_server, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber, GetBlockIds,
+    GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE,
+    MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
-use starcoin_state_api::{ChainStateAsyncService, StateWithProof, StateWithTableItemProof};
-use starcoin_state_service::ChainStateService;
-use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
-    account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::{StcTransactionInfo, Transaction},
+    transaction::{StcTransaction, StcTransactionInfo},
 };
-use starcoin_vm_types::state_store::table::TableInfo;
 use std::sync::Arc;
 
 pub struct NetworkRpcImpl {
     storage: Arc<dyn Store>,
     chain_service: ServiceRef<ChainReaderService>,
     txpool_service: TxPoolService,
-    state_service: ServiceRef<ChainStateService>,
 }
 
 impl NetworkRpcImpl {
@@ -44,13 +37,11 @@ impl NetworkRpcImpl {
         storage: Arc<dyn Store>,
         chain_service: ServiceRef<ChainReaderService>,
         txpool: TxPoolService,
-        state_service: ServiceRef<ChainStateService>,
     ) -> Self {
         Self {
             chain_service,
             txpool_service: txpool,
             storage,
-            state_service,
         }
     }
 }
@@ -91,14 +82,11 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
+    ) -> BoxFuture<Result<Vec<Option<StcTransaction>>>> {
         let storage = self.storage.clone();
         let fut = async move {
             let txns = storage.get_transactions(req.ids)?;
-            Ok(txns
-                .into_iter()
-                .map(|txn| txn.and_then(|t| t.to_v1()))
-                .collect::<Vec<_>>())
+            Ok(txns.into_iter().collect::<Vec<_>>())
         };
         Box::pin(fut)
     }
@@ -210,16 +198,6 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_state_node_by_node_hash(
-        &self,
-        _peer_id: PeerId,
-        state_node_key: HashValue,
-    ) -> BoxFuture<Result<Option<StateNode>>> {
-        let storage = self.storage.clone();
-        let fut = async move { storage.get(&state_node_key) };
-        Box::pin(fut)
-    }
-
     fn get_accumulator_node_by_node_hash(
         &self,
         _peer_id: PeerId,
@@ -228,58 +206,6 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let storage = self.storage.clone();
         let acc_store = storage.get_accumulator_store(request.accumulator_storage_type);
         let fut = async move { acc_store.get_node(request.node_hash) };
-        Box::pin(fut)
-    }
-
-    fn get_state_with_proof(
-        &self,
-        _peer_id: PeerId,
-        req: GetStateWithProof,
-    ) -> BoxFuture<Result<StateWithProof>> {
-        let state_service = self.state_service.clone();
-        let fut = async move {
-            state_service
-                .get_with_proof_by_root(req.access_path, req.state_root)
-                .await
-        };
-        Box::pin(fut)
-    }
-
-    fn get_state_with_table_item_proof(
-        &self,
-        _peer_id: PeerId,
-        req: GetStateWithTableItemProof,
-    ) -> BoxFuture<Result<StateWithTableItemProof>> {
-        let state_service = self.state_service.clone();
-        let fut = async move {
-            state_service
-                .get_with_table_item_proof_by_root(req.handle, req.key, req.state_root)
-                .await
-        };
-        Box::pin(fut)
-    }
-
-    fn get_state_table_info(
-        &self,
-        _peer_id: PeerId,
-        request: GetTableInfo,
-    ) -> BoxFuture<Result<Option<TableInfo>>> {
-        let state_service = self.state_service.clone();
-        let fut = async move { state_service.get_table_info(request.0).await };
-        Box::pin(fut)
-    }
-
-    fn get_account_state(
-        &self,
-        _peer_id: PeerId,
-        req: GetAccountState,
-    ) -> BoxFuture<Result<Option<AccountState>>> {
-        let state_service = self.state_service.clone();
-        let fut = async move {
-            state_service
-                .get_account_state_by_root(req.account_address, req.state_root)
-                .await
-        };
         Box::pin(fut)
     }
 
