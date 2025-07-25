@@ -408,6 +408,15 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
+        // removed this before publishing
+        let _ = self.print_transaction_execution(
+            blue_blocks.len(),
+            &blue_blocks
+                .iter()
+                .flat_map(|b| b.transactions().iter().cloned())
+                .collect::<Vec<_>>(),
+        );
+
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
 
         let uncles = blue_blocks
@@ -453,6 +462,29 @@ where
             parent: previous_header,
             template,
         })
+    }
+
+    fn print_transaction_execution(
+        &self,
+        bluecount: usize,
+        txn: &[SignedUserTransaction],
+    ) -> Result<()> {
+        let mut executed_transaction_count = 0;
+        for transaction in txn {
+            for rich_info_id in self
+                .storage
+                .get_transaction_info_ids_by_txn_hash(transaction.id())?
+            {
+                if let Some(rich_info) = self.storage.get_transaction_info(rich_info_id)? {
+                    if let Some(_block) = self.main.get_block(rich_info.block_id())? {
+                        // in the selected chain
+                        executed_transaction_count += 1;
+                    }
+                }
+            }
+        }
+        info!("executed transaction statistic: blue count: {}, total transaction in blue: {}, executed transaction count: {}, ratio: {}", bluecount, txn.len(), executed_transaction_count, executed_transaction_count as f64 / txn.len() as f64);
+        Ok(())
     }
 
     fn fetch_transactions(
