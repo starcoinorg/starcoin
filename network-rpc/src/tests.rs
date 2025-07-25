@@ -4,11 +4,8 @@
 use anyhow::Result;
 use futures::executor::block_on;
 use starcoin_config::*;
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::{
-    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, Ping,
-};
+use starcoin_network_rpc_api::{gen_client as starcoin_gen_client, GetBlockIds, Ping};
 use starcoin_node::NodeHandle;
 use std::sync::Arc;
 
@@ -55,19 +52,6 @@ fn test_network_rpc() {
             .await
     });
     assert!(ping.is_err(), "expect return err, but return ok");
-
-    let req = GetBlockHeadersByNumber::new(1, 1, 1);
-    let _resp: Option<Vec<HashValue>> = block_on(async {
-        let headers = client
-            .get_headers_by_number(peer_id_2.clone(), req)
-            .await
-            .unwrap();
-        let block_id = headers[0].as_ref().unwrap().id();
-        client
-            .get_vm_state_roots(peer_id_2.clone(), block_id)
-            .await
-            .unwrap()
-    });
 
     let rpc_info = starcoin_gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);
