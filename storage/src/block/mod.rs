@@ -14,8 +14,6 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockHeader};
 
-pub mod legacy;
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
     block: Block,
@@ -73,7 +71,7 @@ define_storage!(
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME
 );
 define_storage!(
-    StcFailedBlockStorage,
+    FailedBlockStorage,
     HashValue,
     FailedBlock,
     FAILED_BLOCK_PREFIX_NAME_V2
@@ -85,7 +83,7 @@ pub struct BlockStorage {
     pub(crate) header_store: BlockHeaderStorage,
     block_txns_store: BlockTransactionsStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
-    failed_block_storage: StcFailedBlockStorage,
+    failed_block_storage: FailedBlockStorage,
 }
 
 impl ValueCodec for Block {
@@ -125,7 +123,7 @@ impl BlockStorage {
             header_store: BlockHeaderStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
-            failed_block_storage: StcFailedBlockStorage::new(instance),
+            failed_block_storage: FailedBlockStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block) -> Result<()> {

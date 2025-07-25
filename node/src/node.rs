@@ -324,9 +324,7 @@ impl NodeService {
 
         let start_time = SystemTime::now();
         storage_instance.check_upgrade(DEFAULT_UPGRADE_BATCH_SIZE)?;
-        storage_instance.barnard_hard_fork(config.clone())?;
-        // disable dragon hard fork
-        //storage_instance.dragon_hard_fork(config.clone())?;
+
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
         let storage2 = Arc::new(Storage2::new(storage_instance2)?);

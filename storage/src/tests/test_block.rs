@@ -3,18 +3,16 @@
 
 extern crate chrono;
 
-use bcs_ext::BCSCodec;
 use chrono::prelude::*;
 use starcoin_crypto::HashValue;
 
-use crate::block::{legacy::OldFailedBlock, FailedBlock};
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
 use starcoin_config::RocksdbConfig;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::block::{legacy, Block, BlockBody, BlockHeader, BlockHeaderExtra};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_uint::U256;
@@ -122,45 +120,6 @@ fn test_block_number() {
     let block2 = storage.block_storage.get(block_id).unwrap();
     assert!(block2.is_some());
     assert_eq!(block1, block2.unwrap());
-}
-
-#[test]
-fn test_old_failed_block_decode() {
-    let dt = Local::now();
-    let block_header = BlockHeader::new(
-        HashValue::random(),
-        dt.timestamp_nanos_opt().expect("") as u64,
-        2,
-        AccountAddress::random(),
-        HashValue::zero(),
-        HashValue::random(),
-        HashValue::zero(),
-        0,
-        U256::zero(),
-        HashValue::random(),
-        ChainId::test(),
-        0,
-        BlockHeaderExtra::new([0u8; 4]),
-    );
-    let block_body = legacy::BlockBody {
-        transactions: vec![SignedUserTransaction::mock()],
-        uncles: None,
-    };
-
-    let block = legacy::Block {
-        header: block_header,
-        body: block_body,
-    };
-
-    let old_failed_block = OldFailedBlock {
-        block,
-        peer_id: None,
-        failed: "test decode".to_string(),
-    };
-    let encoded = old_failed_block.encode();
-    assert!(encoded.is_ok());
-    let result = FailedBlock::decode(encoded.unwrap().as_slice());
-    assert!(result.is_err());
 }
 
 #[test]

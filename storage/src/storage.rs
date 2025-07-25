@@ -118,7 +118,8 @@ impl StorageInstance {
         DBUpgrade::check_upgrade(self, batch_size)
     }
 
-    pub fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
+    #[allow(dead_code)]
+    fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
         if config.net().id().chain_id().is_barnard() {
             info!("barnard_hard_fork in");
             return DBUpgrade::barnard_hard_fork(self);
@@ -126,7 +127,8 @@ impl StorageInstance {
         Ok(())
     }
 
-    pub fn dragon_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
+    #[allow(dead_code)]
+    fn dragon_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
         if config.net().id().chain_id().is_main() {
             info!("dragon_hard_fork in");
             return DBUpgrade::dragon_hard_fork(self);

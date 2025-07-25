@@ -1,16 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_storage::{
-    block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
-    storage::StorageInstance, Storage, StorageVersion,
-};
-use starcoin_types::{account_address::AccountAddress, state_set::ChainStateSet};
+use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
+use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage};
+use starcoin_types::block::legacy::Block;
+use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
+
+const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
+const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 
 /// Export resources and code from storage for a specific block
 pub fn export(
@@ -23,7 +27,7 @@ pub fn export(
     info!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
         db,
-        StorageVersion::V3.get_column_family_names().to_vec(),
+        vec![BLOCK_PREFIX_NAME, STATE_NODE_PREFIX_NAME],
         true,
         Default::default(),
         None,
@@ -31,11 +35,12 @@ pub fn export(
 
     info!("Initializing storage...");
     let storage_instance = StorageInstance::new_db_instance(db_storage);
-    let block_storage = BlockInnerStorage::new(storage_instance.clone());
 
     info!("Fetching block {} from storage...", block_hash);
-    let block = block_storage
-        .get(block_hash)?
+    let block = storage_instance
+        .get(BLOCK_PREFIX_NAME, block_hash.to_vec())?
+        .map(|data| Block::decode(&data))
+        .transpose()?
         .ok_or_else(|| anyhow::anyhow!("block {} not exist", block_hash))?;
     info!("Block found successfully");
 
