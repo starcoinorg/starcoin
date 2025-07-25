@@ -17,7 +17,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
@@ -182,9 +182,9 @@ impl Genesis {
 
             let txn = Self::build_genesis_transaction(net)?;
 
-            let storage = Arc::new(Storage::new(
-                StorageInstance::new_cache_instance_with_capacity(DEFAULT_CACHE_SIZE * 1000),
-            )?);
+            let instance =
+                StorageInstance::new_cache_instance_with_capacity(DEFAULT_CACHE_SIZE * 1000);
+            let storage = Arc::new(Storage::new(instance.clone())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
             let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
@@ -215,6 +215,14 @@ impl Genesis {
 
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
+
+            if instance.db().is_none() {
+                if let Some(cache) = instance.cache() {
+                    let cap = cache.capacity();
+                    let used = cache.get_len()?;
+                    assert_ne!(used as usize, cap, "Increase capacity of cache storage to make sure no eviction happened, used: {}, capacity: {}", used, cap);
+                }
+            }
 
             Ok(Block::genesis_block(
                 parent_hash,

@@ -26,6 +26,10 @@ impl CacheStorage {
             metrics,
         }
     }
+
+    pub fn capacity(&self) -> usize {
+        self.cache.lock().cap()
+    }
 }
 
 impl Default for CacheStorage {
