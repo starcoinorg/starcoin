@@ -1,17 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::{ensure, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::Serialize;
-use starcoin_chain_api::TransactionInfoWithProof;
+use starcoin_chain_api::TransactionInfoWithProof2;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::{StrView, TransactionInfoWithProofView};
-use starcoin_vm_types::access_path::AccessPath;
-use std::convert::TryInto;
+use starcoin_vm2_types::view::{StrView, TransactionInfoWithProofView};
+use starcoin_vm2_vm_types::access_path::AccessPath;
 
 /// Get transaction proof
 #[derive(Debug, Parser)]
@@ -69,7 +67,7 @@ impl CommandAction for GetTransactionProofCommand {
             .ok_or_else(|| format_err!("Can not find block by hash: {}", opt.block_hash))?;
         let (txn_proof, result) = if opt.raw {
             let txn_proof_hex = client
-                .chain_get_transaction_proof_raw(
+                .chain_get_transaction_proof2_raw(
                     opt.block_hash,
                     opt.transaction_global_index,
                     opt.event_index,
@@ -82,12 +80,12 @@ impl CommandAction for GetTransactionProofCommand {
                     )
                 })?;
             let txn_proof =
-                bcs_ext::from_bytes::<TransactionInfoWithProof>(txn_proof_hex.0.as_slice())?;
+                bcs_ext::from_bytes::<TransactionInfoWithProof2>(txn_proof_hex.0.as_slice())?;
 
             (txn_proof, ViewOrRaw::Raw(txn_proof_hex))
         } else {
             let txn_proof_view = client
-                .chain_get_transaction_proof(
+                .chain_get_transaction_proof2(
                     opt.block_hash,
                     opt.transaction_global_index,
                     opt.event_index,
@@ -99,7 +97,7 @@ impl CommandAction for GetTransactionProofCommand {
                         opt.transaction_global_index
                     )
                 })?;
-            let txn_proof: TransactionInfoWithProof = txn_proof_view.clone().try_into()?;
+            let txn_proof: TransactionInfoWithProof2 = txn_proof_view.clone().try_into()?;
             (txn_proof, ViewOrRaw::View(txn_proof_view))
         };
         ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,

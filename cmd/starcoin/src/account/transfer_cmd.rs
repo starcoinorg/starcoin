@@ -5,15 +5,13 @@ use anyhow::Result;
 use clap::Parser;
 
 use scmd::{CommandAction, ExecContext};
-use starcoin_transaction_builder::encode_transfer_script_by_token_code;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_vm2_transaction_builder::encode_transfer_script_by_token_code;
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::token::{stc::G_STC_TOKEN_CODE, token_code::TokenCode};
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, view::TransactionOptions, view_vm2::ExecuteResultView, StarcoinOpt,
+};
 
 /// Transfer token's command, this command will send a transaction to the chain.
 #[derive(Debug, Parser)]
@@ -60,11 +58,10 @@ impl CommandAction for TransferCommand {
             .token_code
             .clone()
             .unwrap_or_else(|| G_STC_TOKEN_CODE.clone());
-        let script_function =
-            encode_transfer_script_by_token_code(receiver_address, opt.amount, token_code);
-        ctx.state().build_and_execute_transaction(
+
+        ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(script_function),
+            encode_transfer_script_by_token_code(receiver_address, opt.amount, token_code),
         )
     }
 }

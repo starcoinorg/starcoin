@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::TransactionInfoView;
+use starcoin_vm2_types::view::TransactionInfoView;
 
 /// Get transaction infos list
 #[derive(Debug, Parser)]
@@ -37,7 +37,7 @@ impl CommandAction for GetTransactionInfoListCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let txn_infos = client.chain_get_transaction_infos(
+        let txn_infos = client.chain_get_transaction_infos2(
             opt.start_index,
             opt.reverse.unwrap_or(false),
             opt.count,

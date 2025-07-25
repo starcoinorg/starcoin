@@ -3,7 +3,6 @@
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
 use jpst::TemplateContext;
-use starcoin_account_api::AccountInfo;
 use starcoin_cmd::helper;
 use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_logger::prelude::*;
@@ -13,6 +12,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_vm2_account_api::AccountInfo;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,10 +79,10 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();
-            let default_account = client.clone().account_default().unwrap().unwrap();
+            let default_account = client.clone().account_default2().unwrap().unwrap();
             info!("default account config success!");
             client
-                .account_unlock(
+                .account_unlock2(
                     default_account.address,
                     "".parse().unwrap(),
                     Duration::from_secs(300 as u64),
@@ -93,9 +93,12 @@ pub fn steps() -> Steps<MyWorld> {
         .given("an account", |world: &mut MyWorld, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();
             let password = "integration";
-            let account = client.clone().account_create(password.to_string()).unwrap();
+            let account = client
+                .clone()
+                .account_create2(password.to_string())
+                .unwrap();
             client
-                .account_unlock(
+                .account_unlock2(
                     account.address,
                     password.to_string(),
                     Duration::from_secs(300 as u64),

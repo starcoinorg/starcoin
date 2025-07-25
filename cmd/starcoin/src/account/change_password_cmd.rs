@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_types::account_address::AccountAddress;
 
 /// Change account password, should unlock the account before change password.
 #[derive(Debug, Parser)]
@@ -36,7 +36,7 @@ impl CommandAction for ChangePasswordCmd {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt: &ChangePasswordOpt = ctx.opt();
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
         let account_info =
             account_client.change_account_password(opt.account_address, opt.password.clone())?;
         Ok(account_info)

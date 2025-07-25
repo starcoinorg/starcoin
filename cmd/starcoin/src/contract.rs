@@ -1,15 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_rpc_api::types::{AnnotatedMoveStructView, StrView};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm2_types::{
+    account_address::AccountAddress,
+    language_storage::{ModuleId, StructTag},
+    view::{AnnotatedMoveStructView, StrView},
+};
 
 /// Get contract data command
 /// Note: this command is deprecated, please use `state get` command.
@@ -67,16 +68,17 @@ impl CommandAction for GetContractDataCommand {
         eprintln!("`contract get` command is deprecated, please use `state get` command.");
         let opt = ctx.opt();
         let result = match opt {
-            GetContractDataOpt::Code { module_id } => {
-                GetContractDataResult::Code(ctx.state().client().get_code(module_id.0.clone())?)
-            }
+            GetContractDataOpt::Code { module_id } => GetContractDataResult::Code(
+                ctx.state().vm2()?.client().get_code2(module_id.0.clone())?,
+            ),
             GetContractDataOpt::Resource {
                 address,
                 resource_type,
             } => GetContractDataResult::Resource(
                 ctx.state()
+                    .vm2()?
                     .client()
-                    .get_resource(*address, resource_type.0.clone())?
+                    .get_resource2(*address, resource_type.0.clone())?
                     .map(Into::into),
             ),
         };

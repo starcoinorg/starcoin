@@ -1,16 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::{bail, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::ValidCryptoMaterialStringExt;
-use starcoin_types::transaction::authenticator::AccountPrivateKey;
-use starcoin_vm_types::account_address::AccountAddress;
-use std::convert::TryFrom;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use std::path::PathBuf;
 
 /// Export account's private key.
@@ -37,7 +36,7 @@ impl CommandAction for ExportCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &ExportOpt = ctx.opt();
         let data = client.export_account(opt.account_address, opt.password.clone())?;
         let private_key = AccountPrivateKey::try_from(data.as_slice())?;

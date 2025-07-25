@@ -6,10 +6,11 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::vm_status::AbortLocation;
-use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
-use vm_status_translator::{explain_move_abort, MoveAbortExplain};
+use starcoin_vm2_status_translator::{explain_move_abort, MoveAbortExplain};
+use starcoin_vm2_types::{
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+    vm_error::AbortLocation,
+};
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.

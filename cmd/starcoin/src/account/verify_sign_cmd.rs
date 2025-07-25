@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_types::sign_message::SignedMessage;
+use starcoin_vm2_types::{genesis_config::ChainId, sign_message::SignedMessage};
 
 /// Verify the message signed by the sign command.
 #[derive(Debug, Parser)]
@@ -30,13 +30,17 @@ impl CommandAction for VerifySignMessageCmd {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let state = ctx.state();
+        let state = ctx.state().vm2()?;
         let signed_message = opt.signed_message.clone();
-        let account_resource = state.get_account_resource(signed_message.account)?;
+        let account_resource = state.get_account_resource(signed_message.account).ok();
 
         let result = signed_message.check_signature().and_then(|_| {
-            signed_message.check_account(state.net().chain_id(), account_resource.as_ref())
+            signed_message.check_account(
+                ChainId::new(state.net().chain_id().id()),
+                account_resource.as_ref(),
+            )
         });
+
         Ok(VerifyResult {
             ok: result.is_ok(),
             error: result.err().map(|e| e.to_string()),

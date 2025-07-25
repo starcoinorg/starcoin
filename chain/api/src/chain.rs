@@ -10,10 +10,9 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 pub use starcoin_types::block::ExecutedBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::StcRichTransactionInfo;
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    transaction::Transaction,
     U256,
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
@@ -48,7 +47,7 @@ pub trait ChainReader {
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     /// Get block hash by block number, if not exist, return None
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<StcTransaction>>;
     /// Get transaction info by transaction's hash
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
 

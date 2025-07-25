@@ -1,20 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::TransactionOptions;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, view::TransactionOptions, StarcoinOpt};
 use anyhow::{bail, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::TransactionInfoView;
-use starcoin_transaction_builder::encode_transfer_script_by_token_code;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config;
-use starcoin_types::account_config::STCUnit;
-use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm_types::token::token_value::TokenValue;
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_vm2_types::{
+    account_address::AccountAddress, account_config::STCUnit, view::TransactionInfoView,
+};
+use starcoin_vm2_vm_types::{
+    account_config::association_address, account_config::G_STC_TOKEN_CODE,
+    token::token_value::TokenValue,
+};
+
+use starcoin_types::account_address::AccountAddress as AccountAddressV1;
+use starcoin_vm2_transaction_builder::encode_transfer_script_by_token_code;
 use std::time::Duration;
 
 /// Get stc to default account.
@@ -50,19 +50,19 @@ impl CommandAction for GetCoinCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let state = ctx.state();
+        let state = ctx.state().vm2()?;
         let net = ctx.state().net();
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
         let to = if let Some(account_address) = opt.address_or_receipt {
             account_address
         } else {
-            ctx.state().default_account()?.address
+            ctx.state().vm2()?.default_account()?.address
         };
 
         let transaction_info = if net.is_test_or_dev() {
-            let sender = account_config::association_address();
+            let sender = association_address();
             let txn_opt = TransactionOptions {
-                sender: Some(sender),
+                sender: Some(AccountAddressV1::new(sender.into_bytes())),
                 blocking: !opt.no_blocking,
                 ..Default::default()
             };
@@ -70,16 +70,16 @@ impl CommandAction for GetCoinCommand {
             state
                 .build_and_execute_transaction(
                     txn_opt,
-                    TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
+                    encode_transfer_script_by_token_code(
                         to,
                         opt.amount.scaling(),
                         G_STC_TOKEN_CODE.clone(),
-                    )),
+                    ),
                 )?
                 .get_transaction_info()
         } else {
             bail!(
-                "The network {} is not support get-coin command, please go to https://faucet.starcoin.org/",
+                "The network {} does not support the get-coin command, please go to https://faucet.starcoin.org/",
                 net
             );
         };

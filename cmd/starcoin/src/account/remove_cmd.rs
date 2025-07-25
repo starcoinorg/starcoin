@@ -6,8 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_vm_types::account_address::AccountAddress;
 
 /// Remove account from local wallet. This operate do not affect the on chain account.
 #[derive(Debug, Parser)]
@@ -35,7 +35,7 @@ impl CommandAction for RemoveCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &RemoveOpt = ctx.opt();
         let account_info = client.remove_account(opt.account_address, opt.password.clone())?;
         Ok(account_info)

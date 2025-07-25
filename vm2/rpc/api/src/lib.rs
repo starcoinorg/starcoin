@@ -8,3 +8,4 @@ pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
 pub mod account_api;
 pub mod contract_api;
 pub mod state_api;
+pub mod transaction_view2;

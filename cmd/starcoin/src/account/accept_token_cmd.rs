@@ -1,17 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{view::TransactionOptions, view_vm2::ExecuteResultView, CliState, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm2_vm_types::{
+    account_config::core_code_address,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+    token::token_code::TokenCode,
+    transaction::{EntryFunction, TransactionPayload},
+};
 use std::convert::TryInto;
 
 /// Accept a new token, this operator will call 0x1::Account::accept_token function.
@@ -41,13 +41,13 @@ impl CommandAction for AcceptTokenCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        ctx.state().build_and_execute_transaction(
+        ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-                Identifier::new("accept_token").unwrap(),
+            TransactionPayload::EntryFunction(EntryFunction::new(
+                ModuleId::new(core_code_address(), Identifier::new("Account")?),
+                Identifier::new("accept_token")?,
                 vec![TypeTag::Struct(Box::new(
-                    opt.token_code.clone().try_into().unwrap(),
+                    opt.token_code.clone().try_into()?,
                 ))],
                 vec![],
             )),

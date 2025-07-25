@@ -72,6 +72,7 @@ starcoin-vm2-status-translator = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-rpc-api = { workspace = true}
 
 [dev-dependencies]
 stest = { workspace = true }

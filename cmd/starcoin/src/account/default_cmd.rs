@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::{format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_types::account_address::AccountAddress;
 
 /// Set or show the default account
 #[derive(Debug, Parser, Default)]
@@ -33,7 +33,7 @@ impl CommandAction for DefaultCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt: &DefaultOpt = ctx.opt();
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
         match opt.account_address.as_ref() {
             None => {
                 let default_account = account_client.get_default_account()?.ok_or_else(|| {

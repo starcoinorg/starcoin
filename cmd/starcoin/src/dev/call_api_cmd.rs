@@ -48,6 +48,7 @@ impl CommandAction for CallApiCommand {
 
         let result = ctx
             .state()
+            .vm2()?
             .client()
             .call_raw_api(opt.rpc_api_name.as_str(), params)?;
         Ok(result)

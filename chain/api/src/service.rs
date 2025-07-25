@@ -10,7 +10,7 @@ use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContrac
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
-use starcoin_types::transaction::{StcRichTransactionInfo, Transaction};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
@@ -25,7 +25,7 @@ pub trait ReadableChainService {
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
-    fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    fn get_transaction(&self, hash: HashValue) -> Result<Option<StcTransaction>>;
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<StcRichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
@@ -104,7 +104,7 @@ pub trait ChainAsyncService:
     async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
-    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>>;
     async fn get_transaction_info(
         &self,
         txn_hash: HashValue,
@@ -244,7 +244,7 @@ where
         Ok(None)
     }
 
-    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>> {
         let response = self.send(ChainRequest::GetTransaction(txn_hash)).await??;
         if let ChainResponse::TransactionOption(txn) = response {
             Ok(txn.map(|b| *b))
