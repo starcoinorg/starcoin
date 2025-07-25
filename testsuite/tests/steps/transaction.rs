@@ -83,10 +83,10 @@ fn transfer_txn(
         ChainId::new(node_info.net.chain_id().id()),
     );
 
-    let txn = sig_txn(client, raw_txn)?;
+    let txn = sign_txn(client, raw_txn)?;
     client.submit_transaction2(txn.clone())
 }
-fn sig_txn(
+fn sign_txn(
     client: &RpcClient,
     raw_txn: RawUserTransaction,
 ) -> Result<SignedUserTransaction, Error> {
