@@ -116,7 +116,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 pub fn get_next_target_helper(
     blocks: Vec<BlockDiffInfo>,
     time_plan: u64,
-    selected_chain: Vec<BlockDiffInfo>,
+    _selected_chain: Vec<BlockDiffInfo>,
 ) -> Result<U256> {
     if blocks.is_empty() {
         bail!("block diff info is empty")
@@ -146,7 +146,7 @@ pub fn get_next_target_helper(
             let latest_timestamp = blocks[0].timestamp;
             let mut total_v_block_time: u64 = 0;
             let mut v_blocks: usize = 0;
-            for (idx, diff_info) in selected_chain.iter().enumerate() {
+            for (idx, diff_info) in blocks.iter().enumerate() {
                 if idx == 0 {
                     continue;
                 }
