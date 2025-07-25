@@ -130,6 +130,10 @@ impl ChainStateWriter for FakeDataStore {
         Ok(())
     }
 
+    fn apply_and_clean_cache(&self, _chain_state_set: ChainStateSet) -> Result<()> {
+        Ok(())
+    }
+
     fn commit(&self) -> Result<HashValue> {
         Ok(HashValue::zero())
     }
