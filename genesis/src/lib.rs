@@ -13,10 +13,11 @@ use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
     DEFAULT_CACHE_SIZE,
 };
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::storage::{InnerStore, StorageInstance};
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
@@ -155,12 +156,25 @@ impl Genesis {
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
         let genesis_config = net.genesis_config();
         let genesis_config2 = net.genesis_config2();
+
+        let parent_hash2 = genesis_config2
+            .genesis_block_parameter()
+            .expect("failed to get genesis block parameter")
+            .parent_hash;
+
         if let Some(GenesisBlockParameter {
-            parent_hash,
+            parent_hash: parent_hash1,
             timestamp,
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            // Merge the parent hashes of vm1 and vm2 into the final genesis parent hash
+            let parent_hash = HashValue::sha3_256_of(
+                [parent_hash1.clone().to_vec(), parent_hash2.to_vec()]
+                    .concat()
+                    .as_slice(),
+            );
+
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
                 genesis_config2,
@@ -168,7 +182,9 @@ impl Genesis {
 
             let txn = Self::build_genesis_transaction(net)?;
 
-            let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+            let instance =
+                StorageInstance::new_cache_instance_with_capacity(DEFAULT_CACHE_SIZE * 1000);
+            let storage = Arc::new(Storage::new(instance.clone())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
             let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
@@ -181,8 +197,14 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::VMState),
             );
+
             let (state_root, txn_info_hash_vec) = {
-                let state_root1 = txn_info.state_root_hash();
+                let state_root1 = if starcoin_chain::should_do_migration(net.chain_id()) {
+                    starcoin_chain::do_migration(&chain_state_db, net.chain_id())?
+                } else {
+                    txn_info.state_root_hash
+                };
+
                 let state_root2 = txn2_info.state_root_hash();
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
@@ -194,8 +216,16 @@ impl Genesis {
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
 
+            if instance.db().is_none() {
+                if let Some(cache) = instance.cache() {
+                    let cap = cache.capacity();
+                    let used = cache.get_len()?;
+                    assert_ne!(used as usize, cap, "Increase capacity of cache storage to make sure no eviction happened, used: {}, capacity: {}", used, cap);
+                }
+            }
+
             Ok(Block::genesis_block(
-                *parent_hash,
+                parent_hash,
                 *timestamp,
                 accumulator_root,
                 state_root,
@@ -306,6 +336,10 @@ impl Genesis {
     }
 
     fn genesis_bytes(net: BuiltinNetworkID) -> Option<&'static [u8]> {
+        info!(
+            "Genesis::genesis_bytes | net id: {:?}, ",
+            net.chain_id().id()
+        );
         let path = PathBuf::from(net.to_string()).join("genesis");
         GENESIS_DIR
             .get_file(path.as_path())
@@ -313,6 +347,10 @@ impl Genesis {
     }
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
+        info!(
+            "Genesis::load_generated | net id: {:?}, ",
+            net.chain_id().id()
+        );
         Ok(match Self::genesis_bytes(net) {
             Some(bytes) => Some(bcs_ext::from_bytes::<Genesis>(bytes)?),
             None => None,
@@ -335,6 +373,7 @@ impl Genesis {
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
+
         storage
             .get_chain_info()?
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
@@ -357,6 +396,7 @@ impl Genesis {
             bcs_ext::to_bytes(self)?
         };
         file.write_all(&contents)?;
+
         Ok(())
     }
 
@@ -380,7 +420,11 @@ impl Genesis {
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
                     genesis.save(data_dir, legacy_genesis)?;
-                    info!("Build and save new genesis: {}", genesis);
+                    info!(
+                        "Genesis::load_and_check_genesis | Build and save new genesis: {}",
+                        genesis
+                    );
+
                     genesis
                 } else {
                     return Err(GenesisError::GenesisNotExist("data_dir".to_owned()).into());
@@ -396,11 +440,8 @@ impl Genesis {
         storage2: Arc<Storage2>,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
-        debug!("load startup_info.");
         let (chain_info, genesis) = match storage.get_chain_info() {
             Ok(Some(chain_info)) => {
-                debug!("Get chain info {:?} from db", chain_info);
-                info!("Check genesis file.");
                 let genesis = Self::load_and_check_genesis(net, data_dir, false)?;
                 match storage.get_block(genesis.block().header().id()) {
                     Ok(Some(block)) => {
@@ -422,12 +463,15 @@ impl Genesis {
                 (chain_info, genesis)
             }
             Ok(None) => {
+                debug!("init_and_check_storage | Cannot found from db, reconstruct chain info");
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let chain_info =
                     genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
                 (chain_info, genesis)
             }
-            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
+            Err(e) => {
+                return Err(GenesisError::GenesisLoadFailure(e).into());
+            }
         };
         //TODO add init time for TimeService
         Ok((chain_info, genesis))
@@ -436,11 +480,11 @@ impl Genesis {
     pub fn init_storage_for_test(
         net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
-        debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+
         Ok((storage, storage2, chain_info, genesis))
     }
 
@@ -448,7 +492,6 @@ impl Genesis {
         net: &ChainNetwork,
         capacity: Option<usize>,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
-        debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(
             StorageInstance::new_cache_instance_with_capacity(
                 capacity.unwrap_or(DEFAULT_CACHE_SIZE),
@@ -531,7 +574,6 @@ mod tests {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info1, genesis1) =
             Genesis::init_and_check_storage(net, storage1.clone(), storage2, data_dir)?;
-
         let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2_2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info2, genesis2) =

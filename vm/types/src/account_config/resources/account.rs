@@ -51,6 +51,22 @@ impl AccountResource {
         }
     }
 
+    pub fn clone_with_parameters(
+        &self,
+        sequence_number: u64,
+        authentication_key: Option<Vec<u8>>,
+    ) -> AccountResource {
+        AccountResource {
+            sequence_number,
+            withdrawal_capability: self.withdrawal_capability.clone(),
+            key_rotation_capability: self.key_rotation_capability.clone(),
+            authentication_key: authentication_key.unwrap_or(self.authentication_key.clone()),
+            deposit_events: self.deposit_events.clone(),
+            withdraw_events: self.withdraw_events.clone(),
+            accept_token_events: self.accept_token_events.clone(),
+        }
+    }
+
     /// Return the sequence_number field for the given AccountResource
     pub fn sequence_number(&self) -> u64 {
         self.sequence_number

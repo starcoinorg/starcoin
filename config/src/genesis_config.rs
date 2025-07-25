@@ -373,6 +373,10 @@ impl ChainNetworkID {
         matches!(self, Self::Builtin(BuiltinNetworkID::Main))
     }
 
+    pub fn is_proxima(&self) -> bool {
+        matches!(self, Self::Builtin(BuiltinNetworkID::Proxima))
+    }
+
     pub fn is_halley(&self) -> bool {
         matches!(self, Self::Builtin(BuiltinNetworkID::Halley))
     }
@@ -485,6 +489,10 @@ impl ChainNetwork {
         Self::new_builtin(BuiltinNetworkID::Test)
     }
 
+    pub fn new_dev() -> Self {
+        Self::new_builtin(BuiltinNetworkID::Dev)
+    }
+
     pub fn id(&self) -> &ChainNetworkID {
         &self.id
     }
@@ -523,6 +531,10 @@ impl ChainNetwork {
 
     pub fn is_main(&self) -> bool {
         self.id.is_main()
+    }
+
+    pub fn is_proxima(&self) -> bool {
+        self.id.is_proxima()
     }
 
     pub fn is_custom(&self) -> bool {
@@ -911,7 +923,7 @@ pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 
 pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // let stdlib_version = StdlibVersion::Latest;
-    let stdlib_version = StdlibVersion::Version(11);
+    let stdlib_version = StdlibVersion::Version(12);
     let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -1035,7 +1047,7 @@ pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let stdlib_version = StdlibVersion::Version(4);
+    let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {

@@ -514,6 +514,7 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
+
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
@@ -524,8 +525,16 @@ impl BlockChain {
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
-            let state_root1 = executed_data.state_root;
+            let state_root1 = if header.is_genesis()
+                && starcoin_data_migration::should_do_migration(header.chain_id())
+            {
+                starcoin_data_migration::do_migration(&statedb, header.chain_id())?
+            } else {
+                executed_data.state_root
+            };
+
             let state_root2 = executed_data2.state_root;
+
             vm_state_accumulator.append(&[state_root1, state_root2])?;
             (
                 vm_state_accumulator.root_hash(),

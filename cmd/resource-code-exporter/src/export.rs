@@ -8,11 +8,17 @@ use starcoin_storage::{
     block::legacy::BlockInnerStorage, db_storage::DBStorage, storage::CodecKVStore,
     storage::StorageInstance, Storage, StorageVersion,
 };
+use starcoin_types::{account_address::AccountAddress, state_set::ChainStateSet};
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
-pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<()> {
+pub fn export(
+    db: &str,
+    output: &Path,
+    block_hash: HashValue,
+    white_list: Option<Vec<AccountAddress>>,
+) -> anyhow::Result<()> {
     info!("Starting export process for block: {}", block_hash);
     info!("Opening database at: {}", db);
     let db_storage = DBStorage::open_with_cfs(
@@ -40,7 +46,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     let statedb = ChainStateDB::new(storage, Some(root));
 
     info!("Starting export from StateDB to: {}", output.display());
-    export_from_statedb(&statedb, output)?;
+    export_from_statedb(&statedb, output, white_list)?;
 
     info!("Export completed successfully");
 
@@ -48,25 +54,72 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
 }
 
 /// Export ChainStateSet as BCS format to specified path
-pub fn export_from_statedb(statedb: &ChainStateDB, bcs_output_path: &Path) -> anyhow::Result<()> {
+pub fn export_from_statedb(
+    statedb: &ChainStateDB,
+    bcs_output_path: &Path,
+    white_list: Option<Vec<AccountAddress>>,
+) -> anyhow::Result<()> {
     info!(
         "Starting export_from_statedb to: {}",
         bcs_output_path.display()
     );
 
     info!("Dumping global states from StateDB...");
-    let dump_state = statedb.dump()?;
+
+    let mut filtered_account_states = vec![];
+
+    if let Some(white_list) = white_list {
+        info!("Using whitelist with {} accounts", white_list.len());
+        for address in white_list {
+            if let Some(account_state_set) = statedb.get_account_state_set(&address)? {
+                let code_count = account_state_set.code_set().map(|s| s.len()).unwrap_or(0);
+                let resource_code = account_state_set
+                    .resource_set()
+                    .map(|s| s.len())
+                    .unwrap_or(0);
+                info!(
+                    "Exporting: account {:?}, Code count: {}, Resource count: {:?}",
+                    address, code_count, resource_code
+                );
+                filtered_account_states.push((address, account_state_set));
+                info!("Added account {} to export, ", address);
+            } else {
+                info!("Account {} not found in state, skipping", address);
+            }
+        }
+    } else {
+        info!("No whitelist provided, exporting all accounts");
+        let global_states_iter = statedb.dump_iter()?;
+        for (account_address, account_state_set) in global_states_iter {
+            let code_count = account_state_set.code_set().map(|s| s.len()).unwrap_or(0);
+            let resource_code = account_state_set
+                .resource_set()
+                .map(|s| s.len())
+                .unwrap_or(0);
+            info!(
+                "Exporting: account {:?}, Code count: {}, Resource count: {:?}",
+                account_address, code_count, resource_code
+            );
+            filtered_account_states.push((account_address, account_state_set));
+        }
+    }
+
+    let dump_state = ChainStateSet::new(filtered_account_states);
 
     // Write dump state as bcs format to file
     info!(
-        "Writing dump state to BCS file: {}",
+        "Filtered {} accounts for export, and writing dump state to BCS file: {}",
+        dump_state.len(),
         bcs_output_path.display()
     );
+
     let bcs_bytes = bcs_ext::to_bytes(&dump_state)?;
     let mut bcs_file = File::create(bcs_output_path)?;
     bcs_file.write_all(&bcs_bytes)?;
-    info!("Successfully wrote {} bytes to BCS file", bcs_bytes.len());
+    info!(
+        "BCS export completed successfully, wrote {} bytes to BCS file",
+        bcs_bytes.len()
+    );
 
-    info!("BCS export completed successfully");
     Ok(())
 }
