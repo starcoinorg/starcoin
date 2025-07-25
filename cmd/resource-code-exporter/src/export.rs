@@ -8,6 +8,8 @@ use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::storage::{ColumnFamilyName, InnerStore};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage};
 use starcoin_types::block::legacy::Block;
+use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::{io::Write, path::Path, sync::Arc};
 
