@@ -382,7 +382,7 @@
     "epoch_block_count": 500,
     "base_block_difficulty_window": 50,
     "min_block_time_target": 1000,
-    "max_block_time_target": 3000,
+    "max_block_time_target": 2000,
     "base_max_uncles_per_block": 2,
     "base_block_gas_limit": 50000000,
     "strategy": 1,
