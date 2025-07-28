@@ -41,6 +41,11 @@ pub struct NewDagBlockFromPeer {
     pub executed_block: Arc<BlockHeader>,
 }
 
+#[derive(Clone, Debug)]
+pub struct DeterminedDagBlock {
+    pub executed_block: Arc<BlockHeader>,
+}
+
 ///Fire this event for generate a new block
 #[derive(Clone, Debug)]
 pub struct GenerateBlockEvent {
