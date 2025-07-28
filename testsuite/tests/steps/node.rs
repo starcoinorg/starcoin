@@ -56,9 +56,7 @@ pub fn steps() -> Steps<MyWorld> {
             }
             if world.rpc_client2.is_some() {
                 let client = world.rpc_client2.take().unwrap();
-                let client = Arc::try_unwrap(client)
-                    .ok()
-                    .expect("get rpc client failed");
+                let client = Arc::try_unwrap(client).ok().expect("get rpc client failed");
                 client.close();
                 info!("rpc_client2 stopped.");
             }
