@@ -8,5 +8,6 @@ pub use account::Account;
 pub use account_manager::AccountManager;
 pub mod account_storage;
 
+mod account_schemadb;
 #[cfg(test)]
 mod account_test;

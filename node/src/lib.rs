@@ -186,7 +186,7 @@ impl NodeHandle {
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new_break(true))?;
             let block = if let Ok(Ok(event)) =
-                async_std::future::timeout(Duration::from_secs(5), receiver).await
+                async_std::future::timeout(Duration::from_secs(30), receiver).await
             {
                 //wait for new block event to been processed.
                 Delay::new(Duration::from_millis(100)).await;
