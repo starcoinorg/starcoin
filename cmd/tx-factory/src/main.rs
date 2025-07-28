@@ -484,7 +484,13 @@ impl TxnMocker {
         let mut sub_account_list = vec![];
         while i < account_num {
             self.recheck_sequence_number()?;
-            let account = self.client.account_create(self.account_password.clone())?;
+            let account = match self.client.account_create(self.account_password.clone()) {
+                Ok(account) => account,
+                Err(e) => {
+                    error!("create account error: {}", e);
+                    continue;
+                }
+            };
             addr_vec.push(account.address);
             sub_account_list.push(account);
             if addr_vec.len() >= batch_size as usize {
@@ -574,8 +580,11 @@ impl TxnMocker {
                         sequences[index] += 1;
                     }
                     Err(err) => {
-                        info!("error: {}", err);
-                        return Err(err);
+                        info!("error: {:?}, refresh the sequence number", err);
+                        for (index, account) in accounts.iter().enumerate() {
+                            sequences[index] =
+                                self.sequence_number(account.address).unwrap().unwrap();
+                        }
                     }
                 }
             }

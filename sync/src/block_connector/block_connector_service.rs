@@ -355,6 +355,11 @@ where
 
         let bus = ctx.bus_ref().clone();
 
+        info!(
+            "jacktest: verify, start to verify the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
         let verified_block =
             match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
                 anyhow::Result::Ok(verified_block) => verified_block,
@@ -367,6 +372,17 @@ where
                     return;
                 }
             };
+        info!(
+            "jacktest: verify, end to verify the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
+
+        info!(
+            "jacktest: execute, start to execute the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
         let executed_block = match chain.execute(verified_block) {
             std::result::Result::Ok(executed_block) => executed_block,
             Err(e) => {
@@ -378,6 +394,17 @@ where
                 return;
             }
         };
+        info!(
+            "jacktest: execute, end to execute the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
+
+        info!(
+            "jacktest: connect, start to connect the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
         match chain.connect(executed_block.clone()) {
             std::result::Result::Ok(_) => (),
             Err(e) => {
@@ -385,7 +412,17 @@ where
                 return;
             }
         }
+        info!(
+            "jacktest: connect, end to execute the mined block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
 
+        info!(
+            "jacktest: new dag block, start to broadcast new dag block id: {:?}, number: {:?}",
+            new_block.id(),
+            new_block.header().number()
+        );
         let _ = bus.broadcast(NewDagBlock {
             executed_block: Arc::new(executed_block.clone()),
         });
