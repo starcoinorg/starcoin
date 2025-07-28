@@ -171,6 +171,7 @@ impl NewHeaderService {
     }
 
     fn determine_header(&mut self, header: &BlockHeader) -> anyhow::Result<()> {
+        info!("jacktest: new dag block, determine_header: new header: {:?}, number: {:?}, current header: {:?}, number: {:?}", header.id(), header.number(), self.header.id(), self.header.number());
         if self.resolve_header(header)? {
             info!(
                 "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
