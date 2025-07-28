@@ -5,10 +5,12 @@ use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_state_api::StateReaderExt;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{BlockStore, IntoSuper, Storage};
 use starcoin_types::{
     block::BlockHeader,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, SystemStarted},
+    system_events::{DeterminedDagBlock, NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
 #[derive(Clone, Debug)]
@@ -44,6 +46,7 @@ pub struct NewHeaderService {
     header: BlockHeader,
     ghostdag_data: GhostdagData,
     dag: BlockDAG,
+    storage: Arc<Storage>,
 }
 
 impl NewHeaderService {
@@ -52,12 +55,14 @@ impl NewHeaderService {
         header: BlockHeader,
         ghostdag_data: GhostdagData,
         dag: BlockDAG,
+        storage: Arc<Storage>,
     ) -> Self {
         Self {
             new_header_channel,
             header,
             ghostdag_data,
             dag,
+            storage,
         }
     }
 }
@@ -118,6 +123,7 @@ impl ServiceFactory<Self> for NewHeaderService {
             header,
             ghostdag_data,
             dag,
+            storage,
         ))
     }
 }
@@ -148,14 +154,7 @@ impl NewHeaderService {
             std::cmp::Ordering::Less => false,
             std::cmp::Ordering::Equal => {
                 match new_ghostdata.blue_score.cmp(&self.ghostdag_data.blue_score) {
-                    std::cmp::Ordering::Less => false,
-                    std::cmp::Ordering::Equal => match header.id().cmp(&self.header.id()) {
-                        std::cmp::Ordering::Less => false,
-                        std::cmp::Ordering::Equal => {
-                            panic!("same block, this condition should not happen")
-                        }
-                        std::cmp::Ordering::Greater => true,
-                    },
+                    std::cmp::Ordering::Equal | std::cmp::Ordering::Less => false,
                     std::cmp::Ordering::Greater => true,
                 }
             }
@@ -167,12 +166,39 @@ impl NewHeaderService {
             self.ghostdag_data = new_ghostdata;
         }
 
-        Ok(true)
+        Ok(update)
     }
 
-    fn determine_header(&mut self, header: &BlockHeader) -> anyhow::Result<()> {
+    fn check_peer_block(&self, header: &BlockHeader, is_from_peer: bool) -> anyhow::Result<bool> {
+        if is_from_peer {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(self.header.state_root()),
+            );
+            let epoch = chain_state.get_epoch()?;
+            if header.number()
+                >= self
+                    .header
+                    .number()
+                    .saturating_sub(epoch.block_difficulty_window())
+            {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
+    fn determine_header(
+        &mut self,
+        header: &BlockHeader,
+        ctx: &mut ServiceContext<Self>,
+        is_from_peer: bool,
+    ) -> anyhow::Result<()> {
         info!("jacktest: new dag block, determine_header: new header: {:?}, number: {:?}, current header: {:?}, number: {:?}", header.id(), header.number(), self.header.id(), self.header.number());
-        if self.resolve_header(header)? {
+        if self.resolve_header(header)? || self.check_peer_block(header, is_from_peer)? {
             info!(
                 "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
                 header.id()
@@ -192,6 +218,9 @@ impl NewHeaderService {
                     warn!("Failed to send new head block: {:?} in NewHeaderService", e);
                 }
             }
+            ctx.broadcast(DeterminedDagBlock {
+                executed_block: Arc::new(self.header.clone()),
+            });
         } else {
             info!("resolve header returns false");
         }
@@ -207,12 +236,12 @@ impl EventHandler<Self, SystemStarted> for NewHeaderService {
 }
 
 impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
-    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
         info!(
             "handle_event: NewDagBlockFromPeer, msg: {:?}",
             msg.executed_block.id()
         );
-        match self.determine_header(msg.executed_block.as_ref()) {
+        match self.determine_header(msg.executed_block.as_ref(), ctx, true) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
                 "Failed to determine header: {:?} when processing NewDagBlockFromPeer",
@@ -223,12 +252,12 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 }
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
-    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         info!(
             "handle_event: NewDagBlock, msg: {:?}",
             msg.executed_block.header().id()
         );
-        match self.determine_header(msg.executed_block.header()) {
+        match self.determine_header(msg.executed_block.header(), ctx, false) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
                 "Failed to determine header: {:?} when processing NewDagBlock",
