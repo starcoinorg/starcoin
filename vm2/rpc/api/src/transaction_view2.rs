@@ -43,7 +43,11 @@ impl TransactionView2 {
                             )
                         })? as u32,
                 )
-                .ok_or_else(|| anyhow::anyhow!("Transaction index overflow "))?,
+                .ok_or_else(|| anyhow::anyhow!( 
+                    "Transaction index overflow for transaction {} in block {}", 
+                    transaction_hash, 
+                    block_hash 
+                ))?,
         };
 
         let (meta, txn) = match txn {
