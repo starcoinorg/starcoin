@@ -78,13 +78,21 @@ pub fn steps() -> Steps<MyWorld> {
             world.default_rpc_client = Some(Arc::new(client))
         })
         .given("default account", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
-            let default_account = client.clone().account_default2().unwrap().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("get rpc client failed");
+            let default_account = client
+                .clone()
+                .account_default2()
+                .expect("should get default account")
+                .expect("should not none");
             info!("default account config success!");
             client
                 .account_unlock2(
                     default_account.address,
-                    "".parse().unwrap(),
+                    "".to_string(),
                     Duration::from_secs(300 as u64),
                 )
                 .unwrap();

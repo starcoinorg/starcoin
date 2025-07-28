@@ -19,15 +19,18 @@ pub fn steps() -> Steps<MyWorld> {
         let proof_view = client
             .clone()
             .state_get_with_proof2(state_key.clone())
-            .unwrap();
-        let state_root = client.clone().state_get_state_root2().unwrap();
+            .expect("should have state");
+        let state_root = client
+            .clone()
+            .state_get_state_root2()
+            .expect("should have state root2");
         let proof: StateWithProof = proof_view.try_into().expect("should convert proof view");
         proof
             .verify(
                 state_root,
                 AccessPath::resource_access_path(*account.address(), AccountResource::struct_tag()),
             )
-            .unwrap();
+            .expect("verify proof failed");
     });
     builder.build()
 }

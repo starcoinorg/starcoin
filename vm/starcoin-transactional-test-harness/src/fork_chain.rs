@@ -400,7 +400,7 @@ impl ChainApi for MockChainApi {
         let chain = self.chain.lock().unwrap();
         let storage = chain.storage.clone();
         let client = chain.remote_chain_client();
-        let status = chain.status.clone();
+        let status = chain.status.clone().expect("clone should succeed");
         let decode_payload = option.unwrap_or_default().decode;
         let fut = async move {
             match storage
@@ -410,13 +410,11 @@ impl ChainApi for MockChainApi {
                 Some(txn) => {
                     // WARNING: the txn here is not in any blocks, use head block instead.
                     // TODO: How to handle the txns not in any blocks.
-                    let block = status.clone().unwrap().head;
+                    let block = status.head;
                     let mut txn = TransactionView2::new(txn, &block)?;
                     if decode_payload {
-                        let state = ChainStateDB::new(
-                            storage,
-                            Some(status.unwrap().status.head().state_root()),
-                        );
+                        let state =
+                            ChainStateDB::new(storage, Some(status.status.head().state_root()));
                         if let Some(txn) = txn.user_transaction.as_mut() {
                             try_decode_txn_payload(
                                 &state,
