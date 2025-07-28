@@ -14,7 +14,7 @@ pub fn steps() -> Steps<MyWorld> {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetworkID::TEST);
             opt.metrics.disable_metrics = Some(false);
-            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            let config = NodeConfig::load_with_opt(&opt).expect("load node config failed");
             info!("config: {:?}", config);
             world.node_config = Some(config)
         })
@@ -23,7 +23,7 @@ pub fn steps() -> Steps<MyWorld> {
             opt.net = Some(ChainNetworkID::DEV);
             opt.metrics.disable_metrics = Some(false);
             opt.base_data_dir = Some(PathBuf::from(r"TMP"));
-            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            let config = NodeConfig::load_with_opt(&opt).expect("load node config failed");
             world.node_config = Some(config)
         })
         .given("halley node config", |world: &mut MyWorld, _step| {
@@ -31,11 +31,15 @@ pub fn steps() -> Steps<MyWorld> {
             opt.net = Some(ChainNetworkID::HALLEY);
             opt.metrics.disable_metrics = Some(false);
             opt.base_data_dir = Some(PathBuf::from(starcoin_config::temp_dir().as_ref()));
-            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            let config = NodeConfig::load_with_opt(&opt).expect("load node config failed");
             world.node_config = Some(config)
         })
         .given("node handle", |world: &mut MyWorld, _step| {
-            let node_config = world.node_config.as_ref().take().unwrap();
+            let node_config = world
+                .node_config
+                .as_ref()
+                .take()
+                .expect("load node config failed");
             let handle = starcoin_node::run_node(Arc::new(node_config.clone()))
                 .unwrap_or_else(|e| panic!("run node fail:{:?}", e));
             world.node_handle = Some(handle)
@@ -46,13 +50,15 @@ pub fn steps() -> Steps<MyWorld> {
             if world.default_rpc_client.is_some() {
                 let client = world.default_rpc_client.take().unwrap();
                 //arc client should no more reference at stop step.
-                let client = Arc::try_unwrap(client).ok().unwrap();
+                let client = Arc::try_unwrap(client).ok().expect("get rpc client failed");
                 client.close();
                 info!("default rpc client stopped.");
             }
             if world.rpc_client2.is_some() {
                 let client = world.rpc_client2.take().unwrap();
-                let client = Arc::try_unwrap(client).ok().unwrap();
+                let client = Arc::try_unwrap(client)
+                    .ok()
+                    .expect("get rpc client failed");
                 client.close();
                 info!("rpc_client2 stopped.");
             }
@@ -66,18 +72,30 @@ pub fn steps() -> Steps<MyWorld> {
             }
         })
         .then("get node info", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("get rpc_client failed");
             let node_info = client.clone().node_info();
             info!("node_info: {:?}", node_info);
         })
         .then("get node status", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("get rpc_client failed");
             let status = client.clone().node_status();
             assert!(status.is_ok());
-            assert_eq!(status.unwrap(), true);
+            assert_eq!(status.expect("get status should succeed"), true);
         })
         .then("get node peers", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("get rpc_client failed");
             let peers = client.clone().node_peers();
             info!("peers: {:?}", peers);
         });

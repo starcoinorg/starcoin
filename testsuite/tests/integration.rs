@@ -57,20 +57,25 @@ pub fn steps() -> Steps<MyWorld> {
                     RocksdbConfig::default(),
                     None,
                 )
-                .unwrap(),
+                .expect("db storage create failed"),
             ))
-            .unwrap();
+            .expect("storage create failed");
             info!("storage created!");
             world.storage = Some(storage)
         })
         .given("remote rpc client", |world: &mut MyWorld, _step| {
             let rpc_addr = env::var("STARCOIN_WS").unwrap_or_else(|_| "".to_string());
-            let client = RpcClient::connect_websocket(rpc_addr.as_ref()).unwrap();
+            let client =
+                RpcClient::connect_websocket(rpc_addr.as_ref()).expect("rpc client connect failed");
             info!("rpc client created!");
             world.default_rpc_client = Some(Arc::new(client))
         })
         .given("ipc rpc client", |world: &mut MyWorld, _step| {
-            let node_config = world.node_config.as_ref().take().unwrap();
+            let node_config = world
+                .node_config
+                .as_ref()
+                .take()
+                .expect("node config missing");
             let ipc_file = node_config.rpc.get_ipc_file();
             helper::wait_until_file_created(ipc_file.as_path()).expect("ipc file must exist");
             let client = RpcClient::connect_ipc(ipc_file).expect("Connect by ipc fail.");
@@ -95,23 +100,27 @@ pub fn steps() -> Steps<MyWorld> {
                     "".to_string(),
                     Duration::from_secs(300 as u64),
                 )
-                .unwrap();
+                .expect("get account unlock2 fail");
             world.default_account = Some(default_account)
         })
         .given("an account", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("get rpc_client failed");
             let password = "integration";
             let account = client
                 .clone()
                 .account_create2(password.to_string())
-                .unwrap();
+                .expect("should create account");
             client
                 .account_unlock2(
                     account.address,
                     password.to_string(),
                     Duration::from_secs(300 as u64),
                 )
-                .unwrap();
+                .expect("get account unlock2 fail");
             info!("a account create success!");
             world.txn_account = Some(account.clone())
         });

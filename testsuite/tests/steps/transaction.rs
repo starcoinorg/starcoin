@@ -24,13 +24,23 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .then("charge money to account", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
-            let to = world.default_account.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("RPC Client not set");
+            let to = world
+                .default_account
+                .as_ref()
+                .take()
+                .expect("RPC Account not set");
             let pre_mine_address = account_config::association_address();
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
             std::thread::sleep(Duration::from_millis(3000));
-            let chain_state_reader = client.state_reader2(StateRootOption::Latest).unwrap();
+            let chain_state_reader = client
+                .state_reader2(StateRootOption::Latest)
+                .expect("state reader");
             let balances = chain_state_reader.get_balance_by_type(
                 *to.address(),
                 G_STC_TOKEN_CODE
@@ -39,14 +49,29 @@ pub fn steps() -> Steps<MyWorld> {
                     .expect("Should convert 0x1::starcoin_coin::STC"),
             );
             assert!(balances.is_ok());
-            info!("charge into default account ok:{:?}", balances.unwrap());
+            info!(
+                "charge into default account ok:{:?}",
+                balances.expect("get balances failed")
+            );
         })
         .then(
             "execute transfer transaction",
             |world: &mut MyWorld, _step| {
-                let client = world.default_rpc_client.as_ref().take().unwrap();
-                let from_account = world.default_account.as_ref().take().unwrap();
-                let to_account = world.txn_account.as_ref().take().unwrap();
+                let client = world
+                    .default_rpc_client
+                    .as_ref()
+                    .take()
+                    .expect("RPC Client not set");
+                let from_account = world
+                    .default_account
+                    .as_ref()
+                    .take()
+                    .expect("RPC Account not set");
+                let to_account = world
+                    .txn_account
+                    .as_ref()
+                    .take()
+                    .expect("Transaction Account not set");
                 info!("transfer from: {:?} to: {:?}", from_account, to_account);
                 let result = transfer_txn(client, to_account, from_account.address, Some(1000));
                 assert!(result.is_ok());

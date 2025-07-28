@@ -13,29 +13,34 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .given("sync rpc client", |world: &mut MyWorld, _step| {
-            let node_config = world.node_config.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            let node_config = world.node_config.as_ref().take().expect("no node config");
+            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file())
+                .expect("should connect");
             info!("node local rpc client created!");
             world.rpc_client2 = Some(Arc::new(client))
         })
         .then("basic check", |world: &mut MyWorld, _step| {
-            let client = world.default_rpc_client.as_ref().take().unwrap();
-            let local_client = world.rpc_client2.as_ref().take().unwrap();
+            let client = world
+                .default_rpc_client
+                .as_ref()
+                .take()
+                .expect("no rpc_client");
+            let local_client = world.rpc_client2.as_ref().take().expect("no rpc_client");
             let status = client.clone().node_status();
             assert!(status.is_ok());
             let list_block = client
                 .chain_get_blocks_by_number(None, 1, Some(GetBlocksOption { reverse: true }))
-                .unwrap();
+                .expect("get blocks from chain_get_blocks_by_number failed");
             let max_num = list_block[0].header.number.0;
             let local_max_block = local_client
                 .chain_get_block_by_number(max_num, None)
-                .unwrap();
+                .expect("get block from chain_get_block_by_number failed");
             assert!(local_max_block.is_some());
             assert_eq!(local_max_block.unwrap(), list_block[0]);
         })
         .then("node stop", |world: &mut MyWorld, _step| {
             thread::sleep(Duration::from_secs(5));
-            let handle = world.node_handle.take().unwrap();
+            let handle = world.node_handle.take().expect("get node handle failed");
             let result = handle.stop();
             assert!(result.is_ok());
         });

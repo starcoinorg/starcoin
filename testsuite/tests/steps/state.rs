@@ -12,8 +12,16 @@ use starcoin_vm2_vm_types::{
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder.then("state proof", |world: &mut MyWorld, _step| {
-        let client = world.default_rpc_client.as_ref().take().unwrap();
-        let account = world.default_account.as_ref().take().unwrap();
+        let client = world
+            .default_rpc_client
+            .as_ref()
+            .take()
+            .expect("get rpc client failed");
+        let account = world
+            .default_account
+            .as_ref()
+            .take()
+            .expect("get account failed");
         let state_key = StateKey::resource(account.address(), &AccountResource::struct_tag())
             .expect("should have state");
         let proof_view = client
