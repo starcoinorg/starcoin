@@ -1,0 +1,87 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::executor::do_execute_block_transactions;
+use serde::{Deserialize, Serialize};
+pub use starcoin_metrics::metrics::VMMetrics;
+use starcoin_vm2_crypto::HashValue;
+use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};
+use starcoin_vm2_types::contract_event::ContractEvent;
+use starcoin_vm2_types::{
+    error::{BlockExecutorError, ExecutorResult},
+    transaction::{Transaction, TransactionInfo, TransactionStatus},
+};
+use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
+use std::collections::BTreeMap;
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BlockExecutedData {
+    pub state_root: HashValue,
+    pub txn_infos: Vec<TransactionInfo>,
+    pub txn_events: Vec<Vec<ContractEvent>>,
+    pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
+}
+
+impl Default for BlockExecutedData {
+    fn default() -> Self {
+        Self {
+            state_root: HashValue::zero(),
+            txn_events: vec![],
+            txn_infos: vec![],
+            txn_table_infos: BTreeMap::new(),
+        }
+    }
+}
+
+pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
+    chain_state: &S,
+    txns: Vec<Transaction>,
+    block_gas_limit: u64,
+    vm_metrics: Option<VMMetrics>,
+) -> ExecutorResult<BlockExecutedData> {
+    let txn_outputs = do_execute_block_transactions(
+        chain_state,
+        txns.clone(),
+        Some(block_gas_limit),
+        vm_metrics.clone(),
+    )
+    .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+
+    let mut executed_data = BlockExecutedData::default();
+    for (txn, output) in txns
+        .iter()
+        .take(txn_outputs.len())
+        .zip(txn_outputs.into_iter())
+    {
+        let txn_hash = txn.id();
+        let (write_set, events, gas_used, status, _) = output.into_inner();
+        match status {
+            TransactionStatus::Discard(status) => {
+                return Err(BlockExecutorError::BlockTransactionDiscard(
+                    status, txn_hash,
+                ));
+            }
+            TransactionStatus::Keep(status) => {
+                chain_state
+                    .apply_write_set(write_set)
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+
+                let txn_state_root = chain_state
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                executed_data.txn_infos.push(TransactionInfo::new(
+                    txn_hash,
+                    txn_state_root,
+                    events.as_slice(),
+                    gas_used,
+                    status,
+                ));
+                executed_data.txn_events.push(events);
+            }
+            TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
+        };
+    }
+
+    executed_data.state_root = chain_state.state_root();
+    Ok(executed_data)
+}
