@@ -29,10 +29,7 @@ pub mod block_metadata {
     pub use starcoin_vm_types::block_metadata::BlockMetadata;
 }
 
-pub mod contract_event {
-    pub use crate::event_info::ContractEventInfo;
-    pub use starcoin_vm_types::contract_event::*;
-}
+pub mod contract_event;
 
 // pub mod time {
 //     pub use starcoin_vm_types::time::*;
@@ -42,6 +39,39 @@ pub mod error;
 
 pub mod event {
     pub use starcoin_vm_types::event::*;
+
+    use schemars::JsonSchema;
+    use serde::{Deserialize, Serialize};
+    use starcoin_vm2_vm_types::event::EventKey as EventKey2;
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+    pub enum StcEventKey {
+        V1(EventKey),
+        V2(EventKey2),
+    }
+
+    impl TryFrom<StcEventKey> for EventKey {
+        type Error = anyhow::Error;
+
+        fn try_from(value: StcEventKey) -> Result<Self, Self::Error> {
+            match value {
+                StcEventKey::V1(key) => Ok(key),
+                StcEventKey::V2(_key) => anyhow::bail!("V2 EventKey cannot be convert to V1"),
+            }
+        }
+    }
+
+    impl From<EventKey> for StcEventKey {
+        fn from(key: EventKey) -> Self {
+            StcEventKey::V1(key)
+        }
+    }
+
+    impl From<EventKey2> for StcEventKey {
+        fn from(key: EventKey2) -> Self {
+            StcEventKey::V2(key)
+        }
+    }
 }
 
 pub mod filter;
@@ -56,24 +86,9 @@ pub mod startup_info;
 pub mod state_set;
 pub mod system_events;
 
-pub mod transaction {
-    pub use starcoin_vm_types::transaction::*;
+pub mod multi_transaction;
 
-    /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
-    pub fn parse_transaction_argument_advance(s: &str) -> anyhow::Result<TransactionArgument> {
-        let arg = match parse_transaction_argument(s) {
-            Ok(arg) => arg,
-            Err(e) => {
-                //auto convert 0xxx to vector<u8>
-                match s.strip_prefix("0x") {
-                    Some(stripped) => TransactionArgument::U8Vector(hex::decode(stripped)?),
-                    None => return Err(e),
-                }
-            }
-        };
-        Ok(arg)
-    }
-}
+pub mod transaction;
 
 //TODO rename or remove this mode.
 pub mod vm_error {
@@ -81,13 +96,73 @@ pub mod vm_error {
 }
 
 pub mod language_storage {
+    use serde::{Deserialize, Serialize};
     pub use starcoin_vm_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
+    use std::str::FromStr;
+
+    pub use starcoin_vm2_vm_types::language_storage::{ModuleId as ModuleId2, TypeTag as TypeTag2};
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+    pub enum StcTypeTag {
+        V1(TypeTag),
+        V2(TypeTag2),
+    }
+
+    impl From<TypeTag> for StcTypeTag {
+        fn from(tag: TypeTag) -> Self {
+            StcTypeTag::V1(tag)
+        }
+    }
+
+    impl From<TypeTag2> for StcTypeTag {
+        fn from(tag: TypeTag2) -> Self {
+            StcTypeTag::V2(tag)
+        }
+    }
+
+    impl FromStr for StcTypeTag {
+        type Err = anyhow::Error;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            if let Ok(tag) = TypeTag2::from_str(s) {
+                Ok(StcTypeTag::V2(tag))
+            } else if let Ok(tag) = TypeTag::from_str(s) {
+                Ok(StcTypeTag::V1(tag))
+            } else {
+                Err(anyhow::anyhow!("Invalid TypeTag string: {}", s))
+            }
+        }
+    }
+
+    impl StcTypeTag {
+        pub fn to_canonical_string(&self) -> String {
+            match self {
+                StcTypeTag::V1(tag) => tag.to_canonical_string(),
+                StcTypeTag::V2(tag) => tag.to_canonical_string(),
+            }
+        }
+
+        pub fn as_v1(&self) -> Option<&TypeTag> {
+            match self {
+                StcTypeTag::V1(tag) => Some(tag),
+                StcTypeTag::V2(_) => None,
+            }
+        }
+
+        pub fn as_v2(&self) -> Option<&TypeTag2> {
+            match self {
+                StcTypeTag::V1(_) => None,
+                StcTypeTag::V2(tag) => Some(tag),
+            }
+        }
+    }
 }
 
 pub mod identifier {
     pub use starcoin_vm_types::identifier::{IdentStr, Identifier};
+    pub use starcoin_vm2_vm_types::identifier::Identifier as Identifier2;
 }
 
 pub mod write_set {
@@ -107,3 +182,5 @@ pub mod proof {
 
 pub mod blockhash;
 pub mod consensus_header;
+pub mod multi_state;
+pub mod table;

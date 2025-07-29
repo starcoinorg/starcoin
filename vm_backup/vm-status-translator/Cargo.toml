@@ -1,0 +1,17 @@
+[dependencies]
+anyhow = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+starcoin-move-explain = { workspace = true }
+starcoin-vm-types = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "vm-status-translator"
+version = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

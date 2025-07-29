@@ -4,7 +4,7 @@
 use crate::define_storage;
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::StorageInstance;
-use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
+use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME, VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
@@ -22,6 +22,13 @@ define_storage!(
     HashValue,
     AccumulatorNode,
     TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+);
+
+define_storage!(
+    VMStateAccumulatorStorage,
+    HashValue,
+    AccumulatorNode,
+    VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME
 );
 
 impl ValueCodec for AccumulatorNode {
@@ -54,6 +61,14 @@ impl AccumulatorStorage<TransactionAccumulatorStorage> {
     pub fn new_transaction_accumulator_storage(instance: StorageInstance) -> Self {
         Self {
             store: TransactionAccumulatorStorage::new(instance),
+        }
+    }
+}
+
+impl AccumulatorStorage<VMStateAccumulatorStorage> {
+    pub fn new_vm_state_accumulator_storage(instance: StorageInstance) -> Self {
+        Self {
+            store: VMStateAccumulatorStorage::new(instance),
         }
     }
 }

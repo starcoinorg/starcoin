@@ -168,6 +168,10 @@ impl ChainId {
         ChainId::new(255)
     }
 
+    pub fn vega() -> Self {
+        ChainId::new(2)
+    }
+
     pub fn is_main(self) -> bool {
         //TODO find way share the id define with BuiltinNetworkID
         self.id == 1
@@ -191,6 +195,10 @@ impl ChainId {
 
     pub fn is_test(self) -> bool {
         self.id == 255
+    }
+
+    pub fn is_vega(self) -> bool {
+        self.id == 2
     }
 }
 

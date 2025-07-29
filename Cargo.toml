@@ -71,7 +71,7 @@ members = [
     "rpc/server",
     "vm/types",
     "vm/vm-runtime",
-    "vm/frameworks",
+    "vm/natives",
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
@@ -191,7 +191,7 @@ default-members = [
     "rpc/server",
     "vm/types",
     "vm/vm-runtime",
-    "vm/frameworks",
+    "vm/natives",
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
@@ -484,7 +484,7 @@ starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "198d236f071819257ebdf54ed4502099a7daaaf5" }
-starcoin-frameworks = { path = "vm/frameworks" }
+starcoin-natives = { path = "vm/natives" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 #starcoin-metrics = { path = "commons/metrics" }
@@ -497,7 +497,6 @@ starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
 starcoin-gas = { path = "vm/starcoin-gas" }
 starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }
-starcoin-natives = { path = "vm/natives" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }
 starcoin-network-rpc-api = { path = "network-rpc/api" }

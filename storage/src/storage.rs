@@ -116,7 +116,7 @@ impl StorageInstance {
     }
 
     pub fn check_upgrade(&mut self) -> Result<()> {
-        DBUpgrade::check_upgrade(self)
+        DBUpgrade::check_upgrade(self, crate::upgrade::DEFAULT_UPGRADE_BATCH_SIZE)
     }
 
     pub fn barnard_hard_fork(&mut self, config: Arc<NodeConfig>) -> Result<()> {
@@ -598,6 +598,16 @@ impl ValueCodec for Vec<u8> {
 }
 
 impl KeyCodec for TableHandle {
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        bcs_ext::to_bytes(self)
+    }
+
+    fn decode_key(data: &[u8]) -> Result<Self> {
+        bcs_ext::from_bytes(data)
+    }
+}
+
+impl KeyCodec for starcoin_types::table::StcTableHandle {
     fn encode_key(&self) -> Result<Vec<u8>> {
         bcs_ext::to_bytes(self)
     }

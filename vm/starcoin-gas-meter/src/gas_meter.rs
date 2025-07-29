@@ -40,7 +40,7 @@ const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
 pub struct NativeGasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub nursery: move_stdlib::natives::NurseryGasParameters,
-    pub starcoin_natives: starcoin_frameworks::natives::GasParameters,
+    pub starcoin_natives: starcoin_natives::GasParameters,
     pub table: move_table_extension::GasParameters,
 }
 
@@ -70,7 +70,7 @@ impl NativeGasParameters {
         Self {
             move_stdlib: move_stdlib::natives::GasParameters::zeros(),
             nursery: move_stdlib::natives::NurseryGasParameters::zeros(),
-            starcoin_natives: starcoin_frameworks::natives::GasParameters::zeros(),
+            starcoin_natives: starcoin_natives::GasParameters::zeros(),
             table: move_table_extension::GasParameters::zeros(),
         }
     }
@@ -803,14 +803,4 @@ impl GasMeter for StarcoinGasMeter {
         Ok(())
     }
 
-    // see StandardGasMeter in `aptos-core`
-    fn charge_dependency(
-        &mut self,
-        _is_new: bool,
-        _addr: &AccountAddress,
-        _name: &IdentStr,
-        _size: NumBytes,
-    ) -> PartialVMResult<()> {
-        Ok(())
-    }
 }
