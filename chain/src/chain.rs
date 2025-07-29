@@ -1193,7 +1193,6 @@ impl ChainReader for BlockChain {
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
         self.storage
             .get_block_by_hash(hash)
-            .and_then(|block| self.exist_block_filter(block))
     }
 
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>> {
