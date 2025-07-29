@@ -8,7 +8,7 @@ use move_table_extension::NativeTableContext;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_runtime::session::Session;
-use starcoin_gas_meter::NativeGasParameters;
+use starcoin_gas::NativeGasParameters;
 use starcoin_vm_types::errors::{PartialVMResult, VMResult};
 use std::ops::Deref;
 
@@ -17,7 +17,6 @@ pub struct MoveVmExt {
 }
 
 impl MoveVmExt {
-    // XXX FIXME YSG need add treat_friend_as_private?
     pub fn new(native_gas_params: NativeGasParameters) -> VMResult<Self> {
         Ok(Self {
             inner: MoveVM::new(natives::starcoin_natives(native_gas_params))?,

@@ -5,6 +5,7 @@ pub mod constants;
 pub mod events;
 pub mod resources;
 
+#[allow(ambiguous_glob_reexports)]
 pub use constants::*;
 pub use events::*;
 pub use resources::*;

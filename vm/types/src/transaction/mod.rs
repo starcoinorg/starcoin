@@ -18,7 +18,6 @@ use crate::{
 use anyhow::{format_err, Error, Result};
 use bcs_ext::Sample;
 use serde::{Deserialize, Deserializer, Serialize};
-use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_crypto::{
     ed25519::*,
@@ -37,13 +36,11 @@ pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
 pub use package::Package;
-pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
 pub use script::{
     ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
     TypeArgumentABI,
 };
-use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
@@ -54,7 +51,6 @@ mod error;
 pub mod helpers;
 mod module;
 mod package;
-mod pending_transaction;
 mod script;
 #[cfg(test)]
 mod tests;
@@ -107,7 +103,7 @@ impl RawUserTransaction {
         chain_id: ChainId,
         gas_token_code: String,
     ) -> Self {
-        Self {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload,
@@ -128,7 +124,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        Self {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload,
@@ -152,7 +148,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        Self {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::Script(script),
@@ -176,7 +172,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        Self {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::ScriptFunction(script_function),
@@ -198,7 +194,7 @@ impl RawUserTransaction {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> Self {
-        Self {
+        RawUserTransaction {
             sender,
             sequence_number,
             payload: TransactionPayload::Package(package),
@@ -391,9 +387,9 @@ pub enum TransactionPayloadType {
 impl TransactionPayload {
     pub fn payload_type(&self) -> TransactionPayloadType {
         match self {
-            Self::Script(_) => TransactionPayloadType::Script,
-            Self::Package(_) => TransactionPayloadType::Package,
-            Self::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
+            TransactionPayload::Script(_) => TransactionPayloadType::Script,
+            TransactionPayload::Package(_) => TransactionPayloadType::Package,
+            TransactionPayload::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
 }
@@ -403,8 +399,8 @@ impl TryFrom<u8> for TransactionPayloadType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::Script),
-            1 => Ok(Self::Package),
+            0 => Ok(TransactionPayloadType::Script),
+            1 => Ok(TransactionPayloadType::Package),
             _ => Err(format_err!("invalid PayloadType")),
         }
     }
@@ -412,7 +408,7 @@ impl TryFrom<u8> for TransactionPayloadType {
 
 impl From<TransactionPayloadType> for u8 {
     fn from(t: TransactionPayloadType) -> Self {
-        t as Self
+        t as u8
     }
 }
 
@@ -484,7 +480,10 @@ impl fmt::Debug for SignedUserTransaction {
 }
 
 impl SignedUserTransaction {
-    pub fn new(raw_txn: RawUserTransaction, authenticator: TransactionAuthenticator) -> Self {
+    pub fn new(
+        raw_txn: RawUserTransaction,
+        authenticator: TransactionAuthenticator,
+    ) -> SignedUserTransaction {
         let mut txn = Self {
             id: None,
             raw_txn,
@@ -498,7 +497,7 @@ impl SignedUserTransaction {
         raw_txn: RawUserTransaction,
         public_key: Ed25519PublicKey,
         signature: Ed25519Signature,
-    ) -> Self {
+    ) -> SignedUserTransaction {
         let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
         Self::new(raw_txn, authenticator)
     }
@@ -507,7 +506,7 @@ impl SignedUserTransaction {
         raw_txn: RawUserTransaction,
         public_key: MultiEd25519PublicKey,
         signature: MultiEd25519Signature,
-    ) -> Self {
+    ) -> SignedUserTransaction {
         let authenticator = TransactionAuthenticator::multi_ed25519(public_key, signature);
         Self::new(raw_txn, authenticator)
     }
@@ -623,17 +622,17 @@ pub enum TransactionStatus {
 impl TransactionStatus {
     pub fn status(&self) -> Result<KeptVMStatus, StatusCode> {
         match self {
-            Self::Keep(status) => Ok(status.clone()),
-            Self::Discard(code) => Err(*code),
-            Self::Retry => Err(StatusCode::UNKNOWN_VALIDATION_STATUS),
+            TransactionStatus::Keep(status) => Ok(status.clone()),
+            TransactionStatus::Discard(code) => Err(*code),
+            TransactionStatus::Retry => Err(StatusCode::UNKNOWN_VALIDATION_STATUS),
         }
     }
 
     pub fn is_discarded(&self) -> bool {
         match self {
-            Self::Discard(_) => true,
-            Self::Keep(_) => false,
-            Self::Retry => true,
+            TransactionStatus::Discard(_) => true,
+            TransactionStatus::Keep(_) => false,
+            TransactionStatus::Retry => true,
         }
     }
 }
@@ -641,8 +640,8 @@ impl TransactionStatus {
 impl From<VMStatus> for TransactionStatus {
     fn from(vm_status: VMStatus) -> Self {
         match vm_status.keep_or_discard() {
-            Ok(recorded) => Self::Keep(recorded),
-            Err(code) => Self::Discard(code),
+            Ok(recorded) => TransactionStatus::Keep(recorded),
+            Err(code) => TransactionStatus::Discard(code),
         }
     }
 }
@@ -672,7 +671,7 @@ impl TransactionOutput {
         gas_used: u64,
         status: TransactionStatus,
     ) -> Self {
-        Self {
+        TransactionOutput {
             table_infos,
             write_set,
             events,
@@ -730,142 +729,6 @@ impl TransactionOutput {
     }
 }
 
-/// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
-/// transaction as well as the execution result of this transaction.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct TransactionInfo {
-    /// The hash of this transaction.
-    pub transaction_hash: HashValue,
-
-    /// The root hash of Sparse Merkle Tree describing the world state at the end of this
-    /// transaction.
-    pub state_root_hash: HashValue,
-
-    /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    pub event_root_hash: HashValue,
-
-    /// The amount of gas used.
-    pub gas_used: u64,
-
-    /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
-    /// failures and Move abort's receive more detailed information. But other errors are generally
-    /// categorized with no status code or other information
-    pub status: KeptVMStatus,
-}
-
-impl TransactionInfo {
-    /// Constructs a new `TransactionInfo` object using transaction hash, state root hash and event
-    /// root hash.
-    pub fn new(
-        transaction_hash: HashValue,
-        state_root_hash: HashValue,
-        events: &[ContractEvent],
-        gas_used: u64,
-        status: KeptVMStatus,
-    ) -> Self {
-        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-        let events_accumulator_hash =
-            InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-        Self {
-            transaction_hash,
-            state_root_hash,
-            event_root_hash: events_accumulator_hash,
-            gas_used,
-            status,
-        }
-    }
-
-    pub fn id(&self) -> HashValue {
-        self.crypto_hash()
-    }
-
-    /// Returns the hash of this transaction.
-    pub fn transaction_hash(&self) -> HashValue {
-        self.transaction_hash
-    }
-
-    /// Returns root hash of Sparse Merkle Tree describing the world state at the end of this
-    /// transaction.
-    pub fn state_root_hash(&self) -> HashValue {
-        self.state_root_hash
-    }
-
-    /// Returns the root hash of Merkle Accumulator storing all events emitted during this
-    /// transaction.
-    pub fn event_root_hash(&self) -> HashValue {
-        self.event_root_hash
-    }
-
-    /// Returns the amount of gas used by this transaction.
-    pub fn gas_used(&self) -> u64 {
-        self.gas_used
-    }
-
-    pub fn status(&self) -> &KeptVMStatus {
-        &self.status
-    }
-}
-
-impl Sample for TransactionInfo {
-    fn sample() -> Self {
-        Self::new(
-            SignedUserTransaction::sample().id(),
-            *SPARSE_MERKLE_PLACEHOLDER_HASH,
-            &[],
-            0,
-            KeptVMStatus::Executed,
-        )
-    }
-}
-
-/// `RichTransactionInfo` is a wrapper of `TransactionInfo` with more info,
-/// such as `block_id`, `block_number` which is the block that include the txn producing the txn info.
-/// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct RichTransactionInfo {
-    pub block_id: HashValue,
-    pub block_number: u64,
-    pub transaction_info: TransactionInfo,
-    /// Transaction index in block
-    pub transaction_index: u32,
-    /// Transaction global index in chain, equivalent to transaction accumulator's leaf index
-    pub transaction_global_index: u64,
-}
-
-impl Deref for RichTransactionInfo {
-    type Target = TransactionInfo;
-
-    fn deref(&self) -> &Self::Target {
-        &self.transaction_info
-    }
-}
-
-impl RichTransactionInfo {
-    pub fn new(
-        block_id: HashValue,
-        block_number: u64,
-        transaction_info: TransactionInfo,
-        transaction_index: u32,
-        transaction_global_index: u64,
-    ) -> Self {
-        Self {
-            block_id,
-            block_number,
-            transaction_info,
-            transaction_index,
-            transaction_global_index,
-        }
-    }
-
-    pub fn block_id(&self) -> HashValue {
-        self.block_id
-    }
-
-    pub fn txn_info(&self) -> &TransactionInfo {
-        &self.transaction_info
-    }
-}
-
 /// `Transaction` will be the transaction type used internally in the diem node to represent the
 /// transaction to be processed and persisted.
 ///
@@ -881,44 +744,18 @@ pub enum Transaction {
     BlockMetadata(BlockMetadata),
 }
 
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename = "Transaction")]
-pub enum LegacyTransaction {
-    UserTransaction(SignedUserTransaction),
-    BlockMetadata(#[serde(rename = "BlockMetadata")] super::block_metadata::LegacyBlockMetadata),
-}
-
-impl LegacyTransaction {
-    pub fn id(&self) -> HashValue {
-        match self {
-            Self::UserTransaction(signed) => signed.id(),
-            Self::BlockMetadata(meta) => meta.id(),
-        }
-    }
-}
-
-impl From<LegacyTransaction> for Transaction {
-    fn from(value: LegacyTransaction) -> Self {
-        match value {
-            LegacyTransaction::UserTransaction(txn) => Self::UserTransaction(txn),
-            LegacyTransaction::BlockMetadata(meta) => Self::BlockMetadata(meta.into()),
-        }
-    }
-}
-
 impl Transaction {
     pub fn as_signed_user_txn(&self) -> Result<&SignedUserTransaction> {
         match self {
-            Self::UserTransaction(txn) => Ok(txn),
+            Transaction::UserTransaction(txn) => Ok(txn),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
 
     pub fn id(&self) -> HashValue {
         match self {
-            Self::UserTransaction(signed) => signed.id(),
-            Self::BlockMetadata(block_metadata) => block_metadata.id(),
+            Transaction::UserTransaction(signed) => signed.id(),
+            Transaction::BlockMetadata(block_metadata) => block_metadata.id(),
         }
     }
 }
@@ -955,12 +792,12 @@ pub enum TxStatus {
 impl std::fmt::Display for TxStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Added => "added",
-            Self::Rejected => "rejected",
-            Self::Dropped => "dropped",
-            Self::Invalid => "invalid",
-            Self::Canceled => "canceled",
-            Self::Culled => "culled",
+            TxStatus::Added => "added",
+            TxStatus::Rejected => "rejected",
+            TxStatus::Dropped => "dropped",
+            TxStatus::Invalid => "invalid",
+            TxStatus::Canceled => "canceled",
+            TxStatus::Culled => "culled",
         };
         write!(f, "{}", s)
     }

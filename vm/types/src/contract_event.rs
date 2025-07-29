@@ -25,7 +25,7 @@ impl ContractEvent {
         type_tag: TypeTag,
         event_data: Vec<u8>,
     ) -> Self {
-        Self::V0(ContractEventV0::new(
+        ContractEvent::V0(ContractEventV0::new(
             key,
             sequence_number,
             type_tag,
@@ -35,7 +35,7 @@ impl ContractEvent {
 
     pub fn is<EventType: MoveResource>(&self) -> bool {
         match self {
-            Self::V0(event) => event.is::<EventType>(),
+            ContractEvent::V0(event) => event.is::<EventType>(),
         }
     }
 }
@@ -47,7 +47,7 @@ impl Deref for ContractEvent {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            Self::V0(event) => event,
+            ContractEvent::V0(event) => event,
         }
     }
 }

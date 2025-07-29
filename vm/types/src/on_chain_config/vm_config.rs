@@ -69,12 +69,13 @@ impl OnChainConfig for TransactionPublishOption {
     const CONF_IDENTIFIER: &'static str = "TransactionPublishOption";
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let vm_publishing_option = bcs_ext::from_bytes::<Self>(bytes).map_err(|e| {
-            format_err!(
-                "Failed first round of deserialization for TransactionPublishOption: {}",
-                e
-            )
-        })?;
+        let vm_publishing_option =
+            bcs_ext::from_bytes::<TransactionPublishOption>(bytes).map_err(|e| {
+                format_err!(
+                    "Failed first round of deserialization for TransactionPublishOption: {}",
+                    e
+                )
+            })?;
         Ok(vm_publishing_option)
     }
 }
@@ -123,7 +124,7 @@ impl OnChainConfig for VMConfig {
             )
         })?;
         let gas_schedule = raw_vm_config.gas_schedule.as_cost_table()?;
-        Ok(Self { gas_schedule })
+        Ok(VMConfig { gas_schedule })
     }
 }
 

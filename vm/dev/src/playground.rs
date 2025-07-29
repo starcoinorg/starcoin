@@ -6,13 +6,13 @@ use starcoin_abi_decoder::decode_move_value;
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::TypeInstantiation;
 use starcoin_crypto::HashValue;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_rpc_api::types::{DryRunOutputView, TransactionOutputView, WriteOpValueView};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, StateViewCache};
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
@@ -25,12 +25,12 @@ use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct PlaygroudService {
+pub struct PlaygroundService {
     state: Arc<dyn StateNodeStore>,
     pub metrics: Option<VMMetrics>,
 }
 
-impl PlaygroudService {
+impl PlaygroundService {
     pub fn new(state_store: Arc<dyn StateNodeStore>, metrics: Option<VMMetrics>) -> Self {
         Self {
             state: state_store,
@@ -39,7 +39,7 @@ impl PlaygroudService {
     }
 }
 
-impl PlaygroudService {
+impl PlaygroundService {
     pub fn dry_run(
         &self,
         state_root: HashValue,

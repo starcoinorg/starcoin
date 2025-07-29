@@ -23,7 +23,6 @@ use std::sync::Mutex;
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
-mod extended_checks;
 pub mod package;
 pub mod release;
 
@@ -61,7 +60,7 @@ pub struct TestOpts {
     format: Format,
 }
 
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Debug, Default, Eq, PartialEq)]
 enum Format {
     #[default]
     Pretty,
@@ -72,9 +71,9 @@ enum Format {
 impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Pretty => write!(f, "pretty"),
-            Self::Terse => write!(f, "terse"),
-            Self::Json => write!(f, "json"),
+            Format::Pretty => write!(f, "pretty"),
+            Format::Terse => write!(f, "terse"),
+            Format::Json => write!(f, "json"),
         }
     }
 }
@@ -88,11 +87,11 @@ impl Format {
 impl FromStr for Format {
     type Err = String;
 
-    fn from_str(s: &str) -> std::result::Result<Self, std::string::String> {
+    fn from_str(s: &str) -> std::result::Result<Format, std::string::String> {
         match s {
-            "pretty" => Ok(Self::Pretty),
-            "terse" => Ok(Self::Terse),
-            "json" => Ok(Self::Json),
+            "pretty" => Ok(Format::Pretty),
+            "terse" => Ok(Format::Terse),
+            "json" => Ok(Format::Json),
             _ => Err(format!("Unsupported format: {}", s)),
         }
     }

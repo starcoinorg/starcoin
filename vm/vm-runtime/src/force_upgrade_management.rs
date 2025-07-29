@@ -5,19 +5,32 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::ChainId;
 
-pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 100;
+/// Note: There are several critical heights here:
+/// 1. Forced Upgrade Height: When the blockchain reaches this height, the forced upgrade logic will be automatically executed.
+/// 2. Transaction Opening Height: Once the blockchain height exceeds this value,
+///    the transaction function of the mainnet will be enabled.
+///     For details, please refer to `AddressFilter::is_blacklisted`.
+/// 3. Illegal STC Destruction Height: When the height exceeds this value,
+///     all STC tokens in the account balances of the blacklisted accounts will be destroyed,
+///     and anyone can initiate the destruction operation.
+///     For the specific implementation, please refer to `StarcoinFramework::do_burn_frozen`.
+///
+pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23009355;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
-    if chain_id.is_test() || chain_id.is_dag_test() {
+    if chain_id.is_main() {
+        FORCE_UPGRADE_BLOCK_NUMBER
+    } else if chain_id.is_test() {
         50
     } else if chain_id.is_dev() {
-        60
+        5
     } else if chain_id.is_halley() || chain_id.is_proxima() {
         300
     } else if chain_id.is_barnard() {
-        16085000
-    } else if chain_id.is_vega() {
-        8500000
+        // add 8000 + BARNARD_HARD_FORK_HEIGHT
+        16081000
+    } else if chain_id.id() == 123 {
+        5
     } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
@@ -36,16 +49,16 @@ pub fn create_account(private_hex: &str) -> anyhow::Result<Account> {
 
 pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> {
     if chain_id.is_main() {
-        // 0x6820910808aba0dda29b486064ffc17f
-        create_account("70ec43d39c812e0c0f7b7b83e22fd0c70cf136f74c29bded7379e0d9589e4485")
+        // 0xed9ea1f3533c14e1b52d9ff6475776ba
+        create_account("650a4e2222996b607bbed13e1de45ad946cd0e66167f45efaa943a58e692e280")
     } else if chain_id.is_barnard() || chain_id.is_proxima() || chain_id.is_halley() {
         // 0x0b1d07ae560c26af9bbb8264f4c7ee73
         create_account("6105e78821ace0676faf437fb40dd6892e72f01c09351298106bad2964edb007")
-    } else if chain_id.is_test() || chain_id.is_dag_test() || chain_id.is_dev() {
-        Ok(Account::new_association())
+    } else if chain_id.id() == 123 {
+        // 0xed9ea1f3533c14e1b52d9ff6475776ba
+        create_account("650a4e2222996b607bbed13e1de45ad946cd0e66167f45efaa943a58e692e280")
     } else {
-        //0x85e4c2c4859fdbf9c8ce6e046c7e310d
-        create_account("d570ecf5cae04c034502474614bf0cdb7e94ee47a71e611097626aa219724fd8")
+        Ok(Account::new_association())
     }
 }
 
@@ -56,8 +69,16 @@ mod tests {
 
     #[test]
     fn test_get_force_upgrade_account() -> anyhow::Result<()> {
-        // Main TODO(BobOng): To fixed
-        // assert_eq!(get_force_upgrade_account(&ChainId::new(1))?.address(), AccountAddress::from_hex_literal("0x2dd7136c13ed8051fb20147f373f6120"));
+        // Main 1
+        assert_eq!(
+            *get_force_upgrade_account(&ChainId::new(1))?.address(),
+            AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")?
+        );
+        // Test 123
+        assert_eq!(
+            *get_force_upgrade_account(&ChainId::new(123))?.address(),
+            AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")?
+        );
         // Barnard 251
         assert_eq!(
             *get_force_upgrade_account(&ChainId::new(251))?.address(),
@@ -80,7 +101,7 @@ mod tests {
         );
         // Test 255
         assert_eq!(
-            get_force_upgrade_account(&ChainId::new(254))?.address(),
+            get_force_upgrade_account(&ChainId::new(255))?.address(),
             &AccountAddress::from_hex_literal("0xA550C18")?
         );
 
