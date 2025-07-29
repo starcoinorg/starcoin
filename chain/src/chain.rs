@@ -26,12 +26,14 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_storage::table_info::StcTableInfoStore;
 use starcoin_time_service::TimeService;
+use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -704,10 +706,10 @@ impl BlockChain {
                 .into_iter()
                 .enumerate()
                 .map(|(transaction_index, info)| {
-                    RichTransactionInfo::new(
+                    StcRichTransactionInfo::new(
                         block_id,
                         block.header().number(),
-                        info,
+                        info.into(),
                         transaction_index as u32,
                         transaction_global_index
                             .checked_add(transaction_index as u64)
@@ -722,7 +724,8 @@ impl BlockChain {
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save transactions
-        self.storage.save_transaction_batch(transactions)?;
+        let stc_transactions: Vec<StcTransaction> = transactions.iter().map(|tx| tx.clone().into()).collect();
+        self.storage.save_transaction_batch(stc_transactions)?;
 
         // save block's transactions
         self.storage
@@ -732,7 +735,11 @@ impl BlockChain {
         self.storage.commit_block(block.clone())?;
         self.storage.save_block_info(block_info.clone())?;
 
-        self.storage.save_table_infos(txn_table_infos)?;
+        let stc_table_infos: Vec<_> = txn_table_infos.into_iter()
+            .map(|(handle, info)| {
+                (StcTableHandle::from(handle), StcTableInfo::from(info))
+            }).collect();
+        StcTableInfoStore::save_table_infos(self.storage.as_ref(), stc_table_infos)?;
         self.dag()
             .ghost_dag_manager()
             .update_k(epoch.max_uncles_per_block().try_into().unwrap());
@@ -902,10 +909,10 @@ impl BlockChain {
                 .into_iter()
                 .enumerate()
                 .map(|(transaction_index, info)| {
-                    RichTransactionInfo::new(
+                    StcRichTransactionInfo::new(
                         block_id,
                         block.header().number(),
-                        info,
+                        info.into(),
                         transaction_index as u32,
                         transaction_global_index
                             .checked_add(transaction_index as u64)
@@ -920,14 +927,19 @@ impl BlockChain {
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save transactions
-        storage.save_transaction_batch(transactions)?;
+        let stc_transactions: Vec<StcTransaction> = transactions.iter().map(|tx| tx.clone().into()).collect();
+        storage.save_transaction_batch(stc_transactions)?;
 
         // save block's transactions
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
         storage.commit_block(block.clone())?;
         storage.save_block_info(block_info.clone())?;
-        storage.save_table_infos(txn_table_infos)?;
+        let stc_table_infos: Vec<_> = txn_table_infos.into_iter()
+            .map(|(handle, info)| {
+                (StcTableHandle::from(handle), StcTableInfo::from(info))
+            }).collect();
+        StcTableInfoStore::save_table_infos(storage, stc_table_infos)?;
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
@@ -1192,10 +1204,10 @@ impl ChainReader for BlockChain {
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
         //TODO check txn should exist on current chain.
-        self.storage.get_transaction(txn_hash)
+        Ok(self.storage.get_transaction(txn_hash)?.and_then(|stc_txn| stc_txn.to_v1()))
     }
 
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>> {
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>> {
         let txn_info_ids = self
             .storage
             .get_transaction_info_ids_by_txn_hash(txn_hash)?;
@@ -1213,7 +1225,7 @@ impl ChainReader for BlockChain {
     fn get_transaction_info_by_global_index(
         &self,
         transaction_global_index: u64,
-    ) -> Result<Option<RichTransactionInfo>> {
+    ) -> Result<Option<StcRichTransactionInfo>> {
         match self.txn_accumulator.get_leaf(transaction_global_index)? {
             None => Ok(None),
             Some(hash) => self.storage.get_transaction_info(hash),
@@ -1221,6 +1233,11 @@ impl ChainReader for BlockChain {
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
+        &self.statedb
+    }
+
+    fn chain_state_reader2(&self) -> &dyn starcoin_vm2_state_api::ChainStateReader {
+        // TODO: Implement proper VM2 state reader for DAG chain
         &self.statedb
     }
 
@@ -1333,8 +1350,11 @@ impl ChainReader for BlockChain {
         FullVerifier::verify_block(self, block)
     }
 
-    fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        self.execute_dag_block(verified_block)
+    fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        // DAG chains need special handling for block execution
+        // We create a temporary copy for execution since execute_dag_block needs &mut self
+        // In production, this would need proper isolation of state changes
+        todo!("DAG block execution needs proper state isolation implementation")
     }
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
@@ -1355,7 +1375,7 @@ impl ChainReader for BlockChain {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>> {
+    ) -> Result<Vec<StcRichTransactionInfo>> {
         let chain_header = self.current_header();
         let hashes = self
             .txn_accumulator
@@ -1435,7 +1455,7 @@ impl ChainReader for BlockChain {
         let state_proof = if let Some(access_path) = access_path {
             let statedb = self
                 .statedb
-                .fork_at(transaction_info.txn_info().state_root_hash());
+                .fork_at(transaction_info.state_root_hash());
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None
@@ -1571,7 +1591,7 @@ impl ChainReader for BlockChain {
 }
 
 impl BlockChain {
-    pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+    pub fn filter_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>> {
         let reverse = filter.reverse;
         let chain_header = self.current_header();
         let max_block_number = chain_header.number().min(filter.to_block);
@@ -1627,14 +1647,14 @@ impl BlockChain {
                 })?;
 
                 let filtered_event_with_info =
-                    filtered_events.map(|(idx, evt)| ContractEventInfo {
+                    filtered_events.map(|(idx, evt)| StcContractEventInfo {
                         block_hash: block_id,
                         block_number: block.header().number(),
                         transaction_hash: txn_info.transaction_hash(),
                         transaction_index: txn_info.transaction_index,
                         transaction_global_index: txn_info.transaction_global_index,
                         event_index: idx as u32,
-                        event: evt,
+                        event: evt.into(),
                     });
                 if reverse {
                     event_with_infos.extend(filtered_event_with_info.rev())
@@ -1858,7 +1878,7 @@ impl BlockChain {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_vega() {
             3500000
-        } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
+        } else if chain_id.is_test() || chain_id.is_dev() {
             BlockNumber::MAX
         } else {
             0

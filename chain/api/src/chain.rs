@@ -10,19 +10,23 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::Transaction,
     U256,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch as Epoch2;
 use std::collections::HashMap;
 
-use crate::TransactionInfoWithProof;
+use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 pub use starcoin_types::block::ExecutedBlock;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 
 pub struct VerifiedBlock {
     pub block: Block,
@@ -53,15 +57,16 @@ pub trait ChainReader {
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
 
     /// get transaction info by global index in chain.
     fn get_transaction_info_by_global_index(
         &self,
         transaction_global_index: u64,
-    ) -> Result<Option<RichTransactionInfo>>;
+    ) -> Result<Option<StcRichTransactionInfo>>;
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
+    fn chain_state_reader2(&self) -> &dyn ChainStateReader2;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> Result<bool>;
@@ -85,7 +90,7 @@ pub trait ChainReader {
     /// Verify block header and body, base current chain, but do not verify it execute state.
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
-    fn execute(&mut self, block: VerifiedBlock) -> Result<ExecutedBlock>;
+    fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(
@@ -93,7 +98,7 @@ pub trait ChainReader {
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<RichTransactionInfo>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
 
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
 

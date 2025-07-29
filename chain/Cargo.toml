@@ -30,6 +30,7 @@ async-std = { workspace = true }
 starcoin-dag = { workspace = true }
 once_cell = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
+starcoin-vm2-state-api = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

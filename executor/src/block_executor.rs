@@ -9,7 +9,7 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_runtime::metrics::VMMetrics;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::write_set::WriteSet;
@@ -140,8 +140,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
     let block_number = statedb
-        .get_block_metadata_v2()?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get metadata"))?
+        .get_block_metadata()?
         .number;
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {

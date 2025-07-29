@@ -14,6 +14,9 @@ starcoin-statedb = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
 thiserror = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-config = { workspace = true }

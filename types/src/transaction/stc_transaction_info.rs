@@ -139,4 +139,18 @@ impl StcRichTransactionInfo {
             }),
         }
     }
+
+    pub fn event_root_hash(&self) -> HashValue {
+        match &self.transaction_info {
+            StcTransactionInfo::V1(info) => info.event_root_hash,
+            StcTransactionInfo::V2(info) => info.event_root_hash,
+        }
+    }
+
+    pub fn state_root_hash(&self) -> HashValue {
+        match &self.transaction_info {
+            StcTransactionInfo::V1(info) => info.state_root_hash,
+            StcTransactionInfo::V2(info) => info.state_root_hash,
+        }
+    }
 }
