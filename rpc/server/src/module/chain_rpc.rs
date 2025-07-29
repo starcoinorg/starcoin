@@ -229,7 +229,7 @@ where
                             )
                         })?;
 
-                    let txn_v1 = t.to_v1().expect("Failed to convert transaction to v2");
+                    let txn_v1 = t.to_v1().ok_or_else(|| anyhow::anyhow!("cannot find txn v1"))?;
                     let mut txn = TransactionView::new(txn_v1, &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
@@ -274,7 +274,7 @@ where
                             )
                         })?;
 
-                    let t_v2 = t.to_v2().expect("Failed to convert transaction to v2");
+                    let t_v2 = t.to_v2().ok_or_else(|| anyhow::anyhow!("cannot find txn v2"))?;
                     let mut txn = TransactionView2::new(t_v2, &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
