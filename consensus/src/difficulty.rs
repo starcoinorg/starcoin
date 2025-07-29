@@ -143,15 +143,14 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Re
                 if idx == 0 {
                     continue;
                 }
-                total_v_block_time = total_v_block_time.saturating_add(
-                    latest_timestamp.saturating_sub(
-                        diff_info
-                            .timestamp
-                            .saturating_sub(diff_info.transaction_count),
-                    ),
-                );
+                total_v_block_time = total_v_block_time
+                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
                 v_blocks = v_blocks.saturating_add(idx);
             }
+
+            let total_transaction_time = blocks.iter().map(|b| b.transaction_count).sum::<u64>();
+            let total_v_block_time = total_v_block_time
+                .saturating_sub(total_transaction_time.saturating_sub(total_transaction_time));
 
             total_v_block_time
                 .checked_div(v_blocks as u64)

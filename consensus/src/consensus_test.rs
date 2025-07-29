@@ -4,7 +4,7 @@
 #![allow(clippy::arithmetic_side_effects)]
 
 use crate::consensus::Consensus;
-use crate::difficulty::{get_next_target_helper, BlockDiffInfo, BlockDiffInfo2};
+use crate::difficulty::{get_next_target_helper, BlockDiffInfo2};
 use crate::{difficult_to_target, target_to_difficulty, G_CRYPTONIGHT};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
