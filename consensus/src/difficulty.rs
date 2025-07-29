@@ -6,7 +6,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;
 use std::collections::HashSet;
@@ -60,27 +60,28 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 .mergeset_blues
                 .iter()
                 .map(|id| {
-                    chain.get_header_by_hash(*id)?.ok_or_else(|| {
+                    chain.get_block(*id)?.ok_or_else(|| {
                         format_err!(
                             "failed to get the block header when getting next work required"
                         )
                     })
                 })
-                .collect::<Result<Vec<BlockHeader>>>()?,
+                .collect::<Result<Vec<Block>>>()?,
         );
-        selected_chain.push(chain.get_header_by_hash(*id)?.ok_or_else(|| {
+        selected_chain.push(chain.get_block(*id)?.ok_or_else(|| {
             format_err!("failed to get the block header when getting next work required")
         })?);
         Ok(())
     })?;
     selected_chain.reverse();
 
-    let mut blue_block_in_order: Vec<BlockHeader> = blue_block_set.into_iter().collect();
+    let mut blue_block_in_order: Vec<Block> = blue_block_set.into_iter().collect();
 
     blue_block_in_order.sort_by(|a, b| {
-        b.number()
-            .cmp(&a.number())
-            .then_with(|| b.timestamp().cmp(&a.timestamp()))
+        b.header()
+            .number()
+            .cmp(&a.header().number())
+            .then_with(|| b.header().timestamp().cmp(&a.header().timestamp()))
             .then_with(|| b.id().cmp(&a.id()))
     });
 
@@ -95,13 +96,9 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let target = get_next_target_helper(
         blue_block_in_order
             .into_iter()
-            .map(|header| header.try_into())
-            .collect::<Result<Vec<BlockDiffInfo>>>()?,
+            .map(|block| block.try_into())
+            .collect::<Result<Vec<BlockDiffInfo2>>>()?,
         next_block_time_target,
-        selected_chain
-            .into_iter()
-            .map(|header| header.try_into())
-            .collect::<Result<Vec<BlockDiffInfo>>>()?,
     )?;
 
     debug!(
@@ -113,11 +110,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-pub fn get_next_target_helper(
-    blocks: Vec<BlockDiffInfo>,
-    time_plan: u64,
-    _selected_chain: Vec<BlockDiffInfo>,
-) -> Result<U256> {
+pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Result<U256> {
     if blocks.is_empty() {
         bail!("block diff info is empty")
     }
@@ -150,10 +143,16 @@ pub fn get_next_target_helper(
                 if idx == 0 {
                     continue;
                 }
-                total_v_block_time = total_v_block_time
-                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
+                total_v_block_time = total_v_block_time.saturating_add(
+                    latest_timestamp.saturating_sub(
+                        diff_info
+                            .timestamp
+                            .saturating_sub(diff_info.transaction_count),
+                    ),
+                );
                 v_blocks = v_blocks.saturating_add(idx);
             }
+
             total_v_block_time
                 .checked_div(v_blocks as u64)
                 .ok_or_else(|| format_err!("calculate avg time overflow"))?
@@ -209,6 +208,34 @@ impl TryFrom<BlockHeader> for BlockDiffInfo {
         Ok(Self {
             timestamp: block_header.timestamp(),
             target: difficult_to_target(block_header.difficulty())?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockDiffInfo2 {
+    pub timestamp: u64,
+    pub target: U256,
+    pub transaction_count: u64,
+}
+
+impl BlockDiffInfo2 {
+    pub fn new(timestamp: u64, target: U256, transaction_count: u64) -> Self {
+        Self {
+            timestamp,
+            target,
+            transaction_count,
+        }
+    }
+}
+
+impl TryFrom<Block> for BlockDiffInfo2 {
+    type Error = anyhow::Error;
+    fn try_from(block: Block) -> Result<Self, Self::Error> {
+        Ok(Self {
+            timestamp: block.header().timestamp(),
+            target: difficult_to_target(block.header().difficulty())?,
+            transaction_count: block.body.transactions.len() as u64,
         })
     }
 }
