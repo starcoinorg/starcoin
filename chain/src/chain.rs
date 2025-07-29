@@ -774,7 +774,6 @@ impl BlockChain {
             block.header().number(),
             block.header().timestamp(),
             block.transactions().len(),
-            txn,
         );
     }
 
