@@ -44,8 +44,12 @@ impl CommandAction for GetTransactionCommand {
             Some(txn_hash) => Ok(client
                 .chain_get_transaction2(*txn_hash, Some(GetTransactionOption { decode: true }))?),
             None => {
-                let block_hash = opt.block_hash.expect("block-hash exists");
-                let idx = opt.idx.expect("idx exists");
+                let block_hash = opt
+                    .block_hash
+                    .ok_or_else(|| anyhow::anyhow!("block-hash should exists"))?;
+                let idx = opt
+                    .idx
+                    .ok_or_else(|| anyhow::anyhow!("idx should exists"))?;
                 match client.chain_get_txn_info_by_block_and_index2(block_hash, idx)? {
                     Some(info) => Ok(client.chain_get_transaction2(
                         info.transaction_hash,

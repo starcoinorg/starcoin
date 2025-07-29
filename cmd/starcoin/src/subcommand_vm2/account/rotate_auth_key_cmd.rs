@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
 
@@ -104,7 +104,7 @@ impl CommandAction for RotateAuthenticationKeyCommand {
                 vec![
                     MoveValue::from(TransactionArgument::U8Vector(auth_key.to_vec()))
                         .simple_serialize()
-                        .expect("transaction arguments must serialize"),
+                        .ok_or_else(|| anyhow!("transaction arguments must serialize"))?,
                 ],
             )),
         )?;

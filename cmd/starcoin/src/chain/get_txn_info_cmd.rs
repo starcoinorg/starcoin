@@ -42,8 +42,12 @@ impl CommandAction for GetTransactionInfoCommand {
         match &opt.txn_hash {
             Some(txn_hash) => Ok(client.chain_get_transaction_info(*txn_hash)?),
             None => {
-                let block_hash = opt.block_hash.expect("block-hash exists");
-                let idx = opt.idx.expect("idx exists");
+                let block_hash = opt.block_hash.ok_or_else(|| {
+                    anyhow::anyhow!("block-hash is required when txn-hash is not provided")
+                })?;
+                let idx = opt.idx.ok_or_else(|| {
+                    anyhow::anyhow!("idx is required when txn-hash is not provided")
+                })?;
                 Ok(client.chain_get_txn_info_by_block_and_index(block_hash, idx)?)
             }
         }
