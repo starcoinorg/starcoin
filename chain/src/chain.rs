@@ -765,9 +765,6 @@ impl BlockChain {
                 )
             })
             .collect::<Vec<_>>();
-        txn.sort_by(|(id1, sender1, seq1), (id2, sender2, seq2)| {
-            sender1.cmp(sender2).then(seq1.cmp(seq2).then(id1.cmp(id2)))
-        });
         info!(
             "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}",
             block.id(),
