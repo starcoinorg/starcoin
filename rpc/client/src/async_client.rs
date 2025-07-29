@@ -12,7 +12,7 @@ use starcoin_rpc_api::types::{BlockView, MintedBlockView, MultiStateView};
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::view::StateWithProofView;
+use starcoin_vm2_types::view::{StateWithProofView, TransactionInfoView};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use tokio::runtime::Runtime;
@@ -125,6 +125,14 @@ impl AsyncRpcClient {
     }
     pub async fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_async(|inner| inner.state_client2.get_state_root())
+            .await
+            .map_err(map_err)
+    }
+    pub async fn chain_get_transaction_info(
+        &self,
+        hash: HashValue,
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_transaction_info2(hash))
             .await
             .map_err(map_err)
     }
