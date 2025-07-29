@@ -769,7 +769,7 @@ impl BlockChain {
             sender1.cmp(sender2).then(seq1.cmp(seq2).then(id1.cmp(id2)))
         });
         info!(
-            "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}, executed: {:?}",
+            "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}",
             block.id(),
             block.header().number(),
             block.header().timestamp(),
