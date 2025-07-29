@@ -754,17 +754,6 @@ impl BlockChain {
     }
 
     fn print_transaction_execution_info(block: &Block) {
-        let mut txn = block
-            .transactions()
-            .iter()
-            .map(|transaction| {
-                (
-                    transaction.id(),
-                    transaction.sender(),
-                    transaction.sequence_number(),
-                )
-            })
-            .collect::<Vec<_>>();
         info!(
             "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}",
             block.id(),
