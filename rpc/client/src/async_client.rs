@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::{map_err, RpcClient};
+use crate::{map_err, ConnSource, ConnectionProvider, RpcClientInner};
 use futures::{TryStream, TryStreamExt};
+use log::{error, info};
+use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetBlockOption;
 use starcoin_rpc_api::node::NodeInfo;
@@ -13,15 +15,61 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::view::StateWithProofView;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use tokio::runtime::Runtime;
 
-impl RpcClient {
-    pub async fn account_default_async(&self) -> anyhow::Result<Option<AccountInfo>> {
+pub struct AsyncRpcClient {
+    inner: Mutex<Option<RpcClientInner>>,
+    provider: ConnectionProvider,
+}
+
+impl AsyncRpcClient {
+    pub fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
+        let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
+        let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into();
+
+        Ok(Self {
+            inner: Mutex::new(Some(inner)),
+            provider,
+        })
+    }
+    async fn call_rpc_async<F, T>(
+        &self,
+        f: impl FnOnce(RpcClientInner) -> F + Send,
+    ) -> Result<T, jsonrpc_client_transports::RpcError>
+    where
+        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
+    {
+        let inner_opt = self.inner.lock().as_ref().cloned();
+        let inner = match inner_opt {
+            Some(inner) => inner,
+            None => {
+                info!(
+                    "Connection is lost, try reconnect by {:?}",
+                    &self.provider.conn_source
+                );
+                let new_inner: RpcClientInner = self
+                    .provider
+                    .get_rpc_channel_async()
+                    .await
+                    .map(|c| c.into())?;
+                *(self.inner.lock()) = Some(new_inner.clone());
+                new_inner
+            }
+        };
+        let result = f(inner).await;
+        if let Err(jsonrpc_client_transports::RpcError::Other(e)) = &result {
+            error!("rpc error due to {}", e);
+            *(self.inner.lock()) = None;
+        }
+        result
+    }
+    pub async fn account_default(&self) -> anyhow::Result<Option<AccountInfo>> {
         self.call_rpc_async(|inner| inner.account_client2.default())
             .await
             .map_err(map_err)
     }
 
-    pub async fn account_get_async(
+    pub async fn account_get(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<AccountInfo>> {
@@ -29,7 +77,7 @@ impl RpcClient {
             .await
             .map_err(map_err)
     }
-    pub async fn account_unlock_async(
+    pub async fn account_unlock(
         &self,
         address: AccountAddress,
         password: String,
@@ -43,7 +91,7 @@ impl RpcClient {
         .await
         .map_err(map_err)
     }
-    pub async fn account_sign_txn_async(
+    pub async fn account_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
@@ -52,20 +100,17 @@ impl RpcClient {
             .await
             .map_err(map_err)
     }
-    pub async fn account_create_async(&self, password: String) -> anyhow::Result<AccountInfo> {
+    pub async fn account_create(&self, password: String) -> anyhow::Result<AccountInfo> {
         self.call_rpc_async(|inner| inner.account_client2.create(password))
             .await
             .map_err(map_err)
     }
-    pub async fn submit_txn_async(
-        &self,
-        signed_txn: SignedUserTransaction,
-    ) -> anyhow::Result<HashValue> {
+    pub async fn submit_txn(&self, signed_txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
         self.call_rpc_async(|inner| inner.txpool_client.submit_transaction2(signed_txn))
             .await
             .map_err(map_err)
     }
-    pub async fn state_get_with_proof_by_root_async(
+    pub async fn state_get_with_proof_by_root(
         &self,
         state_key: StateKey,
         state_root: HashValue,
@@ -78,12 +123,12 @@ impl RpcClient {
         .await
         .map_err(map_err)
     }
-    pub async fn state_get_state_root_async(&self) -> anyhow::Result<HashValue> {
+    pub async fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_async(|inner| inner.state_client2.get_state_root())
             .await
             .map_err(map_err)
     }
-    pub async fn chain_get_block_by_number_async(
+    pub async fn chain_get_block_by_number(
         &self,
         number: u64,
         opt: Option<GetBlockOption>,
@@ -92,7 +137,7 @@ impl RpcClient {
             .await
             .map_err(map_err)
     }
-    pub async fn chain_get_vm_multi_state_async(
+    pub async fn chain_get_vm_multi_state(
         &self,
         hash_value: HashValue,
     ) -> anyhow::Result<Option<MultiStateView>> {
@@ -100,13 +145,13 @@ impl RpcClient {
             .await
             .map_err(map_err)
     }
-    pub async fn node_info_async(&self) -> anyhow::Result<NodeInfo> {
+    pub async fn node_info(&self) -> anyhow::Result<NodeInfo> {
         self.call_rpc_async(|inner| inner.node_client.info())
             .await
             .map_err(map_err)
     }
 
-    pub async fn miner_submit_async(
+    pub async fn miner_submit(
         &self,
         minting_blob: String,
         nonce: u32,
@@ -117,7 +162,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub async fn subscribe_new_mint_blocks_async(
+    pub async fn subscribe_new_mint_blocks(
         &self,
     ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
         self.call_rpc_async(|inner| async move {

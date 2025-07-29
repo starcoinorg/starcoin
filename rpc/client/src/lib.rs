@@ -4,9 +4,12 @@
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
-pub use crate::remote_state_reader2::RemoteStateReader as RemoteStateReader2;
+pub use crate::remote_state_reader2::{
+    AsyncRemoteStateReader, RemoteStateReader as RemoteStateReader2,
+};
 use actix::{Addr, Arbiter, System};
 use anyhow::anyhow;
+pub use async_client::AsyncRpcClient;
 use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
 use futures::{TryStream, TryStreamExt};
@@ -85,7 +88,7 @@ mod remote_state_reader2;
 mod vm2;
 
 #[derive(Clone)]
-enum ConnSource {
+pub enum ConnSource {
     Ipc(PathBuf),
     WebSocket(String),
     Local(Box<RpcChannel>),
@@ -98,6 +101,15 @@ impl std::fmt::Debug for ConnSource {
             ConnSource::WebSocket(url) => write!(f, "WebSocket({})", url),
             ConnSource::Local(_) => write!(f, "Local"),
         }
+    }
+}
+
+impl<P> From<P> for ConnSource
+where
+    P: AsRef<Path>,
+{
+    fn from(path: P) -> Self {
+        ConnSource::Ipc(path.as_ref().to_path_buf())
     }
 }
 
