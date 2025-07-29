@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod multi_chain_state_db;
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, format_err, Result};
 use bcs_ext::BCSCodec;
@@ -660,6 +661,41 @@ impl ChainStateWriter for ChainStateDB {
         }
         Ok(())
     }
+
+    fn apply_and_clean_cache(&self, chain_state_set: ChainStateSet) -> Result<()> {
+        for (address, account_state_set) in chain_state_set.state_sets() {
+            // Add address to updates
+            let mut locks = self.updates.write();
+            locks.insert(*address);
+
+            // Remove it from cache
+            let mut cache_lock = self.cache.lock();
+            cache_lock.pop(address);
+
+            let code_root = if let Some(state_set) = account_state_set.code_set() {
+                let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
+                state_tree.apply(state_set.clone())?;
+                state_tree.flush()?;
+                Some(state_tree.root_hash())
+            } else {
+                None
+            };
+            let resource_root = if let Some(state_set) = account_state_set.resource_set() {
+                let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+                state_tree.apply(state_set.clone())?;
+                state_tree.flush()?;
+                state_tree.root_hash()
+            } else {
+                unreachable!("this should never happened")
+            };
+            let new_account_state = AccountState::new(code_root, resource_root);
+            self.state_tree.put(*address, new_account_state.try_into()?);
+        }
+        self.state_tree.commit()?;
+        self.state_tree.flush()?;
+        Ok(())
+    }
+
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
