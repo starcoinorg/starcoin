@@ -77,6 +77,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
+mod async_client;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
@@ -236,12 +237,6 @@ impl RpcClient {
 
     pub fn node_info(&self) -> anyhow::Result<NodeInfo> {
         self.call_rpc_blocking(|inner| inner.node_client.info())
-            .map_err(map_err)
-    }
-
-    pub async fn node_info_async(&self) -> anyhow::Result<NodeInfo> {
-        self.call_rpc_async(|inner| inner.node_client.info())
-            .await
             .map_err(map_err)
     }
 
@@ -977,16 +972,6 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
             .map_err(map_err)
     }
-    pub async fn miner_submit_async(
-        &self,
-        minting_blob: String,
-        nonce: u32,
-        extra: String,
-    ) -> anyhow::Result<MintedBlockView> {
-        self.call_rpc_async(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
-            .await
-            .map_err(map_err)
-    }
 
     pub fn txpool_status(&self) -> anyhow::Result<TxPoolStatus> {
         self.call_rpc_blocking(|inner| inner.txpool_client.state())
@@ -1044,17 +1029,6 @@ impl RpcClient {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))
         })
-        .map_err(map_err)
-    }
-
-    pub async fn subscribe_new_mint_blocks_async(
-        &self,
-    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
-        self.call_rpc_async(|inner| async move {
-            let res = inner.pubsub_client.subscribe_new_mint_block().await;
-            res.map(|s| s.map_err(map_err))
-        })
-        .await
         .map_err(map_err)
     }
 
