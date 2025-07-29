@@ -943,8 +943,6 @@ impl StarcoinVM {
             Ok(gas_params) => gas_params,
             Err(e) => {
                 if storage.is_genesis() {
-                    // Convert from starcoin_gas_meter::StarcoinGasParameters to starcoin_gas::StarcoinGasParameters
-                    // Use the zeros() method as fallback for genesis
                     return discard_error_vm_status(e);
                 } else {
                     return discard_error_vm_status(e);
@@ -1017,8 +1015,6 @@ impl StarcoinVM {
             Ok(gas_params) => gas_params,
             Err(e) => {
                 if storage.is_genesis() {
-                    // Convert from starcoin_gas_meter::StarcoinGasParameters to starcoin_gas::StarcoinGasParameters
-                    // Use the zeros() method as fallback for genesis
                     return Ok(discard_error_vm_status(e));
                 } else {
                     return Ok(discard_error_vm_status(e));
