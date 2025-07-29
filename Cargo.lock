@@ -14049,8 +14049,11 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "clap 3.2.25",
+ "csv",
  "ctrlc",
  "futures 0.3.31",
+ "rand 0.8.5",
+ "serde 1.0.195",
  "starcoin-account-api 1.13.19",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -14061,6 +14064,7 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-transaction-builder 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "tokio",
 ]
 

@@ -18,6 +18,10 @@ starcoin-state-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+csv = { workspace = true }
+serde = { workspace = true }
+rand = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [package]
 authors = { workspace = true }
