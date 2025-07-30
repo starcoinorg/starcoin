@@ -113,6 +113,14 @@ impl AsyncRpcClient {
             .await
             .map_err(map_err)
     }
+    pub async fn next_sequence_number_in_txpool(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Option<u64>> {
+        self.call_rpc_async(|inner| inner.txpool_client.next_sequence_number2(address))
+            .await
+            .map_err(map_err)
+    }
     pub async fn state_get_with_proof_by_root(
         &self,
         state_key: StateKey,
