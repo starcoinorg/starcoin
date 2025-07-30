@@ -14063,6 +14063,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api 1.13.19",
  "starcoin-transaction-builder 1.13.19",
+ "starcoin-transaction-builder 2.0.1",
  "starcoin-types 1.13.19",
  "starcoin-types 2.0.1",
  "tokio",
