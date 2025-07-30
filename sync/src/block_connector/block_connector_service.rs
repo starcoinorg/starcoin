@@ -31,6 +31,7 @@ use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
@@ -41,6 +42,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::system_events::NewDagBlockFromPeer;
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -231,9 +233,9 @@ impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         info!("jacktest: NewDagBlock in block connector, start");
-        let block_header = match self.chain_service.switch_header(&msg.executed_block) {
+        let block_header = match self.chain_service.switch_header(&msg.executed_block, ctx) {
             std::result::Result::Ok(block_header) => block_header,
             Err(e) => {
                 error!(
@@ -275,8 +277,24 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.try_connect(block) {
+                let current_block_info = self
+                    .storage
+                    .get_block_info(self.chain_service.get_main_header().id())
+                    .expect("block info not found in new dag block message")
+                    .expect("block info not found in new dag block message");
+                if let Err(e) = self.chain_service.try_connect(block.clone()) {
                     error!("Process connected new block from sync error: {:?}", e);
+                } else {
+                    let block_info = self
+                        .storage
+                        .get_block_info(block.id())
+                        .expect("block info not found in new dag block message")
+                        .expect("block info not found in new dag block message");
+                    if current_block_info.total_difficulty < block_info.total_difficulty {
+                        ctx.broadcast(NewDagBlock {
+                            executed_block: Arc::new(ExecutedBlock::new(block, block_info)),
+                        });
+                    }
                 }
             }
             crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
@@ -436,6 +454,11 @@ where
             return;
         }
         let peer_id = msg.get_peer_id();
+        let current_block_info = self
+            .storage
+            .get_block_info(self.chain_service.get_main_header().id())
+            .expect("block info not found in new dag block message")
+            .expect("block info not found in new dag block message");
         if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
                 std::result::Result::Ok(connect_error) => {
@@ -485,6 +508,19 @@ where
             ctx.broadcast(NewDagBlockFromPeer {
                 executed_block: Arc::new(msg.get_block().header().clone()),
             });
+            let block_info = self
+                .storage
+                .get_block_info(msg.get_block().id())
+                .expect("block info not found in new dag block message")
+                .expect("block info not found in new dag block message");
+            if current_block_info.total_difficulty < block_info.total_difficulty {
+                ctx.broadcast(NewHeadBlock {
+                    executed_block: Arc::new(ExecutedBlock {
+                        block: msg.get_block().clone(),
+                        block_info,
+                    }),
+                });
+            }
         }
     }
 }
@@ -522,7 +558,7 @@ where
     fn handle(
         &mut self,
         msg: CreateBlockRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> <CreateBlockRequest as starcoin_service_registry::ServiceRequest>::Response {
         for _i in 0..msg.count {
             let block = self.chain_service.create_block(
@@ -533,7 +569,20 @@ where
                 msg.block_gas_limit,
                 msg.tips.clone(),
             )?;
-            self.chain_service.try_connect(block)?;
+            let current_block_info = self
+                .storage
+                .get_block_info(self.chain_service.get_main_header().id())?
+                .ok_or_else(|| anyhow::anyhow!("block info not found"))?;
+            self.chain_service.try_connect(block.clone())?;
+            let block_info = self
+                .storage
+                .get_block_info(block.id())?
+                .ok_or_else(|| anyhow::anyhow!("block info not found"))?;
+            if current_block_info.total_difficulty < block_info.total_difficulty {
+                ctx.broadcast(NewHeadBlock {
+                    executed_block: Arc::new(ExecutedBlock { block, block_info }),
+                });
+            }
         }
         Ok(CreateBlockResponse)
     }

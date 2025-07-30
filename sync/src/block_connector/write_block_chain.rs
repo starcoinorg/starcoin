@@ -165,7 +165,11 @@ where
         Ok(this)
     }
 
-    pub fn switch_header(&mut self, header: &ExecutedBlock) -> Result<BlockHeader> {
+    pub fn switch_header(
+        &mut self,
+        executed_block: &ExecutedBlock,
+        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+    ) -> Result<BlockHeader> {
         info!("jacktest: switch header before");
         let current_block_info = self
             .storage
@@ -176,9 +180,12 @@ where
                     self.main_header.id()
                 )
             })?;
-        if header.total_difficulty() > current_block_info.total_difficulty {
-            self.main_header = header.block.header().clone();
-            self.update_startup_info(header.block().header())?;
+        if executed_block.total_difficulty() > current_block_info.total_difficulty {
+            self.main_header = executed_block.block.header().clone();
+            self.update_startup_info(executed_block.block().header())?;
+            ctx.broadcast(NewHeadBlock {
+                executed_block: Arc::new(executed_block.clone()),
+            });
         }
         Ok(self.main_header.clone())
     }
