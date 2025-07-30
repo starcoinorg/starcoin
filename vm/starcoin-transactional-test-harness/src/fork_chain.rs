@@ -30,6 +30,7 @@ use starcoin_storage::{
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
@@ -41,6 +42,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
+
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -338,6 +340,38 @@ impl ChainApi for MockChainApi {
                 let hash = number_hash_map.get(&number).map(|h| *h);
                 let block_view = match hash {
                     Some(hash) => storage.get_block_info(hash)?.map(BlockInfoView::from),
+                    None => None,
+                };
+                Ok(block_view)
+            } else {
+                Ok(None)
+            }
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_block_info_by_number2(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<Option<BlockInfoView2>> {
+        let chain = self.chain.lock().unwrap();
+        let client = chain.remote_chain_client();
+        let fork_number = chain.fork_number;
+        let current_number = chain.current_number;
+        let number_hash_map = chain.number_hash_map.clone();
+        let storage = chain.storage.clone();
+        let fut = async move {
+            if number <= fork_number {
+                debug_assert!(client.is_some());
+                client
+                    .unwrap()
+                    .get_block_info_by_number2(number)
+                    .await
+                    .map_err(|e| anyhow!("{}", e))
+            } else if number <= current_number {
+                let hash = number_hash_map.get(&number).map(|h| *h);
+                let block_view = match hash {
+                    Some(hash) => storage.get_block_info(hash)?.map(BlockInfoView2::from),
                     None => None,
                 };
                 Ok(block_view)

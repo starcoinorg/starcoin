@@ -30,6 +30,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
@@ -191,6 +192,21 @@ where
     }
 
     fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfoView>> {
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service
+                .get_block_info_by_number(number)
+                .await?
+                .map(Into::into);
+            Ok(result)
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_info_by_number2(&self, number: u64) -> FutureResult<Option<BlockInfoView2>> {
         let service = self.service.clone();
 
         let fut = async move {

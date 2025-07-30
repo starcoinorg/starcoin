@@ -6,8 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::BlockInfoView;
 use starcoin_types::block::BlockNumber;
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 
 /// Get block info by number
 #[derive(Debug, Parser)]
@@ -23,7 +23,7 @@ impl CommandAction for GetBlockInfoCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetBlockInfoOpt;
-    type ReturnItem = BlockInfoView;
+    type ReturnItem = BlockInfoView2;
 
     fn run(
         &self,
@@ -32,7 +32,7 @@ impl CommandAction for GetBlockInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let block_info = client
-            .chain_get_block_info_by_number(opt.number)?
+            .chain_get_block_info_by_number2(opt.number)?
             .ok_or_else(|| anyhow::format_err!("block_info of height {} not found", opt.number))?;
         Ok(block_info)
     }

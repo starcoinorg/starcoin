@@ -14,7 +14,7 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
-use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
+use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
@@ -56,6 +56,13 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
+
+    #[rpc(name = "chain.get_block_info_by_number2")]
+    fn get_block_info_by_number2(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<Option<BlockInfoView2>>;
+
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(

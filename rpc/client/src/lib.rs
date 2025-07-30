@@ -58,6 +58,7 @@ use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_rpc_api::{
     account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
@@ -803,6 +804,14 @@ impl RpcClient {
         number: BlockNumber,
     ) -> anyhow::Result<Option<BlockInfoView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number(number))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_block_info_by_number2(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<Option<BlockInfoView2>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number2(number))
             .map_err(map_err)
     }
 
