@@ -8,9 +8,9 @@ spec:
   mode: one
   selector:
     namespaces:
-      - default
+      - starcoin-halley
     labelSelectors:
-      "app": "starcoin"
+      "app": "starcoin-0"
   delay:
     latency: "100ms"
     correlation: "25"
