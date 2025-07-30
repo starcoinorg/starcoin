@@ -102,12 +102,12 @@ pub trait BlockVerifier {
         R: ChainReader,
     {
         let ghostdata = current_chain.calc_ghostdata_and_check_bounded_merge_depth(header)?;
-        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
-            Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
-        }
+        // match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+        //     Ok(()) => (),
+        //     Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+        // }
 
-        Self::can_be_uncle(header, uncles, &ghostdata)?;
+        // Self::can_be_uncle(header, uncles, &ghostdata)?;
 
         Ok(ghostdata)
     }

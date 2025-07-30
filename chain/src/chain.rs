@@ -1454,10 +1454,10 @@ impl ChainReader for BlockChain {
 
         let ghostdata = dag.calc_ghostdata(header)?;
 
-        dag.check_bounded_merge_depth(
-            &ghostdata,
-            self.get_merge_bound_hash(ghostdata.selected_parent)?,
-        )?;
+        // dag.check_bounded_merge_depth(
+        //     &ghostdata,
+        //     self.get_merge_bound_hash(ghostdata.selected_parent)?,
+        // )?;
 
         Ok(ghostdata)
     }
