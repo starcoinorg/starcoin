@@ -284,6 +284,7 @@ impl BlockChain {
     }
 
     pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+        info!("jacktest: select dag state 1");
         let new_pruning_point = if header.pruning_point() == HashValue::zero() {
             self.genesis_hash
         } else {
@@ -303,6 +304,7 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(state.tips)
                 .unwrap();
+        info!("jacktest: select dag state 2");
             self.fork(block_id)?
         } else {
             let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
@@ -313,20 +315,24 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(new_state.tips)
                 .unwrap();
+        info!("jacktest: select dag state 3");
             let current_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent(current_state.tips)
                 .unwrap();
+        info!("jacktest: select dag state 4");
 
             let selected_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent([new_header, current_header])
                 .unwrap();
+        info!("jacktest: select dag state 5");
 
             self.fork(selected_header)?
         };
+        info!("jacktest: select dag state 6");
 
         Ok(chain)
     }
