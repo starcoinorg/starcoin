@@ -353,15 +353,36 @@ where
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::thread;
-    use std::time::Duration;
+    use std::sync::Condvar;
 
     // Minimal transaction implementation for testing
     #[derive(Debug, Clone)]
     struct TestTransaction {
         key: String,
         value: u64,
-        delay_ms: u64,
+        acquire_cvar: Option<Arc<(Mutex<bool>, Condvar)>>,
+        release_cvar: Option<Arc<(Mutex<bool>, Condvar)>>,
+    }
+
+    impl TestTransaction {
+        fn wait(&self) {
+            if let Some(arc) = &self.acquire_cvar {
+                let (lock, cvar) = &**arc;
+                let mut resolved = lock.lock();
+                while !*resolved {
+                    resolved = cvar.wait(resolved).unwrap();
+                }
+            }
+        }
+
+        fn notify(&self) {
+            if let Some(arc) = self.release_cvar.as_ref() {
+                let (lock, cvar) = &**arc;
+                let mut resolved = lock.lock();
+                *resolved = true;
+                cvar.notify_all();
+            }
+        }
     }
 
     impl Transaction for TestTransaction {
@@ -418,10 +439,8 @@ mod tests {
             view: &MVHashMapView<String, u64>,
             txn: &Self::T,
         ) -> ExecutionStatus<Self::Output, Self::Error> {
-            // Simulate execution delay if specified
-            if txn.delay_ms > 0 {
-                thread::sleep(Duration::from_millis(txn.delay_ms));
-            }
+            // Wait for any dependencies to be resolved
+            txn.wait();
 
             // Read current value from state or use initial value
             let current_value = view
@@ -436,6 +455,9 @@ mod tests {
             let mut writes = HashMap::new();
             writes.insert(txn.key.clone(), new_value);
 
+            // Signal completion
+            txn.notify();
+
             ExecutionStatus::Success(TestOutput { writes })
         }
     }
@@ -443,16 +465,19 @@ mod tests {
     #[test]
     fn test_parallel_conflicting_transactions() {
         // Create two transactions that will conflict (both modify the same key)
+        let cvar = Arc::new((Mutex::new(false), Condvar::new()));
         let transactions = vec![
             TestTransaction {
                 key: "shared_counter".to_string(),
                 value: 10,
-                delay_ms: 50, // Add some delay to increase conflict probability
+                acquire_cvar: Some(cvar.clone()),
+                release_cvar: None,
             },
             TestTransaction {
                 key: "shared_counter".to_string(),
                 value: 20,
-                delay_ms: 30,
+                acquire_cvar: None,
+                release_cvar: Some(cvar.clone()),
             },
         ];
 
@@ -493,12 +518,14 @@ mod tests {
             TestTransaction {
                 key: "account_a".to_string(),
                 value: 100,
-                delay_ms: 30, // Add some delay to simulate real work
+                acquire_cvar: None,
+                release_cvar: None,
             },
             TestTransaction {
                 key: "account_b".to_string(),
                 value: 200,
-                delay_ms: 40,
+                acquire_cvar: None,
+                release_cvar: None,
             },
         ];
 
