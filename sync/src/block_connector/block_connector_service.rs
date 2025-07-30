@@ -243,6 +243,7 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("jacktest: NewDagBlock in block connector, start");
         let block_header = match self
             .chain_service
             .switch_header(msg.executed_block.header())
