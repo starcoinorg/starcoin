@@ -53,6 +53,7 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<DeterminedDagBlock>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -63,6 +64,7 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<DeterminedDagBlock>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
