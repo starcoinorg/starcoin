@@ -11,6 +11,7 @@ use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
+use starcoin_chain::chain_common_func::has_dag_block;
 use starcoin_chain::verifier::FullVerifier;
 use starcoin_chain::{BlockChain, ChainWriter};
 use starcoin_chain_api::{ChainReader, ExecutedBlock};
@@ -241,7 +242,7 @@ impl SyncService {
                 startup_info.main,
                 storage.clone(),
                 None,
-                dag,
+                dag.clone(),
             )?;
 
             let specific_block = match msg.block {
@@ -287,7 +288,7 @@ impl SyncService {
             while !current_round.is_empty() {
                 for block_id in current_round {
                     // already executed
-                    if chain.has_dag_block(block_id)? {
+                    if has_dag_block(block_id, storage.clone(), &dag)? {
                         continue;
                     }
 
@@ -350,13 +351,15 @@ impl SyncService {
             while let Some(SyncBlockSort { block }) =
                 waiting_for_execution_heap.iter().next().cloned()
             {
-                if chain.has_dag_block(block.id())? {
+                if has_dag_block(block.id(), storage.clone(), &chain.dag())? {
                     waiting_for_execution_heap.remove(&SyncBlockSort {
                         block: block.clone(),
                     });
                     continue;
                 }
-                if !chain.check_parents_ready(block.header()) {
+                if !has_dag_block(block.header().id(), storage.clone(), &chain.dag())
+                    .unwrap_or(false)
+                {
                     failed_blocks.insert(block.clone());
                     waiting_for_execution_heap.remove(&SyncBlockSort {
                         block: block.clone(),
@@ -399,7 +402,7 @@ impl SyncService {
                 }
             }
 
-            if chain.has_dag_block(msg.block_id)? {
+            if has_dag_block(msg.block_id, storage.clone(), &chain.dag())? {
                 chain.connect(ExecutedBlock {
                     block: specific_block,
                     block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| {

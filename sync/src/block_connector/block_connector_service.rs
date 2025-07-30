@@ -19,6 +19,7 @@ use starcoin_chain::verifier::FullVerifier;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
+use starcoin_config::TimeService;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
@@ -36,7 +37,6 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
@@ -55,6 +55,9 @@ where
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
     pruning_point_channel: PruningPointInfoChannel,
+    storage: Arc<Storage>,
+    dag: BlockDAG,
+    time_service: Arc<dyn TimeService>,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -65,12 +68,18 @@ where
         chain_service: WriteBlockChainService<TransactionPoolServiceT>,
         config: Arc<NodeConfig>,
         pruning_point_channel: PruningPointInfoChannel,
+        storage: Arc<Storage>,
+        dag: BlockDAG,
+        time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
             chain_service,
             sync_status: None,
             config,
             pruning_point_channel,
+            storage,
+            dag,
+            time_service,
         }
     }
 
@@ -125,34 +134,6 @@ where
 
         None
     }
-
-    // return false if the number of the block is larger than the current number of the chain.
-    // or return false if the gap of those two blocks is larger than 2 * G_BASE_MAX_UNCLES_PER_BLOCK
-    // else return true.
-    // return false will trigger the burden sync operation.
-    // return true will trigger the specific(light) sync operation.
-    #[allow(dead_code)]
-    fn is_near_block(&self, block_header: &BlockHeader) -> bool {
-        let current_number = self.chain_service.get_main().status().head().number();
-        if current_number <= block_header.number() {
-            return false;
-        }
-        let gap = current_number.saturating_sub(block_header.number());
-        let k = self.chain_service.get_dag().ghost_dag_manager().k() as u64;
-        let config_gap = self
-            .config
-            .sync
-            .lightweight_sync_max_gap()
-            .map_or(k.saturating_mul(k), |max_gap| max_gap);
-        debug!(
-            "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
-            current_number,
-            block_header.number(),
-            gap,
-            config_gap
-        );
-        gap <= config_gap
-    }
 }
 
 impl<TransactionPoolServiceT> ServiceFactory<Self>
@@ -174,14 +155,22 @@ where
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
-            storage,
+            storage.clone(),
             txpool,
             bus,
             vm_metrics,
-            dag,
+            dag.clone(),
         )?;
+        let time_service = config.net().time_service();
 
-        Ok(Self::new(chain_service, config, pruning_point_channel))
+        Ok(Self::new(
+            chain_service,
+            config,
+            pruning_point_channel,
+            storage,
+            dag,
+            time_service,
+        ))
     }
 }
 
@@ -244,10 +233,7 @@ where
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
         info!("jacktest: NewDagBlock in block connector, start");
-        let block_header = match self
-            .chain_service
-            .switch_header(msg.executed_block.header())
-        {
+        let block_header = match self.chain_service.switch_header(&msg.executed_block) {
             std::result::Result::Ok(block_header) => block_header,
             Err(e) => {
                 error!(
@@ -339,13 +325,12 @@ where
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        let main = self.chain_service.get_main();
         let mut chain = BlockChain::new(
-            main.time_service(),
+            self.time_service.clone(),
             new_block.header().parent_hash(),
-            main.get_storage(),
+            self.storage.clone(),
             None,
-            main.dag(),
+            self.dag.clone(),
         )
         .unwrap_or_else(|e| {
             panic!(
@@ -471,18 +456,13 @@ where
                         }
                         e => {
                             warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id);
-                            if let Err(err) = self
-                                .chain_service
-                                .get_main()
-                                .get_storage()
-                                .save_failed_block(
-                                    msg.get_block().id(),
-                                    msg.get_block().clone(),
-                                    Some(peer_id.clone()),
-                                    format!("{:?}", e),
-                                    G_CRATE_VERSION.to_string(),
-                                )
-                            {
+                            if let Err(err) = self.storage.save_failed_block(
+                                msg.get_block().id(),
+                                msg.get_block().clone(),
+                                Some(peer_id.clone()),
+                                format!("{:?}", e),
+                                G_CRATE_VERSION.to_string(),
+                            ) {
                                 warn!(
                                     "Save FailedBlock err: {:?}, block_id:{:?}.",
                                     err,
@@ -570,7 +550,7 @@ where
         msg: CheckBlockConnectorHashValue,
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
-        if self.chain_service.get_main().status().head().id() == msg.head_hash {
+        if self.chain_service.get_main_header().id() == msg.head_hash {
             info!("the branch in chain service is the same as target's branch");
             Ok(())
         } else {

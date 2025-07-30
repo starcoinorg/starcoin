@@ -4,6 +4,7 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
 use itertools::Itertools;
+use starcoin_chain::chain_common_func::has_dag_block;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
@@ -18,7 +19,6 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::BlockInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -39,7 +39,7 @@ where
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    main: BlockChain,
+    main_header: BlockHeader,
     storage: Arc<dyn Store>,
     txpool: P,
     bus: ServiceRef<BusService>,
@@ -81,7 +81,7 @@ where
             .as_ref()
             .map(|metrics| metrics.chain_block_connect_time.start_timer());
 
-        let result = self.connect_inner(block);
+        let result = self.connect_dag_block_from_peer(block);
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
@@ -116,14 +116,14 @@ where
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> Result<Self> {
-        let net = config.net();
-        let main = BlockChain::new(
-            net.time_service(),
-            startup_info.main,
-            storage.clone(),
-            vm_metrics.clone(),
-            dag.clone(),
-        )?;
+        let main_header = storage
+            .get_block_header_by_hash(startup_info.main)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash in new WriteBlockChainService {:?}",
+                    startup_info.main
+                )
+            })?;
 
         let metrics = config
             .metrics
@@ -133,7 +133,7 @@ where
         Ok(Self {
             config,
             startup_info,
-            main,
+            main_header,
             storage,
             txpool,
             bus,
@@ -165,52 +165,42 @@ where
         Ok(this)
     }
 
-    pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
+    pub fn switch_header(&mut self, header: &ExecutedBlock) -> Result<BlockHeader> {
         info!("jacktest: switch header before");
-        let new_branch = self.main.select_dag_state(header)?; // 1 
-        info!("jacktest: switch header after and select head before");
-        self.select_head(new_branch)?;
-        info!("jacktest: switch header and selectd head afer");
-        self.update_startup_info(&self.main.current_header())?;
-        Ok(self.main.current_header())
+        let current_block_info = self
+            .storage
+            .get_block_info(self.main_header.id())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block info by hash in switch_header {:?}.",
+                    self.main_header.id()
+                )
+            })?;
+        if header.total_difficulty() > current_block_info.total_difficulty {
+            self.main_header = header.block.header().clone();
+            self.update_startup_info(header.block().header())?;
+        }
+        Ok(self.main_header.clone())
     }
 
-    fn find_or_fork(
-        &self,
-        header: &BlockHeader,
-    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
-        let block_id = header.id();
-        let block_info = self.storage.get_block_info(block_id)?;
-        let block_chain = if block_info.is_some() {
-            if self.is_main_head(&header.parent_hash()) {
-                None
-            } else {
-                let net = self.config.net();
-                Some(BlockChain::new(
-                    net.time_service(),
-                    block_id,
-                    self.storage.clone(),
-                    self.vm_metrics.clone(),
-                    self.dag.clone(),
-                )?)
-            }
-        } else if self.get_main().has_dag_block(header.parent_hash())? {
-            let net = self.config.net();
-            Some(BlockChain::new(
-                net.time_service(),
-                header.parent_hash(),
-                self.storage.clone(),
-                self.vm_metrics.clone(),
-                self.dag.clone(),
-            )?)
-        } else {
-            None
-        };
-        Ok((block_info, block_chain))
+    // todo: remove this function
+    // this function is only used in testing case, fix them and remove this function
+    pub fn get_main(&self) -> BlockChain {
+        let time_service = self.config.net().time_service();
+        let chain = BlockChain::new(
+            time_service,
+            self.main_header.id(),
+            self.storage.clone(),
+            None,
+            self.dag.clone(),
+        );
+        chain.expect(
+            "Failed to create writeable block chain, this function should be remove in the future",
+        )
     }
 
-    pub fn get_main(&self) -> &BlockChain {
-        &self.main
+    pub fn get_main_header(&self) -> &BlockHeader {
+        &self.main_header
     }
 
     pub fn get_bus(&self) -> ServiceRef<BusService> {
@@ -232,7 +222,8 @@ where
         block_gas_limit: Option<u64>,
         tips: Vec<HashValue>,
     ) -> Result<Block> {
-        let (block_template, _transactions) = self.main.create_block_template(
+        let main = self.get_main();
+        let (block_template, _transactions) = main.create_block_template(
             author,
             parent_hash,
             user_txns,
@@ -241,10 +232,10 @@ where
             tips,
             HashValue::zero(),
         )?;
-        Ok(self
-            .main
+        let time_service = self.config.net().time_service();
+        Ok(main
             .consensus()
-            .create_block(block_template, self.main.time_service().as_ref())
+            .create_block(block_template, time_service.as_ref())
             .unwrap())
     }
 
@@ -257,8 +248,9 @@ where
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
         use starcoin_chain::verifier::FullVerifier;
-        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
-        let _executed_block = self.main.execute(verified_block)?;
+        let mut main = self.get_main();
+        let verified_block = main.verify_with_verifier::<FullVerifier>(block)?;
+        let _executed_block = main.execute(verified_block)?;
         bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }
 
@@ -274,60 +266,47 @@ where
     where
         TransactionPoolServiceT: TxPoolSyncService,
     {
-        let new_branch = BlockChain::new(
-            self.config.net().time_service(),
-            new_head_block,
-            self.storage.clone(),
-            self.vm_metrics.clone(),
-            self.main.dag(),
-        )?;
+        let new_block = self
+            .storage
+            .get_block_by_hash(new_head_block)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block by hash in switch_new_main {:?}.",
+                    new_head_block
+                )
+            })?;
+        let new_head_block_info =
+            self.storage
+                .get_block_info(new_head_block)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find block info by hash in switch_new_main {:?}.",
+                        new_head_block
+                    )
+                })?;
 
-        let main_total_difficulty = self.main.get_total_difficulty()?;
-        let branch_total_difficulty = new_branch.get_total_difficulty()?;
+        let main_block_info = self
+            .storage
+            .get_block_info(self.main_header.id())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block info by hash in switch_new_main {:?}.",
+                    self.main_header.id()
+                )
+            })?;
+
+        let main_total_difficulty = main_block_info.total_difficulty;
+        let branch_total_difficulty = new_head_block_info.total_difficulty;
         if branch_total_difficulty > main_total_difficulty {
-            self.main = new_branch;
-            self.update_startup_info(self.main.head_block().header())?;
+            self.main_header = new_block.header().clone();
+            self.update_startup_info(new_block.header())?;
             ctx.broadcast(NewHeadBlock {
-                executed_block: Arc::new(self.main.head_block()),
+                executed_block: Arc::new(ExecutedBlock::new(new_block, new_head_block_info)),
             });
             Ok(())
         } else {
             Ok(())
         }
-    }
-
-    pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
-        info!("jacktest: select head begins");
-        let executed_block = new_branch.head_block();
-        let main_total_difficulty = self.main.get_total_difficulty()?;
-        let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
-
-        info!("jacktest: select head2");
-        if branch_total_difficulty > main_total_difficulty {
-            info!("jacktest: select head3");
-            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-                if !parent_is_main_head {
-                    self.find_ancestors_from_accumulator(&new_branch)?
-                } else {
-                    (1, vec![executed_block.block.clone()], 0, vec![])
-                };
-            info!("jacktest: select head4");
-            self.main = new_branch;
-
-            info!("jacktest: select head5");
-            self.do_new_head(
-                executed_block,
-                enacted_count,
-                enacted_blocks,
-                retracted_count,
-                retracted_blocks,
-            )?;
-        } else {
-            //send new branch event
-            self.broadcast_new_branch(executed_block);
-        }
-        Ok(())
     }
 
     fn do_new_head(
@@ -374,8 +353,7 @@ where
     /// Reset the node to `block_id`, and replay blocks after the block
     pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
         let new_head_block = self
-            .main
-            .get_storage()
+            .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
         let new_branch = BlockChain::new(
@@ -388,24 +366,23 @@ where
 
         if new_head_block.header().pruning_point() == HashValue::zero() {
             let genesis = self
-                .main
-                .get_storage()
+                .storage
                 .get_genesis()?
                 .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
-            self.main.dag().save_dag_state_directly(
+            self.dag.save_dag_state_directly(
                 genesis,
                 DagState {
                     tips: vec![new_head_block.header().id()],
                 },
             )?;
-            self.main.dag().save_dag_state_directly(
+            self.dag.save_dag_state_directly(
                 HashValue::zero(),
                 DagState {
                     tips: vec![new_head_block.header().id()],
                 },
             )?;
         } else {
-            self.main.dag().save_dag_state_directly(
+            self.dag.save_dag_state_directly(
                 new_head_block.header().pruning_point(),
                 DagState {
                     tips: vec![new_head_block.header().id()],
@@ -414,8 +391,6 @@ where
         }
 
         let executed_block = new_branch.head_block();
-
-        self.main = new_branch;
 
         let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
             (1, vec![executed_block.block.clone()], 0, vec![]);
@@ -457,47 +432,6 @@ where
         }
     }
 
-    fn find_ancestors_from_accumulator(
-        &self,
-        new_branch: &BlockChain,
-    ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
-        let ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
-            format_err!(
-                "Can not find ancestors between main chain: {:?} and branch: {:?}",
-                self.main.status(),
-                new_branch.status()
-            )
-        })?;
-
-        let ancestor_block = self
-            .main
-            .get_block(ancestor.id)?
-            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor.id))?;
-        let enacted_count = new_branch
-            .current_header()
-            .number()
-            .checked_sub(ancestor_block.header().number())
-            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
-        let retracted_count = self
-            .main
-            .current_header()
-            .number()
-            .checked_sub(ancestor_block.header().number())
-            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
-
-        let block_enacted = new_branch.current_header().id();
-        let block_retracted = self.main.current_header().id();
-
-        let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
-        let retracted = self.find_red_blocks(block_enacted, block_retracted)?;
-
-        debug!(
-            "Commit block count:{}, rollback block count:{}",
-            enacted_count, retracted_count,
-        );
-        Ok((enacted_count, enacted, retracted_count, retracted))
-    }
-
     fn find_red_blocks(
         &self,
         selected_header: HashValue,
@@ -507,10 +441,7 @@ where
             "find_red_blocks selected_header:{}, deselected_header:{}",
             selected_header, deselected_header
         );
-        let ghostdata = self
-            .main
-            .dag()
-            .ghostdata(&[selected_header, deselected_header])?;
+        let ghostdata = self.dag.ghostdata(&[selected_header, deselected_header])?;
         info!(
             "find_red_blocks red block count: {:?}",
             ghostdata.mergeset_reds.len()
@@ -518,7 +449,7 @@ where
         let red_blocks = ghostdata
         .mergeset_reds
         .iter()
-        .map(|id| Ok(self.main.get_storage().get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
+        .map(|id| Ok(self.storage.get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
         .collect::<Result<Vec<Block>>>()?
         .into_iter().sorted_by(|a, b| {
             match a.header().number().cmp(&b.header().number()) {
@@ -583,19 +514,20 @@ where
         }
     }
 
-    fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
+    fn connect_dag_block_from_peer(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        if self.main.current_header().id() == block_id {
+        if self.main_header.id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::Duplicate);
         }
 
-        if !block
-            .header()
-            .parents_hash()
-            .iter()
-            .all(|parent_hash| self.main.has_dag_block(*parent_hash).unwrap_or(false))
-        {
+        if has_dag_block(block_id, self.storage.clone(), &self.dag).unwrap_or(false) {
+            return Ok(ConnectOk::Duplicate);
+        }
+
+        if !block.header().parents_hash().iter().all(|parent_hash| {
+            has_dag_block(*parent_hash, self.storage.clone(), &self.dag).unwrap_or(false)
+        }) {
             debug!(
                 "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
                 block_id
@@ -603,46 +535,27 @@ where
             return Err(ConnectBlockError::FutureBlock(Box::new(block)).into());
         }
 
-        if self.main.current_header().id() == block.header().parent_hash()
-            && !self.get_main().has_dag_block(block_id)?
-        {
-            let executed_block = self.main.apply(block)?;
-            let enacted_blocks = vec![executed_block.block().clone()];
-            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
-            return Ok(ConnectOk::ExeConnectMain);
-        }
-        let (block_info, fork) = self.find_or_fork(block.header())?;
-        match (block_info, fork) {
-            // block has been processed in some branch, so just trigger a head selection.
-            (Some(_block_info), Some(branch)) => {
-                debug!(
-                    "Block {} has been processed, trigger head selection, total_difficulty: {}",
-                    block_id,
-                    branch.get_total_difficulty()?
-                );
-                self.select_head(branch)?;
-                Ok(ConnectOk::Duplicate)
-            }
-            // block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some(block_info), None) => {
-                let executed_block = self.main.connect(ExecutedBlock {
-                    block: block.clone(),
-                    block_info,
-                })?;
-                info!(
-                    "Block {} main has been processed, trigger head selection",
-                    block_id
-                );
-                self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
-                Ok(ConnectOk::Connect)
-            }
-            // the block is not processed but its parent branch exists
-            (None, Some(mut branch)) => {
-                let _executed_block = branch.apply(block)?;
-                self.select_head(branch)?;
-                Ok(ConnectOk::ExeConnectBranch)
-            }
-            (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+        let mut main = BlockChain::new(
+            self.config.net().time_service(),
+            block.header().parent_hash(),
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.dag.clone(),
+        )?;
+
+        let executed_block = main.apply(block)?;
+        let current_block_info = self.storage.get_block_info(block_id)?.ok_or_else(|| {
+            format_err!(
+                "Cannot find block info by id in connect_dag_block_from_peer {:?}.",
+                block_id
+            )
+        })?;
+        if executed_block.block_info().total_difficulty > current_block_info.total_difficulty {
+            self.main_header = executed_block.block().header().clone();
+            self.update_startup_info(executed_block.block().header())?;
+            Ok(ConnectOk::ExeConnectBranch)
+        } else {
+            Ok(ConnectOk::ExeConnectMain)
         }
     }
 }

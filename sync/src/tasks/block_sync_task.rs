@@ -12,6 +12,7 @@ use futures::FutureExt;
 use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain::chain_common_func::has_dag_block;
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
@@ -222,8 +223,7 @@ where
     H: BlockConnectedEventHandle + 'static,
 {
     fn has_dag_block(&self, block_id: HashValue) -> anyhow::Result<bool> {
-        self.chain
-            .has_dag_block(block_id)
+        has_dag_block(block_id, self.local_store.clone(), &self.chain.dag())
             .context("Failed to check if DAG block exists")
     }
 
@@ -398,7 +398,7 @@ where
             if absent_blocks.contains(&parent) {
                 continue;
             }
-            if self.chain.has_dag_block(parent)? {
+            if has_dag_block(parent, self.local_store.clone(), &self.chain.dag())? {
                 continue;
             }
             absent_blocks.push(parent);
@@ -430,7 +430,11 @@ where
 
     fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
         let block_header = &block.header().clone();
-        if self.chain.has_dag_block(block_header.id())? {
+        if has_dag_block(
+            block_header.id(),
+            self.local_store.clone(),
+            &self.chain.dag(),
+        )? {
             info!(
                 "the dag block exists, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
@@ -576,7 +580,7 @@ where
                         .get_dag_sync_block(**id)
                         .unwrap_or(None)
                         .is_none()
-                        && match self.chain.has_dag_block(**id) {
+                        && match has_dag_block(**id, self.local_store.clone(), &self.chain.dag()) {
                             Ok(exist) => !exist,
                             Err(_) => true,
                         }
@@ -608,7 +612,8 @@ where
                             .get_dag_sync_block(*id)
                             .unwrap_or(None)
                             .is_none()
-                            && match self.chain.has_dag_block(*id) {
+                            && match has_dag_block(*id, self.local_store.clone(), &self.chain.dag())
+                            {
                                 Ok(exist) => !exist,
                                 Err(_) => true,
                             }
@@ -676,7 +681,11 @@ where
         }
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-            if self.chain.has_dag_block(block.header().id())? {
+            if has_dag_block(
+                block.header().id(),
+                self.local_store.clone(),
+                &self.chain.dag(),
+            )? {
                 let current_header = self.chain.current_header();
                 let current_block = self
                     .local_store
@@ -697,7 +706,11 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if self.chain.has_dag_block(block.header().id())? {
+        let block_info = if has_dag_block(
+            block.header().id(),
+            self.local_store.clone(),
+            &self.chain.dag(),
+        )? {
             block_info
         } else {
             None

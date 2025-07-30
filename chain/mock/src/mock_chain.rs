@@ -3,6 +3,7 @@
 
 use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
+use starcoin_chain::chain_common_func::has_dag_block;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
@@ -132,7 +133,11 @@ impl MockChain {
             Some(id) => id,
             None => self.head.current_header().id(),
         };
-        assert!(self.head.has_dag_block(block_id)?);
+        assert!(has_dag_block(
+            block_id,
+            self.storage.clone(),
+            &self.head().dag()
+        )?);
         BlockChain::new(
             self.head.time_service(),
             block_id,

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_common_func::has_dag_block;
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -304,7 +305,7 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 2");
+            info!("jacktest: select dag state 2");
             self.fork(block_id)?
         } else {
             let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
@@ -315,20 +316,20 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(new_state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 3");
+            info!("jacktest: select dag state 3");
             let current_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent(current_state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 4");
+            info!("jacktest: select dag state 4");
 
             let selected_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent([new_header, current_header])
                 .unwrap();
-        info!("jacktest: select dag state 5");
+            info!("jacktest: select dag state 5");
 
             self.fork(selected_header)?
         };
@@ -443,34 +444,11 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block hash by number {}", number))
     }
 
-    pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
-        header.parents_hash().into_iter().all(|parent| {
-            self.has_dag_block(parent).unwrap_or_else(|e| {
-                warn!("check_parents_ready error: {:?}", e);
-                false
-            })
-        })
-    }
-
     fn check_exist_block(&self, block_id: HashValue, block_number: BlockNumber) -> Result<bool> {
         Ok(self
             .get_hash_by_number(block_number)?
             .filter(|hash| hash == &block_id)
             .is_some())
-    }
-
-    // filter block by check exist
-    fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
-        Ok(match block {
-            Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number())? {
-                    Some(block)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        })
     }
 
     // filter header by check exist
@@ -1197,8 +1175,7 @@ impl ChainReader for BlockChain {
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage
-            .get_block_by_hash(hash)
+        self.storage.get_block_by_hash(hash)
     }
 
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>> {
@@ -1285,7 +1262,7 @@ impl ChainReader for BlockChain {
 
     fn fork(&self, block_id: HashValue) -> Result<Self> {
         ensure!(
-            self.has_dag_block(block_id)?,
+            has_dag_block(block_id, self.storage.clone(), &self.dag)?,
             "Block with id {} do not exists in current chain.",
             block_id
         );
@@ -1469,19 +1446,6 @@ impl ChainReader for BlockChain {
             .map(|state| state.tips)
     }
 
-    fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let header = match self.storage.get_block_header_by_hash(header_id)? {
-            Some(header) => header,
-            None => return Ok(false),
-        };
-
-        if self.storage.get_block_info(header.id())?.is_none() {
-            return Ok(false);
-        }
-
-        self.dag.has_block_connected(&header)
-    }
-
     fn calc_ghostdata_and_check_bounded_merge_depth(
         &self,
         header: &BlockHeader,
@@ -1582,6 +1546,10 @@ impl ChainReader for BlockChain {
             );
         }
         Ok(())
+    }
+
+    fn get_storage(&self) -> Arc<dyn Store> {
+        self.storage.clone()
     }
 }
 
@@ -1768,72 +1736,6 @@ impl BlockChain {
             head: block.clone(),
         };
         self.epoch = get_epoch_from_statedb(&self.statedb)?;
-        // if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
-        //     let start_block_id = self
-        //         .get_block_by_number(self.epoch.start_block_number())?
-        //         .unwrap_or_else(|| {
-        //             panic!(
-        //                 "the block: {:?} should exist",
-        //                 self.epoch.start_block_number()
-        //             )
-        //         });
-        //     let end_block_id = block.id();
-        //     let epoch_info = self.chain_state().get_epoch_info()?;
-        //     let total_selectd_chain_blocks = block
-        //         .header()
-        //         .number()
-        //         .saturating_sub(self.epoch.start_block_number())
-        //         .saturating_add(1);
-        //     let total_blocks = epoch_info
-        //         .uncles()
-        //         .saturating_add(total_selectd_chain_blocks);
-
-        //     let mut block_set = HashSet::new();
-        //     let blocks = (self.epoch.start_block_number()..=block.header().number())
-        //         .map(|block_number| {
-        //             self.get_block_by_number(block_number)
-        //                 .unwrap_or_else(|e| {
-        //                     panic!(
-        //                         "the block: {:?} should exist, for error: {:?}",
-        //                         block_number, e
-        //                     )
-        //                 })
-        //                 .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
-        //         })
-        //         .collect::<Vec<_>>();
-        //     block_set.extend(blocks.iter().map(|block| block.header()).cloned());
-        //     block_set.extend(blocks.iter().flat_map(|block| {
-        //         if let Some(uncles) = &block.body.uncles {
-        //             uncles.clone()
-        //         } else {
-        //             vec![]
-        //         }
-        //     }));
-        //     let total_difficulty: U256 = block_set
-        //         .iter()
-        //         .map(|block_header| block_header.difficulty())
-        //         .sum();
-        //     let avg_total_difficulty = if let Some(avg_total_difficulty) =
-        //         total_difficulty.checked_div(U256::from(total_blocks))
-        //     {
-        //         info!("avg_total_difficulty overflow");
-        //         avg_total_difficulty
-        //     } else {
-        //         U256::MAX
-        //     };
-
-        //     let eclapse_time = {
-        //         let now = SystemTime::now()
-        //             .duration_since(UNIX_EPOCH)
-        //             .unwrap()
-        //             .as_millis();
-        //         now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
-        //     };
-        //     let bps = (total_blocks as f64) / eclapse_time;
-
-        //     info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}",
-        //         total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
-        // }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
 

@@ -7,6 +7,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -18,6 +19,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::TransactionInfoWithProof;
 pub use starcoin_types::block::ExecutedBlock;
@@ -108,7 +110,6 @@ pub trait ChainReader {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
-    fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn calc_ghostdata_and_check_bounded_merge_depth(
         &self,
         header: &BlockHeader,
@@ -118,6 +119,7 @@ pub trait ChainReader {
     fn get_pruning_config(&self) -> (u64, u64);
     fn get_genesis_hash(&self) -> HashValue;
     fn get_dag(&self) -> BlockDAG;
+    fn get_storage(&self) -> Arc<dyn Store>;
     fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
     fn validate_pruning_point(
         &self,
