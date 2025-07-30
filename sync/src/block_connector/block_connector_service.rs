@@ -514,6 +514,10 @@ where
                 .expect("block info not found in new dag block message")
                 .expect("block info not found in new dag block message");
             if current_block_info.total_difficulty < block_info.total_difficulty {
+                self.config
+                    .net()
+                    .time_service()
+                    .adjust(msg.get_block().header().timestamp());
                 ctx.broadcast(NewHeadBlock {
                     executed_block: Arc::new(ExecutedBlock {
                         block: msg.get_block().clone(),

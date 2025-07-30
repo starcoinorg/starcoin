@@ -183,6 +183,10 @@ where
         if executed_block.total_difficulty() > current_block_info.total_difficulty {
             self.main_header = executed_block.block.header().clone();
             self.update_startup_info(executed_block.block().header())?;
+            self.config
+                .net()
+                .time_service()
+                .adjust(executed_block.header().timestamp());
             ctx.broadcast(NewHeadBlock {
                 executed_block: Arc::new(executed_block.clone()),
             });
