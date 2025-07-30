@@ -15,7 +15,6 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::view::{StateWithProofView, TransactionInfoView};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use tokio::runtime::Runtime;
 
 pub struct AsyncRpcClient {
     inner: Mutex<Option<RpcClientInner>>,
@@ -23,9 +22,13 @@ pub struct AsyncRpcClient {
 }
 
 impl AsyncRpcClient {
-    pub fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
-        let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
-        let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into();
+    pub async fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
+        let provider = ConnectionProvider::new(conn_source, None);
+        let inner: RpcClientInner = provider
+            .get_rpc_channel_async()
+            .await
+            .map_err(map_err)?
+            .into();
 
         Ok(Self {
             inner: Mutex::new(Some(inner)),
