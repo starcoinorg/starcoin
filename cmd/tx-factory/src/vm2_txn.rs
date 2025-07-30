@@ -39,7 +39,7 @@ use starcoin_crypto::SigningKey;
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_rpc_client::AsyncRpcClient;
 use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::view::TransactionInfoView;
+use starcoin_vm2_types::view::{TransactionInfoView, TransactionStatusView};
 use std::collections::{HashMap, VecDeque};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -55,7 +55,7 @@ struct AccountEntry {
 #[derive(Debug, Clone)]
 struct TxnRecord {
     txn_hash: HashValue,
-    account_addr: String,
+    account_addr: AccountAddress,
     finished: bool,
 }
 
@@ -90,13 +90,9 @@ async fn create_account(
     password: &str,
 ) -> Result<AccountEntry> {
     // Generate a new mnemonic / keypair via RPC (or locally, then import).
-    let addr = client
-        .account_create(Some(password.to_string()), None)
-        .await?
-        .account
-        .ok_or_else(|| anyhow!("No address returned"))?;
+    let address = client.account_create(password.to_owned()).await?.address;
     let entry = AccountEntry {
-        address: format!("0x{}", addr.to_hex()),
+        address,
         password: password.to_string(),
     };
     append_account(csv_path, &entry)?;
@@ -110,8 +106,8 @@ async fn unlock_account(client: &AsyncRpcClient, account: &AccountEntry) -> Resu
         let ok = client
             .account_unlock(
                 account.address.clone(),
-                Some(account.password.clone()),
-                None,
+                account.password.clone(),
+                Duration::from_secs(30),
             )
             .await?;
         if ok {
@@ -157,9 +153,13 @@ async fn wait_txn_confirmed(client: &AsyncRpcClient, hash: HashValue) -> Result<
     // simple polling; in production, prefer subscription.
     for _ in 0..30 {
         if let Some(info) = client.chain_get_transaction_info(hash).await? {
-            if info.status == "Executed" {
-                return Ok(());
-            }
+            return {
+                match info.status {
+                    TransactionStatusView::Executed => (),
+                    _ => warn!(?info.status, "txn {:?} not executed yet", hash),
+                };
+                Ok(())
+            };
         }
         sleep(Duration::from_secs(2)).await;
     }
@@ -176,9 +176,7 @@ async fn create_and_submit(
     let raw = client
         .txpool_generate_transfer_raw_txn(from.address.clone(), to.to_string(), amount, None, None)
         .await?;
-    let signed = client
-        .account_sign_txn(from.address.clone(), from.password.clone(), raw, None)
-        .await?;
+    let signed = client.account_sign_txn(raw, from.address.clone()).await?;
     let hash = client.submit_txn(signed).await?;
     Ok(hash)
 }
@@ -195,6 +193,9 @@ async fn main() -> Result<()> {
 
     let client = AsyncRpcClient::new(node_url.into())?;
     let mut accounts = load_accounts(&csv_path)?;
+
+    let funding_addr =
+        AccountAddress::from_hex_literal(&funding_addr).context("Invalid funding address")?;
 
     // make sure funding account exists in list (for easy unlock later)
     if !accounts.iter().any(|a| a.address == funding_addr) {
@@ -268,10 +269,17 @@ async fn main() -> Result<()> {
                 if let Some(TransactionInfoView { status, .. }) =
                     client.chain_get_transaction_info(rec.txn_hash).await?
                 {
-                    if status == "Executed" {
-                        rec.finished = true;
+                    match status {
+                        TransactionStatusView::Executed => {
+                            info!(?rec.txn_hash, "txn executed");
+                        }
+                        TransactionStatusView::OutOfGas => {
+                            warn!(?rec.txn_hash, "txn expired or discarded");
+                        }
+                        _ => (),
                     }
                 }
+                rec.finished = true;
             }
         }
 
