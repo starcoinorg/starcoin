@@ -187,13 +187,11 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        match self.receive_header() {
-            ReceiveHeader::Received => self
+    let _ =self.receive_header();
+          self
                 .inner
                 .create_block_template(header_version)
-                .map_err(BlockTemplateError::Other),
-            ReceiveHeader::NotReceived => Err(BlockTemplateError::NoReceivedHeader),
-        }
+                .map_err(BlockTemplateError::Other)
     }
 }
 

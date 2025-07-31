@@ -189,12 +189,14 @@ impl NewHeaderService {
                     warn!("Failed to send new head block: {:?} in NewHeaderService", e);
                 }
             }
-            ctx.broadcast(DeterminedDagBlock {
-                executed_block: Arc::new(self.header.clone()),
-            });
+
         } else {
             info!("resolve header returns false");
         }
+
+            ctx.broadcast(DeterminedDagBlock {
+                executed_block: Arc::new(self.header.clone()),
+            });
 
         Ok(())
     }
