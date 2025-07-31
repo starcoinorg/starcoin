@@ -170,7 +170,7 @@ pub fn get_next_target_helper(
                 }
                 total_v_block_time = total_v_block_time
                     .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-                v_blocks = v_blocks.saturating_add(idx);
+                // v_blocks = v_blocks.saturating_add(idx);
             }
 
             // let total_v_block_time = blocks
