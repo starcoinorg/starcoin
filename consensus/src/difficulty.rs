@@ -162,16 +162,16 @@ pub fn get_next_target_helper(
                 v_blocks = v_blocks.saturating_add(diff_infos.len());
             }
             blocks_in_same_number.reverse();
-            let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
-            let mut total_v_block_time: u64 = 0;
-            for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
-                if idx == 0 {
-                    continue;
-                }
-                total_v_block_time = total_v_block_time
-                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-                // v_blocks = v_blocks.saturating_add(idx);
-            }
+            // let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
+            let mut total_v_block_time: u64 = blocks_in_same_number.first().unwrap().timestamp.saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
+            // for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
+            //     if idx == 0 {
+            //         continue;
+            //     }
+            //     total_v_block_time = total_v_block_time
+            //         .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
+            //     // v_blocks = v_blocks.saturating_add(idx);
+            // }
 
             // let total_v_block_time = blocks
             //     .first()
