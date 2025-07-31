@@ -32,6 +32,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::SelectHeaderState;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -200,6 +201,7 @@ where
         ctx.set_mailbox_capacity(merge_depth as usize);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<SelectHeaderState>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -211,6 +213,7 @@ where
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<SelectHeaderState>();
         Ok(())
     }
 }
@@ -337,12 +340,12 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, PeerNewBlock>
+impl<TransactionPoolServiceT> EventHandler<Self, SelectHeaderState>
     for BlockConnectorService<TransactionPoolServiceT>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: SelectHeaderState, ctx: &mut ServiceContext<Self>) {
         if !self.is_synced() {
             debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
             return;
@@ -399,9 +402,6 @@ where
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
         } else {
-            ctx.broadcast(NewDagBlockFromPeer {
-                executed_block: Arc::new(msg.get_block().header().clone()),
-            });
         }
     }
 }
