@@ -304,7 +304,7 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 2");
+            info!("jacktest: select dag state 2");
             self.fork(block_id)?
         } else {
             let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
@@ -315,20 +315,20 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(new_state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 3");
+            info!("jacktest: select dag state 3");
             let current_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent(current_state.tips)
                 .unwrap();
-        info!("jacktest: select dag state 4");
+            info!("jacktest: select dag state 4");
 
             let selected_header = self
                 .dag
                 .ghost_dag_manager()
                 .find_selected_parent([new_header, current_header])
                 .unwrap();
-        info!("jacktest: select dag state 5");
+            info!("jacktest: select dag state 5");
 
             self.fork(selected_header)?
         };
@@ -1197,8 +1197,7 @@ impl ChainReader for BlockChain {
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage
-            .get_block_by_hash(hash)
+        self.storage.get_block_by_hash(hash)
     }
 
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>> {

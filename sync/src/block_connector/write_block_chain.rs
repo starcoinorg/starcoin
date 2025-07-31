@@ -167,7 +167,7 @@ where
 
     pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
         info!("jacktest: switch header before");
-        let new_branch = self.main.select_dag_state(header)?; // 1 
+        let new_branch = self.main.select_dag_state(header)?; // 1
         info!("jacktest: switch header after and select head before");
         self.select_head(new_branch)?;
         info!("jacktest: switch header and selectd head afer");

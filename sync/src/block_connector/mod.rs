@@ -7,6 +7,7 @@ use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::{Block, ExecutedBlock};
 
 mod block_connector_service;
+mod execute_service;
 mod metrics;
 #[cfg(test)]
 mod test_illegal_block;

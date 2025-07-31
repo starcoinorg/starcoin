@@ -199,7 +199,6 @@ where
             .saturating_mul(3);
         ctx.set_mailbox_capacity(merge_depth as usize);
         ctx.subscribe::<SyncStatusChangeEvent>();
-        ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
@@ -211,7 +210,6 @@ where
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
-        ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
@@ -326,107 +324,6 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoo
         }
 
         feedback.map(|f| f.unbounded_send(BlockConnectedFinishEvent));
-    }
-}
-
-impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
-        let id = new_block.header().id();
-        debug!("try connect mined block: {}", id);
-
-        let main = self.chain_service.get_main();
-        let mut chain = BlockChain::new(
-            main.time_service(),
-            new_block.header().parent_hash(),
-            main.get_storage(),
-            None,
-            main.dag(),
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "new block chain error when processing the mined block: {:?}",
-                e
-            )
-        });
-
-        let bus = ctx.bus_ref().clone();
-
-        info!(
-            "jacktest: verify, start to verify the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-        let verified_block =
-            match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
-                anyhow::Result::Ok(verified_block) => verified_block,
-                Err(e) => {
-                    error!(
-                    "when verifying the mined block, failed to verify block error: {:?}, id: {:?}",
-                    e,
-                    new_block.id()
-                );
-                    return;
-                }
-            };
-        info!(
-            "jacktest: verify, end to verify the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-
-        info!(
-            "jacktest: execute, start to execute the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-        let executed_block = match chain.execute(verified_block) {
-            std::result::Result::Ok(executed_block) => executed_block,
-            Err(e) => {
-                error!(
-                    "when executing the mined block, failed to execute block error: {:?}, id: {:?}",
-                    e,
-                    new_block.id()
-                );
-                return;
-            }
-        };
-        info!(
-            "jacktest: execute, end to execute the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-
-        info!(
-            "jacktest: connect, start to connect the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-        match chain.connect(executed_block.clone()) {
-            std::result::Result::Ok(_) => (),
-            Err(e) => {
-                error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
-                return;
-            }
-        }
-        info!(
-            "jacktest: connect, end to execute the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-
-        info!(
-            "jacktest: new dag block, start to broadcast new dag block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
-        let _ = bus.broadcast(NewDagBlock {
-            executed_block: Arc::new(executed_block.clone()),
-        });
     }
 }
 
