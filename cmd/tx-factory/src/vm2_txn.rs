@@ -30,6 +30,9 @@ use tokio::fs::File;
 use tokio::time::{sleep, Duration};
 
 const DEFAULT_PASSWORD: &str = "password"; // Default password for new accounts
+const INITIAL_BALANCE: u128 = 1_000_000_000;
+const DEFAULT_AMOUNT: u128 = 1_000; // Default amount to transfer
+const MIN_GAS_AMOUNT: u64 = 10_000_000; // max gas
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AccountEntry {
@@ -122,7 +125,10 @@ async fn ensure_balance(
         return Ok(());
     }
     let need = min_balance - bal;
-    info!("Topping up {} with {} nano STC", account.address, need);
+    info!(
+        "Topping up {} with {} nano STC from {}",
+        account.address, need, funding.address
+    );
     let node_info = client.node_info().await?;
     let chain_id = node_info.net.chain_id().id();
     let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
@@ -161,17 +167,22 @@ async fn create_and_submit(
     timestamp: u64,
     chain_id: u8,
 ) -> Result<HashValue> {
-    let seq_num = client
-        .next_sequence_number_in_txpool(from.address)
-        .await?
-        .context("Failed to get next sequence number")?;
+    let seq_num = match client.next_sequence_number_in_txpool(from.address).await? {
+        Some(num) => num,
+        None => {
+            let state_reader =
+                AsyncRemoteStateReader::create(client, StateRootOption::Latest).await?;
+            let acc = state_reader.get_account_resource(&from.address).await?;
+            acc.map(|r| r.sequence_number()).unwrap_or(0)
+        }
+    };
     let raw = build_transfer_txn(
         from.address,
         to,
         seq_num,
         amount,
-        1,         // gas price
-        1_000_000, // max gas
+        1,              // gas price
+        MIN_GAS_AMOUNT, // max gas amount
         timestamp,
         chain_id.into(), // chain ID
     );
@@ -233,6 +244,7 @@ async fn generate_cmd(mut args: impl Iterator<Item = String>) -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    starcoin_logger::init();
     let mut args = std::env::args().skip(1);
     let sub_cmd = args.next().context("sub command")?;
     match sub_cmd.as_str() {
@@ -242,12 +254,16 @@ async fn main() -> Result<()> {
         "run" => (),
         _ => return Err(anyhow!("Unknown command: {}", sub_cmd)),
     }
-    let csv_path = args.next().context("csv path")?;
     let node_url = args.next().context("node url")?;
+    let csv_path = args.next().context("csv path")?;
     let funding_addr = args.next().context("funding addr")?;
     let funding_pw = args.next().context("funding pw")?;
     let target_addr = args.next().context("target addr")?;
-    let min_balance: u128 = args.next().context("min balance")?.parse()?;
+    let min_balance: u128 = args
+        .next()
+        .map(|x| x.parse::<u128>())
+        .transpose()?
+        .unwrap_or(INITIAL_BALANCE);
 
     let client = AsyncRpcClient::new(node_url.into()).await?;
     let mut accounts = load_accounts(&csv_path)?;
@@ -316,7 +332,7 @@ async fn main() -> Result<()> {
             &client,
             &picked,
             target_addr,
-            1_000_000,
+            DEFAULT_AMOUNT,
             timestamp,
             chain_id,
         )

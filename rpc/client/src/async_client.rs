@@ -113,6 +113,11 @@ impl AsyncRpcClient {
             .await
             .map_err(map_err)
     }
+    pub async fn submit_hex_txn(&self, txn: String) -> anyhow::Result<HashValue> {
+        self.call_rpc_async(|inner| inner.txpool_client.submit_hex_transaction2(txn))
+            .await
+            .map_err(map_err)
+    }
     pub async fn next_sequence_number_in_txpool(
         &self,
         address: AccountAddress,
