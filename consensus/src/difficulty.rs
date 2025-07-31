@@ -155,19 +155,30 @@ pub fn get_next_target_helper(
                     .timestamp,
             ),
         Ordering::Greater => {
-            let mut blocks_in_same_number = vec![];
+            // let mut blocks_in_same_number = vec![];
             let mut v_blocks: usize = 0;
             for (_number, diff_infos) in blocks.iter() {
-                blocks_in_same_number.push(diff_infos.last().unwrap().clone());
+                // blocks_in_same_number.push(diff_infos.last().unwrap().clone());
                 v_blocks = v_blocks.saturating_add(diff_infos.len());
             }
-            blocks_in_same_number.reverse();
+            // blocks_in_same_number.reverse();
             // let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
-            let mut total_v_block_time: u64 = blocks_in_same_number
+            let mut total_v_block_time: u64 = blocks
+                .last_key_value()
+                .unwrap()
+                .1
                 .first()
                 .unwrap()
                 .timestamp
-                .saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
+                .saturating_sub(
+                    blocks
+                        .first_key_value()
+                        .unwrap()
+                        .1
+                        .last()
+                        .unwrap()
+                        .timestamp,
+                );
             // for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
             //     if idx == 0 {
             //         continue;
