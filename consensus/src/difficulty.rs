@@ -149,8 +149,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Re
             }
 
             let total_transaction_time = blocks.iter().map(|b| b.transaction_count).sum::<u64>();
-            let total_v_block_time = total_v_block_time
-                .saturating_sub(total_transaction_time);
+            let total_v_block_time = total_v_block_time.saturating_sub(total_transaction_time);
 
             total_v_block_time
                 .checked_div(v_blocks as u64)
