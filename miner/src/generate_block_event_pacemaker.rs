@@ -122,7 +122,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
-            self.send_event(false, ctx)
+            self.send_event(true, ctx)
         } else {
             debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
         }

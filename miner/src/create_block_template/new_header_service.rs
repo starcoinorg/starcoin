@@ -1,13 +1,15 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{storage, BlockStore, Storage};
 use starcoin_types::{
     block::BlockHeader,
+    startup_info::StartupInfo,
     system_events::{DeterminedDagBlock, NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
@@ -72,6 +74,20 @@ impl ActorService for NewHeaderService {
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
+
+        // let startup_info = ctx.get_shared::<StartupInfo>()?;
+        // let storage = ctx.get_shared::<Arc<Storage>>()?;
+        // let header = storage.get_block_header_by_hash(startup_info.main)?.ok_or_else(|| {
+        //     format_err!(
+        //         "no main block: {:?} when creating NewHeaderService",
+        //         startup_info.main
+        //     )
+        // })?;
+        // let statedb = ChainStateDB::new(storage.clone(), Some(header.state_root()));
+
+        ctx.run_interval(Duration::from_millis(2000), |ctx| {
+            ctx.broadcast(DeterminedDagBlock);
+        });
 
         Ok(())
     }
@@ -189,14 +205,11 @@ impl NewHeaderService {
                     warn!("Failed to send new head block: {:?} in NewHeaderService", e);
                 }
             }
-
         } else {
             info!("resolve header returns false");
         }
 
-            ctx.broadcast(DeterminedDagBlock {
-                executed_block: Arc::new(self.header.clone()),
-            });
+        ctx.broadcast(DeterminedDagBlock);
 
         Ok(())
     }
