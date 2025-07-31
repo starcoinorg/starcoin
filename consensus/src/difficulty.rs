@@ -77,13 +77,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 
     let mut blue_block_in_order: Vec<Block> = blue_block_set.into_iter().collect();
 
-    blue_block_in_order.sort_by(|a, b| {
-        b.header()
-            .number()
-            .cmp(&a.header().number())
-            .then_with(|| b.header().timestamp().cmp(&a.header().timestamp()))
-            .then_with(|| b.id().cmp(&a.id()))
-    });
+    blue_block_in_order.sort_by(|a, b| b.header().timestamp().cmp(&a.header().timestamp()));
 
     let next_block_time_target = epoch.block_time_target();
     info!(
@@ -136,24 +130,30 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Re
         }
         Ordering::Equal => blocks[0].timestamp.saturating_sub(blocks[1].timestamp),
         Ordering::Greater => {
-            let latest_timestamp = blocks[0].timestamp;
-            let mut total_v_block_time: u64 = 0;
-            let mut v_blocks: usize = 0;
-            for (idx, diff_info) in blocks.iter().enumerate() {
-                if idx == 0 {
-                    continue;
-                }
-                total_v_block_time = total_v_block_time
-                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-                v_blocks = v_blocks.saturating_add(idx);
-            }
-
+            // let latest_timestamp = blocks[0].timestamp;
+            // let mut total_v_block_time: u64 = 0;
+            // let mut v_blocks: usize = 0;
+            // for (idx, diff_info) in blocks.iter().enumerate() {
+            //     if idx == 0 {
+            //         continue;
+            //     }
+            //     total_v_block_time = total_v_block_time
+            //         .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
+            //     v_blocks = v_blocks.saturating_add(idx);
+            // }
+            let total_v_block_time = blocks
+                .first()
+                .unwrap()
+                .timestamp
+                .saturating_sub(blocks.last().unwrap().timestamp);
             let total_transaction_time = blocks.iter().map(|b| b.transaction_count).sum::<u64>();
             let total_v_block_time = total_v_block_time.saturating_sub(total_transaction_time);
 
-            total_v_block_time
-                .checked_div(v_blocks as u64)
-                .ok_or_else(|| format_err!("calculate avg time overflow"))?
+            let avg_time = total_v_block_time
+                .checked_div(blocks.len() as u64)
+                .ok_or_else(|| format_err!("calculate avg time overflow"))?;
+            info!("jacktest: total_v_block_time: {:?}, total_transaction_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, total_transaction_time, blocks.len(), avg_time, avg_target, time_plan);
+            avg_time
         }
     };
 
