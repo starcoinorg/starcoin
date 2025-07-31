@@ -75,20 +75,6 @@ impl ActorService for NewHeaderService {
         ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
 
-        // let startup_info = ctx.get_shared::<StartupInfo>()?;
-        // let storage = ctx.get_shared::<Arc<Storage>>()?;
-        // let header = storage.get_block_header_by_hash(startup_info.main)?.ok_or_else(|| {
-        //     format_err!(
-        //         "no main block: {:?} when creating NewHeaderService",
-        //         startup_info.main
-        //     )
-        // })?;
-        // let statedb = ChainStateDB::new(storage.clone(), Some(header.state_root()));
-
-        ctx.run_interval(Duration::from_millis(2000), |ctx| {
-            ctx.broadcast(DeterminedDagBlock);
-        });
-
         Ok(())
     }
 
