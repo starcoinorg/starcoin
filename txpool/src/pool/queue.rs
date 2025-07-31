@@ -382,7 +382,12 @@ impl TransactionQueue {
                 .unordered_pending(ready)
                 .take(max_len)
                 .collect(),
-            PendingOrdering::Priority => self.pool.read().pending(ready).take(max_len).collect(),
+            PendingOrdering::Priority => {
+                match self.pool.try_read() {
+                    Some(pool) => pool.pending(ready).take(max_len).collect(),
+                    None => vec![],
+                }
+            },
         }
     }
 
