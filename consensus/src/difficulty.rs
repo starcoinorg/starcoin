@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::convert::TryFrom;
 
 /// Get the target of next pow work
@@ -50,7 +50,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     }
 
     let mut blue_block_set = HashSet::new();
-    let mut selected_chain = Vec::new();
+    // let mut selected_chain = Vec::new();
 
     selected_blocks.iter().try_for_each(|id| {
         let ghostdata = chain.get_dag().storage.ghost_dag_store.get_data(*id)?;
@@ -68,16 +68,25 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 })
                 .collect::<Result<Vec<Block>>>()?,
         );
-        selected_chain.push(chain.get_block(*id)?.ok_or_else(|| {
-            format_err!("failed to get the block header when getting next work required")
-        })?);
+        // selected_chain.push(chain.get_block(*id)?.ok_or_else(|| {
+        //     format_err!("failed to get the block header when getting next work required")
+        // })?);
         Ok(())
     })?;
-    selected_chain.reverse();
+    // selected_chain.reverse();
 
-    let mut blue_block_in_order: Vec<Block> = blue_block_set.into_iter().collect();
+    let mut blue_block_in_order: BTreeMap<u64, Vec<BlockDiffInfo2>> = BTreeMap::new();
 
-    blue_block_in_order.sort_by(|a, b| b.header().timestamp().cmp(&a.header().timestamp()));
+    for blue_block in blue_block_set.iter() {
+        blue_block_in_order
+            .entry(blue_block.header().number())
+            .or_insert_with(Vec::new)
+            .push(blue_block.try_into()?);
+    }
+
+    for b in blue_block_in_order.values_mut() {
+        b.sort_by_key(|b| b.timestamp);
+    }
 
     let next_block_time_target = epoch.block_time_target();
     info!(
@@ -87,13 +96,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         current_header.id()
     );
 
-    let target = get_next_target_helper(
-        blue_block_in_order
-            .into_iter()
-            .map(|block| block.try_into())
-            .collect::<Result<Vec<BlockDiffInfo2>>>()?,
-        next_block_time_target,
-    )?;
+    let target = get_next_target_helper(blue_block_in_order, next_block_time_target)?;
 
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
@@ -104,20 +107,27 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Result<U256> {
+pub fn get_next_target_helper(
+    blocks: BTreeMap<u64, Vec<BlockDiffInfo2>>,
+    time_plan: u64,
+) -> Result<U256> {
     if blocks.is_empty() {
         bail!("block diff info is empty")
     }
     if blocks.len() == 1 {
-        return Ok(blocks[0].target);
+        return Ok(blocks.first_key_value().unwrap().1.last().unwrap().target);
     }
-    let block_n = blocks.len();
+    // let block_n = blocks.iter().map(|(_number, diff)| diff.len()).sum::<usize>() as u64;
+    let mut block_n: u64 = 0;
 
     let mut total_target = U512::zero();
-    for diff_info in blocks.iter() {
-        total_target = total_target
-            .checked_add(U512::from(&diff_info.target))
-            .ok_or_else(|| format_err!("calculate total target overflow"))?;
+    for (_number, diff_infos) in blocks.iter() {
+        for diff_info in diff_infos.iter() {
+            total_target = total_target
+                .checked_add(U512::from(&diff_info.target))
+                .ok_or_else(|| format_err!("calculate total target overflow"))?;
+        }
+        block_n = block_n.saturating_add(diff_infos.len() as u64);
     }
     let avg_target: U256 = total_target
         .checked_div(U512::from(block_n))
@@ -128,29 +138,58 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo2>, time_plan: u64) -> Re
         Ordering::Less => {
             unreachable!()
         }
-        Ordering::Equal => blocks[0].timestamp.saturating_sub(blocks[1].timestamp),
+        Ordering::Equal => blocks
+            .last_key_value()
+            .unwrap()
+            .1
+            .last()
+            .unwrap()
+            .timestamp
+            .saturating_sub(
+                blocks
+                    .first_key_value()
+                    .unwrap()
+                    .1
+                    .last()
+                    .unwrap()
+                    .timestamp,
+            ),
         Ordering::Greater => {
-            // let latest_timestamp = blocks[0].timestamp;
-            // let mut total_v_block_time: u64 = 0;
-            // let mut v_blocks: usize = 0;
-            // for (idx, diff_info) in blocks.iter().enumerate() {
-            //     if idx == 0 {
-            //         continue;
-            //     }
-            //     total_v_block_time = total_v_block_time
-            //         .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-            //     v_blocks = v_blocks.saturating_add(idx);
-            // }
-            let total_v_block_time = blocks
-                .first()
-                .unwrap()
-                .timestamp
-                .saturating_sub(blocks.last().unwrap().timestamp);
-            let total_transaction_time = blocks.iter().map(|b| b.transaction_count).sum::<u64>();
-            let total_v_block_time = total_v_block_time.saturating_sub(total_transaction_time);
+            let mut blocks_in_same_number = vec![];
+            for (_number, diff_infos) in blocks.iter() {
+                blocks_in_same_number.push(diff_infos.last().unwrap().clone());
+            }
+            blocks_in_same_number.reverse();
+            let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
+            let mut total_v_block_time: u64 = 0;
+            let mut v_blocks: usize = 0;
+            for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
+                if idx == 0 {
+                    continue;
+                }
+                total_v_block_time = total_v_block_time
+                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
+                v_blocks = v_blocks.saturating_add(idx);
+            }
+
+            // let total_v_block_time = blocks
+            //     .first()
+            //     .unwrap()
+            //     .timestamp
+            //     .saturating_sub(blocks.last().unwrap().timestamp);
+            let total_transaction_time = blocks
+                .iter()
+                .flat_map(|(_number, diff)| {
+                    diff.iter()
+                        .map(|diff| diff.transaction_count)
+                        .collect::<Vec<u64>>()
+                })
+                .sum::<u64>();
+            let total_v_block_time =
+                total_v_block_time.saturating_sub(total_transaction_time.saturating_mul(2));
 
             let avg_time = total_v_block_time
-                .checked_div(blocks.len() as u64)
+                .checked_div(v_blocks as u64)
                 .ok_or_else(|| format_err!("calculate avg time overflow"))?;
             info!("jacktest: total_v_block_time: {:?}, total_transaction_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, total_transaction_time, blocks.len(), avg_time, avg_target, time_plan);
             avg_time
@@ -210,7 +249,7 @@ impl TryFrom<BlockHeader> for BlockDiffInfo {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockDiffInfo2 {
     pub timestamp: u64,
     pub target: U256,
@@ -227,9 +266,9 @@ impl BlockDiffInfo2 {
     }
 }
 
-impl TryFrom<Block> for BlockDiffInfo2 {
+impl TryFrom<&Block> for BlockDiffInfo2 {
     type Error = anyhow::Error;
-    fn try_from(block: Block) -> Result<Self, Self::Error> {
+    fn try_from(block: &Block) -> Result<Self, Self::Error> {
         Ok(Self {
             timestamp: block.header().timestamp(),
             target: difficult_to_target(block.header().difficulty())?,
