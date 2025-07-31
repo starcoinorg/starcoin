@@ -186,28 +186,27 @@ async fn generate_accounts(
     count: usize,
     password: Option<&str>,
 ) -> Result<()> {
-    let mut existed_accounts = load_accounts(csv_path)?;
+    let existed_accounts = load_accounts(csv_path)?;
     let mut changed = false;
-    existed_accounts.retain(async |account: &AccountEntry| {
-        let unlocked = client
-            .account_unlock(
-                account.address,
-                account.password.clone(),
-                Duration::from_secs(30),
-            )
-            .await
-            .is_ok();
-        if !unlocked {
+    let mut filtered_accounts: Vec<AccountEntry> = Vec::new();
+    for account in existed_accounts {
+        let unlocked = unlock_account(client, &account).await.is_ok();
+        if unlocked {
+            filtered_accounts.push(account);
+        } else {
+            warn!(
+                "Failed to unlock account {}, removing from list",
+                account.address
+            );
             changed = true;
         }
-        unlocked
-    });
-    let existed = existed_accounts.len();
+    }
+    let existed = filtered_accounts.len();
     if changed {
         let file = File::open(csv_path).await?;
         file.set_len(0).await?;
         drop(file);
-        for account in existed_accounts {
+        for account in filtered_accounts {
             append_account(csv_path, &account)?;
         }
     }
