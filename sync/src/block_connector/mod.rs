@@ -18,6 +18,7 @@ mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
+pub use execute_service::ExecuteService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;

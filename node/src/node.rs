@@ -48,7 +48,7 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
-use starcoin_sync::block_connector::{BlockConnectorService, ResetRequest};
+use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync_api::SyncSpecificTargretRequest;
@@ -341,6 +341,7 @@ impl NodeService {
 
         registry.register::<ChainNotifyHandlerService>().await?;
 
+        registry.register::<ExecuteService>().await?;
         registry
             .register::<BlockConnectorService<TxPoolService>>()
             .await?;
