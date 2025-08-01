@@ -8,7 +8,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetTransactionOption;
-use starcoin_rpc_api::types::TransactionView;
+use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 
 /// Get transaction by txn hash or block hash and txn idx in the block
 #[derive(Debug, Parser)]
@@ -32,7 +32,7 @@ impl CommandAction for GetTransactionCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetTransactionOpt;
-    type ReturnItem = Option<TransactionView>;
+    type ReturnItem = Option<TransactionView2>;
 
     fn run(
         &self,
@@ -42,13 +42,16 @@ impl CommandAction for GetTransactionCommand {
         let opt = ctx.opt();
         match &opt.txn_hash {
             Some(txn_hash) => Ok(client
-                .chain_get_transaction(*txn_hash, Some(GetTransactionOption { decode: true }))?),
+                .chain_get_transaction2(*txn_hash, Some(GetTransactionOption { decode: true }))?),
             None => {
-                let block_hash = opt.block_hash.expect("block-hash exists");
-                let idx = opt.idx.expect("idx exists");
-                let txn_info = client.chain_get_txn_info_by_block_and_index(block_hash, idx)?;
-                match txn_info {
-                    Some(info) => Ok(client.chain_get_transaction(
+                let block_hash = opt
+                    .block_hash
+                    .ok_or_else(|| anyhow::anyhow!("block-hash should exists"))?;
+                let idx = opt
+                    .idx
+                    .ok_or_else(|| anyhow::anyhow!("idx should exists"))?;
+                match client.chain_get_txn_info_by_block_and_index2(block_hash, idx)? {
+                    Some(info) => Ok(client.chain_get_transaction2(
                         info.transaction_hash,
                         Some(GetTransactionOption { decode: true }),
                     )?),
