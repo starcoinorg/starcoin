@@ -190,7 +190,7 @@ impl EventHandler<Self, MinedBlock> for ExecuteService {
                     executed_block: Arc::new(executed_block.clone()),
                 });
             }
-            Err(_) => todo!(),
+            Err(e) => error!("execute a mined block {:?} error: {}", new_block.id(), e),
         }
     }
 }

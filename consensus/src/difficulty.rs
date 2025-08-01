@@ -163,7 +163,11 @@ pub fn get_next_target_helper(
             }
             blocks_in_same_number.reverse();
             // let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
-            let mut total_v_block_time: u64 = blocks_in_same_number.first().unwrap().timestamp.saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
+            let mut total_v_block_time: u64 = blocks_in_same_number
+                .first()
+                .unwrap()
+                .timestamp
+                .saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
             // for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
             //     if idx == 0 {
             //         continue;
