@@ -79,7 +79,6 @@ pub trait ChainReader {
     fn fork(&self, block_id: HashValue) -> Result<Self>
     where
         Self: Sized;
-    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber>;
     /// Find two chain's ancestor
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>>;
     /// Verify block header and body, base current chain, but do not verify it execute state.

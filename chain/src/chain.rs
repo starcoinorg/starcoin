@@ -67,7 +67,6 @@ pub struct BlockChain {
     statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
-    uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
@@ -108,7 +107,7 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         watch(CHAIN_WATCH_NAME, "n1253");
-        let mut chain = Self {
+        let chain = Self {
             genesis_hash: genesis,
             time_service,
             txn_accumulator: info_2_accumulator(
@@ -127,17 +126,11 @@ impl BlockChain {
             },
             statedb: chain_state,
             storage: storage.clone(),
-            uncles: HashMap::new(),
             epoch,
             vm_metrics,
             dag: dag.clone(),
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        match uncles {
-            Some(data) => chain.uncles = data,
-            None => chain.update_uncle_cache()?,
-        }
-        watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
 
@@ -189,10 +182,6 @@ impl BlockChain {
         Ok(dag)
     }
 
-    pub fn current_epoch_uncles_size(&self) -> u64 {
-        self.uncles.len() as u64
-    }
-
     pub fn current_block_accumulator_info(&self) -> AccumulatorInfo {
         self.block_accumulator.get_info()
     }
@@ -206,51 +195,6 @@ impl BlockChain {
 
     pub fn dag(&self) -> BlockDAG {
         self.dag.clone()
-    }
-
-    //TODO lazy init uncles cache.
-    fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?;
-        Ok(())
-    }
-
-    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
-        info!("jacktest: update uncles cache start");
-        let epoch = &self.epoch;
-        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let head_block = self.head_block().block;
-        let head_number = head_block.header().number();
-        if head_number < epoch.start_block_number() || head_number >= epoch.end_block_number() {
-            return Err(format_err!(
-                "head block {} not in current epoch: {:?}.",
-                head_number,
-                epoch
-            ));
-        }
-        for block_number in epoch.start_block_number()..epoch.end_block_number() {
-            let block_uncles = if block_number == head_number {
-                head_block.uncle_ids()
-            } else {
-                self.get_block_by_number(block_number)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by number {}, head block number: {}",
-                            block_number,
-                            head_number
-                        )
-                    })?
-                    .uncle_ids()
-            };
-            block_uncles.into_iter().for_each(|uncle_id| {
-                uncles.insert(uncle_id, block_number);
-            });
-            if block_number == head_number {
-                break;
-            }
-        }
-
-        info!("jacktest: update uncles cache end");
-        Ok(uncles)
     }
 
     pub fn create_block_template(
@@ -1316,10 +1260,6 @@ impl ChainReader for BlockChain {
             self.dag.clone(),
             //TODO: check missing blocks need to be clean
         )
-    }
-
-    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber> {
-        &self.uncles
     }
 
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>> {
