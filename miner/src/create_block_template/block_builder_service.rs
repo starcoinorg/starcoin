@@ -238,6 +238,7 @@ pub struct Inner<P> {
     main: BlockHeader,
     config: Arc<NodeConfig>,
     dag: BlockDAG,
+    genesis_hash: HashValue,
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -258,6 +259,9 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        let genesis_hash = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash"))?;
         Ok(Self {
             storage: storage.clone(),
             tx_provider,
@@ -268,6 +272,7 @@ where
             dag,
             metrics,
             vm_metrics,
+            genesis_hash,
         })
     }
 
@@ -280,7 +285,11 @@ where
         } = {
             info!("jacktest: block template main is {:?}", self.main);
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
-            let pruning_point = self.main.pruning_point();
+            let pruning_point = if self.main.pruning_point() == HashValue::zero() {
+                self.genesis_hash
+            } else {
+                self.main.pruning_point()
+            };
             info!("jacktest: block template resolve block parents2");
 
             // calculate the next pruning point and
