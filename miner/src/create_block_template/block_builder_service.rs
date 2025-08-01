@@ -73,9 +73,10 @@ enum ReceiveHeader {
 
 impl BlockBuilderService {
     fn receive_header(&mut self) -> ReceiveHeader {
-        info!("receive header in block builder service");
+        info!("jacktest: receive header in block builder service");
         match self.new_header_channel.new_header_receiver.try_recv() {
             Ok(new_header) => {
+                info!("jacktest: receive header in block builder service2");
                 match self
                     .inner
                     .set_current_block_header(new_header.as_ref().clone())
@@ -272,18 +273,23 @@ where
     }
 
     fn resolve_block_parents(&mut self) -> Result<MinerResponse> {
+        info!("jacktest: block template resolve block parents");
         let MineNewDagBlockInfo {
             selected_parents,
             ghostdata,
             pruning_point,
         } = {
-            info!("block template main is {:?}", self.main.current_header());
+            info!(
+                "jacktest: block template main is {:?}",
+                self.main.current_header()
+            );
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
             let pruning_point = if self.main.current_header().pruning_point() == HashValue::zero() {
                 self.main.get_genesis_hash()
             } else {
                 self.main.current_header().pruning_point()
             };
+            info!("jacktest: block template resolve block parents2");
 
             // calculate the next pruning point and
             // prune the tips and
@@ -297,8 +303,10 @@ where
                 .main
                 .dag()
                 .calc_mergeset_and_tips(pruning_point, self.main.get_genesis_hash())?;
+            info!("jacktest: block template resolve block parents3");
 
             self.update_main_chain(ghostdata.selected_parent)?;
+            info!("jacktest: block template resolve block parents4");
 
             // filter the parent candidates that bring too many ancestors which are not the descendants of the selected parent
             let parents_candidates = self.merge_size_limit_filter(
@@ -308,8 +316,10 @@ where
                     .filter(|id| *id != ghostdata.selected_parent)
                     .collect(),
             )?;
+            info!("jacktest: block template resolve block parents5");
 
             let merge_bound_hash = self.main.get_merge_bound_hash(ghostdata.selected_parent)?;
+            info!("jacktest: block template resolve block parents6");
 
             let (selected_parents, ghostdata) =
                 self.main.dag().remove_bounded_merge_breaking_parents(
@@ -318,8 +328,10 @@ where
                     pruning_point,
                     merge_bound_hash,
                 )?;
+            info!("jacktest: block template resolve block parents7");
 
             self.update_main_chain(ghostdata.selected_parent)?;
+            info!("jacktest: block template resolve block parents8");
 
             MineNewDagBlockInfo {
                 selected_parents,
@@ -328,11 +340,13 @@ where
             }
         };
 
+        info!("jacktest: block template resolve block parents9");
         let selected_parent = ghostdata.selected_parent;
 
         let time_service = self.config.net().time_service();
         let storage = self.storage.clone();
         let vm_metrics = self.vm_metrics.clone();
+        info!("jacktest: block template resolve block parents10");
         let main = BlockChain::new(
             time_service,
             selected_parent,
@@ -340,6 +354,7 @@ where
             vm_metrics,
             self.main.dag(),
         )?;
+        info!("jacktest: block template resolve block parents11");
 
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
@@ -349,7 +364,9 @@ where
             .get_storage()
             .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
+        info!("jacktest: block template resolve block parents12");
         let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
+        info!("jacktest: block template resolve block parents13");
         let now_milliseconds = main.time_service().now_millis();
 
         Ok(MinerResponse {
@@ -366,6 +383,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+        info!("jacktest: create block template 1");
         let MinerResponse {
             previous_header,
             selected_parents,
@@ -377,21 +395,25 @@ where
             ghostdata,
             max_transaction_per_block,
         } = self.resolve_block_parents()?;
+        info!("jacktest: create block template 2");
 
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
+        info!("jacktest: create block template 3");
 
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = min((block_gas_limit / 200) * 2, max_transaction_per_block);
+        info!("jacktest: create block template 4");
 
         let author = *self
             .miner_account
             .read()
             .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
             .address();
+        info!("jacktest: create block template 5");
 
         if now_millis <= previous_header.timestamp() {
             info!(
@@ -400,6 +422,7 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
+        info!("jacktest: create block template 6");
 
         let blue_blocks = ghostdata
             .mergeset_blues
@@ -413,14 +436,15 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
+        info!("jacktest: create block template 7");
         // removed this before publishing
-        let _ = self.print_transaction_execution(
-            blue_blocks.len(),
-            &blue_blocks
-                .iter()
-                .flat_map(|b| b.transactions().iter().cloned())
-                .collect::<Vec<_>>(),
-        );
+        // let _ = self.print_transaction_execution(
+        //     blue_blocks.len(),
+        //     &blue_blocks
+        //         .iter()
+        //         .flat_map(|b| b.transactions().iter().cloned())
+        //         .collect::<Vec<_>>(),
+        // );
 
         let uncles = blue_blocks
             .iter()
@@ -574,9 +598,11 @@ where
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
+        info!("jacktest: receive header in block builder service3");
         if self.main.current_header().id() == header.id() {
             return Ok(());
         }
+        info!("jacktest: receive header in block builder service4");
         self.main = BlockChain::new(
             self.config.net().time_service(),
             header.id(),
@@ -584,6 +610,7 @@ where
             self.vm_metrics.clone(),
             self.main.dag(),
         )?;
+        info!("jacktest: receive header in block builder service5");
         Ok(())
     }
 

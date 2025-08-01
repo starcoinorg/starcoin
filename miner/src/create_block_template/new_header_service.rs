@@ -195,6 +195,7 @@ impl NewHeaderService {
             info!("resolve header returns false");
         }
 
+        info!("jacktest: determine header start");
         ctx.broadcast(DeterminedDagBlock);
 
         Ok(())

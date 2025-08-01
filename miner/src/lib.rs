@@ -192,10 +192,12 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
+        info!("jacktest: dispatch task1");
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
+            info!("jacktest: dispatch task2");
             let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
                 .await
