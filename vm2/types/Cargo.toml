@@ -1,0 +1,49 @@
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+bytes = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+hex = { features = ["serde"], workspace = true }
+proptest = { features = ["std"], optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+rand = { workspace = true }
+schemars = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_json = { workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-uint = { workspace = true }
+starcoin_vm_types = { path = "../vm-types", package = "starcoin-vm2-vm-types" }
+starcoin-resource-viewer = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-resource-viewer" }
+starcoin-abi-decoder = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-decoder" }
+starcoin-abi-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-types" }
+thiserror = { workspace = true }
+lazy_static = { workspace = true }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+once_cell = { workspace = true }
+serde_bytes = { workspace = true }
+vm-status-translator = { workspace = true }
+
+
+[dev-dependencies]
+claims = { workspace = true }
+starcoin_vm_types = { path = "../vm-types", package = "starcoin-vm2-vm-types" }
+
+[features]
+default = []
+fuzzing = ["proptest", "proptest-derive", "starcoin_vm_types/fuzzing"]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-types"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

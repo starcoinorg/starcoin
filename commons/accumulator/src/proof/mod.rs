@@ -7,7 +7,6 @@ use crate::MAX_ACCUMULATOR_PROOF_DEPTH;
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm2_types::view::AccumulatorProofView as AccumulatorProofView2;
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AccumulatorProof {
@@ -16,13 +15,6 @@ pub struct AccumulatorProof {
     pub siblings: Vec<HashValue>,
 }
 
-impl From<AccumulatorProof> for AccumulatorProofView2 {
-    fn from(proof: AccumulatorProof) -> Self {
-        Self {
-            siblings: proof.siblings,
-        }
-    }
-}
 
 impl AccumulatorProof {
     /// Constructs a new `AccumulatorProof` using a list of siblings.

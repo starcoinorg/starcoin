@@ -1,0 +1,71 @@
+[dependencies]
+anyhow = { workspace = true }
+bech32 = { workspace = true }
+chrono = { default-features = false, features = ["clock"], workspace = true }
+hex = { workspace = true }
+log = { workspace = true }
+mirai-annotations = { workspace = true }
+num_enum = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+proptest = { features = ["std"], optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+starcoin-time-service = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
+starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-gas-meter = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-meter" }
+fxhash = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+schemars = { workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-uint = { workspace = true }
+vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format" }
+bytes = { workspace = true }
+strum = "0.24.1"
+strum_macros = "0.24.3"
+bcs = { workspace = true }
+thiserror = { workspace = true }
+num-traits = { workspace = true }
+num-derive = { workspace = true }
+hashbrown = { workspace = true }
+arr_macro = { workspace = true }
+rayon = { workspace = true }
+starcoin-infallible = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra", features = ["testing"] }
+
+[features]
+default = []
+fuzzing = [
+    "proptest",
+    "proptest-derive",
+    "vm/fuzzing",
+    "starcoin-crypto/fuzzing",
+    "move-core-types/fuzzing",
+]
+print_gas_info = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-vm-types"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

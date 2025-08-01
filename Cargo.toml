@@ -93,6 +93,8 @@ members = [
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
+    "vm2/types",
+    "vm2/vm-types",
     "vm2/executor",
     "vm2/genesis",
     "vm2/test-helper",
@@ -267,6 +269,7 @@ aes-gcm = "0.9"
 anyhow = "~1"
 api-limiter = { path = "commons/api-limiter" }
 arc-swap = "1.5.1"
+arr_macro = "0.2.1"
 arrayref = "0.3"
 ascii = "1.0.0"
 async-std = "1.12"
@@ -285,6 +288,7 @@ bs58 = "0.3.1"
 byteorder = "1.3.4"
 bytes = "1"
 chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+claims = "0.7"
 clap = { version = "3", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
@@ -318,8 +322,10 @@ futures-core = "0.3.4"
 futures-retry = "0.6"
 futures-timer = "3.0"
 futures-util = "~0.3"
+fxhash = "0.2.1"
 git-version = "0.3.5"
 governor = { version = "0.4.2", features = ["dashmap"] }
+hashbrown = "0.14.3"
 heck = "0.3.3"
 hex = "0.4"
 hmac = "0.12.1"
@@ -561,8 +567,11 @@ starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", 
 starcoin-vm2-dev = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-dev" }
 starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-storage" }
 starcoin-vm2-vm-runtime = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime" }
-starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-types" }
-starcoin-vm2-vm-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-types" }
+starcoin-vm2-types = { path = "vm2/types" }
+starcoin-vm2-vm-types = { path = "vm2/vm-types" }
+starcoin-vm2-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
+starcoin-vm2-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-vm2-gas-meter = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-meter" }
 starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-statedb" }
 starcoin-vm2-state-api = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-state-api" }
 starcoin-vm2-state-tree = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-state-tree" }
