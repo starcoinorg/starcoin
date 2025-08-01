@@ -382,11 +382,9 @@ impl TransactionQueue {
                 .unordered_pending(ready)
                 .take(max_len)
                 .collect(),
-            PendingOrdering::Priority => {
-                match self.pool.try_read() {
-                    Some(pool) => pool.pending(ready).take(max_len).collect(),
-                    None => vec![],
-                }
+            PendingOrdering::Priority => match self.pool.try_read() {
+                Some(pool) => pool.pending(ready).take(max_len).collect(),
+                None => vec![],
             },
         }
     }
@@ -481,11 +479,15 @@ impl TransactionQueue {
     ) -> Vec<Option<Arc<pool::VerifiedTransaction>>> {
         let results = {
             let mut removed = vec![];
-            let pool = &mut self.pool.write();
-            for hash in hashes.into_iter() {
-                removed.push(pool.remove(hash, is_invalid));
+            match &mut self.pool.try_write() {
+                Some(pool) => {
+                    for hash in hashes.into_iter() {
+                        removed.push(pool.remove(hash, is_invalid));
+                    }
+                    removed
+                }
+                None => vec![],
             }
-            removed
         };
 
         if results.iter().any(Option::is_some) {
