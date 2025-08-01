@@ -483,15 +483,11 @@ impl TransactionQueue {
     ) -> Vec<Option<Arc<pool::VerifiedTransaction>>> {
         let results = {
             let mut removed = vec![];
-            match &mut self.pool.try_write() {
-                Some(pool) => {
-                    for hash in hashes.into_iter() {
-                        removed.push(pool.remove(hash, is_invalid));
-                    }
-                    removed
-                }
-                None => vec![],
+            let pool = &mut self.pool.write();
+            for hash in hashes.into_iter() {
+                removed.push(pool.remove(hash, is_invalid));
             }
+            removed
         };
 
         if results.iter().any(Option::is_some) {

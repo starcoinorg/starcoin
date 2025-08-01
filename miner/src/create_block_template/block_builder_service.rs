@@ -422,8 +422,6 @@ where
                 .collect::<Vec<_>>(),
         );
 
-        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
-
         let uncles = blue_blocks
             .iter()
             .map(|block| block.header().clone())
@@ -456,13 +454,13 @@ where
             ghostdata.mergeset_reds.len() as u64,
         )?;
 
+        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
         let excluded_txns = opened_block.push_txns(txn)?;
-
-        let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
+        let template = opened_block.finalize()?;
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
