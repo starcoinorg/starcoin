@@ -23,7 +23,7 @@ use starcoin_service_registry::{
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{Pool, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
@@ -197,6 +197,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
 pub trait TemplateTxProvider {
     fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
+    fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>>;
 }
 
 pub struct EmptyProvider;
@@ -206,6 +207,9 @@ impl TemplateTxProvider for EmptyProvider {
         vec![]
     }
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
+    fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+        None
+    }
 }
 
 impl TemplateTxProvider for TxPoolService {
@@ -215,6 +219,10 @@ impl TemplateTxProvider for TxPoolService {
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
         self.remove_txn(txn_hash, true);
+    }
+
+    fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+        self.inner.try_read()
     }
 }
 
@@ -490,6 +498,11 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
+        let pool_read_guard = match self.tx_provider.try_read() {
+            Some(pool) => pool,
+            None => return Ok(vec![]),
+        };
+
         let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);

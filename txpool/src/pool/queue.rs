@@ -32,7 +32,7 @@ type Listener = (
         (listener::Logger, listener::StatusLogger),
     ),
 );
-type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
+pub type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
 
 /// Max cache time in milliseconds for pending transactions.
 ///
@@ -247,6 +247,10 @@ impl TransactionQueue {
                 max_count / 4,
             )),
         }
+    }
+
+    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+        self.pool.try_read()
     }
 
     /// Update verification options
