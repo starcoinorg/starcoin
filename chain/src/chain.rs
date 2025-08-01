@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::get_merge_bound_hash;
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -25,6 +26,7 @@ use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::IntoSuper;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
@@ -180,6 +182,10 @@ impl BlockChain {
             },
         }
         Ok(dag)
+    }
+
+    pub fn statedb(self) -> ChainStateDB {
+        self.statedb
     }
 
     pub fn current_block_accumulator_info(&self) -> AccumulatorInfo {
@@ -364,7 +370,7 @@ impl BlockChain {
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
-            parent_header,
+            parent_header.clone(),
             final_block_gas_limit,
             author,
             self.time_service.now_millis(),
@@ -376,6 +382,10 @@ impl BlockChain {
             0,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(parent_header.state_root()),
+            ),
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -1031,35 +1041,6 @@ impl BlockChain {
             self.dag.get_dag_state(current_pruning_point)
         }
     }
-
-    pub fn get_merge_bound_hash(&self, selected_parent: HashValue) -> Result<HashValue> {
-        let header = self
-            .storage
-            .get_block_header_by_hash(selected_parent)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot find block header by hash {:?} when get merge bound hash",
-                    selected_parent
-                )
-            })?;
-        let merge_depth = self.dag().block_depth_manager().merge_depth();
-        if header.number() <= merge_depth {
-            return Ok(self.genesis_hash);
-        }
-        let merge_depth_index = (header.number().checked_div(merge_depth))
-            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?
-            .checked_mul(merge_depth)
-            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?;
-        Ok(self
-            .block_accumulator
-            .get_leaf(merge_depth_index)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot find block header by number {} when get merge bound hash",
-                    merge_depth_index
-                )
-            })?)
-    }
 }
 
 impl ChainReader for BlockChain {
@@ -1433,7 +1414,7 @@ impl ChainReader for BlockChain {
 
         dag.check_bounded_merge_depth(
             &ghostdata,
-            self.get_merge_bound_hash(ghostdata.selected_parent)?,
+            get_merge_bound_hash(ghostdata.selected_parent, dag.clone(), self.storage.clone())?,
         )?;
 
         Ok(ghostdata)

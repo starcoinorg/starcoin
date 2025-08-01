@@ -65,6 +65,7 @@ impl OpenedBlock {
         version: Version,
         pruning_point: HashValue,
         red_blocks: u64,
+        chain_state: ChainStateDB,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -76,8 +77,6 @@ impl OpenedBlock {
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
 
-        let chain_state =
-            ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new_with_parents(
             previous_block_id,

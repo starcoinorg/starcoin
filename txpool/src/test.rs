@@ -18,6 +18,7 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::BlockStore;
+use starcoin_storage::IntoSuper;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::{
     account_address::{self, AccountAddress},
@@ -217,8 +218,8 @@ async fn test_rollback() -> Result<()> {
         let block_header = storage.get_block_header_by_hash(main)?.unwrap();
 
         let mut open_block = OpenedBlock::new(
-            storage,
-            block_header,
+            storage.clone(),
+            block_header.clone(),
             u64::MAX,
             account_address,
             (start_timestamp + 60 * 10) * 1000,
@@ -230,6 +231,10 @@ async fn test_rollback() -> Result<()> {
             0,
             HashValue::zero(),
             0,
+            ChainStateDB::new(
+                storage.clone().into_super_arc(),
+                Some(block_header.state_root()),
+            ),
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
