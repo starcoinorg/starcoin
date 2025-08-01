@@ -124,11 +124,11 @@ pub struct RpcClient {
 
 struct ConnectionProvider {
     conn_source: ConnSource,
-    runtime: Mutex<Option<Runtime>>,
+    runtime: Mutex<Runtime>,
 }
 
 impl ConnectionProvider {
-    fn new(conn_source: ConnSource, runtime: Option<Runtime>) -> Self {
+    fn new(conn_source: ConnSource, runtime: Runtime) -> Self {
         Self {
             conn_source,
             runtime: Mutex::new(runtime),
@@ -140,11 +140,7 @@ impl ConnectionProvider {
         F: futures::Future + std::marker::Send,
         F::Output: std::marker::Send,
     {
-        self.runtime
-            .lock()
-            .as_ref()
-            .expect("no runtime initialized")
-            .block_on(future)
+        self.runtime.lock().block_on(future)
     }
 
     fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -165,7 +161,7 @@ impl ConnectionProvider {
 impl RpcClient {
     pub(crate) fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
-        let provider = ConnectionProvider::new(conn_source, Some(Runtime::new()?));
+        let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
         let (handle_exit_sender, handle_exit_receiver) = oneshot::channel::<()>();

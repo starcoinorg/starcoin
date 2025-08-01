@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::{map_err, ConnSource, ConnectionProvider, RpcClientInner};
+use crate::{map_err, ConnSource, RpcClientInner};
 use futures::{TryStream, TryStreamExt};
+use jsonrpc_client_transports::transports::{ipc, ws};
+use jsonrpc_client_transports::{RpcChannel, RpcError};
 use log::{error, info};
 use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
@@ -18,12 +20,29 @@ use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransacti
 
 pub struct AsyncRpcClient {
     inner: Mutex<Option<RpcClientInner>>,
-    provider: ConnectionProvider,
+    provider: AsyncConnProvider,
+}
+
+struct AsyncConnProvider {
+    conn_source: ConnSource,
+}
+
+impl AsyncConnProvider {
+    pub fn new(conn_source: ConnSource) -> Self {
+        Self { conn_source }
+    }
+    pub async fn get_rpc_channel_async(&self) -> anyhow::Result<RpcChannel, RpcError> {
+        match self.conn_source.clone() {
+            ConnSource::Ipc(sock_path) => ipc::connect(sock_path).await,
+            ConnSource::WebSocket(url) => ws::try_connect(url.as_str())?.await,
+            ConnSource::Local(channel) => Ok(*channel),
+        }
+    }
 }
 
 impl AsyncRpcClient {
     pub async fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
-        let provider = ConnectionProvider::new(conn_source, None);
+        let provider = AsyncConnProvider::new(conn_source);
         let inner: RpcClientInner = provider
             .get_rpc_channel_async()
             .await
@@ -38,9 +57,9 @@ impl AsyncRpcClient {
     async fn call_rpc_async<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F + Send,
-    ) -> Result<T, jsonrpc_client_transports::RpcError>
+    ) -> Result<T, RpcError>
     where
-        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
+        F: std::future::Future<Output = Result<T, RpcError>> + Send,
     {
         let inner_opt = self.inner.lock().as_ref().cloned();
         let inner = match inner_opt {
@@ -60,7 +79,7 @@ impl AsyncRpcClient {
             }
         };
         let result = f(inner).await;
-        if let Err(jsonrpc_client_transports::RpcError::Other(e)) = &result {
+        if let Err(RpcError::Other(e)) = &result {
             error!("rpc error due to {}", e);
             *(self.inner.lock()) = None;
         }
