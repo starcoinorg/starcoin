@@ -17,14 +17,14 @@ use csv::{ReaderBuilder, WriterBuilder};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{error, info, warn};
+use starcoin_logger::prelude::{info, warn};
 use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
 use starcoin_vm2_transaction_builder::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::view::{TransactionInfoView, TransactionStatusView};
-use std::collections::VecDeque;
+use starcoin_vm2_types::view::TransactionStatusView;
 use std::fs::OpenOptions;
 use std::path::Path;
+use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::time::{sleep, Duration};
@@ -38,6 +38,14 @@ const MIN_GAS_AMOUNT: u64 = 10_000_000; // max gas
 struct AccountEntry {
     address: AccountAddress,
     password: String,
+}
+
+enum AccountState {
+    Initial,
+    Ready,
+    Submitted(HashValue),
+    Finished,
+    Error(String),
 }
 
 #[derive(Debug, Clone)]
@@ -242,6 +250,101 @@ async fn generate_cmd(mut args: impl Iterator<Item = String>) -> Result<()> {
     generate_accounts(&client, &csv_path, count, password.as_deref()).await
 }
 
+async fn account_worker(
+    client: Arc<AsyncRpcClient>,
+    entry: AccountEntry,
+    funding: AccountEntry,
+    target_addr: AccountAddress,
+    min_balance: u128,
+    tx_amount: u128,
+) {
+    let mut state = AccountState::Initial;
+    loop {
+        match &state {
+            AccountState::Initial => {
+                if let Err(e) = unlock_account(&client, &entry).await {
+                    warn!("unlock error {e}");
+                    state = AccountState::Error(format!("unlock: {e}"));
+                    sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+                if let Err(e) = ensure_balance(&client, &entry, &funding, min_balance).await {
+                    warn!("balance error {e}");
+                    state = AccountState::Error(format!("balance: {e}"));
+                    sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+                state = AccountState::Ready;
+            }
+            AccountState::Ready => {
+                let node_info = match client.node_info().await {
+                    Ok(info) => info,
+                    Err(e) => {
+                        warn!("failed to get node info {e}");
+                        state = AccountState::Error(format!("node info: {e}"));
+                        sleep(Duration::from_secs(1)).await;
+                        continue;
+                    }
+                };
+                let chain_id = node_info.net.chain_id().id();
+                let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
+                match create_and_submit(
+                    &client,
+                    &entry,
+                    target_addr,
+                    tx_amount,
+                    timestamp,
+                    chain_id,
+                )
+                .await
+                {
+                    Ok(hash) => {
+                        info!("submitted txn {hash} for {}", entry.address);
+                        state = AccountState::Submitted(hash);
+                    }
+                    Err(e) => {
+                        warn!("submit error {e}");
+                        state = AccountState::Error(format!("submit: {e}"));
+                    }
+                }
+            }
+            AccountState::Submitted(hash) => match client.chain_get_transaction_info(*hash).await {
+                Ok(Some(info)) => {
+                    match info.status {
+                        TransactionStatusView::Executed => {
+                            info!("txn executed {:?}", info.transaction_hash);
+                        }
+                        TransactionStatusView::OutOfGas => {
+                            warn!(
+                                "txn executed failed because of OutOfGas {:?}",
+                                info.transaction_hash
+                            );
+                        }
+                        _ => (),
+                    }
+                    state = AccountState::Finished;
+                }
+                Ok(None) => {
+                    sleep(Duration::from_secs(1)).await;
+                }
+                Err(e) => {
+                    warn!("poll error {e}");
+                    state = AccountState::Error(format!("poll: {e}"));
+                }
+            },
+            AccountState::Finished => {
+                info!("test cycle finished → restarting {}", entry.address);
+                state = AccountState::Initial; // repeat endlessly; remove to finish once
+            }
+            AccountState::Error(e) => {
+                warn!("error state: {e}, retrying in 1s");
+                sleep(Duration::from_secs(1)).await;
+                state = AccountState::Initial; // reset to initial state
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     starcoin_logger::init();
@@ -265,7 +368,7 @@ async fn main() -> Result<()> {
         .transpose()?
         .unwrap_or(INITIAL_BALANCE);
 
-    let client = AsyncRpcClient::new(node_url.into()).await?;
+    let client = Arc::new(AsyncRpcClient::new(node_url.into()).await?);
     let mut accounts = load_accounts(&csv_path)?;
 
     let funding_addr =
@@ -286,91 +389,26 @@ async fn main() -> Result<()> {
         .unwrap()
         .clone();
 
-    // Txn queue
-    let mut queue: VecDeque<TxnRecord> = VecDeque::new();
+    let mut test_accounts = accounts
+        .iter()
+        .filter(|a| a.address != funding_addr)
+        .cloned()
+        .collect::<Vec<_>>();
+    test_accounts.shuffle(&mut rand::thread_rng());
 
-    loop {
-        // housekeeping: drop finished txns
-        queue.retain(|rec| !rec.finished);
-
-        // pick a random account (skip funding)
-        let candidates: Vec<_> = accounts
-            .iter()
-            .filter(|a| a.address != funding_addr)
-            .collect();
-        if candidates.is_empty() {
-            error!("no candidate accounts, sleeping...");
-            sleep(Duration::from_secs(10)).await;
-            continue;
-        }
-        let picked = (*candidates.choose(&mut rand::thread_rng()).unwrap()).clone();
-
-        // Ensure no unfinished txn for this account
-        if queue.iter().any(|r| r.account_addr == picked.address) {
-            info!("{} still has pending txn, skipping", picked.address);
-            sleep(Duration::from_millis(500)).await;
-            continue;
-        }
-
-        // try unlock
-        if let Err(e) = unlock_account(&client, &picked).await {
-            error!("unlock failed {e}");
-            continue;
-        }
-
-        // ensure balance
-        if let Err(e) = ensure_balance(&client, &picked, &funding, min_balance).await {
-            error!("balance top‑up failed {e}");
-            continue;
-        }
-
-        let node_info = client.node_info().await?;
-        let chain_id = node_info.net.chain_id().id();
-        let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
-        // create & submit txn to target
-        match create_and_submit(
-            &client,
-            &picked,
-            target_addr,
-            DEFAULT_AMOUNT,
-            timestamp,
-            chain_id,
-        )
-        .await
-        {
-            Ok(hash) => {
-                info!("submitted txn {hash}");
-                queue.push_back(TxnRecord {
-                    txn_hash: hash,
-                    account_addr: picked.address,
-                    finished: false,
-                });
+    let mut handles = Vec::new();
+    for entry in test_accounts {
+        let handle = tokio::spawn({
+            let client = Arc::clone(&client);
+            let funding = funding.clone();
+            let tx_amount = DEFAULT_AMOUNT;
+            async move {
+                account_worker(client, entry, funding, target_addr, min_balance, tx_amount).await;
             }
-            Err(e) => {
-                error!("submit failed {e}");
-            }
-        }
-
-        // very naive subscription replacement: mark finished txns
-        for rec in queue.iter_mut() {
-            if !rec.finished {
-                if let Some(TransactionInfoView { status, .. }) =
-                    client.chain_get_transaction_info(rec.txn_hash).await?
-                {
-                    match status {
-                        TransactionStatusView::Executed => {
-                            info!("txn executed {:?}", rec.txn_hash);
-                        }
-                        TransactionStatusView::OutOfGas => {
-                            warn!("txn expired or discarded {:?}", rec.txn_hash);
-                        }
-                        _ => (),
-                    }
-                }
-                rec.finished = true;
-            }
-        }
-
-        sleep(Duration::from_secs(1)).await;
+        });
+        handles.push(handle);
     }
+
+    futures::future::join_all(handles).await;
+    Ok(())
 }
