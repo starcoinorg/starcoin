@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    pool,
     pool::{
-        PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
+        self, PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
         UnverifiedUserTransaction, VerifiedTransaction,
     },
     pool_client::{NonceCache, PoolClient},
+    Pool,
 };
 
 use crate::metrics::TxPoolMetrics;
@@ -31,7 +31,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
-    inner: Inner,
+    pub inner: Inner,
 }
 impl TxPoolService {
     pub fn new(
@@ -254,7 +254,7 @@ impl TxPoolSyncService for TxPoolService {
 
 pub(crate) type TxnQueue = TransactionQueue;
 #[derive(Clone)]
-pub(crate) struct Inner {
+pub struct Inner {
     pub(crate) node_config: Arc<NodeConfig>,
     queue: Arc<TxnQueue>,
     chain_header: Arc<RwLock<BlockHeader>>,
@@ -357,6 +357,10 @@ impl Inner {
         // self.queue
         //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         self.queue.pending(pool_client, pending_settings)
+    }
+
+    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+        self.queue.try_read()
     }
 
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
