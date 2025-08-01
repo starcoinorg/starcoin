@@ -22,7 +22,7 @@ use scmd::{CmdContext, CustomCommand};
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
 
-use subcommand_vm2::{account as account2, chain as chain2, contract as contract2, dev as dev2};
+use subcommand_vm2::{account as account2, contract as contract2, dev as dev2};
 
 pub fn add_command(
     context: CmdContext<CliState, StarcoinOpt>,
