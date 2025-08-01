@@ -121,6 +121,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
+        info!("jacktest: handle DeterminedDagBlock event");
         if self.is_synced() {
             self.send_event(true, ctx)
         } else {
