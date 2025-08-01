@@ -215,6 +215,7 @@ impl BlockChain {
     }
 
     fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
+        info!("jacktest: update uncles cache start");
         let epoch = &self.epoch;
         let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
         let head_block = self.head_block().block;
@@ -248,6 +249,7 @@ impl BlockChain {
             }
         }
 
+        info!("jacktest: update uncles cache end");
         Ok(uncles)
     }
 
