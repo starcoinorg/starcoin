@@ -20,23 +20,31 @@ pub fn steps() -> Steps<MyWorld> {
         .then_regex(
             r#"cmd: "(([^"\\]|\\).*)""#,
             |world: &mut MyWorld, args, _step| {
-                let client = world.default_rpc_client.as_ref().take().unwrap();
-                let chain_id = client.node_info().unwrap().net.chain_id();
+                let client = world
+                    .default_rpc_client
+                    .as_ref()
+                    .take()
+                    .expect("RPC Client not configured");
+                let chain_id = client
+                    .node_info()
+                    .expect("get node info failed")
+                    .net
+                    .chain_id();
                 let account_client = ProviderFactory::create_provider(
                     client.clone(),
                     chain_id,
                     &AccountProviderConfig::default(),
                 )
-                .unwrap();
+                .expect("provider config");
                 let account_provider2_option = Some(
                     ProviderFactory::create_provider2(
                         client.clone(),
                         chain_id.id().into(),
                         &AccountProviderConfig::default(),
                     )
-                    .unwrap(),
+                    .expect("provider2 config"),
                 );
-                let node_info = client.clone().node_info().unwrap();
+                let node_info = client.clone().node_info().expect("node info failed");
                 let state = CliState::new(
                     node_info.net,
                     client.clone(),
@@ -53,18 +61,19 @@ pub fn steps() -> Steps<MyWorld> {
                 if world.tpl_ctx.is_none() {
                     world.tpl_ctx = Some(TemplateContext::new());
                 }
-                let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
+                let tpl_ctx = world.tpl_ctx.as_mut().expect("get tpl_ctx failed");
                 // get last cmd result as current parameter
                 let mut vec = vec!["starcoin"];
 
-                let evaled_parameters = eval_command_args(tpl_ctx, args[1].parse().unwrap());
+                let evaled_parameters =
+                    eval_command_args(tpl_ctx, args[1].parse().expect("json parameters"));
                 let parameters = evaled_parameters.split_whitespace();
 
                 for parameter in parameters {
                     vec.push(parameter);
                 }
 
-                let cmd = vec.get(1).cloned().unwrap();
+                let cmd = vec.get(1).cloned().expect("should have cmd");
 
                 let result = add_command(context).exec_with_args::<Value>(vec);
 
@@ -81,8 +90,10 @@ pub fn steps() -> Steps<MyWorld> {
         .then_regex(
             r#"assert: "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
-                let evaled_parameters =
-                    eval_command_args(world.tpl_ctx.as_ref().unwrap(), args[1].to_owned());
+                let evaled_parameters = eval_command_args(
+                    world.tpl_ctx.as_ref().expect("tpl ctx get failed"),
+                    args[1].to_owned(),
+                );
                 let parameters = evaled_parameters.split_whitespace().collect::<Vec<_>>();
 
                 for chunk in parameters.chunks(3) {

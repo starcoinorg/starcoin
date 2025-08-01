@@ -205,6 +205,17 @@ impl From<EventWithProof2> for EventWithProofView2 {
     }
 }
 
+impl TryFrom<EventWithProofView2> for EventWithProof2 {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EventWithProofView2) -> Result<Self, Self::Error> {
+        Ok(EventWithProof2 {
+            event: ContractEvent2::decode(value.event.0.as_slice())?,
+            proof: AccumulatorProof::new(value.proof.siblings),
+        })
+    }
+}
+
 impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
     fn from(origin: TransactionInfoWithProof2) -> Self {
         Self {
@@ -213,5 +224,18 @@ impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
             event_proof: origin.event_proof.map(Into::into),
             state_proof: origin.state_proof.map(Into::into),
         }
+    }
+}
+
+impl TryFrom<TransactionInfoWithProofView2> for TransactionInfoWithProof2 {
+    type Error = anyhow::Error;
+
+    fn try_from(view: TransactionInfoWithProofView2) -> Result<Self, Self::Error> {
+        Ok(Self {
+            transaction_info: view.transaction_info.try_into()?,
+            proof: AccumulatorProof::new(view.proof.siblings),
+            event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
+            state_proof: view.state_proof.map(Into::into),
+        })
     }
 }

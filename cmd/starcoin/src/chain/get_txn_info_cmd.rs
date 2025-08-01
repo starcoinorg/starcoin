@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::TransactionInfoView;
+use starcoin_vm2_types::view::TransactionInfoView;
 
 /// Get transaction info by txn hash or block hash and txn idx in the block
 #[derive(Debug, Parser)]
@@ -40,11 +40,13 @@ impl CommandAction for GetTransactionInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         match &opt.txn_hash {
-            Some(txn_hash) => Ok(client.chain_get_transaction_info(*txn_hash)?),
+            Some(txn_hash) => Ok(client.chain_get_transaction_info2(*txn_hash)?),
             None => {
-                let block_hash = opt.block_hash.expect("block-hash exists");
-                let idx = opt.idx.expect("idx exists");
-                Ok(client.chain_get_txn_info_by_block_and_index(block_hash, idx)?)
+                let block_hash = opt
+                    .block_hash
+                    .ok_or_else(|| anyhow::anyhow!("block-hash should exists"))?;
+                let idx = opt.idx.ok_or_else(|| anyhow::anyhow!("idx exists"))?;
+                Ok(client.chain_get_txn_info_by_block_and_index2(block_hash, idx)?)
             }
         }
     }

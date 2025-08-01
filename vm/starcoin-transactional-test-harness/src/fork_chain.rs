@@ -11,7 +11,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
+use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption, GetTransactionOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
@@ -30,6 +30,8 @@ use starcoin_storage::{
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
+use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
@@ -40,6 +42,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
+
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -347,6 +350,38 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_block_info_by_number2(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<Option<BlockInfoView2>> {
+        let chain = self.chain.lock().unwrap();
+        let client = chain.remote_chain_client();
+        let fork_number = chain.fork_number;
+        let current_number = chain.current_number;
+        let number_hash_map = chain.number_hash_map.clone();
+        let storage = chain.storage.clone();
+        let fut = async move {
+            if number <= fork_number {
+                debug_assert!(client.is_some());
+                client
+                    .unwrap()
+                    .get_block_info_by_number2(number)
+                    .await
+                    .map_err(|e| anyhow!("{}", e))
+            } else if number <= current_number {
+                let hash = number_hash_map.get(&number).map(|h| *h);
+                let block_view = match hash {
+                    Some(hash) => storage.get_block_info(hash)?.map(BlockInfoView2::from),
+                    None => None,
+                };
+                Ok(block_view)
+            } else {
+                Ok(None)
+            }
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
     fn get_transaction(
         &self,
         transaction_hash: HashValue,
@@ -382,6 +417,50 @@ impl ChainApi for MockChainApi {
                 None => match client {
                     Some(client) => client
                         .get_transaction(transaction_hash, option)
+                        .await
+                        .map_err(|e| anyhow!("{}", e)),
+                    None => Ok(None),
+                },
+            }
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_transaction2(
+        &self,
+        transaction_hash: HashValue,
+        option: Option<GetTransactionOption>,
+    ) -> FutureResult<Option<TransactionView2>> {
+        let chain = self.chain.lock().unwrap();
+        let storage = chain.storage.clone();
+        let client = chain.remote_chain_client();
+        let status = chain.status.clone().expect("clone should succeed");
+        let decode_payload = option.unwrap_or_default().decode;
+        let fut = async move {
+            match storage
+                .get_transaction(transaction_hash)?
+                .and_then(|t| t.to_v2())
+            {
+                Some(txn) => {
+                    // WARNING: the txn here is not in any blocks, use head block instead.
+                    // TODO: How to handle the txns not in any blocks.
+                    let block = status.head;
+                    let mut txn = TransactionView2::new(txn, &block)?;
+                    if decode_payload {
+                        let state =
+                            ChainStateDB::new(storage, Some(status.status.head().state_root()));
+                        if let Some(txn) = txn.user_transaction.as_mut() {
+                            try_decode_txn_payload(
+                                &state,
+                                &mut MultiSignedUserTransactionView::VM2(txn.clone()),
+                            )?;
+                        }
+                    }
+                    Ok(Some(txn))
+                }
+                None => match client {
+                    Some(client) => client
+                        .get_transaction2(transaction_hash, option)
                         .await
                         .map_err(|e| anyhow!("{}", e)),
                     None => Ok(None),

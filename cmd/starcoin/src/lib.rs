@@ -106,7 +106,7 @@ pub fn add_command(
                 .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetTransactionInfoListCommand)
-                .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
+                .subcommand(chain::GetTransactionProofCommand)
                 .subcommand(chain::GetBlockInfoCommand),
         )
         .command(

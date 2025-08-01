@@ -26,13 +26,16 @@ openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
+schemars = { workspace = true }
+
+starcoin-accumulator = { workspace = true}
+starcoin-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-account-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
-schemars = { workspace = true }
 
 
 [[bin]]

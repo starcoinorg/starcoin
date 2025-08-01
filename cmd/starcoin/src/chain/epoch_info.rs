@@ -1,14 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::StateReaderExt;
-use starcoin_vm_types::on_chain_resource::EpochInfo;
+use starcoin_vm2_vm_types::{on_chain_resource::EpochInfo, state_view::StateReaderExt};
 
 /// Show epoch info.
 #[derive(Debug, Parser)]
@@ -34,7 +32,7 @@ impl CommandAction for EpochInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
 
-        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default())?;
+        let chain_state_reader = client.state_reader2(opt.state_root.unwrap_or_default())?;
         chain_state_reader.get_epoch_info()
     }
 }

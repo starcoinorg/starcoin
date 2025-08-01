@@ -117,7 +117,10 @@ impl CommandAction for GenerateMultisigTxnCommand {
         // gen multisig txn or read from file sent by other participants.
         let (raw_txn, existing_signatures) =
             if let Some(function_id) = opt.script_function.clone().map(|t| t.0) {
-                let sender = ctx.opt().sender.expect("sender address should be provided");
+                let sender = ctx
+                    .opt()
+                    .sender
+                    .ok_or_else(|| anyhow::anyhow!("sender address should be provided"))?;
                 let script_function = EntryFunction::new(
                     function_id.module,
                     function_id.function,
