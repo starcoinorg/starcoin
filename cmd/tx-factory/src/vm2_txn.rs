@@ -212,8 +212,7 @@ async fn generate_accounts(
     }
     let existed = filtered_accounts.len();
     if changed {
-        let file = File::open(csv_path).await?;
-        file.set_len(0).await?;
+        let file = File::create(csv_path).await?;
         drop(file);
         for account in filtered_accounts {
             append_account(csv_path, &account)?;
