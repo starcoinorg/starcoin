@@ -383,18 +383,10 @@ async fn main() -> Result<()> {
     let target_addr =
         AccountAddress::from_hex_literal(&target_addr).context("Invalid target address")?;
 
-    // make sure funding account exists in list (for easy unlock later)
-    if !accounts.iter().any(|a| a.address == funding_addr) {
-        accounts.push(AccountEntry {
-            address: funding_addr,
-            password: funding_pw.clone(),
-        });
-    }
-    let funding = accounts
-        .iter()
-        .find(|a| a.address == funding_addr)
-        .unwrap()
-        .clone();
+    let funding = AccountEntry {
+        address: funding_addr,
+        password: funding_pw,
+    };
 
     let mut test_accounts = accounts
         .iter()
