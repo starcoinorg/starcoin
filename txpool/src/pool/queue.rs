@@ -455,9 +455,12 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        self.pool
-            .read()
-            .pending_from_sender(state_readiness, address)
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
+
+        pool.pending_from_sender(state_readiness, address)
             .last()
             .map(|tx| tx.signed().sequence_number().saturating_add(1))
     }

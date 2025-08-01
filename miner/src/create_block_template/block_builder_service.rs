@@ -496,11 +496,6 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let pool_read_guard = match self.tx_provider.try_read() {
-            Some(pool) => pool,
-            None => return Ok(vec![]),
-        };
-
         let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
