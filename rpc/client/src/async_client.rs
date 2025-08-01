@@ -5,8 +5,7 @@ use crate::{map_err, ConnSource, RpcClientInner};
 use futures::{TryStream, TryStreamExt};
 use jsonrpc_client_transports::transports::{ipc, ws};
 use jsonrpc_client_transports::{RpcChannel, RpcError};
-use log::{error, info};
-use parking_lot::Mutex;
+use log::error;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetBlockOption;
 use starcoin_rpc_api::node::NodeInfo;
@@ -17,10 +16,11 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::view::{StateWithProofView, TransactionInfoView};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use std::sync::Arc;
 
 pub struct AsyncRpcClient {
-    inner: Mutex<Option<RpcClientInner>>,
-    provider: AsyncConnProvider,
+    inner: Arc<RpcClientInner>,
+    _provider: AsyncConnProvider,
 }
 
 struct AsyncConnProvider {
@@ -50,38 +50,20 @@ impl AsyncRpcClient {
             .into();
 
         Ok(Self {
-            inner: Mutex::new(Some(inner)),
-            provider,
+            inner: Arc::new(inner),
+            _provider: provider,
         })
     }
     async fn call_rpc_async<F, T>(
         &self,
-        f: impl FnOnce(RpcClientInner) -> F + Send,
+        f: impl FnOnce(Arc<RpcClientInner>) -> F + Send,
     ) -> Result<T, RpcError>
     where
-        F: std::future::Future<Output = Result<T, RpcError>> + Send,
+        F: std::future::Future<Output=Result<T, RpcError>> + Send,
     {
-        let inner_opt = self.inner.lock().as_ref().cloned();
-        let inner = match inner_opt {
-            Some(inner) => inner,
-            None => {
-                info!(
-                    "Connection is lost, try reconnect by {:?}",
-                    &self.provider.conn_source
-                );
-                let new_inner: RpcClientInner = self
-                    .provider
-                    .get_rpc_channel_async()
-                    .await
-                    .map(|c| c.into())?;
-                *(self.inner.lock()) = Some(new_inner.clone());
-                new_inner
-            }
-        };
-        let result = f(inner).await;
+        let result = f(self.inner.clone()).await;
         if let Err(RpcError::Other(e)) = &result {
             error!("rpc error due to {}", e);
-            *(self.inner.lock()) = None;
         }
         result
     }
@@ -110,8 +92,8 @@ impl AsyncRpcClient {
                 .account_client2
                 .unlock(address, password, Some(duration.as_secs() as u32))
         })
-        .await
-        .map_err(map_err)
+            .await
+            .map_err(map_err)
     }
     pub async fn account_sign_txn(
         &self,
@@ -155,8 +137,8 @@ impl AsyncRpcClient {
                 .state_client2
                 .get_with_proof_by_root(state_key, state_root)
         })
-        .await
-        .map_err(map_err)
+            .await
+            .map_err(map_err)
     }
     pub async fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_async(|inner| inner.state_client2.get_state_root())
@@ -207,12 +189,12 @@ impl AsyncRpcClient {
 
     pub async fn subscribe_new_mint_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok=MintBlockEvent, Error=anyhow::Error>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))
         })
-        .await
-        .map_err(map_err)
+            .await
+            .map_err(map_err)
     }
 }

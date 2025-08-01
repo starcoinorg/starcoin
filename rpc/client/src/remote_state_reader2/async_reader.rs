@@ -5,7 +5,7 @@ use crate::async_client::AsyncRpcClient;
 use crate::StateRootOption;
 use anyhow::format_err;
 use serde::de::DeserializeOwned;
-use starcoin_crypto::HashValue;
+use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::account_config::{AccountResource, BalanceResource};
 use starcoin_vm2_vm_types::move_resource::MoveResource;

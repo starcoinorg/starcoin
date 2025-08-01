@@ -18,7 +18,7 @@ use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{info, warn};
-use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
+use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, ConnSource, StateRootOption};
 use starcoin_vm2_transaction_builder::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::view::TransactionStatusView;
@@ -189,6 +189,11 @@ async fn create_and_submit(
     Ok(hash)
 }
 
+async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -> Result<u128> {
+    let state_reader = AsyncRemoteStateReader::create(client, StateRootOption::Latest).await?;
+    Ok(state_reader.get_balance(address).await?.unwrap_or(0))
+}
+
 async fn generate_accounts(
     client: &AsyncRpcClient,
     csv_path: &str,
@@ -251,19 +256,19 @@ async fn account_worker(
     loop {
         match &state {
             AccountState::Initial => {
-                let state_reader = AsyncRemoteStateReader::create(&client, StateRootOption::Latest)
-                    .await
-                    .unwrap();
-                let bal = state_reader
-                    .get_balance(entry.address)
-                    .await
-                    .unwrap()
-                    .unwrap_or(0);
+                let bal = account_get_balance(&client, entry.address).await;
+                let Ok(bal) = bal else {
+                    warn!("Failed to get balance for {}", entry.address);
+                    sleep(Duration::from_secs(1)).await;
+                    continue;
+                };
                 if bal >= min_balance {
                     state = AccountState::Ready;
                     continue;
                 }
-                tx.send(entry.address).await.unwrap();
+                if let Err(e) = tx.send(entry.address).await {
+                    warn!("Failed to send account to get tokens: {e}");
+                };
                 sleep(Duration::from_secs(2)).await;
             }
             AccountState::Ready => {
@@ -375,8 +380,16 @@ async fn main() -> Result<()> {
         .transpose()?
         .unwrap_or(INITIAL_BALANCE);
 
-    let client = Arc::new(AsyncRpcClient::new(node_url.into()).await?);
-    let mut accounts = load_accounts(&csv_path)?;
+    let client = if node_url.starts_with("ws://") || node_url.starts_with("wss://") {
+        let conn = ConnSource::WebSocket(node_url);
+        AsyncRpcClient::new(conn).await?
+    } else if node_url.starts_with("http://") || node_url.starts_with("https://") {
+        todo!()
+    } else {
+        AsyncRpcClient::new(node_url.into()).await?
+    };
+    let client = Arc::new(client);
+    let accounts = load_accounts(&csv_path)?;
 
     let funding_addr =
         AccountAddress::from_hex_literal(&funding_addr).context("Invalid funding address")?;
@@ -411,7 +424,6 @@ async fn main() -> Result<()> {
     }
     let balancer = tokio::spawn({
         let client = Arc::clone(&client);
-        let funding = funding.clone();
         async move {
             balancer_worker(client, funding, min_balance, rx).await;
         }
