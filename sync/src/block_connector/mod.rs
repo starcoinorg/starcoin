@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;

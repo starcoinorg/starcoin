@@ -6,6 +6,7 @@ use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::StateReaderExt;
+use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
     build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
 };
@@ -23,7 +24,7 @@ pub fn test_open_block() -> Result<()> {
         let miner_account = AccountInfo::random();
         OpenedBlock::new(
             chain.get_storage(),
-            header,
+            header.clone(),
             block_gas_limit,
             miner_account.address,
             config.net().time_service().now_millis(),
@@ -35,6 +36,10 @@ pub fn test_open_block() -> Result<()> {
             0,
             HashValue::zero(),
             0,
+            ChainStateDB::new(
+                chain.get_storage().into_super_arc(),
+                Some(header.state_root()),
+            ),
         )?
     };
 
