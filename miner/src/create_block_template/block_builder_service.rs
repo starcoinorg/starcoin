@@ -347,27 +347,21 @@ where
         let storage = self.storage.clone();
         let vm_metrics = self.vm_metrics.clone();
         info!("jacktest: block template resolve block parents10");
-        let main = BlockChain::new(
-            time_service,
-            selected_parent,
-            storage,
-            vm_metrics,
-            self.main.dag(),
-        )?;
         info!("jacktest: block template resolve block parents11");
 
-        let epoch = main.epoch().clone();
+        let epoch = self.main.epoch().clone();
         let strategy = epoch.strategy();
         let max_transaction_per_block = epoch.max_transaction_per_block();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
-        let previous_header = main
+        let previous_header = self
+            .main
             .get_storage()
             .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
         info!("jacktest: block template resolve block parents12");
-        let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
+        let next_difficulty = epoch.strategy().calculate_next_difficulty(&self.main)?;
         info!("jacktest: block template resolve block parents13");
-        let now_milliseconds = main.time_service().now_millis();
+        let now_milliseconds = self.main.time_service().now_millis();
 
         Ok(MinerResponse {
             previous_header,
