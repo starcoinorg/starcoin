@@ -27,6 +27,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::File;
+use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
 const DEFAULT_PASSWORD: &str = "password"; // Default password for new accounts
@@ -46,13 +47,6 @@ enum AccountState {
     Submitted(HashValue),
     Finished,
     Error(String),
-}
-
-#[derive(Debug, Clone)]
-struct TxnRecord {
-    txn_hash: HashValue,
-    account_addr: AccountAddress,
-    finished: bool,
 }
 
 /// Load AccountAddress,Password tuples from csv file.
@@ -120,22 +114,19 @@ async fn unlock_account(client: &AsyncRpcClient, account: &AccountEntry) -> Resu
 /// Ensure balance >= min_balance (in STC nano).
 async fn ensure_balance(
     client: &AsyncRpcClient,
-    account: &AccountEntry,
+    account: AccountAddress,
     funding: &AccountEntry,
     min_balance: u128,
 ) -> Result<()> {
     let state_reader = AsyncRemoteStateReader::create(client, StateRootOption::Latest).await?;
-    let bal = state_reader
-        .get_balance(account.address)
-        .await?
-        .unwrap_or(0);
+    let bal = state_reader.get_balance(account).await?.unwrap_or(0);
     if bal >= min_balance {
         return Ok(());
     }
-    let need = min_balance - bal;
+    let need = min_balance * 10 - bal;
     info!(
         "Topping up {} with {} nano STC from {}",
-        account.address, need, funding.address
+        account, need, funding.address
     );
     let node_info = client.node_info().await?;
     let chain_id = node_info.net.chain_id().id();
@@ -143,8 +134,7 @@ async fn ensure_balance(
     // unlock funding account
     unlock_account(client, funding).await?;
     // build & send funding txn (sync call for simplicity)
-    let txn_hash =
-        create_and_submit(client, funding, account.address, need, timestamp, chain_id).await?;
+    let txn_hash = create_and_submit(client, funding, account, need, timestamp, chain_id).await?;
     wait_txn_confirmed(client, txn_hash).await
 }
 
@@ -253,28 +243,29 @@ async fn generate_cmd(mut args: impl Iterator<Item = String>) -> Result<()> {
 async fn account_worker(
     client: Arc<AsyncRpcClient>,
     entry: AccountEntry,
-    funding: AccountEntry,
     target_addr: AccountAddress,
     min_balance: u128,
     tx_amount: u128,
+    tx: mpsc::Sender<AccountAddress>,
 ) {
     let mut state = AccountState::Initial;
     loop {
         match &state {
             AccountState::Initial => {
-                if let Err(e) = unlock_account(&client, &entry).await {
-                    warn!("unlock error {e}");
-                    state = AccountState::Error(format!("unlock: {e}"));
-                    sleep(Duration::from_secs(1)).await;
+                let state_reader = AsyncRemoteStateReader::create(&client, StateRootOption::Latest)
+                    .await
+                    .unwrap();
+                let bal = state_reader
+                    .get_balance(entry.address)
+                    .await
+                    .unwrap()
+                    .unwrap_or(0);
+                if bal >= min_balance {
+                    state = AccountState::Ready;
                     continue;
                 }
-                if let Err(e) = ensure_balance(&client, &entry, &funding, min_balance).await {
-                    warn!("balance error {e}");
-                    state = AccountState::Error(format!("balance: {e}"));
-                    sleep(Duration::from_secs(1)).await;
-                    continue;
-                }
-                state = AccountState::Ready;
+                tx.send(entry.address).await.unwrap();
+                sleep(Duration::from_secs(2)).await;
             }
             AccountState::Ready => {
                 let node_info = match client.node_info().await {
@@ -286,6 +277,12 @@ async fn account_worker(
                         continue;
                     }
                 };
+                if let Err(e) = unlock_account(&client, &entry).await {
+                    warn!("unlock error {e}");
+                    state = AccountState::Error(format!("unlock: {e}"));
+                    sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
                 let chain_id = node_info.net.chain_id().id();
                 let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
                 match create_and_submit(
@@ -344,7 +341,18 @@ async fn account_worker(
         }
     }
 }
-
+async fn balancer_worker(
+    client: Arc<AsyncRpcClient>,
+    funding: AccountEntry,
+    min_balance: u128,
+    mut rx: mpsc::Receiver<AccountAddress>,
+) {
+    while let Some(account) = rx.recv().await {
+        if let Err(e) = ensure_balance(&client, account, &funding, min_balance).await {
+            warn!("balancer error {e}");
+        }
+    }
+}
 #[tokio::main]
 async fn main() -> Result<()> {
     starcoin_logger::init();
@@ -396,18 +404,28 @@ async fn main() -> Result<()> {
         .collect::<Vec<_>>();
     test_accounts.shuffle(&mut rand::thread_rng());
 
+    let (tx, rx) = mpsc::channel(10240);
+
     let mut handles = Vec::new();
     for entry in test_accounts {
         let handle = tokio::spawn({
             let client = Arc::clone(&client);
-            let funding = funding.clone();
             let tx_amount = DEFAULT_AMOUNT;
+            let tx = tx.clone();
             async move {
-                account_worker(client, entry, funding, target_addr, min_balance, tx_amount).await;
+                account_worker(client, entry, target_addr, min_balance, tx_amount, tx).await;
             }
         });
         handles.push(handle);
     }
+    let balancer = tokio::spawn({
+        let client = Arc::clone(&client);
+        let funding = funding.clone();
+        async move {
+            balancer_worker(client, funding, min_balance, rx).await;
+        }
+    });
+    handles.push(balancer);
 
     futures::future::join_all(handles).await;
     Ok(())
