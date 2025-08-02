@@ -22,12 +22,12 @@ pub fn block_merkle_tree_from_header(
     let block_info = storage
         .get_block_info(header.id())?
         .ok_or_else(|| format_err!("Can not find block info by hash {}", header.id()))?;
-    let txn_accumulator_info = block_info.get_txn_accumulator_info();
-    let txn_accumulator = MerkleAccumulator::new_with_info(
-        txn_accumulator_info.clone(),
+    let block_accumulator_info = block_info.get_block_accumulator_info();
+    let block_accumulator = MerkleAccumulator::new_with_info(
+        block_accumulator_info.clone(),
         storage.get_accumulator_store(AccumulatorStoreType::Block),
     );
-    Ok(txn_accumulator)
+    Ok(block_accumulator)
 }
 
 pub fn get_merge_bound_hash(
