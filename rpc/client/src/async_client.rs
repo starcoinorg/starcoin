@@ -59,7 +59,7 @@ impl AsyncRpcClient {
         f: impl FnOnce(Arc<RpcClientInner>) -> F + Send,
     ) -> Result<T, RpcError>
     where
-        F: std::future::Future<Output=Result<T, RpcError>> + Send,
+        F: std::future::Future<Output = Result<T, RpcError>> + Send,
     {
         let result = f(self.inner.clone()).await;
         if let Err(RpcError::Other(e)) = &result {
@@ -92,8 +92,8 @@ impl AsyncRpcClient {
                 .account_client2
                 .unlock(address, password, Some(duration.as_secs() as u32))
         })
-            .await
-            .map_err(map_err)
+        .await
+        .map_err(map_err)
     }
     pub async fn account_sign_txn(
         &self,
@@ -137,8 +137,8 @@ impl AsyncRpcClient {
                 .state_client2
                 .get_with_proof_by_root(state_key, state_root)
         })
-            .await
-            .map_err(map_err)
+        .await
+        .map_err(map_err)
     }
     pub async fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_async(|inner| inner.state_client2.get_state_root())
@@ -189,12 +189,12 @@ impl AsyncRpcClient {
 
     pub async fn subscribe_new_mint_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok=MintBlockEvent, Error=anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))
         })
-            .await
-            .map_err(map_err)
+        .await
+        .map_err(map_err)
     }
 }
