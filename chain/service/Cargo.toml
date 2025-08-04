@@ -1,11 +1,10 @@
 [dependencies]
 anyhow = { workspace = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
-serde = { features = ["derive"], workspace = true }
+serde = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
@@ -19,10 +18,12 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
-starcoin-network-rpc-api = { workspace = true }
-starcoin-consensus = { workspace = true }
-starcoin-dag = { workspace = true }
-starcoin-accumulator = { workspace = true }
+starcoin-metrics = { workspace = true }
+
+# dependencies for move2.0
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

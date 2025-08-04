@@ -8,15 +8,17 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    contract_event::ContractEventInfo,
+    contract_event::StcContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
+use crate::TransactionInfoWithProof2;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -40,6 +42,9 @@ pub enum ChainRequest {
         txn_idx: u64,
     },
     GetEventsByTxnHash {
+        txn_hash: HashValue,
+    },
+    GetEventsByTxnHash2 {
         txn_hash: HashValue,
     },
     GetBlocksByNumber(Option<BlockNumber>, bool, u64),
@@ -80,6 +85,12 @@ pub enum ChainRequest {
         absent_id: Vec<HashValue>,
         exp: u64,
     },
+    GetTransactionProof2 {
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -101,10 +112,10 @@ pub enum ChainResponse {
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<Option<BlockHeader>>),
-    TransactionInfos(Vec<RichTransactionInfo>),
-    TransactionInfo(Option<RichTransactionInfo>),
-    Events(Vec<ContractEventInfo>),
-    MainEvents(Vec<ContractEventInfo>),
+    TransactionInfos(Vec<StcRichTransactionInfo>),
+    TransactionInfo(Option<StcRichTransactionInfo>),
+    Events(Vec<StcContractEventInfo>),
+    MainEvents(Vec<StcContractEventInfo>),
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
@@ -113,4 +124,5 @@ pub enum ChainResponse {
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     GetRangeInLocation { range: RangeInLocation },
     GetAbsentBlocks { absent_blocks: Vec<Block> },
+    TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
 }

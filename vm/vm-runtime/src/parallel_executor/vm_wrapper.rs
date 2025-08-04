@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
+    adapter_common::{PreprocessedTransaction, VMAdapter},
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
-    vm_adapter::PreprocessedTransaction,
 };
 
 use starcoin_parallel_executor::{
@@ -29,11 +29,8 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type Error = VMStatus;
     type Argument = &'a S;
 
-    // XXX FIXME YSG
     fn init(argument: &'a S) -> Self {
-        // XXX FIXME YSG
         let mut vm = StarcoinVM::new(None);
-        // XXX FIXME YSG
         vm.load_configs(argument)
             .expect("load configs should always success");
 

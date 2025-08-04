@@ -28,6 +28,7 @@ pub mod account_provider_config;
 mod account_vault_config;
 mod api_config;
 mod api_quota;
+pub mod upgrade_config;
 mod available_port;
 pub mod genesis_config;
 mod helper;

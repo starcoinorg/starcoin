@@ -24,10 +24,11 @@ mod genesis_gas_schedule;
 mod move_lang_version;
 mod version;
 mod vm_config;
+
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
-    flexi_dag_config::*,
+    flexi_dag_config::FlexiDagConfigV2,
     gas_schedule::{
         instruction_gas_schedule_v1, instruction_gas_schedule_v2, native_gas_schedule_v1,
         native_gas_schedule_v2, native_gas_schedule_v3, native_gas_schedule_v4,

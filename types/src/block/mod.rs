@@ -12,6 +12,7 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::multi_state::MultiState;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
@@ -761,25 +762,64 @@ impl BlockHeaderBuilder {
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
+    pub transactions2: Vec<starcoin_vm2_vm_types::transaction::SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
+    pub fn new(
+        multi_transactions: Vec<crate::multi_transaction::MultiSignedUserTransaction>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        let mut transactions = vec![];
+        let mut transactions2 = vec![];
+        for txn in multi_transactions {
+            match txn {
+                crate::multi_transaction::MultiSignedUserTransaction::VM1(txn) => {
+                    transactions.push(txn);
+                }
+                crate::multi_transaction::MultiSignedUserTransaction::VM2(txn) => {
+                    transactions2.push(txn);
+                }
+            }
+        }
         Self {
             transactions,
+            transactions2,
             uncles,
+        }
+    }
+    
+    pub fn new_v2(
+        transactions: Vec<SignedUserTransaction>,
+        transactions2: Vec<starcoin_vm2_vm_types::transaction::SignedUserTransaction>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        Self {
+            transactions,
+            transactions2,
+            uncles,
+        }
+    }
+    
+    /// Just for test
+    pub fn new_empty() -> BlockBody {
+        BlockBody {
+            transactions: Vec::new(),
+            transactions2: Vec::new(),
+            uncles: None,
         }
     }
     pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
         self.transactions.get(index)
     }
 
-    /// Just for test
-    pub fn new_empty() -> Self {
+    /// Just for test (old version, kept for compatibility)
+    pub fn new_empty_legacy() -> Self {
         Self {
             transactions: Vec::new(),
+            transactions2: Vec::new(),
             uncles: None,
         }
     }
@@ -794,6 +834,7 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
         BlockBody {
             transactions: self,
+            transactions2: Vec::new(),
             uncles: None,
         }
     }
@@ -810,6 +851,7 @@ impl Sample for BlockBody {
     fn sample() -> Self {
         Self {
             transactions: vec![],
+            transactions2: vec![],
             uncles: None,
         }
     }
@@ -875,7 +917,7 @@ impl Block {
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
-        let block_body = BlockBody::new(vec![genesis_txn], None);
+        let block_body = BlockBody::new(vec![crate::multi_transaction::MultiSignedUserTransaction::VM1(genesis_txn)], None);
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
@@ -947,6 +989,7 @@ impl Block {
                 SignedUserTransaction::sample(),
                 SignedUserTransaction::sample(),
             ],
+            transactions2: Vec::new(),
             uncles: Some(vec![uncle1, uncle2]),
         };
 
@@ -1014,6 +1057,8 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
+    /// The vm state accumulator info for dual-vm
+    pub vm_state_accumulator_info: AccumulatorInfo,
 }
 
 impl BlockInfo {
@@ -1028,6 +1073,23 @@ impl BlockInfo {
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
+            vm_state_accumulator_info: AccumulatorInfo::default(),
+        }
+    }
+
+    pub fn new_with_vm_state(
+        block_id: HashValue,
+        total_difficulty: U256,
+        txn_accumulator_info: AccumulatorInfo,
+        block_accumulator_info: AccumulatorInfo,
+        vm_state_accumulator_info: AccumulatorInfo,
+    ) -> Self {
+        Self {
+            block_id,
+            total_difficulty,
+            txn_accumulator_info,
+            block_accumulator_info,
+            vm_state_accumulator_info,
         }
     }
 
@@ -1047,6 +1109,10 @@ impl BlockInfo {
         &self.txn_accumulator_info
     }
 
+    pub fn get_vm_state_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.vm_state_accumulator_info
+    }
+
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
@@ -1059,6 +1125,7 @@ impl Sample for BlockInfo {
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
+            vm_state_accumulator_info: AccumulatorInfo::sample(),
         }
     }
 }
@@ -1079,6 +1146,10 @@ pub struct BlockTemplate {
     pub block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
+    /// The vm1 state root
+    state_root1: HashValue,
+    /// The vm2 state root  
+    state_root2: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: u64,
     /// hash for block body
@@ -1104,6 +1175,8 @@ impl BlockTemplate {
         parent_block_accumulator_root: HashValue,
         accumulator_root: HashValue,
         state_root: HashValue,
+        state_root1: HashValue,
+        state_root2: HashValue,
         gas_used: u64,
         body: BlockBody,
         chain_id: ChainId,
@@ -1123,6 +1196,8 @@ impl BlockTemplate {
             author,
             txn_accumulator_root: accumulator_root,
             state_root,
+            state_root1,
+            state_root2,
             gas_used,
             body_hash: body.hash(),
             body,
@@ -1159,6 +1234,10 @@ impl BlockTemplate {
             header,
             body: self.body,
         }
+    }
+
+    pub fn state_roots(&self) -> (HashValue, HashValue, HashValue) {
+        (self.state_root, self.state_root1, self.state_root2)
     }
 
     fn as_raw_block_header(&self) -> RawBlockHeader {
@@ -1198,13 +1277,19 @@ impl BlockTemplate {
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct ExecutedBlock {
-    pub block: Block,
-    pub block_info: BlockInfo,
+    block: Block,
+    block_info: BlockInfo,
+    // only for inner system modules
+    state_root: MultiState,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        Self { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, state_root: MultiState) -> Self {
+        ExecutedBlock {
+            block,
+            block_info,
+            state_root,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {
@@ -1217,6 +1302,10 @@ impl ExecutedBlock {
 
     pub fn block_info(&self) -> &BlockInfo {
         &self.block_info
+    }
+
+    pub fn multi_state(&self) -> &MultiState {
+        &self.state_root
     }
 
     pub fn header(&self) -> &BlockHeader {

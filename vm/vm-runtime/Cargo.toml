@@ -20,23 +20,22 @@ tracing = { workspace = true }
 move-vm-runtime = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-frameworks = { workspace = true }
+starcoin-natives = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
-move-vm-types = { workspace = true }
-move-binary-format = { workspace = true }
 starcoin-metrics = { optional = true, workspace = true }
-starcoin-gas-meter = { workspace = true }
+starcoin-gas = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-parallel-executor = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 hex = "0.4.3"
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 stdlib = { workspace = true }
@@ -44,6 +43,5 @@ stdlib = { workspace = true }
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
-testing = ["move-stdlib/testing", "starcoin-frameworks/testing"]
-force-deploy = []
+testing = ["move-stdlib/testing", "starcoin-natives/testing"]
 print_gas_info = []

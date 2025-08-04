@@ -4,10 +4,10 @@ bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
-proptest = { features = ["std"], optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 sp-utils = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-consensus = { workspace = true }
@@ -30,6 +30,16 @@ async-std = { workspace = true }
 starcoin-dag = { workspace = true }
 once_cell = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
+starcoin-data-migration = { workspace = true }
+
+# dependencies for move2
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-chain = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+log = "0.4.27"
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -37,17 +47,19 @@ proptest-derive = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-chain-mock = { workspace = true }
 starcoin-genesis = { workspace = true }
-starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-types = { features = ["fuzzing"], workspace = true }
-starcoin-vm-runtime = { workspace = true }
-stdlib = { workspace = true }
+starcoin-types = { features = [
+    "fuzzing",
+], workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
-tokio = { features = ["full"], workspace = true }
-starcoin-network-rpc-api = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
-futures = { workspace = true }
+starcoin-vm2-test-helper = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+
+tempfile = "3.2.0"
+flate2 = "1.0"
+tar = "0.4"
 
 [features]
 default = []

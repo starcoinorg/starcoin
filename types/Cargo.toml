@@ -17,6 +17,9 @@ starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
 bincode = { version = "1", default-features = false }

@@ -28,7 +28,6 @@ pub struct Epoch {
 }
 
 impl Epoch {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         number: u64,
         start_time: u64,
@@ -107,15 +106,15 @@ impl Epoch {
     pub fn struct_tag_for_epoch() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            name: Self::struct_identifier(),
-            module: Self::module_identifier(),
+            name: Epoch::struct_identifier(),
+            module: Epoch::module_identifier(),
             type_params: vec![],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
     pub fn data_path_for() -> DataPath {
-        AccessPath::resource_data_path(Self::struct_tag_for_epoch())
+        AccessPath::resource_data_path(Epoch::struct_tag_for_epoch())
     }
 }
 
@@ -132,7 +131,7 @@ pub struct EpochInfo {
 
 impl EpochInfo {
     pub fn new(epoch: Epoch, epoch_data: EpochData) -> Self {
-        Self { epoch, epoch_data }
+        EpochInfo { epoch, epoch_data }
     }
 
     pub fn epoch(&self) -> &Epoch {
@@ -187,7 +186,6 @@ pub struct EpochData {
     uncles: u64,
     total_reward: u128,
     total_gas: u128,
-    red_blocks: u64,
 }
 
 impl MoveResource for EpochData {
@@ -196,12 +194,11 @@ impl MoveResource for EpochData {
 }
 
 impl EpochData {
-    pub fn new(uncles: u64, total_reward: u128, total_gas: u128, red_blocks: u64) -> Self {
+    pub fn new(uncles: u64, total_reward: u128, total_gas: u128) -> Self {
         Self {
             uncles,
             total_reward,
             total_gas,
-            red_blocks,
         }
     }
 
@@ -217,22 +214,18 @@ impl EpochData {
         self.total_reward
     }
 
-    pub fn red_blocks(&self) -> u64 {
-        self.red_blocks
-    }
-
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
     pub fn struct_tag_for_epoch() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
-            name: Self::struct_identifier(),
-            module: Self::module_identifier(),
+            name: EpochData::struct_identifier(),
+            module: EpochData::module_identifier(),
             type_params: vec![],
         }
     }
 
     // TODO: remove this once the MoveResource trait allows type arguments to `resource_path`.
     pub fn data_path_for() -> DataPath {
-        AccessPath::resource_data_path(Self::struct_tag_for_epoch())
+        AccessPath::resource_data_path(EpochData::struct_tag_for_epoch())
     }
 }

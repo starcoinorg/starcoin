@@ -237,6 +237,7 @@ pub mod serde_helper;
 pub mod sign_message;
 pub mod sips;
 pub mod state_store;
+pub mod time;
 pub mod token;
 #[cfg(test)]
 mod unit_tests;

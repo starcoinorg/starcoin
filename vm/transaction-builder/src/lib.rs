@@ -1,15 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::convert::TryInto;
+
 use anyhow::Result;
-use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+
+use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_types::account::Account;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{core_code_address, genesis_address};
+use starcoin_vm_types::account_config::{association_address, core_code_address, genesis_address};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
@@ -25,7 +28,6 @@ use starcoin_vm_types::transaction::{
     TransactionPayload,
 };
 use starcoin_vm_types::value::MoveValue;
-use std::convert::TryInto;
 use stdlib::{module_to_package, stdlib_package};
 pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -347,16 +349,11 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-fn build_init_script(net: &ChainNetwork) -> ScriptFunction {
-    match net.genesis_config().stdlib_version {
-        StdlibVersion::Version(1) => build_init_script_v1(net),
-        version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
-        _ => build_init_script_v3(net),
-    }
-}
-
 pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
-    let init_script = build_init_script(net);
+    let init_script = match net.genesis_config().stdlib_version {
+        StdlibVersion::Version(1) => build_init_script_v1(net),
+        _ => build_init_script_v2(net),
+    };
     stdlib_package(stdlib_option, Some(init_script))
 }
 
@@ -364,7 +361,10 @@ pub fn build_stdlib_package_with_modules(
     net: &ChainNetwork,
     modules: Vec<Vec<u8>>,
 ) -> Result<Package> {
-    let init_script = build_init_script(net);
+    let init_script = match net.genesis_config().stdlib_version {
+        StdlibVersion::Version(1) => build_init_script_v1(net),
+        _ => build_init_script_v2(net),
+    };
     module_to_package(modules, Some(init_script))
 }
 
@@ -696,173 +696,6 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
     )
 }
 
-pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
-    let genesis_config = net.genesis_config();
-    let chain_id = net.chain_id().id();
-    let genesis_timestamp = net.genesis_block_parameter().timestamp;
-    let genesis_parent_hash = net.genesis_block_parameter().parent_hash;
-
-    let genesis_auth_key = genesis_config
-        .genesis_key_pair
-        .as_ref()
-        .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
-        .unwrap_or_default();
-
-    let association_auth_key =
-        AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
-
-    let instruction_schedule =
-        bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
-            .expect("Cannot serialize gas schedule");
-    let native_schedule = bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
-        .expect("Cannot serialize gas schedule");
-
-    ScriptFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
-        Identifier::new("initialize_v3").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.reward_delay).unwrap(),
-            bcs_ext::to_bytes(&G_TOTAL_STC_AMOUNT.scaling()).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.pre_mine_amount).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.time_mint_amount).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.time_mint_period).unwrap(),
-            bcs_ext::to_bytes(&genesis_parent_hash.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&association_auth_key).unwrap(),
-            bcs_ext::to_bytes(&genesis_auth_key).unwrap(),
-            bcs_ext::to_bytes(&chain_id).unwrap(),
-            bcs_ext::to_bytes(&genesis_timestamp).unwrap(),
-            //consensus config
-            bcs_ext::to_bytes(&genesis_config.consensus_config.uncle_rate_target).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.epoch_block_count).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_time_target).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_difficulty_window)
-                .unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.base_reward_per_block).unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .consensus_config
-                    .base_reward_per_uncle_percent,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.min_block_time_target).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.max_block_time_target).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.base_max_uncles_per_block).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_gas_limit).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.strategy).unwrap(),
-            //vm config
-            bcs_ext::to_bytes(&genesis_config.publishing_option.is_script_allowed()).unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .publishing_option
-                    .is_module_publishing_allowed(),
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(&instruction_schedule).unwrap(),
-            bcs_ext::to_bytes(&native_schedule).unwrap(),
-            //gas constants
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .global_memory_per_byte_cost,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .global_memory_per_byte_write_cost,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .min_transaction_gas_units,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .large_transaction_cutoff,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .intrinsic_gas_per_byte,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .maximum_number_of_gas_units,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .min_price_per_gas_unit,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .max_price_per_gas_unit,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .max_transaction_size_in_bytes,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .gas_unit_scaling_factor,
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(
-                &genesis_config
-                    .vm_config
-                    .gas_schedule
-                    .gas_constants
-                    .default_account_size,
-            )
-            .unwrap(),
-            // dao config params
-            bcs_ext::to_bytes(&genesis_config.dao_config.voting_delay).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.dao_config.voting_period).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.dao_config.voting_quorum_rate).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.dao_config.min_action_delay).unwrap(),
-            //transaction timeout config
-            bcs_ext::to_bytes(&genesis_config.transaction_timeout).unwrap(),
-            // flexidag effective height
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
 pub fn build_package_with_stdlib_module(
     stdlib_option: StdLibOptions,
     module_names: Vec<&str>,
@@ -1078,4 +911,73 @@ pub fn build_signed_empty_txn(
     );
     let signature = prikey.sign(&txn);
     SignedUserTransaction::new(txn, signature)
+}
+
+// Build a signed user transaction for burning illegal tokens from a frozen address.
+// This function creates a signed user transaction that attempts to burn illegal tokens
+// from a frozen address. The transaction is signed by the `signer` and is intended for the `recipient`.
+//
+// # Arguments
+// - `signer`: A reference to the `Account` that will sign the transaction.
+// - `recipient`: A reference to the `AccountAddress` of the recipient.
+// - `seq_num`: The sequence number of the transaction.
+// - `amount`: The amount of tokens to be burned, represented as a `u128`.
+// - `net`: A reference to the `ChainNetwork` which provides the chain ID for the transaction.
+//
+// # Returns
+// - A `SignedUserTransaction` that is signed by the `signer` with the specified transaction details.
+pub fn frozen_config_do_burn_frozen_raw_txn(seq_num: u64, chain_id: ChainId) -> RawUserTransaction {
+    RawUserTransaction::new_with_default_gas_token(
+        association_address(),
+        seq_num,
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("FrozenConfigStrategy").unwrap(),
+            ),
+            Identifier::new("do_burn_frozen").unwrap(),
+            vec![],
+            vec![],
+        )),
+        10000000,
+        1,
+        1000 + 60 * 60,
+        chain_id,
+    )
+}
+
+pub fn frozen_config_update_burn_block_number_by_association(
+    seq_num: u64,
+    net: &ChainNetwork,
+    burn_block_number: u64,
+) -> Result<SignedUserTransaction> {
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
+        association_address(),
+        seq_num,
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("FrozenConfigStrategy")?,
+            ),
+            Identifier::new("update_burn_block_number")?,
+            vec![],
+            vec![bcs_ext::to_bytes(&burn_block_number)?],
+        )),
+        10000000,
+        1,
+        1000 + 60 * 60,
+        net.chain_id(),
+    );
+    net.genesis_config().sign_with_association(raw_txn)
+}
+
+pub fn frozen_config_do_burn_frozen_from_association(
+    seq_num: u64,
+    net: &ChainNetwork,
+) -> Result<SignedUserTransaction> {
+    net.genesis_config()
+        .sign_with_association(frozen_config_do_burn_frozen_raw_txn(
+            seq_num,
+            net.chain_id(),
+        ))
 }

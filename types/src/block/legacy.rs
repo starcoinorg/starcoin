@@ -210,6 +210,7 @@ impl From<BlockBody> for crate::block::BlockBody {
 
         Self {
             transactions,
+            transactions2: Vec::new(), // Legacy conversion doesn't have VM2 transactions
             uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
         }
     }
@@ -219,6 +220,7 @@ impl From<crate::block::BlockBody> for BlockBody {
     fn from(value: crate::block::BlockBody) -> Self {
         let crate::block::BlockBody {
             transactions,
+            transactions2: _, // Ignore VM2 transactions in legacy conversion
             uncles,
         } = value;
 

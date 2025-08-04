@@ -6,6 +6,7 @@ starcoin-crypto = { workspace = true }
 futures = { workspace = true }
 starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
+starcoin-config = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-executor = { workspace = true }
@@ -14,11 +15,21 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-force-upgrade = { workspace = true }
+
+# dependencies for move2
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-executor = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
+test-helper = { workspace = true }
 
 [package]
 authors = { workspace = true }

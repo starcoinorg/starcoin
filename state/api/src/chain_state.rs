@@ -152,6 +152,8 @@ pub trait ChainStateWriter {
     //TODO support batch write.
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()>;
 
+    fn apply_and_clean_cache(&self, chain_state_set: ChainStateSet) -> Result<()>;
+
     fn commit(&self) -> Result<HashValue>;
 
     fn flush(&self) -> Result<()>;

@@ -68,15 +68,15 @@ pub struct AccessPath {
 
 impl AccessPath {
     pub fn new(address: AccountAddress, path: DataPath) -> Self {
-        Self { address, path }
+        AccessPath { address, path }
     }
 
     pub fn resource_access_path(address: AccountAddress, struct_tag: StructTag) -> Self {
         Self::new(address, Self::resource_data_path(struct_tag))
     }
 
-    pub fn code_access_path(address: AccountAddress, module_name: Identifier) -> Self {
-        Self::new(address, Self::code_data_path(module_name))
+    pub fn code_access_path(address: AccountAddress, module_name: Identifier) -> AccessPath {
+        AccessPath::new(address, Self::code_data_path(module_name))
     }
 
     pub fn resource_data_path(tag: StructTag) -> DataPath {
@@ -93,18 +93,18 @@ impl AccessPath {
         (address, path)
     }
 
-    pub fn random_code() -> Self {
-        Self::new(AccountAddress::random(), DataPath::Code(random_identity()))
+    pub fn random_code() -> AccessPath {
+        AccessPath::new(AccountAddress::random(), DataPath::Code(random_identity()))
     }
 
-    pub fn random_resource() -> Self {
+    pub fn random_resource() -> AccessPath {
         let struct_tag = StructTag {
             address: AccountAddress::random(),
             module: random_identity(),
             name: random_identity(),
             type_params: vec![],
         };
-        Self::new(AccountAddress::random(), DataPath::Resource(struct_tag))
+        AccessPath::new(AccountAddress::random(), DataPath::Resource(struct_tag))
     }
 
     pub fn as_module_id(&self) -> Option<ModuleId> {
@@ -135,7 +135,7 @@ impl<'de> Deserialize<'de> for AccessPath {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            Self::from_str(&s).map_err(D::Error::custom)
+            AccessPath::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -144,7 +144,7 @@ impl<'de> Deserialize<'de> for AccessPath {
             #[serde(rename = "AccessPath")]
             struct Value(AccountAddress, DataPath);
             let value = Value::deserialize(deserializer)?;
-            Ok(Self::new(value.0, value.1))
+            Ok(AccessPath::new(value.0, value.1))
         }
     }
 }
@@ -180,8 +180,8 @@ impl fmt::Display for AccessPath {
 }
 
 impl From<&ModuleId> for AccessPath {
-    fn from(id: &ModuleId) -> Self {
-        Self::code_access_path(*id.address(), id.name().to_owned())
+    fn from(id: &ModuleId) -> AccessPath {
+        AccessPath::code_access_path(*id.address(), id.name().to_owned())
     }
 }
 
@@ -210,10 +210,10 @@ impl DataType {
     pub const LENGTH: usize = 2;
 
     pub fn is_code(self) -> bool {
-        matches!(self, Self::CODE)
+        matches!(self, DataType::CODE)
     }
     pub fn is_resource(self) -> bool {
-        matches!(self, Self::RESOURCE)
+        matches!(self, DataType::RESOURCE)
     }
 
     #[inline]
@@ -236,7 +236,7 @@ impl DataType {
 impl Arbitrary for DataType {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        prop_oneof![Just(Self::CODE), Just(Self::RESOURCE),].boxed()
+        prop_oneof![Just(DataType::CODE), Just(DataType::RESOURCE),].boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -264,7 +264,7 @@ impl Arbitrary for DataPath {
                 any::<Identifier>(),
                 vec(any::<move_core_types::language_storage::TypeTag>(), 0..4),
             )
-                .prop_map(|(address, module, name, type_params)| Self::Resource(
+                .prop_map(|(address, module, name, type_params)| DataPath::Resource(
                     StructTag {
                         address,
                         module,
@@ -281,28 +281,28 @@ impl Arbitrary for DataPath {
 
 impl DataPath {
     pub fn is_code(&self) -> bool {
-        matches!(self, Self::Code(_))
+        matches!(self, DataPath::Code(_))
     }
     pub fn is_resource(&self) -> bool {
-        matches!(self, Self::Resource(_))
+        matches!(self, DataPath::Resource(_))
     }
     pub fn as_struct_tag(&self) -> Option<&StructTag> {
         match self {
-            Self::Resource(struct_tag) => Some(struct_tag),
+            DataPath::Resource(struct_tag) => Some(struct_tag),
             _ => None,
         }
     }
     pub fn data_type(&self) -> DataType {
         match self {
-            Self::Code(_) => DataType::CODE,
-            Self::Resource(_) => DataType::RESOURCE,
+            DataPath::Code(_) => DataType::CODE,
+            DataPath::Resource(_) => DataType::RESOURCE,
         }
     }
 
     pub fn key_hash(&self) -> HashValue {
         match self {
-            Self::Resource(struct_tag) => struct_tag.key_hash(),
-            Self::Code(module_name) => module_name.key_hash(),
+            DataPath::Resource(struct_tag) => struct_tag.key_hash(),
+            DataPath::Code(module_name) => module_name.key_hash(),
         }
     }
 }
@@ -311,10 +311,10 @@ impl fmt::Display for DataPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let storage_index = self.data_type().storage_index();
         match self {
-            Self::Resource(struct_tag) => {
+            DataPath::Resource(struct_tag) => {
                 write!(f, "{}/{}", storage_index, struct_tag)
             }
-            Self::Code(module_name) => {
+            DataPath::Code(module_name) => {
                 write!(f, "{}/{}", storage_index, module_name)
             }
         }
@@ -332,9 +332,9 @@ impl FromStr for AccessPath {
         let address = AccountAddress::from_str(parts[0])?;
         let data_type = DataType::from_index(parts[1].parse()?)?;
         let data_path = match data_type {
-            DataType::CODE => Self::code_data_path(Identifier::new(parts[2])?),
-            DataType::RESOURCE => Self::resource_data_path(parse_struct_tag(parts[2])?),
+            DataType::CODE => AccessPath::code_data_path(Identifier::new(parts[2])?),
+            DataType::RESOURCE => AccessPath::resource_data_path(parse_struct_tag(parts[2])?),
         };
-        Ok(Self::new(address, data_path))
+        Ok(AccessPath::new(address, data_path))
     }
 }

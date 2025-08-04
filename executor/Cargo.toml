@@ -9,6 +9,7 @@ starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
+starcoin-metrics = { workspace = true }
 serde = { workspace = true }
 bcs-ext = { workspace = true }
 

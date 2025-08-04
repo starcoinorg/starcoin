@@ -26,7 +26,7 @@ pub struct Script {
 
 impl Script {
     pub fn new(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
-        Self {
+        Script {
             code,
             ty_args,
             args,
@@ -291,7 +291,7 @@ impl ScriptFunction {
         ty_args: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Self {
-        Self {
+        ScriptFunction {
             module,
             function,
             ty_args,

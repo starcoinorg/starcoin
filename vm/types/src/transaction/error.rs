@@ -12,7 +12,7 @@ pub enum Error {
     /// Transaction is not valid anymore (state already has higher nonce)
     Old,
     /// Transaction was not imported to the queue because limit has been reached.
-    LimitReached,
+    LimitReached(String),
     /// Transaction's gas price is below threshold.
     InsufficientGasPrice {
         /// Minimal expected gas price
@@ -78,7 +78,7 @@ impl fmt::Display for Error {
                 "Gas price too low to replace, previous tx gas: {:?}, new tx gas: {:?}",
                 prev, new
             ),
-            LimitReached => "Transaction limit reached".into(),
+            LimitReached(e) => format!("Transaction limit reached, {e}"),
             InsufficientGasPrice { minimal, got } => {
                 format!("Insufficient gas price. Min={}, Given={}", minimal, got)
             }
@@ -133,7 +133,7 @@ pub enum CallError {
 
 impl From<VMStatus> for CallError {
     fn from(error: VMStatus) -> Self {
-        Self::ExecutionError(error)
+        CallError::ExecutionError(error)
     }
 }
 

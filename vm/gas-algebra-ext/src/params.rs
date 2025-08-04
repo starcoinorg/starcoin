@@ -93,6 +93,6 @@ mod tests {
         )
         .is_some());
 
-        assert!(GasParameters::from_on_chain_gas_schedule(&[].into_iter().collect()).is_none(),);
+        assert!(GasParameters::from_on_chain_gas_schedule(&[].into_iter().collect()).is_none());
     }
 }

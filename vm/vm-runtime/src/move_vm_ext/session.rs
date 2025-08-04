@@ -93,7 +93,6 @@ impl SessionOutput {
             table_change_set,
         } = self;
 
-        // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
         let mut write_set_mut = WriteSetMut::new(Vec::new());
         for (addr, account_changeset) in change_set.into_inner() {
             let (modules, resources) = account_changeset.into_inner();
@@ -107,7 +106,6 @@ impl SessionOutput {
                 write_set_mut.push((StateKey::AccessPath(ap), op))
             }
 
-            // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
             for (name, blob_opt) in modules {
                 let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
                 let op = match blob_opt {
@@ -123,7 +121,6 @@ impl SessionOutput {
         for (handle, change) in table_change_set.changes {
             for (key, value_op) in change.entries {
                 let state_key = StateKey::table_item(handle.into(), key);
-                // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
                 match value_op {
                     MoveStorageOp::Delete => write_set_mut.push((state_key, WriteOp::Deletion)),
                     MoveStorageOp::New(bytes) => {

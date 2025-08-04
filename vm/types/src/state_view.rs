@@ -20,7 +20,7 @@ use crate::{
     on_chain_config::{GlobalTimeOnChain, OnChainConfig},
     on_chain_resource::{
         dao::{Proposal, ProposalAction},
-        BlockMetadata, BlockMetadataV2, Epoch, EpochData, EpochInfo, Treasury,
+        BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
     },
     sips::SIP,
 };
@@ -161,15 +161,10 @@ pub trait StateReaderExt: StateView {
             .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
     }
 
-    // Get BlockMetadata on chain (stdlib version <= 11)
+    // Get latest BlockMetadata on chain
     fn get_block_metadata(&self) -> Result<BlockMetadata> {
         self.get_resource::<BlockMetadata>(genesis_address())?
             .ok_or_else(|| format_err!("BlockMetadata resource should exist at genesis address. "))
-    }
-
-    // Get latest BlockMetadataV2 on chain, since stdlib version(12)
-    fn get_block_metadata_v2(&self) -> Result<Option<BlockMetadataV2>> {
-        self.get_resource::<BlockMetadataV2>(genesis_address())
     }
 
     fn get_code(&self, module_id: ModuleId) -> Result<Option<Vec<u8>>> {

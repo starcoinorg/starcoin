@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Formatter};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, Default)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum StdlibVersion {
     #[default]
     Latest,
@@ -22,34 +22,34 @@ type VersionNumber = u64;
 impl StdlibVersion {
     pub fn new(version: u64) -> Self {
         if version == 0 {
-            Self::Latest
+            StdlibVersion::Latest
         } else {
-            Self::Version(version)
+            StdlibVersion::Version(version)
         }
     }
 
     pub fn as_string(&self) -> String {
         match self {
-            Self::Latest => "latest".to_string(),
-            Self::Version(version) => format!("{}", version),
+            StdlibVersion::Latest => "latest".to_string(),
+            StdlibVersion::Version(version) => format!("{}", version),
         }
     }
 
     pub fn version(&self) -> u64 {
         match self {
-            Self::Latest => 0,
-            Self::Version(version) => *version,
+            StdlibVersion::Latest => 0,
+            StdlibVersion::Version(version) => *version,
         }
     }
 
     pub fn is_latest(&self) -> bool {
-        matches!(self, Self::Latest)
+        matches!(self, StdlibVersion::Latest)
     }
 
-    pub fn compatible_with_previous(version: &Self) -> bool {
+    pub fn compatible_with_previous(version: &StdlibVersion) -> bool {
         // currently only 4 is not compatible with previous version
         // Todo: need a better solution
-        !matches!(version, Self::Version(4))
+        !matches!(version, StdlibVersion::Version(4))
     }
 }
 
@@ -62,20 +62,21 @@ impl PartialOrd for StdlibVersion {
 impl Ord for StdlibVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (Self::Latest, Self::Latest) => Ordering::Equal,
-            (Self::Latest, _) => Ordering::Greater,
-            (_, Self::Latest) => Ordering::Less,
-            (Self::Version(self_v), Self::Version(other_v)) => self_v.cmp(other_v),
+            (StdlibVersion::Latest, StdlibVersion::Latest) => Ordering::Equal,
+            (StdlibVersion::Latest, _) => Ordering::Greater,
+            (_, StdlibVersion::Latest) => Ordering::Less,
+            (StdlibVersion::Version(self_v), StdlibVersion::Version(other_v)) => {
+                self_v.cmp(other_v)
+            }
         }
     }
 }
-
 impl FromStr for StdlibVersion {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "latest" => Ok(Self::Latest),
+            "latest" => Ok(StdlibVersion::Latest),
             s => Ok(Self::new(s.parse()?)),
         }
     }
@@ -84,8 +85,8 @@ impl FromStr for StdlibVersion {
 impl Display for StdlibVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Latest => f.write_str("latest"),
-            Self::Version(version) => f.write_str(version.to_string().as_str()),
+            StdlibVersion::Latest => f.write_str("latest"),
+            StdlibVersion::Version(version) => f.write_str(version.to_string().as_str()),
         }
     }
 }
@@ -94,6 +95,7 @@ impl Display for StdlibVersion {
     Clone,
     Copy,
     Debug,
+    Default,
     Deserialize,
     Eq,
     Hash,
@@ -107,7 +109,6 @@ impl Display for StdlibVersion {
 )]
 #[repr(u8)]
 #[serde(tag = "type")]
-#[derive(Default)]
 pub enum ConsensusStrategy {
     #[default]
     Dummy = 0,
@@ -125,10 +126,10 @@ impl ConsensusStrategy {
 impl fmt::Display for ConsensusStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Dummy => write!(f, "dummy"),
-            Self::Argon => write!(f, "argon"),
-            Self::Keccak => write!(f, "keccak"),
-            Self::CryptoNight => write!(f, "cryptonight"),
+            ConsensusStrategy::Dummy => write!(f, "dummy"),
+            ConsensusStrategy::Argon => write!(f, "argon"),
+            ConsensusStrategy::Keccak => write!(f, "keccak"),
+            ConsensusStrategy::CryptoNight => write!(f, "cryptonight"),
         }
     }
 }
@@ -138,10 +139,10 @@ impl FromStr for ConsensusStrategy {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "dummy" => Ok(Self::Dummy),
-            "argon" => Ok(Self::Argon),
-            "keccak" => Ok(Self::Keccak),
-            "cryptonight" => Ok(Self::CryptoNight),
+            "dummy" => Ok(ConsensusStrategy::Dummy),
+            "argon" => Ok(ConsensusStrategy::Argon),
+            "keccak" => Ok(ConsensusStrategy::Keccak),
+            "cryptonight" => Ok(ConsensusStrategy::CryptoNight),
             s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
         }
     }
@@ -164,14 +165,11 @@ impl ChainId {
     }
 
     pub fn test() -> Self {
-        Self::new(255)
+        ChainId::new(255)
     }
 
-    pub fn dag_test() -> Self {
-        Self::new(250)
-    }
     pub fn vega() -> Self {
-        Self::new(2)
+        ChainId::new(2)
     }
 
     pub fn is_main(self) -> bool {
@@ -199,10 +197,6 @@ impl ChainId {
         self.id == 255
     }
 
-    pub fn is_dag_test(self) -> bool {
-        self.id == 250
-    }
-
     pub fn is_vega(self) -> bool {
         self.id == 2
     }
@@ -219,7 +213,7 @@ impl FromStr for ChainId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let id: u8 = s.parse()?;
-        Ok(Self::new(id))
+        Ok(ChainId::new(id))
     }
 }
 
@@ -239,4 +233,17 @@ impl Into<u8> for ChainId {
 impl MoveResource for ChainId {
     const MODULE_NAME: &'static str = "ChainId";
     const STRUCT_NAME: &'static str = "ChainId";
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::genesis_config::ConsensusStrategy;
+
+    #[test]
+    fn test_consensus_strategy() {
+        assert_eq!(ConsensusStrategy::Dummy.value(), 0);
+        assert_eq!(ConsensusStrategy::Argon.value(), 1);
+        assert_eq!(ConsensusStrategy::Keccak.value(), 2);
+        assert_eq!(ConsensusStrategy::CryptoNight.value(), 3);
+    }
 }

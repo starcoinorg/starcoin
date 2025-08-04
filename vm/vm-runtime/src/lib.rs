@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod adapter_common;
 pub mod data_cache;
-#[cfg(feature = "metrics")]
-pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;
 
@@ -14,10 +13,7 @@ mod errors;
 pub mod force_upgrade_management;
 pub mod move_vm_ext;
 pub mod parallel_executor;
-mod verifier;
-mod vm_adapter;
-
-use crate::metrics::VMMetrics;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
