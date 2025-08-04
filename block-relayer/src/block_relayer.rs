@@ -14,7 +14,7 @@ use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService};
+use starcoin_sync::block_connector::ExecuteService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_time_service::TimeService;

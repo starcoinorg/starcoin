@@ -17,7 +17,6 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
-use std::collections::HashMap;
 
 use crate::TransactionInfoWithProof;
 pub use starcoin_types::block::ExecutedBlock;

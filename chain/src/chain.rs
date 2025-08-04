@@ -11,7 +11,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
-    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
+    ExecutedBlock, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -26,7 +26,6 @@ use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::IntoSuper;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
@@ -52,7 +51,7 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
@@ -85,13 +84,12 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag)
+        Self::new_with_uncles(time_service, head, storage, vm_metrics, dag)
     }
 
     fn new_with_uncles(
         time_service: Arc<dyn TimeService>,
         head_block: Block,
-        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -413,20 +411,6 @@ impl BlockChain {
             .get_hash_by_number(block_number)?
             .filter(|hash| hash == &block_id)
             .is_some())
-    }
-
-    // filter block by check exist
-    fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
-        Ok(match block {
-            Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number())? {
-                    Some(block)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        })
     }
 
     // filter header by check exist
@@ -1219,23 +1203,10 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        // if fork block_id is at same epoch, try to reuse uncles cache.
-        // let uncles = if head.header().number() >= self.epoch.start_block_number() {
-        //     Some(
-        //         self.uncles
-        //             .iter()
-        //             .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-        //             .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-        //             .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-        //     )
-        // } else {
-        //     None
-        // };
 
         Self::new_with_uncles(
             self.time_service.clone(),
             head,
-            None,
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),

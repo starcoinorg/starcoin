@@ -3,17 +3,12 @@
 
 use anyhow::{Ok, Result};
 use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
-use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
-use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
-use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
 use starcoin_types::identifier::Identifier;
@@ -21,7 +16,6 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
 use std::str::FromStr;
-use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -191,26 +185,6 @@ fn test_find_ancestor_fork() -> Result<()> {
     Ok(())
 }
 
-fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
-    let mut mock_chain =
-        MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::DagTest)).unwrap();
-    let mut times = 10;
-    mock_chain.produce_and_apply_times(times).unwrap();
-
-    // 1. new branch head id
-    let fork_id = mock_chain.head().current_header().id();
-    times = 2;
-    mock_chain.produce_and_apply_times(times).unwrap();
-
-    // 2. fork new branch and create a uncle block
-    let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
-    let miner = mock_chain.miner();
-    let block = product_a_block(&fork_block_chain, miner, Vec::new());
-    let uncle_block_header = block.header().clone();
-    fork_block_chain.apply(block).unwrap();
-    (mock_chain, fork_block_chain, uncle_block_header)
-}
-
 fn product_a_block_by_tips(
     branch: &BlockChain,
     miner: &AccountInfo,
@@ -234,10 +208,6 @@ fn product_a_block_by_tips(
         .consensus()
         .create_block(block_template, branch.time_service().as_ref())
         .unwrap()
-}
-
-fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
-    product_a_block_by_tips(branch, miner, uncles, None, vec![])
 }
 
 #[stest::test]

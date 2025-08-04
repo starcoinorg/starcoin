@@ -1,15 +1,13 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{storage, BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
     block::BlockHeader,
-    startup_info::StartupInfo,
     system_events::{DeterminedDagBlock, NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
