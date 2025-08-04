@@ -7,7 +7,7 @@ futures = { workspace = true }
 futures-timer = { workspace = true }
 starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
-proptest = { features = ["std"], optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }
@@ -23,7 +23,10 @@ starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
-starcoin-dag = { workspace = true }
+
+# dependencies for move 2.0
+starcoin-vm2-storage = { workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }

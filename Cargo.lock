@@ -101,6 +101,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "adler2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
+
+[[package]]
 name = "aead"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -999,7 +1005,7 @@ dependencies = [
  "cc",
  "cfg-if 1.0.0",
  "libc",
- "miniz_oxide",
+ "miniz_oxide 0.6.2",
  "object",
  "rustc-demangle",
 ]
@@ -3382,23 +3388,12 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "errno"
-version = "0.3.1"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bcfec3a70f97c962c307b2d2c56e358cf1d00b558d74262b5f929ee8cc7e73a"
+checksum = "778e2ac28f6c47af28e4907f13ffd1e1ddbd400980a9abd7c8df189bf578a5ad"
 dependencies = [
- "errno-dragonfly",
  "libc",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "errno-dragonfly"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
-dependencies = [
- "cc",
- "libc",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3513,7 +3508,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ef1a30ae415c3a691a4f41afddc2dbcd6d70baf338368d85ebc1e8ed92cedb9"
 dependencies = [
  "cfg-if 1.0.0",
- "rustix",
+ "rustix 0.36.14",
  "windows-sys 0.45.0",
 ]
 
@@ -3568,6 +3563,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
+name = "filetime"
+version = "0.2.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35c0522e981e68cbfa8c3f978441a5f34b30b96e146b33cd3359176b50fe8586"
+dependencies = [
+ "cfg-if 1.0.0",
+ "libc",
+ "libredox",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "findshlibs"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3617,13 +3624,13 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flate2"
-version = "1.0.25"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8a2db397cb1c8772f31494cb8917e48cd1e64f0fa7efac59fbd741a0a8ce841"
+checksum = "4a3d7db9596fecd151c5f638c0ee5d5bd487b6e0ea232e5dc96d5250f6f94b1d"
 dependencies = [
  "crc32fast",
  "libz-sys",
- "miniz_oxide",
+ "miniz_oxide 0.8.9",
 ]
 
 [[package]]
@@ -4818,7 +4825,7 @@ checksum = "22e18b0a45d56fe973d6db23972bf5bc46f988a4a2385deac9cc29572f09daef"
 dependencies = [
  "hermit-abi 0.3.9",
  "io-lifetimes",
- "rustix",
+ "rustix 0.36.14",
  "windows-sys 0.45.0",
 ]
 
@@ -5628,6 +5635,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libredox"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "391290121bad3d37fbddad76d8f5d1c1c314cfc646d143d7e07a3086ddff0ce3"
+dependencies = [
+ "bitflags 2.9.1",
+ "libc",
+ "redox_syscall 0.5.17",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "0.11.0+8.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5703,9 +5721,9 @@ dependencies = [
 
 [[package]]
 name = "libz-sys"
-version = "1.1.8"
+version = "1.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9702761c3935f8cc2f101793272e202c72b99da8f4224a19ddcf1279a6450bbf"
+checksum = "8b70e7a7df205e92a1a4cd9aaae7898dac0aa555503cc0a649494d0d60e7651d"
 dependencies = [
  "cc",
  "pkg-config",
@@ -5741,6 +5759,12 @@ name = "linux-raw-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
+
+[[package]]
+name = "linux-raw-sys"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd945864f07fe9f5371a27ad7b52a172b4b499999f1d97574c9fa68373937e12"
 
 [[package]]
 name = "lock_api"
@@ -5998,6 +6022,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b275950c28b37e794e8c55d88aeb5e139d0ce23fdbbeda68f8d7174abdf9e8fa"
 dependencies = [
  "adler",
+]
+
+[[package]]
+name = "miniz_oxide"
+version = "0.8.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
+dependencies = [
+ "adler2",
 ]
 
 [[package]]
@@ -9836,9 +9869,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.8"
+version = "0.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03a862b389f93e68874fbf580b9de08dd02facb9a788ebadaf4a3fd33cf58834"
+checksum = "5407465600fb0548f1442edf71dd20683c6ed326200ace4b1ef0763521bb3b77"
 dependencies = [
  "bitflags 2.9.1",
 ]
@@ -10283,8 +10316,21 @@ dependencies = [
  "errno",
  "io-lifetimes",
  "libc",
- "linux-raw-sys",
+ "linux-raw-sys 0.1.4",
  "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "rustix"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11181fbabf243db407ef8df94a6ce0b2f9a733bd8be4ad02b4eda9602296cac8"
+dependencies = [
+ "bitflags 2.9.1",
+ "errno",
+ "libc",
+ "linux-raw-sys 0.9.4",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11513,7 +11559,8 @@ dependencies = [
  "async-std",
  "bcs-ext 1.13.19",
  "clap 3.2.23",
- "futures 0.3.31",
+ "flate2",
+ "log 0.4.27",
  "once_cell",
  "proptest",
  "proptest-derive 0.3.0",
@@ -11527,30 +11574,37 @@ dependencies = [
  "starcoin-chain-mock",
  "starcoin-config",
  "starcoin-consensus",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dag",
+ "starcoin-data-migration",
  "starcoin-executor",
  "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
  "starcoin-network-rpc-api",
  "starcoin-open-block",
- "starcoin-resource-viewer 1.13.19",
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-state-api 1.13.19",
  "starcoin-state-api 2.0.1",
  "starcoin-statedb 1.13.19",
+ "starcoin-statedb 2.0.1",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-time-service 1.13.19",
  "starcoin-transaction-builder 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
- "stdlib",
+ "starcoin-vm-types 2.0.1",
+ "starcoin-vm2-chain",
+ "starcoin-vm2-test-helper",
  "stest",
+ "tar",
+ "tempfile",
  "test-helper",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -11559,13 +11613,13 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bcs-ext 1.13.19",
  "futures 0.3.31",
  "network-api",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.205",
  "starcoin-accumulator 1.13.19",
- "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dag",
  "starcoin-network-rpc-api",
@@ -11577,6 +11631,7 @@ dependencies = [
  "starcoin-storage 1.13.19",
  "starcoin-time-service 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "starcoin-vm-types 1.13.19",
  "starcoin-vm-types 2.0.1",
  "thiserror",
@@ -11600,7 +11655,6 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-dag",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
@@ -11608,6 +11662,7 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 1.13.19",
  "thiserror",
@@ -11623,6 +11678,7 @@ dependencies = [
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-storage 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
 ]
 
 [[package]]
@@ -11630,26 +11686,23 @@ name = "starcoin-chain-service"
 version = "1.13.19"
 dependencies = [
  "anyhow",
- "async-std",
  "async-trait",
  "futures 0.3.31",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.205",
- "starcoin-accumulator 1.13.19",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
- "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-dag",
  "starcoin-logger 1.13.19",
- "starcoin-network-rpc-api",
+ "starcoin-metrics 2.0.1",
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-state-api 1.13.19",
  "starcoin-storage 1.13.19",
  "starcoin-storage 2.0.1",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
  "starcoin-vm-types 2.0.1",
@@ -11886,6 +11939,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-data-migration"
+version = "1.13.19"
+dependencies = [
+ "anyhow",
+ "bcs-ext 1.13.19",
+ "flate2",
+ "log 0.4.27",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-logger 1.13.19",
+ "starcoin-state-api 1.13.19",
+ "starcoin-statedb 1.13.19",
+ "starcoin-types 1.13.19",
+ "starcoin-vm-types 1.13.19",
+ "tar",
+ "tempfile",
+]
+
+[[package]]
 name = "starcoin-dataformat-generator"
 version = "1.13.19"
 dependencies = [
@@ -12059,7 +12131,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-force-upgrade"
-version = "2.0.2"
+version = "1.13.19"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12921,18 +12993,26 @@ dependencies = [
  "parking_lot 0.12.1",
  "starcoin-accumulator 1.13.19",
  "starcoin-chain-api",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-executor",
  "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
  "starcoin-state-api 1.13.19",
+ "starcoin-state-api 2.0.1",
  "starcoin-statedb 1.13.19",
+ "starcoin-statedb 2.0.1",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm2-executor",
  "stest",
+ "test-helper",
 ]
 
 [[package]]
@@ -14686,6 +14766,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
+name = "tar"
+version = "0.4.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d863878d212c87a19c1a610eb53bb01fe12951c0501cf5a0d65f724914a667a"
+dependencies = [
+ "filetime",
+ "libc",
+ "xattr",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16376,7 +16467,7 @@ version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "372d5b87f58ec45c384ba03563b03544dc5fadc3983e434b286913f5b4a9bb6d"
 dependencies = [
- "redox_syscall 0.5.8",
+ "redox_syscall 0.5.17",
  "wasite",
  "web-sys",
 ]
@@ -16827,6 +16918,16 @@ dependencies = [
  "rusticata-macros",
  "thiserror",
  "time 0.3.41",
+]
+
+[[package]]
+name = "xattr"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af3a19837351dc82ba89f8a125e22a3c475f05aba604acc023d62b2739ae2909"
+dependencies = [
+ "libc",
+ "rustix 1.0.8",
 ]
 
 [[package]]

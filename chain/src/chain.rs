@@ -1,8 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, FullVerifier};
-use anyhow::{bail, ensure, format_err, Ok, Result};
+use crate::{
+    fixed_blocks::MAIN_DIRECT_SAVE_BLOCK_HASH_MAP,
+    verifier::{BlockVerifier, FullVerifier},
+};
+use anyhow::{bail, ensure, format_err, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -13,6 +16,7 @@ use starcoin_chain_api::{
     ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof,
     TransactionInfoWithProof2, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -21,48 +25,48 @@ use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_executor::VMMetrics;
+use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_storage::table_info::StcTableInfoStore;
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::contract_event::{ContractEventInfo, StcContractEventInfo};
+use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
-    contract_event::ContractEvent,
+    block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
+    contract_event::{ContractEvent, ContractEventInfo},
     error::BlockExecutorError,
-    transaction::{SignedUserTransaction, Transaction},
+    transaction::{Transaction, SignedUserTransaction},
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
-use starcoin_vm2_chain::get_epoch_from_statedb as get_epoch_from_statedb2;
+use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb as get_epoch_from_statedb2};
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::{
+    access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
+    on_chain_resource::Epoch,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
-use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
@@ -1133,7 +1137,7 @@ impl BlockChain {
             );
         }
 
-        Ok(ExecutedBlock { block, block_info })
+        Ok(ExecutedBlock::new(block, block_info, multi_state))
     }
 
     pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
@@ -1198,7 +1202,10 @@ impl ChainReader for BlockChain {
     }
 
     fn head_block(&self) -> ExecutedBlock {
-        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone())
+        let state_root1 = self.statedb.0.state_root();
+        let state_root2 = self.statedb.1.state_root();
+        let multi_state = MultiState::new(state_root1, state_root2);
+        ExecutedBlock::new(self.status.head.clone(), self.status.status.info.clone(), multi_state)
     }
 
     fn current_header(&self) -> BlockHeader {
@@ -1531,7 +1538,7 @@ impl ChainReader for BlockChain {
             None
         };
         Ok(Some(TransactionInfoWithProof {
-            transaction_info,
+            transaction_info: transaction_info.into(),
             proof: txn_proof,
             event_proof,
             state_proof,
@@ -1947,6 +1954,24 @@ impl BlockChain {
         }
         Ok(())
     }
+
+    fn get_ghostdata(&self, block_hash: HashValue) -> Result<GhostdagData> {
+        self.dag.get_ghostdata(&block_hash)
+    }
+
+    fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<starcoin_vm2_vm_types::access_path::AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof2>> {
+        // TODO: Implement VM2 transaction proof generation
+        // This is a placeholder implementation for compilation
+        let _ = (block_id, transaction_global_index, event_index, access_path);
+        Ok(None)
+    }
+    
     // legacy: pruning height should alawys start from genesis.
     pub fn get_pruning_height(&self) -> BlockNumber {
         let chain_id = self.status().head().chain_id();
@@ -1958,18 +1983,19 @@ impl BlockChain {
             0
         }
     }
+
 }
 
 impl ChainWriter for BlockChain {
     fn can_connect(&self, executed_block: &ExecutedBlock) -> bool {
-        executed_block.block.header().parent_hash() == self.status.status.head().id()
+        executed_block.block().header().parent_hash() == self.status.status.head().id()
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         info!(
             "connect a dag block, {:?}, number: {:?}",
-            executed_block.block.id(),
-            executed_block.block.header().number(),
+            executed_block.block().id(),
+            executed_block.block().header().number(),
         );
         self.connect_dag(executed_block)
     }
@@ -1981,6 +2007,11 @@ impl ChainWriter for BlockChain {
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb.0
     }
+
+    fn chain_state2(&mut self) -> &ChainStateDB2 {
+        &self.statedb.1
+    }
+    
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<FullVerifier>(block)
     }

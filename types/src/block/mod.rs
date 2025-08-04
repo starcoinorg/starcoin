@@ -12,6 +12,7 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::multi_state::MultiState;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
@@ -772,6 +773,33 @@ impl BlockBody {
             uncles,
         }
     }
+    
+    /// Create BlockBody with dual-vm transactions (vm1 + vm2)
+    pub fn new_v2(
+        transactions_v1: Vec<SignedUserTransaction>,
+        transactions_v2: Vec<crate::multi_transaction::MultiSignedUserTransaction>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        let mut all_transactions = transactions_v1;
+        // Extract VM1 transactions from MultiSignedUserTransaction and append them
+        for txn_v2 in transactions_v2 {
+            match txn_v2 {
+                crate::multi_transaction::MultiSignedUserTransaction::VM1(vm1_txn) => {
+                    all_transactions.push(vm1_txn);
+                }
+                crate::multi_transaction::MultiSignedUserTransaction::VM2(_vm2_txn) => {
+                    // VM2 transactions are handled separately in dual-VM execution
+                    // They are not stored in the traditional BlockBody transactions field
+                    // The dual-VM executor will process them based on the VM2 state
+                    continue;
+                }
+            }
+        }
+        Self {
+            transactions: all_transactions,
+            uncles,
+        }
+    }
     pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
         self.transactions.get(index)
     }
@@ -1066,6 +1094,10 @@ impl BlockInfo {
         &self.txn_accumulator_info
     }
 
+    pub fn get_vm_state_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.vm_state_accumulator_info
+    }
+
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
@@ -1099,6 +1131,10 @@ pub struct BlockTemplate {
     pub block_accumulator_root: HashValue,
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
+    /// The vm1 state root
+    state_root1: HashValue,
+    /// The vm2 state root  
+    state_root2: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: u64,
     /// hash for block body
@@ -1124,6 +1160,8 @@ impl BlockTemplate {
         parent_block_accumulator_root: HashValue,
         accumulator_root: HashValue,
         state_root: HashValue,
+        state_root1: HashValue,
+        state_root2: HashValue,
         gas_used: u64,
         body: BlockBody,
         chain_id: ChainId,
@@ -1143,6 +1181,8 @@ impl BlockTemplate {
             author,
             txn_accumulator_root: accumulator_root,
             state_root,
+            state_root1,
+            state_root2,
             gas_used,
             body_hash: body.hash(),
             body,
@@ -1179,6 +1219,10 @@ impl BlockTemplate {
             header,
             body: self.body,
         }
+    }
+
+    pub fn state_roots(&self) -> (HashValue, HashValue, HashValue) {
+        (self.state_root, self.state_root1, self.state_root2)
     }
 
     fn as_raw_block_header(&self) -> RawBlockHeader {
@@ -1218,13 +1262,19 @@ impl BlockTemplate {
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct ExecutedBlock {
-    pub block: Block,
-    pub block_info: BlockInfo,
+    block: Block,
+    block_info: BlockInfo,
+    // only for inner system modules
+    state_root: MultiState,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        Self { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, state_root: MultiState) -> Self {
+        ExecutedBlock {
+            block,
+            block_info,
+            state_root,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {
@@ -1237,6 +1287,10 @@ impl ExecutedBlock {
 
     pub fn block_info(&self) -> &BlockInfo {
         &self.block_info
+    }
+
+    pub fn multi_state(&self) -> &MultiState {
+        &self.state_root
     }
 
     pub fn header(&self) -> &BlockHeader {

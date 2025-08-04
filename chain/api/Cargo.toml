@@ -1,27 +1,30 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+bcs-ext = { workspace = true }
 futures = { workspace = true }
 network-api = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
-serde = { features = ["derive"], workspace = true }
+rand_core = { workspace = true }
+serde = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm2-vm-types = { workspace = true }
+thiserror = { workspace = true }
+# dag dependencies
+starcoin-dag = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
+# dependencies for move2
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
-thiserror = { workspace = true }
-starcoin-network-rpc-api = { workspace = true }
-starcoin-config = { workspace = true }
-starcoin-dag = { workspace = true }
-starcoin-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 
