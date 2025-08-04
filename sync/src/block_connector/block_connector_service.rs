@@ -232,13 +232,17 @@ where
     }
 }
 
+// To select the state and update startup info
 impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
     for BlockConnectorService<TransactionPoolServiceT>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        info!("jacktest: NewDagBlock in block connector, start");
+        debug!(
+            "[BlockProcess] handle NewDagBlock for selecting the header: {}",
+            msg.executed_block.block.id()
+        );
         let block_header = match self
             .chain_service
             .switch_header(msg.executed_block.header())
@@ -253,6 +257,11 @@ where
                 return;
             }
         };
+
+        debug!(
+            "[BlockProcess] select the header: {}",
+            self.chain_service.get_main().current_header().id()
+        );
 
         let _consume = self
             .pruning_point_channel

@@ -172,40 +172,16 @@ pub fn get_next_target_helper(
             }
             blocks_in_same_number.reverse();
             // let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
-            let mut total_v_block_time: u64 = blocks_in_same_number
+            let total_v_block_time: u64 = blocks_in_same_number
                 .first()
                 .unwrap()
                 .timestamp
                 .saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
-            // for (idx, diff_info) in blocks_in_same_number.iter().enumerate() {
-            //     if idx == 0 {
-            //         continue;
-            //     }
-            //     total_v_block_time = total_v_block_time
-            //         .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-            //     // v_blocks = v_blocks.saturating_add(idx);
-            // }
-
-            // let total_v_block_time = blocks
-            //     .first()
-            //     .unwrap()
-            //     .timestamp
-            //     .saturating_sub(blocks.last().unwrap().timestamp);
-            let total_transaction_time = blocks
-                .iter()
-                .flat_map(|(_number, diff)| {
-                    diff.iter()
-                        .map(|diff| diff.transaction_count)
-                        .collect::<Vec<u64>>()
-                })
-                .sum::<u64>();
-            total_v_block_time =
-                total_v_block_time.saturating_sub(total_transaction_time.saturating_mul(2));
 
             let avg_time = total_v_block_time
                 .checked_div(v_blocks as u64)
                 .ok_or_else(|| format_err!("calculate avg time overflow"))?;
-            info!("jacktest: total_v_block_time: {:?}, total_transaction_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, total_transaction_time, v_blocks, avg_time, avg_target, time_plan);
+            info!("total_v_block_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, v_blocks, avg_time, avg_target, time_plan);
             avg_time
         }
     };

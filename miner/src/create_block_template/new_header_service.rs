@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
-use starcoin_logger::prelude::{error, info, warn};
+use starcoin_logger::prelude::{debug, error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
@@ -124,12 +124,6 @@ impl ServiceFactory<Self> for NewHeaderService {
 
 impl NewHeaderService {
     fn resolve_header(&mut self, header: &BlockHeader) -> anyhow::Result<bool> {
-        info!(
-            "resolve_header: new header: {:?}, current header: {:?}",
-            header.id(),
-            self.header.id()
-        );
-
         if header.id() == self.header.id() {
             return Ok(false);
         }
@@ -168,12 +162,7 @@ impl NewHeaderService {
         header: &BlockHeader,
         ctx: &mut ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        info!("jacktest: new dag block, determine_header: new header: {:?}, number: {:?}, current header: {:?}, number: {:?}", header.id(), header.number(), self.header.id(), self.header.number());
         if self.resolve_header(header)? {
-            info!(
-                "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
-                header.id()
-            );
             let _consume = self
                 .new_header_channel
                 .new_header_receiver
@@ -189,11 +178,8 @@ impl NewHeaderService {
                     warn!("Failed to send new head block: {:?} in NewHeaderService", e);
                 }
             }
-        } else {
-            info!("resolve header returns false");
         }
-
-        info!("jacktest: determine header start");
+        debug!("[BlockProcess]determine_header finish, now trigger the minting process");
         ctx.broadcast(DeterminedDagBlock);
 
         Ok(())
@@ -224,8 +210,8 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
-        info!(
-            "handle_event: NewDagBlock, msg: {:?}",
+        debug!(
+            "[BlockProcess]handle_event: NewDagBlock for determine header to mint a new block, msg: {:?}",
             msg.executed_block.header().id()
         );
         match self.determine_header(msg.executed_block.header(), ctx) {

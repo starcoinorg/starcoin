@@ -15,7 +15,7 @@ use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{debug, error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
@@ -73,10 +73,8 @@ enum ReceiveHeader {
 
 impl BlockBuilderService {
     fn receive_header(&mut self) -> ReceiveHeader {
-        info!("jacktest: receive header in block builder service");
         match self.new_header_channel.new_header_receiver.try_recv() {
             Ok(new_header) => {
-                info!("jacktest: receive header in block builder service2");
                 match self
                     .inner
                     .set_current_block_header(new_header.as_ref().clone())
@@ -266,20 +264,18 @@ where
     }
 
     fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
-        info!("jacktest: block template resolve block parents");
+        debug!("[BlockProcess] start to resolve block parents");
         let MineNewDagBlockInfo {
             selected_parents,
             ghostdata,
             pruning_point,
         } = {
-            info!("jacktest: block template main is {:?}", self.main);
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
             let pruning_point = if self.main.pruning_point() == HashValue::zero() {
                 self.genesis_hash
             } else {
                 self.main.pruning_point()
             };
-            info!("jacktest: block template resolve block parents2");
 
             // calculate the next pruning point and
             // prune the tips and
@@ -295,10 +291,8 @@ where
                     .get_genesis()?
                     .expect("genesis not found when resolve block parents"),
             )?;
-            info!("jacktest: block template resolve block parents3");
 
             self.update_main_chain(ghostdata.selected_parent)?;
-            info!("jacktest: block template resolve block parents4");
 
             // filter the parent candidates that bring too many ancestors which are not the descendants of the selected parent
             let parents_candidates = self.merge_size_limit_filter(
@@ -308,14 +302,12 @@ where
                     .filter(|id| *id != ghostdata.selected_parent)
                     .collect(),
             )?;
-            info!("jacktest: block template resolve block parents5");
 
             let merge_bound_hash = get_merge_bound_hash(
                 ghostdata.selected_parent,
                 self.dag.clone(),
                 self.storage.clone(),
             )?;
-            info!("jacktest: block template resolve block parents6");
 
             let (selected_parents, ghostdata) = self.dag.remove_bounded_merge_breaking_parents(
                 parents_candidates,
@@ -323,10 +315,8 @@ where
                 pruning_point,
                 merge_bound_hash,
             )?;
-            info!("jacktest: block template resolve block parents7");
 
             self.update_main_chain(ghostdata.selected_parent)?;
-            info!("jacktest: block template resolve block parents8");
 
             MineNewDagBlockInfo {
                 selected_parents,
@@ -335,11 +325,12 @@ where
             }
         };
 
-        info!("jacktest: block template resolve block parents9");
         let selected_parent = ghostdata.selected_parent;
 
-        info!("jacktest: block template resolve block parents11");
-
+        debug!(
+            "[BlockProcess] selected parent: {}, and now initialize the chain object",
+            selected_parent
+        );
         let main = BlockChain::new(
             self.config.net().time_service().clone(),
             selected_parent,
@@ -347,8 +338,11 @@ where
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
+        debug!(
+            "[BlockProcess] selected parent: {}, and finish to initialize the chain object",
+            selected_parent
+        );
 
-        info!("jacktest: block template resolve block parents11.1");
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
         let max_transaction_per_block = epoch.max_transaction_per_block();
@@ -357,11 +351,10 @@ where
             .storage
             .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
-        info!("jacktest: block template resolve block parents12");
         let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
-        info!("jacktest: block template resolve block parents13");
         let now_milliseconds = self.config.net().time_service().now_millis();
 
+        debug!("[BlockProcess] finish to resolve block parents");
         Ok((
             MinerResponse {
                 previous_header,
@@ -379,7 +372,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
-        info!("jacktest: create block template 1");
+        debug!("[BlockProcess] create_block_template start");
         let (
             MinerResponse {
                 previous_header,
@@ -394,25 +387,23 @@ where
             },
             main,
         ) = self.resolve_block_parents()?;
-        info!("jacktest: create block template 2");
+
+        debug!("[BlockProcess] create_block_template resolve_block_parents finish");
 
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        info!("jacktest: create block template 3");
 
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = min((block_gas_limit / 200) * 2, max_transaction_per_block);
-        info!("jacktest: create block template 4");
 
         let author = *self
             .miner_account
             .read()
             .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
             .address();
-        info!("jacktest: create block template 5");
 
         if now_millis <= previous_header.timestamp() {
             info!(
@@ -421,7 +412,6 @@ where
             );
             now_millis = previous_header.timestamp() + 1;
         }
-        info!("jacktest: create block template 6");
 
         let blue_blocks = ghostdata
             .mergeset_blues
@@ -434,8 +424,6 @@ where
                 op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
             })
             .collect::<Result<Vec<Block>>>()?;
-
-        info!("jacktest: create block template 7");
 
         let uncles = blue_blocks
             .iter()
@@ -470,13 +458,18 @@ where
             main.statedb(),
         )?;
 
+        debug!("[BlockProcess] create_block_template now to fetch transactions");
+
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
         let excluded_txns = opened_block.push_txns(txn)?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
+        debug!("[BlockProcess] create_block_template finish to fetch and execlude transactions");
 
         let template = opened_block.finalize()?;
+
+        debug!("[BlockProcess] create_block_template finish");
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
@@ -567,13 +560,10 @@ where
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
-        info!("jacktest: receive header in block builder service3");
         if self.main.id() == header.id() {
             return Ok(());
         }
-        info!("jacktest: receive header in block builder service4");
         self.main = header;
-        info!("jacktest: receive header in block builder service5");
         Ok(())
     }
 

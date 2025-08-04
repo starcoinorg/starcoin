@@ -192,12 +192,11 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        info!("jacktest: dispatch task1");
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
-            info!("jacktest: dispatch task2");
+            debug!("[BlockProcess] start to create block template");
             let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
                 .await
@@ -247,7 +246,7 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         block_template: BlockTemplate,
     ) -> Result<()> {
-        debug!("Mint block template: {:?}", block_template);
+        debug!("[BlockProcess] Mint block template: {:?}", block_template);
         let difficulty = block_template.difficulty;
         let strategy = block_template.strategy;
         let number = block_template.number;
@@ -275,7 +274,7 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        info!("jacktest: finish_task");
+        debug!("[BlockProcess] start to finish task");
         if self.task_pool.is_empty() {
             return Err(MinerError::TaskEmptyError.into());
         }
@@ -287,13 +286,9 @@ impl MinerService {
             let task = self.task_pool.remove(index);
 
             let block = task.finish(nonce, extra);
+            debug!("[BlockProcess] nonce task finish, block id: {}", block.id());
             let block_hash: HashValue = block.id();
-            info!(target: "miner", "Minted new block: {}", block);
-            info!(
-                "jacktest: finish_task, start to broadcast mined block: {:?}, number: {:?}",
-                block_hash,
-                block.header().number()
-            );
+            info!(target: "miner", "Minted new block: {}", block.header().id());
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();

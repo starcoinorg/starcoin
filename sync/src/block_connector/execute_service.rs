@@ -6,7 +6,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::{debug, error, info};
+use starcoin_logger::prelude::{debug, error};
 use starcoin_service_registry::{
     bus::Bus, ActorService, EventHandler, ServiceContext, ServiceFactory,
 };
@@ -35,6 +35,10 @@ impl ExecuteService {
     }
 
     fn execute(&self, new_block: Block) -> Result<ExecutedBlock> {
+        debug!(
+            "[BlockProcess]start to initialize the chain for executing the block: {}",
+            new_block.id()
+        );
         let mut chain = BlockChain::new(
             self.time_service.clone(),
             new_block.header().parent_hash(),
@@ -49,10 +53,9 @@ impl ExecuteService {
             )
         });
 
-        info!(
-            "jacktest: verify, start to verify the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
+        debug!(
+            "[BlockProcess]start to verify the block: {}",
+            new_block.id()
         );
         let id = new_block.id();
         let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block) {
@@ -65,12 +68,11 @@ impl ExecuteService {
                 return Err(e);
             }
         };
-        info!(
-            "jacktest: verify, end to verify the mined block id: {:?}, number: {:?}",
-            verified_block.block.id(),
-            verified_block.block.header().number()
-        );
 
+        debug!(
+            "[BlockProcess]start to execute the block: {}",
+            verified_block.block.id()
+        );
         let executed_block = match chain.execute(verified_block) {
             std::result::Result::Ok(executed_block) => executed_block,
             Err(e) => {
@@ -81,12 +83,11 @@ impl ExecuteService {
                 return Err(e);
             }
         };
-        info!(
-            "jacktest: execute, end to execute the mined block id: {:?}, number: {:?}",
-            executed_block.block.id(),
-            executed_block.block.header().number()
-        );
 
+        debug!(
+            "[BlockProcess]start to connect the block: {}",
+            executed_block.block.id()
+        );
         match chain.connect(executed_block.clone()) {
             std::result::Result::Ok(_) => (),
             Err(e) => {
@@ -94,10 +95,10 @@ impl ExecuteService {
                 return Err(e);
             }
         }
-        info!(
-            "jacktest: connect, end to execute the mined block id: {:?}, number: {:?}",
-            executed_block.block.id(),
-            executed_block.block().header().number()
+
+        debug!(
+            "[BlockProcess]finish to execute the block: {}",
+            executed_block.block.id()
         );
 
         Ok(executed_block)
@@ -131,6 +132,10 @@ impl ActorService for ExecuteService {
 
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
+        debug!(
+            "[BlockProcess] now start to execute the block from a peer: {}, firstly, check it",
+            msg.get_block().id()
+        );
         let block = msg.get_block();
 
         let block_info = self
@@ -152,6 +157,10 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                 return;
             }
         }
+        debug!(
+            "[BlockProcess] now start to execute the block from a peer: {}",
+            msg.get_block().id()
+        );
 
         match self.execute(msg.get_block().clone()) {
             std::result::Result::Ok(executed_block) => {
