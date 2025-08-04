@@ -1012,6 +1012,20 @@ impl BlockChain {
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
+        
+        // Check if this block's execution data is pre-computed in MAIN_DIRECT_SAVE_BLOCK_HASH_MAP
+        // This optimization avoids re-executing certain known blocks
+        if let Some((pre_executed_data, pre_block_info)) = MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&block_id) {
+            info!("Using pre-computed execution data for block {}", block_id);
+            // TODO: VM2_DAG_COMPATIBILITY - ExecutedBlock constructor signature
+            // ExecutedBlock::new expects MultiState but pre_executed_data has HashValue state_root
+            // For now use MultiState with the pre-computed state_root
+            let multi_state = starcoin_types::multi_state::MultiState::new(
+                pre_executed_data.state_root,
+                pre_executed_data.state_root, // Use same state root for both VM1 and VM2 for compatibility
+            );
+            return Ok(ExecutedBlock::new(block, pre_block_info.clone(), multi_state));
+        }
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
             let mut t = match &parent_status {

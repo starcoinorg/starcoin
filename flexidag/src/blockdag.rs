@@ -1118,4 +1118,13 @@ impl BlockDAG {
         let val = (self.ghost_dag_manager().k() as u64) << 1;
         val.clamp(180, 512)
     }
+
+    /// Get ghostdata for a specific block hash
+    /// Required by ChainReader trait for DAG functionality
+    pub fn get_ghostdata(&self, block_hash: HashValue) -> anyhow::Result<GhostdagData> {
+        match self.ghostdata_by_hash(block_hash)? {
+            Some(ghostdata) => Ok((*ghostdata).clone()),
+            None => bail!("Ghostdata not found for block hash: {}", block_hash),
+        }
+    }
 }
