@@ -146,7 +146,7 @@ impl BlockChain {
 
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
-        let epoch = get_epoch_from_statedb(&chain_state)?;
+        let epoch = get_epoch_from_statedb2(&chain_state2)?;
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
@@ -239,10 +239,7 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        // TODO: VM2_DAG_COMPATIBILITY - ConsensusStrategy type mismatch
-        // epoch.strategy() returns u8 but ConsensusStrategy expected
-        // Preserve DAG consensus logic
-        ConsensusStrategy::try_from(self.epoch.strategy()).unwrap_or(ConsensusStrategy::CryptoNight)
+        ConsensusStrategy::try_from(self.epoch.strategy()).expect("epoch consensus must be valid")
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -396,9 +393,7 @@ impl BlockChain {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
         let strategy = epoch.strategy();
-        // TODO: VM2_DAG_COMPATIBILITY - ConsensusStrategy method access
-        // strategy is u8, need ConsensusStrategy for calculate_next_difficulty
-        let consensus_strategy = ConsensusStrategy::try_from(strategy).unwrap_or(ConsensusStrategy::CryptoNight);
+        let consensus_strategy = ConsensusStrategy::try_from(strategy).expect("epoch consensus must be valid");
         let difficulty = consensus_strategy.calculate_next_difficulty(self)?;
 
         let (ghostdata, tips) = if tips.is_empty() {
@@ -644,7 +639,7 @@ impl BlockChain {
             self.statedb.0.fork_at(selected_head.header.state_root()),
             self.statedb.1.fork_at(selected_head.header.state_root()),
         );
-        let epoch = get_epoch_from_statedb(&statedb.0)?;
+        let epoch = get_epoch_from_statedb2(&statedb.1)?;
         info!(
             "execute dag before, block id: {:?}, block time target in epoch: {:?}",
             selected_head.header().id(),
@@ -1054,11 +1049,9 @@ impl BlockChain {
             vm_metrics.clone(),
         )?;
 
-        // TODO: TECHNICAL DEBT - VM2 transactions are not properly extracted from block
-        // Currently BlockBody.new_v2() discards VM2 transactions (see line 790-795 in types/block/mod.rs)
-        // This means we cannot access original VM2 transactions here for dual-VM execution
-        // As a temporary fix, we'll create empty VM2 transaction list
-        let vm2_transactions: &[starcoin_vm2_vm_types::transaction::SignedUserTransaction] = &[];
+        // Extract VM2 transactions from block body
+        // With the fixed BlockBody structure, we can now properly access VM2 transactions
+        let vm2_transactions = &block.body.transactions2;
         let vm2_block_meta = parent_status.as_ref().map(|p| {
             // TODO: VM2_DAG_COMPATIBILITY - BlockMetadata conversion issues  
             // VM1 and VM2 BlockMetadata have different constructor signatures and field access
@@ -1261,10 +1254,79 @@ impl ChainReader for BlockChain {
         event_index: Option<u64>,
         access_path: Option<starcoin_vm2_vm_types::access_path::AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof2>> {
-        // TODO: Implement VM2 transaction proof generation
-        // This is a placeholder implementation for compilation
-        let _ = (block_id, transaction_global_index, event_index, access_path);
-        Ok(None)
+        let (storage, _) = &self.storage;
+        let (_, statedb2) = &self.statedb;
+        let block_info = match self.get_block_info(Some(block_id))? {
+            Some(block_info) => block_info,
+            None => return Ok(None),
+        };
+        let accumulator = self
+            .txn_accumulator
+            .fork(Some(block_info.txn_accumulator_info));
+        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
+            Some(proof) => proof,
+            None => return Ok(None),
+        };
+
+        // If can get proof by leaf_index, the leaf and transaction info should exist.
+        let txn_info_hash = accumulator
+            .get_leaf(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Can not find txn info hash by index {}",
+                    transaction_global_index
+                )
+            })?;
+        let transaction_info = storage
+            .get_transaction_info(txn_info_hash)?
+            .and_then(|i| i.to_v2())
+            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
+
+        let event_proof = if let Some(event_index) = event_index {
+            let events = storage
+                .get_contract_events_v2(txn_info_hash)?
+                .unwrap_or_default();
+            let events = events
+                .into_iter()
+                .filter_map(|e| e.to_v2())
+                .collect::<Vec<_>>();
+            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                format_err!("event index out of range, events len:{}", events.len())
+            })?;
+            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+            let event_proof =
+                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
+            Some(EventWithProof2 {
+                event,
+                proof: event_proof,
+            })
+        } else {
+            None
+        };
+        let state_proof = if let Some(access_path) = access_path {
+            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash());
+            let state_key = match access_path.path {
+                DataPath2::Code(module_name) => {
+                    StateKey::module(&access_path.address, &module_name)
+                }
+                DataPath2::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, &struct_tag)?
+                }
+                DataPath2::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, &struct_tag)
+                }
+            };
+            Some(statedb.get_with_proof(&state_key)?)
+        } else {
+            None
+        };
+        Ok(Some(TransactionInfoWithProof2 {
+            transaction_info,
+            proof: txn_proof,
+            event_proof,
+            state_proof,
+        }))
     }
     fn info(&self) -> ChainInfo {
         ChainInfo::new(
@@ -1586,7 +1648,8 @@ impl ChainReader for BlockChain {
         let transaction_info = self
             .storage.0
             .get_transaction_info(txn_info_hash)?
-            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
+            .and_then(|i| i.to_v1())
+            .ok_or_else(|| format_err!("Can not find V1 txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
             let events = self
@@ -1615,26 +1678,8 @@ impl ChainReader for BlockChain {
         } else {
             None
         };
-        // TODO: VM2_DAG_COMPATIBILITY - StcRichTransactionInfo to RichTransactionInfo conversion
-        // StcRichTransactionInfo has different field structure than legacy::RichTransactionInfo
-        // Preserve dual-VM logic by using correct field mapping
-        let legacy_transaction_info = starcoin_types::transaction::legacy::RichTransactionInfo {
-            block_id: transaction_info.block_id,
-            block_number: transaction_info.block_number,
-            // TODO: VM2_DAG_COMPATIBILITY - StcTransactionInfo to TransactionInfo conversion
-            // StcTransactionInfo doesn't have Into<TransactionInfo>, extract the inner value
-            transaction_info: match transaction_info.transaction_info {
-                starcoin_types::transaction::StcTransactionInfo::V1(info) => info,
-                starcoin_types::transaction::StcTransactionInfo::V2(_info) => {
-                    // TODO: Handle V2 transaction info properly
-                    return Err(format_err!("V2 transaction info not yet supported in proof generation"));
-                }
-            },
-            transaction_index: transaction_info.transaction_index,
-            transaction_global_index: transaction_info.transaction_global_index,
-        };
         Ok(Some(TransactionInfoWithProof {
-            transaction_info: legacy_transaction_info,
+            transaction_info,
             proof: txn_proof,
             event_proof,
             state_proof,
@@ -1949,7 +1994,7 @@ impl BlockChain {
             head: block.clone(),
             multi_state: MultiState::new(state_root, state_root),
         };
-        self.epoch = get_epoch_from_statedb(&self.statedb.0)?;
+        self.epoch = get_epoch_from_statedb2(&self.statedb.1)?;
         if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
             let start_block_id = self
                 .get_block_by_number(self.epoch.start_block_number())?
@@ -2108,30 +2153,3 @@ pub(crate) fn info_2_accumulator(
     )
 }
 
-fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
-    // TODO: VM2_DAG_COMPATIBILITY - Epoch MoveResource trait missing  
-    // starcoin_vm_types::on_chain_resource::Epoch doesn't implement MoveResource
-    // Preserve DAG logic: try direct access first, fallback to manual deserialization
-    let account_reader = AccountStateReader::new(statedb);
-    
-    // TODO: VM2_DAG_COMPATIBILITY - simplified epoch access for compilation
-    // Placeholder implementation to bypass MoveResource trait and get/StructTag issues
-    let _unused = account_reader; // Prevent unused variable warning
-    // TODO: VM2_DAG_COMPATIBILITY - Epoch constructor with correct EventHandle
-    // Use the EventHandle from starcoin_vm2_vm_types that matches Epoch requirements
-    use starcoin_vm2_vm_types::event::{EventHandle, EventKey};
-    Ok(Epoch::new(
-        0, // number
-        0, // start_block_number  
-        0, // end_block_number
-        0, // block_time_target
-        0, // strategy
-        0, // reward_per_block
-        0, // reward_per_uncle_percent
-        0, // block_difficulty_window
-        0, // max_uncles_per_block
-        0, // block_gas_limit
-        0, // start_time
-        EventHandle::new(EventKey::new(0u64, starcoin_vm2_vm_types::PeerId::from([0u8; 16])), 0), // change_events
-    ))
-}

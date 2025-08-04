@@ -386,12 +386,7 @@ impl OpenedBlock {
         } else {
             None
         };
-        // Convert VM2 transactions to MultiSignedUserTransaction
-        let multi_txns2: Vec<MultiSignedUserTransaction> = self.included_user_txns2
-            .into_iter()
-            .map(|txn| MultiSignedUserTransaction::VM2(txn))
-            .collect();
-        let body = BlockBody::new_v2(self.included_user_txns, multi_txns2, uncles);
+        let body = BlockBody::new_v2(self.included_user_txns, self.included_user_txns2, uncles);
         // Extract version and pruning_point from block_meta or use defaults
         let version = 0u32; // Default version for new blocks
         let pruning_point = HashValue::zero(); // Default pruning point

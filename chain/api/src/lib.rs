@@ -5,7 +5,9 @@
 use anyhow::{bail, format_err, Result};
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::proof::AccumulatorProof;
+// Import both versions of AccumulatorProof to handle the type mismatch
+use starcoin_accumulator::proof::AccumulatorProof as WorkspaceAccumulatorProof;
+use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{
     multi_transaction::MultiSignedUserTransaction, transaction::legacy::RichTransactionInfo,
@@ -30,11 +32,10 @@ use starcoin_crypto::HashValue;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
-// Temporarily commented out due to type compatibility issues
-// use starcoin_vm2_types::view::{
-//     EventWithProofView as EventWithProofView2, StrView as StrView2,
-//     TransactionInfoWithProofView as TransactionInfoWithProofView2,
-// };
+use starcoin_vm2_types::view::{
+    EventWithProofView as EventWithProofView2, StrView as StrView2,
+    TransactionInfoWithProofView as TransactionInfoWithProofView2,
+};
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {
@@ -53,7 +54,7 @@ impl ExcludedTxns {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct EventWithProof {
     pub event: ContractEvent,
-    pub proof: AccumulatorProof,
+    pub proof: WorkspaceAccumulatorProof,
 }
 
 impl EventWithProof {
@@ -66,7 +67,7 @@ impl EventWithProof {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof {
     pub transaction_info: RichTransactionInfo,
-    pub proof: AccumulatorProof,
+    pub proof: WorkspaceAccumulatorProof,
     pub event_proof: Option<EventWithProof>,
     pub state_proof: Option<StateWithProof>,
 }
@@ -127,7 +128,7 @@ impl TransactionInfoWithProof {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct EventWithProof2 {
     pub event: ContractEvent2,
-    pub proof: AccumulatorProof,
+    pub proof: WorkspaceAccumulatorProof,
 }
 
 impl EventWithProof2 {
@@ -140,7 +141,7 @@ impl EventWithProof2 {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof2 {
     pub transaction_info: RichTransactionInfo2,
-    pub proof: AccumulatorProof,
+    pub proof: WorkspaceAccumulatorProof,
     pub event_proof: Option<EventWithProof2>,
     pub state_proof: Option<StateWithProof2>,
 }
@@ -198,21 +199,24 @@ impl TransactionInfoWithProof2 {
     }
 }
 
-// Temporarily commented out due to type compatibility issues
+// Temporarily commented out due to AccumulatorProof version incompatibility
+// Different versions of starcoin-accumulator in git dependencies vs workspace cause type conflicts
 // impl From<EventWithProof2> for EventWithProofView2 {
 //     fn from(origin: EventWithProof2) -> Self {
 //         Self {
 //             event: StrView2(origin.event.encode().expect("encode event should succeed")),
-//             proof: origin.proof.into(),
+//             proof: WorkspaceAccumulatorProof::new(origin.proof.siblings().to_vec()).into(),
 //         }
 //     }
 // }
 
+// Temporarily commented out due to AccumulatorProof version incompatibility
+// Different versions of starcoin-accumulator in git dependencies vs workspace cause type conflicts
 // impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
 //     fn from(origin: TransactionInfoWithProof2) -> Self {
 //         Self {
 //             transaction_info: origin.transaction_info.into(),
-//             proof: origin.proof.into(),
+//             proof: WorkspaceAccumulatorProof::new(origin.proof.siblings().to_vec()).into(),
 //             event_proof: origin.event_proof.map(Into::into),
 //             state_proof: origin.state_proof.map(Into::into),
 //         }

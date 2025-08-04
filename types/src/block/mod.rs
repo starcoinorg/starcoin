@@ -762,52 +762,64 @@ impl BlockHeaderBuilder {
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
+    pub transactions2: Vec<starcoin_vm2_vm_types::transaction::SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
-        Self {
-            transactions,
-            uncles,
-        }
-    }
-    
-    /// Create BlockBody with dual-vm transactions (vm1 + vm2)
-    pub fn new_v2(
-        transactions_v1: Vec<SignedUserTransaction>,
-        transactions_v2: Vec<crate::multi_transaction::MultiSignedUserTransaction>,
+    pub fn new(
+        multi_transactions: Vec<crate::multi_transaction::MultiSignedUserTransaction>,
         uncles: Option<Vec<BlockHeader>>,
     ) -> Self {
-        let mut all_transactions = transactions_v1;
-        // Extract VM1 transactions from MultiSignedUserTransaction and append them
-        for txn_v2 in transactions_v2 {
-            match txn_v2 {
-                crate::multi_transaction::MultiSignedUserTransaction::VM1(vm1_txn) => {
-                    all_transactions.push(vm1_txn);
+        let mut transactions = vec![];
+        let mut transactions2 = vec![];
+        for txn in multi_transactions {
+            match txn {
+                crate::multi_transaction::MultiSignedUserTransaction::VM1(txn) => {
+                    transactions.push(txn);
                 }
-                crate::multi_transaction::MultiSignedUserTransaction::VM2(_vm2_txn) => {
-                    // VM2 transactions are handled separately in dual-VM execution
-                    // They are not stored in the traditional BlockBody transactions field
-                    // The dual-VM executor will process them based on the VM2 state
-                    continue;
+                crate::multi_transaction::MultiSignedUserTransaction::VM2(txn) => {
+                    transactions2.push(txn);
                 }
             }
         }
         Self {
-            transactions: all_transactions,
+            transactions,
+            transactions2,
             uncles,
+        }
+    }
+    
+    pub fn new_v2(
+        transactions: Vec<SignedUserTransaction>,
+        transactions2: Vec<starcoin_vm2_vm_types::transaction::SignedUserTransaction>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        Self {
+            transactions,
+            transactions2,
+            uncles,
+        }
+    }
+    
+    /// Just for test
+    pub fn new_empty() -> BlockBody {
+        BlockBody {
+            transactions: Vec::new(),
+            transactions2: Vec::new(),
+            uncles: None,
         }
     }
     pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
         self.transactions.get(index)
     }
 
-    /// Just for test
-    pub fn new_empty() -> Self {
+    /// Just for test (old version, kept for compatibility)
+    pub fn new_empty_legacy() -> Self {
         Self {
             transactions: Vec::new(),
+            transactions2: Vec::new(),
             uncles: None,
         }
     }
@@ -822,6 +834,7 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
         BlockBody {
             transactions: self,
+            transactions2: Vec::new(),
             uncles: None,
         }
     }
@@ -838,6 +851,7 @@ impl Sample for BlockBody {
     fn sample() -> Self {
         Self {
             transactions: vec![],
+            transactions2: vec![],
             uncles: None,
         }
     }
@@ -903,7 +917,7 @@ impl Block {
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
-        let block_body = BlockBody::new(vec![genesis_txn], None);
+        let block_body = BlockBody::new(vec![crate::multi_transaction::MultiSignedUserTransaction::VM1(genesis_txn)], None);
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
@@ -975,6 +989,7 @@ impl Block {
                 SignedUserTransaction::sample(),
                 SignedUserTransaction::sample(),
             ],
+            transactions2: Vec::new(),
             uncles: Some(vec![uncle1, uncle2]),
         };
 
