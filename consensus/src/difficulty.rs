@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::convert::TryFrom;
 
 /// Get the target of next pow work
@@ -80,7 +80,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     for blue_block in blue_block_set.iter() {
         blue_block_in_order
             .entry(blue_block.header().number())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(blue_block.try_into()?);
     }
 
@@ -115,7 +115,14 @@ pub fn get_next_target_helper(
         bail!("block diff info is empty")
     }
     if blocks.len() == 1 {
-        return Ok(blocks.first_key_value().unwrap().1.last().unwrap().target);
+        return Ok(blocks
+            .iter()
+            .next()
+            .expect("block diff info is empty")
+            .1
+            .last()
+            .unwrap()
+            .target);
     }
     // let block_n = blocks.iter().map(|(_number, diff)| diff.len()).sum::<usize>() as u64;
     let mut block_n: u64 = 0;
@@ -139,16 +146,18 @@ pub fn get_next_target_helper(
             unreachable!()
         }
         Ordering::Equal => blocks
-            .last_key_value()
-            .unwrap()
+            .iter()
+            .last()
+            .expect("block diff info is empty")
             .1
             .last()
             .unwrap()
             .timestamp
             .saturating_sub(
                 blocks
-                    .first_key_value()
-                    .unwrap()
+                    .iter()
+                    .next()
+                    .expect("block diff info is empty")
                     .1
                     .last()
                     .unwrap()

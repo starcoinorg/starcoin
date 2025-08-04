@@ -15,9 +15,6 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain::verifier::FullVerifier;
-use starcoin_chain::BlockChain;
-use starcoin_chain::ChainWriter;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_dag::blockdag::BlockDAG;
@@ -26,12 +23,10 @@ use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
-use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::PeerNewBlock;
 use starcoin_sync_api::SelectHeaderState;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -41,8 +36,7 @@ use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
-use starcoin_types::system_events::NewDagBlockFromPeer;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+use starcoin_types::system_events::{SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
@@ -401,7 +395,6 @@ where
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
-        } else {
         }
     }
 }

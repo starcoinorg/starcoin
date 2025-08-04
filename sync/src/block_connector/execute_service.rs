@@ -26,12 +26,8 @@ pub struct ExecuteService {
 }
 
 impl ExecuteService {
-    fn new(
-        time_service: Arc<dyn TimeService>,
-        storage: Arc<Storage>,
-        dag: BlockDAG,
-    ) -> ExecuteService {
-        ExecuteService {
+    fn new(time_service: Arc<dyn TimeService>, storage: Arc<Storage>, dag: BlockDAG) -> Self {
+        Self {
             time_service,
             storage,
             dag,
@@ -142,7 +138,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
             .get_block_info(block.header().parent_hash())
             .expect("get block info error in execute service");
         if block_info.is_none() {
-            let _ = ctx.broadcast(CheckSyncEvent::default());
+            ctx.broadcast(CheckSyncEvent::default());
             return;
         }
 
@@ -152,7 +148,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                 .get_block_info(parent)
                 .expect("get block info for parents error in execute service");
             if block_info.is_none() {
-                let _ = ctx.broadcast(CheckSyncEvent::default());
+                ctx.broadcast(CheckSyncEvent::default());
                 return;
             }
         }
@@ -160,7 +156,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
         match self.execute(msg.get_block().clone()) {
             std::result::Result::Ok(executed_block) => {
                 ctx.broadcast(NewDagBlockFromPeer {
-                    executed_block: Arc::new(msg.get_block().header().clone()),
+                    executed_block: Arc::new(executed_block.header().clone()),
                 });
                 let bus = ctx.bus_ref().clone();
                 let _ = bus.broadcast(SelectHeaderState::new(
