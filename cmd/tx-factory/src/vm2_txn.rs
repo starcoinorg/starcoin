@@ -357,8 +357,7 @@ async fn balancer_worker(
         }
     }
 }
-#[tokio::main]
-async fn main() -> Result<()> {
+async fn async_main() -> Result<()> {
     starcoin_logger::init();
     let mut args = std::env::args().skip(1);
     let sub_cmd = args.next().context("sub command")?;
@@ -432,4 +431,17 @@ async fn main() -> Result<()> {
 
     futures::future::join_all(handles).await;
     Ok(())
+}
+
+fn main() {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime");
+    let handle = rt.spawn(async_main());
+
+    if let Err(e) = rt.block_on(async { handle.await }) {
+        eprintln!("Error: {:?}", e);
+        std::process::exit(1);
+    }
 }
