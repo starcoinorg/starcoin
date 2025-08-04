@@ -97,8 +97,9 @@ impl ExecuteService {
         }
 
         debug!(
-            "[BlockProcess]finish to execute the block: {}",
-            executed_block.block.id()
+            "[BlockProcess]finish to execute the block: {}, transaction len: {}",
+            executed_block.block.id(),
+            executed_block.block().body.transactions.len(),
         );
 
         Ok(executed_block)
