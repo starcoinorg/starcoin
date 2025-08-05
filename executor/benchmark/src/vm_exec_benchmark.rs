@@ -95,10 +95,9 @@ impl TransactionGenerator {
 
     fn gen_create_account_transactions(&mut self) -> Vec<Transaction> {
         self.net.time_service().sleep(1000);
-        let mut sequence: u64 = 0;
 
         let mut txns = Vec::with_capacity(self.accounts.len() + 1);
-        for account in self.accounts.iter() {
+        for (sequence, account) in (0_u64..).zip(self.accounts.iter()) {
             let txn = create_transaction(
                 sequence,
                 encode_create_account_script_function(
@@ -112,7 +111,6 @@ impl TransactionGenerator {
                 &self.net,
             );
             txns.push(txn);
-            sequence += 1;
         }
 
         txns
@@ -265,5 +263,11 @@ impl BenchmarkManager {
         }
 
         println!("└─────────────┴──────────┴─────────────┴─────────────┘");
+    }
+}
+
+impl Default for BenchmarkManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
