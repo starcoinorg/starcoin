@@ -435,6 +435,24 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
+        let red_blocks = ghostdata
+            .mergeset_reds
+            .iter()
+            .map(|hash| self.storage.get_block_by_hash(*hash))
+            .collect::<Result<Vec<Option<Block>>>>()?
+            .into_iter()
+            .map(|op_block_header| {
+                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
+            })
+            .collect::<Result<Vec<Block>>>()?;
+
+        let _ = self.tx_provider.add_txns(
+            red_blocks
+                .into_iter()
+                .flat_map(|block| block.body.transactions)
+                .collect(),
+        );
+
         info!("jacktest: create block template 7");
 
         let uncles = blue_blocks
@@ -562,7 +580,6 @@ where
         Ok(pending_transaction_map
             .iter()
             .flat_map(|(_sender, transactions)| transactions.clone())
-            .take(max_txns as usize)
             .collect())
     }
 
