@@ -32,6 +32,7 @@ pub(crate) mod resolve_cmd;
 pub(crate) mod sign_txn_helper;
 pub(crate) mod sleep_cmd;
 mod subscribe_cmd;
+mod txn_factory_cmd;
 mod upgrade_module_exe_cmd;
 mod upgrade_module_plan_cmd;
 mod upgrade_module_proposal_cmd;
