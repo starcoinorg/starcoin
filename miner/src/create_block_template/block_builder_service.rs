@@ -461,7 +461,16 @@ where
         debug!("[BlockProcess] create_block_template now to fetch transactions");
 
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        debug!(
+            "[BlockProcess] pending_transactions len after filter: {}",
+            txn.len()
+        );
         let excluded_txns = opened_block.push_txns(txn)?;
+        debug!(
+            "[BlockProcess] untouched and invalid len after filter: {}, {}",
+            excluded_txns.untouched_txns.len(),
+            excluded_txns.discarded_txns.len()
+        );
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
@@ -485,6 +494,10 @@ where
         let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
+        debug!(
+            "[BlockProcess] fetch_transactions pending_transactions len: {}",
+            pending_transactions.len()
+        );
 
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);

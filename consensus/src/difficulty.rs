@@ -75,11 +75,16 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     })?;
     // selected_chain.reverse();
 
-    let mut blue_block_in_order: BTreeMap<u64, Vec<BlockDiffInfo2>> = BTreeMap::new();
+    let mut blue_block_in_order: BTreeMap<u64, Vec<BlockDiffInfo>> = BTreeMap::new();
 
     for blue_block in blue_block_set.iter() {
+        let ghostdata = chain
+            .get_dag()
+            .storage
+            .ghost_dag_store
+            .get_data(blue_block.id())?;
         blue_block_in_order
-            .entry(blue_block.header().number())
+            .entry(ghostdata.blue_score)
             .or_default()
             .push(blue_block.try_into()?);
     }
@@ -108,7 +113,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 }
 
 pub fn get_next_target_helper(
-    blocks: BTreeMap<u64, Vec<BlockDiffInfo2>>,
+    blocks: BTreeMap<u64, Vec<BlockDiffInfo>>,
     time_plan: u64,
 ) -> Result<U256> {
     if blocks.is_empty() {
@@ -165,23 +170,25 @@ pub fn get_next_target_helper(
             ),
         Ordering::Greater => {
             let mut blocks_in_same_number = vec![];
-            let mut v_blocks: usize = 0;
             for (_number, diff_infos) in blocks.iter() {
                 blocks_in_same_number.push(diff_infos.last().unwrap().clone());
-                v_blocks = v_blocks.saturating_add(diff_infos.len());
             }
-            blocks_in_same_number.reverse();
             // let latest_timestamp = blocks_in_same_number.first().unwrap().timestamp;
             let total_v_block_time: u64 = blocks_in_same_number
-                .first()
-                .unwrap()
+                .last()
+                .expect("block diff info is empty")
                 .timestamp
-                .saturating_sub(blocks_in_same_number.last().unwrap().timestamp);
+                .saturating_sub(
+                    blocks_in_same_number
+                        .first()
+                        .expect("block diff info is empty")
+                        .timestamp,
+                );
 
             let avg_time = total_v_block_time
-                .checked_div(v_blocks as u64)
+                .checked_div(block_n)
                 .ok_or_else(|| format_err!("calculate avg time overflow"))?;
-            info!("total_v_block_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, v_blocks, avg_time, avg_target, time_plan);
+            info!("total_v_block_time: {:?}, v_blocks: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, block_n, avg_time, avg_target, time_plan);
             avg_time
         }
     };
@@ -239,30 +246,12 @@ impl TryFrom<BlockHeader> for BlockDiffInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BlockDiffInfo2 {
-    pub timestamp: u64,
-    pub target: U256,
-    pub transaction_count: u64,
-}
-
-impl BlockDiffInfo2 {
-    pub fn new(timestamp: u64, target: U256, transaction_count: u64) -> Self {
-        Self {
-            timestamp,
-            target,
-            transaction_count,
-        }
-    }
-}
-
-impl TryFrom<&Block> for BlockDiffInfo2 {
+impl TryFrom<&Block> for BlockDiffInfo {
     type Error = anyhow::Error;
     fn try_from(block: &Block) -> Result<Self, Self::Error> {
         Ok(Self {
             timestamp: block.header().timestamp(),
             target: difficult_to_target(block.header().difficulty())?,
-            transaction_count: block.body.transactions.len() as u64,
         })
     }
 }
