@@ -40,7 +40,10 @@ impl AccountVaultConfig {
     }
 
     pub fn dir2(&self) -> PathBuf {
-        self.dir().join("vm2")
+        let mut dir = self.dir();
+        let last = dir.file_name().unwrap_or_default().to_string_lossy();
+        dir.set_file_name(format!("{last}2"));
+        dir
     }
 }
 
