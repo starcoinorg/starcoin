@@ -41,7 +41,10 @@ impl AccountVaultConfig {
 
     pub fn dir2(&self) -> PathBuf {
         let mut dir = self.dir();
-        let last = dir.file_name().unwrap_or_default().to_string_lossy();
+        let last = dir
+            .file_name()
+            .expect("account dir should be set properly")
+            .to_string_lossy();
         dir.set_file_name(format!("{last}2"));
         dir
     }
