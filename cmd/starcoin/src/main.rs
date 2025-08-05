@@ -25,6 +25,9 @@ fn run() -> Result<()> {
         Some(G_APP_VERSION.as_str()),
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {}", opt);
+            if opt.account_provider.account_dir.is_some() {
+                warn!("***VM1 local account provider has been disabled***");
+            }
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
             let (client, node_handle) = match connect {
                 Connect::IPC(ipc_file) => {
@@ -74,11 +77,15 @@ fn run() -> Result<()> {
             let node_info = client.node_info()?;
             let client = Arc::new(client);
 
-            let account_provider = ProviderFactory::create_provider(
-                client.clone(),
-                node_info.net.chain_id(),
-                &opt.account_provider,
-            )?;
+            let account_provider = if opt.account_provider.account_dir.is_some() {
+                None
+            } else {
+                Some(ProviderFactory::create_provider(
+                    client.clone(),
+                    node_info.net.chain_id(),
+                    &opt.account_provider,
+                )?)
+            };
 
             let account_provider2_option = Some(ProviderFactory::create_provider2(
                 client.clone(),
