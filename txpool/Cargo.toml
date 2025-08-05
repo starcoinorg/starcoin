@@ -30,6 +30,7 @@ trace-time = { workspace = true }
 transaction-pool = { workspace = true }
 proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

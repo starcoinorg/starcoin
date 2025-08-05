@@ -12,11 +12,12 @@ use crate::{
 
 use crate::metrics::TxPoolMetrics;
 use crate::pool::{Client, TransactionQueue};
-use anyhow::Result;
+use anyhow::{format_err, Ok, Result};
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
@@ -38,6 +39,7 @@ impl TxPoolService {
         node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
         chain_header: BlockHeader,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
         let metrics = node_config
@@ -66,6 +68,7 @@ impl TxPoolService {
             storage,
             chain_header: Arc::new(RwLock::new(chain_header)),
             sequence_number_cache: NonceCache::new(128),
+            dag,
             metrics,
             vm_metrics,
         };
@@ -262,6 +265,7 @@ pub struct Inner {
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 impl std::fmt::Debug for Inner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -379,7 +383,8 @@ impl Inner {
             NonceCache::new(0),
             self.vm_metrics.clone(),
         );
-        self.queue.next_sequence_number(pool_client, &address)
+        self.queue
+            .try_read_next_sequence_number(pool_client, &address)
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
@@ -391,6 +396,36 @@ impl Inner {
         let (tx, rx) = mpsc::unbounded();
         self.queue.add_pending_listener(tx);
         rx
+    }
+
+    pub fn update_chain_header(&self, pruning_point: HashValue) -> Result<()> {
+        let dag_state = self.dag.get_dag_state(pruning_point)?;
+        let selected_header = self
+            .dag
+            .ghost_dag_manager()
+            .find_selected_parent(dag_state.tips)?;
+
+        if self.chain_header.read().id() == selected_header {
+            return Ok(());
+        }
+
+        let header = self
+            .storage
+            .get_block_header_by_hash(selected_header)?
+            .ok_or_else(|| {
+                format_err!(
+                    "cannot find the block by id {:?} in update_chain_header",
+                    selected_header
+                )
+            })?;
+
+        // new head block, update chain header
+        self.notify_new_chain_header(header);
+
+        // remove outdated txns.
+        self.cull();
+
+        Ok(())
     }
 
     pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
@@ -405,14 +440,6 @@ impl Inner {
                 .map(|b| b.header().number())
                 .collect::<Vec<_>>()
         );
-
-        // new head block, update chain header
-        if let Some(block) = enacted.last() {
-            self.notify_new_chain_header(block.header().clone());
-        }
-
-        // remove outdated txns.
-        self.cull();
 
         // import retracted txns.
         let txns = retracted

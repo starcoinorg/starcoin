@@ -455,6 +455,26 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
+        self.pool
+            .read()
+            .pending_from_sender(state_readiness, address)
+            .last()
+            .map(|tx| tx.signed().sequence_number().saturating_add(1))
+    }
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    /// for minting a block use only
+    pub fn try_read_next_sequence_number<C: client::AccountSeqNumberClient>(
+        &self,
+        client: C,
+        address: &Address,
+    ) -> Option<SeqNumber> {
+        // Also we ignore stale transactions in the queue.
+        let stale_id = None;
+
+        let state_readiness = ready::State::new(client, stale_id);
+
         let pool = match self.pool.try_read() {
             Some(pool) => pool,
             None => return None,

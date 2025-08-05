@@ -239,7 +239,7 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        debug!(
+        info!(
             "[BlockProcess] handle NewDagBlock for selecting the header: {}",
             msg.executed_block.block.id()
         );
@@ -258,7 +258,7 @@ where
             }
         };
 
-        debug!(
+        info!(
             "[BlockProcess] select the header: {}",
             self.chain_service.get_main().current_header().id()
         );

@@ -29,7 +29,7 @@ async fn test_miner_service() {
     let (storage, _chain_info, genesis, dag) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
-    registry.put_shared(dag).await.unwrap();
+    registry.put_shared(dag.clone()).await.unwrap();
 
     let genesis_hash = genesis.block().id();
     registry.put_shared(genesis).await.unwrap();
@@ -38,7 +38,13 @@ async fn test_miner_service() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        chain_header,
+        dag,
+        None,
+    );
     registry.put_shared(txpool).await.unwrap();
     registry
         .register_mocker(AccountService::mock().unwrap())

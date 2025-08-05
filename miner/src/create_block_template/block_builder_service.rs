@@ -15,7 +15,7 @@ use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{debug, error, info};
+use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
@@ -264,7 +264,7 @@ where
     }
 
     fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
-        debug!("[BlockProcess] start to resolve block parents");
+        info!("[BlockProcess] start to resolve block parents");
         let MineNewDagBlockInfo {
             selected_parents,
             ghostdata,
@@ -327,7 +327,7 @@ where
 
         let selected_parent = ghostdata.selected_parent;
 
-        debug!(
+        info!(
             "[BlockProcess] selected parent: {}, and now initialize the chain object",
             selected_parent
         );
@@ -338,7 +338,7 @@ where
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
-        debug!(
+        info!(
             "[BlockProcess] selected parent: {}, and finish to initialize the chain object",
             selected_parent
         );
@@ -354,7 +354,7 @@ where
         let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
         let now_milliseconds = self.config.net().time_service().now_millis();
 
-        debug!("[BlockProcess] finish to resolve block parents");
+        info!("[BlockProcess] finish to resolve block parents");
         Ok((
             MinerResponse {
                 previous_header,
@@ -372,7 +372,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
-        debug!("[BlockProcess] create_block_template start");
+        info!("[BlockProcess] create_block_template start");
         let (
             MinerResponse {
                 previous_header,
@@ -388,7 +388,7 @@ where
             main,
         ) = self.resolve_block_parents()?;
 
-        debug!("[BlockProcess] create_block_template resolve_block_parents finish");
+        info!("[BlockProcess] create_block_template resolve_block_parents finish");
 
         let block_gas_limit = self
             .local_block_gas_limit
@@ -458,15 +458,15 @@ where
             main.statedb(),
         )?;
 
-        debug!("[BlockProcess] create_block_template now to fetch transactions");
+        info!("[BlockProcess] create_block_template now to fetch transactions");
 
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
-        debug!(
+        info!(
             "[BlockProcess] pending_transactions len after filter: {}",
             txn.len()
         );
         let excluded_txns = opened_block.push_txns(txn)?;
-        debug!(
+        info!(
             "[BlockProcess] untouched and invalid len after filter: {}, {}",
             excluded_txns.untouched_txns.len(),
             excluded_txns.discarded_txns.len()
@@ -474,11 +474,11 @@ where
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-        debug!("[BlockProcess] create_block_template finish to fetch and execlude transactions");
+        info!("[BlockProcess] create_block_template finish to fetch and execlude transactions");
 
         let template = opened_block.finalize()?;
 
-        debug!("[BlockProcess] create_block_template finish");
+        info!("[BlockProcess] create_block_template finish");
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
@@ -494,7 +494,7 @@ where
         let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
-        debug!(
+        info!(
             "[BlockProcess] fetch_transactions pending_transactions len: {}",
             pending_transactions.len()
         );

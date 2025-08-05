@@ -13,11 +13,13 @@ use network_api::messages::PeerTransactionsMessage;
 pub use pool::queue::Pool;
 pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_state_api::AccountStateReader;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use starcoin_types::system_events::{NewDagBlock, NewDagBlockFromPeer};
 use starcoin_types::{
     sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
     transaction::SignedUserTransaction,
@@ -94,6 +96,7 @@ impl TxPoolActorService {
 impl ServiceFactory<Self> for TxPoolActorService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let txpool_service = ctx.get_shared_or_put(|| {
@@ -113,6 +116,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
                 node_config,
                 storage,
                 best_block_header,
+                dag,
                 vm_metrics,
             ))
         })?;
@@ -220,6 +224,30 @@ impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
         } else {
             //TODO should keep txn in a buffer, then execute after sync finished.
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
+        }
+    }
+}
+
+impl EventHandler<Self, NewDagBlockFromPeer> for TxPoolActorService {
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+        let pruning_point = msg.executed_block.pruning_point();
+        match self.inner.update_chain_header(pruning_point) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!("[txpool] fail to update chain header, err: {}", e);
+            }
+        }
+    }
+}
+
+impl EventHandler<Self, NewDagBlock> for TxPoolActorService {
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        let pruning_point = msg.executed_block.header().pruning_point();
+        match self.inner.update_chain_header(pruning_point) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!("[txpool] fail to update chain header, err: {}", e);
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{format_err, Ok};
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_dag::{blockdag::BlockDAG, types::ghostdata::GhostdagData};
-use starcoin_logger::prelude::{debug, error, info, warn};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
@@ -179,7 +179,7 @@ impl NewHeaderService {
                 }
             }
         }
-        debug!("[BlockProcess]determine_header finish, now trigger the minting process");
+        info!("[BlockProcess]determine_header finish, now trigger the minting process");
         ctx.broadcast(DeterminedDagBlock);
 
         Ok(())
@@ -210,7 +210,7 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
-        debug!(
+        info!(
             "[BlockProcess]handle_event: NewDagBlock for determine header to mint a new block, msg: {:?}",
             msg.executed_block.header().id()
         );

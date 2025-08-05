@@ -121,12 +121,12 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
-        debug!("[BlockProcess] start to generate block event");
+        info!("[BlockProcess] start to generate block event");
         if self.is_synced() {
-            debug!("[BlockProcess] synced, start to generate block event");
+            info!("[BlockProcess] synced, start to generate block event");
             self.send_event(true, ctx)
         } else {
-            debug!("[BlockProcess] syncing, ignore the generating block event");
+            info!("[BlockProcess] syncing, ignore the generating block event");
             debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
         }
     }

@@ -196,7 +196,7 @@ impl MinerService {
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
-            debug!("[BlockProcess] start to create block template");
+            info!("[BlockProcess] start to create block template");
             let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
                 .await
@@ -246,7 +246,7 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         block_template: BlockTemplate,
     ) -> Result<()> {
-        debug!("[BlockProcess] Mint block template: {:?}", block_template);
+        info!("[BlockProcess] Mint block template: {:?}", block_template);
         let difficulty = block_template.difficulty;
         let strategy = block_template.strategy;
         let number = block_template.number;
@@ -274,7 +274,7 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        debug!("[BlockProcess] start to finish task");
+        info!("[BlockProcess] start to finish task");
         if self.task_pool.is_empty() {
             return Err(MinerError::TaskEmptyError.into());
         }
@@ -286,7 +286,7 @@ impl MinerService {
             let task = self.task_pool.remove(index);
 
             let block = task.finish(nonce, extra);
-            debug!("[BlockProcess] nonce task finish, block id: {}", block.id());
+            info!("[BlockProcess] nonce task finish, block id: {}", block.id());
             let block_hash: HashValue = block.id();
             info!(target: "miner", "Minted new block: {}", block.header().id());
             ctx.broadcast(MinedBlock(Arc::new(block)));

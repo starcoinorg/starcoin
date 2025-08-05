@@ -6,7 +6,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::{debug, error};
+use starcoin_logger::prelude::{debug, error, info};
 use starcoin_service_registry::{
     bus::Bus, ActorService, EventHandler, ServiceContext, ServiceFactory,
 };
@@ -35,7 +35,7 @@ impl ExecuteService {
     }
 
     fn execute(&self, new_block: Block) -> Result<ExecutedBlock> {
-        debug!(
+        info!(
             "[BlockProcess]start to initialize the chain for executing the block: {}",
             new_block.id()
         );
@@ -53,7 +53,7 @@ impl ExecuteService {
             )
         });
 
-        debug!(
+        info!(
             "[BlockProcess]start to verify the block: {}",
             new_block.id()
         );
@@ -69,7 +69,7 @@ impl ExecuteService {
             }
         };
 
-        debug!(
+        info!(
             "[BlockProcess]start to execute the block: {}",
             verified_block.block.id()
         );
@@ -84,7 +84,7 @@ impl ExecuteService {
             }
         };
 
-        debug!(
+        info!(
             "[BlockProcess]start to connect the block: {}",
             executed_block.block.id()
         );
@@ -96,7 +96,7 @@ impl ExecuteService {
             }
         }
 
-        debug!(
+        info!(
             "[BlockProcess]finish to execute the block: {}, transaction len: {}",
             executed_block.block.id(),
             executed_block.block().body.transactions.len(),
@@ -133,7 +133,7 @@ impl ActorService for ExecuteService {
 
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        debug!(
+        info!(
             "[BlockProcess] now start to execute the block from a peer: {}, firstly, check it",
             msg.get_block().id()
         );
@@ -158,7 +158,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                 return;
             }
         }
-        debug!(
+        info!(
             "[BlockProcess] now start to execute the block from a peer: {}",
             msg.get_block().id()
         );
