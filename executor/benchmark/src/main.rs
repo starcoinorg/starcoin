@@ -21,18 +21,14 @@ struct Opt {
     #[clap(long, default_value = "true")]
     bench_vm_exec: bool,
 
-    #[clap(long, default_value = "true")]
-    mute_info_log: bool,
+    #[clap(long, default_value = "warn")]
+    log_level: String,
 }
 
 fn main() {
     let opt = Opt::parse();
 
-    if opt.mute_info_log {
-        starcoin_logger::init_with_default_level("warn", None);
-    } else {
-        starcoin_logger::init();
-    }
+    starcoin_logger::init_with_default_level(&opt.log_level, None);
 
     if opt.bench_vm_exec {
         let mut manager = vm_exec_benchmark::BenchmarkManager::new();
