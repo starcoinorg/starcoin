@@ -3591,7 +3591,7 @@ dependencies = [
  "byteorder",
  "criterion",
  "hex",
- "num-derive",
+ "num-derive 0.4.2",
  "num-traits 0.2.19",
  "proptest",
  "proptest-derive 0.6.0",
@@ -3616,7 +3616,7 @@ dependencies = [
  "byteorder",
  "hex",
  "mirai-annotations",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits 0.2.19",
  "serde 1.0.195",
  "serde_bytes",
@@ -8335,6 +8335,17 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "num-derive"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
+dependencies = [
+ "proc-macro2 1.0.94",
+ "quote 1.0.40",
+ "syn 2.0.100",
 ]
 
 [[package]]
@@ -14390,7 +14401,7 @@ dependencies = [
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits 0.2.19",
  "num_enum",
  "once_cell",
