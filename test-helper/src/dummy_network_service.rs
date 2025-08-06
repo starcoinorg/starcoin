@@ -32,15 +32,15 @@ impl NetworkService for DummyNetworkService {
 }
 
 impl PeerProvider for DummyNetworkService {
-    fn peer_set(&self) -> BoxFuture<anyhow::Result<Vec<PeerInfo>>> {
+    fn peer_set(&self) -> BoxFuture<'_, anyhow::Result<Vec<PeerInfo>>> {
         async { Ok(vec![]) }.boxed()
     }
 
-    fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<anyhow::Result<Option<PeerInfo>>> {
+    fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<'_, anyhow::Result<Option<PeerInfo>>> {
         async { Ok(None) }.boxed()
     }
 
-    fn get_self_peer(&self) -> BoxFuture<anyhow::Result<PeerInfo>> {
+    fn get_self_peer(&self) -> BoxFuture<'_, anyhow::Result<PeerInfo>> {
         let info = self.self_info.clone();
         async { Ok(info) }.boxed()
     }

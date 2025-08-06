@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub trait RpcMethod: Send + Sync + 'static {
-    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Result<Vec<u8>>>;
+    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<'_, Result<Vec<u8>>>;
 }
 
 struct DelegateAsyncMethod<T, F> {
@@ -25,7 +25,7 @@ where
     T: Send + Sync + 'static,
     F: Send + Sync + 'static,
 {
-    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Result<Vec<u8>>> {
+    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<'_, Result<Vec<u8>>> {
         let closure = &self.closure;
         Box::pin(closure(self.delegate.clone(), peer_id, params))
     }

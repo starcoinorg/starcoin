@@ -115,7 +115,7 @@ where
 }
 
 pub trait SupportedRpcProtocol {
-    fn is_supported(&self, peer_id: PeerId, rpc_protocol: Cow<'static, str>) -> BoxFuture<bool>;
+    fn is_supported(&self, peer_id: PeerId, rpc_protocol: Cow<'static, str>) -> BoxFuture<'_, bool>;
 }
 
 pub trait BroadcastProtocolFilter {

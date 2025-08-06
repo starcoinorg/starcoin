@@ -54,7 +54,7 @@ impl RawRpcServer for NetworkRpcServer {
         peer_id: PeerId,
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         self.handle_request_async(peer_id, rpc_path, message)
             .boxed()
     }
