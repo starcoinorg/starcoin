@@ -1,8 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { workspace = true }
+bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 bytes = { workspace = true }
-forkable-jellyfish-merkle = { workspace = true }
+forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 hex = { features = ["serde"], workspace = true }
 proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
@@ -10,10 +10,10 @@ rand = { workspace = true }
 schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
-starcoin-accumulator = { workspace = true }
+starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-uint = { workspace = true }
-starcoin_vm_types = { path = "../vm-types", package = "starcoin-vm2-vm-types" }
+starcoin-vm-types = { path = "../vm-types" }
 starcoin-resource-viewer = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-resource-viewer" }
 starcoin-abi-decoder = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-decoder" }
 starcoin-abi-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-types" }
@@ -26,22 +26,22 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 once_cell = { workspace = true }
 serde_bytes = { workspace = true }
-vm-status-translator = { workspace = true }
+vm-status-translator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "vm-status-translator" }
 
 
 [dev-dependencies]
 claims = { workspace = true }
-starcoin_vm_types = { path = "../vm-types", package = "starcoin-vm2-vm-types" }
+starcoin-vm-types = { path = "../vm-types" }
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin_vm_types/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
 
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm2-types"
+name = "starcoin-types"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }

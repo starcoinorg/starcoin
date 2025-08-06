@@ -52,7 +52,7 @@ print_gas_info = []
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm-types"
+name = "starcoin-vm1-vm-types"
 publish = { workspace = true }
 version = { workspace = true }
 homepage = { workspace = true }

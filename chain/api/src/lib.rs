@@ -30,8 +30,8 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_vm2_types::view::{
-    EventWithProofView as EventWithProofView2, StrView as StrView2,
-    TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    AccumulatorProofView as AccumulatorProofView2, EventWithProofView as EventWithProofView2,
+    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 
 #[derive(Clone, Debug)]
@@ -200,7 +200,9 @@ impl From<EventWithProof2> for EventWithProofView2 {
     fn from(origin: EventWithProof2) -> Self {
         Self {
             event: StrView2(origin.event.encode().expect("encode event should succeed")),
-            proof: origin.proof.into(),
+            proof: AccumulatorProofView2 {
+                siblings: origin.proof.siblings().to_vec(),
+            },
         }
     }
 }
@@ -220,7 +222,9 @@ impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
     fn from(origin: TransactionInfoWithProof2) -> Self {
         Self {
             transaction_info: origin.transaction_info.into(),
-            proof: origin.proof.into(),
+            proof: AccumulatorProofView2 {
+                siblings: origin.proof.siblings().to_vec(),
+            },
             event_proof: origin.event_proof.map(Into::into),
             state_proof: origin.state_proof.map(Into::into),
         }

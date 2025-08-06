@@ -19,14 +19,14 @@ move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0
 proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { workspace = true }
-bcs-ext = { workspace = true }
+bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
 starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
 starcoin-gas-meter = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-meter" }
 fxhash = { workspace = true }
-forkable-jellyfish-merkle = { workspace = true }
+forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 schemars = { workspace = true }
-starcoin-accumulator = { workspace = true }
+starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-uint = { workspace = true }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format" }
@@ -63,7 +63,7 @@ print_gas_info = []
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm2-vm-types"
+name = "starcoin-vm-types"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }

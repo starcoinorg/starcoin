@@ -32,7 +32,7 @@ fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-types"
+name = "starcoin-vm1-types"
 publish = { workspace = true }
 version = { workspace = true }
 homepage = { workspace = true }
