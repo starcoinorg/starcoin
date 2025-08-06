@@ -169,7 +169,7 @@ impl PeersState {
     }
 
     /// Returns an object that grants access to the reputation value of a peer.
-    pub fn peer_reputation(&mut self, peer_id: PeerId) -> Reputation {
+    pub fn peer_reputation(&mut self, peer_id: PeerId) -> Reputation<'_> {
         let sets_len = self.sets.len();
         self.nodes
             .entry(peer_id)
@@ -256,7 +256,7 @@ impl PeersState {
     ///
     /// `set` must be within range of the sets passed to [`PeersState::new`].
     ///
-    pub fn highest_not_connected_peer(&mut self, set: usize) -> Option<NotConnectedPeer> {
+    pub fn highest_not_connected_peer(&mut self, set: usize) -> Option<NotConnectedPeer<'_>> {
         // The code below will panic anyway if this happens to be false, but this earlier assert
         // makes it explicit what is wrong.
         assert!(set < self.sets.len());
@@ -668,7 +668,7 @@ pub struct Reputation<'a> {
     node: Option<OccupiedEntry<'a, PeerId, Node>>,
 }
 
-impl<'a> Reputation<'a> {
+impl Reputation<'_> {
     /// Returns the reputation value of the node.
     pub fn reputation(&self) -> i32 {
         self.node.as_ref().unwrap().get().reputation
@@ -688,7 +688,7 @@ impl<'a> Reputation<'a> {
     }
 }
 
-impl<'a> Drop for Reputation<'a> {
+impl Drop for Reputation<'_> {
     fn drop(&mut self) {
         if let Some(node) = self.node.take() {
             if node.get().reputation == 0

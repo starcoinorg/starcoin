@@ -20,6 +20,8 @@ pub struct EchoStruct {
 
 #[net_rpc(client, server)]
 #[allow(clippy::upper_case_acronyms)]
+// following clippy rule or explicit annotate lifetime is not applicable here
+// temporary shallow clippy here
 pub trait KVRpc: Sized + Send + Sync {
     fn echo_str(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
     fn echo_struct(&self, peer_id: PeerId, req: EchoStruct) -> BoxFuture<Result<EchoStruct>>;
@@ -31,13 +33,13 @@ pub trait KVRpc: Sized + Send + Sync {
 struct KVRpcImpl {}
 
 impl gen_server::KVRpc for KVRpcImpl {
-    fn echo_str(&self, _peer_id: PeerId, req: String) -> BoxFuture<Result<String>> {
+    fn echo_str(&self, _peer_id: PeerId, req: String) -> BoxFuture<'_, Result<String>> {
         futures::future::ready(Ok(req)).boxed()
     }
-    fn echo_struct(&self, _peer_id: PeerId, req: EchoStruct) -> BoxFuture<Result<EchoStruct>> {
+    fn echo_struct(&self, _peer_id: PeerId, req: EchoStruct) -> BoxFuture<'_, Result<EchoStruct>> {
         futures::future::ready(Ok(req)).boxed()
     }
-    fn echo_err(&self, _peer_id: PeerId, req: String) -> BoxFuture<Result<String>> {
+    fn echo_err(&self, _peer_id: PeerId, req: String) -> BoxFuture<'_, Result<String>> {
         futures::future::ready(Err(NetRpcError::client_err(req).into())).boxed()
     }
 }

@@ -187,7 +187,7 @@ where
 
     /// check if there is data that has not been commit.
     pub fn is_dirty(&self) -> bool {
-        self.updates.read().len() > 0
+        !self.updates.read().is_empty()
     }
 
     /// Write state_set to state tree.
@@ -313,7 +313,7 @@ where
     //     Ok(())
     // }
 
-    /// get all changes so far based on initial root_hash.
+    // get all changes so far based on initial root_hash.
     /*
     pub fn change_sets(&self) -> (HashValue, TreeUpdateBatch<K>) {
         let cache_guard = self.cache.lock();
@@ -345,7 +345,7 @@ struct CachedTreeReader<'a, K: RawKey> {
     cache: &'a StateCache<K>,
 }
 
-impl<'a, K> TreeReader<K> for CachedTreeReader<'a, K>
+impl<K> TreeReader<K> for CachedTreeReader<'_, K>
 where
     K: RawKey,
 {

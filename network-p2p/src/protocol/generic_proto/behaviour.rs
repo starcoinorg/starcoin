@@ -864,7 +864,7 @@ impl GenericProto {
                 *occ_entry.into_mut() = st;
                 debug_assert!(false);
             }
-            st @ PeerState::Requested { .. } | st @ PeerState::PendingRequest { .. } => {
+            st @ PeerState::Requested | st @ PeerState::PendingRequest { .. } => {
                 warn!(target: "sub-libp2p",
                       "PSM => Connect({}, {:?}): Duplicate request.",
                       occ_entry.key().0, set_id);

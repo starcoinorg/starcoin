@@ -39,11 +39,11 @@ impl NetworkService for NetworkServiceRef {
 }
 
 impl PeerProvider for NetworkServiceRef {
-    fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>> {
+    fn peer_set(&self) -> BoxFuture<'_, Result<Vec<PeerInfo>>> {
         self.service_ref.peer_set()
     }
 
-    fn get_peer(&self, peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>> {
+    fn get_peer(&self, peer_id: PeerId) -> BoxFuture<'_, Result<Option<PeerInfo>>> {
         self.service_ref.get_peer(peer_id)
     }
 
@@ -68,7 +68,7 @@ impl PeerProvider for NetworkServiceRef {
 }
 
 impl SupportedRpcProtocol for NetworkServiceRef {
-    fn is_supported(&self, peer_id: PeerId, protocol: Cow<'static, str>) -> BoxFuture<bool> {
+    fn is_supported(&self, peer_id: PeerId, protocol: Cow<'static, str>) -> BoxFuture<'_, bool> {
         async move {
             if let Ok(Some(peer_info)) = self.get_peer(peer_id).await {
                 return peer_info.is_support_rpc_protocol(protocol);
@@ -85,7 +85,7 @@ impl RawRpcClient for NetworkServiceRef {
         peer_id: PeerId,
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         async move {
             if self.get_peer(peer_id.clone()).await?.is_none() {
                 return Err(RequestFailure::NotConnected.into());
