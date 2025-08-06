@@ -429,7 +429,7 @@ pretty = "0.10.0"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"
 proptest = "1.0.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.6.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand = "0.8.5"

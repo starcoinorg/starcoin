@@ -137,7 +137,7 @@ where
     }
 
     /// Send a request to target service and wait response by default timeout.
-    pub fn send<R>(&self, request: R) -> BoxFuture<Result<<R as ServiceRequest>::Response>>
+    pub fn send<R>(&self, request: R) -> BoxFuture<'_, Result<<R as ServiceRequest>::Response>>
     where
         R: ServiceRequest + 'static,
         S: ServiceHandler<S, R>,
