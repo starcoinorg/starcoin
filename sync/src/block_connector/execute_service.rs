@@ -6,7 +6,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::{debug, error, info};
+use starcoin_logger::prelude::{debug, error};
 use starcoin_service_registry::{
     bus::Bus, ActorService, EventHandler, ServiceContext, ServiceFactory,
 };
@@ -49,11 +49,6 @@ impl ExecuteService {
             )
         });
 
-        info!(
-            "jacktest: verify, start to verify the mined block id: {:?}, number: {:?}",
-            new_block.id(),
-            new_block.header().number()
-        );
         let id = new_block.id();
         let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block) {
             anyhow::Result::Ok(verified_block) => verified_block,
@@ -65,11 +60,6 @@ impl ExecuteService {
                 return Err(e);
             }
         };
-        info!(
-            "jacktest: verify, end to verify the mined block id: {:?}, number: {:?}",
-            verified_block.block.id(),
-            verified_block.block.header().number()
-        );
 
         let executed_block = match chain.execute(verified_block) {
             std::result::Result::Ok(executed_block) => executed_block,
@@ -81,11 +71,6 @@ impl ExecuteService {
                 return Err(e);
             }
         };
-        info!(
-            "jacktest: execute, end to execute the mined block id: {:?}, number: {:?}",
-            executed_block.block.id(),
-            executed_block.block.header().number()
-        );
 
         match chain.connect(executed_block.clone()) {
             std::result::Result::Ok(_) => (),
@@ -94,12 +79,6 @@ impl ExecuteService {
                 return Err(e);
             }
         }
-        info!(
-            "jacktest: connect, end to execute the mined block id: {:?}, number: {:?}",
-            executed_block.block.id(),
-            executed_block.block().header().number()
-        );
-
         Ok(executed_block)
     }
 }

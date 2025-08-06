@@ -166,11 +166,8 @@ where
     }
 
     pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
-        info!("jacktest: switch header before");
         let new_branch = self.main.select_dag_state(header)?; // 1
-        info!("jacktest: switch header after and select head before");
         self.select_head(new_branch)?;
-        info!("jacktest: switch header and selectd head afer");
         self.update_startup_info(&self.main.current_header())?;
         Ok(self.main.current_header())
     }
@@ -297,25 +294,20 @@ where
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
-        info!("jacktest: select head begins");
         let executed_block = new_branch.head_block();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
-        info!("jacktest: select head2");
         if branch_total_difficulty > main_total_difficulty {
-            info!("jacktest: select head3");
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
                     (1, vec![executed_block.block.clone()], 0, vec![])
                 };
-            info!("jacktest: select head4");
             self.main = new_branch;
 
-            info!("jacktest: select head5");
             self.do_new_head(
                 executed_block,
                 enacted_count,
@@ -340,16 +332,13 @@ where
     ) -> Result<()> {
         debug_assert!(!enacted_blocks.is_empty());
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
-        info!("jacktest: do new head begin");
         self.update_startup_info(executed_block.block().header())?;
         if retracted_count > 0 {
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.chain_rollback_block_total.inc_by(retracted_count);
             }
         }
-        info!("jacktest: do new head 2");
         self.commit_2_txpool(enacted_blocks, retracted_blocks);
-        info!("jacktest: do new head 3");
         self.config
             .net()
             .time_service()

@@ -168,7 +168,6 @@ impl NewHeaderService {
         header: &BlockHeader,
         ctx: &mut ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        info!("jacktest: new dag block, determine_header: new header: {:?}, number: {:?}, current header: {:?}, number: {:?}", header.id(), header.number(), self.header.id(), self.header.number());
         if self.resolve_header(header)? {
             info!(
                 "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
@@ -193,7 +192,6 @@ impl NewHeaderService {
             info!("resolve header returns false");
         }
 
-        info!("jacktest: determine header start");
         ctx.broadcast(DeterminedDagBlock);
 
         Ok(())

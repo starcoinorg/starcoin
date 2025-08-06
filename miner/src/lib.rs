@@ -192,12 +192,10 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        info!("jacktest: dispatch task1");
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
         ctx.spawn(async move {
-            info!("jacktest: dispatch task2");
             let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
                 .await
@@ -275,7 +273,6 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        info!("jacktest: finish_task");
         if self.task_pool.is_empty() {
             return Err(MinerError::TaskEmptyError.into());
         }
@@ -289,11 +286,6 @@ impl MinerService {
             let block = task.finish(nonce, extra);
             let block_hash: HashValue = block.id();
             info!(target: "miner", "Minted new block: {}", block);
-            info!(
-                "jacktest: finish_task, start to broadcast mined block: {:?}, number: {:?}",
-                block_hash,
-                block.header().number()
-            );
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();
