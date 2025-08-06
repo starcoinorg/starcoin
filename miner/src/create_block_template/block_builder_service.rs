@@ -463,10 +463,16 @@ where
         )?;
 
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        info!("[BlockProcess] txns len: {}", txn.len());
         let excluded_txns = opened_block.push_txns(txn)?;
-        for invalid_txn in excluded_txns.discarded_txns {
+        for invalid_txn in &excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
+        info!(
+            "[BlockProcess] discarded len: {}, untouched txns len: {}",
+            excluded_txns.discarded_txns.len(),
+            excluded_txns.untouched_txns.len()
+        );
 
         let template = opened_block.finalize()?;
         Ok(BlockTemplateResponse {

@@ -6,7 +6,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::{debug, error};
+use starcoin_logger::prelude::{debug, error, info};
 use starcoin_service_registry::{
     bus::Bus, ActorService, EventHandler, ServiceContext, ServiceFactory,
 };
@@ -79,6 +79,14 @@ impl ExecuteService {
                 return Err(e);
             }
         }
+        info!(
+            "[BlockProcess] executed transactions: {}",
+            executed_block.block.transactions().len()
+        );
+        debug!(
+            "[BlockProcess] executed transactions: {:?}",
+            executed_block.block.transactions()
+        );
         Ok(executed_block)
     }
 }
