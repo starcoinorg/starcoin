@@ -182,7 +182,7 @@ pub fn get_next_target_helper(
             let avg_time = total_v_block_time
                 .checked_div(block_n)
                 .ok_or_else(|| format_err!("calculate avg time overflow"))?;
-            info!("total_v_block_time: {:?}, block_n: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, block_n, avg_time, avg_target, time_plan);
+            info!("[BlockProcess] total_v_block_time: {:?}, block_n: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, block_n, avg_time, avg_target, time_plan);
             avg_time
         }
     };
