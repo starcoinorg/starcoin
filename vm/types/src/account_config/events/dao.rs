@@ -13,8 +13,7 @@ pub struct ProposalCreatedEvent {
 }
 impl ProposalCreatedEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(bytes).map_err(Into::into)
-    }
+        bcs_ext::from_bytes(bytes)}
 }
 impl MoveResource for ProposalCreatedEvent {
     const MODULE_NAME: &'static str = "Dao";
@@ -39,6 +38,5 @@ impl MoveResource for VoteChangedEvent {
 
 impl VoteChangedEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(bytes).map_err(Into::into)
-    }
+        bcs_ext::from_bytes(bytes)}
 }

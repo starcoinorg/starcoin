@@ -76,8 +76,7 @@ impl CommandAction for GetContractDataCommand {
             } => GetContractDataResult::Resource(
                 ctx.state()
                     .client()
-                    .get_resource(*address, resource_type.0.clone())?
-                    .map(Into::into),
+                    .get_resource(*address, resource_type.0.clone())?,
             ),
         };
         Ok(result)

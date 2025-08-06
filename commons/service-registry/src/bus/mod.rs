@@ -168,9 +168,7 @@ impl Bus for ServiceRef<BusService> {
         M: Send + Clone + Debug + 'static,
     {
         self.send(SubscribeRequest { notifier })
-            .await
-            .map_err(Into::<anyhow::Error>::into)
-    }
+            .await}
 
     async fn unsubscribe<S, M>(&self) -> Result<()>
     where
@@ -178,17 +176,14 @@ impl Bus for ServiceRef<BusService> {
         M: Send + Clone + Debug + 'static,
     {
         self.send(UnsubscribeRequest::<M>::new(S::service_name()))
-            .await
-            .map_err(Into::<anyhow::Error>::into)
-    }
+            .await}
 
     async fn channel<M>(&self) -> Result<mpsc::UnboundedReceiver<M>>
     where
         M: Send + Clone + Debug + 'static,
     {
         self.send(ChannelRequest::<M>::new())
-            .await
-            .map_err(Into::<anyhow::Error>::into)?
+            .await?
     }
 
     async fn oneshot<M>(&self) -> Result<oneshot::Receiver<M>>
@@ -196,8 +191,7 @@ impl Bus for ServiceRef<BusService> {
         M: Send + Clone + Debug + 'static,
     {
         self.send(OneshotRequest::<M>::new())
-            .await
-            .map_err(Into::<anyhow::Error>::into)?
+            .await?
     }
 
     fn broadcast<M>(&self, msg: M) -> Result<(), TrySendError<M>>

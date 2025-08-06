@@ -212,9 +212,7 @@ impl AccumulatorTree {
     pub fn flush(&mut self) -> Result<()> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes
-                .iter()
-                .map(|(_, node)| node.clone())
+            let nodes_vec = nodes.values().cloned()
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
             self.store.save_nodes(nodes_vec)?;

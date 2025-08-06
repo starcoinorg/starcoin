@@ -194,7 +194,7 @@ impl ScriptFunctionCall {
         rust::CodeGenerator::new(&config)
             .with_custom_derive_block(custom_derive_block)
             .output(&mut self.out, &script_registry)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{}", err)))?;
+            .map_err(|err| std::io::Error::other(format!("{}", err)))?;
         Ok(())
     }
 

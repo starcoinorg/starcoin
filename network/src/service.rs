@@ -495,7 +495,7 @@ impl Inner {
             Err(error) => {
                 error!(
                     "failed to chain_status.encode(), reason: {}",
-                    error.to_string()
+                    error
                 );
             }
         }

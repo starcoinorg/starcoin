@@ -10,7 +10,6 @@ use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::collections::HashSet;
-use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
 
@@ -442,8 +441,7 @@ impl InnerStore for DBStorage {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            let cf_handles = iter::repeat(&cf_handle)
-                .take(keys.len())
+            let cf_handles = std::iter::repeat_n(&cf_handle, keys.len())
                 .collect::<Vec<_>>();
             let keys_multi = keys
                 .iter()
