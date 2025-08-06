@@ -21,9 +21,9 @@ pub struct EchoStruct {
 #[net_rpc(client, server)]
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVRpc: Sized + Send + Sync {
-    fn echo_str(&self, peer_id: PeerId, req: String) -> BoxFuture<'_, Result<String>>;
-    fn echo_struct(&self, peer_id: PeerId, req: EchoStruct) -> BoxFuture<'_, Result<EchoStruct>>;
-    fn echo_err(&self, _peer_id: PeerId, req: String) -> BoxFuture<'_, Result<String>>;
+    fn echo_str(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
+    fn echo_struct(&self, peer_id: PeerId, req: EchoStruct) -> BoxFuture<Result<EchoStruct>>;
+    fn echo_err(&self, _peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
 }
 
 #[derive(Default)]
