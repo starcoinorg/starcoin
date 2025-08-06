@@ -313,7 +313,7 @@ where
     //     Ok(())
     // }
 
-    /// get all changes so far based on initial root_hash.
+    // get all changes so far based on initial root_hash.
     /*
     pub fn change_sets(&self) -> (HashValue, TreeUpdateBatch<K>) {
         let cache_guard = self.cache.lock();

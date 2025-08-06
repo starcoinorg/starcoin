@@ -189,7 +189,7 @@ impl RpcClient {
     pub fn state_reader2(
         &self,
         state_root_opt: StateRootOption,
-    ) -> anyhow::Result<RemoteStateReader> {
+    ) -> anyhow::Result<RemoteStateReader<'_>> {
         RemoteStateReader::new(self, state_root_opt)
     }
 

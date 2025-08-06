@@ -222,7 +222,7 @@ impl DBStorage {
         &self,
         prefix_name: &str,
         direction: ScanDirection,
-    ) -> Result<SchemaIterator<K, V>>
+    ) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -236,7 +236,7 @@ impl DBStorage {
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_,K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -245,7 +245,7 @@ impl DBStorage {
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -441,8 +441,7 @@ impl InnerStore for DBStorage {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
-            let cf_handles = std::iter::repeat_n(&cf_handle, keys.len())
-                .collect::<Vec<_>>();
+            let cf_handles = std::iter::repeat_n(&cf_handle, keys.len()).collect::<Vec<_>>();
             let keys_multi = keys
                 .iter()
                 .zip(cf_handles)
