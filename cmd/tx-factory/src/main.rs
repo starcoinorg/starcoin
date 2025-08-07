@@ -459,6 +459,7 @@ impl TxnMocker {
                     balance, start_balance
                 );
             }
+            info!("default account balance is {}", balance.unwrap());
             let lack = self.create_accounts(lack_len, batch_size)?;
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;
@@ -518,6 +519,7 @@ impl TxnMocker {
             }
             i += 1;
         }
+        account_list.extend_from_slice(sub_account_list.as_slice());
         info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)
     }
