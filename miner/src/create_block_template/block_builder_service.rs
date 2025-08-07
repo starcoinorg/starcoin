@@ -491,9 +491,18 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let pending_transactions = self
+        info!(
+            "[BlockProcess] now get the transaction from txpool: {}",
+            max_txns
+        );
+        let mut pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
+        pending_transactions = pending_transactions.into_iter().take(500).collect();
+        info!(
+            "[BlockProcess] after fetching pending txns len: {}",
+            pending_transactions.len()
+        );
 
         info!(
             "[BlockProcess] pending txns: {:?}",

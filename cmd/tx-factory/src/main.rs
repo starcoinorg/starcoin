@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::format_err;
 use anyhow::{bail, Result};
 use clap::Parser;
 use starcoin_account_api::AccountInfo;
@@ -607,7 +608,7 @@ impl TxnMocker {
                         info!("error: {:?}, refresh the sequence number", err);
                         for (index, account) in accounts.iter().enumerate() {
                             sequences[index] =
-                                self.sequence_number(account.address).unwrap().unwrap();
+                                self.sequence_number(account.address)?.ok_or_else(|| format_err!("failed to get the sequence number, this round will end and next round will start"))?;
                         }
                     }
                 }
