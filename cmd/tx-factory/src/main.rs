@@ -184,6 +184,9 @@ fn main() {
                         if let Err(e) = tx_mocker.recheck_sequence_number() {
                             error!("fail to start over, err: {:?}", e);
                         }
+                    } else {
+                        info!("stress test success.");
+                        return;
                     }
                 } else {
                     let success = tx_mocker.gen_and_submit_txn(false);
@@ -417,9 +420,11 @@ impl TxnMocker {
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
         let mut index = 0;
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        info!("read the lastest state");
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?; // what promises we get the latest state??
         while index < account_num {
             if let Some(account) = account_local.pop() {
+                info!("unlock and check balance for account: {}", account.address);
                 if self
                     .client
                     .account_unlock(
@@ -432,6 +437,7 @@ impl TxnMocker {
                     let balance = state_reader.get_balance(*account.address()).unwrap_or(None);
                     if let Some(amount) = balance {
                         if amount > 0 {
+                            info!("the account is available, and its address is {} having balance: {}", account.address, amount);
                             available_list.push(account);
                         }
                     }
@@ -578,6 +584,7 @@ impl TxnMocker {
                     Ok(_) => {
                         // sequence add
                         sequences[index] += 1;
+                        return Ok(());
                     }
                     Err(err) => {
                         info!("error: {:?}, refresh the sequence number", err);
