@@ -465,12 +465,17 @@ impl TxnMocker {
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;
             for account in lack {
-                let account_resource = state_reader
-                    .get_account_resource(*account.address())
-                    .unwrap_or(None);
-                if account_resource.is_some() {
-                    available_list.push(account);
-                    if available_list.len() == account_num as usize {
+                loop {
+                    let account_resource = state_reader
+                        .get_account_resource(*account.address())
+                        .unwrap_or(None);
+                    std::thread::sleep(Duration::from_millis(200));
+                    info!("waiting for account resource");
+                    if account_resource.is_some() {
+                        available_list.push(account.clone());
+                        if available_list.len() == account_num as usize {
+                            return Ok(available_list);
+                        }
                         break;
                     }
                 }
