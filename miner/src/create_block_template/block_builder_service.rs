@@ -462,7 +462,14 @@ where
             main.statedb(),
         )?;
 
-        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        let mut txn = Vec::new();
+        for _i in 0..3 {
+            let fetch = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+            if txn.len() >= max_txns as usize {
+                break;
+            }
+            txn.extend(fetch);
+        }
         info!("[BlockProcess] txns len: {}", txn.len());
         let excluded_txns = opened_block.push_txns(txn)?;
         for invalid_txn in &excluded_txns.discarded_txns {

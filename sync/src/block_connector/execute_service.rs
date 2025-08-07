@@ -83,10 +83,6 @@ impl ExecuteService {
             "[BlockProcess] executed transactions: {}",
             executed_block.block.transactions().len()
         );
-        info!(
-            "[BlockProcess] executed transactions: {:?}",
-            executed_block.block.transactions()
-        );
         Ok(executed_block)
     }
 }

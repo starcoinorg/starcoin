@@ -499,30 +499,43 @@ impl TxnMocker {
             addr_vec.push(account.address);
             sub_account_list.push(account);
             if addr_vec.len() >= batch_size as usize {
-                //submit create batch account transaction
-                let txn = self.generator.generate_account_txn(
-                    self.next_sequence_number,
-                    self.account_address,
-                    addr_vec.clone(),
-                    1000000000,
-                    1,
-                    expiration_timestamp,
-                )?;
-                let result = self.submit_txn(txn, self.account_address, true);
-                if result.is_ok() {
-                    info!("account transfer submit ok.");
-                } else {
-                    info!("error: {:?}", result);
-                }
+                self.submit_create_account_by_address(addr_vec.clone(), expiration_timestamp)?;
                 account_list.extend_from_slice(sub_account_list.as_slice());
                 sub_account_list.clear();
                 addr_vec.clear();
             }
+
             i += 1;
         }
-        account_list.extend_from_slice(sub_account_list.as_slice());
+        if !addr_vec.is_empty() {
+            self.submit_create_account_by_address(addr_vec, expiration_timestamp)?;
+            account_list.extend_from_slice(sub_account_list.as_slice());
+        }
         info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)
+    }
+
+    fn submit_create_account_by_address(
+        &self,
+        addr_vec: Vec<AccountAddress>,
+        expiration_timestamp: u64,
+    ) -> Result<()> {
+        //submit create batch account transaction
+        let txn = self.generator.generate_account_txn(
+            self.next_sequence_number,
+            self.account_address,
+            addr_vec.clone(),
+            1000000000,
+            1,
+            expiration_timestamp,
+        )?;
+        let result = self.submit_txn(txn, self.account_address, true);
+        if result.is_ok() {
+            info!("account transfer submit ok.");
+        } else {
+            info!("error: {:?}", result);
+        }
+        Ok(())
     }
 
     fn sequence_number(&self, address: AccountAddress) -> Result<Option<u64>> {
