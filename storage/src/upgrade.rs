@@ -71,13 +71,23 @@ impl DBUpgrade {
     pub fn do_upgrade(
         version_in_db: StorageVersion,
         version_in_code: StorageVersion,
-        _instance: &mut StorageInstance,
+        instance: &mut StorageInstance,
         _batch_size: usize,
     ) -> Result<()> {
         info!(
             "Upgrade db from {:?} to {:?}",
             version_in_db, version_in_code
         );
+        
+        // Handle V4 to V5 upgrade (DAG support)
+        if version_in_db == StorageVersion::V4 && version_in_code == StorageVersion::V5 {
+            // Initialize DAG-related storage
+            let _dag_sync_block_storage = crate::block::DagSyncBlockStorage::new(instance.clone());
+            // BlockHeaderStorage with V2 will be used for new DAG blocks
+            // Old blocks remain in BLOCK_HEADER_PREFIX_NAME
+            info!("Initialized DAG storage for V5");
+        }
+        
         Ok(())
     }
 

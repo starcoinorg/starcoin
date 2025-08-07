@@ -34,6 +34,8 @@ pub struct RocksdbConfig {
     pub wal_bytes_per_sync: u64,
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: u64,
+    #[clap(name = "rocksdb-parallelism", long, help = "rocksdb parallelism")]
+    pub parallelism: i32,
 }
 
 impl RocksdbConfig {
@@ -61,6 +63,8 @@ impl Default for RocksdbConfig {
             bytes_per_sync: 1u64 << 20,
             // For wal sync every size to be 1MB
             wal_bytes_per_sync: 1u64 << 20,
+            // Default parallelism
+            parallelism: 1,
         }
     }
 }
@@ -124,6 +128,7 @@ impl StorageConfig {
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
+            parallelism: default.parallelism,  // Use default for now, can add option later if needed
         }
     }
     pub fn cache_size(&self) -> usize {

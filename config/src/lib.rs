@@ -60,7 +60,10 @@ pub use genesis_config::{
 };
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
-pub use miner_config::{MinerClientConfig, MinerConfig};
+pub use miner_config::{
+    MinerClientConfig, MinerConfig, G_DAG_BLOCK_RECEIVE_TIME_WINDOW, G_MAX_PARENTS_COUNT,
+    G_MERGE_DEPTH,
+};
 pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
     ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,

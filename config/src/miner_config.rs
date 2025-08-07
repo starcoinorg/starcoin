@@ -7,6 +7,11 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+// DAG constants
+pub static G_MAX_PARENTS_COUNT: u64 = 10;
+pub static G_DAG_BLOCK_RECEIVE_TIME_WINDOW: u64 = 2; // in second, 2s for default
+pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
+
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {

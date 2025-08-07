@@ -1,18 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
-use crate::errors::StorageInitError;
-use crate::metrics::{record_metrics, StorageMetrics};
-use crate::storage::{ColumnFamilyName, InnerStore, KeyCodec, ValueCodec, WriteOp};
-use crate::{StorageVersion, DEFAULT_PREFIX_NAME};
+use crate::{
+    batch::{WriteBatch, WriteBatchWithColumn},
+    errors::StorageInitError,
+    metrics::{record_metrics, StorageMetrics},
+    storage::{ColumnFamilyName, InnerStore, KeyCodec, RawDBStorage, ValueCodec, WriteOp},
+    StorageVersion, DEFAULT_PREFIX_NAME,
+};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{
+    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
+};
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
-use std::collections::HashSet;
-use std::iter;
-use std::marker::PhantomData;
-use std::path::Path;
+use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
 const RES_FDS: u64 = 4096;
 
@@ -58,11 +60,10 @@ impl DBStorage {
                 "Duplicate column family name found.",
             );
         }
-        if Self::db_exists(path) && !readonly {
+        if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
-            let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
-            #[allow(clippy::unnecessary_to_owned)]
-            db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
+            let mut db_cfs_set: HashSet<_> = cf_vec.iter().map(|cf| cf.as_str()).collect();
+            db_cfs_set.remove(DEFAULT_PREFIX_NAME);
             ensure!(
                 db_cfs_set.len() <= cfs_set.len(),
                 StorageInitError::StorageCheckError(format_err!(
@@ -73,8 +74,8 @@ impl DBStorage {
             );
             let mut remove_cf_vec = Vec::new();
             db_cfs_set.iter().for_each(|k| {
-                if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(<&std::string::String>::clone(k));
+                if !cfs_set.contains(k) {
+                    remove_cf_vec.push(k);
                 }
             });
             ensure!(
@@ -97,7 +98,8 @@ impl DBStorage {
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
-        Ok(DBStorage {
+
+        Ok(Self {
             db,
             cfs: column_families,
             metrics,
@@ -173,7 +175,7 @@ impl DBStorage {
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
         for cf_name in &self.cfs {
-            let cf_handle = self.get_cf_handle(cf_name)?;
+            let cf_handle = self.get_cf_handle(cf_name);
             self.db.flush_cf(cf_handle)?;
         }
         Ok(())
@@ -189,9 +191,9 @@ impl DBStorage {
         rocksdb_current_file.is_file()
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
-        self.db.cf_handle(cf_name).ok_or_else(|| {
-            format_err!(
+    pub fn get_cf_handle(&self, cf_name: &str) -> &rocksdb::ColumnFamily {
+        self.db.cf_handle(cf_name).unwrap_or_else(|| {
+            panic!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
             )
@@ -214,6 +216,9 @@ impl DBStorage {
         // write buffer size
         db_opts.set_max_write_buffer_number(5);
         db_opts.set_max_background_jobs(5);
+        if config.parallelism > 1 {
+            db_opts.increase_parallelism(config.parallelism as i32);
+        }
         // cache
         // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
         // db_opts.set_row_cache(&cache.unwrap());
@@ -228,12 +233,22 @@ impl DBStorage {
         K: KeyCodec,
         V: ValueCodec,
     {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
+        let cf_handle = self.get_cf_handle(prefix_name);
         Ok(SchemaIterator::new(
             self.db
                 .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
             direction,
         ))
+    }
+
+    pub fn raw_iterator_cf_opt(
+        &self,
+        prefix_name: &str,
+        mode: IteratorMode,
+        readopts: ReadOptions,
+    ) -> Result<DBIterator> {
+        let cf_handle = self.get_cf_handle(prefix_name);
+        Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
@@ -345,7 +360,7 @@ where
 impl InnerStore for DBStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             let result = self.db.get_cf(cf_handle, key.as_slice())?;
             Ok(result)
         })
@@ -360,7 +375,7 @@ impl InnerStore for DBStorage {
         }
 
         record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
             Ok(())
@@ -377,7 +392,7 @@ impl InnerStore for DBStorage {
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db.delete_cf(cf_handle, &key)?;
             Ok(())
         })
@@ -387,7 +402,7 @@ impl InnerStore for DBStorage {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
@@ -396,6 +411,56 @@ impl InnerStore for DBStorage {
             }
             self.db
                 .write_opt(db_batch, &Self::default_write_options())?;
+            Ok(())
+        })
+    }
+
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        batch.data.into_iter().for_each(|data| {
+            let cf_handle = self.get_cf_handle(&data.column);
+            for (key, write_op) in data.row_data.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+        });
+        record_metrics(
+            "db",
+            "write_batch_column",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
+            self.db
+                .write_opt(db_batch, &Self::default_write_options())?;
+            let mut flush_options = FlushOptions::default();
+            flush_options.set_wait(false);
+            self.db.flush_opt(&flush_options).unwrap();
+            Ok(())
+        })
+    }
+
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        batch.data.into_iter().for_each(|data| {
+            let cf_handle = self.get_cf_handle(&data.column);
+            for (key, write_op) in data.row_data.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+        });
+        record_metrics(
+            "db",
+            "write_batch_column",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
+            self.db.write_opt(db_batch, &Self::sync_write_options())?;
             Ok(())
         })
     }
@@ -417,7 +482,7 @@ impl InnerStore for DBStorage {
         }
 
         record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
                 .put_cf_opt(cf_handle, &key, &value, &Self::sync_write_options())?;
             Ok(())
@@ -427,7 +492,7 @@ impl InnerStore for DBStorage {
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
                     WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
@@ -441,7 +506,7 @@ impl InnerStore for DBStorage {
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             let cf_handles = iter::repeat(&cf_handle)
                 .take(keys.len())
                 .collect::<Vec<_>>();
@@ -459,5 +524,31 @@ impl InnerStore for DBStorage {
             }
             Ok(res)
         })
+    }
+}
+
+impl RawDBStorage for DBStorage {
+    fn raw_get_pinned_cf<K: AsRef<[u8]>>(
+        &self,
+        prefix: &str,
+        key: K,
+    ) -> Result<Option<DBPinnableSlice>> {
+        let cf = self.get_cf_handle(prefix);
+        let res = self
+            .db
+            .get_pinned_cf_opt(cf, key, &ReadOptions::default())?;
+        Ok(res)
+    }
+
+    fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
+        self.db.write(batch)?;
+        Ok(())
+    }
+
+    fn raw_write_batch_sync(&self, batch: DBWriteBatch) -> Result<()> {
+        let mut opt = WriteOptions::default();
+        opt.set_sync(true);
+        self.db.write_opt(batch, &opt)?;
+        Ok(())
     }
 }

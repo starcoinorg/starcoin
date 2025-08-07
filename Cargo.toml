@@ -42,6 +42,7 @@ members = [
     "executor",
     "executor/benchmark",
     "contrib-contracts",
+    "flexidag",
     "chain",
     "chain/api",
     "chain/data-migration",
@@ -168,6 +169,7 @@ default-members = [
     "executor",
     "executor/benchmark",
     "contrib-contracts",
+    "flexidag",
     "chain",
     "chain/api",
     "chain/data-migration",
@@ -492,6 +494,7 @@ starcoin-accumulator = { path = "commons/accumulator", package = "starcoin-accum
 starcoin-block-relayer = { path = "block-relayer" }
 starcoin-chain = { path = "chain" }
 starcoin-chain-api = { path = "chain/api" }
+starcoin-dag = { path = "flexidag" }
 starcoin-data-migration = { path = "chain/data-migration" }
 starcoin-chain-mock = { path = "chain/mock" }
 starcoin-chain-notify = { path = "chain/chain-notify" }

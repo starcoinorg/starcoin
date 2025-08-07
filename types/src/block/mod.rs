@@ -748,6 +748,12 @@ impl Block {
         }
     }
 
+    pub fn random() -> Self {
+        let body = BlockBody::sample();
+        let header = BlockHeader::random();
+        Self { header, body }
+    }
+
     pub fn id(&self) -> HashValue {
         self.header.id()
     }

@@ -70,6 +70,7 @@ pub const VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_vm
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "block_v2";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
+pub const BLOCK_HEADER_PREFIX_NAME_V2: ColumnFamilyName = "block_header_v2";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_INFO_PREFIX_NAME_V2: ColumnFamilyName = "block_info_v2";
@@ -90,6 +91,7 @@ pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const FAILED_BLOCK_PREFIX_NAME_V2: ColumnFamilyName = "failed_block_v2";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 pub const TABLE_INFO_PREFIX_NAME_V2: ColumnFamilyName = "table_info_v2";
+pub const DAG_SYNC_BLOCK_PREFIX_NAME: ColumnFamilyName = "dag_sync_block";
 
 pub trait BlockStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;

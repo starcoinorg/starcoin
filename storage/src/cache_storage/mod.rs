@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
+use crate::batch::{WriteBatch, WriteBatchWithColumn};
 use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
@@ -121,6 +121,17 @@ impl InnerStore for CacheStorage {
             result.push(item);
         }
         Ok(result)
+    }
+
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        for data in batch.data {
+            self.write_batch(&data.column, data.row_data)?;
+        }
+        Ok(())
+    }
+
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        self.write_batch_with_column(batch)
     }
 }
 

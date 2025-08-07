@@ -4,8 +4,9 @@
 use crate::storage::ColumnFamilyName;
 use crate::{
     BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME,
-    BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2, BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, CHAIN_INFO_PREFIX_NAME,
+    BLOCK_HEADER_PREFIX_NAME_V2, BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2, 
+    BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME, 
+    BLOCK_TRANSACTION_INFOS_PREFIX_NAME, CHAIN_INFO_PREFIX_NAME,
     CONTRACT_EVENT_PREFIX_NAME, CONTRACT_EVENT_PREFIX_NAME_V2, FAILED_BLOCK_PREFIX_NAME,
     FAILED_BLOCK_PREFIX_NAME_V2, STATE_NODE_PREFIX_NAME, TABLE_INFO_PREFIX_NAME,
     TABLE_INFO_PREFIX_NAME_V2, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME,
@@ -98,6 +99,16 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     prefix.into_iter().collect()
 });
 
+static VEC_PREFIX_NAME_V5: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    let mut prefix = VEC_PREFIX_NAME_V4.iter().cloned().collect::<HashSet<_>>();
+    
+    prefix.insert(crate::DAG_SYNC_BLOCK_PREFIX_NAME);  // DAG support
+    prefix.insert(crate::BLOCK_HEADER_PREFIX_NAME_V2);  // DAG block header with parents_hash
+    assert_eq!(prefix.len(), VEC_PREFIX_NAME_V4.len() + 2);
+    
+    prefix.into_iter().collect()
+});
+
 // For V4 storage, the following column families are updated from V3:
 // check db_upgrade_from_v3_v4 to see the details of the upgrade.
 // --------------------------------------------------------------------------------------------------
@@ -120,11 +131,12 @@ pub enum StorageVersion {
     V2 = 2,
     V3 = 3,
     V4 = 4,
+    V5 = 5,  // DAG support (DagSyncBlockStorage)
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V4
+        StorageVersion::V5
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -133,6 +145,7 @@ impl StorageVersion {
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
             StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
+            StorageVersion::V5 => &VEC_PREFIX_NAME_V5,
         }
     }
 
@@ -150,6 +163,7 @@ impl StorageVersion {
                 TABLE_INFO_PREFIX_NAME,
                 TRANSACTION_INFO_PREFIX_NAME_V2,
             ],
+            StorageVersion::V5 => vec![],  // No columns to drop for DAG upgrade
         }
     }
 }

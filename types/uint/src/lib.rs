@@ -7,6 +7,7 @@
 use serde::{de, ser, Deserialize, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
+use std::iter::Sum;
 use uint::*;
 construct_uint! {
     pub struct U256(4);
@@ -14,6 +15,16 @@ construct_uint! {
 
 construct_uint! {
     pub struct U512(8);
+}
+
+impl Sum for U256 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum = Self::zero();
+        for value in iter {
+            sum += value;
+        }
+        sum
+    }
 }
 
 #[macro_export]
