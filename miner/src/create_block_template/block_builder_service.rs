@@ -495,18 +495,13 @@ where
             "[BlockProcess] now get the transaction from txpool: {}",
             max_txns
         );
-        let mut pending_transactions = self
+        let pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
-        pending_transactions = pending_transactions.into_iter().take(400).collect();
         info!(
             "[BlockProcess] after fetching pending txns len: {}",
             pending_transactions.len()
         );
-
-        if pending_transactions.len() >= 400_usize {
-            return Ok(pending_transactions);
-        }
 
         let mut pending_transaction_map =
             HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
@@ -573,9 +568,11 @@ where
             }
         }
 
+        // todo: put the extra transaction back to the pool in an asynchronous way 
+
         Ok(pending_transaction_map
             .iter()
-            .take(400)
+            .take(500)
             .flat_map(|(_sender, transactions)| transactions.clone())
             .collect())
     }
