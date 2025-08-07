@@ -477,7 +477,7 @@ where
         let template = opened_block.finalize()?;
         info!(
             "[BlockProcess] transacions in block: {:?} ",
-            template.body.transactions
+            template.body.transactions.len(),
         );
         Ok(BlockTemplateResponse {
             parent: previous_header,

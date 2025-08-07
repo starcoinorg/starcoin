@@ -173,6 +173,7 @@ fn main() {
         let accounts = tx_mocker
             .get_or_create_accounts(account_num, batch_size)
             .expect("create accounts should success");
+        info!("the number of accounts is: {}", accounts.len());
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
                 if is_stress {
