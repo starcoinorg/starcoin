@@ -1,0 +1,61 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm-runtime"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+once_cell = { workspace = true }
+tracing = { workspace = true }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+num_enum = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-framework" }
+starcoin-types = { path = "../types" }
+starcoin-vm-types = { path = "../vm-types" }
+starcoin-move-stdlib = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-move-stdlib" }
+starcoin-table-natives = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-table-natives" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+starcoin-metrics = { optional = true, workspace = true }
+starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
+starcoin-gas-meter = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-meter" }
+starcoin-parallel-executor = { workspace = true }
+starcoin-vm-runtime-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime-types" }
+starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+hex = "0.4.3"
+bytes = { workspace = true }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+starcoin-aggregator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-aggregator" }
+move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", optional = true }
+
+[dev-dependencies]
+#stdlib = { workspace = true }
+claims = { workspace = true }
+starcoin-cached-packages = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-cached-packages" }
+
+
+[features]
+default = ["metrics"]
+metrics = ["starcoin-metrics"]
+testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing", "move-unit-test", "starcoin-gas-meter/testing"]
+print_gas_info = ["starcoin-vm-types/print_gas_info"]

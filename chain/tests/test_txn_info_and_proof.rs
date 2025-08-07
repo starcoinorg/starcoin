@@ -86,7 +86,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         .into()]);
         all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
-            block.to_metadata2(current_header.gas_used()),
+            block.to_metadata2(current_header.gas_used(), 0),
         )
         .into()]);
         current_header = block.header().clone();

@@ -2,33 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::adapter_common::{
-    discard_error_output, discard_error_vm_status, PreprocessedTransaction, VMAdapter,
-};
-use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::force_upgrade_management::{get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER};
-use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
+use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver};
+use crate::{
+    default_gas_schedule, discard_error_output, discard_error_vm_status, PreprocessedTransaction,
+};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
-use move_table_extension::NativeTableContext;
-use move_vm_runtime::move_vm_adapter::{PublishModuleBundleOption, SessionAdapter};
-use move_vm_runtime::session::Session;
+use move_core_types::move_resource::MoveStructType;
+use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
+use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
+use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
 use once_cell::sync::OnceCell;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
-use starcoin_gas_algebra_ext::{
-    CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
+use starcoin_gas_algebra::Gas;
+use starcoin_gas_meter::StarcoinGasMeter;
+use starcoin_gas_schedule::{
+    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
+    G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
-use starcoin_types::account_config::{
-    access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
-};
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -37,45 +36,37 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
-use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
-use starcoin_vm_types::account_config::{
-    core_code_address, genesis_address, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
-    G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
-};
-use starcoin_vm_types::errors::VMResult;
-use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
-use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::identifier::IdentStr;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
-    G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
-};
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
-use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
-use starcoin_vm_types::value::{serialize_values, MoveValue};
-use starcoin_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
+use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
+use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
-    errors::Location,
-    language_storage::TypeTag,
-    on_chain_config::{OnChainConfig, VMConfig, Version},
-    state_view::StateView,
-    transaction_metadata::TransactionMetadata,
-    vm_status::{StatusCode, VMStatus},
+    access::{ModuleAccess, ScriptAccess},
+    account_address::AccountAddress,
+    account_config::{
+        genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
+        G_EPILOGUE_NAME, G_PROLOGUE_NAME,
+    },
+    errors::{Location, PartialVMError, VMResult},
+    file_format::{CompiledModule, CompiledScript},
+    identifier::IdentStr,
+    language_storage::{ModuleId, TypeTag},
+    on_chain_config::{
+        FlexiDagConfig, GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
+    },
+    state_store::{state_key::StateKey, StateView, TStateView},
+    state_view::StateReaderExt,
+    transaction::{DryRunTransaction, Package, TransactionPayloadType},
+    transaction_metadata::{TransactionMetadata, TransactionPayloadMetadata},
+    value::{serialize_values, MoveValue},
+    vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
-use std::cmp::min;
-use std::sync::Arc;
+use std::{borrow::Borrow, cmp::min, sync::Arc};
 
-static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
-
-use crate::VMExecutor;
+use crate::{verifier, VMExecutor};
 #[cfg(feature = "metrics")]
 use starcoin_metrics::metrics::VMMetrics;
+
+static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -88,21 +79,26 @@ pub struct StarcoinVM {
     native_params: NativeGasParameters,
     gas_params: Option<StarcoinGasParameters>,
     gas_schedule: Option<GasSchedule>,
+    flexi_dag_config: Option<FlexiDagConfig>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
 
-/// marking of stdlib version which includes vmconfig upgrades.
-const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
-// const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
-
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
-    pub fn new(metrics: Option<VMMetrics>) -> Self {
+    pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        let inner = MoveVmExt::new(native_params.clone())
-            .expect("should be able to create Move VM; check if there are duplicated natives");
+        let resolver = state.as_move_resolver();
+        let inner = MoveVmExt::new(
+            native_params.clone(),
+            gas_params.vm.misc.clone(),
+            LATEST_GAS_FEATURE_VERSION,
+            Features::default(),
+            TimedFeaturesBuilder::enable_all().build(),
+            &resolver,
+        )
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -111,15 +107,26 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
             metrics,
         }
     }
+
     #[cfg(not(feature = "metrics"))]
-    pub fn new() -> Self {
+    pub fn new<S: StateView>(state: &S) -> Self {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        let inner = MoveVmExt::new(native_params.clone())
-            .expect("should be able to create Move VM; check if there are duplicated natives");
+        // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
+        let resolver = StorageAdapter::new(state);
+        let inner = MoveVmExt::new(
+            native_params.clone(),
+            gas_params.vm.misc.clone(),
+            1,
+            Features::default(),
+            TimedFeaturesBuilder::enable_all().build(),
+            resolver,
+        )
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -128,142 +135,85 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
+            flexi_dag_config: None,
         }
     }
 
     pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
+            let gas_schedule = default_gas_schedule();
             self.vm_config = Some(VMConfig {
-                gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
+                gas_schedule: gas_schedule.clone(),
             });
             self.version = Some(Version { major: 1 });
-            self.gas_schedule = Some(GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()));
+            self.gas_schedule = Some(gas_schedule);
 
             #[cfg(feature = "print_gas_info")]
             self.gas_schedule.as_ref().unwrap().info("from is_genesis");
-        } else {
-            self.load_configs_impl(state)?;
+            return Ok(());
         }
+
+        self.load_configs_impl(state)?;
 
         match self.gas_schedule.as_ref() {
             None => {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                let gas_params =
-                    StarcoinGasParameters::from_on_chain_gas_schedule(&gs.clone().to_btree_map());
-                if let Some(ref params) = gas_params {
-                    if params.natives != self.native_params {
-                        debug!("update native_params");
-                        match Arc::get_mut(&mut self.move_vm) {
-                            None => {
-                                bail!("failed to get move vm when load config");
-                            }
-                            Some(mv) => {
-                                mv.update_native_functions(params.clone().natives)?;
-                            }
-                        }
-                        self.native_params = params.natives.clone();
+                let gas_feature_version = gs.feature_version;
+                let gas_schdule_treemap = gs.clone().to_btree_map();
+                let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
+                    &gas_schdule_treemap,
+                    gas_feature_version,
+                )
+                .map_err(|e| format_err!("{e}"))?;
+
+                // TODO(simon): do double check
+                // if params.natives != self.native_params {
+                debug!("update native_params");
+                match Arc::get_mut(&mut self.move_vm) {
+                    None => {
+                        bail!("failed to get move vm when load config");
                     }
-                    self.gas_params = gas_params;
+                    Some(mv) => {
+                        let gas_params = gas_params.clone();
+                        mv.update_native_functions(
+                            gas_params.natives,
+                            gas_params.vm.misc,
+                            gas_feature_version,
+                        )?;
+                    }
                 }
+                self.native_params = gas_params.natives.clone();
+                self.gas_params = Some(gas_params);
             }
         }
         Ok(())
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
-        let remote_storage = RemoteStorage::new(state);
-        self.version = Some(
-            Version::fetch_config(&remote_storage)?
-                .ok_or_else(|| format_err!("Load Version fail, Version resource not exist."))?,
-        );
+        let remote_storage = state.as_move_resolver();
+        self.version = Version::fetch_config(&remote_storage);
         // move version can be none.
-        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage)?;
+        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
             let stdlib_version = v.clone().into_stdlib_version();
-            let _message;
-            (self.gas_schedule, _message) = if stdlib_version
-                < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
-            {
+            self.gas_schedule = {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
-                let gas_cost_table = VMConfig::fetch_config(&remote_storage)?
-                    .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?
-                    .gas_schedule;
-                (
-                    Some(GasSchedule::from(&gas_cost_table)),
-                    "gas schedule from VMConfig",
-                )
-            } else {
-                debug!(
-                    "stdlib version: {}, fetch VMConfig from onchain module",
-                    stdlib_version
-                );
-                let instruction_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
-                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Expect 0x1::VMConfig::instruction_schedule() return value"
-                            )
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let native_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
-                            G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::native_schedule() return value")
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let gas_constants = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
-                            G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::gas_constants() return value")
-                        })?;
-                    bcs_ext::from_bytes::<GasConstants>(&data)?
-                };
-                let cost_table = CostTable {
-                    instruction_table: instruction_schedule,
-                    native_table: native_schedule,
-                    gas_constants,
-                };
-                (
-                    Some(GasSchedule::from(&cost_table)),
-                    "gas schedule from VMConfig",
-                )
+                // todo: fetch gas schedule from GasSchedule Config on chain
+                VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
             };
+
+            self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
+            debug!(
+                "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
+                stdlib_version, self.flexi_dag_config,
+            );
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
@@ -277,43 +227,41 @@ impl StarcoinVM {
         Ok(())
     }
 
-    pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
+    pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
+        self.flexi_dag_config
+            .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
+    }
+
+    pub fn get_gas_schedule(&self) -> Result<&GasSchedule, VMStatus> {
         self.vm_config
             .as_ref()
             .map(|config| &config.gas_schedule)
-            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+            .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
     pub fn get_version(&self) -> Result<Version, VMStatus> {
         self.version
             .clone()
-            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+            .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
     pub fn get_move_version(&self) -> Option<MoveLanguageVersion> {
         self.move_version
     }
 
-    fn check_move_version(
-        &self,
-        package_or_script_bytecode_version: u64,
-        block_number: u64,
-    ) -> Result<(), VMStatus> {
+    fn check_move_version(&self, package_or_script_bytecode_version: u64) -> Result<(), VMStatus> {
         // if move_version config is not exists on chain, this check will do no harm.
         if let Some(supported_move_version) = &self.move_version {
             if package_or_script_bytecode_version > supported_move_version.major {
                 // TODO: currently, if the bytecode version of a package or script is higher than onchain config,
                 // return `FEATURE_UNDER_GATING` error, and the txn will not be included in blocks.
-                return Err(VMStatus::Error(StatusCode::FEATURE_UNDER_GATING));
+                return Err(VMStatus::error(StatusCode::FEATURE_UNDER_GATING, None));
             }
-        }
-        if block_number > FORCE_UPGRADE_BLOCK_NUMBER && package_or_script_bytecode_version < 6 {
-            return Err(VMStatus::Error(StatusCode::UNKNOWN_VERSION));
         }
         Ok(())
     }
 
     fn check_gas(&self, txn_data: &TransactionMetadata) -> Result<(), VMStatus> {
-        let txn_gas_params = &self.get_gas_parameters()?.txn;
+        let txn_gas_params = &self.get_gas_parameters()?.vm.txn;
         let raw_bytes_len = txn_data.transaction_size;
         // The transaction is too large.
         if raw_bytes_len > txn_gas_params.max_transaction_size_in_bytes {
@@ -321,7 +269,10 @@ impl StarcoinVM {
                 "[VM] Transaction size too big {} (max {})",
                 raw_bytes_len, txn_gas_params.max_transaction_size_in_bytes
             );
-            return Err(VMStatus::Error(StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE));
+            return Err(VMStatus::error(
+                StatusCode::EXCEEDED_MAX_TRANSACTION_SIZE,
+                None,
+            ));
         }
 
         // The submitted max gas units that the transaction can consume is greater than the
@@ -334,8 +285,9 @@ impl StarcoinVM {
                 txn_data.max_gas_amount(),
                 txn_gas_params.gas_unit_scaling_factor
             );
-            return Err(VMStatus::Error(
+            return Err(VMStatus::error(
                 StatusCode::MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND,
+                None,
             ));
         }
 
@@ -352,8 +304,9 @@ impl StarcoinVM {
                 txn_data.max_gas_amount(),
                 txn_gas_params.gas_unit_scaling_factor
             );
-            return Err(VMStatus::Error(
+            return Err(VMStatus::error(
                 StatusCode::MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS,
+                None,
             ));
         }
 
@@ -368,7 +321,10 @@ impl StarcoinVM {
                 txn_gas_params.min_price_per_gas_unit,
                 txn_data.gas_unit_price()
             );
-            return Err(VMStatus::Error(StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND));
+            return Err(VMStatus::error(
+                StatusCode::GAS_UNIT_PRICE_BELOW_MIN_BOUND,
+                None,
+            ));
         }
 
         // The submitted gas price is greater than the maximum gas unit price set by the VM.
@@ -378,7 +334,10 @@ impl StarcoinVM {
                 txn_gas_params.max_price_per_gas_unit,
                 txn_data.gas_unit_price()
             );
-            return Err(VMStatus::Error(StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND));
+            return Err(VMStatus::error(
+                StatusCode::GAS_UNIT_PRICE_ABOVE_MAX_BOUND,
+                None,
+            ));
         }
         Ok(())
     }
@@ -390,15 +349,9 @@ impl StarcoinVM {
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
-        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
-        let mut session: SessionAdapter<_> = self
+        let mut session = self
             .move_vm
-            .new_session(&data_cache, SessionId::txn(transaction))
-            .into();
+            .new_session(&data_cache, SessionId::txn(transaction));
         let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
@@ -408,17 +361,19 @@ impl StarcoinVM {
                 for module in package.modules() {
                     if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                         // check module's bytecode version.
-                        self.check_move_version(compiled_module.version() as u64, block_number)?;
+                        self.check_move_version(compiled_module.version() as u64)?;
                     };
                 }
+
                 let enforced =
                     Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
                 let only_new_module =
                     match Self::only_new_module_strategy(remote_cache, package.package_address()) {
                         Err(e) => {
                             warn!("[VM]Update module strategy deserialize err : {:?}", e);
-                            return Err(VMStatus::Error(
+                            return Err(VMStatus::error(
                                 StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
+                                None,
                             ));
                         }
                         Ok(only_new_module) => only_new_module,
@@ -441,7 +396,7 @@ impl StarcoinVM {
             }
             TransactionPayload::Script(s) => {
                 if let Ok(s) = CompiledScript::deserialize(s.code()) {
-                    self.check_move_version(s.version() as u64, block_number)?;
+                    self.check_move_version(s.version() as u64)?;
                 };
                 session
                     .verify_script_args(
@@ -452,7 +407,7 @@ impl StarcoinVM {
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
-            TransactionPayload::ScriptFunction(s) => {
+            TransactionPayload::EntryFunction(s) => {
                 session
                     .verify_script_function_args(
                         s.module(),
@@ -482,11 +437,11 @@ impl StarcoinVM {
         let data_cache = StateViewCache::new(state_view);
         let signature_verified_txn = match txn.check_signature() {
             Ok(t) => t,
-            Err(_) => return Some(VMStatus::Error(StatusCode::INVALID_SIGNATURE)),
+            Err(_) => return Some(VMStatus::error(StatusCode::INVALID_SIGNATURE, None)),
         };
         if let Err(err) = self.load_configs(state_view) {
             warn!("Load config error at verify_transaction: {}", err);
-            return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
+            return Some(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
         }
         match self.verify_transaction_impl(&signature_verified_txn, &data_cache) {
             Ok(_) => None,
@@ -504,11 +459,9 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
         package_address: AccountAddress,
     ) -> Result<bool> {
-        let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
-        if let Some(data) =
-            remote_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
-        {
-            Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
+        let key = StateKey::resource(&package_address, &ModuleUpgradeStrategy::struct_tag())?;
+        if let Some(data) = remote_cache.get_state_value(&key)? {
+            Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(data.bytes())?.only_new_module())
         } else {
             Ok(false)
         }
@@ -519,17 +472,21 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let chain_id = remote_cache.get_chain_id()?;
-        let block_meta = remote_cache.get_block_metadata()?;
+        let block_number = match remote_cache.get_block_metadata().map(|data| data.number) {
+            Ok(n) => n,
+            Err(_) => remote_cache.get_block_metadata().map(|v| v.number)?,
+        };
+
         // from mainnet after 8015088 and barnard after 8311392, we disable enforce upgrade
         if package_address == genesis_address()
-            || (chain_id.is_main() && block_meta.number < 8015088)
-            || (chain_id.is_barnard() && block_meta.number < 8311392)
+            || (chain_id.is_main() && block_number < 8015088)
+            || (chain_id.is_barnard() && block_number < 8311392)
         {
-            let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
-            if let Some(data) =
-                remote_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
-            {
-                let enforced = bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced();
+            let key =
+                StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag())?;
+            if let Some(data) = remote_cache.get_state_value(&key)? {
+                let enforced =
+                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(data.bytes())?.enforced();
                 Ok(enforced)
             } else {
                 Ok(false)
@@ -539,40 +496,29 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_package<S: MoveResolverExt + StateView>(
+    fn execute_package<S: StarcoinMoveResolver + StateView>(
         &self,
-        mut session: SessionAdapter<S>,
+        mut session: SessionExt,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         package: &Package,
         storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let data_cache = StateViewCache::new(storage);
-        let block_number = if let Ok(block_meta) = data_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
-        let is_force_upgrade = !data_cache.is_genesis()
-            && block_number
-                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
-                    warn!("[VM] execute_package error, get_chain_id error: {:?}", e);
-                    VMStatus::Error(StatusCode::STORAGE_ERROR)
-                })?);
         {
             // Run the validation logic
             gas_meter.set_metering(false);
 
-            // // genesis txn and force upgrade txn skip check gas and txn prologue.
-            if !data_cache.is_genesis() && !is_force_upgrade {
+            // // genesis txn skip check gas and txn prologue.
+            if !data_cache.is_genesis() {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
                 self.run_prologue(&mut session, gas_meter, txn_data)?;
             }
         }
         {
-            // Genesis txn and force upgrade txn not enable gas charge.
-            if !data_cache.is_genesis() && !is_force_upgrade {
+            // Genesis txn not enable gas charge.
+            if !data_cache.is_genesis() {
                 gas_meter.set_metering(true);
             }
 
@@ -583,7 +529,7 @@ impl StarcoinVM {
             for module in package.modules() {
                 if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                     // check module's bytecode version.
-                    self.check_move_version(compiled_module.version() as u64, block_number)?;
+                    self.check_move_version(compiled_module.version() as u64)?;
                 };
             }
 
@@ -592,7 +538,10 @@ impl StarcoinVM {
             {
                 Err(e) => {
                     warn!("[VM]Update module strategy deserialize err : {:?}", e);
-                    return Err(VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE));
+                    return Err(VMStatus::error(
+                        StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
+                        None,
+                    ));
                 }
                 Ok(only_new_module) => only_new_module,
             };
@@ -605,7 +554,7 @@ impl StarcoinVM {
                         .map(|m| m.code().to_vec())
                         .collect(),
                     package.package_address(), // be careful with the sender.
-                     gas_meter,
+                    gas_meter,
                     PublishModuleBundleOption {
                         force_publish: enforced,
                         only_new_module,
@@ -637,16 +586,16 @@ impl StarcoinVM {
                     init_script.function(),
                     sender
                 );
-                session
-                    .execute_entry_function(
-                        init_script.module(),
-                        init_script.function(),
-                        init_script.ty_args().to_vec(),
-                        init_script.args().to_vec(),
-                        gas_meter,
-                        sender,
-                    )
-                    .map_err(|e| e.into_vm_status())?;
+                Self::validate_execute_entry_function(
+                    &mut session,
+                    init_script.module(),
+                    init_script.function(),
+                    init_script.ty_args().to_vec(),
+                    init_script.args().to_vec(),
+                    gas_meter,
+                    sender,
+                )
+                .map_err(|e| e.into_vm_status())?;
             }
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
@@ -655,20 +604,13 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_script_or_script_function<S: MoveResolverExt + StateView>(
+    fn execute_script_or_script_function(
         &self,
-        mut session: SessionAdapter<S>,
+        mut session: SessionExt,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
-        storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let remote_cache = StateViewCache::new(storage);
-        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
         // Run the validation logic
         {
             gas_meter.set_metering(false);
@@ -687,10 +629,11 @@ impl StarcoinVM {
                 TransactionPayload::Script(script) => {
                     // we only use the ok path, let move vm handle the wrong path.
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
-                        self.check_move_version(s.version() as u64, block_number)?;
+                        self.check_move_version(s.version() as u64)?;
                     };
                     debug!("TransactionPayload::{:?}", script);
-                    session.execute_script(
+                    Self::validate_execute_script(
+                        &mut session,
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
@@ -698,9 +641,10 @@ impl StarcoinVM {
                         txn_data.sender(),
                     )
                 }
-                TransactionPayload::ScriptFunction(script_function) => {
+                TransactionPayload::EntryFunction(script_function) => {
                     debug!("TransactionPayload::{:?}", script_function);
-                    session.execute_entry_function(
+                    Self::validate_execute_entry_function(
+                        &mut session,
                         script_function.module(),
                         script_function.function(),
                         script_function.ty_args().to_vec(),
@@ -710,33 +654,104 @@ impl StarcoinVM {
                     )
                 }
                 TransactionPayload::Package(_) => {
-                    return Err(VMStatus::Error(StatusCode::UNREACHABLE));
+                    return Err(VMStatus::error(StatusCode::UNREACHABLE, None));
                 }
             }
-            .map_err(|e|
-                {
-                    warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
-                    e.into_vm_status()
-                })?;
+                .map_err(|e|
+                    {
+                        warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
+                        e.into_vm_status()
+                    })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
             self.success_transaction_cleanup(session, gas_meter, txn_data)
         }
     }
 
+    fn validate_execute_entry_function(
+        session: &mut SessionExt,
+        module: &ModuleId,
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        args: Vec<impl Borrow<[u8]>>,
+        gas_meter: &mut impl GasMeter,
+        sender: AccountAddress,
+    ) -> VMResult<()> {
+        let loaded_func = session.load_function(module, function_name, &ty_args)?;
+
+        verifier::transaction_arg_validation::validate_combine_singer_and_args(
+            session,
+            vec![sender],
+            &args,
+            &loaded_func,
+        )?;
+
+        let final_args = SessionExt::check_and_rearrange_args_by_signer_position(
+            loaded_func.borrow(),
+            args.iter().map(|b| b.borrow().to_vec()).collect(),
+            sender,
+        )?;
+
+        let tranversal_storage = TraversalStorage::new();
+        session.execute_entry_function(
+            loaded_func,
+            final_args,
+            gas_meter,
+            &mut TraversalContext::new(&tranversal_storage),
+        )
+    }
+
+    fn validate_execute_script(
+        session: &mut SessionExt,
+        script: impl Borrow<[u8]>,
+        ty_args: Vec<TypeTag>,
+        args: Vec<impl Borrow<[u8]>>,
+        gas_meter: &mut impl GasMeter,
+        sender: AccountAddress,
+    ) -> VMResult<()> {
+        let loaded_func = session.load_script(script.borrow(), ty_args.as_ref())?;
+
+        verifier::transaction_arg_validation::validate_combine_singer_and_args(
+            session,
+            vec![sender],
+            &args,
+            &loaded_func,
+        )?;
+
+        let final_args = SessionExt::check_and_rearrange_args_by_signer_position(
+            loaded_func.borrow(),
+            args.iter().map(|b| b.borrow().to_vec()).collect(),
+            sender,
+        )?;
+
+        let traversal_storage = TraversalStorage::new();
+        session.execute_script(
+            script,
+            ty_args,
+            final_args,
+            gas_meter,
+            &mut TraversalContext::new(&traversal_storage),
+        )
+    }
+
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_prologue<R: MoveResolverExt>(
+    fn run_prologue(
         &self,
-        session: &mut SessionAdapter<R>,
+        session: &mut SessionExt,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
         let genesis_address = genesis_address();
         let gas_token_ty =
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
-                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+                |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
+        info!(
+            "StarcoinVM::run_prologue | Gas token data: {:?}",
+            gas_token_ty
+        );
+
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -757,11 +772,11 @@ impl StarcoinVM {
             ),
         };
 
+        let traversal_storage = TraversalStorage::new();
         // Run prologue by genesis account
         session
-            .as_mut()
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_TRANSACTION_VALIDATION_MODULE,
                 &G_PROLOGUE_NAME,
                 vec![gas_token_ty],
                 serialize_values(&vec![
@@ -778,6 +793,7 @@ impl StarcoinVM {
                     MoveValue::Address(package_address),
                 ]),
                 gas_meter,
+                &mut TraversalContext::new(&traversal_storage),
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)
@@ -785,9 +801,9 @@ impl StarcoinVM {
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_epilogue<R: MoveResolverExt>(
+    fn run_epilogue(
         &self,
-        session: &mut SessionAdapter<R>,
+        session: &mut SessionExt,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         success: bool,
@@ -795,8 +811,9 @@ impl StarcoinVM {
         let genesis_address = genesis_address();
         let gas_token_ty =
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
-                |_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),
+                |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
+
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -815,57 +832,75 @@ impl StarcoinVM {
                 AccountAddress::ZERO,
             ),
         };
-        let stdlib_version = self.get_version()?.into_stdlib_version();
+        //let stdlib_version = self.get_version()?.into_stdlib_version();
         // Run epilogue by genesis account, second arg is txn sender.
         // From stdlib v5, the epilogue function add `txn_authentication_key_preimage` argument, change to epilogue_v2
-        let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
-            (
-                &G_EPILOGUE_V2_NAME,
-                serialize_values(&vec![
-                    MoveValue::Signer(genesis_address),
-                    MoveValue::Address(txn_data.sender),
-                    MoveValue::U64(txn_sequence_number),
-                    MoveValue::vector_u8(txn_authentication_key_preimage),
-                    MoveValue::U64(txn_gas_price),
-                    MoveValue::U64(txn_max_gas_amount),
-                    MoveValue::U64(gas_remaining),
-                    MoveValue::U8(payload_type.into()),
-                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
-                    MoveValue::Address(package_address),
-                    MoveValue::Bool(success),
-                ]),
-            )
-        } else {
-            (
-                &G_EPILOGUE_NAME,
-                serialize_values(&vec![
-                    MoveValue::Signer(genesis_address),
-                    MoveValue::Address(txn_data.sender),
-                    MoveValue::U64(txn_sequence_number),
-                    MoveValue::U64(txn_gas_price),
-                    MoveValue::U64(txn_max_gas_amount),
-                    MoveValue::U64(gas_remaining),
-                    MoveValue::U8(payload_type.into()),
-                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
-                    MoveValue::Address(package_address),
-                    MoveValue::Bool(success),
-                ]),
-            )
-        };
+        // let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
+        //     (
+        //         &G_EPILOGUE_NAME,
+        //         serialize_values(&vec![
+        //             MoveValue::Signer(genesis_address),
+        //             MoveValue::Address(txn_data.sender),
+        //             MoveValue::U64(txn_sequence_number),
+        //             MoveValue::vector_u8(txn_authentication_key_preimage),
+        //             MoveValue::U64(txn_gas_price),
+        //             MoveValue::U64(txn_max_gas_amount),
+        //             MoveValue::U64(gas_remaining),
+        //             MoveValue::U8(payload_type.into()),
+        //             MoveValue::vector_u8(script_or_package_hash.to_vec()),
+        //             MoveValue::Address(package_address),
+        //             MoveValue::Bool(success),
+        //         ]),
+        //     )
+        // } else {
+        //     (
+        //         &G_EPILOGUE_NAME,
+        //         serialize_values(&vec![
+        //             MoveValue::Signer(genesis_address),
+        //             MoveValue::Address(txn_data.sender),
+        //             MoveValue::U64(txn_sequence_number),
+        //             MoveValue::U64(txn_gas_price),
+        //             MoveValue::U64(txn_max_gas_amount),
+        //             MoveValue::U64(gas_remaining),
+        //             MoveValue::U8(payload_type.into()),
+        //             MoveValue::vector_u8(script_or_package_hash.to_vec()),
+        //             MoveValue::Address(package_address),
+        //             MoveValue::Bool(success),
+        //         ]),
+        //     )
+        // };
+        let (function_name, args) = (
+            &G_EPILOGUE_NAME,
+            serialize_values(&vec![
+                MoveValue::Signer(genesis_address),
+                MoveValue::Address(txn_data.sender),
+                MoveValue::U64(txn_sequence_number),
+                MoveValue::vector_u8(txn_authentication_key_preimage),
+                MoveValue::U64(txn_gas_price),
+                MoveValue::U64(txn_max_gas_amount),
+                MoveValue::U64(gas_remaining),
+                MoveValue::U8(payload_type.into()),
+                MoveValue::vector_u8(script_or_package_hash.to_vec()),
+                MoveValue::Address(package_address),
+                MoveValue::Bool(success),
+            ]),
+        );
+
+        let traversal_storage = TraversalStorage::new();
         session
-            .as_mut()
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_TRANSACTION_VALIDATION_MODULE,
                 function_name,
                 vec![gas_token_ty],
                 args,
                 gas_meter,
+                &mut TraversalContext::new(&traversal_storage),
             )
             .map(|_return_vals| ())
             .or_else(convert_normal_success_epilogue_error)
     }
 
-    fn process_block_metadata<S: MoveResolverExt>(
+    fn process_block_metadata<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
         block_metadata: BlockMetadata,
@@ -873,63 +908,46 @@ impl StarcoinVM {
         #[cfg(feature = "testing")]
         info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
-        // always use 0 gas for system.
-        let max_gas_amount: Gas = 0.into();
-        // let mut gas_meter = UnmeteredGasMeter;
-        // for debug
-        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
-        gas_meter.set_metering(false);
+        let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
-        let (
-            parent_id,
-            timestamp,
-            author,
-            author_auth_key,
-            uncles,
-            number,
-            chain_id,
-            parent_gas_used,
-            parents_hash,
-            _red_blocks,
-        ) = block_metadata.into_inner();
-        let args = serialize_values(&vec![
+        let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash, _red_blocks) =
+            block_metadata.into_inner();
+        let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+        let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
             MoveValue::Address(author),
-            match author_auth_key {
-                Some(author_auth_key) => MoveValue::vector_u8(author_auth_key.to_vec()),
-                None => MoveValue::vector_u8(Vec::new()),
-            },
+            MoveValue::vector_u8(Vec::new()),
             MoveValue::U64(uncles),
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
-        ]);
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
+            MoveValue::vector_u8(
+                bcs_ext::to_bytes(&parents_hash)
+                    .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
+            ),
+        ];
+        let args = serialize_values(&args_vec);
+        let mut session = self.move_vm.new_session(storage, session_id);
+        let traverse_storage = TraversalStorage::new();
         session
-            .as_mut()
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
-                &account_config::G_BLOCK_PROLOGUE_NAME,
+                &account_config::G_BLOCK_MODULE,
+                function_name,
                 vec![],
                 args,
                 &mut gas_meter,
+                &mut TraversalContext::new(&traverse_storage),
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         #[cfg(feature = "testing")]
         info!("process_block_meta end");
-        get_transaction_output(
-            &mut (),
-            session,
-            0.into(),
-            max_gas_amount,
-            KeptVMStatus::Executed,
-        )
+        get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
-    fn execute_user_transaction<S: MoveResolverExt + StateView>(
+    fn execute_user_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         storage: &S,
         txn: SignedUserTransaction,
@@ -951,29 +969,26 @@ impl StarcoinVM {
             }
         };
 
-        let session: SessionAdapter<_> = self
+        let session = self
             .move_vm
-            .new_session(storage, SessionId::txn_meta(&txn_data))
-            .into();
+            .new_session(storage, SessionId::txn_meta(&txn_data));
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
-        gas_meter.set_metering(false);
         // check signature
         let signature_checked_txn = match txn.check_signature() {
             Ok(t) => Ok(t),
-            Err(_) => Err(VMStatus::Error(StatusCode::INVALID_SIGNATURE)),
+            Err(_) => Err(VMStatus::error(StatusCode::INVALID_SIGNATURE, None)),
         };
 
         match signature_checked_txn {
             Ok(txn) => {
                 let result = match txn.payload() {
                     payload @ TransactionPayload::Script(_)
-                    | payload @ TransactionPayload::ScriptFunction(_) => self
+                    | payload @ TransactionPayload::EntryFunction(_) => self
                         .execute_script_or_script_function(
                             session,
                             &mut gas_meter,
                             &txn_data,
                             payload,
-                            storage,
                         ),
                     TransactionPayload::Package(p) => {
                         self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
@@ -1004,7 +1019,7 @@ impl StarcoinVM {
         }
     }
 
-    pub fn dry_run_transaction<S: MoveResolverExt + StateView>(
+    pub fn dry_run_transaction<S: StarcoinMoveResolver + StateView>(
         &mut self,
         storage: &S,
         txn: DryRunTransaction,
@@ -1031,20 +1046,14 @@ impl StarcoinVM {
         };
         let session = self
             .move_vm
-            .new_session(storage, SessionId::txn_meta(&txn_data))
-            .into();
+            .new_session(storage, SessionId::txn_meta(&txn_data));
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
-            | payload @ TransactionPayload::ScriptFunction(_) => self
-                .execute_script_or_script_function(
-                    session,
-                    &mut gas_meter,
-                    &txn_data,
-                    payload,
-                    storage,
-                ),
+            | payload @ TransactionPayload::EntryFunction(_) => {
+                self.execute_script_or_script_function(session, &mut gas_meter, &txn_data, payload)
+            }
             TransactionPayload::Package(p) => {
                 self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
             }
@@ -1067,9 +1076,10 @@ impl StarcoinVM {
         state_view: &S,
         output: &TransactionOutput,
     ) -> Result<(), Error> {
-        for event in output.events() {
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+        for contract_event in output.events() {
+            if contract_event.event_key().get_creator_address() == genesis_address()
+                && (contract_event.is_typed::<UpgradeEvent>()
+                    || contract_event.is_typed::<ConfigChangeEvent<Version>>())
             {
                 info!("Load vm configs trigger by reconfigure event. ");
                 self.load_configs(state_view)?;
@@ -1090,8 +1100,13 @@ impl StarcoinVM {
         let mut result = vec![];
 
         // TODO load config by config change event
-        self.load_configs(&data_cache)
-            .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
+        self.load_configs(&data_cache).map_err(|err| {
+            error!(
+                "StarcoinVM::execute_block_transactions | load_configs return error: ‘{:?}’ ",
+                err
+            );
+            VMStatus::error(StatusCode::STORAGE_ERROR, None)
+        })?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
         let blocks = chunk_block_transactions(transactions);
@@ -1130,11 +1145,21 @@ impl StarcoinVM {
                                 );
                             }
                             // Push write set to write set
-                            data_cache.push_write_set(output.write_set())
+                            data_cache
+                                .push_write_set(output.write_set())
+                                .map_err(|err| {
+                                    VMStatus::error(
+                                        StatusCode::STORAGE_ERROR,
+                                        Some(err.to_string()),
+                                    )
+                                })?;
                         }
                         // TODO load config by config change event
                         self.check_reconfigure(&data_cache, &output)
-                            .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
+                            .map_err(|err| {
+                                info!("check_reconfigure error: {:?}", err);
+                                VMStatus::error(StatusCode::STORAGE_ERROR, None)
+                            })?;
 
                         #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
@@ -1182,7 +1207,11 @@ impl StarcoinVM {
                             "Block metadata transaction keep status must been Executed."
                         );
                         // Push write set to write set
-                        data_cache.push_write_set(output.write_set())
+                        data_cache
+                            .push_write_set(output.write_set())
+                            .map_err(|err| {
+                                VMStatus::error(StatusCode::STORAGE_ERROR, Some(err.to_string()))
+                            })?;
                     }
                     #[cfg(feature = "metrics")]
                     if let Some(timer) = timer {
@@ -1247,12 +1276,12 @@ impl StarcoinVM {
                     "Load config error at execute_readonly_function_internal: {}",
                     err
                 );
-                return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
+                return Err(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
             }
             let gas_params = self.get_gas_parameters()?;
             let mut gas_meter = StarcoinGasMeter::new(
                 G_LATEST_GAS_PARAMS.clone(),
-                gas_params.txn.maximum_number_of_gas_units,
+                gas_params.vm.txn.maximum_number_of_gas_units,
             );
             gas_meter.set_metering(true);
             gas_meter
@@ -1263,6 +1292,8 @@ impl StarcoinVM {
             gas_meter.set_metering(false);
             gas_meter
         };
+
+        let traversal_storage = TraversalStorage::new();
         let mut session = self.move_vm.new_session(&data_cache, SessionId::void());
         let result = session
             .execute_function_bypass_visibility(
@@ -1271,6 +1302,7 @@ impl StarcoinVM {
                 type_params,
                 args,
                 &mut gas_meter,
+                &mut TraversalContext::new(&traversal_storage),
             )
             .map_err(|e| e.into_vm_status())?
             .return_values
@@ -1278,31 +1310,29 @@ impl StarcoinVM {
             .map(|(a, _)| a)
             .collect();
 
-        let (change_set, events, mut extensions) = session
-            .finish_with_extensions()
+        let change_set_config =
+            ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
+        let (change_set, module_write_set) = session
+            .finish(&change_set_config)
             .map_err(|e| e.into_vm_status())?;
-        let table_context: NativeTableContext = extensions.remove();
-        let table_change_set = table_context
-            .into_change_set()
-            .map_err(|e| e.finish(Location::Undefined))?;
-        // Ignore new table infos.
-        // No table infos should be produced in readonly function.
-        let (_table_infos, write_set, _events) = SessionOutput {
-            change_set,
-            events,
-            table_change_set,
-        }
-        .into_change_set(&mut ())?;
+        let (write_set, _events) = change_set
+            .try_combine_into_storage_change_set(module_write_set)
+            .map_err(|e| {
+                PartialVMError::from(e)
+                    .finish(Location::Undefined)
+                    .into_vm_status()
+            })?
+            .into_inner();
         if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
-            return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
+            return Err(VMStatus::error(StatusCode::REJECTED_WRITE_SET, None));
         }
         Ok(result)
     }
 
-    fn success_transaction_cleanup<R: MoveResolverExt>(
+    fn success_transaction_cleanup(
         &self,
-        mut session: SessionAdapter<R>,
+        mut session: SessionExt,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
@@ -1321,7 +1351,7 @@ impl StarcoinVM {
         ))
     }
 
-    fn failed_transaction_cleanup<S: MoveResolverExt + StateView>(
+    fn failed_transaction_cleanup<S: StarcoinMoveResolver + StateView>(
         &self,
         error_code: VMStatus,
         gas_meter: &mut StarcoinGasMeter,
@@ -1329,10 +1359,9 @@ impl StarcoinVM {
         storage: &S,
     ) -> (VMStatus, TransactionOutput) {
         gas_meter.set_metering(false);
-        let mut session: SessionAdapter<_> = self
+        let mut session = self
             .move_vm
-            .new_session(storage, SessionId::txn_meta(txn_data))
-            .into();
+            .new_session(storage, SessionId::txn_meta(txn_data));
 
         // init_script doesn't need run epilogue
         if storage.is_genesis() {
@@ -1355,7 +1384,7 @@ impl StarcoinVM {
                 (error_code, txn_output)
             }
             TransactionStatus::Discard(status) => {
-                (VMStatus::Error(status), discard_error_output(status))
+                (VMStatus::error(status, None), discard_error_output(status))
             }
             TransactionStatus::Retry => unreachable!(),
         }
@@ -1364,7 +1393,7 @@ impl StarcoinVM {
     pub fn get_gas_parameters(&self) -> Result<&StarcoinGasParameters, VMStatus> {
         self.gas_params.as_ref().ok_or_else(|| {
             debug!("VM Startup Failed. Gas Parameters Not Found");
-            VMStatus::Error(StatusCode::VM_STARTUP_FAILURE)
+            VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None)
         })
     }
 
@@ -1393,11 +1422,11 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut vm = StarcoinVM::new(metrics);
+        let mut vm = Self::new(metrics, state_view);
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
-    pub fn load_module<R: MoveResolverExt>(
+    pub fn load_module<R: StarcoinMoveResolver>(
         &self,
         module_id: &ModuleId,
         remote: &R,
@@ -1415,8 +1444,8 @@ pub enum TransactionBlock {
 impl TransactionBlock {
     pub fn type_name(&self) -> &str {
         match self {
-            TransactionBlock::UserTransaction(_) => "UserTransaction",
-            TransactionBlock::BlockPrologue(_) => "BlockMetadata",
+            Self::UserTransaction(_) => "UserTransaction",
+            Self::BlockPrologue(_) => "BlockMetadata",
         }
     }
 }
@@ -1445,14 +1474,14 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
+pub(crate) fn charge_global_write_gas_usage(
     gas_meter: &mut StarcoinGasMeter,
-    session: &SessionAdapter<R>,
+    session: &SessionExt,
     sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
-        * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
+        * NumBytes::new(session.num_mutated_accounts(sender));
     #[cfg(feature = "testing")]
     info!(
         "charge_global_write_gas_usage {} {}",
@@ -1464,9 +1493,9 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
 }
 
-pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
-    ap_cache: &mut A,
-    session: SessionAdapter<R>,
+pub(crate) fn get_transaction_output<A: AccessPathCache>(
+    _ap_cache: &mut A,
+    session: SessionExt,
     gas_left: Gas,
     max_gas_amount: Gas,
     status: KeptVMStatus,
@@ -1475,24 +1504,23 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
     let gas_used = max_gas_amount
         .checked_sub(gas_left)
         .expect("Balance should always be less than or equal to max gas amount");
-    let (change_set, events, mut extensions) =
-        Into::<Session<R>>::into(session).finish_with_extensions()?;
-    let table_context: NativeTableContext = extensions.remove();
-    let table_change_set = table_context
-        .into_change_set()
-        .map_err(|e| e.finish(Location::Undefined))?;
-    let (table_infos, write_set, events) = SessionOutput {
-        change_set,
-        events,
-        table_change_set,
-    }
-    .into_change_set(ap_cache)?;
+    let change_set_config =
+        ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
+    let (change_set, module_write_set) = session.finish(&change_set_config)?;
+    let (write_set, events) = change_set
+        .try_combine_into_storage_change_set(module_write_set)
+        .map_err(|e| {
+            PartialVMError::from(e)
+                .finish(Location::Undefined)
+                .into_vm_status()
+        })?
+        .into_inner();
     Ok(TransactionOutput::new(
-        table_infos,
         write_set,
         events,
         u64::from(gas_used),
         TransactionStatus::Keep(status),
+        TransactionAuxiliaryData::None,
     ))
 }
 
@@ -1541,7 +1569,7 @@ impl VMExecutor for StarcoinVM {
     /// transaction output.
     fn execute_block(
         transactions: Vec<Transaction>,
-        state_view: &impl StateView,
+        state_view: &(impl StateView + Sync),
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
@@ -1554,7 +1582,7 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
+            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(
@@ -1571,23 +1599,12 @@ impl VMExecutor for StarcoinVM {
     }
 }
 
-impl VMAdapter for StarcoinVM {
-    fn new_session<'r, R: MoveResolverExt>(
-        &self,
-        remote: &'r R,
-        session_id: SessionId,
-    ) -> SessionAdapter<'r, '_, R> {
-        self.move_vm.new_session(remote, session_id).into()
-    }
-
-    fn check_signature(txn: SignedUserTransaction) -> Result<SignatureCheckedTransaction> {
-        txn.check_signature()
-    }
-
-    fn should_restart_execution(output: &TransactionOutput) -> bool {
-        for event in output.events() {
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+impl StarcoinVM {
+    pub(crate) fn should_restart_execution(output: &TransactionOutput) -> bool {
+        for contract_event in output.events() {
+            if contract_event.event_key().get_creator_address() == genesis_address()
+                && (contract_event.is_typed::<UpgradeEvent>()
+                    || contract_event.is_typed::<ConfigChangeEvent<Version>>())
             {
                 info!("should_restart_execution happen");
                 return true;
@@ -1596,7 +1613,7 @@ impl VMAdapter for StarcoinVM {
         false
     }
 
-    fn execute_single_transaction<S: MoveResolverExt + StateView>(
+    pub(crate) fn execute_single_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         txn: &PreprocessedTransaction,
         data_cache: &S,
@@ -1605,6 +1622,7 @@ impl VMAdapter for StarcoinVM {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
+                // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }

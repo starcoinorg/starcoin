@@ -486,6 +486,8 @@ impl FakeExecutor {
             0,
             ChainId::test(),
             0,
+            vec![HashValue::zero()],
+            0,
         );
         let output = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])

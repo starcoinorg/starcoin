@@ -847,13 +847,15 @@ impl<'a> StarcoinTestAdapter<'a> {
             height,
             self.context.storage.get_chain_id()?,
             0,
+            vec![parent_hash],
+            0,
         );
         self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
             println!("Run blockmeta error: {}", e);
             e
         })?;
 
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, _parents_hash, _red_blocks) =
             new_block_meta.clone().into_inner();
         let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(

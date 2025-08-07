@@ -73,9 +73,11 @@ impl From<LegacyGenesis> for Genesis {
             .collect();
         Genesis {
             block: Block {
-                header: legacy_genesis.block.header,
+                header: legacy_genesis.block.header.into(),
 
-                body: BlockBody::new(txns, legacy_genesis.block.body.uncles),
+                body: BlockBody::new(txns, legacy_genesis.block.body.uncles.map(|uncles| {
+                    uncles.into_iter().map(|uncle| uncle.into()).collect()
+                })),
             },
         }
     }
@@ -85,10 +87,12 @@ impl From<Genesis> for LegacyGenesis {
     fn from(genesis: Genesis) -> Self {
         LegacyGenesis {
             block: legacy::Block {
-                header: genesis.block.header,
+                header: genesis.block.header.into(),
                 body: legacy::BlockBody {
                     transactions: genesis.block.body.transactions,
-                    uncles: genesis.block.body.uncles,
+                    uncles: genesis.block.body.uncles.map(|uncles| {
+                        uncles.into_iter().map(|uncle| uncle.into()).collect()
+                    }),
                 },
             },
         }

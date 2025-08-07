@@ -139,6 +139,8 @@ pub fn execute_create_account(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         if !chain_state.exist_account(alice.address())? {
@@ -240,6 +242,8 @@ fn execute_cast_vote(
             block_number,
             net.chain_id(),
             0,
+            vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+            0,  // TODO: DAG - use proper red_blocks after DAG merge
         ),
     )?;
     let proposer_address = *alice.address();
@@ -471,6 +475,8 @@ pub fn dao_vote_test(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         account_execute_should_success(
@@ -516,6 +522,8 @@ pub fn dao_vote_test(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         let state = proposal_state(
@@ -543,6 +551,8 @@ pub fn dao_vote_test(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         let state = proposal_state(
@@ -593,6 +603,8 @@ pub fn dao_vote_test(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         let state = proposal_state(
@@ -625,6 +637,8 @@ pub fn dao_vote_test(
                 block_number,
                 net.chain_id(),
                 0,
+                vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
+                0,  // TODO: DAG - use proper red_blocks after DAG merge
             ),
         )?;
         let state = proposal_state(

@@ -502,7 +502,7 @@ impl BlockChain {
             block.transactions2(),
             parent_status
                 .as_ref()
-                .map(|p| block.to_metadata2(p.head.gas_used())),
+                .map(|p| block.to_metadata2(p.head.gas_used(), 0)),
         );
 
         assert!(!transactions2.is_empty());

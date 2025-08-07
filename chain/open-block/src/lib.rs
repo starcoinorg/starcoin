@@ -123,6 +123,8 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
+            vec![previous_block_id],  // TODO: DAG - use proper parents_hash after DAG merge
+            0,  // TODO: DAG - use proper red_blocks after DAG merge
         );
 
         let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());

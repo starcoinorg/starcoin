@@ -55,28 +55,6 @@ impl BlockMetadata {
         number: u64,
         chain_id: ChainId,
         parent_gas_used: u64,
-    ) -> Self {
-        Self::new_with_parents(
-            parent_hash,
-            timestamp,
-            author,
-            uncles,
-            number,
-            chain_id,
-            parent_gas_used,
-            vec![parent_hash],
-            0,
-        )
-    }
-
-    pub fn new_with_parents(
-        parent_hash: HashValue,
-        timestamp: u64,
-        author: AccountAddress,
-        uncles: u64,
-        number: u64,
-        chain_id: ChainId,
-        parent_gas_used: u64,
         parents_hash: Vec<HashValue>,
         red_blocks: u64,
     ) -> Self {
@@ -177,7 +155,7 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             red_blocks: u64,
         }
         let data = BlockMetadataData::deserialize(deserializer)?;
-        Ok(Self::new_with_parents(
+        Ok(Self::new(
             data.parent_hash,
             data.timestamp,
             data.author,
@@ -197,7 +175,7 @@ impl<'de> Deserialize<'de> for BlockMetadata {
 
 impl Sample for BlockMetadata {
     fn sample() -> Self {
-        Self::new_with_parents(
+        Self::new(
             HashValue::zero(),
             0,
             genesis_address(),
@@ -205,7 +183,7 @@ impl Sample for BlockMetadata {
             0,
             ChainId::test(),
             0,
-            vec![],
+            vec![HashValue::zero()],
             0,
         )
     }

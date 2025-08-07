@@ -31,6 +31,8 @@ fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata)
         number,
         chain_id,
         parent_gas_used,
+        parents_hash,
+        red_blocks,
     ) = block_meta.into_inner();
     let author = AccountAddress::new(author.into_bytes());
     BlockMetadata::new(
@@ -41,6 +43,8 @@ fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata)
         number,
         chain_id.id().into(),
         parent_gas_used,
+        parents_hash,
+        red_blocks,
     )
 }
 

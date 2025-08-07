@@ -68,7 +68,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             parents_hash,
             red_blocks,
         } = self;
-        BlockMetadata::new_with_parents(
+        BlockMetadata::new(
             parent_hash,
             timestamp.0,
             author,
@@ -76,7 +76,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             number.0,
             genesis_config::ChainId::new(chain_id),
             parent_gas_used.0,
-            parents_hash.unwrap_or_default(),
+            parents_hash.unwrap_or_else(|| vec![parent_hash]),
             red_blocks.0,
         )
     }

@@ -2,7 +2,7 @@
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm-runtime"
+name = "starcoin-vm1-vm-runtime"
 publish = { workspace = true }
 version = { workspace = true }
 homepage = { workspace = true }

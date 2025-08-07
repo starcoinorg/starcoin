@@ -829,7 +829,7 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
-        BlockMetadata::new_with_parents(
+        BlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,

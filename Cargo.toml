@@ -1,6 +1,7 @@
 [patch."https://github.com/starcoinorg/starcoin"]
 starcoin-vm-types = { path = "vm2/vm-types" }
 starcoin-types = { path = "vm2/types" }
+starcoin-vm-runtime = { path = "vm2/vm-runtime" }
 
 [workspace]
 resolver = "2"
@@ -99,6 +100,7 @@ members = [
     "vm/proptest-helpers",
     "vm2/types",
     "vm2/vm-types",
+    "vm2/vm-runtime",
     "vm2/executor",
     "vm2/genesis",
     "vm2/test-helper",
@@ -412,6 +414,7 @@ move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "bab
 move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0", features = [
     "table-extension",
 ] }
+move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -545,7 +548,7 @@ starcoin-txpool-api = { path = "txpool/api" }
 starcoin-txpool-mock-service = { path = "txpool/mock-service" }
 starcoin-types = { path = "types", package = "starcoin-vm1-types" }
 starcoin-uint = { path = "types/uint" }
-starcoin-vm-runtime = { path = "vm/vm-runtime" }
+starcoin-vm-runtime = { path = "vm/vm-runtime", package = "starcoin-vm1-vm-runtime" }
 starcoin-vm-types = { path = "vm/types", package = "starcoin-vm1-vm-types" }
 stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
@@ -570,7 +573,7 @@ starcoin-vm2-rpc-server = { path = "vm2/rpc/server" }
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
 starcoin-vm2-dev = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-dev" }
 starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-storage" }
-starcoin-vm2-vm-runtime = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime" }
+starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
 starcoin-vm2-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
@@ -581,6 +584,7 @@ starcoin-vm2-state-api = { git = "https://github.com/starcoinorg/starcoin", rev 
 starcoin-vm2-state-tree = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-state-tree" }
 starcoin-vm2-framework = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-framework" }
 starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-transaction-builder" }
+starcoin-vm2-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
 starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-move-compiler" }
 starcoin-vm2-abi-decoder = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-decoder" }
 starcoin-vm2-abi-resolver = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-abi-resolver" }
@@ -591,6 +595,10 @@ starcoin-vm2-account-provider = { git = "https://github.com/starcoinorg/starcoin
 starcoin-vm2-resource-viewer = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-resource-viewer" }
 starcoin-vm2-status-translator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "vm-status-translator" }
 starcoin-vm2-cached-packages = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-cached-packages" }
+starcoin-vm2-aggregator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-aggregator" }
+starcoin-vm2-move-stdlib = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-move-stdlib" }
+starcoin-vm2-table-natives = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-table-natives" }
+starcoin-vm2-vm-runtime-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime-types" }
 
 move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
 move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }

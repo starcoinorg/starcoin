@@ -814,7 +814,7 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
-        BlockMetadata::new_with_parents(
+        BlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
@@ -828,7 +828,7 @@ impl Block {
         )
     }
 
-    pub fn to_metadata2(&self, parent_gas_used: u64) -> BlockMetadataV2 {
+    pub fn to_metadata2(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadataV2 {
         let uncles = self
             .body
             .uncles
@@ -844,6 +844,8 @@ impl Block {
             self.header.number,
             self.header.chain_id.id().into(),
             parent_gas_used,
+            self.header.parents_hash.clone(),
+            red_blocks,
         )
     }
 }
