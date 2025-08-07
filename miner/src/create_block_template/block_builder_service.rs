@@ -572,8 +572,8 @@ where
 
         Ok(pending_transaction_map
             .iter()
-            .take(500)
             .flat_map(|(_sender, transactions)| transactions.clone())
+            .take(500)
             .collect())
     }
 
