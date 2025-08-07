@@ -50,7 +50,7 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
 
         // short circuit
         if watched_keys.is_empty() {
-        info!("jacktest: watched_keys is empty");
+            info!("jacktest: watched_keys is empty");
             return;
         }
 

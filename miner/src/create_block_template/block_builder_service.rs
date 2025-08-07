@@ -475,7 +475,10 @@ where
         );
 
         let template = opened_block.finalize()?;
-        info!("[BlockProcess] transacions in block: {:?} ", template.body.transactions);
+        info!(
+            "[BlockProcess] transacions in block: {:?} ",
+            template.body.transactions
+        );
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
@@ -492,7 +495,13 @@ where
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
 
-        info!("[BlockProcess] pending txns: {}", pending_transactions);
+        info!(
+            "[BlockProcess] pending txns: {:?}",
+            pending_transactions
+                .iter()
+                .map(|t| t.id())
+                .collect::<Vec<_>>()
+        );
 
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
