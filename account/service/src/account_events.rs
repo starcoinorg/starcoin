@@ -35,7 +35,6 @@ impl ServiceFactory<Self> for AccountEventService {
 
 impl EventHandler<Self, ContractEventNotification> for AccountEventService {
     fn handle_event(&mut self, item: ContractEventNotification, _ctx: &mut ServiceContext<Self>) {
-        info!("jacktest: handle event ContractEventNotification");
         let addrs = match self.storage.list_addresses() {
             Ok(addresses) => addresses,
             Err(e) => {
@@ -50,7 +49,6 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
 
         // short circuit
         if watched_keys.is_empty() {
-            info!("jacktest: watched_keys is empty");
             return;
         }
 

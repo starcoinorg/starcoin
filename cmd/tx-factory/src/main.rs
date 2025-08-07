@@ -184,9 +184,6 @@ fn main() {
                         if let Err(e) = tx_mocker.recheck_sequence_number() {
                             error!("fail to start over, err: {:?}", e);
                         }
-                    } else {
-                        info!("stress test success.");
-                        return;
                     }
                 } else {
                     let success = tx_mocker.gen_and_submit_txn(false);
@@ -584,7 +581,6 @@ impl TxnMocker {
                     Ok(_) => {
                         // sequence add
                         sequences[index] += 1;
-                        return Ok(());
                     }
                     Err(err) => {
                         info!("error: {:?}, refresh the sequence number", err);
