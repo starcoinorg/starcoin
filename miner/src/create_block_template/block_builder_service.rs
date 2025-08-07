@@ -498,21 +498,13 @@ where
         let mut pending_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
-        pending_transactions = pending_transactions.into_iter().take(500).collect();
+        pending_transactions = pending_transactions.into_iter().take(400).collect();
         info!(
             "[BlockProcess] after fetching pending txns len: {}",
             pending_transactions.len()
         );
 
-        info!(
-            "[BlockProcess] pending txns: {:?}",
-            pending_transactions
-                .iter()
-                .map(|t| t.id())
-                .collect::<Vec<_>>()
-        );
-
-        if pending_transactions.len() >= max_txns as usize {
+        if pending_transactions.len() >= 400_usize {
             return Ok(pending_transactions);
         }
 
@@ -583,6 +575,7 @@ where
 
         Ok(pending_transaction_map
             .iter()
+            .take(400)
             .flat_map(|(_sender, transactions)| transactions.clone())
             .collect())
     }
