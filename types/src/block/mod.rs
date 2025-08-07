@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod legacy;
+#[cfg(test)]
+mod tests;
+
+pub mod raw_block_header;
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
@@ -12,6 +16,8 @@ use crate::multi_transaction::MultiSignedUserTransaction;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
+pub use legacy::{Block as LegacyBlock, BlockBody as LegacyBlockBody};
+use raw_block_header::RawBlockHeader;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -34,6 +40,10 @@ use std::hash::Hash;
 
 /// Type for block number.
 pub type BlockNumber = u64;
+
+pub type ParentsHash = Vec<HashValue>;
+
+pub type Version = u32;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -164,6 +174,12 @@ pub struct BlockHeader {
     nonce: u32,
     /// block header extra
     extra: BlockHeaderExtra,
+    /// Parents hash.
+    parents_hash: ParentsHash,
+    /// Header version
+    version: Version,
+    /// pruning point
+    pruning_point: HashValue,
 }
 
 impl BlockHeader {
@@ -233,6 +249,9 @@ impl BlockHeader {
             body_hash,
             chain_id,
             extra,
+            parents_hash: vec![],
+            version: 0,
+            pruning_point: HashValue::zero(),
         };
         header.id = Some(header.crypto_hash());
         header
@@ -311,6 +330,18 @@ impl BlockHeader {
         &self.extra
     }
 
+    pub fn parents_hash(&self) -> &[HashValue] {
+        &self.parents_hash
+    }
+
+    pub fn version(&self) -> Version {
+        self.version
+    }
+
+    pub fn pruning_point(&self) -> HashValue {
+        self.pruning_point
+    }
+
     pub fn is_genesis(&self) -> bool {
         self.number == 0
     }
@@ -386,26 +417,37 @@ impl<'de> Deserialize<'de> for BlockHeader {
             chain_id: ChainId,
             nonce: u32,
             extra: BlockHeaderExtra,
+            #[serde(default)]
+            parents_hash: ParentsHash,
+            #[serde(default)]
+            version: Version,
+            #[serde(default)]
+            pruning_point: HashValue,
         }
 
         let header_data = BlockHeaderData::deserialize(deserializer)?;
-        let block_header = Self::new_with_auth_key(
-            header_data.parent_hash,
-            header_data.timestamp,
-            header_data.number,
-            header_data.author,
-            header_data.author_auth_key,
-            header_data.txn_accumulator_root,
-            header_data.block_accumulator_root,
-            header_data.state_root,
-            header_data.gas_used,
-            header_data.difficulty,
-            header_data.body_hash,
-            header_data.chain_id,
-            header_data.nonce,
-            header_data.extra,
-        );
-        Ok(block_header)
+        let mut header = BlockHeader {
+            id: None,
+            parent_hash: header_data.parent_hash,
+            timestamp: header_data.timestamp,
+            number: header_data.number,
+            author: header_data.author,
+            author_auth_key: header_data.author_auth_key,
+            txn_accumulator_root: header_data.txn_accumulator_root,
+            block_accumulator_root: header_data.block_accumulator_root,
+            state_root: header_data.state_root,
+            gas_used: header_data.gas_used,
+            difficulty: header_data.difficulty,
+            body_hash: header_data.body_hash,
+            chain_id: header_data.chain_id,
+            nonce: header_data.nonce,
+            extra: header_data.extra,
+            parents_hash: header_data.parents_hash,
+            version: header_data.version,
+            pruning_point: header_data.pruning_point,
+        };
+        header.id = Some(header.crypto_hash());
+        Ok(header)
     }
 }
 
@@ -465,40 +507,14 @@ impl Into<RawBlockHeader> for BlockHeader {
             difficulty: self.difficulty,
             body_hash: self.body_hash,
             chain_id: self.chain_id,
+            parents_hash: self.parents_hash,
+            version: self.version,
+            pruning_point: self.pruning_point,
         }
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct RawBlockHeader {
-    /// Parent hash.
-    pub parent_hash: HashValue,
-    /// Block timestamp.
-    pub timestamp: u64,
-    /// Block number.
-    pub number: BlockNumber,
-    /// Block author.
-    pub author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    pub author_auth_key: Option<AuthenticationKey>,
-    /// The transaction accumulator root hash after executing this block.
-    pub accumulator_root: HashValue,
-    /// The parent block accumulator root hash.
-    pub parent_block_accumulator_root: HashValue,
-    /// The last transaction state_root of this block after execute.
-    pub state_root: HashValue,
-    /// Gas used for contracts execution.
-    pub gas_used: u64,
-    /// Block difficulty
-    pub difficulty: U256,
-    /// hash for block body
-    pub body_hash: HashValue,
-    /// The chain id
-    pub chain_id: ChainId,
-}
-
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BlockHeaderBuilder {
     buffer: BlockHeader,
 }
@@ -588,6 +604,21 @@ impl BlockHeaderBuilder {
 
     pub fn with_extra(mut self, extra: BlockHeaderExtra) -> Self {
         self.buffer.extra = extra;
+        self
+    }
+
+    pub fn with_parents_hash(mut self, parents_hash: Vec<HashValue>) -> Self {
+        self.buffer.parents_hash = parents_hash;
+        self
+    }
+
+    pub fn with_version(mut self, version: Version) -> Self {
+        self.buffer.version = version;
+        self
+    }
+
+    pub fn with_pruning_point(mut self, pruning_point: HashValue) -> Self {
+        self.buffer.pruning_point = pruning_point;
         self
     }
 
@@ -775,7 +806,7 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -783,7 +814,7 @@ impl Block {
             .map(|uncles| uncles.len() as u64)
             .unwrap_or(0);
 
-        BlockMetadata::new(
+        BlockMetadata::new_with_parents(
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
@@ -792,6 +823,8 @@ impl Block {
             self.header.number,
             self.header.chain_id,
             parent_gas_used,
+            self.header.parents_hash.clone(),
+            red_blocks,
         )
     }
 
@@ -955,6 +988,12 @@ pub struct BlockTemplate {
     pub difficulty: U256,
     /// Block consensus strategy
     pub strategy: ConsensusStrategy,
+    /// Parents hash.
+    pub parents_hash: ParentsHash,
+    /// Block version
+    pub version: Version,
+    /// pruning point
+    pub pruning_point: HashValue,
 }
 
 impl BlockTemplate {
@@ -971,7 +1010,7 @@ impl BlockTemplate {
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, _, _) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -989,6 +1028,9 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
+            parents_hash: vec![],
+            version: 0,
+            pruning_point: HashValue::zero(),
         }
     }
 
@@ -1028,6 +1070,9 @@ impl BlockTemplate {
             body_hash: self.body_hash,
             difficulty: self.difficulty,
             chain_id: self.chain_id,
+            parents_hash: self.parents_hash.clone(),
+            version: self.version,
+            pruning_point: self.pruning_point,
         }
     }
 

@@ -67,7 +67,8 @@ impl From<BlockMetadata> for super::BlockMetadata {
             number: value.number,
             chain_id: value.chain_id,
             parent_gas_used: value.parent_gas_used,
-            parents_hash: None,
+            parents_hash: vec![value.parent_hash],
+            red_blocks: 0,
         }
     }
 }

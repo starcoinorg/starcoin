@@ -478,7 +478,7 @@ impl BlockChain {
                 Some(parent) => {
                     let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
                     if header.number() < vm1_offline {
-                        let block_metadata = block.to_metadata(parent.head().gas_used());
+                        let block_metadata = block.to_metadata(parent.head().gas_used(), 0);
                         (false, vec![Transaction::BlockMetadata(block_metadata)])
                     } else {
                         (true, vec![])
@@ -754,7 +754,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), 0);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -903,7 +903,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block.to_metadata(parent.head().gas_used(), 0);
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };

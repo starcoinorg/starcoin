@@ -821,7 +821,7 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -841,6 +841,7 @@ impl Block {
                 .parents_hash
                 .clone()
                 .expect("Parents must exist"),
+            red_blocks,
         )
     }
 
@@ -993,7 +994,7 @@ impl BlockTemplate {
         strategy: u8,
         block_metadata: BlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, _, number, _, _, parents_hash) =
+        let (parent_hash, timestamp, author, _, number, _, _, parents_hash, _) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -1010,7 +1011,7 @@ impl BlockTemplate {
             difficulty,
             strategy,
             // for an upgraded binary, parents_hash should never be None.
-            parents_hash: parents_hash.or_else(|| Some(vec![])),
+            parents_hash: Some(if parents_hash.is_empty() { vec![] } else { parents_hash }),
         }
     }
 

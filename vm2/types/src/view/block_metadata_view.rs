@@ -22,6 +22,7 @@ pub struct BlockMetadataView {
     pub chain_id: u8,
     pub parent_gas_used: StrView<u64>,
     pub parents_hash: Option<Vec<HashValue>>,
+    pub red_blocks: StrView<u64>,
 }
 
 impl From<BlockMetadata> for BlockMetadataView {
@@ -35,6 +36,7 @@ impl From<BlockMetadata> for BlockMetadataView {
             chain_id,
             parent_gas_used,
             parents_hash,
+            red_blocks,
         ) = origin.into_inner();
         Self {
             parent_hash,
@@ -45,7 +47,8 @@ impl From<BlockMetadata> for BlockMetadataView {
             number: number.into(),
             chain_id: chain_id.id(),
             parent_gas_used: parent_gas_used.into(),
-            parents_hash,
+            parents_hash: Some(parents_hash),
+            red_blocks: red_blocks.into(),
         }
     }
 }
@@ -63,6 +66,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             chain_id,
             parent_gas_used,
             parents_hash,
+            red_blocks,
         } = self;
         BlockMetadata::new_with_parents(
             parent_hash,
@@ -73,6 +77,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             genesis_config::ChainId::new(chain_id),
             parent_gas_used.0,
             parents_hash.unwrap_or_default(),
+            red_blocks.0,
         )
     }
 }

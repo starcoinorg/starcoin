@@ -42,7 +42,8 @@ pub struct BlockMetadata {
     number: u64,
     chain_id: ChainId,
     parent_gas_used: u64,
-    parents_hash: Option<Vec<HashValue>>,
+    parents_hash: Vec<HashValue>,
+    red_blocks: u64,
 }
 
 impl BlockMetadata {
@@ -55,8 +56,7 @@ impl BlockMetadata {
         chain_id: ChainId,
         parent_gas_used: u64,
     ) -> Self {
-        let mut txn = legacy::BlockMetadata {
-            id: None,
+        Self::new_with_parents(
             parent_hash,
             timestamp,
             author,
@@ -64,9 +64,9 @@ impl BlockMetadata {
             number,
             chain_id,
             parent_gas_used,
-        };
-        txn.id = Some(txn.crypto_hash());
-        txn.into()
+            vec![parent_hash],
+            0,
+        )
     }
 
     pub fn new_with_parents(
@@ -78,6 +78,7 @@ impl BlockMetadata {
         chain_id: ChainId,
         parent_gas_used: u64,
         parents_hash: Vec<HashValue>,
+        red_blocks: u64,
     ) -> Self {
         let mut txn = Self {
             id: None,
@@ -88,7 +89,8 @@ impl BlockMetadata {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash: Some(parents_hash),
+            parents_hash,
+            red_blocks,
         };
         txn.id = Some(txn.crypto_hash());
         txn
@@ -104,7 +106,8 @@ impl BlockMetadata {
         u64,
         ChainId,
         u64,
-        Option<Vec<HashValue>>,
+        Vec<HashValue>,
+        u64,
     ) {
         (
             self.parent_hash,
@@ -115,6 +118,7 @@ impl BlockMetadata {
             self.chain_id,
             self.parent_gas_used,
             self.parents_hash,
+            self.red_blocks,
         )
     }
 
@@ -142,6 +146,14 @@ impl BlockMetadata {
     pub fn author(&self) -> AccountAddress {
         self.author
     }
+
+    pub fn parents_hash(&self) -> &[HashValue] {
+        &self.parents_hash
+    }
+
+    pub fn red_blocks(&self) -> u64 {
+        self.red_blocks
+    }
 }
 
 impl<'de> Deserialize<'de> for BlockMetadata {
@@ -159,31 +171,27 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             number: u64,
             chain_id: ChainId,
             parent_gas_used: u64,
-            parents_hash: Option<Vec<HashValue>>,
+            #[serde(default)]
+            parents_hash: Vec<HashValue>,
+            #[serde(default)]
+            red_blocks: u64,
         }
         let data = BlockMetadataData::deserialize(deserializer)?;
-        Ok(if let Some(parents_hash) = data.parents_hash {
-            Self::new_with_parents(
-                data.parent_hash,
-                data.timestamp,
-                data.author,
-                data.uncles,
-                data.number,
-                data.chain_id,
-                data.parent_gas_used,
-                parents_hash,
-            )
-        } else {
-            Self::new(
-                data.parent_hash,
-                data.timestamp,
-                data.author,
-                data.uncles,
-                data.number,
-                data.chain_id,
-                data.parent_gas_used,
-            )
-        })
+        Ok(Self::new_with_parents(
+            data.parent_hash,
+            data.timestamp,
+            data.author,
+            data.uncles,
+            data.number,
+            data.chain_id,
+            data.parent_gas_used,
+            if data.parents_hash.is_empty() {
+                vec![data.parent_hash]
+            } else {
+                data.parents_hash
+            },
+            data.red_blocks,
+        ))
     }
 }
 
@@ -198,6 +206,7 @@ impl Sample for BlockMetadata {
             ChainId::test(),
             0,
             vec![],
+            0,
         )
     }
 }

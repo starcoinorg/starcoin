@@ -91,7 +91,7 @@ fn generate_old_db(
     let block_metadata = {
         // convert to latest type to construct block-meta txn just for convenient.
         let b = Block::from(block.clone());
-        b.to_metadata(0)
+        b.to_metadata(0, 0)
     };
     let txn_info_0 = TransactionInfo::new(
         block_metadata.id(),
