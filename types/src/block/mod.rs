@@ -784,6 +784,10 @@ impl Block {
         (self.header, self.body)
     }
 
+    pub fn parent_hash(&self) -> HashValue {
+        self.header.parent_hash()
+    }
+
     pub fn genesis_block(
         parent_hash: HashValue,
         timestamp: u64,

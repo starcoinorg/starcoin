@@ -5,6 +5,7 @@ use anyhow::Result;
 use network_p2p_core::export::log::debug;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_config::{
     upgrade_config::vm1_offline_height, BuiltinNetworkID, ChainNetwork, RocksdbConfig,
     DEFAULT_CACHE_SIZE,
@@ -80,12 +81,15 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
                 Genesis::init_cache_storage_for_test(net, capacity)
                     .expect("init storage by genesis fail.");
 
+            let dag = BlockDAG::create_for_testing()
+                .expect("Failed to create test DAG");
             let block_chain = BlockChain::new(
                 net.time_service(),
                 chain_info.head().id(),
                 storage.clone(),
                 storage2.clone(),
                 None,
+                dag,
             )?;
             let state_root = block_chain.chain_state_reader().state_root();
             Ok((block_chain, ChainStateDB::new(storage, Some(state_root))))
@@ -94,12 +98,15 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
             let (storage, storage2, chain_info, _) =
                 init_storage_for_test_with_temp_dir(net, &temp_dir)?;
 
+            let dag = BlockDAG::create_for_testing()
+                .expect("Failed to create test DAG");
             let block_chain = BlockChain::new(
                 net.time_service(),
                 chain_info.head().id(),
                 storage.clone(),
                 storage2.clone(),
                 None,
+                dag,
             )?;
             let state_root = block_chain.chain_state_reader().state_root();
             Ok((block_chain, ChainStateDB::new(storage, Some(state_root))))

@@ -23,7 +23,12 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 use std::collections::HashMap;
 
-pub struct VerifiedBlock(pub Block);
+use starcoin_dag::types::ghostdata::GhostdagData;
+
+pub struct VerifiedBlock {
+    pub block: Block,
+    pub ghostdata: GhostdagData,
+}
 pub type MintedUncleNumber = u64;
 
 pub trait ChainReader {
@@ -82,7 +87,7 @@ pub trait ChainReader {
     /// Verify block header and body, base current chain, but do not verify it execute state.
     fn verify(&self, block: Block) -> Result<VerifiedBlock>;
     /// Execute block and verify it execute state, and save result base current chain, but do not change current chain.
-    fn execute(&self, block: VerifiedBlock) -> Result<ExecutedBlock>;
+    fn execute(&mut self, block: VerifiedBlock) -> Result<ExecutedBlock>;
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock>;
     /// Get chain transaction infos
     fn get_transaction_infos(

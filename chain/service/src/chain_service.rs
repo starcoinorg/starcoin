@@ -3,6 +3,8 @@
 
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::{FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
@@ -284,12 +286,20 @@ impl ChainReaderServiceInner {
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
+        // Create DAG storage
+        let dag_storage_path = config.storage.dag_dir();
+        let dag_config = FlexiDagStorageConfig::from(config.storage.clone());
+        let dag_storage = FlexiDagStorage::create_from_path(dag_storage_path, dag_config)
+            .map_err(|e| format_err!("Failed to create DAG storage: {}", e))?;
+        let dag = BlockDAG::create_blockdag(dag_storage);
+        
         let main = BlockChain::new(
             net.time_service(),
             startup_info.main,
             storage.clone(),
             storage2.clone(),
             vm_metrics.clone(),
+            dag,
         )?;
         Ok(Self {
             config,
@@ -316,12 +326,20 @@ impl ChainReaderServiceInner {
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
         let net = self.config.net();
+        // Create DAG storage for new chain
+        let dag_storage_path = self.config.storage.dag_dir();
+        let dag_config = FlexiDagStorageConfig::from(self.config.storage.clone());
+        let dag_storage = FlexiDagStorage::create_from_path(dag_storage_path, dag_config)
+            .map_err(|e| format_err!("Failed to create DAG storage: {}", e))?;
+        let dag = BlockDAG::create_blockdag(dag_storage);
+        
         self.main = BlockChain::new(
             net.time_service(),
             new_head_id,
             self.storage.clone(),
             self.storage2.clone(),
             self.vm_metrics.clone(),
+            dag,
         )?;
         Ok(())
     }
