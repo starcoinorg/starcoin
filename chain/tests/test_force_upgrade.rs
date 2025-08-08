@@ -199,6 +199,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore = "Dag version will not need update"]
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();

@@ -421,7 +421,6 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
             bcs_ext::to_bytes(&genesis_config.consensus_config.base_max_uncles_per_block).unwrap(),
             bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_gas_limit).unwrap(),
             bcs_ext::to_bytes(&genesis_config.consensus_config.strategy).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.max_transaction_per_block).unwrap(),
             //vm config
             bcs_ext::to_bytes(&genesis_config.publishing_option.is_script_allowed()).unwrap(),
             bcs_ext::to_bytes(
@@ -587,7 +586,6 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
             bcs_ext::to_bytes(&genesis_config.consensus_config.base_max_uncles_per_block).unwrap(),
             bcs_ext::to_bytes(&genesis_config.consensus_config.base_block_gas_limit).unwrap(),
             bcs_ext::to_bytes(&genesis_config.consensus_config.strategy).unwrap(),
-            bcs_ext::to_bytes(&genesis_config.consensus_config.max_transaction_per_block).unwrap(),
             //vm config
             bcs_ext::to_bytes(&genesis_config.publishing_option.is_script_allowed()).unwrap(),
             bcs_ext::to_bytes(
