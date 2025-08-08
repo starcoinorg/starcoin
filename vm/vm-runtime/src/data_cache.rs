@@ -163,11 +163,11 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> RemoteStorage<S>;
+    fn as_move_resolver(&self) -> RemoteStorage<'_, S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> RemoteStorage<S> {
+    fn as_move_resolver(&self) -> RemoteStorage<'_, S> {
         RemoteStorage::new(self)
     }
 }

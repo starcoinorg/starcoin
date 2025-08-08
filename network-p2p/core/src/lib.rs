@@ -124,7 +124,7 @@ pub trait RawRpcServer {
         peer_id: PeerId,
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>>;
+    ) -> BoxFuture<'_, Result<Vec<u8>>>;
 }
 
 pub trait RawRpcClient {
@@ -135,7 +135,7 @@ pub trait RawRpcClient {
         peer_id: PeerId,
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<anyhow::Result<Vec<u8>>>;
+    ) -> BoxFuture<'_, anyhow::Result<Vec<u8>>>;
 }
 
 /// A in memory rpc client witch hold a server, just for test
@@ -159,7 +159,7 @@ impl RawRpcClient for InmemoryRpcClient {
         _peer_id: PeerId,
         rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, anyhow::Result<Vec<u8>>> {
         Box::pin(
             self.server
                 .handle_raw_request(self.self_peer_id.clone(), rpc_path, message)

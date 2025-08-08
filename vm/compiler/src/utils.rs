@@ -15,7 +15,7 @@ pub fn iterate_directory(path: &Path) -> impl Iterator<Item = PathBuf> {
                 && entry
                     .file_name()
                     .to_str()
-                    .map_or(false, |s| !s.starts_with('.')) // Skip hidden files
+                    .is_some_and(|s| !s.starts_with('.')) // Skip hidden files
         })
         .map(|entry| entry.path().to_path_buf())
 }

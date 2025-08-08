@@ -744,7 +744,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         let blocks = self.blocks.lock().unwrap();
         let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
             .iter()

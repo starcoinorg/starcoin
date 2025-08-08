@@ -22,7 +22,7 @@ impl StateSet {
         self.0.is_empty()
     }
 
-    pub fn iter(&self) -> ::std::slice::Iter<(Vec<u8>, Vec<u8>)> {
+    pub fn iter(&self) -> ::std::slice::Iter<'_, (Vec<u8>, Vec<u8>)> {
         self.into_iter()
     }
 

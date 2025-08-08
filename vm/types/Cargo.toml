@@ -4,7 +4,7 @@ bech32 = { workspace = true }
 chrono = { features = ["clock"], workspace = true }
 hex = { workspace = true }
 log = { workspace = true }
-mirai-annotations = { workspace = true }
+
 num_enum = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }

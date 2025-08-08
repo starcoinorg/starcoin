@@ -372,7 +372,7 @@ log = { version = "0.4.16" }
 log4rs = { version = "1.2.0", features = ["background_rotation", "gzip"] }
 lru = "0.7.8"
 merkletree = { version = "0.22.1" }
-mirai-annotations = "1.10.1"
+
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
@@ -413,7 +413,7 @@ network-types = { path = "network/types" }
 cmd-utils = { path = "cmd/cmd-utils" }
 
 num = "0.4.0"
-num-derive = "0.3.3"
+num-derive = "0.4.2"
 num-traits = "0.2"
 num_cpus = "1.13"
 num_enum = "0.5.7"
@@ -429,7 +429,7 @@ pretty = "0.10.0"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"
 proptest = "1.0.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.6.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand = "0.8.5"

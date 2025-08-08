@@ -511,7 +511,7 @@ where
 
     fn keys(&self) -> Result<Vec<K>>;
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>>;
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>>;
 }
 
 impl KeyCodec for u64 {
@@ -639,7 +639,7 @@ where
             .collect()
     }
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>> {
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>> {
         let db = self
             .get_store()
             .storage()

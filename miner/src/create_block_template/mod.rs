@@ -166,6 +166,7 @@ pub trait TemplateTxProvider {
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
+#[allow(dead_code)]
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {

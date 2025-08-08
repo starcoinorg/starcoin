@@ -29,7 +29,10 @@ use starcoin_types::write_set::{WriteOp, WriteSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
 
 fn main() {
-    generate().unwrap();
+    match generate() {
+        Ok(_) => println!("Generation successful"),
+        Err(e) => eprintln!("Error during generation: {}", e),
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, CryptoHasher, CryptoHash)]

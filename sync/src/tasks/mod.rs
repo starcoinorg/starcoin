@@ -86,7 +86,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
         best_target: SyncTarget,
         max_peers: u64,
         begin_number: u64,
-    ) -> BoxFuture<Result<SyncTarget>> {
+    ) -> BoxFuture<'_, Result<SyncTarget>> {
         let fut = async move {
             if min_difficulty >= best_target.block_info.total_difficulty {
                 return Ok(best_target);
@@ -212,13 +212,13 @@ pub trait BlockIdFetcher: Send + Sync {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>>;
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>>;
 
     fn fetch_block_id(
         &self,
         peer: Option<PeerId>,
         number: BlockNumber,
-    ) -> BoxFuture<Result<Option<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Option<HashValue>>> {
         self.fetch_block_ids(peer, number, false, 1)
             .and_then(|mut ids| async move { Ok(ids.pop()) })
             .boxed()
@@ -245,7 +245,7 @@ impl BlockIdFetcher for VerifiedRpcClient {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         self.get_block_ids(peer, start_number, reverse, max_size)
             .map_err(fetcher_err_map)
             .boxed()
@@ -271,7 +271,7 @@ where
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         BlockIdFetcher::fetch_block_ids(self.as_ref(), peer, start_number, reverse, max_size)
     }
 }
@@ -280,7 +280,7 @@ pub trait BlockFetcher: Send + Sync {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -322,12 +322,12 @@ pub trait BlockInfoFetcher: Send + Sync {
         &self,
         peer_id: Option<PeerId>,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>>;
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>>;
     fn fetch_block_info(
         &self,
         peer_id: Option<PeerId>,
         block_id: HashValue,
-    ) -> BoxFuture<Result<Option<BlockInfo>>> {
+    ) -> BoxFuture<'_, Result<Option<BlockInfo>>> {
         self.fetch_block_infos(peer_id, vec![block_id])
             .and_then(|mut block_infos| async move { Ok(block_infos.pop().flatten()) })
             .boxed()
@@ -342,7 +342,7 @@ where
         &self,
         peer_id: Option<PeerId>,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>> {
         BlockInfoFetcher::fetch_block_infos(self.as_ref(), peer_id, block_ids)
     }
 }

@@ -122,7 +122,6 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::apply`]
-
     fn apply(&self, idx: usize, chain_state_set: ChainStateSet) -> anyhow::Result<()> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));

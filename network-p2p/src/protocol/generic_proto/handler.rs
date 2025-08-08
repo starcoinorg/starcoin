@@ -844,14 +844,7 @@ impl ConnectionHandler for NotifsHandler {
                 ..
             } = &mut self.protocols[protocol_index].state
             {
-                loop {
-                    // Before we poll the notifications sink receiver, check that the substream
-                    // is ready to accept a message.
-                    match out_substream.poll_ready_unpin(cx) {
-                        Poll::Ready(_) => {}
-                        Poll::Pending => break,
-                    }
-
+                while out_substream.poll_ready_unpin(cx).is_ready() {
                     // Now that all substreams are ready for a message, grab what to send.
                     let message = match notifications_sink_rx.poll_next_unpin(cx) {
                         Poll::Ready(Some(msg)) => msg,
