@@ -46,7 +46,7 @@ use starcoin_vm_types::{
     state_view::{StateReaderExt, StateView},
 };
 use std::{convert::TryInto, sync::Arc};
-
+use starcoin_types::block::Version;
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
@@ -65,6 +65,9 @@ pub struct OpenedBlock {
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
     vm2_initialized: bool,
+    // DAG fields
+    version: Version,
+    pruning_point: HashValue,
 }
 
 impl OpenedBlock {
@@ -79,6 +82,10 @@ impl OpenedBlock {
         difficulty: U256,
         strategy: ConsensusStrategy,
         vm_metrics: Option<VMMetrics>,
+        tips_hash: Vec<HashValue>,
+        version: Version,
+        pruning_point: HashValue,
+        red_blocks: u64,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -123,8 +130,8 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
-            vec![previous_block_id],  // TODO: DAG - use proper parents_hash after DAG merge
-            0,  // TODO: DAG - use proper red_blocks after DAG merge
+            tips_hash,  // DAG: use actual tips as parents
+            red_blocks, // DAG: use actual red_blocks count
         );
 
         let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
@@ -144,6 +151,8 @@ impl OpenedBlock {
             strategy,
             vm_metrics,
             vm2_initialized: false,
+            version,
+            pruning_point,
         };
 
         // Donot execute vm2 blockmeta txn util we need to execute vm2 user txns,
@@ -403,6 +412,8 @@ impl OpenedBlock {
             self.difficulty,
             self.strategy,
             self.block_meta,
+            self.version,
+            self.pruning_point,
         );
         Ok(block_template)
     }

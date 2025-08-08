@@ -1017,8 +1017,10 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
+        version: u32,  // DAG: block version
+        pruning_point: HashValue,  // DAG: pruning point
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, _, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash, _) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -1036,9 +1038,9 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            parents_hash: vec![],
-            version: 0,
-            pruning_point: HashValue::zero(),
+            parents_hash,
+            version,
+            pruning_point,
         }
     }
 

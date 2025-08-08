@@ -145,7 +145,7 @@ where
         key_iter: &mut (impl Iterator<Item = S::Key> + Clone),
     ) -> Result<(), StoreError> {
         let key_iter_clone = key_iter.clone();
-        self.cache.remove_many(key_iter.clone());
+        self.cache.remove_many(key_iter);
         for key in key_iter_clone {
             writer.delete::<S>(&key)?;
         }
