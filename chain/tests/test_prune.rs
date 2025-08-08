@@ -4,6 +4,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_logger::prelude::debug;
 use std::collections::HashSet;
 
+#[ignore = "pruning logic is tested in dag module, and here, we should init the state db by test config"]
 #[stest::test]
 fn test_block_chain_prune() -> anyhow::Result<()> {
     let mut mock_chain = MockChain::new_with_params(ChainNetwork::new_test(), 3)?;
