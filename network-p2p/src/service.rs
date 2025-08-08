@@ -84,6 +84,7 @@ pub struct NetworkService {
     /// Number of peers we're connected to.
     num_connected: Arc<AtomicUsize>,
     /// The local external addresses.
+    #[allow(dead_code)]
     external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
     /// Are we actively catching up with the chain?
     is_major_syncing: Arc<AtomicBool>,
