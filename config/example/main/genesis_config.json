@@ -386,7 +386,7 @@
     "base_max_uncles_per_block": 2,
     "base_block_gas_limit": 50000000,
     "strategy": 3,
-    "max_transaction_per_block": 50
+    "max_transaction_per_block": 700
   },
   "association_key_pair": [
     null,
@@ -394,7 +394,7 @@
   ],
   "genesis_key_pair": null,
   "stdlib_version": {
-    "Version": 4
+    "Version": 13
   },
   "dao_config": {
     "voting_delay": 3600000,
