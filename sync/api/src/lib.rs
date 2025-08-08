@@ -54,6 +54,26 @@ impl Ord for SyncBlockSort {
 pub struct StartSyncTxnEvent;
 
 #[derive(Clone, Debug)]
+pub struct SelectHeaderState {
+    peer_id: PeerId,
+    new_block: Block,
+}
+
+impl SelectHeaderState {
+    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
+        Self { peer_id, new_block }
+    }
+
+    pub fn get_peer_id(&self) -> PeerId {
+        self.peer_id.clone()
+    }
+
+    pub fn get_block(&self) -> &Block {
+        &self.new_block
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct PeerNewBlock {
     peer_id: PeerId,
     new_block: Block,

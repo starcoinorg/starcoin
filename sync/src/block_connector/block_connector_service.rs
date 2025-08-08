@@ -15,9 +15,6 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain::verifier::FullVerifier;
-use starcoin_chain::BlockChain;
-use starcoin_chain::ChainWriter;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_dag::blockdag::BlockDAG;
@@ -26,12 +23,11 @@ use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
-use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::SelectHeaderState;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -40,8 +36,7 @@ use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
-use starcoin_types::system_events::NewDagBlockFromPeer;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+use starcoin_types::system_events::{SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
@@ -199,8 +194,8 @@ where
             .saturating_mul(3);
         ctx.set_mailbox_capacity(merge_depth as usize);
         ctx.subscribe::<SyncStatusChangeEvent>();
-        ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<SelectHeaderState>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -211,8 +206,8 @@ where
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
-        ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<SelectHeaderState>();
         Ok(())
     }
 }
@@ -328,63 +323,6 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoo
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
-        let id = new_block.header().id();
-        debug!("try connect mined block: {}", id);
-
-        let main = self.chain_service.get_main();
-        let mut chain = BlockChain::new(
-            main.time_service(),
-            new_block.header().parent_hash(),
-            main.get_storage(),
-            None,
-            main.dag(),
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "new block chain error when processing the mined block: {:?}",
-                e
-            )
-        });
-
-        let bus = ctx.bus_ref().clone();
-
-        ctx.spawn(async move {
-            let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block.as_ref().clone()) {
-                anyhow::Result::Ok(verified_block) => verified_block,
-                Err(e) => {
-                    error!("when verifying the mined block, failed to verify block error: {:?}, id: {:?}", e, new_block.id());
-                    return;
-                }
-            };
-            let executed_block = match chain.execute(verified_block) {
-                    std::result::Result::Ok(executed_block) => executed_block,
-                    Err(e) => {
-                        error!("when executing the mined block, failed to execute block error: {:?}, id: {:?}", e, new_block.id());
-                        return;
-                    },
-                };
-            match chain.connect(executed_block.clone()) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => {
-                    error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
-                    return;
-                },
-            }
-
-            let _ = bus.broadcast(NewDagBlock {
-                executed_block: Arc::new(executed_block.clone()),
-            });
-        });
-    }
-}
-
 impl<TransactionPoolServiceT> EventHandler<Self, SyncStatusChangeEvent>
     for BlockConnectorService<TransactionPoolServiceT>
 where
@@ -395,12 +333,12 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, PeerNewBlock>
+impl<TransactionPoolServiceT> EventHandler<Self, SelectHeaderState>
     for BlockConnectorService<TransactionPoolServiceT>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: SelectHeaderState, ctx: &mut ServiceContext<Self>) {
         if !self.is_synced() {
             debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
             return;
@@ -456,10 +394,6 @@ where
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
-        } else {
-            ctx.broadcast(NewDagBlockFromPeer {
-                executed_block: Arc::new(msg.get_block().header().clone()),
-            });
         }
     }
 }

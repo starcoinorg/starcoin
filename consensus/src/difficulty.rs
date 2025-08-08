@@ -6,10 +6,10 @@ use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::{U256, U512};
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::convert::TryFrom;
 
 /// Get the target of next pow work
@@ -50,6 +50,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     }
 
     let mut blue_block_set = HashSet::new();
+    // let mut selected_chain = Vec::new();
 
     selected_blocks.iter().try_for_each(|id| {
         let ghostdata = chain.get_dag().storage.ghost_dag_store.get_data(*id)?;
@@ -59,26 +60,33 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                 .mergeset_blues
                 .iter()
                 .map(|id| {
-                    chain.get_header_by_hash(*id)?.ok_or_else(|| {
+                    chain.get_block(*id)?.ok_or_else(|| {
                         format_err!(
                             "failed to get the block header when getting next work required"
                         )
                     })
                 })
-                .collect::<Result<Vec<BlockHeader>>>()?,
+                .collect::<Result<Vec<Block>>>()?,
         );
-
+        // selected_chain.push(chain.get_block(*id)?.ok_or_else(|| {
+        //     format_err!("failed to get the block header when getting next work required")
+        // })?);
         Ok(())
     })?;
+    // selected_chain.reverse();
 
-    let mut blue_block_in_order: Vec<BlockHeader> = blue_block_set.into_iter().collect();
+    let mut blue_block_in_order: BTreeMap<u64, Vec<BlockDiffInfo>> = BTreeMap::new();
 
-    blue_block_in_order.sort_by(|a, b| {
-        b.number()
-            .cmp(&a.number())
-            .then_with(|| b.timestamp().cmp(&a.timestamp()))
-            .then_with(|| b.id().cmp(&a.id()))
-    });
+    for blue_block in blue_block_set.iter() {
+        blue_block_in_order
+            .entry(blue_block.header().number())
+            .or_default()
+            .push(blue_block.try_into()?);
+    }
+
+    for b in blue_block_in_order.values_mut() {
+        b.sort_by_key(|b| b.timestamp);
+    }
 
     let next_block_time_target = epoch.block_time_target();
     info!(
@@ -88,14 +96,8 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         current_header.id()
     );
 
-    let target = get_next_target_helper(
-        blue_block_in_order
-            .into_iter()
-            .map(|header| header.try_into())
-            .collect::<Result<Vec<BlockDiffInfo>>>()?,
-        // 200,
-        next_block_time_target,
-    )?;
+    let target = get_next_target_helper(blue_block_in_order, next_block_time_target)?;
+
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),
@@ -105,20 +107,34 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     Ok(target)
 }
 
-pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
+pub fn get_next_target_helper(
+    blocks: BTreeMap<u64, Vec<BlockDiffInfo>>,
+    time_plan: u64,
+) -> Result<U256> {
     if blocks.is_empty() {
         bail!("block diff info is empty")
     }
     if blocks.len() == 1 {
-        return Ok(blocks[0].target);
+        return Ok(blocks
+            .iter()
+            .next()
+            .expect("block diff info is empty")
+            .1
+            .last()
+            .unwrap()
+            .target);
     }
-    let block_n = blocks.len();
+    // let block_n = blocks.iter().map(|(_number, diff)| diff.len()).sum::<usize>() as u64;
+    let mut block_n: u64 = 0;
 
     let mut total_target = U512::zero();
-    for diff_info in blocks.iter() {
-        total_target = total_target
-            .checked_add(U512::from(&diff_info.target))
-            .ok_or_else(|| format_err!("calculate total target overflow"))?;
+    for (_number, diff_infos) in blocks.iter() {
+        for diff_info in diff_infos.iter() {
+            total_target = total_target
+                .checked_add(U512::from(&diff_info.target))
+                .ok_or_else(|| format_err!("calculate total target overflow"))?;
+        }
+        block_n = block_n.saturating_add(diff_infos.len() as u64);
     }
     let avg_target: U256 = total_target
         .checked_div(U512::from(block_n))
@@ -129,28 +145,52 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
         Ordering::Less => {
             unreachable!()
         }
-        Ordering::Equal => blocks[0].timestamp.saturating_sub(blocks[1].timestamp),
+        Ordering::Equal => blocks
+            .iter()
+            .last()
+            .expect("block diff info is empty")
+            .1
+            .last()
+            .unwrap()
+            .timestamp
+            .saturating_sub(
+                blocks
+                    .iter()
+                    .next()
+                    .expect("block diff info is empty")
+                    .1
+                    .last()
+                    .unwrap()
+                    .timestamp,
+            ),
         Ordering::Greater => {
-            let latest_timestamp = blocks[0].timestamp;
-            let mut total_v_block_time: u64 = 0;
-            let mut v_blocks: usize = 0;
-            for (idx, diff_info) in blocks.iter().enumerate() {
-                if idx == 0 {
-                    continue;
-                }
-                total_v_block_time = total_v_block_time
-                    .saturating_add(latest_timestamp.saturating_sub(diff_info.timestamp));
-                v_blocks = v_blocks.saturating_add(idx);
+            let mut blocks_in_same_number = vec![];
+            for (_number, diff_infos) in blocks.iter() {
+                blocks_in_same_number.push(diff_infos.last().unwrap().clone());
             }
-            total_v_block_time
-                .checked_div(v_blocks as u64)
-                .ok_or_else(|| format_err!("calculate avg time overflow"))?
+            let total_v_block_time: u64 = blocks_in_same_number
+                .last()
+                .expect("cannot find last block")
+                .timestamp
+                .saturating_sub(
+                    blocks_in_same_number
+                        .first()
+                        .expect("cannot find first block")
+                        .timestamp,
+                );
+
+            let avg_time = total_v_block_time
+                .checked_div(block_n)
+                .ok_or_else(|| format_err!("calculate avg time overflow"))?;
+            info!("[BlockProcess] total_v_block_time: {:?}, block_n: {:?}, avg_time: {:?}, avg_target: {:?}, time plan: {:?}", total_v_block_time, block_n, avg_time, avg_target, time_plan);
+            avg_time
         }
     };
 
     if avg_time == 0 {
         avg_time = 1
     }
+
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target = if let Some(new_target) = avg_target
@@ -196,6 +236,16 @@ impl TryFrom<BlockHeader> for BlockDiffInfo {
         Ok(Self {
             timestamp: block_header.timestamp(),
             target: difficult_to_target(block_header.difficulty())?,
+        })
+    }
+}
+
+impl TryFrom<&Block> for BlockDiffInfo {
+    type Error = anyhow::Error;
+    fn try_from(block: &Block) -> Result<Self, Self::Error> {
+        Ok(Self {
+            timestamp: block.header().timestamp(),
+            target: difficult_to_target(block.header().difficulty())?,
         })
     }
 }

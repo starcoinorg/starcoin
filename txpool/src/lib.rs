@@ -10,6 +10,7 @@ extern crate transaction_pool as tx_pool;
 
 use anyhow::{format_err, Result};
 use network_api::messages::PeerTransactionsMessage;
+pub use pool::queue::Pool;
 pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;

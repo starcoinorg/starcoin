@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::get_merge_bound_hash;
 use crate::verifier::{BlockVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -10,7 +11,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
-    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
+    ExecutedBlock, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -23,7 +24,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -47,12 +48,10 @@ use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
@@ -69,7 +68,6 @@ pub struct BlockChain {
     statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
-    uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
@@ -86,13 +84,12 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics, dag)
+        Self::new_with_uncles(time_service, head, storage, vm_metrics, dag)
     }
 
     fn new_with_uncles(
         time_service: Arc<dyn TimeService>,
         head_block: Block,
-        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -110,7 +107,7 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         watch(CHAIN_WATCH_NAME, "n1253");
-        let mut chain = Self {
+        let chain = Self {
             genesis_hash: genesis,
             time_service,
             txn_accumulator: info_2_accumulator(
@@ -129,17 +126,11 @@ impl BlockChain {
             },
             statedb: chain_state,
             storage: storage.clone(),
-            uncles: HashMap::new(),
             epoch,
             vm_metrics,
             dag: dag.clone(),
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        match uncles {
-            Some(data) => chain.uncles = data,
-            None => chain.update_uncle_cache()?,
-        }
-        watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
 
@@ -191,8 +182,8 @@ impl BlockChain {
         Ok(dag)
     }
 
-    pub fn current_epoch_uncles_size(&self) -> u64 {
-        self.uncles.len() as u64
+    pub fn into_statedb(self) -> ChainStateDB {
+        self.statedb
     }
 
     pub fn current_block_accumulator_info(&self) -> AccumulatorInfo {
@@ -208,49 +199,6 @@ impl BlockChain {
 
     pub fn dag(&self) -> BlockDAG {
         self.dag.clone()
-    }
-
-    //TODO lazy init uncles cache.
-    fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?;
-        Ok(())
-    }
-
-    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
-        let epoch = &self.epoch;
-        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let head_block = self.head_block().block;
-        let head_number = head_block.header().number();
-        if head_number < epoch.start_block_number() || head_number >= epoch.end_block_number() {
-            return Err(format_err!(
-                "head block {} not in current epoch: {:?}.",
-                head_number,
-                epoch
-            ));
-        }
-        for block_number in epoch.start_block_number()..epoch.end_block_number() {
-            let block_uncles = if block_number == head_number {
-                head_block.uncle_ids()
-            } else {
-                self.get_block_by_number(block_number)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by number {}, head block number: {}",
-                            block_number,
-                            head_number
-                        )
-                    })?
-                    .uncle_ids()
-            };
-            block_uncles.into_iter().for_each(|uncle_id| {
-                uncles.insert(uncle_id, block_number);
-            });
-            if block_number == head_number {
-                break;
-            }
-        }
-
-        Ok(uncles)
     }
 
     pub fn create_block_template(
@@ -414,7 +362,7 @@ impl BlockChain {
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
-            parent_header,
+            parent_header.clone(),
             final_block_gas_limit,
             author,
             self.time_service.now_millis(),
@@ -423,10 +371,13 @@ impl BlockChain {
             strategy,
             None,
             selected_parents,
-            blue_blocks,
             0,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(parent_header.state_root()),
+            ),
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
@@ -454,20 +405,6 @@ impl BlockChain {
             .get_hash_by_number(block_number)?
             .filter(|hash| hash == &block_id)
             .is_some())
-    }
-
-    // filter block by check exist
-    fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
-        Ok(match block {
-            Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number())? {
-                    Some(block)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        })
     }
 
     // filter header by check exist
@@ -750,7 +687,20 @@ impl BlockChain {
             }
         }
         watch(CHAIN_WATCH_NAME, "n26");
+
+        Self::print_transaction_execution_info(&block);
+
         Ok(ExecutedBlock { block, block_info })
+    }
+
+    fn print_transaction_execution_info(block: &Block) {
+        info!(
+            "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}",
+            block.id(),
+            block.header().number(),
+            block.header().timestamp(),
+            block.transactions().len(),
+        );
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -1069,35 +1019,6 @@ impl BlockChain {
             self.dag.get_dag_state(current_pruning_point)
         }
     }
-
-    pub fn get_merge_bound_hash(&self, selected_parent: HashValue) -> Result<HashValue> {
-        let header = self
-            .storage
-            .get_block_header_by_hash(selected_parent)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot find block header by hash {:?} when get merge bound hash",
-                    selected_parent
-                )
-            })?;
-        let merge_depth = self.dag().block_depth_manager().merge_depth();
-        if header.number() <= merge_depth {
-            return Ok(self.genesis_hash);
-        }
-        let merge_depth_index = (header.number().checked_div(merge_depth))
-            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?
-            .checked_mul(merge_depth)
-            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?;
-        Ok(self
-            .block_accumulator
-            .get_leaf(merge_depth_index)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot find block header by number {} when get merge bound hash",
-                    merge_depth_index
-                )
-            })?)
-    }
 }
 
 impl ChainReader for BlockChain {
@@ -1181,9 +1102,7 @@ impl ChainReader for BlockChain {
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage
-            .get_block_by_hash(hash)
-            .and_then(|block| self.exist_block_filter(block))
+        self.storage.get_block_by_hash(hash)
     }
 
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>> {
@@ -1278,32 +1197,15 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        // if fork block_id is at same epoch, try to reuse uncles cache.
-        // let uncles = if head.header().number() >= self.epoch.start_block_number() {
-        //     Some(
-        //         self.uncles
-        //             .iter()
-        //             .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-        //             .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-        //             .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-        //     )
-        // } else {
-        //     None
-        // };
 
         Self::new_with_uncles(
             self.time_service.clone(),
             head,
-            None,
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
             //TODO: check missing blocks need to be clean
         )
-    }
-
-    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber> {
-        &self.uncles
     }
 
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>> {
@@ -1477,7 +1379,7 @@ impl ChainReader for BlockChain {
 
         dag.check_bounded_merge_depth(
             &ghostdata,
-            self.get_merge_bound_hash(ghostdata.selected_parent)?,
+            get_merge_bound_hash(ghostdata.selected_parent, dag.clone(), self.storage.clone())?,
         )?;
 
         Ok(ghostdata)
@@ -1753,72 +1655,72 @@ impl BlockChain {
             head: block.clone(),
         };
         self.epoch = get_epoch_from_statedb(&self.statedb)?;
-        if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
-            let start_block_id = self
-                .get_block_by_number(self.epoch.start_block_number())?
-                .unwrap_or_else(|| {
-                    panic!(
-                        "the block: {:?} should exist",
-                        self.epoch.start_block_number()
-                    )
-                });
-            let end_block_id = block.id();
-            let epoch_info = self.chain_state().get_epoch_info()?;
-            let total_selectd_chain_blocks = block
-                .header()
-                .number()
-                .saturating_sub(self.epoch.start_block_number())
-                .saturating_add(1);
-            let total_blocks = epoch_info
-                .uncles()
-                .saturating_add(total_selectd_chain_blocks);
+        // if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+        //     let start_block_id = self
+        //         .get_block_by_number(self.epoch.start_block_number())?
+        //         .unwrap_or_else(|| {
+        //             panic!(
+        //                 "the block: {:?} should exist",
+        //                 self.epoch.start_block_number()
+        //             )
+        //         });
+        //     let end_block_id = block.id();
+        //     let epoch_info = self.chain_state().get_epoch_info()?;
+        //     let total_selectd_chain_blocks = block
+        //         .header()
+        //         .number()
+        //         .saturating_sub(self.epoch.start_block_number())
+        //         .saturating_add(1);
+        //     let total_blocks = epoch_info
+        //         .uncles()
+        //         .saturating_add(total_selectd_chain_blocks);
 
-            let mut block_set = HashSet::new();
-            let blocks = (self.epoch.start_block_number()..=block.header().number())
-                .map(|block_number| {
-                    self.get_block_by_number(block_number)
-                        .unwrap_or_else(|e| {
-                            panic!(
-                                "the block: {:?} should exist, for error: {:?}",
-                                block_number, e
-                            )
-                        })
-                        .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
-                })
-                .collect::<Vec<_>>();
-            block_set.extend(blocks.iter().map(|block| block.header()).cloned());
-            block_set.extend(blocks.iter().flat_map(|block| {
-                if let Some(uncles) = &block.body.uncles {
-                    uncles.clone()
-                } else {
-                    vec![]
-                }
-            }));
-            let total_difficulty: U256 = block_set
-                .iter()
-                .map(|block_header| block_header.difficulty())
-                .sum();
-            let avg_total_difficulty = if let Some(avg_total_difficulty) =
-                total_difficulty.checked_div(U256::from(total_blocks))
-            {
-                info!("avg_total_difficulty overflow");
-                avg_total_difficulty
-            } else {
-                U256::MAX
-            };
+        //     let mut block_set = HashSet::new();
+        //     let blocks = (self.epoch.start_block_number()..=block.header().number())
+        //         .map(|block_number| {
+        //             self.get_block_by_number(block_number)
+        //                 .unwrap_or_else(|e| {
+        //                     panic!(
+        //                         "the block: {:?} should exist, for error: {:?}",
+        //                         block_number, e
+        //                     )
+        //                 })
+        //                 .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
+        //         })
+        //         .collect::<Vec<_>>();
+        //     block_set.extend(blocks.iter().map(|block| block.header()).cloned());
+        //     block_set.extend(blocks.iter().flat_map(|block| {
+        //         if let Some(uncles) = &block.body.uncles {
+        //             uncles.clone()
+        //         } else {
+        //             vec![]
+        //         }
+        //     }));
+        //     let total_difficulty: U256 = block_set
+        //         .iter()
+        //         .map(|block_header| block_header.difficulty())
+        //         .sum();
+        //     let avg_total_difficulty = if let Some(avg_total_difficulty) =
+        //         total_difficulty.checked_div(U256::from(total_blocks))
+        //     {
+        //         info!("avg_total_difficulty overflow");
+        //         avg_total_difficulty
+        //     } else {
+        //         U256::MAX
+        //     };
 
-            let eclapse_time = {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis();
-                now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
-            };
-            let bps = (total_blocks as f64) / eclapse_time;
+        //     let eclapse_time = {
+        //         let now = SystemTime::now()
+        //             .duration_since(UNIX_EPOCH)
+        //             .unwrap()
+        //             .as_millis();
+        //         now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
+        //     };
+        //     let bps = (total_blocks as f64) / eclapse_time;
 
-            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
-                total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
-        }
+        //     info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}",
+        //         total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
+        // }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
 

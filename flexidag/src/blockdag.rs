@@ -660,17 +660,6 @@ impl BlockDAG {
             .collect();
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
-        match self.storage.ghost_dag_store.insert(
-            next_ghostdata.selected_parent,
-            Arc::new(next_ghostdata.clone()),
-        ) {
-            std::result::Result::Ok(_) => (),
-            Err(e) => match e {
-                StoreError::KeyAlreadyExists(_) => (),
-                _ => return Err(e.into()),
-            },
-        }
-
         if next_pruning_point == Hash::zero() {
             next_pruning_point = genesis_id;
         }

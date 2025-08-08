@@ -7,6 +7,7 @@ use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::{Block, ExecutedBlock};
 
 mod block_connector_service;
+mod execute_service;
 mod metrics;
 #[cfg(test)]
 mod test_illegal_block;
@@ -17,6 +18,7 @@ mod test_write_dag_block_chain;
 mod write_block_chain;
 
 pub use block_connector_service::BlockConnectorService;
+pub use execute_service::ExecuteService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
@@ -58,6 +60,7 @@ pub struct MinerResponse {
     pub now_milliseconds: u64,
     pub pruning_point: HashValue,
     pub ghostdata: GhostdagData,
+    pub max_transaction_per_block: u64,
 }
 
 #[cfg(test)]
