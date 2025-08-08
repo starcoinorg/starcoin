@@ -8,11 +8,13 @@ use starcoin_chain_api::{
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_crypto::HashValue;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::{collections::HashSet, str::FromStr};
+use std::{collections::{HashMap, HashSet}, str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub enum Verifier {
@@ -92,13 +94,16 @@ pub trait BlockVerifier {
         StaticVerifier::verify_vm1_offline(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
-        Self::verify_uncles(
+        let ghostdata = Self::verify_uncles(
             current_chain,
             new_block.uncles().unwrap_or_default(),
             new_block_header,
         )?;
         watch(CHAIN_WATCH_NAME, "n14");
-        Ok(VerifiedBlock(new_block))
+        Ok(VerifiedBlock {
+            block: new_block,
+            ghostdata,
+        })
     }
 
     fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
@@ -117,11 +122,35 @@ pub trait BlockVerifier {
         current_chain: &R,
         uncles: &[BlockHeader],
         header: &BlockHeader,
-    ) -> Result<()>
+    ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
+
+        // Calculate ghostdata first
+        let ghostdata = if header.parents_hash().is_empty() || header.parents_hash().len() == 1 {
+            // Single parent case (non-DAG)
+            GhostdagData::new(
+                0, // blue_score
+                0u32.into(), // blue_work
+                header.parent_hash(),
+                Arc::new(vec![]), // mergeset_blues
+                Arc::new(vec![]), // mergeset_reds
+                Arc::new(HashMap::new()), // blues_anticone_sizes
+            )
+        } else {
+            // DAG case - calculate from parents
+            // TODO: Implement dag() method in ChainReader
+            GhostdagData::new(
+                0, // blue_score
+                0u32.into(), // blue_work
+                header.parent_hash(),
+                Arc::new(vec![]), // mergeset_blues
+                Arc::new(vec![]), // mergeset_reds
+                Arc::new(HashMap::new()), // blues_anticone_sizes
+            )
+        };
 
         let switch_epoch = header.number() == epoch.end_block_number();
         // epoch first block's uncles should empty.
@@ -134,7 +163,7 @@ pub trait BlockVerifier {
         }
 
         if uncles.is_empty() {
-            return Ok(());
+            return Ok(ghostdata);
         }
         verify_block!(
             VerifyBlockField::Uncle,
@@ -179,7 +208,7 @@ pub trait BlockVerifier {
             Self::verify_header(&uncle_branch, uncle)?;
             uncle_ids.insert(uncle_id);
         }
-        Ok(())
+        Ok(ghostdata)
     }
 
     fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
@@ -333,17 +362,35 @@ impl BlockVerifier for NoneVerifier {
     where
         R: ChainReader,
     {
-        Ok(VerifiedBlock(new_block))
+        let ghostdata = GhostdagData::new(
+            0, // blue_score
+            0u32.into(), // blue_work
+            new_block.header().parent_hash(),
+            Arc::new(vec![]), // mergeset_blues
+            Arc::new(vec![]), // mergeset_reds
+            Arc::new(HashMap::new()), // blues_anticone_sizes
+        );
+        Ok(VerifiedBlock {
+            block: new_block,
+            ghostdata,
+        })
     }
 
     fn verify_uncles<R>(
         _current_chain: &R,
         _uncles: &[BlockHeader],
-        _header: &BlockHeader,
-    ) -> Result<()>
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
     where
         R: ChainReader,
     {
-        Ok(())
+        Ok(GhostdagData::new(
+            0, // blue_score
+            0u32.into(), // blue_work
+            header.parent_hash(),
+            Arc::new(vec![]), // mergeset_blues
+            Arc::new(vec![]), // mergeset_reds
+            Arc::new(HashMap::new()), // blues_anticone_sizes
+        ))
     }
 }
