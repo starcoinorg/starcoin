@@ -182,7 +182,7 @@ impl BlockChain {
         Ok(dag)
     }
 
-    pub fn statedb(self) -> ChainStateDB {
+    pub fn into_statedb(self) -> ChainStateDB {
         self.statedb
     }
 

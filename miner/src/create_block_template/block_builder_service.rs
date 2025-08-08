@@ -459,7 +459,7 @@ where
             header_version,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
-            main.statedb(),
+            main.into_statedb(),
         )?;
 
         let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
