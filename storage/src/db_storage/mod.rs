@@ -236,7 +236,7 @@ impl DBStorage {
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_,K, V>>
+    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,

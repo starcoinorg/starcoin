@@ -94,7 +94,8 @@ impl ContractEventV0 {
     }
 
     pub fn decode_event<EventType: MoveResource + DeserializeOwned>(&self) -> Result<EventType> {
-        bcs_ext::from_bytes(self.event_data.as_slice())}
+        bcs_ext::from_bytes(self.event_data.as_slice())
+    }
 
     pub fn type_tag(&self) -> &TypeTag {
         &self.type_tag

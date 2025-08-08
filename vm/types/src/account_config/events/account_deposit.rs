@@ -26,7 +26,8 @@ impl DepositEvent {
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(bytes)}
+        bcs_ext::from_bytes(bytes)
+    }
 
     /// Get the amount sent or received
     pub fn amount(&self) -> u128 {

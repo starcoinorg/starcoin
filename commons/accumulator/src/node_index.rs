@@ -206,7 +206,6 @@ impl Iterator for FrozenSubTreeIterator {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<NodeIndex> {
-
         if self.bitmap == 0 {
             return None;
         }

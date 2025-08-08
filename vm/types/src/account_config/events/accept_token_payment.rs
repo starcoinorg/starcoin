@@ -19,7 +19,8 @@ impl AcceptTokenEvent {
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(bytes)}
+        bcs_ext::from_bytes(bytes)
+    }
 
     /// Return the token code symbol that the payment was made in.
     pub fn token_code(&self) -> &TokenCode {

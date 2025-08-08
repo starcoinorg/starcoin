@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0s
 
 use crate::node_index::FrozenSubTreeIterator;
-use crate::node_index::{NodeIndex};
+use crate::node_index::NodeIndex;
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
 use anyhow::{bail, format_err, Result};
@@ -212,8 +212,7 @@ impl AccumulatorTree {
     pub fn flush(&mut self) -> Result<()> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes.values().cloned()
-                .collect::<Vec<AccumulatorNode>>();
+            let nodes_vec = nodes.values().cloned().collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();

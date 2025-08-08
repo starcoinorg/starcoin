@@ -421,7 +421,9 @@ impl Scheduler {
     /// return the version to the caller together with a guard to be used for the
     /// corresponding ExecutionTask.
     /// - Otherwise, return None.
-    fn try_execute_next_version(&self) -> Option<(Version, Option<DependencyCondvar>, TaskGuard<'_>)> {
+    fn try_execute_next_version(
+        &self,
+    ) -> Option<(Version, Option<DependencyCondvar>, TaskGuard<'_>)> {
         let idx_to_execute = self.execution_idx.load(Ordering::SeqCst);
 
         if idx_to_execute >= self.num_txns {
