@@ -569,12 +569,11 @@ where
             }
         }
 
-        // todo: put the extra transaction back to the pool in an asynchronous way
+        // todo: put the extra transaction back to the pool in an asynchronous way 
 
         Ok(pending_transaction_map
             .iter()
             .flat_map(|(_sender, transactions)| transactions.clone())
-            .take(500)
             .collect())
     }
 
