@@ -264,6 +264,7 @@ where
     }
 
     fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
+        info!("[BlockProcess] start to resolve block parents");
         let MineNewDagBlockInfo {
             selected_parents,
             ghostdata,
@@ -344,6 +345,7 @@ where
         let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
         let now_milliseconds = self.config.net().time_service().now_millis();
 
+        info!("[BlockProcess] finish to resolve block parents");
         Ok((
             MinerResponse {
                 previous_header,
@@ -361,6 +363,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+        info!("[BlockProcess] start to create block template");
         let (
             MinerResponse {
                 previous_header,
@@ -421,7 +424,7 @@ where
                 op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
             })
             .collect::<Result<Vec<Block>>>()?;
-
+        info!("[BlockProcess] try to put the transactions of the red block into txpool, red block len: {}, transactions len: {}", red_blocks.len(), red_blocks.iter().map(|block| block.body.transactions.len()).sum::<usize>());
         let _ = self.tx_provider.add_txns(
             red_blocks
                 .into_iter()
@@ -475,10 +478,8 @@ where
         );
 
         let template = opened_block.finalize()?;
-        info!(
-            "[BlockProcess] transacions in block: {:?} ",
-            template.body.transactions.len(),
-        );
+
+        info!("[BlockProcess] finish to create block template");
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
@@ -568,7 +569,7 @@ where
             }
         }
 
-        // todo: put the extra transaction back to the pool in an asynchronous way 
+        // todo: put the extra transaction back to the pool in an asynchronous way
 
         Ok(pending_transaction_map
             .iter()
