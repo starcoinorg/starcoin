@@ -79,21 +79,6 @@ use std::num::NonZeroUsize;
 use std::time::Duration;
 const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
-/// A cloneable handle for reporting cost/benefits of peers.
-#[derive(Clone)]
-pub struct ReportHandle {
-    #[allow(unused)]
-    inner: PeersetHandle, // wraps it so we don't have to worry about breaking API.
-}
-
-impl From<PeersetHandle> for ReportHandle {
-    fn from(peerset_handle: PeersetHandle) -> Self {
-        ReportHandle {
-            inner: peerset_handle,
-        }
-    }
-}
-
 /// Substrate network service. Handles network IO and manages connectivity.
 pub struct NetworkService {
     /// Number of peers we're connected to.
