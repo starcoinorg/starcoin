@@ -50,7 +50,7 @@ pub fn steps() -> Steps<MyWorld> {
                     client.clone(),
                     Some(Duration::from_secs(5)),
                     None,
-                    account_client,
+                    Some(account_client),
                     account_provider2_option,
                 );
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(

@@ -42,6 +42,7 @@ use starcoin_vm_types::transaction::{
 };
 
 static G_HISTORY_FILE_NAME: &str = "history";
+static G_TXN_FACTORY_ACCOUNTS_FILE_NAME: &str = "txn_factory_accounts";
 
 pub struct CliState {
     net: ChainNetworkID,
@@ -51,7 +52,7 @@ pub struct CliState {
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
-    account_client: Box<dyn AccountProvider>,
+    account_client: Option<Box<dyn AccountProvider>>,
     vm2_state: Option<CliStateVM2>,
 }
 
@@ -67,7 +68,7 @@ impl CliState {
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
-        account_client: Box<dyn AccountProvider>,
+        account_client: Option<Box<dyn AccountProvider>>,
         account_client_vm2: Option<Box<dyn AccountProvider2>>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
@@ -110,7 +111,9 @@ impl CliState {
     }
 
     pub fn account_client(&self) -> &dyn AccountProvider {
-        self.account_client.as_ref()
+        self.account_client
+            .as_deref()
+            .expect("account_client not set")
     }
     pub fn temp_dir(&self) -> &Path {
         self.temp_dir.path()
@@ -125,12 +128,16 @@ impl CliState {
         self.data_dir().join(G_HISTORY_FILE_NAME)
     }
 
+    pub fn txn_factory_accounts_file(&self) -> PathBuf {
+        self.data_dir().join(G_TXN_FACTORY_ACCOUNTS_FILE_NAME)
+    }
+
     pub fn node_handle(&self) -> Option<&NodeHandle> {
         self.node_handle.as_ref()
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
-        self.account_client
+        self.account_client()
             .get_default_account()?
             .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
     }
@@ -144,7 +151,7 @@ impl CliState {
 
     /// Get account from node managed wallet.
     pub fn get_account(&self, account_address: AccountAddress) -> Result<AccountInfo> {
-        self.account_client
+        self.account_client()
             .get_account(account_address)?
             .ok_or_else(|| {
                 format_err!("Can not find WalletAccount by address: {}", account_address)
@@ -156,7 +163,7 @@ impl CliState {
         account_address: Option<AccountAddress>,
     ) -> Result<AccountInfo> {
         if let Some(account_address) = account_address {
-            self.account_client
+            self.account_client()
                 .get_account(account_address)?
                 .ok_or_else(|| {
                     format_err!("Can not find WalletAccount by address: {}", account_address)
@@ -321,7 +328,7 @@ impl CliState {
             return Ok(execute_result);
         }
 
-        let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
+        let signed_txn = self.account_client().sign_txn(raw_txn, sender.address)?;
 
         let multisig_public_key = match &public_key {
             AccountPublicKey::Single(_) => {
