@@ -6,6 +6,7 @@ use futures::{TryStream, TryStreamExt};
 use jsonrpc_client_transports::transports::{ipc, ws};
 use jsonrpc_client_transports::{RpcChannel, RpcError};
 use log::error;
+use parking_lot::Mutex;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::GetBlockOption;
 use starcoin_rpc_api::node::NodeInfo;
@@ -16,11 +17,13 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::view::{StateWithProofView, TransactionInfoView};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub struct AsyncRpcClient {
-    inner: Arc<RpcClientInner>,
-    _provider: AsyncConnProvider,
+    inner: Arc<Mutex<Option<Arc<RpcClientInner>>>>,
+    provider: AsyncConnProvider,
+    connecting: AtomicBool,
 }
 
 struct AsyncConnProvider {
@@ -50,8 +53,9 @@ impl AsyncRpcClient {
             .into();
 
         Ok(Self {
-            inner: Arc::new(inner),
-            _provider: provider,
+            inner: Arc::new(Mutex::new(Some(Arc::new(inner)))),
+            provider,
+            connecting: AtomicBool::new(false),
         })
     }
     async fn call_rpc_async<F, T>(
@@ -61,9 +65,45 @@ impl AsyncRpcClient {
     where
         F: std::future::Future<Output = Result<T, RpcError>> + Send,
     {
-        let result = f(self.inner.clone()).await;
+        let inner_client = {
+            let inner_opt = self.inner.lock();
+            if let Some(inner) = inner_opt.as_ref() {
+                Some(inner.clone())
+            } else if self.connecting.load(Ordering::SeqCst) {
+                // quick failing if someone is trying to connect
+                return Err(RpcError::Client("re-connecting to RPC server...".into()));
+            } else {
+                // no other client is re-connecting, so we can try to connect and stop following clients
+                self.connecting.store(true, Ordering::SeqCst);
+                None
+            }
+        };
+        let inner_client = match inner_client {
+            Some(inner) => inner,
+            None => {
+                let channel = match self.provider.get_rpc_channel_async().await {
+                    Ok(channel) => channel,
+                    Err(e) => {
+                        // clean up the connecting state, leave it for the next call
+                        self.connecting.store(false, Ordering::SeqCst);
+                        return Err(e);
+                    }
+                };
+                let new_inner = Arc::new(RpcClientInner::new(channel));
+                let mut inner_opt = self.inner.lock();
+                *inner_opt = Some(new_inner.clone());
+                // we're all set, clean up.
+                self.connecting.store(false, Ordering::SeqCst);
+                new_inner
+            }
+        };
+        let result = f(inner_client).await;
         if let Err(RpcError::Other(e)) = &result {
             error!("rpc error due to {}", e);
+            {
+                let mut inner_opt = self.inner.lock();
+                *inner_opt = None;
+            }
         }
         result
     }
