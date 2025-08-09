@@ -297,7 +297,7 @@ async fn account_worker(
                     timestamp,
                     chain_id,
                 )
-                    .await
+                .await
                 {
                     Ok(hash) => {
                         info!("submitted txn {hash} for {}", entry.address);
