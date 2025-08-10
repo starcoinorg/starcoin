@@ -80,6 +80,11 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    
+    fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    fn get_dag_state(&self) -> Result<starcoin_dag::consensusdb::consensus_state::DagStateView>;
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
+    
     fn get_transaction_proof2(
         &self,
         block_id: HashValue,

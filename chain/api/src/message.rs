@@ -4,6 +4,8 @@
 use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::multi_state::MultiState;
@@ -65,6 +67,15 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetDagBlockChildren {
+        block_ids: Vec<HashValue>,
+    },
+    GetDagStateView,
+    GetGhostdagData(Vec<HashValue>),
+    IsAncestorOfCommand {
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    },
     GetMultiStateByHash(HashValue),
     GetTransactionProof2 {
         block_id: HashValue,
@@ -100,6 +111,9 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
+    DagStateView(Box<DagStateView>),
+    GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
+    IsAncestorOfCommand { reachability_view: ReachabilityView },
     MultiStateResp(Option<MultiState>),
     TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
 }

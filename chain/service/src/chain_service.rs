@@ -1,10 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
-use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::{FlexiDagStorage, FlexiDagStorageConfig};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
@@ -12,6 +10,10 @@ use starcoin_chain_api::{
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
+use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_service_registry::{
@@ -21,7 +23,7 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{NewDagBlock, NewHeadBlock};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -44,6 +46,7 @@ impl ChainReaderService {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
@@ -52,6 +55,7 @@ impl ChainReaderService {
                 startup_info,
                 storage,
                 storage2,
+                dag,
                 vm_metrics,
             )?,
         })
@@ -59,35 +63,67 @@ impl ChainReaderService {
 }
 
 impl ServiceFactory<Self> for ChainReaderService {
-    fn create(ctx: &mut ServiceContext<ChainReaderService>) -> Result<ChainReaderService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, startup_info, storage, storage2, vm_metrics)
+        Self::new(config, startup_info, storage, storage2, dag, vm_metrics)
     }
 }
 
 impl ActorService for ChainReaderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewDagBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
 
+impl EventHandler<Self, NewDagBlock> for ChainReaderService {
+    fn handle_event(&mut self, event: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in chain reader service");
+        let mut main = self
+            .inner
+            .get_main()
+            .fork(self.inner.main_head_header().id())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "fork error when handle NewDagBlock in chain reader service: {:?}",
+                    e
+                )
+            });
+        self.inner.main = main
+            .select_dag_state(event.executed_block.as_ref().header())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "select_dag_state error when handle NewDagBlock in chain reader service: {:?}",
+                    e
+                )
+            });
+    }
+}
+
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
-        let new_head = event.0.block().header();
-        if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
-            self.inner.update_chain_head(event.0.as_ref().clone())
+    fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+        let new_head = event.executed_block.block().header().clone();
+        if let Err(e) = if self
+            .inner
+            .get_main()
+            .can_connect(event.executed_block.as_ref())
+        {
+            self.inner
+                .update_chain_head(event.executed_block.as_ref().clone())
         } else {
             self.inner.switch_main(new_head.id())
         } {
@@ -247,6 +283,21 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetDagBlockChildren { block_ids } => Ok(ChainResponse::HashVec(
+                self.inner.get_dag_block_children(block_ids)?,
+            )),
+            ChainRequest::GetDagStateView => Ok(ChainResponse::DagStateView(Box::new(
+                self.inner.get_dag_state()?,
+            ))),
+            ChainRequest::GetGhostdagData(ids) => Ok(ChainResponse::GhostdagDataOption(Box::new(
+                self.inner.get_ghostdagdata(ids)?,
+            ))),
+            ChainRequest::IsAncestorOfCommand {
+                ancestor,
+                descendants,
+            } => Ok(ChainResponse::IsAncestorOfCommand {
+                reachability_view: self.inner.dag.is_ancestor_of(ancestor, descendants)?,
+            }),
             ChainRequest::GetMultiStateByHash(hash) => {
                 let state = self.inner.storage.get_vm_multi_state(hash)?;
                 Ok(ChainResponse::MultiStateResp(Some(state)))
@@ -274,6 +325,7 @@ pub struct ChainReaderServiceInner {
     main: BlockChain,
     storage: Arc<dyn Store>,
     storage2: Arc<dyn Store2>,
+    dag: BlockDAG,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -283,23 +335,17 @@ impl ChainReaderServiceInner {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        // Create DAG storage
-        let dag_storage_path = config.storage.dag_dir();
-        let dag_config = FlexiDagStorageConfig::from(config.storage.clone());
-        let dag_storage = FlexiDagStorage::create_from_path(dag_storage_path, dag_config)
-            .map_err(|e| format_err!("Failed to create DAG storage: {}", e))?;
-        let dag = BlockDAG::create_blockdag(dag_storage);
-        
         let main = BlockChain::new(
             net.time_service(),
             startup_info.main,
             storage.clone(),
             storage2.clone(),
             vm_metrics.clone(),
-            dag,
+            dag.clone(),
         )?;
         Ok(Self {
             config,
@@ -307,6 +353,7 @@ impl ChainReaderServiceInner {
             main,
             storage,
             storage2,
+            dag,
             vm_metrics,
         })
     }
@@ -326,20 +373,13 @@ impl ChainReaderServiceInner {
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
         let net = self.config.net();
-        // Create DAG storage for new chain
-        let dag_storage_path = self.config.storage.dag_dir();
-        let dag_config = FlexiDagStorageConfig::from(self.config.storage.clone());
-        let dag_storage = FlexiDagStorage::create_from_path(dag_storage_path, dag_config)
-            .map_err(|e| format_err!("Failed to create DAG storage: {}", e))?;
-        let dag = BlockDAG::create_blockdag(dag_storage);
-        
         self.main = BlockChain::new(
             net.time_service(),
             new_head_id,
             self.storage.clone(),
             self.storage2.clone(),
             self.vm_metrics.clone(),
-            dag,
+            self.dag.clone(),
         )?;
         Ok(())
     }
@@ -483,6 +523,38 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>> {
         self.storage.get_block_infos(ids)
     }
+
+    fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>> {
+        ids.into_iter().try_fold(vec![], |mut result, id| {
+            self.dag.get_children(id).map(|children| {
+                result.extend(children);
+                result
+            })
+        })
+    }
+
+    fn get_dag_state(&self) -> Result<DagStateView> {
+        let state = self.main.get_dag_state()?;
+        let pruning_point = self.main.status().head().pruning_point();
+        Ok(DagStateView {
+            tips: state.tips,
+            pruning_point,
+        })
+    }
+
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
+        let arc_results = self.dag.ghostdata_by_hashes(&ids)?;
+
+        let results = arc_results
+            .into_iter()
+            .map(|maybe_arc| {
+                maybe_arc.map(|arc| Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone()))
+            })
+            .collect();
+
+        Ok(results)
+    }
+
 
     fn get_transaction_proof2(
         &self,

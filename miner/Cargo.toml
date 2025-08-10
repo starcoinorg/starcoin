@@ -6,6 +6,7 @@ hex = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
+bcs-ext = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
@@ -14,6 +15,7 @@ starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
+starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-metrics = { workspace = true }
@@ -25,7 +27,13 @@ starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-sync = { workspace = true }
+starcoin-genesis = { workspace = true }
+crossbeam = { workspace = true }
+rand = { workspace = true }
+starcoin-statedb = { workspace = true }
 
 # dependencies for move 2.0
 starcoin-vm2-storage = { workspace = true }

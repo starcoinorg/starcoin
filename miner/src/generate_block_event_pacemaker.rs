@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::GenerateBlockEvent;
+use crate::{GenerateBlockEvent, NewHeaderChannel};
 use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -9,20 +9,22 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{DeterminedDagBlock, NewHeadBlock, SyncStatusChangeEvent},
 };
 use std::sync::Arc;
 
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
+    new_header_channel: NewHeaderChannel,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
-    fn create(ctx: &mut ServiceContext<GenerateBlockEventPacemaker>) -> Result<Self> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
+            new_header_channel: ctx.get_shared::<NewHeaderChannel>()?,
         })
     }
 }
@@ -33,8 +35,15 @@ impl GenerateBlockEventPacemaker {
     }
 
     pub fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+        match &self.sync_status {
+            Some(status) => match status.sync_status() {
+                starcoin_types::sync_status::SyncState::Prepare => false,
+                starcoin_types::sync_status::SyncState::Synchronizing {
+                    target: _,
+                    total_difficulty: _,
+                } => false,
+                starcoin_types::sync_status::SyncState::Synchronized => true,
+            },
             None => false,
         }
     }
@@ -62,11 +71,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 }
 
 impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
-    fn handle_event(
-        &mut self,
-        _msg: NewHeadBlock,
-        ctx: &mut ServiceContext<GenerateBlockEventPacemaker>,
-    ) {
+    fn handle_event(&mut self, _msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
             self.send_event(true, ctx)
         } else {
@@ -87,10 +92,39 @@ impl EventHandler<Self, PropagateTransactions> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
-        let is_synced = msg.0.is_synced();
+        // let is_synced = msg.0.is_synced();
         self.sync_status = Some(msg.0);
-        if is_synced {
-            self.send_event(false, ctx);
+        if self.is_synced() {
+            let _consume = self
+                .new_header_channel
+                .new_header_receiver
+                .try_iter()
+                .count();
+            match self.new_header_channel.new_header_sender.send(Arc::new(
+                self.sync_status
+                    .as_ref()
+                    .unwrap()
+                    .chain_status()
+                    .head()
+                    .clone(),
+            )) {
+                Ok(_) => (),
+                Err(e) => {
+                    error!("Failed to send header to new header channel: {:?}", e);
+                    return;
+                }
+            }
+            self.send_event(true, ctx);
+        }
+    }
+}
+
+impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
+        if self.is_synced() {
+            self.send_event(true, ctx)
+        } else {
+            debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
         }
     }
 }

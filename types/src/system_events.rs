@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
+use crate::block::{Block, BlockHeader, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use schemars::JsonSchema;
@@ -10,7 +10,14 @@ use starcoin_crypto::HashValue;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
-pub struct NewHeadBlock(pub Arc<ExecutedBlock>);
+pub struct NewHeadBlock {
+    pub executed_block: Arc<ExecutedBlock>,
+}
+
+#[derive(Clone, Debug)]
+pub struct NewDagBlock {
+    pub executed_block: Arc<ExecutedBlock>,
+}
 
 /// may be uncle block
 #[derive(Clone, Debug)]

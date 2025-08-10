@@ -4,9 +4,8 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use futures::executor::block_on;
+use create_block_template::block_builder_service::BlockTemplateError;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -21,13 +20,17 @@ pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
 
-pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
+pub use create_block_template::{
+    block_builder_service::BlockBuilderService, block_builder_service::BlockTemplateRequest,
+    new_header_service::NewHeaderChannel, new_header_service::NewHeaderService,
+};
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use std::fmt;
 use thiserror::Error;
 
+const DEFAULT_TASK_POOL_SIZE: usize = 16;
 #[derive(Debug, Error)]
 pub enum MinerError {
     #[error("Mint task is empty Error")]
@@ -47,7 +50,7 @@ impl ServiceRequest for UpdateSubscriberNumRequest {
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
-    current_task: Option<MintTask>,
+    task_pool: Vec<MintTask>,
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
     metrics: Option<MinerMetrics>,
@@ -90,12 +93,12 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     fn handle(
         &mut self,
         req: UpdateSubscriberNumRequest,
-        _ctx: &mut ServiceContext<MinerService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Option<MintBlockEvent> {
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
         }
-        self.current_task.as_ref().map(|task| MintBlockEvent {
+        self.task_pool.last().map(|task| MintBlockEvent {
             parent_hash: task.block_template.parent_hash,
             strategy: task.block_template.strategy,
             minting_blob: task.minting_blob.clone(),
@@ -106,17 +109,17 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     }
 }
 
-impl ServiceFactory<MinerService> for MinerService {
-    fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
+impl ServiceFactory<Self> for MinerService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let create_block_template_service = ctx.service_ref::<BlockBuilderService>()?.clone();
         let metrics = config
             .metrics
             .registry()
             .and_then(|registry| MinerMetrics::register(registry).ok());
-        Ok(MinerService {
+        Ok(Self {
             config,
-            current_task: None,
+            task_pool: Vec::new(),
             create_block_template_service,
             client_subscribers_num: 0,
             metrics,
@@ -132,6 +135,7 @@ impl ActorService for MinerService {
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
+        info!("stoped miner_serive ");
         Ok(())
     }
 }
@@ -140,7 +144,7 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
     fn handle(
         &mut self,
         req: SubmitSealRequest,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
         self.finish_task(req.nonce, req.extra, req.minting_blob.clone(), ctx)
             .map_err(|e| {
@@ -150,52 +154,96 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
     }
 }
 
-// one hour
-const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
+#[derive(Debug)]
+pub struct DispatchMintBlockTemplate {
+    pub block_template: BlockTemplate,
+}
+
+impl ServiceRequest for DispatchMintBlockTemplate {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, DispatchMintBlockTemplate> for MinerService {
+    fn handle(&mut self, msg: DispatchMintBlockTemplate, ctx: &mut ServiceContext<Self>) {
+        let _ = self.dispatch_mint_block_event(ctx, msg.block_template.clone());
+    }
+}
+
+#[derive(Debug)]
+pub struct DelayGenerateBlockEvent {
+    pub delay_secs: u64,
+}
+
+impl ServiceRequest for DelayGenerateBlockEvent {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, DelayGenerateBlockEvent> for MinerService {
+    fn handle(&mut self, msg: DelayGenerateBlockEvent, ctx: &mut ServiceContext<Self>) {
+        ctx.run_later(Duration::from_secs(msg.delay_secs), |ctx| {
+            ctx.notify(GenerateBlockEvent::default());
+        });
+    }
+}
 
 impl MinerService {
     pub fn dispatch_task(
         &mut self,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
-    ) -> Result<()> {
-        //create block template should block_on for avoid mint same block template.
-        let response = block_on(async {
-            self.create_block_template_service
+    ) -> anyhow::Result<()> {
+        let create_block_template_service = self.create_block_template_service.clone();
+        let config = self.config.clone();
+        let addr = ctx.service_ref::<Self>()?.clone();
+        ctx.spawn(async move {
+            let block_template = match create_block_template_service
                 .send(BlockTemplateRequest)
-                .await?
-        })?;
-        let parent = response.parent;
-        let block_template = response.template;
-        let block_time_gap = block_template.timestamp - parent.timestamp();
+                .await
+            {
+                Ok(send_result) => match send_result {
+                    Ok(block_template) => block_template,
+                    Err(block_template_error) => {
+                        match block_template_error {
+                            BlockTemplateError::NoReceivedHeader => {
+                                return;
+                            }
+                            BlockTemplateError::Other(e) => {
+                                error!("BlockTemplateRequest processing failed: {:?}", e);
+                            }
+                        }
+                        return;
+                    }
+                },
+                Err(e) => {
+                    error!("BlockTemplateRequest delivery failed: {:?}", e);
+                    return;
+                }
+            };
 
-        if !event.skip_empty_block_check
-            && (block_template.body.transactions.is_empty()
-            && block_template.body.transactions2.is_empty()
-            && self.config.miner.is_disable_mint_empty_block()
-            //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
-            && block_time_gap < MAX_BLOCK_TIME_GAP)
-        {
-            debug!("The flag disable_mint_empty_block is true and no txn in pool, so skip mint empty block.");
-            Ok(())
-        } else {
-            self.dispatch_mint_block_event(ctx, block_template)
-        }
-    }
+            let parent = block_template.parent;
+            let block_template = block_template.template;
+            let block_time_gap = block_template.timestamp - parent.timestamp();
 
-    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
-        //create block template should block_on for avoid mint same block template.
-        let response = block_on(async {
-            self.create_block_template_service
-                .send(BlockTemplateRequest)
-                .await?
-        })?;
-        self.dispatch_mint_block_event(ctx, response.template)
+            let should_skip = !event.skip_empty_block_check
+                && block_template.body.transactions.is_empty()
+                && block_template.body.transactions2.is_empty()
+                && config.miner.is_disable_mint_empty_block()
+                && block_time_gap < 3600 * 1000;
+            if should_skip {
+                info!("Skipping minting empty block");
+            } else if let Err(e) = addr
+                .send(DispatchMintBlockTemplate { block_template })
+                .await
+            {
+                warn!("Failed to dispatch block template: {}", e);
+            }
+        });
+        Ok(())
     }
 
     fn dispatch_mint_block_event(
         &mut self,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
         block_template: BlockTemplate,
     ) -> Result<()> {
         debug!("Mint block template: {:?}", block_template);
@@ -205,13 +253,9 @@ impl MinerService {
         let parent_hash = block_template.parent_hash;
         let task = MintTask::new(block_template, self.metrics.clone());
         let mining_blob = task.minting_blob.clone();
-        if let Some(current_task) = self.current_task.as_ref() {
-            debug!(
-                "force set mint task, current_task: {:?}, new_task: {:?}",
-                current_task, task
-            );
-        }
-        self.current_task = Some(task);
+        self.task_pool.retain(|t| t.minting_blob != mining_blob);
+        self.manage_task_pool();
+        self.task_pool.push(task);
         ctx.broadcast(MintBlockEvent::new(
             parent_hash,
             strategy,
@@ -228,50 +272,55 @@ impl MinerService {
         nonce: u32,
         extra: BlockHeaderExtra,
         minting_blob: Vec<u8>,
-        ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        match self.current_task.as_ref() {
-            Some(task) => {
-                if task.minting_blob != minting_blob {
-                    return Err(MinerError::TaskMisMatchError {
-                        current: hex::encode(&task.minting_blob),
-                        real: hex::encode(minting_blob),
-                    }
-                    .into());
-                };
-                task.block_template.strategy.verify_blob(
-                    task.minting_blob.clone(),
-                    nonce,
-                    extra,
-                    task.block_template.difficulty,
-                )?
-            }
-            None => {
-                return Err(MinerError::TaskEmptyError.into());
-            }
+        if self.task_pool.is_empty() {
+            return Err(MinerError::TaskEmptyError.into());
         }
+        if let Some(index) = self
+            .task_pool
+            .iter()
+            .position(|t| t.minting_blob == minting_blob)
+        {
+            let task = self.task_pool.remove(index);
 
-        if let Some(task) = self.current_task.take() {
             let block = task.finish(nonce, extra);
-            let block_hash = block.id();
-            info!(target: "miner", "Mint new block: {}", block);
+            let block_hash: HashValue = block.id();
+            info!(target: "miner", "Minted new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();
             }
+
             Ok(block_hash)
         } else {
-            Err(MinerError::TaskEmptyError.into())
+            // TODO:: Refactor TaskMisMatchError,remove current @sanlee
+            Err(MinerError::TaskMisMatchError {
+                current: "None".to_string(),
+                real: hex::encode(&minting_blob),
+            }
+            .into())
         }
     }
 
     pub fn is_minting(&self) -> bool {
-        self.current_task.is_some()
+        !self.task_pool.is_empty()
+    }
+    fn manage_task_pool(&mut self) {
+        if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
+            self.task_pool.remove(0);
+        }
+    }
+    pub fn task_pool_len(&self) -> usize {
+        self.task_pool.len()
+    }
+    pub fn get_task_pool(&self) -> &Vec<MintTask> {
+        &self.task_pool
     }
 }
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
-    fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
+    fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<Self>) {
         debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.break_current_task && self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");

@@ -9,6 +9,7 @@ starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
