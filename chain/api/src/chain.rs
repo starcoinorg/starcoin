@@ -128,6 +128,26 @@ pub trait ChainReader {
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof2>>;
+
+    // DAG methods
+    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
+    fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
+    fn calc_ghostdata_and_check_bounded_merge_depth(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<starcoin_dag::types::ghostdata::GhostdagData>;
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool>;
+    fn get_pruning_height(&self) -> BlockNumber;
+    fn get_pruning_config(&self) -> (u64, u64);
+    fn get_genesis_hash(&self) -> HashValue;
+    fn dag(&self) -> starcoin_dag::blockdag::BlockDAG;
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()>;
+    fn check_parents_ready(&self, block_header: &BlockHeader) -> bool;
 }
 
 pub trait ChainWriter {

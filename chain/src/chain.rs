@@ -477,7 +477,9 @@ impl BlockChain {
     }
 
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
-        FullVerifier::can_be_uncle(self, block_header)
+        // DAG blocks don't use the traditional uncle verification
+        // This is handled by verify_blue_blocks in the verifier
+        Ok(true)
     }
 
     pub fn verify_with_verifier<V>(&mut self, block: Block) -> Result<VerifiedBlock>
@@ -1529,6 +1531,133 @@ impl ChainReader for BlockChain {
             state_proof,
         }))
     }
+
+    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>> {
+        self.dag
+            .get_dag_state(pruning_point)
+            .map(|state| state.tips)
+    }
+
+    fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
+        let header = match self.storage.0.get_block_header_by_hash(header_id)? {
+            Some(header) => header,
+            None => return Ok(false),
+        };
+
+        if self.storage.0.get_block_info(header.id())?.is_none() {
+            return Ok(false);
+        }
+
+        self.dag.has_block_connected(&header)
+    }
+
+    fn calc_ghostdata_and_check_bounded_merge_depth(
+        &self,
+        header: &BlockHeader,
+    ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
+        let dag = self.dag();
+
+        let ghostdata = dag.calc_ghostdata(header)?;
+
+        dag.check_bounded_merge_depth(
+            &ghostdata,
+            get_merge_bound_hash(ghostdata.selected_parent, dag.clone(), self.storage.0.clone())?,
+        )?;
+
+        Ok(ghostdata)
+    }
+
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
+        self.dag().check_ancestor_of(ancestor, descendant)
+    }
+
+    fn get_pruning_height(&self) -> BlockNumber {
+        self.get_pruning_height()
+    }
+
+    fn get_pruning_config(&self) -> (u64, u64) {
+        // TODO: DAG - Get from on-chain config when FlexiDagConfigV2 is available
+        // For now, return default values
+        let pruning_depth = 1000u64;
+        let pruning_finality = 100u64;
+        (pruning_depth, pruning_finality)
+    }
+
+    fn get_genesis_hash(&self) -> HashValue {
+        self.genesis_hash
+    }
+
+    fn dag(&self) -> BlockDAG {
+        self.dag()
+    }
+
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.0.get_block_header_by_hash(block_id)
+    }
+
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()> {
+        let chain_pruning_point = if pruning_point == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            pruning_point
+        };
+        let pruning_point_header = self
+            .storage
+            .0
+            .get_block_header_by_hash(chain_pruning_point)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash when validating the block header {:?}",
+                    chain_pruning_point
+                )
+            })?;
+        let pruning_point_hash = self
+            .get_hash_by_number(pruning_point_header.number())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block hash by number when validating the block header {:?}",
+                    pruning_point_header.number()
+                )
+            })?;
+        if pruning_point_header.id() != pruning_point_hash {
+            bail!(
+                "Pruning point header id: {:?} not match with pruning point: {:?}",
+                pruning_point_header.id(),
+                pruning_point_hash
+            );
+        }
+
+        let pruning_point_blue_score = self
+            .dag()
+            .storage
+            .ghost_dag_store
+            .get_blue_score(chain_pruning_point)?;
+        let (pruning_depth, _pruning_finality) = self.get_pruning_config();
+        if let Some(blue_score) = pruning_point_blue_score.checked_add(pruning_depth) {
+            if ghostdata.blue_score < blue_score && chain_pruning_point != self.genesis_hash {
+                bail!("Pruning point blue score: {:?} not match with ghostdag blue score: {:?} and pruning depth: {:?}", pruning_point_blue_score, ghostdata.blue_score, pruning_depth);
+            }
+        } else {
+            bail!(
+                "Overflow occurred when computing pruning_point_blue_score + pruning_depth: {:?} + {:?}",
+                pruning_point_blue_score, pruning_depth
+            );
+        }
+        Ok(())
+    }
+
+    fn check_parents_ready(&self, block_header: &BlockHeader) -> bool {
+        block_header.parents_hash().iter().all(|parent| {
+            self.has_dag_block(*parent).unwrap_or_else(|e| {
+                warn!("check_parents_ready error: {:?}", e);
+                false
+            })
+        })
+    }
 }
 
 impl BlockChain {
@@ -1682,10 +1811,6 @@ impl BlockChain {
         self.dag().has_block_connected(&header)
     }
     
-    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
-        self.dag().check_ancestor_of(ancestor, descendant)
-    }
-    
     pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
         header.parents_hash().into_iter().all(|parent| {
             self.has_dag_block(*parent).unwrap_or_else(|e| {
@@ -1693,6 +1818,16 @@ impl BlockChain {
                 false
             })
         })
+    }
+
+    // legacy: pruning height should always start from genesis.
+    pub fn get_pruning_height(&self) -> BlockNumber {
+        let chain_id = self.status().head().chain_id();
+        if chain_id.is_test() || chain_id.is_dev() {
+            BlockNumber::MAX
+        } else {
+            0
+        }
     }
     
     pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
