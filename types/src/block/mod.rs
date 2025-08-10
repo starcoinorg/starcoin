@@ -9,7 +9,8 @@ pub mod raw_block_header;
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::genesis_config::{ChainId, ConsensusStrategy};
+use crate::genesis_config::ChainId;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::multi_state::MultiState;
 use crate::multi_transaction::MultiSignedUserTransaction;

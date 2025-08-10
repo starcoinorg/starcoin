@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 // DAG constants
-pub static G_MAX_PARENTS_COUNT: u64 = 10;
+pub static G_MAX_PARENTS_COUNT: usize = 10;
 pub static G_DAG_BLOCK_RECEIVE_TIME_WINDOW: u64 = 2; // in second, 2s for default
 pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
 
@@ -39,6 +39,18 @@ pub struct MinerConfig {
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "maximum-parents-count")]
+    pub maximum_parents_count: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "dag-block-receive-time-window")]
+    pub dag_block_receive_time_window: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "dag-merge-depth")]
+    pub dag_merge_depth: Option<u64>,
 }
 
 impl MinerConfig {
@@ -64,6 +76,19 @@ impl MinerConfig {
             miner_thread: self.miner_thread.unwrap_or(1),
             enable_stderr: true,
         })
+    }
+
+    pub fn maximum_parents_count(&self) -> usize {
+        self.maximum_parents_count.unwrap_or(G_MAX_PARENTS_COUNT)
+    }
+
+    pub fn dag_block_receive_time_window(&self) -> u64 {
+        self.dag_block_receive_time_window
+            .unwrap_or(G_DAG_BLOCK_RECEIVE_TIME_WINDOW)
+    }
+
+    pub fn dag_merge_depth(&self) -> u64 {
+        self.dag_merge_depth.unwrap_or(G_MERGE_DEPTH)
     }
 }
 
@@ -106,6 +131,18 @@ impl ConfigModule for MinerConfig {
         }
         if opt.miner.block_gas_limit.is_some() {
             self.block_gas_limit = opt.miner.block_gas_limit;
+        }
+
+        if opt.miner.maximum_parents_count.is_some() {
+            self.maximum_parents_count = opt.miner.maximum_parents_count;
+        }
+
+        if opt.miner.dag_block_receive_time_window.is_some() {
+            self.dag_block_receive_time_window = opt.miner.dag_block_receive_time_window;
+        }
+
+        if opt.miner.dag_merge_depth.is_some() {
+            self.dag_merge_depth = opt.miner.dag_merge_depth;
         }
 
         Ok(())

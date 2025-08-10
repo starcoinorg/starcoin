@@ -14,6 +14,7 @@ starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-open-block = { workspace = true }

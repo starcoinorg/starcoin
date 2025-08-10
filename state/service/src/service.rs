@@ -132,7 +132,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
-        let NewHeadBlock(block) = msg;
+        let NewHeadBlock { executed_block: block } = msg;
 
         let state_root = block.multi_state().state_root1();
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);

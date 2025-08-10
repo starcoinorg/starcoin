@@ -17,12 +17,11 @@ use starcoin_storage::Store;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME,
-    account_address::AccountAddress,
     block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
-    genesis_config::{ChainId, ConsensusStrategy},
+    genesis_config::ChainId,
     identifier::Identifier,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
@@ -30,9 +29,11 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
@@ -121,11 +122,16 @@ impl OpenedBlock {
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
+        // Convert VM2's AccountAddress to VM1's AccountAddress for BlockMetadata
+        let author_bytes = author.to_vec();
+        let mut author_array = [0u8; 16];
+        author_array.copy_from_slice(&author_bytes[..16]);
+        let author_v1 = starcoin_types::account_address::AccountAddress::from(author_array);
         let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
-            author,
-            None,
+            author_v1,
+            None,  // author_auth_key
             uncles.len() as u64,
             previous_header.number() + 1,
             chain_id,

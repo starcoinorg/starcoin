@@ -8,10 +8,11 @@ pub use config::{
     G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG, G_VEGA_CONFIG,
 };
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::move_resource::{MoveResource, MoveStructType};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -95,6 +96,63 @@ impl Display for StdlibVersion {
         match self {
             Self::Latest => f.write_str("latest"),
             Self::Version(version) => f.write_str(version.to_string().as_str()),
+        }
+    }
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    IntoPrimitive,
+    TryFromPrimitive,
+    JsonSchema,
+)]
+#[repr(u8)]
+#[serde(tag = "type")]
+pub enum ConsensusStrategy {
+    #[default]
+    Dummy = 0,
+    Argon = 1,
+    Keccak = 2,
+    CryptoNight = 3,
+}
+
+impl ConsensusStrategy {
+    pub fn value(self) -> u8 {
+        self.into()
+    }
+}
+
+impl fmt::Display for ConsensusStrategy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConsensusStrategy::Dummy => write!(f, "dummy"),
+            ConsensusStrategy::Argon => write!(f, "argon"),
+            ConsensusStrategy::Keccak => write!(f, "keccak"),
+            ConsensusStrategy::CryptoNight => write!(f, "cryptonight"),
+        }
+    }
+}
+
+impl FromStr for ConsensusStrategy {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "dummy" => Ok(ConsensusStrategy::Dummy),
+            "argon" => Ok(ConsensusStrategy::Argon),
+            "keccak" => Ok(ConsensusStrategy::Keccak),
+            "cryptonight" => Ok(ConsensusStrategy::CryptoNight),
+            s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
         }
     }
 }

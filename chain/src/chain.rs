@@ -59,7 +59,7 @@ use starcoin_vm2_vm_types::{
     on_chain_resource::Epoch,
 };
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::collections::{BTreeMap, HashMap};
 use std::iter::Extend;
@@ -391,12 +391,17 @@ impl BlockChain {
         let strategy = self.consensus();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let previous_header_id = previous_header.id();
+        // Convert VM1's AccountAddress to VM2's for OpenedBlock
+        let author_bytes = author.to_vec();
+        let mut author_array = [0u8; 16];
+        author_array.copy_from_slice(&author_bytes[..16]);
+        let author_v2 = starcoin_vm2_types::account_address::AccountAddress::new(author_array);
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
             self.storage.1.clone(),
             previous_header,
             final_block_gas_limit,
-            author,
+            author_v2,
             self.time_service.now_millis(),
             uncles,
             difficulty,

@@ -8,7 +8,7 @@ use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
-use starcoin_types::{account_address::AccountAddress, block::Block};
+use starcoin_types::{account_address::AccountAddress, block::{Block, BlockHeader}};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::{
     iter::Iterator,
@@ -96,6 +96,37 @@ impl TxPoolSyncService for MockTxPoolService {
 
     fn status(&self) -> TxPoolStatus {
         unimplemented!()
+    }
+
+    fn get_pending_with_header(
+        &self,
+        max_len: u64,
+        _current_timestamp_secs: Option<u64>,
+        _header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction> {
+        self.pool
+            .lock()
+            .unwrap()
+            .iter()
+            .take(max_len as usize)
+            .cloned()
+            .collect()
+    }
+
+    fn next_sequence_number_with_header(
+        &self,
+        _address: AccountAddress,
+        _header: &BlockHeader,
+    ) -> Option<u64> {
+        todo!()
+    }
+
+    fn next_sequence_number2_with_header(
+        &self,
+        _address: AccountAddress2,
+        _header: &BlockHeader,
+    ) -> Option<u64> {
+        todo!()
     }
 
     fn find_txn(&self, _hash: &HashValue) -> Option<MultiSignedUserTransaction> {

@@ -575,20 +575,23 @@ impl ChainNetwork {
             0,
             self.genesis_block_parameter().timestamp,
             0,
-            self.genesis_config.consensus_config.epoch_block_count,
-            self.genesis_config.consensus_config.base_block_time_target,
-            self.genesis_config.consensus_config.base_reward_per_block,
-            self.genesis_config
+            self.genesis_config2.consensus_config.epoch_block_count,
+            self.genesis_config2.consensus_config.base_block_time_target,
+            self.genesis_config2.consensus_config.base_reward_per_block,
+            self.genesis_config2
                 .consensus_config
                 .base_reward_per_uncle_percent,
-            self.genesis_config
+            self.genesis_config2
                 .consensus_config
                 .base_block_difficulty_window,
-            self.genesis_config
+            self.genesis_config2
                 .consensus_config
                 .base_max_uncles_per_block,
-            self.genesis_config.consensus_config.base_block_gas_limit,
-            self.genesis_config.consensus_config.strategy,
+            self.genesis_config2.consensus_config.base_block_gas_limit,
+            self.genesis_config2.consensus_config.strategy,
+            self.genesis_config2
+                .consensus_config
+                .max_transaction_per_block,
             //TODO conform new Epoch events salt value.
             EventHandle::new(EventKey::new(0, genesis_address()), 0),
         )

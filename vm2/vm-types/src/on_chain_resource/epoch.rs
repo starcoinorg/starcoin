@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::access_path::{AccessPath, DataPath};
 use crate::event::EventHandle;
+use crate::genesis_config::ConsensusStrategy;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
@@ -25,10 +26,12 @@ pub struct Epoch {
     max_uncles_per_block: u64,
     block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
     new_epoch_events: EventHandle,
 }
 
 impl Epoch {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         number: u64,
         start_time: u64,
@@ -41,6 +44,7 @@ impl Epoch {
         max_uncles_per_block: u64,
         block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {
@@ -55,6 +59,7 @@ impl Epoch {
             max_uncles_per_block,
             block_gas_limit,
             strategy,
+            max_transaction_per_block,
             new_epoch_events,
         }
     }
@@ -99,8 +104,12 @@ impl Epoch {
         self.block_gas_limit
     }
 
-    pub fn strategy(&self) -> u8 {
-        self.strategy
+    pub fn strategy(&self) -> ConsensusStrategy {
+        ConsensusStrategy::try_from(self.strategy).expect("epoch consensus strategy must exist.")
+    }
+    
+    pub fn max_transaction_per_block(&self) -> u64 {
+        self.max_transaction_per_block
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

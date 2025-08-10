@@ -13,7 +13,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::{collections::{HashMap, HashSet}, str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]

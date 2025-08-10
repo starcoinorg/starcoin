@@ -22,6 +22,7 @@ starcoin-force-upgrade = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }

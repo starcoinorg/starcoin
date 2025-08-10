@@ -18,6 +18,7 @@ starcoin-state-api = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

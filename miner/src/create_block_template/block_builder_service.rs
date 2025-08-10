@@ -22,7 +22,6 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
-use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
@@ -34,11 +33,28 @@ use starcoin_types::{
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::RwLock;
 
 use crate::NewHeaderChannel;
 
 use super::metrics::BlockBuilderMetrics;
+use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_types::U256;
+
+#[derive(Clone, Debug)]
+pub struct MinerResponse {
+    pub previous_header: BlockHeader,
+    pub selected_parents: Vec<HashValue>,
+    pub strategy: ConsensusStrategy,
+    pub on_chain_block_gas_limit: u64,
+    pub next_difficulty: U256,
+    pub now_milliseconds: u64,
+    pub pruning_point: HashValue,
+    pub ghostdata: GhostdagData,
+    pub max_transaction_per_block: u64,
+}
 
 enum MergesetIncreaseResult {
     Accepted { increase_size: u64 },
@@ -186,12 +202,8 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
         _msg: BlockTemplateRequest,
         _ctx: &mut ServiceContext<Self>,
     ) -> <BlockTemplateRequest as ServiceRequest>::Response {
-        let header_version = self
-            .inner
-            .config
-            .net()
-            .genesis_config()
-            .block_header_version;
+        // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
+        let header_version = 1u32; // Default block header version for now
         let _ = self.receive_header();
         self.inner
             .create_block_template(header_version)
@@ -351,7 +363,7 @@ where
             .storage
             .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
-        let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
+        let next_difficulty = strategy.calculate_next_difficulty(&main)?;
         let now_milliseconds = self.config.net().time_service().now_millis();
 
         Ok((
@@ -507,7 +519,7 @@ where
         selected_header: &BlockHeader,
         blue_blocks: &[Block],
         max_txns: u64,
-    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction>)> {
+    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
         let pending_multi_transactions = self
             .tx_provider
             .get_txns_with_header(max_txns, selected_header);
@@ -536,7 +548,7 @@ where
 
         // Process VM2 transactions  
         let mut pending_transaction2_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+            HashMap::<AccountAddress2, Vec<SignedUserTransaction2>>::new();
         pending_transactions2.into_iter().for_each(|transaction| {
             pending_transaction2_map
                 .entry(transaction.sender())
@@ -547,7 +559,7 @@ where
         let mut uncle_transaction_map =
             HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
         let mut uncle_transaction2_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+            HashMap::<AccountAddress2, Vec<SignedUserTransaction2>>::new();
         blue_blocks.iter().for_each(|block| {
             // Process VM1 transactions from blue blocks
             block.transactions().iter().for_each(|transaction| {
@@ -678,7 +690,7 @@ where
         selected_parent: HashValue,
         mut candidates: VecDeque<HashValue>,
     ) -> Result<Vec<HashValue>> {
-        let max_block_parents: usize = usize::try_from(self.config.miner.maximum_parents_count())?;
+        let max_block_parents = self.config.miner.maximum_parents_count();
         let max_candidates: usize = max_block_parents * 3;
 
         // Prioritize half the blocks with highest blue work and pick the rest randomly to ensure diversity between nodes

@@ -7,7 +7,7 @@ use crate::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock {
@@ -18,6 +18,14 @@ pub struct NewHeadBlock {
 pub struct NewDagBlock {
     pub executed_block: Arc<ExecutedBlock>,
 }
+
+#[derive(Clone, Debug)]
+pub struct NewDagBlockFromPeer {
+    pub executed_block: Arc<ExecutedBlock>,
+}
+
+#[derive(Clone, Debug)]
+pub struct DeterminedDagBlock;
 
 /// may be uncle block
 #[derive(Clone, Debug)]
