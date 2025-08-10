@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -7,7 +7,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::{get_merge_bound_hash, BlockChain, ChainReader};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -15,7 +15,7 @@ use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info, warn};
+use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
@@ -25,6 +25,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
@@ -42,10 +43,16 @@ enum MergesetIncreaseResult {
 }
 
 #[derive(Debug)]
+pub enum BlockTemplateError {
+    NoReceivedHeader,
+    Other(anyhow::Error),
+}
+
+#[derive(Debug)]
 pub struct BlockTemplateRequest;
 
 impl ServiceRequest for BlockTemplateRequest {
-    type Response = Result<BlockTemplateResponse>;
+    type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
 }
 
 #[derive(Debug, Clone)]
@@ -59,26 +66,30 @@ pub struct BlockBuilderService {
     new_header_channel: NewHeaderChannel,
 }
 
+enum ReceiveHeader {
+    Received,
+    NotReceived,
+}
+
 impl BlockBuilderService {
-    fn receive_header(&mut self) {
-        info!("receive header in block builder service");
+    fn receive_header(&mut self) -> ReceiveHeader {
         match self.new_header_channel.new_header_receiver.try_recv() {
             Ok(new_header) => {
                 match self
                     .inner
                     .set_current_block_header(new_header.as_ref().clone())
                 {
-                    Ok(()) => (),
-                    Err(e) => error!(
+                    Ok(()) => ReceiveHeader::Received,
+                    Err(e) => panic!(
                         "Failed to set current block header: {:?} in BlockBuilderService",
                         e
                     ),
                 }
             }
             Err(e) => match e {
-                crossbeam::channel::TryRecvError::Empty => (),
+                crossbeam::channel::TryRecvError::Empty => ReceiveHeader::NotReceived,
                 crossbeam::channel::TryRecvError::Disconnected => {
-                    error!("the new headerchannel is disconnected")
+                    panic!("the new headerchannel is disconnected")
                 }
             },
         }
@@ -175,29 +186,30 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        self.receive_header();
-        self.inner.create_block_template(header_version)
+        let _ = self.receive_header();
+        self.inner
+            .create_block_template(header_version)
+            .map_err(BlockTemplateError::Other)
     }
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
+    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+    fn get_txns_with_header(&self, _max: u64, _header: &BlockHeader) -> Vec<SignedUserTransaction> {
         vec![]
     }
-
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
-        self.get_pending_txns(Some(max), None)
+    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction> {
+        self.get_pending_with_header(max, None, header)
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
@@ -210,8 +222,10 @@ pub struct Inner<P> {
     tx_provider: P,
     local_block_gas_limit: Option<u64>,
     miner_account: RwLock<AccountInfo>,
-    main: BlockChain,
+    main: BlockHeader,
     config: Arc<NodeConfig>,
+    dag: BlockDAG,
+    genesis_hash: HashValue,
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -232,36 +246,34 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        let genesis_hash = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash"))?;
         Ok(Self {
             storage: storage.clone(),
             tx_provider,
             local_block_gas_limit,
             miner_account: RwLock::new(miner_account),
-            main: BlockChain::new(
-                config.net().time_service(),
-                header.id(),
-                storage,
-                vm_metrics.clone(),
-                dag,
-            )?,
+            main: header,
             config,
+            dag,
             metrics,
             vm_metrics,
+            genesis_hash,
         })
     }
 
-    fn resolve_block_parents(&mut self) -> Result<MinerResponse> {
+    fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
         let MineNewDagBlockInfo {
             selected_parents,
             ghostdata,
             pruning_point,
         } = {
-            info!("block template main is {:?}", self.main.current_header());
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
-            let pruning_point = if self.main.current_header().pruning_point() == HashValue::zero() {
-                self.main.get_genesis_hash()
+            let pruning_point = if self.main.pruning_point() == HashValue::zero() {
+                self.genesis_hash
             } else {
-                self.main.current_header().pruning_point()
+                self.main.pruning_point()
             };
 
             // calculate the next pruning point and
@@ -272,16 +284,15 @@ where
                 selected_parents, // ordered parents by work type or blue score
                 ghostdata,
                 pruning_point,
-            } = self
-                .main
-                .dag()
-                .calc_mergeset_and_tips(pruning_point, self.main.get_genesis_hash())?;
-            info!("after calculate the ghostdata, selected_parents are: {:?}, ghostdata selected parent: {:?}, blue score: {:?}, blue blocks: {:?}, red blocks: {:?}pruning point is: {:?}", 
-            selected_parents, ghostdata.blue_score, ghostdata.selected_parent, ghostdata.mergeset_blues, ghostdata.mergeset_reds.len(), pruning_point);
+            } = self.dag.calc_mergeset_and_tips(
+                pruning_point,
+                self.storage
+                    .get_genesis()?
+                    .expect("genesis not found when resolve block parents"),
+            )?;
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
-            // filter the parent candidates that bring too many ancestors which are not the descendants of the selected parent
             let parents_candidates = self.merge_size_limit_filter(
                 ghostdata.selected_parent,
                 selected_parents
@@ -290,17 +301,18 @@ where
                     .collect(),
             )?;
 
-            let merge_bound_hash = self.main.get_merge_bound_hash(ghostdata.selected_parent)?;
+            let merge_bound_hash = get_merge_bound_hash(
+                ghostdata.selected_parent,
+                self.dag.clone(),
+                self.storage.clone(),
+            )?;
 
-            let (selected_parents, ghostdata) =
-                self.main.dag().remove_bounded_merge_breaking_parents(
-                    parents_candidates,
-                    ghostdata,
-                    pruning_point,
-                    merge_bound_hash,
-                )?;
-            info!("after remove the bounded merge breaking parents, selected_parents are: {:?}, ghostdata selected parent: {:?}, blue score: {:?}, blue blocks: {:?}, red blocks: {:?}, pruning point is: {:?}, merge bound hash is: {:?}", 
-            selected_parents, ghostdata.selected_parent, ghostdata.blue_score, ghostdata.mergeset_blues, ghostdata.mergeset_reds.len(), pruning_point, merge_bound_hash);
+            let (selected_parents, ghostdata) = self.dag.remove_bounded_merge_breaking_parents(
+                parents_candidates,
+                ghostdata,
+                pruning_point,
+                merge_bound_hash,
+            )?;
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
@@ -313,50 +325,56 @@ where
 
         let selected_parent = ghostdata.selected_parent;
 
-        let time_service = self.config.net().time_service();
-        let storage = self.storage.clone();
-        let vm_metrics = self.vm_metrics.clone();
         let main = BlockChain::new(
-            time_service,
+            self.config.net().time_service().clone(),
             selected_parent,
-            storage,
-            vm_metrics,
-            self.main.dag(),
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
 
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
+        let max_transaction_per_block = epoch.max_transaction_per_block();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
-        let previous_header = main
-            .get_storage()
+        let previous_header = self
+            .storage
             .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
         let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
-        let now_milliseconds = main.time_service().now_millis();
+        let now_milliseconds = self.config.net().time_service().now_millis();
 
-        Ok(MinerResponse {
-            previous_header,
-            on_chain_block_gas_limit,
-            selected_parents,
-            strategy,
-            next_difficulty,
-            now_milliseconds,
-            pruning_point,
-            ghostdata,
-        })
+        Ok((
+            MinerResponse {
+                previous_header,
+                on_chain_block_gas_limit,
+                selected_parents,
+                strategy,
+                next_difficulty,
+                now_milliseconds,
+                pruning_point,
+                ghostdata,
+                max_transaction_per_block,
+            },
+            main,
+        ))
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
-        let MinerResponse {
-            previous_header,
-            selected_parents,
-            strategy,
-            on_chain_block_gas_limit,
-            next_difficulty: difficulty,
-            now_milliseconds: mut now_millis,
-            pruning_point,
-            ghostdata,
-        } = self.resolve_block_parents()?;
+        let (
+            MinerResponse {
+                previous_header,
+                selected_parents,
+                strategy,
+                on_chain_block_gas_limit,
+                next_difficulty: difficulty,
+                now_milliseconds: mut now_millis,
+                pruning_point,
+                ghostdata,
+                max_transaction_per_block,
+            },
+            main,
+        ) = self.resolve_block_parents()?;
 
         let block_gas_limit = self
             .local_block_gas_limit
@@ -365,11 +383,7 @@ where
 
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = (block_gas_limit / 200) * 2;
-
-        self.put_red_block_transactions(&ghostdata)?;
-
-        let txns = self.tx_provider.get_txns(max_txns);
+        let max_txns = min((block_gas_limit / 200) * 2, max_transaction_per_block);
 
         let author = *self
             .miner_account
@@ -397,17 +411,34 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
+        let red_blocks = ghostdata
+            .mergeset_reds
+            .iter()
+            .map(|hash| self.storage.get_block_by_hash(*hash))
+            .collect::<Result<Vec<Option<Block>>>>()?
+            .into_iter()
+            .map(|op_block_header| {
+                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
+            })
+            .collect::<Result<Vec<Block>>>()?;
+
+        let _ = self.tx_provider.add_txns(
+            red_blocks
+                .into_iter()
+                .flat_map(|block| block.body.transactions)
+                .collect(),
+        );
+
         let uncles = blue_blocks
             .iter()
             .map(|block| block.header().clone())
             .collect::<Vec<_>>();
 
         info!(
-            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
+            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, uncles len: {}, timestamp: {}",
             previous_header,
             block_gas_limit,
             max_txns,
-            txns.len(),
             uncles.len(),
             now_millis,
         );
@@ -425,36 +456,118 @@ where
             strategy,
             self.vm_metrics.clone(),
             selected_parents,
-            blue_blocks,
             header_version,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            main.into_statedb(),
         )?;
 
-        let excluded_txns = opened_block.push_txns(txns)?;
-
-        let template = opened_block.finalize()?;
-        for invalid_txn in excluded_txns.discarded_txns {
+        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        info!("[BlockProcess] txns len: {}", txn.len());
+        let excluded_txns = opened_block.push_txns(txn)?;
+        for invalid_txn in &excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
+        info!(
+            "[BlockProcess] discarded len: {}, untouched txns len: {}",
+            excluded_txns.discarded_txns.len(),
+            excluded_txns.untouched_txns.len()
+        );
 
+        let template = opened_block.finalize()?;
         Ok(BlockTemplateResponse {
             parent: previous_header,
             template,
         })
     }
 
+    fn fetch_transactions(
+        &self,
+        selected_header: &BlockHeader,
+        blue_blocks: &[Block],
+        max_txns: u64,
+    ) -> Result<Vec<SignedUserTransaction>> {
+        let pending_transactions = self
+            .tx_provider
+            .get_txns_with_header(max_txns, selected_header);
+
+        if pending_transactions.len() >= max_txns as usize {
+            return Ok(pending_transactions);
+        }
+
+        let mut pending_transaction_map =
+            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+        pending_transactions.into_iter().for_each(|transaction| {
+            pending_transaction_map
+                .entry(transaction.sender())
+                .or_default()
+                .push(transaction);
+        });
+
+        let mut uncle_transaction_map =
+            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+        blue_blocks.iter().for_each(|block| {
+            block.transactions().iter().for_each(|transaction| {
+                uncle_transaction_map
+                    .entry(transaction.sender())
+                    .or_default()
+                    .push(transaction.clone());
+            })
+        });
+
+        for transactions in uncle_transaction_map.values_mut() {
+            if transactions.len() <= 1 {
+                continue;
+            }
+
+            let mut index = 1;
+            while index < transactions.len() {
+                if transactions[index].sequence_number()
+                    != transactions[index - 1].sequence_number() + 1
+                {
+                    break;
+                }
+                index += 1;
+            }
+            transactions.truncate(index);
+        }
+
+        for (sender, uncle_transactions) in uncle_transaction_map.iter() {
+            if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
+                let pending_last_seq = pending_transactions
+                    .last()
+                    .expect("transaction not found in pending transactions")
+                    .sequence_number();
+                if let Some(index) = uncle_transactions
+                    .iter()
+                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
+                {
+                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
+                }
+            } else if let Some(next_seq) = self
+                .tx_provider
+                .next_sequence_number_with_header(*sender, selected_header)
+            {
+                if let Some(index) = uncle_transactions
+                    .iter()
+                    .position(|transaction| transaction.sequence_number() == next_seq)
+                {
+                    pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
+                }
+            }
+        }
+
+        Ok(pending_transaction_map
+            .iter()
+            .flat_map(|(_sender, transactions)| transactions.clone())
+            .collect())
+    }
+
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
-        if self.main.current_header().id() == header.id() {
+        if self.main.id() == header.id() {
             return Ok(());
         }
-        self.main = BlockChain::new(
-            self.config.net().time_service(),
-            header.id(),
-            self.storage.clone(),
-            self.vm_metrics.clone(),
-            self.main.dag(),
-        )?;
+        self.main = header;
         Ok(())
     }
 
@@ -493,7 +606,7 @@ where
         let mut parents = Vec::with_capacity(min(max_block_parents, candidates.len() + 1));
         parents.push(selected_parent);
         let mut mergeset_size = 1;
-        let mergeset_size_limit = self.main.dag().mergeset_size_limit();
+        let mergeset_size_limit = self.dag.mergeset_size_limit();
 
         // Try adding parents as long as mergeset size and number of parents limits are not reached
         while let Some(candidate) = candidates.pop_front() {
@@ -512,8 +625,7 @@ where
                 MergesetIncreaseResult::Rejected { new_candidate } => {
                     // If we already have a candidate in the past of new candidate then skip.
                     if self
-                        .main
-                        .dag()
+                        .dag
                         .reachability_service()
                         .is_any_dag_ancestor(&mut candidates.iter().copied(), new_candidate)
                     {
@@ -522,8 +634,7 @@ where
                     // Remove all candidates which are in the future of the new candidate
                     candidates.retain(|&h| {
                         !self
-                            .main
-                            .dag()
+                            .dag
                             .reachability_service()
                             .is_dag_ancestor_of(new_candidate, h)
                     });
@@ -548,8 +659,7 @@ where
         */
 
         let mut queue = self
-            .main
-            .dag()
+            .dag
             .storage
             .relations_store
             .read()
@@ -562,8 +672,7 @@ where
 
         while let Some(current) = queue.pop_front() {
             if self
-                .main
-                .dag()
+                .dag
                 .reachability_service()
                 .is_dag_ancestor_of_any(current, &mut selected_parents.iter().copied())
             {
@@ -577,8 +686,7 @@ where
             }
 
             let current_parents = self
-                .main
-                .dag()
+                .dag
                 .storage
                 .relations_store
                 .read()
@@ -595,39 +703,17 @@ where
     }
 
     fn update_main_chain(&mut self, selected_parent: HashValue) -> Result<()> {
-        if self.main.head_block().header().id() != selected_parent {
-            self.main = BlockChain::new(
-                self.config.net().time_service(),
-                selected_parent,
-                self.storage.clone(),
-                self.vm_metrics.clone(),
-                self.main.dag(),
-            )?;
+        if self.main.id() != selected_parent {
+            self.main = self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find the selected parent {} in storage",
+                        selected_parent
+                    )
+                })?;
         }
-        Ok(())
-    }
-
-    fn put_red_block_transactions(
-        &self,
-        ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
-    ) -> Result<()> {
-        if ghostdata.mergeset_reds.is_empty() {
-            return Ok(());
-        }
-        let transactions = ghostdata
-        .mergeset_reds
-        .iter()
-        .map(|id| self.storage.get_block_by_hash(*id)?
-        .ok_or_else(|| format_err!("cannot find the block by id {:?} in minting for putting red block transaction back to the pool", id))).collect::<Result<Vec<Block>>>()?
-        .into_iter()
-        .flat_map(|block| block.body.transactions).collect::<Vec<_>>();
-
-        self.tx_provider.add_txns(transactions.clone()).iter().zip(transactions).for_each(|(result, transaction)| {
-            if let Err(err) = result {
-                warn!("minting for putting red block transaction back to the pool failed: {:?}, transaction id: {:?}", err, transaction.id());
-            }
-        });
-
         Ok(())
     }
 }

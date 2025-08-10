@@ -9,7 +9,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_logger::prelude::warn;
+use starcoin_logger::prelude::error;
 use starcoin_types::{
     block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME},
     consensus_header::ConsensusHeader,
@@ -102,7 +102,10 @@ pub trait BlockVerifier {
         let ghostdata = current_chain.calc_ghostdata_and_check_bounded_merge_depth(header)?;
         match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
             Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+            Err(e) => {
+                error!("validate the pruning point failed, error: {:?}", e);
+                return Err(e);
+            }
         }
 
         Self::can_be_uncle(header, uncles, &ghostdata)?;

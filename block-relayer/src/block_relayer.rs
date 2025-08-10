@@ -14,7 +14,7 @@ use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_sync::block_connector::BlockConnectorService;
+use starcoin_sync::block_connector::ExecuteService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_time_service::TimeService;
@@ -203,9 +203,7 @@ impl BlockRelayer {
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let block_connector_service = ctx
-            .service_ref::<BlockConnectorService<TxPoolService>>()?
-            .clone();
+        let block_connector_service = ctx.service_ref::<ExecuteService>()?.clone();
         let txpool = self.txpool.clone();
         let metrics = self.metrics.clone();
         let fut = async move {

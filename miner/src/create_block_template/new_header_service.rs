@@ -8,7 +8,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
     block::BlockHeader,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, SystemStarted},
+    system_events::{DeterminedDagBlock, NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
 #[derive(Clone, Debug)]
@@ -148,14 +148,7 @@ impl NewHeaderService {
             std::cmp::Ordering::Less => false,
             std::cmp::Ordering::Equal => {
                 match new_ghostdata.blue_score.cmp(&self.ghostdag_data.blue_score) {
-                    std::cmp::Ordering::Less => false,
-                    std::cmp::Ordering::Equal => match header.id().cmp(&self.header.id()) {
-                        std::cmp::Ordering::Less => false,
-                        std::cmp::Ordering::Equal => {
-                            panic!("same block, this condition should not happen")
-                        }
-                        std::cmp::Ordering::Greater => true,
-                    },
+                    std::cmp::Ordering::Equal | std::cmp::Ordering::Less => false,
                     std::cmp::Ordering::Greater => true,
                 }
             }
@@ -167,10 +160,14 @@ impl NewHeaderService {
             self.ghostdag_data = new_ghostdata;
         }
 
-        Ok(true)
+        Ok(update)
     }
 
-    fn determine_header(&mut self, header: &BlockHeader) -> anyhow::Result<()> {
+    fn determine_header(
+        &mut self,
+        header: &BlockHeader,
+        ctx: &mut ServiceContext<Self>,
+    ) -> anyhow::Result<()> {
         if self.resolve_header(header)? {
             info!(
                 "resolve header returns true, header: {:?} will be sent to BlockBuilderService",
@@ -195,6 +192,8 @@ impl NewHeaderService {
             info!("resolve header returns false");
         }
 
+        ctx.broadcast(DeterminedDagBlock);
+
         Ok(())
     }
 }
@@ -206,12 +205,12 @@ impl EventHandler<Self, SystemStarted> for NewHeaderService {
 }
 
 impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
-    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
         info!(
             "handle_event: NewDagBlockFromPeer, msg: {:?}",
             msg.executed_block.id()
         );
-        match self.determine_header(msg.executed_block.as_ref()) {
+        match self.determine_header(msg.executed_block.as_ref(), ctx) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
                 "Failed to determine header: {:?} when processing NewDagBlockFromPeer",
@@ -222,12 +221,12 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
 }
 
 impl EventHandler<Self, NewDagBlock> for NewHeaderService {
-    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
         info!(
             "handle_event: NewDagBlock, msg: {:?}",
             msg.executed_block.header().id()
         );
-        match self.determine_header(msg.executed_block.header()) {
+        match self.determine_header(msg.executed_block.header(), ctx) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
                 "Failed to determine header: {:?} when processing NewDagBlock",

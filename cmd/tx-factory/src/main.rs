@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_state_api::StateReaderExt;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
@@ -484,7 +484,13 @@ impl TxnMocker {
         let mut sub_account_list = vec![];
         while i < account_num {
             self.recheck_sequence_number()?;
-            let account = self.client.account_create(self.account_password.clone())?;
+            let account = match self.client.account_create(self.account_password.clone()) {
+                Ok(account) => account,
+                Err(e) => {
+                    error!("create account error: {}", e);
+                    continue;
+                }
+            };
             addr_vec.push(account.address);
             sub_account_list.push(account);
             if addr_vec.len() >= batch_size as usize {
@@ -513,10 +519,7 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn sequence_number<R>(&self, state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
-    where
-        R: ChainStateReader,
-    {
+    fn sequence_number(&self, address: AccountAddress) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
         info!(
             "seq_number_in_pool for address {:?} is {:?}",
@@ -525,6 +528,7 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
+                let state_reader = self.client.state_reader(StateRootOption::Latest)?;
                 let account_resource = state_reader.get_account_resource(address)?;
                 match account_resource {
                     None => None,
@@ -545,22 +549,17 @@ impl TxnMocker {
             info!("node syncing, pause stress");
             return Ok(());
         }
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
         //unlock all account and get sequence
         let mut sequences = vec![];
         for account in &accounts {
-            sequences.push(
-                self.sequence_number(&state_reader, account.address)
-                    .unwrap()
-                    .unwrap(),
-            );
+            sequences.push(self.sequence_number(account.address).unwrap().unwrap());
         }
         //get  of all account
         let expiration_timestamp = self.fetch_expiration_time();
         let count = accounts.len();
-        (0..round_num).for_each(|_| {
-            (0..count).for_each(|index| {
+        for _ in 0..round_num {
+            for (index, _) in accounts.iter().enumerate() {
                 let mut j = index + 1;
                 if j >= count {
                     j = 0;
@@ -581,15 +580,15 @@ impl TxnMocker {
                         sequences[index] += 1;
                     }
                     Err(err) => {
-                        info!(
-                            "Submit txn failed with error: {:?}. Try again after 500ms.",
-                            err
-                        );
-                        std::thread::sleep(Duration::from_millis(500));
+                        info!("error: {:?}, refresh the sequence number", err);
+                        for (index, account) in accounts.iter().enumerate() {
+                            sequences[index] =
+                                self.sequence_number(account.address).unwrap().unwrap();
+                        }
                     }
                 }
-            });
-        });
+            }
+        }
         Ok(())
     }
 }

@@ -111,6 +111,7 @@ fn test_init_script() -> Result<()> {
     Ok(())
 }
 
+#[ignore = "Dag version will not need update"]
 #[stest::test]
 fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
     let alice = Account::new();
