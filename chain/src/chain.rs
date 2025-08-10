@@ -1668,7 +1668,7 @@ impl BlockChain {
         Ok(())
     }
     
-    fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
+    pub fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
         let (storage, _) = &self.storage;
         let header = match storage.get_block_header_by_hash(header_id)? {
             Some(header) => header,
@@ -1871,6 +1871,10 @@ impl ChainWriter for BlockChain {
 
     fn chain_state2(&mut self) -> &ChainStateDB2 {
         &self.statedb.1
+    }
+    
+    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<FullVerifier>(block)
     }
 }
 

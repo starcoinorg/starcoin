@@ -4,6 +4,7 @@
 use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
+use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
     TransactionInfoWithProof2,
@@ -315,6 +316,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     access_path,
                 )?,
             ))),
+            ChainRequest::GetRangeInLocation { start_id, end_id } => {
+                Ok(ChainResponse::GetRangeInLocation {
+                    range: self.inner.get_range_in_location(start_id, end_id)?,
+                })
+            }
+            ChainRequest::GetAbsentBlocks { absent_id, exp } => {
+                Ok(ChainResponse::GetAbsentBlocks {
+                    absent_blocks: self.inner.get_absent_blocks(absent_id, exp)?,
+                })
+            }
         }
     }
 }
@@ -569,6 +580,42 @@ impl ReadableChainService for ChainReaderServiceInner {
             event_index,
             access_path,
         )
+    }
+
+    fn get_range_in_location(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<RangeInLocation> {
+        range_locate::get_range_in_location(self.get_main(), self.storage.clone(), start_id, end_id)
+    }
+
+    fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
+        let result = self
+            .dag
+            .get_absent_blocks(GetAbsentBlock { absent_id, exp })?;
+
+        let origin_id = self.config.net().genesis_block_parameter().parent_hash;
+        let genesis_id = self
+            .storage
+            .get_genesis()?
+            .unwrap_or_else(|| panic!("genesis not exist"));
+
+        result
+            .absent_blocks
+            .into_iter()
+            .filter(|id| *id != origin_id && *id != genesis_id)
+            .map(|block_id| match self.storage.get_block(block_id) {
+                Ok(op_block) => {
+                    op_block.ok_or_else(|| format_err!("block {:?} should exist", block_id))
+                }
+                Err(e) => bail!(
+                    "in get absent blocks, get block {:?} err: {:?}",
+                    block_id,
+                    e
+                ),
+            })
+            .collect()
     }
 }
 

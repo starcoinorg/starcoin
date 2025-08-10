@@ -79,8 +79,8 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                         let executed_block = self.operator.apply(child_block.block.clone())?;
                         info!(
                             "succeed to apply a dag block: {:?}, number: {:?}",
-                            executed_block.block.id(),
-                            executed_block.block.header().number()
+                            executed_block.block().id(),
+                            executed_block.block().header().number()
                         );
                         self.operator.notify(executed_block)?;
                         next_parent_blocks.push(*child);
@@ -98,9 +98,9 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
     fn check_parents_exist(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         let mut result = Ok(true);
         for parent in block_header.parents_hash() {
-            if !self.operator.has_dag_block(parent)? {
+            if !self.operator.has_dag_block(*parent)? {
                 info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block_header.id(), block_header.number(), parent);
-                let mut parent_block = self.local_store.get_dag_sync_block(parent)?.ok_or_else(|| {
+                let mut parent_block = self.local_store.get_dag_sync_block(*parent)?.ok_or_else(|| {
                     anyhow!(
                         "the dag block should exist in local store, parent block id: {:?}, number: {:?}",
                         block_header.id(),
@@ -149,20 +149,20 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                 let executed_block = self.operator.apply(block.clone())?;
                 info!(
                     "succeed to apply a dag block: {:?}, number: {:?}",
-                    executed_block.block.id(),
-                    executed_block.block.header().number()
+                    executed_block.block().id(),
+                    executed_block.block().header().number()
                 );
 
-                let block_id = executed_block.block.id();
-                let block_number = executed_block.block.header().number();
+                let block_id = executed_block.block().id();
+                let block_number = executed_block.block().header().number();
 
                 debug!("start to execute the children blocks if the parent: {:?}, number: {:?} was executed.", block_id, block_number);
-                self.execute_if_parent_ready_norecursion(executed_block.block.id())?;
+                self.execute_if_parent_ready_norecursion(executed_block.block().id())?;
                 debug!("finish to execute the children blocks if the parent: {:?}, number: {:?} was executed.", block_id, block_number);
 
                 debug!("delete from the local store after the block was executed: {:?}, number: {:?}", block_id, block_number);
                 self.local_store
-                    .delete_dag_sync_block(executed_block.block.id())?;
+                    .delete_dag_sync_block(executed_block.block().id())?;
 
                 debug!("notify the collector after the block was executed: {:?}, number: {:?}", block_id, block_number);
                 self.operator.notify(executed_block)?;

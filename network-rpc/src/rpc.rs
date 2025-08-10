@@ -10,9 +10,11 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber, GetBlockIds,
-    GetTxnsWithHash, GetTxnsWithSize, Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE,
-    MAX_BLOCK_INFO_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
+    gen_server, BlockBody, GetAbsentBlockRequest, GetAbsentBlockResponse,
+    GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber, GetBlockIds,
+    GetRangeInLocationRequest, GetRangeInLocationResponse, GetTxnsWithHash, GetTxnsWithSize,
+    Ping, RpcRequest, MAX_BLOCK_HEADER_REQUEST_SIZE, MAX_BLOCK_INFO_REQUEST_SIZE,
+    MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
@@ -266,6 +268,36 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                     NetRpcError::client_err(format!("get_multi_state error: {:?}", e)).into()
                 })
         };
+        Box::pin(fut)
+    }
+
+    fn get_dag_block_children(
+        &self,
+        _peer_id: PeerId,
+        request: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_dag_block_children(request).await };
+        Box::pin(fut)
+    }
+
+    fn get_range_in_location(
+        &self,
+        _peer_id: PeerId,
+        req: GetRangeInLocationRequest,
+    ) -> BoxFuture<Result<GetRangeInLocationResponse>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_range_in_location(req).await };
+        Box::pin(fut)
+    }
+
+    fn get_absent_blocks(
+        &self,
+        _peer_id: PeerId,
+        req: GetAbsentBlockRequest,
+    ) -> BoxFuture<Result<GetAbsentBlockResponse>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move { chain_service.get_absent_blocks(req).await };
         Box::pin(fut)
     }
 }

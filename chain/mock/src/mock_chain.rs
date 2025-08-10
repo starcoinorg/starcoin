@@ -10,10 +10,10 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Store};
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
 
 pub struct MockChain {
@@ -70,6 +70,14 @@ impl MockChain {
 
     pub fn chain_info(&self) -> ChainInfo {
         self.head.info()
+    }
+
+    pub fn get_storage(&self) -> Arc<dyn Store> {
+        self.head.get_storage()
+    }
+
+    pub fn get_storage2(&self) -> Arc<dyn Store2> {
+        self.head.get_storage2()
     }
 
     pub fn fork_new_branch(&self, head_id: Option<HashValue>) -> Result<BlockChain> {

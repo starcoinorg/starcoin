@@ -19,6 +19,7 @@ use starcoin_vm2_vm_types::{
 mod chain;
 mod errors;
 pub mod message;
+pub mod range_locate;
 mod service;
 
 pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};

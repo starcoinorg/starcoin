@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::range_locate::RangeInLocation;
 use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
@@ -83,6 +84,14 @@ pub enum ChainRequest {
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     },
+    GetRangeInLocation {
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    },
+    GetAbsentBlocks {
+        absent_id: Vec<HashValue>,
+        exp: u64,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -116,4 +125,6 @@ pub enum ChainResponse {
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     MultiStateResp(Option<MultiState>),
     TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
+    GetRangeInLocation { range: RangeInLocation },
+    GetAbsentBlocks { absent_blocks: Vec<Block> },
 }

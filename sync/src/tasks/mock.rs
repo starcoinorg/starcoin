@@ -344,6 +344,10 @@ impl SyncNodeMocker {
         self.chain_mocker.get_storage()
     }
 
+    pub fn get_storage2(&self) -> Arc<starcoin_vm2_storage::Storage> {
+        self.chain_mocker.get_storage2()
+    }
+
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
         self.chain_mocker.produce_and_apply_times(times)
     }

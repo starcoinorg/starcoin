@@ -14,6 +14,7 @@ use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::ValueCodec;
@@ -211,6 +212,7 @@ pub struct BlockCollector<N, H> {
     peer_provider: N,
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
+    storage2: Arc<Storage2>,
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
@@ -232,14 +234,14 @@ where
     }
 
     fn notify(&mut self, executed_block: ExecutedBlock) -> anyhow::Result<CollectorState> {
-        let block = executed_block.block;
+        let block = executed_block.block();
         let block_id = block.id();
         let block_info = self
             .local_store
             .get_block_info(block_id)?
             .ok_or_else(|| format_err!("block info should exist, id: {:?}", block_id))?;
         self.notify_connected_block(
-            block,
+            block.clone(),
             block_info.clone(),
             BlockConnectAction::ConnectNewBlock,
             self.check_enough_by_info(block_info)?,
@@ -261,6 +263,7 @@ where
         peer_provider: N,
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
+        storage2: Arc<Storage2>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
@@ -273,6 +276,7 @@ where
             peer_provider,
             skip_pow_verify,
             local_store,
+            storage2,
             fetcher,
             latest_block_id,
             sync_dag_store,
@@ -395,13 +399,13 @@ where
             return Ok(());
         }
         for parent in parents {
-            if absent_blocks.contains(&parent) {
+            if absent_blocks.contains(parent) {
                 continue;
             }
-            if self.chain.has_dag_block(parent)? {
+            if self.chain.has_dag_block(*parent)? {
                 continue;
             }
-            absent_blocks.push(parent);
+            absent_blocks.push(*parent);
         }
         Ok(())
     }
@@ -457,6 +461,7 @@ where
                     100000,
                     self.chain.time_service(),
                     self.local_store.clone(),
+                    self.storage2.clone(),
                     None,
                     self.chain.dag(),
                     self,
@@ -603,16 +608,16 @@ where
                     )?;
                     self.sync_dag_store.save_block(block.clone())?;
                     result.push(block.header().clone());
-                    filtered_set.extend(block.header().parents_hash().into_iter().filter(|id| {
+                    filtered_set.extend(block.header().parents_hash().iter().filter(|id| {
                         self.local_store
-                            .get_dag_sync_block(*id)
+                            .get_dag_sync_block(**id)
                             .unwrap_or(None)
                             .is_none()
-                            && match self.chain.has_dag_block(*id) {
+                            && match self.chain.has_dag_block(**id) {
                                 Ok(exist) => !exist,
                                 Err(_) => true,
                             }
-                    }));
+                    }).cloned());
                 }
                 if filtered_set.is_empty() {
                     exp = 1;
@@ -705,10 +710,12 @@ where
 
         let (block_info, action) = match block_info {
             Some(block_info) => {
-                self.chain.connect(ExecutedBlock {
-                    block: block.clone(),
-                    block_info: block_info.clone(),
-                })?;
+                let multi_state = self.local_store.get_vm_multi_state(block.id())?;
+                self.chain.connect(ExecutedBlock::new(
+                    block.clone(),
+                    block_info.clone(),
+                    multi_state,
+                ))?;
                 (block_info, BlockConnectAction::ConnectExecutedBlock)
             }
             None => {

@@ -25,7 +25,8 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
@@ -66,6 +67,7 @@ pub struct SyncService {
     stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
     sync_dag_store: Arc<SyncDagStore>,
     dag: BlockDAG,
     metrics: Option<SyncMetrics>,
@@ -77,6 +79,7 @@ impl SyncService {
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
@@ -111,6 +114,7 @@ impl SyncService {
             stage: SyncStage::NotStart,
             config,
             storage,
+            storage2,
             sync_dag_store,
             dag,
             metrics,
@@ -135,7 +139,6 @@ impl SyncService {
             if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
                 let level = if config.net().is_dev()
                     || config.net().is_test()
-                    || config.net().is_dag_test()
                 {
                     Level::Debug
                 } else {
@@ -221,6 +224,7 @@ impl SyncService {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let config = self.config.clone();
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
 
         let fut = async move {
@@ -240,6 +244,7 @@ impl SyncService {
                 config.net().time_service(),
                 startup_info.main,
                 storage.clone(),
+                storage2.clone(),
                 None,
                 dag,
             )?;
@@ -280,7 +285,7 @@ impl SyncService {
                 specific_block.id()
             );
 
-            let mut current_round = specific_block.header().parents_hash();
+            let mut current_round = specific_block.header().parents_hash().to_vec();
             let mut next_round = vec![];
             let mut blocks_to_be_executed = vec![specific_block.clone()];
 
@@ -329,7 +334,7 @@ impl SyncService {
                 }
                 current_round = next_round
                     .iter()
-                    .flat_map(|block| block.header().parents_hash())
+                    .flat_map(|block| block.header().parents_hash().iter().cloned())
                     .collect::<HashSet<_>>()
                     .into_iter()
                     .collect::<Vec<_>>();
@@ -400,12 +405,15 @@ impl SyncService {
             }
 
             if chain.has_dag_block(msg.block_id)? {
-                chain.connect(ExecutedBlock {
-                    block: specific_block,
-                    block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| {
-                        format_err!("failed to get the block info for id: {:?}", msg.block_id)
-                    })?,
+                let block_info = storage.get_block_info(msg.block_id)?.ok_or_else(|| {
+                    format_err!("failed to get the block info for id: {:?}", msg.block_id)
                 })?;
+                let multi_state = storage.get_vm_multi_state(msg.block_id)?;
+                chain.connect(ExecutedBlock::new(
+                    specific_block.clone(),
+                    block_info,
+                    multi_state,
+                ))?;
                 info!("[sync specific] Sync specific block done");
             } else {
                 return Err(format_err!(
@@ -452,6 +460,7 @@ impl SyncService {
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let self_ref = ctx.self_ref();
         let connector_service = ctx
             .service_ref::<BlockConnectorService<TxPoolService>>()?
@@ -494,6 +503,7 @@ impl SyncService {
                     skip_pow_verify,
                     config.net().time_service(),
                     storage.clone(),
+                    storage2.clone(),
                     connector_service.clone(),
                     rpc_client.clone(),
                     self_ref.clone(),
@@ -655,9 +665,10 @@ impl ServiceFactory<Self> for SyncService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, storage, dag, vm_metrics)
+        Self::new(config, storage, storage2, dag, vm_metrics)
     }
 }
 
@@ -890,7 +901,7 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         if self.sync_status.update_chain_status(ChainStatus::new(
             msg.executed_block.header().clone(),
-            msg.executed_block.block_info.clone(),
+            msg.executed_block.block_info().clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }

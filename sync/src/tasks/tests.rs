@@ -59,10 +59,12 @@ pub async fn test_failed_block() -> Result<()> {
     let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
     let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
 
+    let storage2 = Arc::new(starcoin_vm2_storage::CacheStorage::new(None));
     let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        storage2.clone(),
         None,
         dag,
     )?;
@@ -82,6 +84,7 @@ pub async fn test_failed_block() -> Result<()> {
         DummyNetworkService::default(),
         true,
         storage.clone(),
+        storage2,
         Arc::new(fetcher),
         sync_dag_store,
     );

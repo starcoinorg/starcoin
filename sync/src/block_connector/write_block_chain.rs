@@ -19,6 +19,8 @@ use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
+use starcoin_types::multi_state::MultiState;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -41,6 +43,7 @@ where
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    storage2: Arc<Storage2>,
     txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
@@ -111,6 +114,7 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        storage2: Arc<Storage2>,
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
@@ -121,6 +125,7 @@ where
             net.time_service(),
             startup_info.main,
             storage.clone(),
+            storage2.clone(),
             vm_metrics.clone(),
             dag.clone(),
         )?;
@@ -135,6 +140,7 @@ where
             startup_info,
             main,
             storage,
+            storage2,
             txpool,
             bus,
             metrics,
@@ -175,35 +181,44 @@ where
     fn find_or_fork(
         &self,
         header: &BlockHeader,
-    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
+    ) -> Result<(Option<(BlockInfo, MultiState)>, Option<BlockChain>)> {
         let block_id = header.id();
         let block_info = self.storage.get_block_info(block_id)?;
-        let block_chain = if block_info.is_some() {
+        let res = if let Some(block_info) = block_info {
+            let multi_state = self.storage.get_vm_multi_state(block_id)?;
             if self.is_main_head(&header.parent_hash()) {
-                None
+                (Some((block_info, multi_state)), None)
             } else {
                 let net = self.config.net();
-                Some(BlockChain::new(
-                    net.time_service(),
-                    block_id,
-                    self.storage.clone(),
-                    self.vm_metrics.clone(),
-                    self.dag.clone(),
-                )?)
+                (
+                    Some((block_info, multi_state)),
+                    Some(BlockChain::new(
+                        net.time_service(),
+                        block_id,
+                        self.storage.clone(),
+                        self.storage2.clone(),
+                        self.vm_metrics.clone(),
+                        self.dag.clone(),
+                    )?),
+                )
             }
         } else if self.get_main().has_dag_block(header.parent_hash())? {
             let net = self.config.net();
-            Some(BlockChain::new(
-                net.time_service(),
-                header.parent_hash(),
-                self.storage.clone(),
-                self.vm_metrics.clone(),
-                self.dag.clone(),
-            )?)
+            (
+                None,
+                Some(BlockChain::new(
+                    net.time_service(),
+                    header.parent_hash(),
+                    self.storage.clone(),
+                    self.storage2.clone(),
+                    self.vm_metrics.clone(),
+                    self.dag.clone(),
+                )?),
+            )
         } else {
-            None
+            (None, None)
         };
-        Ok((block_info, block_chain))
+        Ok(res)
     }
 
     pub fn get_main(&self) -> &BlockChain {
@@ -275,6 +290,7 @@ where
             self.config.net().time_service(),
             new_head_block,
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
             self.main.dag(),
         )?;
@@ -304,7 +320,7 @@ where
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![executed_block.block.clone()], 0, vec![])
+                    (1, vec![executed_block.block().clone()], 0, vec![])
                 };
             self.main = new_branch;
 
@@ -348,11 +364,11 @@ where
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_block_num
-                .set(executed_block.block.header().number());
+                .set(executed_block.block().header().number());
 
             metrics
                 .chain_txn_num
-                .set(executed_block.block_info.txn_accumulator_info.num_leaves);
+                .set(executed_block.block_info().txn_accumulator_info.num_leaves);
         }
 
         self.broadcast_new_head(executed_block);
@@ -371,6 +387,7 @@ where
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
@@ -407,7 +424,7 @@ where
         self.main = new_branch;
 
         let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-            (1, vec![executed_block.block.clone()], 0, vec![]);
+            (1, vec![executed_block.block().clone()], 0, vec![]);
         self.do_new_head(
             executed_block,
             enacted_count,
@@ -424,6 +441,7 @@ where
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
         )?;
@@ -600,10 +618,10 @@ where
             self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
             return Ok(ConnectOk::ExeConnectMain);
         }
-        let (block_info, fork) = self.find_or_fork(block.header())?;
-        match (block_info, fork) {
+        let (block_info_with_state, fork) = self.find_or_fork(block.header())?;
+        match (block_info_with_state, fork) {
             // block has been processed in some branch, so just trigger a head selection.
-            (Some(_block_info), Some(branch)) => {
+            (Some((_block_info, _multi_state)), Some(branch)) => {
                 debug!(
                     "Block {} has been processed, trigger head selection, total_difficulty: {}",
                     block_id,
@@ -613,11 +631,12 @@ where
                 Ok(ConnectOk::Duplicate)
             }
             // block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some(block_info), None) => {
-                let executed_block = self.main.connect(ExecutedBlock {
-                    block: block.clone(),
+            (Some((block_info, multi_state)), None) => {
+                let executed_block = self.main.connect(ExecutedBlock::new(
+                    block.clone(),
                     block_info,
-                })?;
+                    multi_state,
+                ))?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id

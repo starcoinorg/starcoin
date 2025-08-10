@@ -261,6 +261,24 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         id: HashValue,
     ) -> BoxFuture<Result<Option<Vec<HashValue>>>>;
+
+    fn get_dag_block_children(
+        &self,
+        peer_id: PeerId,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn get_range_in_location(
+        &self,
+        peer_id: PeerId,
+        req: GetRangeInLocationRequest,
+    ) -> BoxFuture<Result<GetRangeInLocationResponse>>;
+
+    fn get_absent_blocks(
+        &self,
+        peer_id: PeerId,
+        req: GetAbsentBlockRequest,
+    ) -> BoxFuture<Result<GetAbsentBlockResponse>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -271,3 +289,31 @@ pub struct GetStateWithTableItemProof {
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetTableInfo(pub AccountAddress);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetRangeInLocationRequest {
+    pub start_id: HashValue,
+    pub end_id: Option<HashValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum RangeInLocation {
+    NotInSelectedChain,
+    InSelectedChain(HashValue, Vec<HashValue>),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetRangeInLocationResponse {
+    pub range: RangeInLocation,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetAbsentBlockRequest {
+    pub absent_id: Vec<HashValue>,
+    pub exp: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetAbsentBlockResponse {
+    pub absent_blocks: Vec<Block>,
+}

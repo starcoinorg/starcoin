@@ -6,6 +6,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
@@ -31,6 +32,7 @@ where
     ancestor: BlockIdAndNumber,
     target: SyncTarget,
     storage: Arc<dyn Store>,
+    storage2: Arc<Storage2>,
     block_event_handle: H,
     fetcher: Arc<F>,
     event_handle: Arc<dyn TaskEventHandle>,
@@ -51,6 +53,7 @@ where
         ancestor: BlockIdAndNumber,
         target: SyncTarget,
         storage: Arc<dyn Store>,
+        storage2: Arc<Storage2>,
         block_event_handle: H,
         fetcher: Arc<F>,
         event_handle: Arc<dyn TaskEventHandle>,
@@ -64,6 +67,7 @@ where
             ancestor,
             target,
             storage,
+            storage2,
             block_event_handle,
             fetcher,
             event_handle,
@@ -142,6 +146,7 @@ where
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),
+                self.storage2.clone(),
                 vm_metrics,
                 self.dag.clone(),
             )?;
@@ -153,6 +158,7 @@ where
                 self.peer_provider.clone(),
                 skip_pow_verify_when_sync,
                 self.storage.clone(),
+                self.storage2.clone(),
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
             );

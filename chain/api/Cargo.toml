@@ -10,9 +10,11 @@ serde = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-dag = { workspace = true }
+starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }

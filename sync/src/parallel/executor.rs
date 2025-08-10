@@ -8,6 +8,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
@@ -30,6 +31,7 @@ pub struct DagBlockExecutor {
     receiver: Receiver<Option<Block>>,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
+    storage2: Arc<Storage2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
 }
@@ -40,6 +42,7 @@ impl DagBlockExecutor {
         buffer_size: usize,
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
+        storage2: Arc<Storage2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
@@ -49,6 +52,7 @@ impl DagBlockExecutor {
             receiver,
             time_service,
             storage,
+            storage2,
             vm_metrics,
             dag,
         };
@@ -58,10 +62,10 @@ impl DagBlockExecutor {
     pub fn waiting_for_parents(
         chain: &BlockDAG,
         storage: Arc<dyn Store>,
-        parents_hash: Vec<HashValue>,
+        parents_hash: &[HashValue],
     ) -> anyhow::Result<bool> {
         for parent_id in parents_hash {
-            let header = match storage.get_block_header_by_hash(parent_id)? {
+            let header = match storage.get_block_header_by_hash(*parent_id)? {
                 Some(header) => header,
                 None => return Ok(false),
             };
@@ -165,6 +169,7 @@ impl DagBlockExecutor {
                                     self.time_service.clone(),
                                     block.header().parent_hash(),
                                     self.storage.clone(),
+                                    self.storage2.clone(),
                                     self.vm_metrics.clone(),
                                     self.dag.clone(),
                                 ) {

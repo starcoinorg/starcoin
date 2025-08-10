@@ -160,6 +160,7 @@ where
         let bus = ctx.bus_ref().clone();
         let txpool = ctx.get_shared::<TransactionPoolServiceT>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<starcoin_vm2_storage::Storage>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -170,6 +171,7 @@ where
             config.clone(),
             startup_info,
             storage,
+            storage2,
             txpool,
             bus,
             vm_metrics,

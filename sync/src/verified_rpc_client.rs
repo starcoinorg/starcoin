@@ -16,12 +16,12 @@ use starcoin_network_rpc_api::{
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_network_rpc_api::{GetAbsentBlockRequest, GetRangeInLocationRequest, RangeInLocation};
-use starcoin_state_tree::StateNode;
+// use starcoin_state_tree::StateNode;  // Unused
 use starcoin_types::block::Block;
-use starcoin_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::TransactionInfo,
+    transaction::{StcTransaction, StcTransactionInfo},
 };
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -156,7 +156,7 @@ impl VerifiedRpcClient {
         &self,
         peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> Result<Vec<Option<SignedUserTransaction>>> {
+    ) -> Result<Vec<Option<MultiSignedUserTransaction>>> {
         let mut count = 0;
         while count < G_RPC_RETRY_COUNT {
             match self
@@ -195,7 +195,7 @@ impl VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
-    ) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
+    ) -> Result<(Vec<HashValue>, Vec<MultiSignedUserTransaction>)> {
         let peer_id = if let Some(peer) = peer_id {
             peer
         } else {
@@ -206,7 +206,7 @@ impl VerifiedRpcClient {
             .await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
-            let mut verified_txns: Vec<SignedUserTransaction> = Vec::new();
+            let mut verified_txns: Vec<MultiSignedUserTransaction> = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {
@@ -244,7 +244,7 @@ impl VerifiedRpcClient {
         &self,
         peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> Result<Vec<Option<Transaction>>> {
+    ) -> Result<Vec<Option<StcTransaction>>> {
         let mut count = 0;
         while count < G_RPC_RETRY_COUNT {
             match self.client.get_txns(peer_id.clone(), req.clone()).await {
@@ -276,12 +276,12 @@ impl VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
-    ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
+    ) -> Result<(Vec<HashValue>, Vec<StcTransaction>)> {
         let peer_id = peer_id.unwrap_or(self.select_a_peer()?);
         let data = self.get_txns_inner(peer_id.clone(), req.clone()).await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
-            let mut verified_txns: Vec<Transaction> = Vec::new();
+            let mut verified_txns: Vec<StcTransaction> = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {
@@ -318,7 +318,7 @@ impl VerifiedRpcClient {
     pub async fn get_txn_infos(
         &self,
         block_id: HashValue,
-    ) -> Result<(PeerId, Option<Vec<TransactionInfo>>)> {
+    ) -> Result<(PeerId, Option<Vec<StcTransactionInfo>>)> {
         let peer_id = self.select_a_peer()?;
         let mut count = 0;
         while count < G_RPC_RETRY_COUNT {
@@ -512,44 +512,45 @@ impl VerifiedRpcClient {
         .into())
     }
 
-    pub async fn get_state_node_by_node_hash(
-        &self,
-        node_key: HashValue,
-    ) -> Result<(PeerId, Option<StateNode>)> {
-        let peer_id = self.select_a_peer()?;
-        let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
-            match self
-                .client
-                .get_state_node_by_node_hash(peer_id.clone(), node_key)
-                .await
-            {
-                Ok(result) => return Ok((peer_id, result)),
-                Err(e) => {
-                    count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
-                        return Err(RpcVerifyError::new(
-                            peer_id.clone(),
-                            format!(
-                                "failed to get state node by node hash from peer : {:?}. error: {:?}",
-                                peer_id, e
-                            ),
-                        )
-                        .into());
-                    }
-                    continue;
-                }
-            }
-        }
-        Err(RpcVerifyError::new(
-            peer_id.clone(),
-            format!(
-                "failed to get state node by node hash from peer : {:?}",
-                peer_id,
-            ),
-        )
-        .into())
-    }
+    // TODO: This function seems to be unused and the RPC method doesn't exist
+    // pub async fn get_state_node_by_node_hash(
+    //     &self,
+    //     node_key: HashValue,
+    // ) -> Result<(PeerId, Option<StateNode>)> {
+    //     let peer_id = self.select_a_peer()?;
+    //     let mut count = 0;
+    //     while count < G_RPC_RETRY_COUNT {
+    //         match self
+    //             .client
+    //             .get_state_node_by_node_hash(peer_id.clone(), node_key)
+    //             .await
+    //         {
+    //             Ok(result) => return Ok((peer_id, result)),
+    //             Err(e) => {
+    //                 count = count.saturating_add(1);
+    //                 if count == G_RPC_RETRY_COUNT {
+    //                     return Err(RpcVerifyError::new(
+    //                         peer_id.clone(),
+    //                         format!(
+    //                             "failed to get state node by node hash from peer : {:?}. error: {:?}",
+    //                             peer_id, e
+    //                         ),
+    //                     )
+    //                     .into());
+    //                 }
+    //                 continue;
+    //             }
+    //         }
+    //     }
+    //     Err(RpcVerifyError::new(
+    //         peer_id.clone(),
+    //         format!(
+    //             "failed to get state node by node hash from peer : {:?}",
+    //             peer_id,
+    //         ),
+    //     )
+    //     .into())
+    // }
 
     async fn get_accumulator_node_by_node_hash_inner(
         &self,

@@ -12,6 +12,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::{PeerNewBlock, SelectHeaderState};
 use starcoin_types::block::Block;
 use starcoin_types::consensus_header::ConsensusHeader;
@@ -22,14 +23,16 @@ use crate::sync::CheckSyncEvent;
 pub struct ExecuteService {
     time_service: Arc<dyn TimeService>,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
     dag: BlockDAG,
 }
 
 impl ExecuteService {
-    fn new(time_service: Arc<dyn TimeService>, storage: Arc<Storage>, dag: BlockDAG) -> Self {
+    fn new(time_service: Arc<dyn TimeService>, storage: Arc<Storage>, storage2: Arc<Storage2>, dag: BlockDAG) -> Self {
         Self {
             time_service,
             storage,
+            storage2,
             dag,
         }
     }
@@ -39,6 +42,7 @@ impl ExecuteService {
             self.time_service.clone(),
             new_block.header().parent_hash(),
             self.storage.clone(),
+            self.storage2.clone(),
             None,
             self.dag.clone(),
         )
@@ -75,17 +79,17 @@ impl ExecuteService {
         match chain.connect(executed_block.clone()) {
             std::result::Result::Ok(_) => (),
             Err(e) => {
-                error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, executed_block.block.id());
+                error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, executed_block.block().id());
                 return Err(e);
             }
         }
         info!(
             "[BlockProcess] executed transactions: {}",
-            executed_block.block.transactions().len()
+            executed_block.block().transactions().len()
         );
         debug!(
             "[BlockProcess] executed transactions: {:?}",
-            executed_block.block.transactions()
+            executed_block.block().transactions()
         );
         Ok(executed_block)
     }
@@ -96,9 +100,10 @@ impl ServiceFactory<Self> for ExecuteService {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let time_service = config.net().time_service();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
 
-        Ok(Self::new(time_service, storage, dag))
+        Ok(Self::new(time_service, storage, storage2, dag))
     }
 }
 
@@ -143,7 +148,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
         match self.execute(msg.get_block().clone()) {
             std::result::Result::Ok(executed_block) => {
                 ctx.broadcast(NewDagBlockFromPeer {
-                    executed_block: Arc::new(executed_block.header().clone()),
+                    executed_block: Arc::new(executed_block),
                 });
                 let bus = ctx.bus_ref().clone();
                 let _ = bus.broadcast(SelectHeaderState::new(
