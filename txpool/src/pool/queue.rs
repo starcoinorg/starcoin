@@ -35,7 +35,7 @@ type Listener = (
         (listener::Logger, listener::StatusLogger),
     ),
 );
-type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
+pub type Pool = tx_pool::Pool<pool::VerifiedTransaction, scoring::SeqNumberAndGasPrice, Listener>;
 
 /// Max cache time in milliseconds for pending transactions.
 ///
@@ -245,7 +245,7 @@ impl TransactionQueue {
         vm1_peer_blacklist_duration_secs: u64,
     ) -> Self {
         let max_count = limits.max_count;
-        TransactionQueue {
+        Self {
             insertion_id: Default::default(),
             pool: RwLock::new(tx_pool::Pool::new(
                 Default::default(),
@@ -264,6 +264,10 @@ impl TransactionQueue {
             vm1_reject_count: RwLock::new(HashMap::new()),
             vm1_blacklist: RwLock::new(HashMap::new()),
         }
+    }
+
+    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+        self.pool.try_read()
     }
 
     /// Update verification options
@@ -465,7 +469,10 @@ impl TransactionQueue {
                 .unordered_pending(ready)
                 .take(max_len)
                 .collect(),
-            PendingOrdering::Priority => self.pool.read().pending(ready).take(max_len).collect(),
+            PendingOrdering::Priority => match self.pool.try_read() {
+                Some(pool) => pool.pending(ready).take(max_len).collect(),
+                None => vec![],
+            },
         }
     }
 
@@ -531,9 +538,12 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        self.pool
-            .read()
-            .pending_from_sender(state_readiness, address)
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
+
+        pool.pending_from_sender(state_readiness, address)
             .last()
             .map(|tx| tx.signed().sequence_number().saturating_add(1))
     }

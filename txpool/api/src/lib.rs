@@ -10,7 +10,7 @@ use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
+use starcoin_types::{account_address::AccountAddress, block::{Block, BlockHeader}, transaction};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -74,9 +74,24 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         now: Option<u64>,
     ) -> Vec<MultiSignedUserTransaction>;
 
+    /// Get all pending txns which is ok to be packaged to mining with a specific header state.
+    fn get_pending_with_header(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: Option<u64>,
+        header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction>;
+
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64>;
+
+    /// Returns next valid sequence number for given sender with a specific header state.
+    fn next_sequence_number_with_header(
+        &self,
+        address: AccountAddress,
+        header: &BlockHeader,
+    ) -> Option<u64>;
 
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
@@ -101,6 +116,13 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// Returns next valid sequence number for given sender (vm2 AccountAddress)
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64>;
+
+    /// Returns next valid sequence number for given sender (vm2 AccountAddress) with a specific header state.
+    fn next_sequence_number2_with_header(
+        &self,
+        address: AccountAddress2,
+        header: &BlockHeader,
+    ) -> Option<u64>;
 }
 
 #[derive(Clone, Debug)]
