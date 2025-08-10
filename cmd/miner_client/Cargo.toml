@@ -20,6 +20,7 @@ starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 async-trait = { workspace = true }
 byteorder = { workspace = true }

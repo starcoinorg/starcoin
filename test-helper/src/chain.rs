@@ -64,8 +64,11 @@ pub fn init_storage_for_test_with_temp_dir(
     // Load or build genesis
     let genesis = Genesis::load_or_build(net)?;
 
+    // Create DAG for testing
+    let dag = BlockDAG::create_for_testing()?;
+
     // Execute genesis block
-    let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+    let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
 
     Ok((storage, storage2, chain_info, genesis))
 }
@@ -77,7 +80,7 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
 ) -> Result<(BlockChain, ChainStateDB)> {
     match storage_type {
         StorageType::Cache(capacity) => {
-            let (storage, storage2, chain_info, _) =
+            let (storage, storage2, chain_info, _, _dag) =
                 Genesis::init_cache_storage_for_test(net, capacity)
                     .expect("init storage by genesis fail.");
 

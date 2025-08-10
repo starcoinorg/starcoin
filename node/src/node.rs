@@ -16,6 +16,7 @@ use starcoin_account_service::{AccountEventService, AccountService, AccountStora
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
+use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
@@ -47,11 +48,11 @@ use starcoin_storage::{
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
-use starcoin_sync::block_connector::{BlockConnectorService, ExecuteRequest, ResetRequest};
+use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
-use starcoin_txpool::TxPoolActorService;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm2_account_service::{
     AccountEventService as AccountEventService2, AccountService as AccountService2,
@@ -141,7 +142,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+                let connect_service = ctx.service_ref::<BlockConnectorService<TxPoolService>>()?.clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
                     connect_service.send(ResetRequest { block_hash }).await?
@@ -150,42 +151,14 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 NodeResponse::AsyncResult(receiver)
             }
             NodeRequest::ReExecuteBlock(block_hash) => {
-                let storage = self
-                    .registry
-                    .get_shared_sync::<Arc<Storage>>()
-                    .expect("Storage must exist.");
-
-                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
-                let network = ctx.get_shared::<NetworkServiceRef>()?;
+                let sync_service = ctx.service_ref::<SyncService>()?.clone();
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
-                    let block = match storage.get_block(block_hash)? {
-                        Some(block) => Some(block),
-                        None => {
-                            info!("Get block from peer to peer network");
-                            //get block from peer to peer network.
-                            let peer_set = network.peer_set().await?;
-                            if peer_set.is_empty() {
-                                info!("Peers is empty.");
-                                None
-                            } else {
-                                let peer_selector =
-                                    PeerSelector::new(peer_set, PeerStrategy::Best, None);
-                                peer_selector.retain_rpc_peers();
-                                let rpc_client = VerifiedRpcClient::new(peer_selector, network);
-                                let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;
-                                blocks.pop().flatten().map(|(block, _peer)| block)
-                            }
-                        }
-                    };
-                    let block = block.ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by {} from local and peer to peer network.",
-                            block_hash
-                        )
+                    sync_service.notify(starcoin_sync_api::SyncSpecificTargretRequest {
+                        block: None,
+                        block_id: block_hash,
+                        peer_id: None,
                     })?;
-                    let result = connect_service.send(ExecuteRequest { block }).await??;
-                    info!("Re execute result: {:?}", result);
                     Ok(())
                 };
                 let receiver = ctx.exec(fut);
@@ -330,10 +303,24 @@ impl NodeService {
         let storage2 = Arc::new(Storage2::new(storage_instance2)?);
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
+        
+        // Initialize DAG
+        let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
+            config.storage.dag_dir(),
+            config.storage.clone().into(),
+        )?;
+        let dag = starcoin_dag::blockdag::BlockDAG::new(
+            starcoin_types::blockhash::KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
+            config.miner.dag_merge_depth(),
+            dag_storage.clone(),
+        );
+        registry.put_shared(dag.clone()).await?;
+        
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
             storage.clone(),
             storage2,
+            dag.clone(),
             config.data_dir(),
         )?;
 
@@ -379,7 +366,8 @@ impl NodeService {
 
         registry.register::<ChainNotifyHandlerService>().await?;
 
-        registry.register::<BlockConnectorService>().await?;
+        registry.register::<ExecuteService>().await?;
+        registry.register::<BlockConnectorService<TxPoolService>>().await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;
