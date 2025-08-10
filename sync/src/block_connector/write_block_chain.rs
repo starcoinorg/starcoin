@@ -2,27 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::metrics::ChainMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Ok, Result};
+use itertools::Itertools;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
+#[cfg(test)]
+use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::ServiceRef;
+use starcoin_service_registry::{ServiceContext, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::multi_state::MultiState;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm2_storage::Store as Store2;
-use std::fmt::Formatter;
-use std::sync::Arc;
+#[cfg(test)]
+use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+// use std::collections::HashSet;
+use std::{fmt::Formatter, sync::Arc};
+
+use super::BlockConnectorService;
 
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
@@ -34,11 +41,11 @@ where
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
-    storage2: Arc<dyn Store2>,
     txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -55,10 +62,10 @@ pub enum ConnectOk {
 impl std::fmt::Display for ConnectOk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            ConnectOk::Duplicate => "Duplicate",
-            ConnectOk::ExeConnectMain => "ExeConnectMain",
-            ConnectOk::ExeConnectBranch => "ExeConnectBranch",
-            ConnectOk::Connect => "Connect",
+            Self::Duplicate => "Duplicate",
+            Self::ExeConnectMain => "ExeConnectMain",
+            Self::ExeConnectBranch => "ExeConnectBranch",
+            Self::Connect => "Connect",
         };
         write!(f, "{}", s)
     }
@@ -78,7 +85,7 @@ where
 
         if let Some(metrics) = self.metrics.as_ref() {
             let result = match result.as_ref() {
-                Ok(connect) => format!("Ok_{}", connect),
+                std::result::Result::Ok(connect) => format!("Ok_{}", connect),
                 Err(err) => {
                     if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
                         format!("Err_{}", connect_err.reason())
@@ -96,27 +103,28 @@ where
     }
 }
 
-impl<P> WriteBlockChainService<P>
+impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
-    P: TxPoolSyncService + 'static,
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        storage2: Arc<dyn Store2>,
-        txpool: P,
+        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(
             net.time_service(),
             startup_info.main,
             storage.clone(),
-            storage2.clone(),
             vm_metrics.clone(),
+            dag.clone(),
         )?;
+
         let metrics = config
             .metrics
             .registry()
@@ -127,61 +135,162 @@ where
             startup_info,
             main,
             storage,
-            storage2,
             txpool,
             bus,
             metrics,
             vm_metrics,
+            dag,
         })
+    }
+
+    #[cfg(test)]
+    pub fn new_with_dag_fork_number(
+        config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
+        storage: Arc<dyn Store>,
+        txpool: TransactionPoolServiceT,
+        bus: ServiceRef<BusService>,
+        vm_metrics: Option<VMMetrics>,
+        dag: BlockDAG,
+    ) -> Result<Self> {
+        let this: Self = Self::new(
+            config.clone(),
+            startup_info,
+            storage,
+            txpool,
+            bus,
+            vm_metrics,
+            dag,
+        )?;
+        Ok(this)
+    }
+
+    pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
+        let new_branch = self.main.select_dag_state(header)?; // 1
+        self.select_head(new_branch)?;
+        self.update_startup_info(&self.main.current_header())?;
+        Ok(self.main.current_header())
     }
 
     fn find_or_fork(
         &self,
         header: &BlockHeader,
-    ) -> Result<(Option<(BlockInfo, MultiState)>, Option<BlockChain>)> {
+    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
         let block_id = header.id();
         let block_info = self.storage.get_block_info(block_id)?;
-        let res = if let Some(block_info) = block_info {
-            let multi_state = self.storage.get_vm_multi_state(block_id)?;
+        let block_chain = if block_info.is_some() {
             if self.is_main_head(&header.parent_hash()) {
-                (Some((block_info, multi_state)), None)
+                None
             } else {
                 let net = self.config.net();
-                (
-                    Some((block_info, multi_state)),
-                    Some(BlockChain::new(
-                        net.time_service(),
-                        block_id,
-                        self.storage.clone(),
-                        self.storage2.clone(),
-                        self.vm_metrics.clone(),
-                    )?),
-                )
-            }
-        } else if self.block_exist(header.parent_hash())? {
-            let net = self.config.net();
-            (
-                None,
                 Some(BlockChain::new(
                     net.time_service(),
-                    header.parent_hash(),
+                    block_id,
                     self.storage.clone(),
-                    self.storage2.clone(),
                     self.vm_metrics.clone(),
-                )?),
-            )
+                    self.dag.clone(),
+                )?)
+            }
+        } else if self.get_main().has_dag_block(header.parent_hash())? {
+            let net = self.config.net();
+            Some(BlockChain::new(
+                net.time_service(),
+                header.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?)
         } else {
-            (None, None)
+            None
         };
-        Ok(res)
-    }
-
-    fn block_exist(&self, block_id: HashValue) -> Result<bool> {
-        Ok(self.storage.get_block_info(block_id)?.is_some())
+        Ok((block_info, block_chain))
     }
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    pub fn get_bus(&self) -> ServiceRef<BusService> {
+        self.bus.clone()
+    }
+
+    //todo: return a reference
+    pub fn get_dag(&self) -> BlockDAG {
+        self.dag.clone()
+    }
+
+    #[cfg(test)]
+    pub fn create_block(
+        &self,
+        author: AccountAddress,
+        parent_hash: Option<HashValue>,
+        user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
+        tips: Vec<HashValue>,
+    ) -> Result<Block> {
+        let (block_template, _transactions) = self.main.create_block_template(
+            author,
+            parent_hash,
+            user_txns,
+            uncles,
+            block_gas_limit,
+            tips,
+            HashValue::zero(),
+        )?;
+        Ok(self
+            .main
+            .consensus()
+            .create_block(block_template, self.main.time_service().as_ref())
+            .unwrap())
+    }
+
+    #[cfg(test)]
+    pub fn time_sleep(&self, millis: u64) {
+        self.config.net().time_service().sleep(millis);
+    }
+
+    #[cfg(test)]
+    pub fn apply_failed(&mut self, block: Block) -> Result<()> {
+        use anyhow::bail;
+        use starcoin_chain::verifier::FullVerifier;
+        let verified_block = self.main.verify_with_verifier::<FullVerifier>(block)?;
+        let _executed_block = self.main.execute(verified_block)?;
+        bail!("In test case, return a failure intentionally to force sync to reconnect the block");
+    }
+
+    // for sync task to connect to its chain, if chain's total difficulties is larger than the main
+    // switch by:
+    // 1, update the startup info
+    // 2, broadcast the new header
+    pub fn switch_new_main(
+        &mut self,
+        new_head_block: HashValue,
+        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
+    ) -> Result<()>
+    where
+        TransactionPoolServiceT: TxPoolSyncService,
+    {
+        let new_branch = BlockChain::new(
+            self.config.net().time_service(),
+            new_head_block,
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.main.dag(),
+        )?;
+
+        let main_total_difficulty = self.main.get_total_difficulty()?;
+        let branch_total_difficulty = new_branch.get_total_difficulty()?;
+        if branch_total_difficulty > main_total_difficulty {
+            self.main = new_branch;
+            self.update_startup_info(self.main.head_block().header())?;
+            ctx.broadcast(NewHeadBlock {
+                executed_block: Arc::new(self.main.head_block()),
+            });
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
@@ -195,7 +304,7 @@ where
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![executed_block.block().clone()], 0, vec![])
+                    (1, vec![executed_block.block.clone()], 0, vec![])
                 };
             self.main = new_branch;
 
@@ -239,11 +348,11 @@ where
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_block_num
-                .set(executed_block.block().header().number());
+                .set(executed_block.block.header().number());
 
             metrics
                 .chain_txn_num
-                .set(executed_block.block_info().txn_accumulator_info.num_leaves);
+                .set(executed_block.block_info.txn_accumulator_info.num_leaves);
         }
 
         self.broadcast_new_head(executed_block);
@@ -255,34 +364,50 @@ where
     pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
         let new_head_block = self
             .main
-            .get_block(block_id)?
+            .get_storage()
+            .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
         let new_branch = BlockChain::new(
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
-            self.storage2.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
 
-        // delete block since from block.number + 1 to latest.
-        let start = new_head_block.header().number().saturating_add(1);
-        let latest = self.main.status().head.number();
-        for block_number in start..latest {
-            if let Some(block) = self.main.get_block_by_number(block_number)? {
-                info!("Delete block({:?})", block.header);
-                self.storage.delete_block(block.id())?;
-                self.storage.delete_block_info(block.id())?;
-            } else {
-                warn!("Can not find block by number:{}", block_number);
-            }
+        if new_head_block.header().pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().save_dag_state_directly(
+                genesis,
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+            self.main.dag().save_dag_state_directly(
+                HashValue::zero(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+        } else {
+            self.main.dag().save_dag_state_directly(
+                new_head_block.header().pruning_point(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
         }
+
         let executed_block = new_branch.head_block();
 
         self.main = new_branch;
 
         let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-            (1, vec![executed_block.block().clone()], 0, vec![]);
+            (1, vec![executed_block.block.clone()], 0, vec![]);
         self.do_new_head(
             executed_block,
             enacted_count,
@@ -295,12 +420,12 @@ where
 
     ///Directly execute the block and save result, do not try to connect.
     pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let chain = BlockChain::new(
+        let mut chain = BlockChain::new(
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
-            self.storage2.clone(),
             self.vm_metrics.clone(),
+            self.dag.clone(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)
@@ -353,14 +478,44 @@ where
         let block_retracted = self.main.current_header().id();
 
         let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
-        let retracted =
-            self.find_blocks_until(block_retracted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let retracted = self.find_red_blocks(block_enacted, block_retracted)?;
 
         debug!(
             "Commit block count:{}, rollback block count:{}",
             enacted_count, retracted_count,
         );
         Ok((enacted_count, enacted, retracted_count, retracted))
+    }
+
+    fn find_red_blocks(
+        &self,
+        selected_header: HashValue,
+        deselected_header: HashValue,
+    ) -> Result<Vec<Block>> {
+        info!(
+            "find_red_blocks selected_header:{}, deselected_header:{}",
+            selected_header, deselected_header
+        );
+        let ghostdata = self
+            .main
+            .dag()
+            .ghostdata(&[selected_header, deselected_header])?;
+        info!(
+            "find_red_blocks red block count: {:?}",
+            ghostdata.mergeset_reds.len()
+        );
+        let red_blocks = ghostdata
+        .mergeset_reds
+        .iter()
+        .map(|id| Ok(self.main.get_storage().get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
+        .collect::<Result<Vec<Block>>>()?
+        .into_iter().sorted_by(|a, b| {
+            match a.header().number().cmp(&b.header().number()) {
+                std::cmp::Ordering::Equal => a.header().id().cmp(&b.header().id()),
+                other => other,
+            }
+        }).collect();
+        Ok(red_blocks)
     }
 
     fn find_blocks_until(
@@ -390,7 +545,7 @@ where
         Ok(blocks)
     }
 
-    fn broadcast_new_head(&self, block: ExecutedBlock) {
+    pub fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_select_head_total
@@ -398,7 +553,9 @@ where
                 .inc()
         }
 
-        if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
+        if let Err(e) = self.bus.broadcast(NewHeadBlock {
+            executed_block: Arc::new(block),
+        }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
     }
@@ -417,18 +574,26 @@ where
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
-            && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
-        {
-            debug!("barnard hard fork {}", block_id);
-            return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
-        }
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::Duplicate);
         }
+
+        if !block
+            .header()
+            .parents_hash()
+            .iter()
+            .all(|parent_hash| self.main.has_dag_block(*parent_hash).unwrap_or(false))
+        {
+            debug!(
+                "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
+                block_id
+            );
+            return Err(ConnectBlockError::FutureBlock(Box::new(block)).into());
+        }
+
         if self.main.current_header().id() == block.header().parent_hash()
-            && !self.block_exist(block_id)?
+            && !self.get_main().has_dag_block(block_id)?
         {
             let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];
@@ -437,7 +602,7 @@ where
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
-            //block has been processed in some branch, so just trigger a head selection.
+            // block has been processed in some branch, so just trigger a head selection.
             (Some(_block_info), Some(branch)) => {
                 debug!(
                     "Block {} has been processed, trigger head selection, total_difficulty: {}",
@@ -447,13 +612,12 @@ where
                 self.select_head(branch)?;
                 Ok(ConnectOk::Duplicate)
             }
-            //block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some((block_info, multi_state)), None) => {
-                let executed_block = self.main.connect(ExecutedBlock::new(
-                    block.clone(),
+            // block has been processed, and its parent is main chain, so just connect it to main chain.
+            (Some(block_info), None) => {
+                let executed_block = self.main.connect(ExecutedBlock {
+                    block: block.clone(),
                     block_info,
-                    multi_state,
-                ))?;
+                })?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id
@@ -461,6 +625,7 @@ where
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(ConnectOk::Connect)
             }
+            // the block is not processed but its parent branch exists
             (None, Some(mut branch)) => {
                 let _executed_block = branch.apply(block)?;
                 self.select_head(branch)?;

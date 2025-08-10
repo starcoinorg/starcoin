@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
-use anyhow::{format_err, Context, Result};
+use anyhow::{format_err, Context, Ok, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
@@ -14,17 +15,25 @@ use network_api::messages::NotificationMessage;
 use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use rand::Rng;
+use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
+use starcoin_chain_api::range_locate::get_range_in_location;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::G_RPC_INFO;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::GetAbsentBlock;
+use starcoin_network_rpc_api::{RangeInLocation, G_RPC_INFO};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
+
+use super::BlockIdRangeFetcher;
 
 #[derive(Default)]
 pub enum ErrorStrategy {
@@ -34,6 +43,7 @@ pub enum ErrorStrategy {
     RandomErr,
     MethodNotFound,
 }
+
 pub struct ErrorMocker {
     strategy: ErrorStrategy,
     pub random_error_percent: u32,
@@ -125,10 +135,54 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     }
 }
 
+pub struct MockRangeLocationFetcher {
+    chain: MockChain,
+}
+
+impl MockRangeLocationFetcher {
+    pub fn new(chain: MockChain) -> Self {
+        Self { chain }
+    }
+
+    async fn fetch_range_locate(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<starcoin_network_rpc_api::RangeInLocation> {
+        let result = match get_range_in_location(
+            self.chain.head(),
+            self.chain.head().get_storage(),
+            start_id,
+            end_id,
+        )? {
+            starcoin_chain_api::range_locate::RangeInLocation::NotInSelectedChain => {
+                RangeInLocation::NotInSelectedChain
+            }
+            starcoin_chain_api::range_locate::RangeInLocation::InSelectedChain(
+                hash_value,
+                hash_values,
+            ) => RangeInLocation::InSelectedChain(hash_value, hash_values),
+        };
+        Ok(result)
+    }
+}
+
+impl BlockIdRangeFetcher for MockRangeLocationFetcher {
+    fn fetch_range_locate(
+        &self,
+        _peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+        self.fetch_range_locate(start_id, end_id).boxed()
+    }
+}
+
 pub struct SyncNodeMocker {
     pub peer_id: PeerId,
     pub chain_mocker: MockChain,
     pub err_mocker: ErrorMocker,
+    pub sync_dag_store: Arc<SyncDagStore>,
     peer_selector: PeerSelector,
 }
 
@@ -148,12 +202,47 @@ impl SyncNodeMocker {
             None,
         );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = Arc::new(
+            SyncDagStore::create_for_testing()
+                .context("Failed to create SyncDagStore for testing")?,
+        );
         Ok(Self::new_inner(
             peer_id,
             chain,
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
             peer_selector,
+            sync_dag_store,
+        ))
+    }
+
+    pub fn new_with_storage(
+        net: ChainNetwork,
+        storage: Arc<Storage>,
+        chain_info: ChainInfo,
+        miner: AccountInfo,
+        delay_milliseconds: u64,
+        random_error_percent: u32,
+        dag: BlockDAG,
+    ) -> Result<Self> {
+        let chain = MockChain::new_with_storage(net, storage, chain_info.head().id(), miner, dag)?;
+        let peer_id = PeerId::random();
+        let peer_info = PeerInfo::new(
+            peer_id.clone(),
+            chain.chain_info(),
+            NotificationMessage::protocols(),
+            G_RPC_INFO.clone().into_protocols(),
+            None,
+        );
+        let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
+        Ok(Self::new_inner(
+            peer_id,
+            chain,
+            ErrorStrategy::Timeout(delay_milliseconds),
+            random_error_percent,
+            peer_selector,
+            sync_dag_store,
         ))
     }
 
@@ -166,12 +255,14 @@ impl SyncNodeMocker {
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(peer_id.clone(), chain.chain_info(), vec![], vec![], None);
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
+        let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
         Ok(Self::new_inner(
             peer_id,
             chain,
             error_strategy,
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         ))
     }
 
@@ -181,6 +272,7 @@ impl SyncNodeMocker {
         delay_milliseconds: u64,
         random_error_percent: u32,
         peer_selector: PeerSelector,
+        sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
         Self::new_inner(
             peer_id,
@@ -188,6 +280,7 @@ impl SyncNodeMocker {
             ErrorStrategy::Timeout(delay_milliseconds),
             random_error_percent,
             peer_selector,
+            sync_dag_store,
         )
     }
 
@@ -197,12 +290,14 @@ impl SyncNodeMocker {
         error_strategy: ErrorStrategy,
         random_error_percent: u32,
         peer_selector: PeerSelector,
+        sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
         Self {
             peer_id: peer_id.clone(),
             chain_mocker: chain,
             err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_id),
             peer_selector,
+            sync_dag_store,
         }
     }
 
@@ -245,8 +340,16 @@ impl SyncNodeMocker {
         self.chain_mocker.head()
     }
 
+    pub fn get_storage(&self) -> Arc<Storage> {
+        self.chain_mocker.get_storage()
+    }
+
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
         self.chain_mocker.produce_and_apply_times(times)
+    }
+
+    pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
+        self.chain_mocker.produce_fork_chain(one_count, two_count)
     }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {
@@ -308,12 +411,74 @@ impl BlockFetcher for SyncNodeMocker {
             .into_iter()
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
-                    Ok((block, None))
+                    Ok((block, Some(PeerId::random())))
+                } else if let Some(block) = self.chain().get_storage().get_block(block_id)? {
+                    Ok((block, Some(PeerId::random())))
                 } else {
-                    Err(format_err!("Can not find block by id: {}", block_id))
+                    Err(format_err!("Cannot find block by id: {}", block_id))
                 }
             })
             .collect();
+        async move {
+            let _ = self.select_a_peer()?;
+            self.err_mocker.random_err().await?;
+            result
+        }
+        .boxed()
+    }
+
+    fn fetch_block_headers(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+        async move {
+            let blocks = self.fetch_blocks(block_ids).await?;
+            blocks
+                .into_iter()
+                .map(|(block, _)| Ok((block.id(), Some(block.header().clone()))))
+                .collect()
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_children(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        async move {
+            let blocks = self.fetch_blocks(block_ids).await?;
+            let mut result = vec![];
+            for block in blocks {
+                result.extend(self.chain().dag().get_children(block.0.id())?);
+            }
+            Ok(result)
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+        let dag = self.chain().dag();
+        let result = match dag.get_absent_blocks(GetAbsentBlock {
+            absent_id: block_ids,
+            exp,
+        }) {
+            anyhow::Result::Ok(result) => result
+                .absent_blocks
+                .into_iter()
+                .map(|id| {
+                    let block = self
+                        .get_storage()
+                        .get_block(id)?
+                        .ok_or_else(|| format_err!("Block {:?} should exist", id))?;
+                    Ok((block, None))
+                })
+                .collect::<anyhow::Result<Vec<(Block, Option<PeerId>)>>>(),
+            Err(e) => anyhow::Result::Err(e),
+        };
         async move {
             let _ = self.select_a_peer()?;
             self.err_mocker.random_err().await?;
@@ -334,11 +499,22 @@ impl BlockInfoFetcher for SyncNodeMocker {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());
         });
         async move {
-            let _ = self.select_a_peer()?;
-            self.err_mocker.random_err().await?;
+            // let _ = self.select_a_peer()?;
+            // self.err_mocker.random_err().await?;
             Ok(result)
         }
         .boxed()
+    }
+}
+
+impl BlockIdRangeFetcher for SyncNodeMocker {
+    fn fetch_range_locate(
+        &self,
+        _peer: Option<PeerId>,
+        _start_id: HashValue,
+        _end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+        unimplemented!()
     }
 }
 

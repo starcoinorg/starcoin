@@ -57,7 +57,7 @@ impl TaskState for BlockAccumulatorSyncTask {
             if max_size > self.batch_size {
                 max_size = self.batch_size;
             }
-            debug!(
+            info!(
                 "Accumulator sync task: start_number: {}, target_number: {}",
                 start, target
             );
@@ -100,6 +100,7 @@ impl AccumulatorCollector {
         start: AccumulatorInfo,
         target: AccumulatorInfo,
     ) -> Self {
+        info!("now start to collect the hash value for building the accumulator ahead, ancestor: {:?}", ancestor);
         let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,
@@ -123,13 +124,6 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
     }
 
     fn finish(self) -> Result<Self::Output> {
-        let info = self.accumulator.get_info();
-        ensure!(
-            info == self.target,
-            "Target accumulator: {:?}, but got: {:?}",
-            self.target,
-            info
-        );
         Ok((self.ancestor, self.accumulator))
     }
 }

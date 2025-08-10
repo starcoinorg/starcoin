@@ -7,7 +7,7 @@ forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
 futures-retry = { workspace = true }
 futures-timer = { workspace = true }
-itertools = { workspace = true }
+itertools = { features = ["use_alloc"], workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-network = { workspace = true }
@@ -29,6 +29,7 @@ starcoin-network-rpc = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-sync-api = { workspace = true }
@@ -42,10 +43,13 @@ stest = { workspace = true }
 stream-task = { workspace = true }
 sysinfo = { workspace = true }
 thiserror = { workspace = true }
-
-#dependencies for move2.0
-starcoin-vm2-storage = { workspace = true }
-starcoin-vm2-vm-types = { workspace = true }
+starcoin-consensus = { workspace = true }
+timeout-join-handler = { workspace = true }
+starcoin-dag = { workspace = true }
+serde = { workspace = true }
+byteorder = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+crossbeam = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
@@ -61,6 +65,7 @@ starcoin-txpool-mock-service = { workspace = true }
 starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+starcoin-genesis = { workspace = true }
 
 [package]
 authors = { workspace = true }

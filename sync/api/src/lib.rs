@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::cmp::Ordering;
+
 use anyhow::Result;
 use network_api::PeerId;
 use network_api::PeerStrategy;
@@ -16,8 +18,60 @@ pub use stream_task::TaskProgressReport;
 
 mod service;
 
+#[derive(Clone, Debug, Eq)]
+pub struct SyncBlockSort {
+    pub block: Block,
+}
+
+impl PartialEq for SyncBlockSort {
+    fn eq(&self, other: &Self) -> bool {
+        self.block.header().id() == other.block.header().id()
+    }
+}
+
+impl PartialOrd for SyncBlockSort {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SyncBlockSort {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let result = self
+            .block
+            .header()
+            .number()
+            .cmp(&other.block.header().number());
+        if Ordering::Equal == result {
+            self.block.header().id().cmp(&other.block.header().id())
+        } else {
+            result
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct StartSyncTxnEvent;
+
+#[derive(Clone, Debug)]
+pub struct SelectHeaderState {
+    peer_id: PeerId,
+    new_block: Block,
+}
+
+impl SelectHeaderState {
+    pub fn new(peer_id: PeerId, new_block: Block) -> Self {
+        Self { peer_id, new_block }
+    }
+
+    pub fn get_peer_id(&self) -> PeerId {
+        self.peer_id.clone()
+    }
+
+    pub fn get_block(&self) -> &Block {
+        &self.new_block
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct PeerNewBlock {
@@ -27,7 +81,7 @@ pub struct PeerNewBlock {
 
 impl PeerNewBlock {
     pub fn new(peer_id: PeerId, new_block: Block) -> Self {
-        PeerNewBlock { peer_id, new_block }
+        Self { peer_id, new_block }
     }
 
     pub fn get_peer_id(&self) -> PeerId {
@@ -58,6 +112,17 @@ pub struct SyncStatusRequest;
 
 impl ServiceRequest for SyncStatusRequest {
     type Response = SyncStatus;
+}
+
+#[derive(Debug, Clone)]
+pub struct SyncSpecificTargretRequest {
+    pub block: Option<Block>,
+    pub block_id: HashValue,
+    pub peer_id: Option<PeerId>,
+}
+
+impl ServiceRequest for SyncSpecificTargretRequest {
+    type Response = Result<()>;
 }
 
 #[derive(Debug, Clone)]

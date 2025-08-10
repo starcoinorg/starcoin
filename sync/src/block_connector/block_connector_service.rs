@@ -1,13 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_connector::{ExecuteRequest, ResetRequest, WriteBlockChainService};
+#[cfg(test)]
+use super::CheckBlockConnectorHashValue;
+#[cfg(test)]
+use super::CreateBlockRequest;
+#[cfg(test)]
+use super::CreateBlockResponse;
+use super::ResetRequest;
+use crate::block_connector::{ExecuteRequest, WriteBlockChainService};
 use crate::sync::{CheckSyncEvent, SyncService};
-use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
-use anyhow::{format_err, Result};
+use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
+#[cfg(test)]
+use anyhow::bail;
+use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
+use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -15,39 +27,51 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::SelectHeaderState;
 use starcoin_txpool::TxPoolService;
+use starcoin_txpool_api::TxPoolSyncService;
+#[cfg(test)]
+use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_types::system_events::NewDagBlock;
+use starcoin_types::system_events::{SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
-
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
-pub struct BlockConnectorService {
-    chain_service: WriteBlockChainService<TxPoolService>,
+pub struct BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    chain_service: WriteBlockChainService<TransactionPoolServiceT>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
+    pruning_point_channel: PruningPointInfoChannel,
 }
 
-impl BlockConnectorService {
+impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
     pub fn new(
-        chain_service: WriteBlockChainService<TxPoolService>,
+        chain_service: WriteBlockChainService<TransactionPoolServiceT>,
         config: Arc<NodeConfig>,
+        pruning_point_channel: PruningPointInfoChannel,
     ) -> Self {
         Self {
             chain_service,
             sync_status: None,
             config,
+            pruning_point_channel,
         }
     }
 
     pub fn is_synced(&self) -> bool {
         match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_synced(),
+            Some(sync_status) => sync_status.is_nearly_synced(),
             None => false,
         }
     }
@@ -96,39 +120,82 @@ impl BlockConnectorService {
 
         None
     }
+
+    // return false if the number of the block is larger than the current number of the chain.
+    // or return false if the gap of those two blocks is larger than 2 * G_BASE_MAX_UNCLES_PER_BLOCK
+    // else return true.
+    // return false will trigger the burden sync operation.
+    // return true will trigger the specific(light) sync operation.
+    #[allow(dead_code)]
+    fn is_near_block(&self, block_header: &BlockHeader) -> bool {
+        let current_number = self.chain_service.get_main().status().head().number();
+        if current_number <= block_header.number() {
+            return false;
+        }
+        let gap = current_number.saturating_sub(block_header.number());
+        let k = self.chain_service.get_dag().ghost_dag_manager().k() as u64;
+        let config_gap = self
+            .config
+            .sync
+            .lightweight_sync_max_gap()
+            .map_or(k.saturating_mul(k), |max_gap| max_gap);
+        debug!(
+            "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
+            current_number,
+            block_header.number(),
+            gap,
+            config_gap
+        );
+        gap <= config_gap
+    }
 }
 
-impl ServiceFactory<Self> for BlockConnectorService {
-    fn create(ctx: &mut ServiceContext<BlockConnectorService>) -> Result<BlockConnectorService> {
+impl<TransactionPoolServiceT> ServiceFactory<Self>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let bus = ctx.bus_ref().clone();
-        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let txpool = ctx.get_shared::<TransactionPoolServiceT>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+        let pruning_point_channel = ctx.get_shared::<PruningPointInfoChannel>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
             storage,
-            storage2,
             txpool,
             bus,
             vm_metrics,
+            dag,
         )?;
 
-        Ok(Self::new(chain_service, config))
+        Ok(Self::new(chain_service, config, pruning_point_channel))
     }
 }
 
-impl ActorService for BlockConnectorService {
+impl<TransactionPoolServiceT> ActorService for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         //TODO figure out a more suitable value.
-        ctx.set_mailbox_capacity(1024);
+        let merge_depth = self
+            .chain_service
+            .get_dag()
+            .block_depth_manager()
+            .merge_depth()
+            .saturating_mul(3);
+        ctx.set_mailbox_capacity(merge_depth as usize);
         ctx.subscribe::<SyncStatusChangeEvent>();
-        ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<SelectHeaderState>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -139,20 +206,21 @@ impl ActorService for BlockConnectorService {
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
-        ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<SelectHeaderState>();
         Ok(())
     }
 }
 
-impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
-    fn handle_event(
-        &mut self,
-        _: BlockDiskCheckEvent,
-        ctx: &mut ServiceContext<BlockConnectorService>,
-    ) {
+impl<TransactionPoolServiceT> EventHandler<Self, BlockDiskCheckEvent>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, _: BlockDiskCheckEvent, ctx: &mut ServiceContext<Self>) {
         if let Some(res) = self.check_disk_space() {
             match res {
-                Ok(available_space) => {
+                std::result::Result::Ok(available_space) => {
                     warn!("Available diskspace only {}/GB left ", available_space)
                 }
                 Err(e) => {
@@ -164,45 +232,113 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
     }
 }
 
-impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
-    fn handle_event(
-        &mut self,
-        msg: BlockConnectedEvent,
-        _ctx: &mut ServiceContext<BlockConnectorService>,
-    ) {
-        //because this block has execute at sync task, so just try connect to select head chain.
-        //TODO refactor connect and execute
-
-        let block = msg.block;
-        if let Err(e) = self.chain_service.try_connect(block) {
-            error!("Process connected block error: {:?}", e);
-        }
-    }
-}
-
-impl EventHandler<Self, MinedBlock> for BlockConnectorService {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
-        let id = new_block.header().id();
-        debug!("try connect mined block: {}", id);
-
-        match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            Ok(_) => debug!("Process mined block {} success.", id),
+impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        let block_header = match self
+            .chain_service
+            .switch_header(msg.executed_block.header())
+        {
+            std::result::Result::Ok(block_header) => block_header,
             Err(e) => {
-                warn!("Process mined block {} fail, error: {:?}", id, e);
+                error!(
+                    "failed to switch header when processing NewDagBlock, error: {:?}, id: {:?}",
+                    e,
+                    msg.executed_block.header().id()
+                );
+                return;
+            }
+        };
+
+        let _consume = self
+            .pruning_point_channel
+            .pruning_receiver
+            .try_iter()
+            .count();
+        match self
+            .pruning_point_channel
+            .pruning_sender
+            .send(PruningPointMessage { block_header })
+        {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!(
+                    "failed to send NewDagBlock for calculating the pruning point, error: {:?}",
+                    e
+                );
             }
         }
     }
 }
 
-impl EventHandler<Self, SyncStatusChangeEvent> for BlockConnectorService {
+impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolService> {
+    fn handle_event(&mut self, msg: BlockConnectedEvent, ctx: &mut ServiceContext<Self>) {
+        //because this block has execute at sync task, so just try connect to select head chain.
+        //TODO refactor connect and execute
+        let block = msg.block;
+        let feedback = msg.feedback;
+
+        match msg.action {
+            crate::tasks::BlockConnectAction::ConnectNewBlock => {
+                if let Err(e) = self.chain_service.try_connect(block) {
+                    error!("Process connected new block from sync error: {:?}", e);
+                }
+            }
+            crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
+                if let Err(e) = self.chain_service.switch_new_main(block.header().id(), ctx) {
+                    error!("Process connected executed block from sync error: {:?}", e);
+                }
+            }
+        }
+
+        feedback.map(|f| f.unbounded_send(BlockConnectedFinishEvent));
+    }
+}
+
+#[cfg(test)]
+impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<MockTxPoolService> {
+    fn handle_event(&mut self, msg: BlockConnectedEvent, ctx: &mut ServiceContext<Self>) {
+        //because this block has execute at sync task, so just try connect to select head chain.
+        //TODO refactor connect and execute
+        let block = msg.block;
+        let feedback = msg.feedback;
+
+        match msg.action {
+            crate::tasks::BlockConnectAction::ConnectNewBlock => {
+                if let Err(e) = self.chain_service.apply_failed(block) {
+                    error!("Process connected new block from sync error: {:?}", e);
+                }
+            }
+            crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
+                if let Err(e) = self.chain_service.switch_new_main(block.header().id(), ctx) {
+                    error!("Process connected executed block from sync error: {:?}", e);
+                }
+            }
+        }
+
+        feedback.map(|f| f.unbounded_send(BlockConnectedFinishEvent));
+    }
+}
+
+impl<TransactionPoolServiceT> EventHandler<Self, SyncStatusChangeEvent>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
         self.sync_status = Some(msg.0);
     }
 }
 
-impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
-    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
+impl<TransactionPoolServiceT> EventHandler<Self, SelectHeaderState>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, msg: SelectHeaderState, ctx: &mut ServiceContext<Self>) {
         if !self.is_synced() {
             debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
             return;
@@ -210,11 +346,13 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
         let peer_id = msg.get_peer_id();
         if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
-                Ok(connect_error) => {
+                std::result::Result::Ok(connect_error) => {
                     match connect_error {
                         ConnectBlockError::FutureBlock(block) => {
                             //TODO cache future block
-                            if let Ok(sync_service) = ctx.service_ref::<SyncService>() {
+                            if let std::result::Result::Ok(sync_service) =
+                                ctx.service_ref::<SyncService>()
+                            {
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
@@ -260,22 +398,73 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
     }
 }
 
-impl ServiceHandler<Self, ResetRequest> for BlockConnectorService {
-    fn handle(
-        &mut self,
-        msg: ResetRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService>,
-    ) -> Result<()> {
+impl<TransactionPoolServiceT> ServiceHandler<Self, ResetRequest>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle(&mut self, msg: ResetRequest, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.chain_service.reset(msg.block_hash)
     }
 }
 
-impl ServiceHandler<Self, ExecuteRequest> for BlockConnectorService {
+impl<TransactionPoolServiceT> ServiceHandler<Self, ExecuteRequest>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
     fn handle(
         &mut self,
         msg: ExecuteRequest,
-        _ctx: &mut ServiceContext<BlockConnectorService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ExecutedBlock> {
         self.chain_service.execute(msg.block)
+    }
+}
+
+#[cfg(test)]
+impl<TransactionPoolServiceT> ServiceHandler<Self, CreateBlockRequest>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle(
+        &mut self,
+        msg: CreateBlockRequest,
+        _ctx: &mut ServiceContext<Self>,
+    ) -> <CreateBlockRequest as starcoin_service_registry::ServiceRequest>::Response {
+        for _i in 0..msg.count {
+            let block = self.chain_service.create_block(
+                msg.author,
+                msg.parent_hash,
+                msg.user_txns.clone(),
+                msg.uncles.clone(),
+                msg.block_gas_limit,
+                msg.tips.clone(),
+            )?;
+            self.chain_service.try_connect(block)?;
+        }
+        Ok(CreateBlockResponse)
+    }
+}
+
+#[cfg(test)]
+impl<TransactionPoolServiceT> ServiceHandler<Self, CheckBlockConnectorHashValue>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle(
+        &mut self,
+        msg: CheckBlockConnectorHashValue,
+        _ctx: &mut ServiceContext<Self>,
+    ) -> Result<()> {
+        if self.chain_service.get_main().status().head().id() == msg.head_hash {
+            info!("the branch in chain service is the same as target's branch");
+            Ok(())
+        } else {
+            info!("mock branch in chain service is not the same as target's branch");
+            bail!("blockchain in chain service is not the same as target!");
+        }
     }
 }

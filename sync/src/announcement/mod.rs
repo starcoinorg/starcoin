@@ -11,9 +11,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_storage::{BlockTransactionInfoStore, Storage};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::multi_transaction::MultiTransactionError;
 use starcoin_types::transaction::TransactionError;
-use starcoin_vm2_vm_types::transaction::TransactionError as TransactionError2;
 
 /// Service which handle Announcement message
 pub struct AnnouncementService {
@@ -23,14 +21,14 @@ pub struct AnnouncementService {
 
 impl AnnouncementService {
     fn new(storage: Arc<Storage>, txpool: TxPoolService) -> Self {
-        AnnouncementService { storage, txpool }
+        Self { storage, txpool }
     }
 }
 
 impl ActorService for AnnouncementService {}
 
 impl ServiceFactory<Self> for AnnouncementService {
-    fn create(ctx: &mut ServiceContext<Self>) -> Result<AnnouncementService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
 
@@ -42,7 +40,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
     fn handle_event(
         &mut self,
         announcement_msg: PeerAnnouncementMessage,
-        ctx: &mut ServiceContext<AnnouncementService>,
+        ctx: &mut ServiceContext<Self>,
     ) {
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();
@@ -57,7 +55,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                 let fresh_ids = announcement_msg.message.ids().into_iter().filter(|txn_id| {
                     if txpool.find_txn(txn_id).is_none() {
                         if let Ok(None) = storage.get_transaction_info(*txn_id) {
-                            return true;
+                            return true
                         }
                     }
                     false
@@ -70,7 +68,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                         peer_selector,
                         network.clone(),
                     );
-                    match rpc_client.get_txns_with_hash_from_pool(Some(peer_id.clone()), GetTxnsWithHash { ids: fresh_ids }).await {
+                    match rpc_client.get_txns_with_hash_from_pool(Some(peer_id.clone()), GetTxnsWithHash { ids:fresh_ids }).await {
                         Err(err) => error!(
                             "[sync] handle announcement msg result error: {:?}, peer_id:{:?} ",
                             err, peer_id
@@ -85,19 +83,15 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                                             "[sync] handle announcement msg error: {:?}, peer_id:{:?} ",
                                             err, peer_id
                                         );
-                                        if let MultiTransactionError::VM1(TransactionError::InvalidSignature(_)) = err {
-                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "VM1 InvalidSignature"))
-                                        }
-
-                                        if let MultiTransactionError::VM2(TransactionError2::InvalidSignature(_)) = err {
-                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "VM1 InvalidSignature"))
+                                        if let TransactionError::InvalidSignature(_) = err {
+                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "InvalidSignature"))
                                         }
                                     }
                                 }
                             });
 
                             if !fresh_txns.is_empty() {
-                                txpool.add_txns_multi_signed(fresh_txns, true, None);
+                                txpool.add_txns(fresh_txns);
                             }
                         }
                     }
@@ -119,7 +113,7 @@ mod tests {
 
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
-        let mut config_1 = NodeConfig::random_for_test();
+        let mut config_1 = NodeConfig::random_for_dag_test();
         config_1.miner.disable_miner_client = Some(true);
         let config_1 = Arc::new(config_1);
         let service1 = test_helper::run_node_by_config(config_1.clone()).unwrap();
@@ -132,7 +126,7 @@ mod tests {
             config_1.network.listen(),
             peer_1.clone().into(),
         )];
-        let mut config_2 = NodeConfig::random_for_test();
+        let mut config_2 = NodeConfig::random_for_dag_test();
         config_2.network.seeds = nodes.into();
         config_2.network.unsupported_protocols = Some(vec![TXN_PROTOCOL_NAME.to_string()]);
         config_2.miner.disable_miner_client = Some(true);
