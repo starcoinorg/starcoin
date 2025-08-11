@@ -668,7 +668,7 @@ pub struct Reputation<'a> {
     node: Option<OccupiedEntry<'a, PeerId, Node>>,
 }
 
-impl<'a> Reputation<'a> {
+impl Reputation<'_> {
     /// Returns the reputation value of the node.
     pub fn reputation(&self) -> i32 {
         self.node.as_ref().unwrap().get().reputation
@@ -688,7 +688,7 @@ impl<'a> Reputation<'a> {
     }
 }
 
-impl<'a> Drop for Reputation<'a> {
+impl Drop for Reputation<'_> {
     fn drop(&mut self) {
         if let Some(node) = self.node.take() {
             if node.get().reputation == 0

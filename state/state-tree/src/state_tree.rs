@@ -345,7 +345,7 @@ struct CachedTreeReader<'a, K: RawKey> {
     cache: &'a StateCache<K>,
 }
 
-impl<'a, K> TreeReader<K> for CachedTreeReader<'a, K>
+impl<K> TreeReader<K> for CachedTreeReader<'_, K>
 where
     K: RawKey,
 {
