@@ -102,19 +102,19 @@ impl TxPoolSyncService for MockTxPoolService {
         todo!()
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         _max_len: u64,
         _current_timestamp_secs: Option<u64>,
-        _header: &starcoin_types::block::BlockHeader,
+        _state_root: HashValue,
     ) -> Vec<SignedUserTransaction> {
         todo!()
     }
 
-    fn next_sequence_number_with_header(
+    fn next_sequence_number_with_state(
         &self,
         _address: AccountAddress,
-        _header: &starcoin_types::block::BlockHeader,
+        _state_root: HashValue,
     ) -> Option<u64> {
         todo!()
     }

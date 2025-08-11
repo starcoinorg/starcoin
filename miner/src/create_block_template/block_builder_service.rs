@@ -186,32 +186,34 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
-        let _ = self.receive_header();
-        self.inner
-            .create_block_template(header_version)
-            .map_err(BlockTemplateError::Other)
+        match self.receive_header() {
+            ReceiveHeader::Received => self
+                .inner
+                .create_block_template(header_version)
+                .map_err(BlockTemplateError::Other),
+            ReceiveHeader::NotReceived => Err(BlockTemplateError::NoReceivedHeader),
+        }
     }
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction>;
+    fn get_txns_with_state(&self, max: u64, state_root: HashValue) -> Vec<SignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns_with_header(&self, _max: u64, _header: &BlockHeader) -> Vec<SignedUserTransaction> {
+    fn get_txns_with_state(&self, _max: u64, _state_root: HashValue) -> Vec<SignedUserTransaction> {
         vec![]
     }
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction> {
-        self.get_pending_with_header(max, None, header)
+    fn get_txns_with_state(&self, max: u64, state_root: HashValue) -> Vec<SignedUserTransaction> {
+        self.get_pending_with_state(max, None, state_root)
     }
-
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
         self.remove_txn(txn_hash, true);
     }
@@ -361,6 +363,7 @@ where
     }
 
     pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+        info!("[BlockProcess] now create the template");
         let (
             MinerResponse {
                 previous_header,
@@ -462,7 +465,7 @@ where
             main.into_statedb(),
         )?;
 
-        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        let txn = self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
         info!("[BlockProcess] txns len: {}", txn.len());
         let excluded_txns = opened_block.push_txns(txn)?;
         for invalid_txn in &excluded_txns.discarded_txns {
@@ -474,6 +477,32 @@ where
             excluded_txns.untouched_txns.len()
         );
 
+        let left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
+        info!("[BlockProcess] left: {}", left);
+        if left > 0 {
+            let txn = self
+                .tx_provider
+                .get_txns_with_state(left, opened_block.state_root());
+            info!("[BlockProcess] read txns again: {}", txn.len());
+            let excluded_txns = opened_block.push_txns(txn)?;
+            for invalid_txn in &excluded_txns.discarded_txns {
+                self.tx_provider.remove_invalid_txn(invalid_txn.id());
+            }
+            info!(
+                "[BlockProcess] discarded againlen: {}, untouched txns len: {}",
+                excluded_txns.discarded_txns.len(),
+                excluded_txns.untouched_txns.len()
+            );
+        }
+        info!(
+            "[BlockProcess] included txns len: {}",
+            opened_block.included_user_txns().len()
+        );
+        info!(
+            "[BlockProcess] end of create the template, parent: {:?}",
+            opened_block.block_meta().parent_hash()
+        );
+
         let template = opened_block.finalize()?;
         Ok(BlockTemplateResponse {
             parent: previous_header,
@@ -483,13 +512,11 @@ where
 
     fn fetch_transactions(
         &self,
-        selected_header: &BlockHeader,
+        state_root: HashValue,
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let pending_transactions = self
-            .tx_provider
-            .get_txns_with_header(max_txns, selected_header);
+        let pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
@@ -546,13 +573,15 @@ where
                 }
             } else if let Some(next_seq) = self
                 .tx_provider
-                .next_sequence_number_with_header(*sender, selected_header)
+                .next_sequence_number_with_state(*sender, state_root)
             {
                 if let Some(index) = uncle_transactions
                     .iter()
                     .position(|transaction| transaction.sequence_number() == next_seq)
                 {
                     pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
+                } else {
+                    pending_transaction_map.insert(*sender, uncle_transactions.to_vec());
                 }
             }
         }

@@ -285,7 +285,7 @@ impl MinerService {
 
             let block = task.finish(nonce, extra);
             let block_hash: HashValue = block.id();
-            info!(target: "miner", "Minted new block: {}", block);
+            info!(target: "miner", "Minted new block: {}", block.id());
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();

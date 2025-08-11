@@ -35,6 +35,10 @@ impl ExecuteService {
     }
 
     fn execute(&self, new_block: Block) -> Result<ExecutedBlock> {
+        info!(
+            "[BlockProcess] now start to execute the block: {:?}",
+            new_block.id()
+        );
         let mut chain = BlockChain::new(
             self.time_service.clone(),
             new_block.header().parent_hash(),
@@ -50,6 +54,7 @@ impl ExecuteService {
         });
 
         let id = new_block.id();
+        info!("[BlockProcess] now verify the block: {:?}", new_block.id());
         let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block) {
             anyhow::Result::Ok(verified_block) => verified_block,
             Err(e) => {
@@ -61,6 +66,10 @@ impl ExecuteService {
             }
         };
 
+        info!(
+            "[BlockProcess] now execute the block: {:?}",
+            verified_block.block.id()
+        );
         let executed_block = match chain.execute(verified_block) {
             std::result::Result::Ok(executed_block) => executed_block,
             Err(e) => {
@@ -72,6 +81,11 @@ impl ExecuteService {
             }
         };
 
+        info!(
+            "[BlockProcess] now connect the block: {:?}",
+            executed_block.block.id()
+        );
+
         match chain.connect(executed_block.clone()) {
             std::result::Result::Ok(_) => (),
             Err(e) => {
@@ -80,13 +94,11 @@ impl ExecuteService {
             }
         }
         info!(
-            "[BlockProcess] executed transactions: {}",
-            executed_block.block.transactions().len()
+            "[BlockProcess] executed transactions: {}, block id: {:?}",
+            executed_block.block.transactions().len(),
+            executed_block.block.id()
         );
-        debug!(
-            "[BlockProcess] executed transactions: {:?}",
-            executed_block.block.transactions()
-        );
+
         Ok(executed_block)
     }
 }
