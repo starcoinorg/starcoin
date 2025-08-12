@@ -1,0 +1,38 @@
+kind: Schedule
+apiVersion: chaos-mesh.org/v1alpha1
+metadata:
+  namespace: starcoin-halley
+  name: networkdelay
+spec:
+  schedule: '*/15 * * * *'
+  startingDeadlineSeconds: null
+  concurrencyPolicy: Forbid
+  historyLimit: 1
+  type: NetworkChaos
+  networkChaos:
+    selector:
+      namespaces:
+        - starcoin-halley
+      pods:
+        starcoin-halley:
+          - starcoin-0
+          - starcoin-1
+          - starcoin-2
+    mode: one
+    action: delay
+    duration: 5m
+    delay:
+      latency: 50000ms
+      correlation: '0'
+      jitter: 50m
+    direction: to
+    target:
+      selector:
+        namespaces:
+          - starcoin-halley
+        pods:
+          starcoin-halley:
+            - starcoin-0
+            - starcoin-1
+            - starcoin-2
+      mode: one
