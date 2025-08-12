@@ -187,11 +187,10 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .genesis_config()
             .block_header_version;
         match self.receive_header() {
-            ReceiveHeader::Received => self
+            ReceiveHeader::NotReceived | ReceiveHeader::Received => self
                 .inner
                 .create_block_template(header_version)
                 .map_err(BlockTemplateError::Other),
-            ReceiveHeader::NotReceived => Err(BlockTemplateError::NoReceivedHeader),
         }
     }
 }
@@ -465,7 +464,14 @@ where
             main.into_statedb(),
         )?;
 
-        let txn = self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
+        info!("[BlockProcess] fetch transactions"); 
+        let mut txn =
+            self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
+        if txn.len() > 400 {
+            let extra = txn[400..].to_vec();
+            self.tx_provider.add_txns(extra);
+            txn = txn[..400].to_vec();
+        }
         info!("[BlockProcess] txns len: {}", txn.len());
         let excluded_txns = opened_block.push_txns(txn)?;
         for invalid_txn in &excluded_txns.discarded_txns {
@@ -477,23 +483,30 @@ where
             excluded_txns.untouched_txns.len()
         );
 
-        let left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
-        info!("[BlockProcess] left: {}", left);
-        if left > 0 {
-            let txn = self
-                .tx_provider
-                .get_txns_with_state(left, opened_block.state_root());
-            info!("[BlockProcess] read txns again: {}", txn.len());
-            let excluded_txns = opened_block.push_txns(txn)?;
-            for invalid_txn in &excluded_txns.discarded_txns {
-                self.tx_provider.remove_invalid_txn(invalid_txn.id());
-            }
-            info!(
-                "[BlockProcess] discarded againlen: {}, untouched txns len: {}",
-                excluded_txns.discarded_txns.len(),
-                excluded_txns.untouched_txns.len()
-            );
-        }
+        // let mut left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
+        // let mut count: u64 = 200;
+
+        // while left > 200 && count > 0 {
+        //     info!("[BlockProcess] left: {}", left);
+        // if left > 0 {
+        //     let txn = self
+        //         .tx_provider
+        //         .get_txns_with_state(left, opened_block.state_root());
+        //     info!("[BlockProcess] read txns again: {}", txn.len());
+        //     let excluded_txns = opened_block.push_txns(txn)?;
+        //     for invalid_txn in &excluded_txns.discarded_txns {
+        //         self.tx_provider.remove_invalid_txn(invalid_txn.id());
+        //     }
+        //     info!(
+        //         "[BlockProcess] discarded againlen: {}, untouched txns len: {}",
+        //         excluded_txns.discarded_txns.len(),
+        //         excluded_txns.untouched_txns.len()
+        //     );
+        // }
+        // left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
+        // count = count.saturating_sub(1);
+        // }
+
         info!(
             "[BlockProcess] included txns len: {}",
             opened_block.included_user_txns().len()
@@ -513,83 +526,84 @@ where
     fn fetch_transactions(
         &self,
         state_root: HashValue,
-        blue_blocks: &[Block],
+        _blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
         let pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
-        if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
-        }
+        // if pending_transactions.len() >= max_txns as usize {
+        //     return Ok(pending_transactions);
+        // }
 
-        let mut pending_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        pending_transactions.into_iter().for_each(|transaction| {
-            pending_transaction_map
-                .entry(transaction.sender())
-                .or_default()
-                .push(transaction);
-        });
+        // let mut pending_transaction_map =
+        //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+        // pending_transactions.into_iter().for_each(|transaction| {
+        //     pending_transaction_map
+        //         .entry(transaction.sender())
+        //         .or_default()
+        //         .push(transaction);
+        // });
 
-        let mut uncle_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        blue_blocks.iter().for_each(|block| {
-            block.transactions().iter().for_each(|transaction| {
-                uncle_transaction_map
-                    .entry(transaction.sender())
-                    .or_default()
-                    .push(transaction.clone());
-            })
-        });
+        // let mut uncle_transaction_map =
+        //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
+        // blue_blocks.iter().for_each(|block| {
+        //     block.transactions().iter().for_each(|transaction| {
+        //         uncle_transaction_map
+        //             .entry(transaction.sender())
+        //             .or_default()
+        //             .push(transaction.clone());
+        //     })
+        // });
 
-        for transactions in uncle_transaction_map.values_mut() {
-            if transactions.len() <= 1 {
-                continue;
-            }
+        // for transactions in uncle_transaction_map.values_mut() {
+        //     if transactions.len() <= 1 {
+        //         continue;
+        //     }
 
-            let mut index = 1;
-            while index < transactions.len() {
-                if transactions[index].sequence_number()
-                    != transactions[index - 1].sequence_number() + 1
-                {
-                    break;
-                }
-                index += 1;
-            }
-            transactions.truncate(index);
-        }
+        //     let mut index = 1;
+        //     while index < transactions.len() {
+        //         if transactions[index].sequence_number()
+        //             != transactions[index - 1].sequence_number() + 1
+        //         {
+        //             break;
+        //         }
+        //         index += 1;
+        //     }
+        //     transactions.truncate(index);
+        // }
 
-        for (sender, uncle_transactions) in uncle_transaction_map.iter() {
-            if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
-                let pending_last_seq = pending_transactions
-                    .last()
-                    .expect("transaction not found in pending transactions")
-                    .sequence_number();
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
-                {
-                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
-                }
-            } else if let Some(next_seq) = self
-                .tx_provider
-                .next_sequence_number_with_state(*sender, state_root)
-            {
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == next_seq)
-                {
-                    pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
-                } else {
-                    pending_transaction_map.insert(*sender, uncle_transactions.to_vec());
-                }
-            }
-        }
+        // for (sender, uncle_transactions) in uncle_transaction_map.iter() {
+        //     if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
+        //         let pending_last_seq = pending_transactions
+        //             .last()
+        //             .expect("transaction not found in pending transactions")
+        //             .sequence_number();
+        //         if let Some(index) = uncle_transactions
+        //             .iter()
+        //             .position(|transaction| transaction.sequence_number() == pending_last_seq)
+        //         {
+        //             pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
+        //         }
+        //     } else if let Some(next_seq) = self
+        //         .tx_provider
+        //         .next_sequence_number_with_state(*sender, state_root)
+        //     {
+        //         if let Some(index) = uncle_transactions
+        //             .iter()
+        //             .position(|transaction| transaction.sequence_number() == next_seq)
+        //         {
+        //             pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
+        //         } else {
+        //             pending_transaction_map.insert(*sender, uncle_transactions.to_vec());
+        //         }
+        //     }
+        // }
 
-        Ok(pending_transaction_map
-            .iter()
-            .flat_map(|(_sender, transactions)| transactions.clone())
-            .collect())
+        // Ok(pending_transaction_map
+        //     .iter()
+        //     .flat_map(|(_sender, transactions)| transactions.clone())
+        //     .collect())
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

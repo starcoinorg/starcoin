@@ -730,11 +730,11 @@ impl GenesisConfig {
     }
 }
 
-static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 1000;
+static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 100;
 static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 50;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static G_MIN_BLOCK_TIME_TARGET: u64 = 1000;
-static G_MAX_BLOCK_TIME_TARGET: u64 = 2000;
+static G_MIN_BLOCK_TIME_TARGET: u64 = 100;
+static G_MAX_BLOCK_TIME_TARGET: u64 = 500;
 pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
@@ -754,8 +754,8 @@ static G_DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
-pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_0040_000; //must big than maximum_number_of_gas_units
-pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 400;
+pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 500_040_000; //must big than maximum_number_of_gas_units
+pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 3000;
 
 pub static G_PRUNING_DEPTH: u64 = 17280;
 pub static G_PRUNING_FINALITY: u64 = 8640;

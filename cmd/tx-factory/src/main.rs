@@ -446,16 +446,16 @@ impl TxnMocker {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
             // account has enough STC
-            let start_balance = INITIAL_BALANCE * lack_len as u128;
-            let mut balance = state_reader.get_balance(self.account_address)?;
-            while balance.unwrap() < start_balance {
-                std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance(self.account_address)?;
-                info!(
-                    "account balance is {:?}, min is: {}",
-                    balance, start_balance
-                );
-            }
+            // let start_balance = INITIAL_BALANCE * lack_len as u128;
+            // let mut balance = state_reader.get_balance(self.account_address)?;
+            // while balance.unwrap() < start_balance {
+            //     std::thread::sleep(Duration::from_millis(1000));
+            //     balance = state_reader.get_balance(self.account_address)?;
+            //     info!(
+            //         "account balance is {:?}, min is: {}",
+            //         balance, start_balance
+            //     );
+            // }
             let lack = self.create_accounts(lack_len, batch_size)?;
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;

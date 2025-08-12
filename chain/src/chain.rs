@@ -473,7 +473,8 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        info!("execute dag block:{:?}", verified_block.block.header().id());
+        let block_id = verified_block.block.header().id();
+        info!("execute dag block:{:?}", block_id);
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
@@ -525,15 +526,18 @@ impl BlockChain {
                 .map(Transaction::UserTransaction),
         );
         watch(CHAIN_WATCH_NAME, "n21");
-        let statedb = self.statedb.fork_at(selected_head.header.state_root());
-        let epoch = get_epoch_from_statedb(&statedb)?;
+        if self.statedb.state_root() != selected_head.header.state_root() {
+            warn!("state root not equal to selected head state root, please ensure the state db is consistent before execution, avoid fork");
+            self.statedb = self.statedb.fork_at(selected_head.header.state_root());
+        }
+        assert_eq!(self.statedb.state_root(), selected_head.header.state_root());
+        let epoch = get_epoch_from_statedb(&self.statedb)?;
         info!(
-            "execute dag before, block id: {:?}, block time target in epoch: {:?}",
-            selected_head.header().id(),
-            epoch.block_time_target()
+            "execute transaction before entering vm, block id: {:?}",
+            block_id,
         );
         let executed_data = starcoin_executor::block_execute(
-            &statedb,
+            &self.statedb,
             transactions.clone(),
             epoch.block_gas_limit(), //TODO: Fix me
             self.vm_metrics.clone(),
@@ -593,7 +597,7 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
-        statedb
+        self.statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         // If chain state is matched, and accumulator is matched,
