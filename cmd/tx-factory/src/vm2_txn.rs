@@ -4,7 +4,7 @@
 use anyhow::{anyhow, Context};
 use starcoin_config::Connect;
 use starcoin_rpc_client::{AsyncRpcClient, ConnSource};
-use starcoin_tx_factory::vm2_txn_lib::{async_main, generate_cmd};
+use starcoin_tx_factory::vm2_txn_lib::{async_main, generate_cmd, FUNDING_ACCOUNT};
 use starcoin_vm2_types::account_address::AccountAddress;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -28,41 +28,26 @@ fn main() -> anyhow::Result<()> {
     let sub_cmd = args.next().context("sub command")?;
     let handle = match sub_cmd.as_str() {
         "generate" => {
-            let node_url = args.next().context("node url")?;
-            let csv_path = args.next().context("csv file path")?;
+            let account_path = args.next().context("account file path")?;
             let count = args
                 .next()
                 .context("count of transactions to generate")?
                 .parse::<usize>()
                 .context("invalid count")?;
-            let password = args.next();
-            let client = rt.block_on(create_client(&node_url))?;
 
-            rt.spawn(generate_cmd(Arc::new(client), csv_path, count, password))
+            rt.spawn(generate_cmd(account_path, count))
         }
         "run" => {
             let node_url = args.next().context("node url")?;
-            let funding = args
-                .next()
-                .context("funding account address")?
-                .parse::<AccountAddress>()
-                .context("invalid account")?;
-            let funding_password = args.next().expect("funding password");
+            let account_path = args.next().context("account file path")?;
             let target_address = args
                 .next()
-                .context("target account address")?
-                .parse::<AccountAddress>()
-                .context("invalid target account")?;
-            let csv_path = args.next().context("csv file path")?;
+                .map(|s| s.parse::<AccountAddress>())
+                .transpose()?
+                .unwrap_or(FUNDING_ACCOUNT.address());
             let client = rt.block_on(create_client(&node_url))?;
 
-            rt.spawn(async_main(
-                Arc::new(client),
-                funding,
-                funding_password,
-                target_address,
-                csv_path,
-            ))
+            rt.spawn(async_main(Arc::new(client), target_address, account_path))
         }
         _ => return Err(anyhow!("Unknown command: {}", sub_cmd)),
     };

@@ -13,32 +13,63 @@
 //    and mark items as finished on the event stream.
 //
 use anyhow::{anyhow, Result};
-use csv::{ReaderBuilder, WriterBuilder};
+use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{info, warn};
 use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
+use starcoin_vm2_account_api::{AccountPrivateKey, AccountPublicKey};
+use starcoin_vm2_crypto::{keygen::KeyGen, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_vm2_transaction_builder::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
+use starcoin_vm2_types::account_address;
 use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm2_types::view::TransactionStatusView;
-use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
-const DEFAULT_PASSWORD: &str = "password"; // Default password for new accounts
 const INITIAL_BALANCE: u128 = 1_000_000_000;
 const DEFAULT_AMOUNT: u128 = 1_000; // Default amount to transfer
 const MIN_GAS_AMOUNT: u64 = 10_000_000; // max gas
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct AccountEntry {
+//"ok": {
+//   "account": "0x047e2d5eeb825c80ffa986b6cd0b521d",
+//   "private_key": "0x57bc2570de3bfe939ad6127d17d5b81db99a4bf4282cea5406fb7149e7ae67c5"
+// }
+pub static FUNDING_ACCOUNT: Lazy<AccountEntry> = Lazy::new(|| {
+    let private_key_str = "0x57bc2570de3bfe939ad6127d17d5b81db99a4bf4282cea5406fb7149e7ae67c5";
+    let private_key = AccountPrivateKey::from_encoded_string(private_key_str)
+        .expect("Invalid funding private key");
+    let public_key = private_key.public_key();
+    let address = public_key.derived_address();
+    AccountEntry {
+        address,
+        public_key,
+        private_key,
+    }
+});
+
+// 在 async 函数中直接用 &*FUNDING_ACCOUNT 即可
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountEntry {
     address: AccountAddress,
-    password: String,
+    public_key: AccountPublicKey,
+    private_key: AccountPrivateKey,
+}
+
+impl AccountEntry {
+    pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        let signature = self.private_key.sign(&raw_txn)?;
+        Ok(SignedUserTransaction::new(raw_txn, signature))
+    }
+    pub fn address(&self) -> AccountAddress {
+        self.address
+    }
 }
 
 enum AccountState {
@@ -49,66 +80,49 @@ enum AccountState {
     Error(String),
 }
 
-/// Load AccountAddress,Password tuples from csv file.
-fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
-    if !path.as_ref().exists() {
-        return Ok(Vec::new());
+/// Load Account from file
+async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
+    let file = match File::open(&path).await {
+        Ok(f) => f,
+        Err(_) => return Ok(Vec::new()),
+    };
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut accounts = Vec::new();
+    while let Some(line) = lines.next_line().await? {
+        let private_key = AccountPrivateKey::from_encoded_string(&line)?;
+        let ae = AccountEntry {
+            address: private_key.public_key().derived_address(),
+            public_key: private_key.public_key(),
+            private_key,
+        };
+        accounts.push(ae);
     }
-    let mut rdr = ReaderBuilder::new().has_headers(false).from_path(path)?;
-    let mut out = Vec::new();
-    for result in rdr.deserialize() {
-        let entry: AccountEntry = result?;
-        out.push(entry);
-    }
-    Ok(out)
+
+    Ok(accounts)
 }
 
-/// Append a new account line to csv.
-fn append_account<P: AsRef<Path>>(path: P, account: &AccountEntry) -> Result<()> {
-    let mut wtr = WriterBuilder::new()
-        .has_headers(false)
-        .from_writer(OpenOptions::new().create(true).append(true).open(path)?);
-    wtr.serialize(account)?;
-    wtr.flush()?;
+/// Append a new account line.
+async fn append_account<P: AsRef<Path>>(path: P, account: &AccountEntry) -> Result<()> {
+    let encoded = account.private_key.to_encoded_string()?;
+    let mut file = File::options().append(true).create(true).open(path).await?;
+    file.write_all(format!("{}\n", encoded).as_bytes()).await?;
     Ok(())
 }
 
-/// Create a fresh account locally and persist its credentials.
-async fn create_account(
-    client: &AsyncRpcClient,
-    csv_path: &str,
-    password: &str,
-) -> Result<AccountEntry> {
-    // Generate a new mnemonic / keypair via RPC (or locally, then import).
-    let address = client.account_create(password.to_owned()).await?.address;
+/// Create a fresh account locally
+async fn create_account(account_path: &str) -> Result<AccountEntry> {
+    let mut key_gen = KeyGen::from_os_rng();
+    let (private_key, public_key) = key_gen.generate_keypair();
+    let address = account_address::from_public_key(&public_key);
+    let account_public_key = AccountPublicKey::Single(public_key);
     let entry = AccountEntry {
         address,
-        password: password.to_string(),
+        public_key: account_public_key,
+        private_key: AccountPrivateKey::Single(private_key),
     };
-    append_account(csv_path, &entry)?;
+    append_account(account_path, &entry).await?;
     Ok(entry)
-}
-
-/// Unlock an account; retry a few times on failure.
-async fn unlock_account(client: &AsyncRpcClient, account: &AccountEntry) -> Result<()> {
-    const MAX_RETRY: usize = 3;
-    for _ in 0..MAX_RETRY {
-        let ok = client
-            .account_unlock(
-                account.address,
-                account.password.clone(),
-                Duration::from_secs(30),
-            )
-            .await
-            .is_ok();
-        if ok {
-            info!("Unlocked account {}", account.address);
-            return Ok(());
-        }
-        warn!("unlock failed, retrying...");
-        sleep(Duration::from_millis(500)).await;
-    }
-    Err(anyhow!("unable to unlock account {}", account.address))
 }
 
 /// Ensure balance >= min_balance (in STC nano).
@@ -131,8 +145,6 @@ async fn ensure_balance(
     let node_info = client.node_info().await?;
     let chain_id = node_info.net.chain_id().id();
     let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
-    // unlock funding account
-    unlock_account(client, funding).await?;
     // build & send funding txn (sync call for simplicity)
     let txn_hash = create_and_submit(client, funding, account, need, timestamp, chain_id).await?;
     wait_txn_confirmed(client, txn_hash).await
@@ -184,7 +196,7 @@ async fn create_and_submit(
         timestamp,
         chain_id.into(), // chain ID
     );
-    let signed = client.account_sign_txn(raw, from.address).await?;
+    let signed = from.sign_txn(raw)?;
     let hash = client.submit_txn(signed).await?;
     Ok(hash)
 }
@@ -194,54 +206,22 @@ async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -
     Ok(state_reader.get_balance(address).await?.unwrap_or(0))
 }
 
-async fn generate_accounts(
-    client: &AsyncRpcClient,
-    csv_path: &str,
-    count: usize,
-    password: Option<&str>,
-) -> Result<()> {
-    let existed_accounts = load_accounts(csv_path)?;
-    let mut changed = false;
-    let mut filtered_accounts: Vec<AccountEntry> = Vec::new();
-    for account in existed_accounts {
-        let unlocked = unlock_account(client, &account).await.is_ok();
-        if unlocked {
-            filtered_accounts.push(account);
-        } else {
-            warn!(
-                "Failed to unlock account {}, removing from list",
-                account.address
-            );
-            changed = true;
-        }
-    }
-    let existed = filtered_accounts.len();
-    if changed {
-        let file = File::create(csv_path).await?;
-        drop(file);
-        for account in filtered_accounts {
-            append_account(csv_path, &account)?;
-        }
-    }
+async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
+    let existed_accounts = load_accounts(account_path).await?;
+    let existed = existed_accounts.len();
     // todo: handle duplicated accounts
-    let password = password.unwrap_or(DEFAULT_PASSWORD);
     for _ in 0..count - existed {
-        let entry = create_account(client, csv_path, password).await?;
+        let entry = create_account(account_path).await?;
         info!("Created account {}", entry.address);
     }
     Ok(())
 }
 
-pub async fn generate_cmd(
-    client: Arc<AsyncRpcClient>,
-    csv_path: String,
-    count: usize,
-    password: Option<String>,
-) -> Result<()> {
-    if fs::try_exists(&csv_path).await? && !fs::metadata(&csv_path).await?.is_file() {
-        return Err(anyhow!("{} is not a file", csv_path));
+pub async fn generate_cmd(account_path: String, count: usize) -> Result<()> {
+    if fs::try_exists(&account_path).await? && !fs::metadata(&account_path).await?.is_file() {
+        return Err(anyhow!("{} is not a file", account_path));
     }
-    generate_accounts(&client, &csv_path, count, password.as_deref()).await
+    generate_accounts(&account_path, count).await
 }
 
 async fn account_worker(
@@ -281,12 +261,6 @@ async fn account_worker(
                         continue;
                     }
                 };
-                if let Err(e) = unlock_account(&client, &entry).await {
-                    warn!("unlock error {e}");
-                    state = AccountState::Error(format!("unlock: {e}"));
-                    sleep(Duration::from_secs(1)).await;
-                    continue;
-                }
                 let chain_id = node_info.net.chain_id().id();
                 let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
                 match create_and_submit(
@@ -347,43 +321,31 @@ async fn account_worker(
 }
 async fn balancer_worker(
     client: Arc<AsyncRpcClient>,
-    funding: AccountEntry,
+    funding: &AccountEntry,
     min_balance: u128,
     mut rx: mpsc::Receiver<AccountAddress>,
 ) {
     while let Some(account) = rx.recv().await {
-        if let Err(e) = ensure_balance(&client, account, &funding, min_balance).await {
+        if let Err(e) = ensure_balance(&client, account, funding, min_balance).await {
             warn!("balancer error {e}");
         }
     }
 }
 pub async fn async_main(
     client: Arc<AsyncRpcClient>,
-    funding: AccountAddress,
-    funding_pw: String,
     target: AccountAddress,
-    csv_path: String,
+    account_path: String,
 ) -> Result<()> {
     let min_balance: u128 = INITIAL_BALANCE;
+    let funding = &*FUNDING_ACCOUNT;
 
-    let accounts = load_accounts(&csv_path)?;
-
-    let funding_entry = AccountEntry {
-        address: funding,
-        password: funding_pw,
-    };
-
-    let mut test_accounts = accounts
-        .iter()
-        .filter(|a| a.address != funding)
-        .cloned()
-        .collect::<Vec<_>>();
-    test_accounts.shuffle(&mut rand::thread_rng());
+    let mut accounts = load_accounts(&account_path).await?;
+    accounts.shuffle(&mut rand::thread_rng());
 
     let (tx, rx) = mpsc::channel(10240);
 
     let mut handles = Vec::new();
-    for entry in test_accounts {
+    for entry in accounts {
         let handle = tokio::spawn({
             let client = Arc::clone(&client);
             let tx_amount = DEFAULT_AMOUNT;
@@ -397,7 +359,7 @@ pub async fn async_main(
     let balancer = tokio::spawn({
         let client = Arc::clone(&client);
         async move {
-            balancer_worker(client, funding_entry, min_balance, rx).await;
+            balancer_worker(client, funding, min_balance, rx).await;
         }
     });
     handles.push(balancer);

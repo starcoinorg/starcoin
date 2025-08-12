@@ -27,6 +27,10 @@ serde = { workspace = true }
 rand = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+once_cell = { workspace = true }
 
 [package]
 authors = { workspace = true }
