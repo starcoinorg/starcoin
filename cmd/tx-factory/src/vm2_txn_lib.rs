@@ -26,12 +26,13 @@ use starcoin_vm2_types::account_address;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm2_types::view::TransactionStatusView;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tokio::time::{sleep, Duration};
 
 const INITIAL_BALANCE: u128 = 1_000_000_000;
@@ -55,7 +56,6 @@ pub static FUNDING_ACCOUNT: Lazy<AccountEntry> = Lazy::new(|| {
     }
 });
 
-// 在 async 函数中直接用 &*FUNDING_ACCOUNT 即可
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountEntry {
     address: AccountAddress,
@@ -76,9 +76,14 @@ impl AccountEntry {
 enum AccountState {
     Initial,
     Ready,
-    Submitted(HashValue),
+    Submitted((HashValue, oneshot::Receiver<Result<()>>)),
     Finished,
     Error(String),
+}
+
+struct TxnReceipt {
+    txn_hash: HashValue,
+    response_tx: oneshot::Sender<Result<()>>,
 }
 
 /// Load Account from file
@@ -232,10 +237,11 @@ async fn account_worker(
     min_balance: u128,
     tx_amount: u128,
     tx: mpsc::Sender<AccountAddress>,
+    tx1: mpsc::Sender<TxnReceipt>,
 ) {
     let mut state = AccountState::Initial;
     loop {
-        match &state {
+        match &mut state {
             AccountState::Initial => {
                 let bal = account_get_balance(&client, entry.address).await;
                 let Ok(bal) = bal else {
@@ -276,7 +282,14 @@ async fn account_worker(
                 {
                     Ok(hash) => {
                         info!("submitted txn {hash} for {}", entry.address);
-                        state = AccountState::Submitted(hash);
+                        let (tx, rx) = oneshot::channel();
+                        tx1.send(TxnReceipt {
+                            txn_hash: hash,
+                            response_tx: tx,
+                        })
+                        .await
+                        .expect("Failed to send txn receipt");
+                        state = AccountState::Submitted((hash, rx));
                     }
                     Err(e) => {
                         warn!("submit error {e}");
@@ -284,28 +297,17 @@ async fn account_worker(
                     }
                 }
             }
-            AccountState::Submitted(hash) => match client.chain_get_transaction_info(*hash).await {
-                Ok(Some(info)) => {
-                    match info.status {
-                        TransactionStatusView::Executed => {
-                            info!("txn executed {:?}", info.transaction_hash);
-                        }
-                        TransactionStatusView::OutOfGas => {
-                            warn!(
-                                "txn executed failed because of OutOfGas {:?}",
-                                info.transaction_hash
-                            );
-                        }
-                        _ => (),
-                    }
+            AccountState::Submitted((txn_hash, ref mut rx)) => match rx.try_recv() {
+                Ok(_) => {
+                    info!("txn {txn_hash} confirmed for {}", entry.address);
                     state = AccountState::Finished;
                 }
-                Ok(None) => {
-                    sleep(Duration::from_secs(1)).await;
+                Err(oneshot::error::TryRecvError::Empty) => {
+                    sleep(Duration::from_millis(100)).await;
                 }
-                Err(e) => {
-                    warn!("poll error {e}");
-                    state = AccountState::Error(format!("poll: {e}"));
+                Err(_) => {
+                    warn!("failed to receive confirmation for txn {txn_hash}");
+                    state = AccountState::Error("confirmation channel closed".to_string());
                 }
             },
             AccountState::Finished => {
@@ -332,7 +334,10 @@ async fn balancer_worker(
         }
     }
 }
-async fn info_worker(client: Arc<AsyncRpcClient>) {
+async fn txn_confirmer(client: Arc<AsyncRpcClient>, mut rx: mpsc::Receiver<TxnReceipt>) {
+    let mut confirmed_txns = BTreeSet::new();
+    let mut unconfirmed_txns = BTreeMap::new();
+
     loop {
         let Ok(mut stream) = client.subscribe_new_blocks().await else {
             warn!("Failed to subscribe to new blocks");
@@ -341,15 +346,37 @@ async fn info_worker(client: Arc<AsyncRpcClient>) {
         };
 
         loop {
-            match stream.try_next().await {
-                Ok(None) => break,
-                Ok(Some(event)) => {
-                    info!("New block event: {:?}", event);
+            tokio::select! {
+                Some(receipt) = rx.recv() => {
+                    let txn_hash = receipt.txn_hash;
+                    if confirmed_txns.remove(&txn_hash) {
+                       receipt.response_tx.send(Ok(())).expect("Failed to send confirmation for txn");
+                    } else {
+                        unconfirmed_txns.insert(txn_hash, receipt);
+                    }
                 }
-                Err(e) => {
-                    warn!("Error receiving new block event: {}", e);
-                    break; // Exit the inner loop to re-subscribe
+                v = stream.try_next() => {
+                    match v {
+                        Ok(None) => break,
+                        Ok(Some(event)) => {
+                            let mut txns = event.body.txn_hashes();
+                            txns.retain(|hash| {
+                                if let Some(receipt) = unconfirmed_txns.remove(hash) {
+                                    receipt.response_tx.send(Ok(())).expect("Failed to send confirmation for txn");
+                                    false
+                                } else {
+                                    true
+                                }
+                            });
+                            confirmed_txns.extend(txns);
+                        }
+                        Err(e) => {
+                            warn!("Error receiving new block event: {}", e);
+                            break; // Exit the inner loop to re-subscribe
+                        }
+                    }
                 }
+
             }
         }
     }
@@ -366,23 +393,25 @@ pub async fn async_main(
     accounts.shuffle(&mut rand::thread_rng());
 
     let (tx, rx) = mpsc::channel(10240);
+    let (confirm_tx, confirm_rx) = mpsc::channel(10240);
 
     let mut handles = Vec::new();
-    let info_worker = tokio::spawn({
+    let txn_confirmer = tokio::spawn({
         let client = Arc::clone(&client);
         async move {
-            info_worker(client).await;
+            txn_confirmer(client, confirm_rx).await;
         }
     });
-    handles.push(info_worker);
+    handles.push(txn_confirmer);
 
     for entry in accounts {
         let handle = tokio::spawn({
             let client = Arc::clone(&client);
             let tx_amount = DEFAULT_AMOUNT;
             let tx = tx.clone();
+            let tx1 = confirm_tx.clone();
             async move {
-                account_worker(client, entry, target, min_balance, tx_amount, tx).await;
+                account_worker(client, entry, target, min_balance, tx_amount, tx, tx1).await;
             }
         });
         handles.push(handle);
