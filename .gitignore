@@ -1,7 +1,6 @@
 **/target
 /target
 public
-resources
 **/*.rs.bk
 
 # macOS Specific ignores
@@ -47,4 +46,4 @@ build/
 
 # CI experimental mold binary
 mold
-.claude
+.claude/*
