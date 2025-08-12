@@ -23,7 +23,9 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()
         .expect("tokio runtime");
-    starcoin_logger::init();
+    let handle = starcoin_logger::init();
+    handle.enable_file("tx-factory.log".into(), 10 * 1024 * 1024, 7);
+    handle.disable_stderr();
     let mut args = std::env::args().skip(1);
     let sub_cmd = args.next().context("sub command")?;
     let handle = match sub_cmd.as_str() {
