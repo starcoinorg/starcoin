@@ -1,0 +1,18 @@
+//# init -n dev
+
+//# faucet --addr alice --amount 100000000000000000
+
+//# run --signers alice
+script {
+    use std::fixed_point32;
+
+    fun main() {
+        let f1 = fixed_point32::create_from_raw_value(1); // 0x0.00000001
+        // Divide 2^32 by the minimum fractional value. This should overflow.
+        let overflow = fixed_point32::divide_u64(4294967296, copy f1);
+        // The above should fail at runtime so that the following assertion
+        // is never even tested.
+        assert!(overflow == 999, 1);
+    }
+}
+// check: "Keep(ABORTED { code: 26120"

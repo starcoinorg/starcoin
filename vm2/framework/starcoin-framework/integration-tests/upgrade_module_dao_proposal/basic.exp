@@ -1,0 +1,87 @@
+processed 19 tasks
+
+task 5 'run'. lines 58-80:
+{
+  "gas_used": 1566239,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 82-99:
+{
+  "gas_used": 1464397,
+  "status": "Executed"
+}
+
+task 7 'run'. lines 100-110:
+{
+  "gas_used": 25441,
+  "status": "Executed"
+}
+
+task 8 'run'. lines 112-128:
+{
+  "gas_used": 207203,
+  "status": "Executed"
+}
+
+task 9 'run'. lines 130-142:
+{
+  "gas_used": 45584,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao_upgrade_module_proposal"
+        }
+      },
+      "abort_code": "262545"
+    }
+  }
+}
+
+task 10 'run'. lines 145-158:
+{
+  "gas_used": 47695,
+  "status": "Executed"
+}
+
+task 11 'run'. lines 161-181:
+{
+  "gas_used": 164384,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66938"
+    }
+  }
+}
+
+task 12 'run'. lines 183-202:
+{
+  "gas_used": 1246073,
+  "status": "Executed"
+}
+
+task 14 'run'. lines 207-242:
+{
+  "gas_used": 1178009,
+  "status": "Executed"
+}
+
+task 16 'run'. lines 247-261:
+{
+  "gas_used": 62412,
+  "status": "Executed"
+}
+
+task 18 'run'. lines 265-281:
+{
+  "gas_used": 100832,
+  "status": "Executed"
+}

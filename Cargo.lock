@@ -421,7 +421,7 @@ dependencies = [
  "base64 0.13.1",
  "bcs 0.1.4",
  "blst",
- "bulletproofs",
+ "bulletproofs 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 1.6.1",
  "crypto-common 0.1.0",
  "curve25519-dalek 3.2.0",
@@ -1447,6 +1447,25 @@ name = "bulletproofs"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40e698f1df446cc6246afd823afbe2d121134d089c9102c1dd26d1264991ba32"
+dependencies = [
+ "byteorder",
+ "clear_on_drop",
+ "curve25519-dalek-ng",
+ "digest 0.9.0",
+ "merlin",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde 1.0.205",
+ "serde_derive",
+ "sha3",
+ "subtle-ng",
+ "thiserror",
+]
+
+[[package]]
+name = "bulletproofs"
+version = "4.0.0"
+source = "git+https://github.com/zkcrypto/bulletproofs?tag=4.0.0#10ff5f373794eb7e828286d3200cf210eed166be"
 dependencies = [
  "byteorder",
  "clear_on_drop",
@@ -3063,6 +3082,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dir-diff"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7ad16bf5f84253b50d6557681c58c3ab67c47c77d39fed9aeb56e947290bd10"
+dependencies = [
+ "walkdir",
+]
+
+[[package]]
 name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3317,7 +3345,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "778e2ac28f6c47af28e4907f13ffd1e1ddbd400980a9abd7c8df189bf578a5ad"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3491,6 +3519,12 @@ name = "fiat-crypto"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
+
+[[package]]
+name = "file_diff"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31a7a908b8f32538a2143e59a6e4e2508988832d5d4d6f7c156b3cbc762643a5"
 
 [[package]]
 name = "filetime"
@@ -10259,7 +10293,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -11484,12 +11518,13 @@ dependencies = [
 [[package]]
 name = "starcoin-cached-packages"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
+ "proptest",
+ "proptest-derive 0.3.0",
  "starcoin-framework 0.1.0",
  "starcoin-package-builder",
  "starcoin-vm-types",
@@ -12125,7 +12160,6 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "ark-bls12-381",
@@ -12137,8 +12171,9 @@ dependencies = [
  "bcs 0.1.5",
  "better_any",
  "blake2-rfc",
- "bulletproofs",
+ "bulletproofs 4.0.0 (git+https://github.com/zkcrypto/bulletproofs?tag=4.0.0)",
  "byteorder",
+ "claims",
  "clap 4.5.43",
  "codespan-reporting",
  "curve25519-dalek-ng",
@@ -12154,7 +12189,6 @@ dependencies = [
  "move-cli 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-compiler-v2",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-docgen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12163,10 +12197,12 @@ dependencies = [
  "move-prover-boogie-backend 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-prover-bytecode-pipeline",
  "move-stackless-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-unit-test 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "num-traits 0.2.19",
  "once_cell",
+ "rand 0.7.3",
  "rand 0.8.5",
  "rand_core 0.5.1",
  "ripemd",
@@ -12185,6 +12221,7 @@ dependencies = [
  "starcoin-native-interface",
  "starcoin-sdk-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
  "tempfile",
@@ -12308,7 +12345,6 @@ dependencies = [
  "starcoin-storage 1.13.19",
  "starcoin-storage 2.0.1",
  "starcoin-transaction-builder 1.13.19",
- "starcoin-transaction-builder 2.0.1",
  "starcoin-types",
  "starcoin-vm-types",
  "starcoin-vm1-types",
@@ -12618,9 +12654,10 @@ dependencies = [
 [[package]]
 name = "starcoin-move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
+ "dir-diff",
+ "file_diff",
  "include_dir",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12630,7 +12667,7 @@ dependencies = [
  "sha3",
  "smallvec 1.10.0",
  "starcoin-gas-schedule",
- "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
+ "starcoin-logger 1.13.19",
  "starcoin-native-interface",
  "tempfile",
 ]
@@ -13574,7 +13611,6 @@ dependencies = [
 [[package]]
 name = "starcoin-table-natives"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "better_any",
  "bytes 1.6.1",
@@ -14666,7 +14702,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix 1.0.8",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

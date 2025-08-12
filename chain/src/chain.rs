@@ -2070,7 +2070,7 @@ impl BlockChain {
         let epoch = get_epoch_from_statedb(&statedb2)?;
         
         // Execute VM1 transactions
-        let mut executed_data = if !transactions.is_empty() {
+        let executed_data = if !transactions.is_empty() {
             starcoin_executor::block_execute(
                 &statedb,
                 transactions.clone(),

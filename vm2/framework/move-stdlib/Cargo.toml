@@ -1,0 +1,34 @@
+[package]
+name = "starcoin-move-stdlib"
+version = "0.1.1"
+edition = "2021"
+authors = ["Starcoin Association <opensource@starcoinorg.com>"]
+description = "Starcoin stdlib"
+repository = "https://github.com/starcoinorg/starcoin"
+homepage = "https://starcoin.org"
+license = "Apache-2.0"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+anyhow = { workspace = true }
+include_dir = { workspace = true }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+once_cell = { workspace = true }
+sha2 = "0.9.3"
+sha3 = "0.9.1"
+smallvec = { workspace = true }
+starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-logger = { workspace = true }
+starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
+tempfile = { workspace = true }
+
+[dev-dependencies]
+dir-diff = "0.3.2"
+file_diff = "1.0.0"
+tempfile = "3.2.0"
+
+[features]
+testing = []

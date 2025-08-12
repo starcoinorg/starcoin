@@ -1,0 +1,16 @@
+[package]
+name = "StarcoinFramework"
+version = "1.0.0"
+
+[addresses]
+std = "0x1"
+starcoin_std = "0x1"
+starcoin_framework = "0x1"
+starcoin_fungible_asset = "0x1"
+starcoin_token = "0x1"
+core_resources = "0xA550C18"
+vm_reserved = "0x0"
+
+[dependencies]
+StarcoinStdlib = { local = "../starcoin-stdlib" }
+MoveStdlib = { local = "../move-stdlib" }

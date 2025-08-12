@@ -1,0 +1,13 @@
+[package]
+name = "StarcoinTokenObjects"
+version = "1.0.0"
+
+[addresses]
+std = "0x1"
+starcoin_std = "0x1"
+starcoin_framework = "0x1"
+starcoin_token_objects = "0x1"
+
+[dependencies]
+MoveStdlib = { local = "../move-stdlib" }
+StarcoinFramework = { local = "../starcoin-framework"}

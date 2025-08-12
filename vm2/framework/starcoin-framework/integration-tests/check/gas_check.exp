@@ -1,0 +1,29 @@
+processed 5 tasks
+
+task 2 'run'. lines 5-14:
+{
+  "gas_used": 1000,
+  "status": "OutOfGas"
+}
+
+task 3 'run'. lines 17-26:
+{
+  "gas_used": 0,
+  "status": {
+    "Discard": {
+      "status_code": "14",
+      "status_code_name": "MAX_GAS_UNITS_BELOW_MIN_TRANSACTION_GAS_UNITS"
+    }
+  }
+}
+
+task 4 'run'. lines 29-38:
+{
+  "gas_used": 0,
+  "status": {
+    "Discard": {
+      "status_code": "13",
+      "status_code_name": "MAX_GAS_UNITS_EXCEEDS_MAX_GAS_UNITS_BOUND"
+    }
+  }
+}

@@ -1,0 +1,125 @@
+processed 12 tasks
+
+task 3 'run'. lines 8-27:
+{
+  "gas_used": 1922786,
+  "status": "Executed"
+}
+
+task 4 'run'. lines 30-70:
+{
+  "gas_used": 1102916,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "system_addresses"
+        }
+      },
+      "abort_code": "327683"
+    }
+  }
+}
+
+task 5 'run'. lines 73-107:
+{
+  "gas_used": 1182504,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_validation"
+        }
+      },
+      "abort_code": "66540"
+    }
+  }
+}
+
+task 6 'run'. lines 110-145:
+{
+  "gas_used": 364278,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_validation"
+        }
+      },
+      "abort_code": "66537"
+    }
+  }
+}
+
+task 7 'run'. lines 148-187:
+{
+  "gas_used": 1189687,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_validation"
+        }
+      },
+      "abort_code": "66539"
+    }
+  }
+}
+
+task 8 'run'. lines 190-245:
+{
+  "gas_used": 2389553,
+  "status": "Executed"
+}
+
+task 9 'run'. lines 248-287:
+{
+  "gas_used": 1141651,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_validation"
+        }
+      },
+      "abort_code": "66538"
+    }
+  }
+}
+
+task 10 'run'. lines 290-330:
+{
+  "gas_used": 1085681,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_validation"
+        }
+      },
+      "abort_code": "132082"
+    }
+  }
+}
+
+task 11 'run'. lines 333-374:
+{
+  "gas_used": 281131,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "system_addresses"
+        }
+      },
+      "abort_code": "327683"
+    }
+  }
+}

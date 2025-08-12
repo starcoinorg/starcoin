@@ -21,11 +21,11 @@ num_enum = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-framework" }
+starcoin-framework = { path = "../framework" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm-types" }
-starcoin-move-stdlib = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-move-stdlib" }
-starcoin-table-natives = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-table-natives" }
+starcoin-move-stdlib = { path = "../framework/move-stdlib" }
+starcoin-table-natives = { path = "../framework/table-natives" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
@@ -51,7 +51,7 @@ move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6
 [dev-dependencies]
 #stdlib = { workspace = true }
 claims = { workspace = true }
-starcoin-cached-packages = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-cached-packages" }
+starcoin-cached-packages = { path = "../framework/cached-packages" }
 
 
 [features]
