@@ -42,7 +42,6 @@ use starcoin_vm_types::transaction::{
 };
 
 static G_HISTORY_FILE_NAME: &str = "history";
-static G_TXN_FACTORY_ACCOUNTS_FILE_NAME: &str = "txn_factory_accounts";
 
 pub struct CliState {
     net: ChainNetworkID,
@@ -126,10 +125,6 @@ impl CliState {
 
     pub fn history_file(&self) -> PathBuf {
         self.data_dir().join(G_HISTORY_FILE_NAME)
-    }
-
-    pub fn txn_factory_accounts_file(&self) -> PathBuf {
-        self.data_dir().join(G_TXN_FACTORY_ACCOUNTS_FILE_NAME)
     }
 
     pub fn node_handle(&self) -> Option<&NodeHandle> {
