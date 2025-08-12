@@ -24,6 +24,8 @@ pub struct BlockMetadata {
     pub uncles: u64,
     // Parents hash for DAG
     pub parents_hash: Vec<u8>,
+    // Red blocks count for DAG
+    pub red_blocks: u64,
     // Handle where events with the time of new blocks are emitted
     pub new_block_events: EventHandle,
 }

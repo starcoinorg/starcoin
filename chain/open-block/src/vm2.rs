@@ -21,7 +21,11 @@ use starcoin_vm2_types::{
     },
 };
 
-fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata) -> BlockMetadata {
+fn convert_block_meta_with_dag(
+    block_meta: starcoin_types::block_metadata::BlockMetadata, 
+    parents_hash: Vec<HashValue>,
+    red_blocks: u64,
+) -> BlockMetadata {
     let (
         parent_hash,
         timestamp,
@@ -31,8 +35,6 @@ fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata)
         number,
         chain_id,
         parent_gas_used,
-        parents_hash,
-        red_blocks,
     ) = block_meta.into_inner();
     let author = AccountAddress::new(author.into_bytes());
     BlockMetadata::new(
@@ -49,10 +51,10 @@ fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata)
 }
 
 impl OpenedBlock {
-    pub fn initialize_v2(&mut self) -> anyhow::Result<()> {
+    pub fn initialize_v2(&mut self, parents_hash: Vec<HashValue>, red_blocks: u64) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         let block_metadata_txn =
-            Transaction2::BlockMetadata(convert_block_meta(self.block_meta.clone()));
+            Transaction2::BlockMetadata(convert_block_meta_with_dag(self.block_meta.clone(), parents_hash, red_blocks));
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results = do_execute_block_transactions(
             state,
@@ -91,7 +93,7 @@ impl OpenedBlock {
     ) -> anyhow::Result<ExcludedTxns> {
         // if the vm2 block meta has not been executed, do it first.
         if !self.vm2_initialized {
-            self.initialize_v2()?;
+            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
         }
         let state = &self.state.1;
         let mut txns = user_txns

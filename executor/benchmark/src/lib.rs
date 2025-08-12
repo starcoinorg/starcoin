@@ -122,8 +122,6 @@ impl TransactionGenerator {
                 self.block_number,
                 self.net.chain_id(),
                 0,
-                vec![HashValue::random()],  // TODO: DAG - use proper parents_hash after DAG merge
-                0,  // TODO: DAG - use proper red_blocks after DAG merge
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
@@ -168,8 +166,6 @@ impl TransactionGenerator {
                 self.block_number,
                 self.net.chain_id(),
                 0,
-                vec![HashValue::random()],  // TODO: DAG - use proper parents_hash after DAG merge
-                0,  // TODO: DAG - use proper red_blocks after DAG merge
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));

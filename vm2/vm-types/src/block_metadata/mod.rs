@@ -4,13 +4,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod legacy;
-
 use crate::account_address::AccountAddress;
 use crate::account_config::genesis_address;
 use crate::genesis_config::ChainId;
 use bcs_ext::Sample;
-pub use legacy::BlockMetadata as LegacyBlockMetadata;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{
@@ -188,3 +185,4 @@ impl Sample for BlockMetadata {
         )
     }
 }
+

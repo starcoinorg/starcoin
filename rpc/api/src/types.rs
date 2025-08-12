@@ -706,8 +706,6 @@ impl From<BlockMetadata> for BlockMetadataView {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash,
-            red_blocks,
         ) = origin.into_inner();
         BlockMetadataView {
             parent_hash,
@@ -718,8 +716,9 @@ impl From<BlockMetadata> for BlockMetadataView {
             number: number.into(),
             chain_id: chain_id.id(),
             parent_gas_used: parent_gas_used.into(),
-            parents_hash,
-            red_blocks: red_blocks.into(),
+            // VM1's BlockMetadata doesn't have DAG fields, use defaults
+            parents_hash: vec![parent_hash],
+            red_blocks: 0u64.into(),
         }
     }
 }
@@ -736,8 +735,8 @@ impl Into<BlockMetadata> for BlockMetadataView {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash,
-            red_blocks,
+            parents_hash: _,  // DAG field not used in VM1
+            red_blocks: _,    // DAG field not used in VM1
         } = self;
         BlockMetadata::new(
             parent_hash,
@@ -748,8 +747,6 @@ impl Into<BlockMetadata> for BlockMetadataView {
             number.0,
             genesis_config::ChainId::new(chain_id),
             parent_gas_used.0,
-            parents_hash,
-            red_blocks.0,
         )
     }
 }

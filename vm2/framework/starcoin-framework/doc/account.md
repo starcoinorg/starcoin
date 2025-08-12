@@ -3,6 +3,7 @@
 
 # Module `0x1::account`
 
+Test modification to trigger rebuild
 
 
 -  [Struct `KeyRotation`](#0x1_account_KeyRotation)

@@ -534,7 +534,7 @@ impl BlockChain {
                 Some(parent) => {
                     let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
                     if header.number() < vm1_offline {
-                        let block_metadata = block.to_metadata(parent.head().gas_used(), red_blocks);
+                        let block_metadata = block.to_metadata(parent.head().gas_used());
                         (false, vec![Transaction::BlockMetadata(block_metadata)])
                     } else {
                         (true, vec![])
@@ -558,7 +558,7 @@ impl BlockChain {
             block.transactions2(),
             parent_status
                 .as_ref()
-                .map(|p| block.to_metadata2(p.head.gas_used(), 0)),
+                .map(|p| block.to_metadata2(p.head.gas_used(), red_blocks)),
         );
 
         assert!(!transactions2.is_empty());
@@ -810,7 +810,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used(), 0);
+                    let block_metadata = block.to_metadata(parent.head().gas_used());
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -959,7 +959,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used(), 0);
+                    let block_metadata = block.to_metadata(parent.head().gas_used());
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -2035,8 +2035,7 @@ impl BlockChain {
         let vm1_offline = header.number() >= vm1_offline_height(header.chain_id().id().into());
         let transactions = if !vm1_offline {
             let block_metadata = block.to_metadata(
-                selected_head.header().gas_used(),
-                verified_block.ghostdata.mergeset_reds.len() as u64,
+                selected_head.header().gas_used()
             );
             let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
             txns.extend(

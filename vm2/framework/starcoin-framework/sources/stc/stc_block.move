@@ -123,6 +123,8 @@ module starcoin_framework::stc_block {
         chain_id: u8,
         parent_gas_used: u64,
         parents_hash: vector<u8>,
+        // TODO: Add red_blocks parameter for DAG support
+        // red_blocks: u64,
     ) acquires BlockMetadata {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
 
@@ -174,6 +176,8 @@ module starcoin_framework::stc_block {
         uncles: u64,
         number: u64,
         parents_hash: vector<u8>,
+        // TODO: Add red_blocks parameter for DAG support
+        // red_blocks: u64,
     ) acquires BlockMetadata {
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Entered"));
 
@@ -189,6 +193,8 @@ module starcoin_framework::stc_block {
         block_metadata_ref.parent_hash = parent_hash;
         block_metadata_ref.uncles = uncles;
         block_metadata_ref.parents_hash = parents_hash;
+        // TODO: Update red_blocks for DAG support
+        // block_metadata_ref.red_blocks = red_blocks;
 
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to emit NewBlockEvent  "));
 

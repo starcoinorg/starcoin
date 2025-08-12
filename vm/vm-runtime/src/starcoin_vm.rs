@@ -889,8 +889,6 @@ impl StarcoinVM {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash,
-            _red_blocks,
         ) = block_metadata.into_inner();
         let args = serialize_values(&vec![
             MoveValue::Signer(txn_sender),

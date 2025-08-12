@@ -415,7 +415,7 @@ fn stake_to_be_member_function(
 }
 
 fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) -> Result<Block> {
-    let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, _parents_hash, _red_blocks) =
+    let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
         block_meta.into_inner();
     let block_body = BlockBody::new(vec![], None);
     let block_header = BlockHeader::new(
@@ -492,8 +492,6 @@ fn execute_block(
         block_number,
         net.chain_id(),
         0,
-        vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
-        0,  // TODO: DAG - use proper red_blocks after DAG merge
     );
     blockmeta_execute(chain_state, block_meta.clone())?;
     let _ = chain_state.commit();
@@ -529,8 +527,6 @@ pub fn dao_vote_test(
         block_number,
         net.chain_id(),
         0,
-        vec![HashValue::zero()],  // TODO: DAG - use proper parents_hash after DAG merge
-        0,  // TODO: DAG - use proper red_blocks after DAG merge
     );
     blockmeta_execute(chain_state, block_meta.clone())?;
     let block = block_from_metadata(block_meta, chain_state)?;

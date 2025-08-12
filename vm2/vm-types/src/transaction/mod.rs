@@ -983,12 +983,36 @@ pub enum Transaction {
     BlockMetadata(BlockMetadata),
 }
 
+// Legacy BlockMetadata for database upgrade compatibility
+// This matches the old VM1 BlockMetadata structure
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct LegacyBlockMetadata {
+    #[serde(skip)]
+    id: Option<HashValue>,
+    parent_hash: HashValue,
+    timestamp: u64,
+    author: crate::account_address::AccountAddress,
+    author_auth_key: Option<crate::transaction::authenticator::AuthenticationKey>,
+    uncles: u64,
+    number: u64,
+    chain_id: crate::genesis_config::ChainId,
+    parent_gas_used: u64,
+}
+
+impl LegacyBlockMetadata {
+    pub fn id(&self) -> HashValue {
+        self.id.unwrap_or_else(|| HashValue::zero())
+    }
+}
+
+// LegacyTransaction is kept for backward compatibility with database upgrades
+// It uses the legacy BlockMetadata structure to read old data
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename = "Transaction")]
 pub enum LegacyTransaction {
     UserTransaction(SignedUserTransaction),
-    BlockMetadata(#[serde(rename = "BlockMetadata")] super::block_metadata::LegacyBlockMetadata),
+    BlockMetadata(#[serde(rename = "BlockMetadata")] LegacyBlockMetadata),
 }
 
 impl LegacyTransaction {
@@ -1004,7 +1028,22 @@ impl From<LegacyTransaction> for Transaction {
     fn from(value: LegacyTransaction) -> Self {
         match value {
             LegacyTransaction::UserTransaction(txn) => Self::UserTransaction(txn),
-            LegacyTransaction::BlockMetadata(meta) => Self::BlockMetadata(meta.into()),
+            LegacyTransaction::BlockMetadata(legacy_meta) => {
+                // Convert legacy BlockMetadata to new format with DAG support
+                // Use parent_hash as single parent and 0 red_blocks for non-DAG blocks
+                let author = crate::account_address::AccountAddress::new(legacy_meta.author.into_bytes());
+                Self::BlockMetadata(BlockMetadata::new(
+                    legacy_meta.parent_hash,
+                    legacy_meta.timestamp,
+                    author,
+                    legacy_meta.uncles,
+                    legacy_meta.number,
+                    legacy_meta.chain_id.id().into(),
+                    legacy_meta.parent_gas_used,
+                    vec![legacy_meta.parent_hash], // Convert single parent to parents_hash
+                    0, // No red blocks in legacy data
+                ))
+            }
         }
     }
 }

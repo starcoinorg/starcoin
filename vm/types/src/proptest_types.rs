@@ -538,8 +538,6 @@ impl Arbitrary for BlockMetadata {
                         number,
                         ChainId::test(),
                         parent_gas_used,
-                        vec![parent_hash],
-                        0,
                     )
                 },
             )

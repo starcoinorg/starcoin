@@ -69,6 +69,8 @@ pub struct OpenedBlock {
     // DAG fields
     version: Version,
     pruning_point: HashValue,
+    parents_hash: Vec<HashValue>,
+    red_blocks: u64,
 }
 
 impl OpenedBlock {
@@ -136,8 +138,6 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
-            tips_hash,  // DAG: use actual tips as parents
-            red_blocks, // DAG: use actual red_blocks count
         );
 
         let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
@@ -159,6 +159,8 @@ impl OpenedBlock {
             vm2_initialized: false,
             version,
             pruning_point,
+            parents_hash: tips_hash.clone(),
+            red_blocks,
         };
 
         // Donot execute vm2 blockmeta txn util we need to execute vm2 user txns,
@@ -166,7 +168,7 @@ impl OpenedBlock {
         if !vm1_offline {
             opened_block.initialize()?;
         } else {
-            opened_block.initialize_v2()?;
+            opened_block.initialize_v2(tips_hash, red_blocks)?;
         }
         Ok(opened_block)
     }
@@ -384,7 +386,7 @@ impl OpenedBlock {
     pub fn finalize(mut self) -> Result<BlockTemplate> {
         // if vm2 is not initialized, we need to execute vm2 block_meta txn first
         if !self.vm2_initialized {
-            self.initialize_v2()?;
+            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
         }
         debug_assert!(self.vm2_initialized);
         let accumulator_root = self.txn_accumulator.root_hash();

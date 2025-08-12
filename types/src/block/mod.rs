@@ -817,7 +817,7 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -834,8 +834,6 @@ impl Block {
             self.header.number,
             self.header.chain_id,
             parent_gas_used,
-            self.header.parents_hash.clone(),
-            red_blocks,
         )
     }
 
@@ -1025,7 +1023,7 @@ impl BlockTemplate {
         version: u32,  // DAG: block version
         pruning_point: HashValue,  // DAG: pruning point
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash, _) =
+        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -1043,7 +1041,7 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            parents_hash,
+            parents_hash: vec![parent_hash],  // Default to single parent for VM1
             version,
             pruning_point,
         }

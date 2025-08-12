@@ -41,8 +41,6 @@ pub struct BlockMetadata {
     number: u64,
     chain_id: ChainId,
     parent_gas_used: u64,
-    parents_hash: Vec<HashValue>,
-    red_blocks: u64,
 }
 
 impl BlockMetadata {
@@ -55,8 +53,6 @@ impl BlockMetadata {
         number: u64,
         chain_id: ChainId,
         parent_gas_used: u64,
-        parents_hash: Vec<HashValue>,
-        red_blocks: u64,
     ) -> Self {
         let mut txn = Self {
             id: None,
@@ -68,8 +64,6 @@ impl BlockMetadata {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash,
-            red_blocks,
         };
         txn.id = Some(txn.crypto_hash());
         txn
@@ -86,8 +80,6 @@ impl BlockMetadata {
         u64,
         ChainId,
         u64,
-        Vec<HashValue>,
-        u64,
     ) {
         (
             self.parent_hash,
@@ -98,8 +90,6 @@ impl BlockMetadata {
             self.number,
             self.chain_id,
             self.parent_gas_used,
-            self.parents_hash,
-            self.red_blocks,
         )
     }
 
@@ -127,14 +117,6 @@ impl BlockMetadata {
     pub fn author(&self) -> AccountAddress {
         self.author
     }
-
-    pub fn parents_hash(&self) -> &[HashValue] {
-        &self.parents_hash
-    }
-
-    pub fn red_blocks(&self) -> u64 {
-        self.red_blocks
-    }
 }
 
 impl<'de> Deserialize<'de> for BlockMetadata {
@@ -153,8 +135,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             number: u64,
             chain_id: ChainId,
             parent_gas_used: u64,
-            parents_hash: Vec<HashValue>,
-            red_blocks: u64,
         }
         let data = BlockMetadataData::deserialize(deserializer)?;
         Ok(Self::new(
@@ -166,8 +146,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             data.number,
             data.chain_id,
             data.parent_gas_used,
-            data.parents_hash,
-            data.red_blocks,
         ))
     }
 }
@@ -182,8 +160,6 @@ impl Sample for BlockMetadata {
             0,
             0,
             ChainId::test(),
-            0,
-            vec![HashValue::zero()],
             0,
         )
     }

@@ -913,6 +913,12 @@ impl StarcoinVM {
         let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash, _red_blocks) =
             block_metadata.into_inner();
         let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+        // TODO: Add red_blocks support to block_prologue Move function
+        // Currently red_blocks is extracted but not passed to the Move contract.
+        // Need to update:
+        // 1. block_prologue function signature in stc_block.move
+        // 2. process_block_metadata to update on-chain red_blocks
+        // 3. Add red_blocks to args_vec below
         let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
@@ -927,6 +933,7 @@ impl StarcoinVM {
                 bcs_ext::to_bytes(&parents_hash)
                     .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
             ),
+            // MoveValue::U64(red_blocks), // TODO: Add when Move contract is updated
         ];
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);

@@ -369,6 +369,8 @@ The runtime always runs this before executing the transactions in a block.
     <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8,
     parent_gas_used: u64,
     parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    // TODO: Add red_blocks parameter for DAG support
+    // red_blocks: u64,
 ) <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | Entered"));
 
@@ -440,6 +442,8 @@ Call at block prologue
     uncles: u64,
     number: u64,
     parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    // TODO: Add red_blocks parameter for DAG support
+    // red_blocks: u64,
 ) <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_process_block_metadata">stc_block::process_block_metadata</a> | Entered"));
 
@@ -455,6 +459,8 @@ Call at block prologue
     block_metadata_ref.parent_hash = parent_hash;
     block_metadata_ref.uncles = uncles;
     block_metadata_ref.parents_hash = parents_hash;
+    // TODO: Update red_blocks for DAG support
+    // block_metadata_ref.red_blocks = red_blocks;
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_process_block_metadata">stc_block::process_block_metadata</a> | <b>to</b> emit <a href="stc_block.md#0x1_stc_block_NewBlockEvent">NewBlockEvent</a>  "));
 
