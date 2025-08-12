@@ -13,6 +13,7 @@
 //    and mark items as finished on the event stream.
 //
 use anyhow::{anyhow, Result};
+use futures::TryStreamExt;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
@@ -331,6 +332,28 @@ async fn balancer_worker(
         }
     }
 }
+async fn info_worker(client: Arc<AsyncRpcClient>) {
+    loop {
+        let Ok(mut stream) = client.subscribe_new_blocks().await else {
+            warn!("Failed to subscribe to new blocks");
+            sleep(Duration::from_secs(30)).await;
+            continue;
+        };
+
+        loop {
+            match stream.try_next().await {
+                Ok(None) => break,
+                Ok(Some(event)) => {
+                    info!("New block event: {:?}", event);
+                }
+                Err(e) => {
+                    warn!("Error receiving new block event: {}", e);
+                    break; // Exit the inner loop to re-subscribe
+                }
+            }
+        }
+    }
+}
 pub async fn async_main(
     client: Arc<AsyncRpcClient>,
     target: AccountAddress,
@@ -345,6 +368,14 @@ pub async fn async_main(
     let (tx, rx) = mpsc::channel(10240);
 
     let mut handles = Vec::new();
+    let info_worker = tokio::spawn({
+        let client = Arc::clone(&client);
+        async move {
+            info_worker(client).await;
+        }
+    });
+    handles.push(info_worker);
+
     for entry in accounts {
         let handle = tokio::spawn({
             let client = Arc::clone(&client);
