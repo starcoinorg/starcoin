@@ -72,6 +72,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txns.clone(),
                 vec![],
                 None,
+                vec![],
+                HashValue::zero(),
             )
             .unwrap();
 

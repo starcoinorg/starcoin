@@ -136,7 +136,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
                 })?;
         //TODO support get service ref by AsyncAPI;
         //Currently use vm2 account as default
-        let account_service = ctx.service_ref::<starcoin_vm2_account_service::AccountService>()?;
+        let account_service = ctx.service_ref::<AccountService>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
             .ok_or_else(|| {
                 format_err!("Default account should exist when BlockBuilderService start.")
@@ -395,7 +395,7 @@ where
                 ghostdata,
                 max_transaction_per_block,
             },
-            main,
+            _main, //TODO: remove it. not need
         ) = self.resolve_block_parents()?;
 
         let block_gas_limit = self

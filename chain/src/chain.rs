@@ -38,7 +38,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction, TransactionInfo};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
@@ -68,10 +68,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
-
-// DAG constants - TODO: get from on-chain config
-const PRUNING_DEPTH: u64 = 50000;
-const PRUNING_FINALITY: u64 = 100;
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -328,7 +324,7 @@ impl BlockChain {
         &self,
         author: AccountAddress,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, vec![], vec![], None)
+        self.create_block_template(author, None, vec![], vec![], None, vec![], HashValue::zero())
     }
 
     pub fn create_block_template_simple_with_txns(
@@ -336,7 +332,7 @@ impl BlockChain {
         author: AccountAddress,
         user_txns: Vec<MultiSignedUserTransaction>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, user_txns, vec![], None)
+        self.create_block_template(author, None, user_txns, vec![], None, vec![], HashValue::zero())
     }
 
     pub fn create_block_template_simple_with_uncles(
@@ -344,7 +340,7 @@ impl BlockChain {
         author: AccountAddress,
         uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, vec![], uncles, None)
+        self.create_block_template(author, None, vec![], uncles, None, vec![], HashValue::zero())
     }
 
     pub fn create_block_template(
@@ -354,52 +350,121 @@ impl BlockChain {
         user_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
+        tips: Vec<HashValue>,
+        pruning_point: HashValue,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         //FIXME create block template by parent may be use invalid chain state, such as epoch.
         //So the right way should be creating a BlockChain by parent_hash, then create block template.
         //the timestamp should be an argument, if want to mock an early block.
         let previous_header = match parent_hash {
             Some(hash) => self
-                .get_header(hash)?
-                .ok_or_else(|| format_err!("Can't find block header by {:?}", hash))?,
+                .get_storage()
+                .get_block_header_by_hash(hash)?
+                .ok_or_else(|| format_err!("Can find block header by {:?}", hash))?,
             None => self.current_header(),
         };
 
-        self.create_block_template_inner(
+        self.create_block_template_by_header(
             author,
             previous_header,
             user_txns,
             uncles,
             block_gas_limit,
+            tips,
+            pruning_point,
         )
     }
 
-    fn create_block_template_inner(
+
+    // This is only for testing.
+    // Uncles, pruning point and tips must be coherent, if not,
+    // there will be some unexpected behaviour happening.
+    // Input empty vec for uncles and zero for pruning point simply if you do not know what to do.
+    pub fn create_block_template_by_header(
         &self,
         author: AccountAddress,
         previous_header: BlockHeader,
         user_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
+        tips: Vec<HashValue>,
+        pruning_point: HashValue,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let epoch = self.epoch();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-
-        let strategy = self.consensus();
+        let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
-        let previous_header_id = previous_header.id();
+
+        let (ghostdata, tips) = if tips.is_empty() {
+            let tips = self.get_dag_state()?.tips;
+            (self.dag().ghostdata(&tips)?, tips)
+        } else {
+            (self.dag().ghostdata(&tips)?, tips)
+        };
+
+        let MineNewDagBlockInfo {
+            selected_parents,
+            ghostdata,
+            pruning_point: _,
+        } = {
+            MineNewDagBlockInfo {
+                selected_parents: tips,
+                ghostdata,
+                pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
+            }
+        };
+
+        debug!(
+            "Blue blocks:{:?} in chain/create_block_template_by_header",
+            ghostdata.mergeset_blues
+        );
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .as_ref()
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|block| self.storage.0.get_block_by_hash(block))
+            .collect::<Result<Vec<Option<Block>>>>()?
+            .into_iter()
+            .map(|op_block| op_block.expect("failed to get a block"))
+            .collect::<Vec<_>>();
+
+        let uncles = if uncles.is_empty() {
+            blue_blocks
+                .iter()
+                .map(|block| block.header().clone())
+                .collect::<Vec<_>>()
+        } else {
+            uncles
+        };
+
+        let parent_header = if ghostdata.selected_parent != previous_header.id() {
+            self.storage.0
+                .get_block_header_by_hash(ghostdata.selected_parent)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find block header by {:?}",
+                        ghostdata.selected_parent
+                    )
+                })?
+        } else {
+            previous_header
+        };
+
         // Convert VM1's AccountAddress to VM2's for OpenedBlock
         let author_bytes = author.to_vec();
         let mut author_array = [0u8; 16];
         author_array.copy_from_slice(&author_bytes[..16]);
         let author_v2 = starcoin_vm2_types::account_address::AccountAddress::new(author_array);
+
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
             self.storage.1.clone(),
-            previous_header,
+            parent_header.clone(),
             final_block_gas_limit,
             author_v2,
             self.time_service.now_millis(),
@@ -407,12 +472,13 @@ impl BlockChain {
             difficulty,
             strategy,
             None,
-            vec![previous_header_id],    // DAG: Single parent for template, actual tips determined during mining
-            0,                            // DAG: Version 0 for template
-            HashValue::zero(),            // DAG: Pruning point determined during consensus
-            0,                            // DAG: Red blocks count determined after DAG verification
+            selected_parents,
+            0,
+            pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
         )?;
-        // split user_txns to two parts
+        
+        // split user_txns to two parts for dual VM support
         let mut vm1_txns = vec![];
         let mut vm2_txns = vec![];
         for txn in user_txns {
@@ -424,6 +490,7 @@ impl BlockChain {
         let excluded_txns = opened_block.push_txns(vm1_txns)?;
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
+        
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }
 
@@ -476,7 +543,7 @@ impl BlockChain {
         self.storage.1.clone()
     }
 
-    pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
+    pub fn can_be_uncle(&self, _block_header: &BlockHeader) -> Result<bool> {
         // DAG blocks don't use the traditional uncle verification
         // This is handled by verify_blue_blocks in the verifier
         Ok(true)

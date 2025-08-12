@@ -258,6 +258,8 @@ mod import_test {
                     vec![txn1.into()],
                     vec![],
                     None,
+                    vec![],
+                    HashValue::zero(),
                 )?;
 
                 let block1 = source_chain
@@ -310,6 +312,8 @@ mod import_test {
                     vec![txn2.into()],
                     vec![],
                     None,
+                    vec![],
+                    HashValue::zero(),
                 )?;
 
                 let block2 = source_chain

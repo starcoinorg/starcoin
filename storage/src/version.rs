@@ -4,7 +4,8 @@
 use crate::storage::ColumnFamilyName;
 use crate::{
     BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME,
-    BLOCK_HEADER_PREFIX_NAME_V2, BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2, 
+    BLOCK_HEADER_PREFIX_NAME_V2, BLOCK_INFO_PREFIX_NAME, BLOCK_INFO_PREFIX_NAME_V2,
+    DAG_SYNC_BLOCK_PREFIX_NAME,
     BLOCK_PREFIX_NAME, BLOCK_PREFIX_NAME_V2, BLOCK_TRANSACTIONS_PREFIX_NAME, 
     BLOCK_TRANSACTION_INFOS_PREFIX_NAME, CHAIN_INFO_PREFIX_NAME,
     CONTRACT_EVENT_PREFIX_NAME, CONTRACT_EVENT_PREFIX_NAME_V2, FAILED_BLOCK_PREFIX_NAME,
@@ -102,8 +103,8 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 static VEC_PREFIX_NAME_V5: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     let mut prefix = VEC_PREFIX_NAME_V4.iter().cloned().collect::<HashSet<_>>();
     
-    prefix.insert(crate::DAG_SYNC_BLOCK_PREFIX_NAME);  // DAG support
-    prefix.insert(crate::BLOCK_HEADER_PREFIX_NAME_V2);  // DAG block header with parents_hash
+    prefix.insert(DAG_SYNC_BLOCK_PREFIX_NAME);  // DAG support
+    prefix.insert(BLOCK_HEADER_PREFIX_NAME_V2);  // DAG block header with parents_hash
     assert_eq!(prefix.len(), VEC_PREFIX_NAME_V4.len() + 2);
     
     prefix.into_iter().collect()

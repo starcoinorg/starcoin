@@ -5,9 +5,7 @@ use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_state_api::AccountStateReader;
-use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockStore, IntoSuper, Storage};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
 // TODO: DAG - Add FlexiDagConfigV2 when on-chain config is ready
 // use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
@@ -114,7 +112,8 @@ impl EventHandler<Self, SystemStarted> for PruningPointService {
 impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
     fn handle_event(&mut self, _: PruningPointInfoGeneration, ctx: &mut ServiceContext<Self>) {
         let pruning_point_receiver = self.pruning_channel.pruning_receiver.clone();
-        let storage = self.storage.clone();
+        // TODO: DAG dep:
+        let _storage = self.storage.clone();
         let dag = self.dag.clone();
         let genesis_id = self.genesis_id;
         let self_ref = ctx.self_ref();
@@ -123,6 +122,10 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
                 std::result::Result::Ok(new_dag_block) => {
                     let block_header = new_dag_block.block_header;
                     // TODO: DAG - Read from on-chain config when FlexiDagConfigV2 is available
+                    // use starcoin_state_api::AccountStateReader;
+                    // use starcoin_statedb::ChainStateDB;
+                    // use starcoin_storage::IntoSuper;
+
                     // let chain_state = ChainStateDB::new(
                     //     storage.clone().into_super_arc(),
                     //     Some(block_header.state_root()),

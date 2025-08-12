@@ -375,6 +375,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         vec![],
         None,
+        vec![],
+        HashValue::zero(),
     )?;
 
     let block_b1 = block_chain
@@ -405,6 +407,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone().into()],
         vec![],
         None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = block_chain
@@ -418,6 +422,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.into()],
         vec![],
         None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b3 = block_chain2

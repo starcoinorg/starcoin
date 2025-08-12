@@ -493,6 +493,8 @@ fn execute_transactions_by_miner(
         user_txns,
         vec![],
         Some(10000000),
+        vec![],
+        HashValue::zero(),
     )?;
 
     let block = miner

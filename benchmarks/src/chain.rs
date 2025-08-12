@@ -66,7 +66,7 @@ impl ChainBencher {
             let (block_template, _) = self
                 .chain
                 .read()
-                .create_block_template(*self.account.address(), None, vec![], vec![], None)
+                .create_block_template(*self.account.address(), None, vec![], vec![], None, vec![], HashValue::zero())
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())
