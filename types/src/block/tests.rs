@@ -161,7 +161,7 @@ fn verify_body_and_legacybody_hash() {
 #[test]
 fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
     let header = crate::block::BlockHeaderBuilder::new()
-        .with_chain_id(ChainId::vega())
+        .with_chain_id(ChainId::test())
         .with_number(1024)
         .with_parent_hash(HashValue::random())
         .with_parents_hash(vec![
@@ -182,7 +182,7 @@ fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
 
 #[test]
 fn test_block_compatible_for_vega() -> anyhow::Result<()> {
-    let latest_block = crate::block::Block::rational_random();
+    let latest_block = crate::block::Block::random();
 
     let deserilized_block = crate::block::Block::decode(&latest_block.encode()?)?;
 
@@ -200,12 +200,13 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
             SignedUserTransaction::sample(),
             SignedUserTransaction::sample(),
         ],
+        transactions2: vec![],
         uncles: Some(vec![]),
     };
 
     let uncle1 = crate::block::BlockHeaderBuilder::new()
         .with_number(2048)
-        .with_chain_id(ChainId::dag_test())
+        .with_chain_id(ChainId::test())
         .with_parent_hash(HashValue::random())
         .with_parents_hash(vec![
             HashValue::random(),
@@ -218,7 +219,7 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
 
     let uncle2 = crate::block::BlockHeaderBuilder::new()
         .with_number(2049)
-        .with_chain_id(ChainId::dag_test())
+        .with_chain_id(ChainId::test())
         .with_parent_hash(HashValue::random())
         .with_parents_hash(vec![
             HashValue::random(),
@@ -234,12 +235,13 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
             SignedUserTransaction::sample(),
             SignedUserTransaction::sample(),
         ],
+        transactions2: vec![],
         uncles: Some(vec![uncle1, uncle2]),
     };
 
     let header = crate::block::BlockHeaderBuilder::new()
         .with_number(2050)
-        .with_chain_id(ChainId::dag_test())
+        .with_chain_id(ChainId::test())
         .with_parent_hash(HashValue::random())
         .with_parents_hash(vec![
             HashValue::random(),
