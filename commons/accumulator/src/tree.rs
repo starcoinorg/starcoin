@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0s
 
 use crate::node_index::FrozenSubTreeIterator;
-use crate::node_index::NodeIndex;
+use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
 use anyhow::{bail, format_err, Result};
 use lru::LruCache;
-
+use mirai_annotations::*;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -385,6 +385,9 @@ impl AccumulatorTree {
     ///     and the full route from root of that subtree to the accumulator root turns frozen
     ///         height - (log2(num_new_leaves) + 1) < height - 1 = root_level
     fn max_to_freeze(num_new_leaves: usize, root_level: u32) -> usize {
+        precondition!(root_level as usize <= MAX_ACCUMULATOR_PROOF_DEPTH);
+        precondition!(num_new_leaves < (usize::MAX / 2));
+        precondition!(num_new_leaves * 2 <= usize::MAX - root_level as usize);
         num_new_leaves * 2 + root_level as usize
     }
 

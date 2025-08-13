@@ -5,7 +5,7 @@ byteorder = { workspace = true }
 itertools = { workspace = true }
 starcoin-logger = { workspace = true }
 lru = { workspace = true }
-
+mirai-annotations = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 schemars = { workspace = true }
