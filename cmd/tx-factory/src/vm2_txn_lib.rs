@@ -18,6 +18,7 @@ use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::{info, warn};
+use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
 use starcoin_vm2_account_api::{AccountPrivateKey, AccountPublicKey};
 use starcoin_vm2_crypto::{keygen::KeyGen, HashValue, ValidCryptoMaterialStringExt};
@@ -28,10 +29,11 @@ use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction}
 use starcoin_vm2_types::view::TransactionStatusView;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::sync::RwLock;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{sleep, Duration};
 
@@ -55,6 +57,23 @@ pub static FUNDING_ACCOUNT: Lazy<AccountEntry> = Lazy::new(|| {
         private_key,
     }
 });
+
+static GLOBAL_NODE_INFO: OnceLock<Arc<RwLock<NodeInfo>>> = OnceLock::new();
+
+async fn node_info() -> (u8, u64) {
+    let info = GLOBAL_NODE_INFO
+        .get()
+        .expect("GLOBAL_NODE_INFO uninitialized")
+        .read()
+        .await;
+    (info.net.chain_id().id(), info.now_seconds)
+}
+
+fn set_info(info: NodeInfo) {
+    GLOBAL_NODE_INFO
+        .set(Arc::new(RwLock::new(info)))
+        .expect("GLOBAL_NODE_INFO already initialized");
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountEntry {
@@ -148,9 +167,8 @@ async fn ensure_balance(
         "Topping up {} with {} nano STC from {}",
         account, need, funding.address
     );
-    let node_info = client.node_info().await?;
-    let chain_id = node_info.net.chain_id().id();
-    let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
+    let (chain_id, now_seconds) = node_info().await;
+    let timestamp = now_seconds + DEFAULT_EXPIRATION_TIME;
     // build & send funding txn (sync call for simplicity)
     let txn_hash = create_and_submit(client, funding, account, need, timestamp, chain_id).await?;
     wait_txn_confirmed(client, txn_hash).await
@@ -259,17 +277,8 @@ async fn account_worker(
                 sleep(Duration::from_secs(2)).await;
             }
             AccountState::Ready => {
-                let node_info = match client.node_info().await {
-                    Ok(info) => info,
-                    Err(e) => {
-                        warn!("failed to get node info {e}");
-                        state = AccountState::Error(format!("node info: {e}"));
-                        sleep(Duration::from_secs(1)).await;
-                        continue;
-                    }
-                };
-                let chain_id = node_info.net.chain_id().id();
-                let timestamp = node_info.now_seconds + DEFAULT_EXPIRATION_TIME;
+                let (chain_id, now_seconds) = node_info().await;
+                let timestamp = now_seconds + DEFAULT_EXPIRATION_TIME;
                 match create_and_submit(
                     &client,
                     &entry,
@@ -381,6 +390,20 @@ async fn txn_confirmer(client: Arc<AsyncRpcClient>, mut rx: mpsc::Receiver<TxnRe
         }
     }
 }
+async fn info_worker(client: Arc<AsyncRpcClient>) {
+    loop {
+        if let Ok(node_info) = client.node_info().await {
+            if let Some(guard) = GLOBAL_NODE_INFO.get() {
+                let mut info = guard.write().await;
+                *info = node_info;
+            } else {
+                warn!("Failed to get node info");
+            }
+        }
+        sleep(Duration::from_secs(60)).await;
+    }
+}
+
 pub async fn async_main(
     client: Arc<AsyncRpcClient>,
     target: AccountAddress,
@@ -388,14 +411,24 @@ pub async fn async_main(
 ) -> Result<()> {
     let min_balance: u128 = INITIAL_BALANCE;
     let funding = &*FUNDING_ACCOUNT;
+    let node_info = client.node_info().await?;
+    set_info(node_info);
 
     let mut accounts = load_accounts(&account_path).await?;
     accounts.shuffle(&mut rand::thread_rng());
 
+    let mut handles = Vec::new();
+    let info_handle = tokio::spawn({
+        let client = Arc::clone(&client);
+        async move {
+            info_worker(client).await;
+        }
+    });
+    handles.push(info_handle);
+
     let (tx, rx) = mpsc::channel(10240);
     let (confirm_tx, confirm_rx) = mpsc::channel(10240);
 
-    let mut handles = Vec::new();
     let txn_confirmer = tokio::spawn({
         let client = Arc::clone(&client);
         async move {
