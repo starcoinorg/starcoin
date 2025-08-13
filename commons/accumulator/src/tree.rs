@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0s
 
+#![allow(unexpected_cfgs)]
+
 use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;

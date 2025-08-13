@@ -7,6 +7,8 @@
 //! NibblePath library simplify operations with nibbles in a compact format for modified sparse
 //! Merkle tree by providing powerful iterators advancing by either bit or nibble.
 
+#![allow(unexpected_cfgs)]
+
 #[cfg(test)]
 mod nibble_path_test;
 
