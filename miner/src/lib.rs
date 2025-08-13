@@ -4,7 +4,7 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use create_block_template::block_builder_service::BlockTemplateError;
+use create_block_template::block_builder_service::{BlockTemplateError, BlockTemplateResponse};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -130,11 +130,13 @@ impl ServiceFactory<Self> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
+        ctx.subscribe::<BlockTemplateResponse>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
+        ctx.unsubscribe::<BlockTemplateResponse>();
         info!("stoped miner_serive ");
         Ok(())
     }
@@ -189,54 +191,56 @@ impl ServiceHandler<Self, DelayGenerateBlockEvent> for MinerService {
 impl MinerService {
     pub fn dispatch_task(
         &mut self,
-        ctx: &mut ServiceContext<Self>,
-        event: GenerateBlockEvent,
+        _ctx: &mut ServiceContext<Self>,
+        _event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        let create_block_template_service = self.create_block_template_service.clone();
-        let config = self.config.clone();
-        let addr = ctx.service_ref::<Self>()?.clone();
-        ctx.spawn(async move {
-            let block_template = match create_block_template_service
-                .send(BlockTemplateRequest)
-                .await
-            {
-                Ok(send_result) => match send_result {
-                    Ok(block_template) => block_template,
-                    Err(block_template_error) => {
-                        match block_template_error {
-                            BlockTemplateError::NoReceivedHeader => {
-                                return;
-                            }
-                            BlockTemplateError::Other(e) => {
-                                error!("BlockTemplateRequest processing failed: {:?}", e);
-                            }
-                        }
-                        return;
-                    }
-                },
-                Err(e) => {
-                    error!("BlockTemplateRequest delivery failed: {:?}", e);
-                    return;
-                }
-            };
+        // let config = self.config.clone();
+        // let addr = ctx.service_ref::<Self>()?.clone();
+        match self
+            .create_block_template_service
+            .notify(BlockTemplateRequest)
+        {
+            std::result::Result::Ok(_) => (),
+            Err(e) => error!("BlockTemplateRequest delivery failed: {:?}", e),
+        }
+        //     .await
+        // {
+        //     Ok(send_result) => match send_result {
+        //         Ok(block_template) => block_template,
+        //         Err(block_template_error) => {
+        //             match block_template_error {
+        //                 BlockTemplateError::NoReceivedHeader => {
+        //                     return;
+        //                 }
+        //                 BlockTemplateError::Other(e) => {
+        //                     error!("BlockTemplateRequest processing failed: {:?}", e);
+        //                 }
+        //             }
+        //             return;
+        //         }
+        //     },
+        //     Err(e) => {
+        //         error!("BlockTemplateRequest delivery failed: {:?}", e);
+        //         return;
+        //     }
+        // };
 
-            let parent = block_template.parent;
-            let block_template = block_template.template;
-            let block_time_gap = block_template.timestamp - parent.timestamp();
+        // let parent = block_template.parent;
+        // let block_template = block_template.template;
+        // let block_time_gap = block_template.timestamp - parent.timestamp();
 
-            let should_skip = !event.skip_empty_block_check
-                && block_template.body.transactions.is_empty()
-                && config.miner.is_disable_mint_empty_block()
-                && block_time_gap < 3600 * 1000;
-            if should_skip {
-                info!("Skipping minting empty block");
-            } else if let Err(e) = addr
-                .send(DispatchMintBlockTemplate { block_template })
-                .await
-            {
-                warn!("Failed to dispatch block template: {}", e);
-            }
-        });
+        // let should_skip = !event.skip_empty_block_check
+        //     && block_template.body.transactions.is_empty()
+        //     && config.miner.is_disable_mint_empty_block()
+        //     && block_time_gap < 3600 * 1000;
+        // if should_skip {
+        //     info!("Skipping minting empty block");
+        // } else if let Err(e) = addr
+        //     .send(DispatchMintBlockTemplate { block_template })
+        //     .await
+        // {
+        //     warn!("Failed to dispatch block template: {}", e);
+        // }
         Ok(())
     }
 
@@ -342,5 +346,35 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 ctx.notify(GenerateBlockEvent::default());
             });
         }
+    }
+}
+
+impl EventHandler<Self, BlockTemplateResponse> for MinerService {
+    fn handle_event(
+        &mut self,
+        block_template: BlockTemplateResponse,
+        ctx: &mut ServiceContext<Self>,
+    ) {
+        let config = self.config.clone();
+        let addr = ctx
+            .service_ref::<Self>()
+            .expect("failed to get miner service ref")
+            .clone();
+        let parent = block_template.parent;
+        let block_template = block_template.template;
+        let block_time_gap = block_template.timestamp - parent.timestamp();
+
+        ctx.spawn(async move {
+            let should_skip =
+                config.miner.is_disable_mint_empty_block() && block_time_gap < 3600 * 1000;
+            if should_skip {
+                info!("Skipping minting empty block");
+            } else if let Err(e) = addr
+                .send(DispatchMintBlockTemplate { block_template })
+                .await
+            {
+                warn!("Failed to dispatch block template: {}", e);
+            }
+        });
     }
 }

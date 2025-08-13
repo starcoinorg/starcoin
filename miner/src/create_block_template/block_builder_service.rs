@@ -20,21 +20,25 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockTemplate, Version},
+    block::{Block, BlockBody, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
 };
 use std::sync::RwLock;
 
+use crate::create_block_template::process_transaction::ProcessTransactionData;
 use crate::NewHeaderChannel;
 
 use super::metrics::BlockBuilderMetrics;
+use super::process_transaction::{ProcessHeaderTemplate, ProcessedTransactions};
 
 enum MergesetIncreaseResult {
     Accepted { increase_size: u64 },
@@ -47,12 +51,12 @@ pub enum BlockTemplateError {
     Other(anyhow::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockTemplateRequest;
 
-impl ServiceRequest for BlockTemplateRequest {
-    type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
-}
+// impl ServiceRequest for BlockTemplateRequest {
+//     type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
+// }
 
 #[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
@@ -151,11 +155,75 @@ impl ServiceFactory<Self> for BlockBuilderService {
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
+        ctx.subscribe::<BlockTemplateRequest>();
+
+        ctx.put_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>(
+            self.inner.receiver.clone(),
+        )?;
+
+        ctx.run_interval(std::time::Duration::from_millis(10), |ctx: &mut ServiceContext<'_, Self>| {
+            let receiver = ctx.get_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>().expect("get receiver error");
+            let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
+            while let std::result::Result::Ok(process_header_template) = receiver.try_recv() {
+                let state_root = process_header_template.trans.state_root;
+
+                let (uncles, uncle_len) = if !process_header_template.uncles.is_empty() {
+                    let uncle_len = process_header_template.uncles.len() as u64;
+                    (Some(process_header_template.uncles), uncle_len)
+                } else {
+                    (None, 0)
+                };
+                let body = BlockBody::new(process_header_template.trans.included_user_txns, uncles);
+
+                let config = ctx.get_shared::<Arc<NodeConfig>>().expect("get config error");
+                let mut now_millis = config.net().time_service().now_millis();
+                if now_millis <= process_header_template.header.timestamp() {
+                    info!(
+                        "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
+                        process_header_template.header.timestamp(), now_millis, process_header_template.header.timestamp() - now_millis,
+                    );
+                    now_millis = process_header_template.header.timestamp() + 1;
+                }
+
+                let block_info = storage.get_block_info(process_header_template.header.id()).expect("get block info error").expect("block info is none");
+                let block_meta = BlockMetadata::new_with_parents(
+                    process_header_template.header.id(),
+                    now_millis,
+                    process_header_template.author,
+                    None,
+                    uncle_len,
+                    process_header_template.header.number() + 1,
+                    process_header_template.header.chain_id(),
+                    process_header_template.header.gas_used(),
+                    process_header_template.tips_hash,
+                    process_header_template.red_blocks,
+                );
+
+                let block_template = BlockTemplate::new(
+                    block_info.block_accumulator_info.accumulator_root,
+                    process_header_template.trans.txn_accumulator_root,
+                    state_root,
+                    0,
+                    body,
+                    process_header_template.header.chain_id(),
+                    process_header_template.difficulty,
+                    process_header_template.strategy,
+                    block_meta,
+                    process_header_template.version,
+                    process_header_template.pruning_point,
+                );
+                ctx.broadcast(BlockTemplateResponse {
+                    parent: process_header_template.header,
+                    template: block_template,
+                });
+            }
+        });
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
+        ctx.unsubscribe::<BlockTemplateRequest>();
         Ok(())
     }
 }
@@ -173,23 +241,23 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
-impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
-    fn handle(
-        &mut self,
-        _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<Self>,
-    ) -> <BlockTemplateRequest as ServiceRequest>::Response {
+impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
+    fn handle_event(&mut self, _msg: BlockTemplateRequest, _ctx: &mut ServiceContext<Self>) {
         let header_version = self
             .inner
             .config
             .net()
             .genesis_config()
             .block_header_version;
-        match self.receive_header() {
+        let result = match self.receive_header() {
             ReceiveHeader::NotReceived | ReceiveHeader::Received => self
                 .inner
                 .create_block_template(header_version)
                 .map_err(BlockTemplateError::Other),
+        };
+
+        if let Err(err) = result {
+            error!("Block template request failed: {:?}", err);
         }
     }
 }
@@ -229,11 +297,14 @@ pub struct Inner<P> {
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+
+    sender: crossbeam::channel::Sender<ProcessHeaderTemplate>,
+    receiver: crossbeam::channel::Receiver<ProcessHeaderTemplate>,
 }
 
 impl<P> Inner<P>
 where
-    P: TemplateTxProvider + TxPoolSyncService,
+    P: TemplateTxProvider + TxPoolSyncService + 'static,
 {
     pub fn new(
         header: BlockHeader,
@@ -249,6 +320,7 @@ where
         let genesis_hash = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash"))?;
+        let (sender, receiver) = crossbeam::channel::unbounded::<ProcessHeaderTemplate>();
         Ok(Self {
             storage: storage.clone(),
             tx_provider,
@@ -260,6 +332,8 @@ where
             metrics,
             vm_metrics,
             genesis_hash,
+            sender,
+            receiver,
         })
     }
 
@@ -360,7 +434,7 @@ where
         ))
     }
 
-    pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(&mut self, _version: Version) -> Result<()> {
         info!("[BlockProcess] now create the template");
         let (
             MinerResponse {
@@ -369,7 +443,7 @@ where
                 strategy,
                 on_chain_block_gas_limit,
                 next_difficulty: difficulty,
-                now_milliseconds: mut now_millis,
+                now_milliseconds: now_millis,
                 pruning_point,
                 ghostdata,
                 max_transaction_per_block,
@@ -392,13 +466,13 @@ where
             .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
             .address();
 
-        if now_millis <= previous_header.timestamp() {
-            info!(
-                "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
-                previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
-            );
-            now_millis = previous_header.timestamp() + 1;
-        }
+        // if now_millis <= previous_header.timestamp() {
+        //     info!(
+        //         "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
+        //         previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
+        //     );
+        //     now_millis = previous_header.timestamp() + 1;
+        // }
 
         let blue_blocks = ghostdata
             .mergeset_blues
@@ -444,58 +518,97 @@ where
             now_millis,
         );
 
-        let header_version = 1;
+        let txn = self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
 
-        let mut opened_block = OpenedBlock::new(
-            self.storage.clone(),
-            previous_header.clone(),
-            block_gas_limit,
-            author,
-            now_millis,
-            uncles,
-            difficulty,
-            strategy,
-            self.vm_metrics.clone(),
-            selected_parents,
-            header_version,
-            pruning_point,
-            ghostdata.mergeset_reds.len() as u64,
-            main.into_statedb(),
-        )?;
+        let storage = self.storage.clone();
+        let selected_header = previous_header.id();
+        let txn_provider = self.tx_provider.clone();
+        let vm_metrics = self.vm_metrics.clone();
+        let sender = self.sender.clone();
 
-        info!("[BlockProcess] fetch transactions");
-        let mut txn =
-            self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
-        if txn.len() > 400 {
-            let extra = txn[400..].to_vec();
-            self.tx_provider.add_txns(extra);
-            txn = txn[..400].to_vec();
-        }
-        info!("[BlockProcess] txns len: {}", txn.len());
-        let excluded_txns = opened_block.push_txns(txn)?;
-        for invalid_txn in &excluded_txns.discarded_txns {
-            self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        }
-        info!(
-            "[BlockProcess] discarded len: {}, untouched txns len: {}",
-            excluded_txns.discarded_txns.len(),
-            excluded_txns.untouched_txns.len()
-        );
+        // the data pass to
 
-        info!(
-            "[BlockProcess] included txns len: {}",
-            opened_block.included_user_txns().len()
-        );
-        info!(
-            "[BlockProcess] end of create the template, parent: {:?}",
-            opened_block.block_meta().parent_hash()
-        );
+        async_std::task::spawn(async move {
+            let process_trans = ProcessTransactionData::new(
+                storage,
+                selected_header,
+                Arc::new(main.into_statedb()),
+                txn_provider,
+                txn,
+                block_gas_limit,
+                0,
+                vm_metrics,
+            )
+            .expect("failed to init process transaction");
 
-        let template = opened_block.finalize()?;
-        Ok(BlockTemplateResponse {
-            parent: previous_header,
-            template,
-        })
+            let result = process_trans
+                .process()
+                .expect("failed to process transaction");
+
+            let header_version = 1;
+            sender
+                .send(ProcessHeaderTemplate {
+                    header: previous_header,
+                    author,
+                    uncles,
+                    difficulty,
+                    strategy,
+                    tips_hash: selected_parents,
+                    version: header_version,
+                    pruning_point,
+                    trans: result,
+                    red_blocks: ghostdata.mergeset_reds.len() as u64,
+                })
+                .expect("failed to send result");
+        });
+
+        Ok(())
+        //////////
+
+        // let mut opened_block = OpenedBlock::new(
+        //     self.storage.clone(),
+        //     previous_header.clone(),
+        //     block_gas_limit,
+        //     author,
+        //     now_millis,
+        //     uncles,
+        //     difficulty,
+        //     strategy,
+        //     self.vm_metrics.clone(),
+        //     selected_parents,
+        //     header_version,
+        //     pruning_point,
+        //     ghostdata.mergeset_reds.len() as u64,
+        //     main.into_statedb(),
+        // )?;
+
+        // info!("[BlockProcess] fetch transactions");
+
+        // info!("[BlockProcess] txns len: {}", txn.len());
+        // let excluded_txns = opened_block.push_txns(txn)?;
+        // for invalid_txn in &excluded_txns.discarded_txns {
+        //     self.tx_provider.remove_invalid_txn(invalid_txn.id());
+        // }
+        // info!(
+        //     "[BlockProcess] discarded len: {}, untouched txns len: {}",
+        //     excluded_txns.discarded_txns.len(),
+        //     excluded_txns.untouched_txns.len()
+        // );
+
+        // info!(
+        //     "[BlockProcess] included txns len: {}",
+        //     opened_block.included_user_txns().len()
+        // );
+        // info!(
+        //     "[BlockProcess] end of create the template, parent: {:?}",
+        //     opened_block.block_meta().parent_hash()
+        // );
+
+        // let template = opened_block.finalize()?;
+        // Ok(BlockTemplateResponse {
+        //     parent: previous_header,
+        //     template,
+        // })
     }
 
     fn fetch_transactions(

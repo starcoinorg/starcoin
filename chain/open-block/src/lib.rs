@@ -288,10 +288,6 @@ impl OpenedBlock {
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
-        self.state
-            .flush()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
-
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
