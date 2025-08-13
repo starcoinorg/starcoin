@@ -81,7 +81,7 @@ pub struct TxFactoryOpt {
     pub batch_size: u32,
 }
 
-const INITIAL_BALANCE: u128 = 1_000_000_000;
+// const INITIAL_BALANCE: u128 = 1_000_000_000;
 
 fn get_account_or_default(
     client: &RpcClient,

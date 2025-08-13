@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -25,7 +25,6 @@ use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
@@ -464,7 +463,7 @@ where
             main.into_statedb(),
         )?;
 
-        info!("[BlockProcess] fetch transactions"); 
+        info!("[BlockProcess] fetch transactions");
         let mut txn =
             self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
         if txn.len() > 400 {
@@ -482,30 +481,6 @@ where
             excluded_txns.discarded_txns.len(),
             excluded_txns.untouched_txns.len()
         );
-
-        // let mut left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
-        // let mut count: u64 = 200;
-
-        // while left > 200 && count > 0 {
-        //     info!("[BlockProcess] left: {}", left);
-        // if left > 0 {
-        //     let txn = self
-        //         .tx_provider
-        //         .get_txns_with_state(left, opened_block.state_root());
-        //     info!("[BlockProcess] read txns again: {}", txn.len());
-        //     let excluded_txns = opened_block.push_txns(txn)?;
-        //     for invalid_txn in &excluded_txns.discarded_txns {
-        //         self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        //     }
-        //     info!(
-        //         "[BlockProcess] discarded againlen: {}, untouched txns len: {}",
-        //         excluded_txns.discarded_txns.len(),
-        //         excluded_txns.untouched_txns.len()
-        //     );
-        // }
-        // left = max_txns.saturating_sub(opened_block.included_user_txns().len() as u64);
-        // count = count.saturating_sub(1);
-        // }
 
         info!(
             "[BlockProcess] included txns len: {}",
@@ -531,7 +506,7 @@ where
     ) -> Result<Vec<SignedUserTransaction>> {
         let pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
-            return Ok(pending_transactions);
+        Ok(pending_transactions)
         // if pending_transactions.len() >= max_txns as usize {
         //     return Ok(pending_transactions);
         // }
