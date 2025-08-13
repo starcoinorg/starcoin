@@ -166,16 +166,6 @@ pub trait TemplateTxProvider {
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
-#[allow(dead_code)]
-pub struct EmptyProvider;
-
-impl TemplateTxProvider for EmptyProvider {
-    fn get_txns(&self, _max: u64) -> Vec<MultiSignedUserTransaction> {
-        vec![]
-    }
-    fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
-}
-
 impl TemplateTxProvider for TxPoolService {
     fn get_txns(&self, max: u64) -> Vec<MultiSignedUserTransaction> {
         self.get_pending_txns(Some(max), None)

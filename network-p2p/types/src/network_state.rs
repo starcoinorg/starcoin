@@ -40,8 +40,6 @@ pub struct NetworkState {
     pub peer_id: String,
     /// List of addresses the node is currently listening on.
     pub listened_addresses: HashSet<Multiaddr>,
-    /// List of addresses the node knows it can be reached as.
-    pub external_addresses: HashSet<Multiaddr>,
     /// List of node we're connected to.
     pub connected_peers: HashMap<String, Peer>,
     /// List of node that we know of but that we're not connected to.

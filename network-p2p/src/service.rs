@@ -83,9 +83,6 @@ const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 pub struct NetworkService {
     /// Number of peers we're connected to.
     num_connected: Arc<AtomicUsize>,
-    /// The local external addresses.
-    #[allow(dead_code)]
-    external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
     /// Are we actively catching up with the chain?
     is_major_syncing: Arc<AtomicBool>,
     /// Local copy of the `PeerId` of the local node.
@@ -304,7 +301,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             Swarm::add_external_address(&mut swarm, addr.clone(), AddressScore::Infinite);
         }
 
-        let external_addresses = Arc::new(Mutex::new(Vec::new()));
         let peers_notifications_sinks = Arc::new(Mutex::new(HashMap::new()));
 
         let metrics = params
@@ -313,7 +309,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             .and_then(|registry| Metrics::register(registry).ok());
         let service = Arc::new(NetworkService {
             bandwidth,
-            external_addresses,
             num_connected,
             is_major_syncing,
             peerset: peerset_handle,
@@ -447,11 +442,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
         NetworkState {
             peer_id: swarm.local_peer_id().to_base58(),
             listened_addresses: swarm.listeners().cloned().collect(),
-            external_addresses: swarm
-                .external_addresses()
-                .map(|r| &r.addr)
-                .cloned()
-                .collect(),
             connected_peers,
             not_connected_peers,
             peerset: swarm
@@ -868,19 +858,11 @@ impl NetworkService {
 /// Trait for providing information about the local network state
 #[allow(dead_code)]
 pub trait NetworkStateInfo {
-    /// Returns the local external addresses.
-    fn external_addresses(&self) -> Vec<Multiaddr>;
-
     /// Returns the local Peer ID.
     fn local_peer_id(&self) -> PeerId;
 }
 
 impl NetworkStateInfo for NetworkService {
-    /// Returns the local external addresses.
-    fn external_addresses(&self) -> Vec<Multiaddr> {
-        self.external_addresses.lock().clone()
-    }
-
     /// Returns the local Peer ID.
     fn local_peer_id(&self) -> PeerId {
         self.local_peer_id
