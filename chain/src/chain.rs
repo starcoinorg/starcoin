@@ -548,8 +548,10 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
-            "verify block:{:?} state_root fail",
+            "verify block:{:?} state_root fail, expected: {:?}, actual: {:?}",
             block_id,
+            state_root,
+            header.state_root(),
         );
         let block_gas_used = vec_transaction_info
             .iter()

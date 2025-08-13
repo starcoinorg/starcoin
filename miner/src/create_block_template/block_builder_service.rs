@@ -161,63 +161,57 @@ impl ActorService for BlockBuilderService {
             self.inner.receiver.clone(),
         )?;
 
-        ctx.run_interval(std::time::Duration::from_millis(10), |ctx: &mut ServiceContext<'_, Self>| {
-            let receiver = ctx.get_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>().expect("get receiver error");
-            let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
-            while let std::result::Result::Ok(process_header_template) = receiver.try_recv() {
-                let state_root = process_header_template.trans.state_root;
+        ctx.run_interval(
+            std::time::Duration::from_millis(10),
+            |ctx: &mut ServiceContext<'_, Self>| {
+                let receiver = ctx
+                    .get_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>()
+                    .expect("get receiver error");
+                let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
+                while let std::result::Result::Ok(mut process_header_template) = receiver.try_recv()
+                {
+                    let state_root = process_header_template.trans.state_root;
 
-                let (uncles, uncle_len) = if !process_header_template.uncles.is_empty() {
-                    let uncle_len = process_header_template.uncles.len() as u64;
-                    (Some(process_header_template.uncles), uncle_len)
-                } else {
-                    (None, 0)
-                };
-                let body = BlockBody::new(process_header_template.trans.included_user_txns, uncles);
+                    let (uncles, uncle_len) = if !process_header_template.uncles.is_empty() {
+                        let uncle_len = process_header_template.uncles.len() as u64;
+                        (Some(process_header_template.uncles), uncle_len)
+                    } else {
+                        (None, 0)
+                    };
+                    let body =
+                        BlockBody::new(process_header_template.trans.included_user_txns, uncles);
 
-                let config = ctx.get_shared::<Arc<NodeConfig>>().expect("get config error");
-                let mut now_millis = config.net().time_service().now_millis();
-                if now_millis <= process_header_template.header.timestamp() {
+                    let block_info = storage
+                        .get_block_info(process_header_template.header.id())
+                        .expect("get block info error")
+                        .expect("block info is none");
+
+                    let version = 1;
+
                     info!(
-                        "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
-                        process_header_template.header.timestamp(), now_millis, process_header_template.header.timestamp() - now_millis,
+                        "jacktest: state root4: {:?}, transaction accumulator root: {:?}",
+                        state_root, process_header_template.trans.txn_accumulator_root
                     );
-                    now_millis = process_header_template.header.timestamp() + 1;
+                    let block_template = BlockTemplate::new(
+                        block_info.block_accumulator_info.accumulator_root,
+                        process_header_template.trans.txn_accumulator_root,
+                        state_root,
+                        process_header_template.trans.gas_used,
+                        body,
+                        process_header_template.header.chain_id(),
+                        process_header_template.difficulty,
+                        process_header_template.strategy,
+                        process_header_template.block_metadata,
+                        version,
+                        process_header_template.pruning_point,
+                    );
+                    ctx.broadcast(BlockTemplateResponse {
+                        parent: process_header_template.header,
+                        template: block_template,
+                    });
                 }
-
-                let block_info = storage.get_block_info(process_header_template.header.id()).expect("get block info error").expect("block info is none");
-                let block_meta = BlockMetadata::new_with_parents(
-                    process_header_template.header.id(),
-                    now_millis,
-                    process_header_template.author,
-                    None,
-                    uncle_len,
-                    process_header_template.header.number() + 1,
-                    process_header_template.header.chain_id(),
-                    process_header_template.header.gas_used(),
-                    process_header_template.tips_hash,
-                    process_header_template.red_blocks,
-                );
-
-                let block_template = BlockTemplate::new(
-                    block_info.block_accumulator_info.accumulator_root,
-                    process_header_template.trans.txn_accumulator_root,
-                    state_root,
-                    0,
-                    body,
-                    process_header_template.header.chain_id(),
-                    process_header_template.difficulty,
-                    process_header_template.strategy,
-                    block_meta,
-                    process_header_template.version,
-                    process_header_template.pruning_point,
-                );
-                ctx.broadcast(BlockTemplateResponse {
-                    parent: process_header_template.header,
-                    template: block_template,
-                });
-            }
-        });
+            },
+        );
         Ok(())
     }
 
@@ -443,7 +437,7 @@ where
                 strategy,
                 on_chain_block_gas_limit,
                 next_difficulty: difficulty,
-                now_milliseconds: now_millis,
+                now_milliseconds: mut now_millis,
                 pruning_point,
                 ghostdata,
                 max_transaction_per_block,
@@ -508,7 +502,13 @@ where
             .iter()
             .map(|block| block.header().clone())
             .collect::<Vec<_>>();
-
+        if now_millis <= previous_header.timestamp() {
+            info!(
+                        "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
+                        previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
+                    );
+            now_millis = previous_header.timestamp() + 1;
+        }
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, uncles len: {}, timestamp: {}",
             previous_header,
@@ -526,6 +526,19 @@ where
         let vm_metrics = self.vm_metrics.clone();
         let sender = self.sender.clone();
 
+        let block_meta = BlockMetadata::new_with_parents(
+            previous_header.id(),
+            now_millis,
+            author,
+            None,
+            uncles.len() as u64,
+            previous_header.number() + 1,
+            previous_header.chain_id(),
+            previous_header.gas_used(),
+            selected_parents,
+            ghostdata.mergeset_reds.len() as u64,
+        );
+
         // the data pass to
 
         async_std::task::spawn(async move {
@@ -537,6 +550,7 @@ where
                 txn,
                 block_gas_limit,
                 0,
+                block_meta.clone(),
                 vm_metrics,
             )
             .expect("failed to init process transaction");
@@ -545,19 +559,15 @@ where
                 .process()
                 .expect("failed to process transaction");
 
-            let header_version = 1;
             sender
                 .send(ProcessHeaderTemplate {
                     header: previous_header,
-                    author,
                     uncles,
                     difficulty,
                     strategy,
-                    tips_hash: selected_parents,
-                    version: header_version,
-                    pruning_point,
                     trans: result,
-                    red_blocks: ghostdata.mergeset_reds.len() as u64,
+                    block_metadata: block_meta,
+                    pruning_point,
                 })
                 .expect("failed to send result");
         });
