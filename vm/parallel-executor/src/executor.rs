@@ -348,3 +348,223 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use std::sync::Condvar;
+
+    // Minimal transaction implementation for testing
+    #[derive(Debug, Clone)]
+    struct TestTransaction {
+        key: String,
+        value: u64,
+        acquire_cvar: Option<Arc<(Mutex<bool>, Condvar)>>,
+        release_cvar: Option<Arc<(Mutex<bool>, Condvar)>>,
+    }
+
+    impl TestTransaction {
+        fn wait(&self) {
+            if let Some(arc) = &self.acquire_cvar {
+                let (lock, cvar) = &**arc;
+                let mut resolved = lock.lock();
+                while !*resolved {
+                    resolved = cvar.wait(resolved).unwrap();
+                }
+            }
+        }
+
+        fn notify(&self) {
+            if let Some(arc) = self.release_cvar.as_ref() {
+                let (lock, cvar) = &**arc;
+                let mut resolved = lock.lock();
+                *resolved = true;
+                cvar.notify_all();
+            }
+        }
+    }
+
+    impl Transaction for TestTransaction {
+        type Key = String;
+        type Value = u64;
+    }
+
+    // Minimal executor implementation for testing
+    struct TestExecutor {
+        initial_value: u64,
+    }
+
+    impl TestExecutor {
+        fn new(initial_value: u64) -> Self {
+            Self { initial_value }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct TestOutput {
+        writes: HashMap<String, u64>,
+    }
+
+    impl TransactionOutput for TestOutput {
+        type T = TestTransaction;
+
+        fn get_writes(&self) -> Vec<(String, u64)> {
+            self.writes.iter().map(|(k, v)| (k.clone(), *v)).collect()
+        }
+
+        fn skip_output() -> Self {
+            Self {
+                writes: HashMap::new(),
+            }
+        }
+    }
+
+    impl ExecutorTask for TestExecutor {
+        type T = TestTransaction;
+        type Output = TestOutput;
+        type Error = ();
+        type Argument = u64;
+
+        fn init(initial_value: Self::Argument) -> Self {
+            Self::new(initial_value)
+        }
+
+        fn execute_transaction(
+            &self,
+            view: &MVHashMapView<String, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            // Wait for any dependencies to be resolved
+            txn.wait();
+
+            // Read current value from state or use initial value
+            let current_value = view
+                .read(&txn.key)
+                .map(|v| *v)
+                .unwrap_or(self.initial_value);
+
+            // Calculate new value by adding the transaction value
+            let new_value = current_value + txn.value;
+
+            // Create write set
+            let mut writes = HashMap::new();
+            writes.insert(txn.key.clone(), new_value);
+
+            // Signal completion
+            txn.notify();
+
+            ExecutionStatus::Success(TestOutput { writes })
+        }
+    }
+
+    #[test]
+    fn test_parallel_conflicting_transactions() {
+        // Create two transactions that will conflict (both modify the same key)
+        let cvar = Arc::new((Mutex::new(false), Condvar::new()));
+        let transactions = vec![
+            TestTransaction {
+                key: "shared_counter".to_string(),
+                value: 10,
+                acquire_cvar: Some(cvar.clone()),
+                release_cvar: None,
+            },
+            TestTransaction {
+                key: "shared_counter".to_string(),
+                value: 20,
+                acquire_cvar: None,
+                release_cvar: Some(cvar.clone()),
+            },
+        ];
+
+        let initial_value = 0;
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(num_cpus::get().max(2));
+
+        let result = executor.execute_transactions_parallel(initial_value, transactions);
+        assert!(
+            result.is_ok(),
+            "Conflicting transactions should still succeed"
+        );
+
+        let outputs: Vec<TestOutput> = result.unwrap();
+        assert_eq!(outputs.len(), 2);
+
+        // Verify that both transactions produced outputs
+        for (i, output) in outputs.iter().enumerate() {
+            assert!(
+                output.writes.contains_key("shared_counter"),
+                "Transaction {} should write to shared_counter",
+                i
+            );
+        }
+
+        // The final result should be the cumulative effect: 0 + 10 + 20 = 30
+        // Due to parallel execution, the final value should reflect both increments
+        let final_output = &outputs[1];
+        if let Some(final_value) = final_output.writes.get("shared_counter") {
+            assert_eq!(*final_value, 30, "Final value should be 30 (0 + 10 + 20)");
+        }
+    }
+
+    #[test]
+    fn test_parallel_independent_transactions() {
+        // Create two transactions that operate on different keys (no conflicts)
+        let transactions = vec![
+            TestTransaction {
+                key: "account_a".to_string(),
+                value: 100,
+                acquire_cvar: None,
+                release_cvar: None,
+            },
+            TestTransaction {
+                key: "account_b".to_string(),
+                value: 200,
+                acquire_cvar: None,
+                release_cvar: None,
+            },
+        ];
+
+        let initial_value = 50;
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(num_cpus::get().max(2));
+
+        let result = executor.execute_transactions_parallel(initial_value, transactions);
+        assert!(result.is_ok(), "Independent transactions should succeed");
+
+        let outputs: Vec<TestOutput> = result.unwrap();
+        assert_eq!(outputs.len(), 2);
+
+        // Verify that both transactions produced outputs with correct values
+        let output_a = &outputs[0];
+        let output_b = &outputs[1];
+
+        // First transaction: account_a should have initial_value + 100 = 150
+        assert!(
+            output_a.writes.contains_key("account_a"),
+            "First transaction should write to account_a"
+        );
+        if let Some(value_a) = output_a.writes.get("account_a") {
+            assert_eq!(*value_a, 150, "account_a should have value 150 (50 + 100)");
+        }
+
+        // Second transaction: account_b should have initial_value + 200 = 250
+        assert!(
+            output_b.writes.contains_key("account_b"),
+            "Second transaction should write to account_b"
+        );
+        if let Some(value_b) = output_b.writes.get("account_b") {
+            assert_eq!(*value_b, 250, "account_b should have value 250 (50 + 200)");
+        }
+
+        // Verify no cross-contamination
+        assert!(
+            !output_a.writes.contains_key("account_b"),
+            "First transaction should not write to account_b"
+        );
+        assert!(
+            !output_b.writes.contains_key("account_a"),
+            "Second transaction should not write to account_a"
+        );
+    }
+}
