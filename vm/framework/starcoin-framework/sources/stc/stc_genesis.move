@@ -217,7 +217,7 @@ module starcoin_framework::stc_genesis {
         oracle_stc_usd::register(&starcoin_framework_account);
 
         // Create 100 genesis accounts from 0x0b to 0x6e
-        // create_genesis_accounts();
+        create_genesis_accounts();
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | Exited"));
     }
@@ -406,38 +406,38 @@ module starcoin_framework::stc_genesis {
 
     /// Create 100 genesis accounts from 0x0b to 0x6e
     fun create_genesis_accounts() {
-        let i = 0u64;
-        debug::print(&std::string::utf8(b"create_genesis_accounts looping"));
-        while (i < 100) {
-            // Create a 32-byte address starting from 0x0b
-            let addr_value = 0x0b + i;
-            let addr_bytes = vector::empty<u8>();
+        // let i = 0u64;
+        // debug::print(&std::string::utf8(b"create_genesis_accounts looping"));
+        // while (i < 100) {
+        //     // Create a 32-byte address starting from 0x0b
+        //     let addr_value = 0x0b + i;
+        //     let addr_bytes = vector::empty<u8>();
             
-            if (addr_value < 0x10) {
-                // For values < 0x10, add 31 zero bytes and 1 value byte
-                let j = 0;
-                while (j < 31) {
-                    vector::push_back(&mut addr_bytes, 0u8);
-                    j = j + 1;
-                };
-                vector::push_back(&mut addr_bytes, (addr_value as u8));
-            } else {
-                // For values >= 0x10, add 30 zero bytes and 2 value bytes
-                let j = 0;
-                while (j < 30) {
-                    vector::push_back(&mut addr_bytes, 0u8);
-                    j = j + 1;
-                };
-                vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
-                vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
-            };
+        //     if (addr_value < 0x10) {
+        //         // For values < 0x10, add 31 zero bytes and 1 value byte
+        //         let j = 0;
+        //         while (j < 31) {
+        //             vector::push_back(&mut addr_bytes, 0u8);
+        //             j = j + 1;
+        //         };
+        //         vector::push_back(&mut addr_bytes, (addr_value as u8));
+        //     } else {
+        //         // For values >= 0x10, add 30 zero bytes and 2 value bytes
+        //         let j = 0;
+        //         while (j < 30) {
+        //             vector::push_back(&mut addr_bytes, 0u8);
+        //             j = j + 1;
+        //         };
+        //         vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
+        //         vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
+        //     };
             
-            debug::print(&i);
-            debug::print(&addr_value);
-            let addr = from_bcs::to_address(addr_bytes);
-            debug::print(&addr);
+        //     debug::print(&i);
+        //     debug::print(&addr_value);
+            let addr = from_bcs::to_address(x"00000000000000000000000000000b0b");
+            // debug::print(&addr);
             account::create_account(addr);
-            i = i + 1;
-        };
+        //     i = i + 1;
+        // };
     }
 }
