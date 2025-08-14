@@ -217,7 +217,7 @@ module starcoin_framework::stc_genesis {
         oracle_stc_usd::register(&starcoin_framework_account);
 
         // Create 100 genesis accounts from 0x0b to 0x6e
-        create_genesis_accounts();
+        // create_genesis_accounts();
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | Exited"));
     }
