@@ -60,7 +60,7 @@ impl<'a> RemoteStateReader<'a> {
     }
 }
 
-impl<'a> ChainStateReader for RemoteStateReader<'a> {
+impl ChainStateReader for RemoteStateReader<'_> {
     fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof> {
         self.client
             .state_get_with_proof_by_root2(state_key.clone(), self.state_root)
@@ -104,7 +104,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
 }
 
-impl<'a> TStateView for RemoteStateReader<'a> {
+impl TStateView for RemoteStateReader<'_> {
     type Key = StateKey;
 
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {

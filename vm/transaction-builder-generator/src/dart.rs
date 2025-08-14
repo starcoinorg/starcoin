@@ -181,7 +181,7 @@ struct DartEmitter<'a, T> {
     package_name: &'a str,
 }
 
-impl<'a, T> DartEmitter<'a, T>
+impl<T> DartEmitter<'_, T>
 where
     T: Write,
 {

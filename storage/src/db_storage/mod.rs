@@ -329,7 +329,7 @@ where
     }
 }
 
-impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>
+impl<K, V> Iterator for SchemaIterator<'_, K, V>
 where
     K: KeyCodec,
     V: ValueCodec,

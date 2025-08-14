@@ -22,7 +22,6 @@ pub struct EchoStruct {
 #[allow(clippy::upper_case_acronyms)]
 // following clippy rule or explicit annotate lifetime is not applicable here
 // temporary shallow clippy here
-#[allow(mismatched_lifetime_syntaxes)]
 pub trait KVRpc: Sized + Send + Sync {
     fn echo_str(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
     fn echo_struct(&self, peer_id: PeerId, req: EchoStruct) -> BoxFuture<Result<EchoStruct>>;

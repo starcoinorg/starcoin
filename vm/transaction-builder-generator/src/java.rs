@@ -173,7 +173,7 @@ struct JavaEmitter<'a, T> {
     package_name: &'a str,
 }
 
-impl<'a, T> JavaEmitter<'a, T>
+impl<T> JavaEmitter<'_, T>
 where
     T: Write,
 {

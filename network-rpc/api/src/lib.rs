@@ -190,7 +190,6 @@ pub struct Ping {
 
 // following clippy rule or explicit annotate lifetime is not applicable here
 // temporary shallow clippy here
-#[allow(mismatched_lifetime_syntaxes)]
 #[net_rpc(client, server)]
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
