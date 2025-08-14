@@ -10,7 +10,7 @@ Uses aggregator_v2 for parallel execution and distributes fees across 100 genesi
 -  [Resource `AutoIncrementCounter`](#0x1_stc_transaction_fee_AutoIncrementCounter)
 -  [Function `initialize`](#0x1_stc_transaction_fee_initialize)
 -  [Function `add_txn_fee_token`](#0x1_stc_transaction_fee_add_txn_fee_token)
--  [Function `get_genesis_account_address`](#0x1_stc_transaction_fee_get_genesis_account_address)
+-  [Function `next_storage_address`](#0x1_stc_transaction_fee_next_storage_address)
 -  [Function `pay_fee`](#0x1_stc_transaction_fee_pay_fee)
 -  [Function `distribute_transaction_fees`](#0x1_stc_transaction_fee_distribute_transaction_fees)
 -  [Specification](#@Specification_0)
@@ -121,14 +121,14 @@ publishing a wrapper of the <code><a href="stc_transaction_fee.md#0x1_stc_transa
 
 </details>
 
-<a id="0x1_stc_transaction_fee_get_genesis_account_address"></a>
+<a id="0x1_stc_transaction_fee_next_storage_address"></a>
 
-## Function `get_genesis_account_address`
+## Function `next_storage_address`
 
-Helper function to create a genesis account address from index (0-99)
+Helper function to create a storage account address from predefined addresses
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_get_genesis_account_address">get_genesis_account_address</a>(index: u64): <b>address</b>
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>(): <b>address</b>
 </code></pre>
 
 
@@ -137,31 +137,13 @@ Helper function to create a genesis account address from index (0-99)
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_get_genesis_account_address">get_genesis_account_address</a>(index: u64): <b>address</b> {
-    // Create a 32-byte <b>address</b> for genesis <a href="account.md#0x1_account">account</a> (0x0b + index)
-    <b>let</b> addr_value = 0x0b + index;
-    <b>let</b> addr_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>(): <b>address</b> {
+    // Increment counter and get which storage <a href="account.md#0x1_account">account</a> <b>to</b> <b>use</b>
+    // <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
+    // <b>let</b> counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
+    // <b>let</b> storage_account_index = counter_value % 100;
 
-    <b>if</b> (addr_value &lt; 0x10) {
-        // For values &lt; 0x10, add 31 zero bytes and 1 value byte
-        <b>let</b> j = 0;
-        <b>while</b> (j &lt; 31) {
-            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
-            j = j + 1;
-        };
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8));
-    } <b>else</b> {
-        // For values &gt;= 0x10, add 30 zero bytes and 2 value bytes
-        <b>let</b> j = 0;
-        <b>while</b> (j &lt; 30) {
-            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
-            j = j + 1;
-        };
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, ((addr_value &gt;&gt; 8) <b>as</b> u8)); // high byte
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8)); // low byte
-    };
-
-    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(addr_bytes)
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
 }
 </code></pre>
 
@@ -173,7 +155,7 @@ Helper function to create a genesis account address from index (0-99)
 
 ## Function `pay_fee`
 
-Deposit <code>token</code> into one of the 100 genesis accounts based on counter
+Deposit <code>token</code> into one of the storage accounts
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;)
@@ -190,16 +172,11 @@ Deposit <code>token</code> into one of the 100 genesis accounts based on counter
         <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
     );
 
-    // Increment counter and get which genesis <a href="account.md#0x1_account">account</a> <b>to</b> <b>use</b>
-    <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-    <b>let</b> counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
-    <b>let</b> genesis_account_index = counter_value % 100;
-
     // Get the target genesis <a href="account.md#0x1_account">account</a> <b>address</b>
-    <b>let</b> target_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_get_genesis_account_address">get_genesis_account_address</a>(genesis_account_index);
+    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
 
     // Deposit the fee directly <b>to</b> the selected genesis <a href="account.md#0x1_account">account</a>
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(target_address, token);
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(deposit_address, token);
 }
 </code></pre>
 
@@ -234,34 +211,21 @@ This function iterates through all genesis accounts and withdraws available fees
     // Create accumulator for all collected fees
     <b>let</b> total_fees = <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;();
 
-    // Iterate through all 100 genesis accounts and collect their fees
-    <b>let</b> i = 0;
-    <b>while</b> (i &lt; 100) {
-        <b>let</b> genesis_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_get_genesis_account_address">get_genesis_account_address</a>(i);
+    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
+
+    <b>while</b> (<b>true</b>) {
+        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
 
         // Check <b>if</b> the genesis <a href="account.md#0x1_account">account</a> <b>has</b> <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> balance
-        <b>if</b> (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(genesis_address) &gt; 0) {
-            <b>let</b> account_balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(genesis_address);
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Collecting from genesis <a href="account.md#0x1_account">account</a>: "));
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&i);
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b" <b>with</b> balance: "));
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&account_balance);
-
+        <b>if</b> (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address) &gt; 0) {
+            <b>let</b> account_balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address);
             // Create <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> for the genesis <a href="account.md#0x1_account">account</a> and withdraw all funds
-            <b>let</b> genesis_signer = <a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(genesis_address);
+            <b>let</b> genesis_signer = <a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(withdraw_address);
             <b>let</b> withdrawn_coin = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenType&gt;(&genesis_signer, account_balance);
             <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_fees, withdrawn_coin);
         };
 
-        i = i + 1;
-    };
-
-    <b>let</b> total_value = <a href="coin.md#0x1_coin_value">coin::value</a>&lt;TokenType&gt;(&total_fees);
-    <b>if</b> (total_value &gt; 0) {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit <b>with</b> total value: "));
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&total_value);
-    } <b>else</b> {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit <b>with</b> zero"));
+        <b>if</b> (withdraw_address == first_withdraw_address) <b>break</b>;
     };
 
     total_fees

@@ -530,39 +530,39 @@ Create 100 genesis accounts from 0x0b to 0x6e
 
 
 <pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>() {
-    <b>let</b> i = 0u64;
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"create_genesis_accounts looping"));
-    <b>while</b> (i &lt; 100) {
-        // Create a 32-byte <b>address</b> starting from 0x0b
-        <b>let</b> addr_value = 0x0b + i;
-        <b>let</b> addr_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+    // <b>let</b> i = 0u64;
+    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"create_genesis_accounts looping"));
+    // <b>while</b> (i &lt; 100) {
+    //     // Create a 32-byte <b>address</b> starting from 0x0b
+    //     <b>let</b> addr_value = 0x0b + i;
+    //     <b>let</b> addr_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
 
-        <b>if</b> (addr_value &lt; 0x10) {
-            // For values &lt; 0x10, add 31 zero bytes and 1 value byte
-            <b>let</b> j = 0;
-            <b>while</b> (j &lt; 31) {
-                <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
-                j = j + 1;
-            };
-            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8));
-        } <b>else</b> {
-            // For values &gt;= 0x10, add 30 zero bytes and 2 value bytes
-            <b>let</b> j = 0;
-            <b>while</b> (j &lt; 30) {
-                <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
-                j = j + 1;
-            };
-            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, ((addr_value &gt;&gt; 8) <b>as</b> u8)); // high byte
-            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8)); // low byte
-        };
+    //     <b>if</b> (addr_value &lt; 0x10) {
+    //         // For values &lt; 0x10, add 31 zero bytes and 1 value byte
+    //         <b>let</b> j = 0;
+    //         <b>while</b> (j &lt; 31) {
+    //             <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
+    //             j = j + 1;
+    //         };
+    //         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8));
+    //     } <b>else</b> {
+    //         // For values &gt;= 0x10, add 30 zero bytes and 2 value bytes
+    //         <b>let</b> j = 0;
+    //         <b>while</b> (j &lt; 30) {
+    //             <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
+    //             j = j + 1;
+    //         };
+    //         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, ((addr_value &gt;&gt; 8) <b>as</b> u8)); // high byte
+    //         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8)); // low byte
+    //     };
 
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&i);
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr_value);
-        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(addr_bytes);
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr);
+    //     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&i);
+    //     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr_value);
+        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b");
+        // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr);
         <a href="account.md#0x1_account_create_account">account::create_account</a>(addr);
-        i = i + 1;
-    };
+    //     i = i + 1;
+    // };
 }
 </code></pre>
 

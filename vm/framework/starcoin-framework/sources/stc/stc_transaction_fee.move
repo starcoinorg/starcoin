@@ -55,50 +55,27 @@ module starcoin_framework::stc_transaction_fee {
         aborts_if exists<AutoIncrementCounter<TokenType>>(signer::address_of(account));
     }
 
-    /// Helper function to create a genesis account address from index (0-99)
-    fun get_genesis_account_address(index: u64): address {
-        // Create a 32-byte address for genesis account (0x0b + index)
-        let addr_value = 0x0b + index;
-        let addr_bytes = vector::empty<u8>();
-        
-        if (addr_value < 0x10) {
-            // For values < 0x10, add 31 zero bytes and 1 value byte
-            let j = 0;
-            while (j < 31) {
-                vector::push_back(&mut addr_bytes, 0u8);
-                j = j + 1;
-            };
-            vector::push_back(&mut addr_bytes, (addr_value as u8));
-        } else {
-            // For values >= 0x10, add 30 zero bytes and 2 value bytes
-            let j = 0;
-            while (j < 30) {
-                vector::push_back(&mut addr_bytes, 0u8);
-                j = j + 1;
-            };
-            vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
-            vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
-        };
-        
-        from_bcs::to_address(addr_bytes)
+    /// Helper function to create a storage account address from predefined addresses
+    fun next_storage_address(): address {
+        // Increment counter and get which storage account to use
+        // aggregator_v2::add(&mut counter_resource.counter, 1);
+        // let counter_value = aggregator_v2::read(&counter_resource.counter);
+        // let storage_account_index = counter_value % 100;
+
+        from_bcs::to_address(x"00000000000000000000000000000b0b")
     }
 
-    /// Deposit `token` into one of the 100 genesis accounts based on counter
+    /// Deposit `token` into one of the storage accounts
     public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) acquires AutoIncrementCounter {
         let counter_resource = borrow_global_mut<AutoIncrementCounter<TokenType>>(
             system_addresses::get_starcoin_framework()
         );
         
-        // Increment counter and get which genesis account to use
-        aggregator_v2::add(&mut counter_resource.counter, 1);
-        let counter_value = aggregator_v2::read(&counter_resource.counter);
-        let genesis_account_index = counter_value % 100;
-        
         // Get the target genesis account address
-        let target_address = get_genesis_account_address(genesis_account_index);
+        let deposit_address = next_storage_address();
         
         // Deposit the fee directly to the selected genesis account
-        coin::deposit(target_address, token);
+        coin::deposit(deposit_address, token);
     }
 
     spec pay_fee {
@@ -119,34 +96,21 @@ module starcoin_framework::stc_transaction_fee {
         // Create accumulator for all collected fees
         let total_fees = coin::zero<TokenType>();
         
-        // Iterate through all 100 genesis accounts and collect their fees
-        let i = 0;
-        while (i < 100) {
-            let genesis_address = get_genesis_account_address(i);
-            
+        let first_withdraw_address = next_storage_address();
+
+        while (true) {
+            let withdraw_address = next_storage_address();
+
             // Check if the genesis account has any balance
-            if (coin::balance<TokenType>(genesis_address) > 0) {
-                let account_balance = coin::balance<TokenType>(genesis_address);
-                debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Collecting from genesis account: "));
-                debug::print(&i);
-                debug::print(&std::string::utf8(b" with balance: "));
-                debug::print(&account_balance);
-                
+            if (coin::balance<TokenType>(withdraw_address) > 0) {
+                let account_balance = coin::balance<TokenType>(withdraw_address);
                 // Create signer for the genesis account and withdraw all funds
-                let genesis_signer = create_signer::create_signer(genesis_address);
+                let genesis_signer = create_signer::create_signer(withdraw_address);
                 let withdrawn_coin = coin::withdraw<TokenType>(&genesis_signer, account_balance);
                 coin::merge(&mut total_fees, withdrawn_coin);
             };
-            
-            i = i + 1;
-        };
 
-        let total_value = coin::value<TokenType>(&total_fees);
-        if (total_value > 0) {
-            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with total value: "));
-            debug::print(&total_value);
-        } else {
-            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with zero"));
+            if (withdraw_address == first_withdraw_address) break;
         };
 
         total_fees
