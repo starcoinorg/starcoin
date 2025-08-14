@@ -142,15 +142,16 @@ Helper function to create a genesis account address from index (0-99)
     <b>let</b> addr_value = 0x0b + index;
     <b>let</b> addr_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
 
-    // Add 31 zero bytes
+    // Add 30 zero bytes (not 31!)
     <b>let</b> j = 0;
-    <b>while</b> (j &lt; 31) {
+    <b>while</b> (j &lt; 30) {
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
         j = j + 1;
     };
 
-    // Add the <b>address</b> value <b>as</b> the last byte
-    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8));
+    // Add the <b>address</b> value <b>as</b> the last 2 bytes (<b>to</b> handle values &gt; 255)
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, ((addr_value &gt;&gt; 8) <b>as</b> u8)); // high byte
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8)); // low byte
 
     <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(addr_bytes)
 }

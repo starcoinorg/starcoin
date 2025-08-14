@@ -61,15 +61,16 @@ module starcoin_framework::stc_transaction_fee {
         let addr_value = 0x0b + index;
         let addr_bytes = vector::empty<u8>();
         
-        // Add 31 zero bytes
+        // Add 30 zero bytes (not 31!)
         let j = 0;
-        while (j < 31) {
+        while (j < 30) {
             vector::push_back(&mut addr_bytes, 0u8);
             j = j + 1;
         };
         
-        // Add the address value as the last byte
-        vector::push_back(&mut addr_bytes, (addr_value as u8));
+        // Add the address value as the last 2 bytes (to handle values > 255)
+        vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
+        vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
         
         from_bcs::to_address(addr_bytes)
     }
