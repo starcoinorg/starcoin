@@ -82,7 +82,7 @@ pub fn new_dag_block(
 #[stest::test]
 async fn test_dag_block_chain_apply() {
     let times = 12;
-    let (mut writeable_block_chain_service, node_config, _) =
+    let (mut writeable_block_chain_service, node_config, _, _) =
         create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let last_header_id = gen_dag_blocks(times, &mut writeable_block_chain_service, net);
@@ -115,6 +115,7 @@ fn gen_fork_dag_block_chain(
                 net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_main().get_storage(),
+                writeable_block_chain_service.get_storage2(),
                 None,
                 dag.clone(),
             )
@@ -147,7 +148,7 @@ fn gen_fork_dag_block_chain(
 #[stest::test(timeout = 120)]
 async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     let times = 12;
-    let (mut writeable_block_chain_service, node_config, _) =
+    let (mut writeable_block_chain_service, node_config, _, _) =
         create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let mut last_block = gen_dag_blocks(times, &mut writeable_block_chain_service, net)?;
@@ -181,7 +182,7 @@ async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
 #[stest::test]
 async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) =
+    let (mut writeable_block_chain_service, node_config, _, _) =
         create_writeable_dag_block_chain().await;
     let net = node_config.net();
     let last_block = gen_dag_blocks(times, &mut writeable_block_chain_service, net)?;

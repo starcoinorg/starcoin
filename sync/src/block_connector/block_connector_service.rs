@@ -439,7 +439,7 @@ where
             let block = self.chain_service.create_block(
                 msg.author,
                 msg.parent_hash,
-                msg.user_txns.clone(),
+                msg.multi_txns.clone(),
                 msg.uncles.clone(),
                 msg.block_gas_limit,
                 msg.tips.clone(),

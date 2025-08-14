@@ -27,7 +27,9 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 #[cfg(test)]
-use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use starcoin_vm_types::account_address::AccountAddress;
+#[cfg(test)]
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 // use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
@@ -154,6 +156,7 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        storage2: Arc<Storage2>,
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
@@ -163,6 +166,7 @@ where
             config.clone(),
             startup_info,
             storage,
+            storage2,
             txpool,
             bus,
             vm_metrics,
@@ -224,6 +228,10 @@ where
     pub fn get_main(&self) -> &BlockChain {
         &self.main
     }
+    
+    pub fn get_storage2(&self) -> Arc<Storage2> {
+        self.storage2.clone()
+    }
 
     pub fn get_bus(&self) -> ServiceRef<BusService> {
         self.bus.clone()
@@ -239,7 +247,7 @@ where
         &self,
         author: AccountAddress,
         parent_hash: Option<HashValue>,
-        user_txns: Vec<SignedUserTransaction>,
+        multi_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
         tips: Vec<HashValue>,
@@ -247,7 +255,7 @@ where
         let (block_template, _transactions) = self.main.create_block_template(
             author,
             parent_hash,
-            user_txns,
+            multi_txns,
             uncles,
             block_gas_limit,
             tips,

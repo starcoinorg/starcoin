@@ -10,7 +10,6 @@ use futures::channel::mpsc::unbounded;
 use starcoin_chain_api::ChainReader;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_storage::BlockStore;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
 
@@ -35,12 +34,14 @@ async fn sync_block_process(
             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
         )?;
 
+        let storage2 = local_node.get_storage2();
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
             target.clone(),
             false,
             local_net.time_service(),
             storage.clone(),
+            storage2,
             block_chain_service,
             target_node.clone(),
             local_ancestor_sender,

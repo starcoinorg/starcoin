@@ -377,8 +377,9 @@ impl GenesisConfig {
         Ok(())
     }
 
-    pub fn consensus(&self) -> u8 {
-        self.consensus_config.strategy
+    pub fn consensus(&self) -> crate::genesis_config::ConsensusStrategy {
+        crate::genesis_config::ConsensusStrategy::try_from(self.consensus_config.strategy)
+            .expect("consensus strategy config error.")
     }
 }
 

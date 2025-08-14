@@ -83,7 +83,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
         all_txns.extend_from_slice(&[Transaction::BlockMetadata(
-            block.to_metadata(current_header.gas_used(), 0),
+            block.to_metadata(current_header.gas_used()),
         )
         .into()]);
         all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));

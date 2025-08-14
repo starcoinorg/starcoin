@@ -11,7 +11,8 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::{Storage, Store};
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
@@ -160,6 +161,68 @@ impl MockChain {
             self.produce_and_apply()?;
         }
         Ok(())
+    }
+
+    pub fn connect(&mut self, executed_block: ExecutedBlock) -> Result<()> {
+        self.head.connect(executed_block)?;
+        Ok(())
+    }
+
+    pub fn produce_and_apply_with_tips_for_times(
+        &mut self,
+        times: u64,
+    ) -> Result<Vec<ExecutedBlock>> {
+        let mut blocks = Vec::new();
+        for _i in 0..times {
+            let header = self.produce_and_apply_by_tips(
+                self.head.current_header(),
+                vec![self.head.current_header().id()],
+            )?;
+            let block = self
+                .head
+                .get_storage()
+                .get_block_by_hash(header.id())?
+                .unwrap();
+            let block_info = self
+                .head
+                .get_storage()
+                .get_block_info(header.id())?
+                .unwrap();
+            // Create ExecutedBlock with MultiState
+            let executed_block = ExecutedBlock::new(block, block_info, MultiState::default());
+            blocks.push(executed_block);
+        }
+        Ok(blocks)
+    }
+
+    pub fn produce_and_apply_by_tips(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<BlockHeader> {
+        let block = self.produce_block_by_tips(&parent_header, tips)?;
+        self.head.apply(block.clone())?;
+        let header = block.header().clone();
+        Ok(header)
+    }
+
+    pub fn produce_block_by_tips(
+        &mut self,
+        parent_header: &BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<Block> {
+        let (block_template, _) = self.head.create_block_template(
+            *self.miner.address(),
+            Some(parent_header.id()),
+            Vec::new(),
+            vec![],
+            None,
+            tips,
+            HashValue::zero(),
+        )?;
+        let new_block = self.head.consensus()
+            .create_block(block_template, self.net.time_service().as_ref())?;
+        Ok(new_block)
     }
 
     pub fn miner(&self) -> &AccountInfo {

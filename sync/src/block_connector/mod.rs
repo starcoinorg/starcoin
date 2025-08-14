@@ -25,7 +25,7 @@ use starcoin_vm_types::genesis_config::ConsensusStrategy;
 pub use write_block_chain::WriteBlockChainService;
 #[cfg(test)]
 use {
-    starcoin_types::transaction::SignedUserTransaction,
+    starcoin_types::multi_transaction::MultiSignedUserTransaction,
     starcoin_vm_types::account_address::AccountAddress,
 };
 
@@ -69,7 +69,7 @@ pub struct CreateBlockRequest {
     pub count: u64,
     pub author: AccountAddress,
     pub parent_hash: Option<HashValue>,
-    pub user_txns: Vec<SignedUserTransaction>,
+    pub multi_txns: Vec<MultiSignedUserTransaction>,
     pub uncles: Vec<BlockHeader>,
     pub block_gas_limit: Option<u64>,
     pub tips: Vec<HashValue>,

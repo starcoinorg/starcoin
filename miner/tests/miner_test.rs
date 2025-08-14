@@ -26,7 +26,7 @@ async fn test_miner_service() {
     let registry = RegistryService::launch();
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
-    let (storage, _chain_info, genesis, dag) =
+    let (storage, storage2, _chain_info, genesis, dag) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
     registry.put_shared(dag).await.unwrap();
@@ -38,7 +38,7 @@ async fn test_miner_service() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2, chain_header, None);
     registry.put_shared(txpool).await.unwrap();
     registry
         .register_mocker(AccountService::mock().unwrap())
@@ -76,9 +76,10 @@ async fn test_miner_service() {
     let diff = U256::from(1024);
     let minting_blob = vec![0u8; 76];
 
+    // Use genesis_config2 directly since vm1 consensus is not maintained
     let nonce = config
         .net()
-        .genesis_config()
+        .genesis_config2()
         .consensus()
         .solve_consensus_nonce(&minting_blob, diff, config.net().time_service().as_ref());
     miner

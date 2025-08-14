@@ -50,6 +50,7 @@ stdlib = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 starcoin-chain = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [features]
 default = []

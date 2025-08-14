@@ -18,7 +18,7 @@ use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
 pub use legacy::{Block as LegacyBlock, BlockBody as LegacyBlockBody};
-use raw_block_header::RawBlockHeader;
+pub use raw_block_header::RawBlockHeader;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -389,6 +389,30 @@ impl BlockHeader {
             0,
             BlockHeaderExtra([0u8; 4]),
         )
+    }
+
+    pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
+        let mut header = Self::random();
+        header.parents_hash = vec![];
+        header.number = dag_genesis_number;
+        header.id = Some(header.calc_hash());
+        header
+    }
+
+    //for test
+    pub fn dag_genesis_random_with_parent(parent: Self) -> anyhow::Result<Self> {
+        let header_builder = BlockHeaderBuilder::random();
+        anyhow::Result::Ok(
+            header_builder
+                .with_parent_hash(parent.id())
+                .with_parents_hash(vec![parent.id()])
+                .with_number(0)
+                .build(),
+        )
+    }
+
+    pub fn calc_hash(&self) -> HashValue {
+        self.crypto_hash()
     }
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {

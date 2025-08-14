@@ -39,7 +39,7 @@ pub struct SyncTestSystem {
 #[cfg(test)]
 impl SyncTestSystem {
     pub async fn initialize_sync_system() -> Result<Self> {
-        let config = Arc::new(NodeConfig::random_for_dag_test());
+        let config = Arc::new(NodeConfig::random_for_test());
 
         let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref());
         let storage_path = temp_path.join(Path::new("local/storage"));
@@ -52,6 +52,12 @@ impl SyncTestSystem {
             ))
             .unwrap(),
         );
+        // Create storage2 using cache instance for simplicity in tests
+        let storage2 = Arc::new(
+            starcoin_vm2_storage::Storage::new(
+                starcoin_vm2_storage::storage::StorageInstance::new_cache_instance()
+            ).unwrap(),
+        );
         let genesis = Genesis::load_or_build(config.net())?;
         // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -62,12 +68,13 @@ impl SyncTestSystem {
         let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage); // local dag
 
         let chain_info =
-            genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
+            genesis.execute_genesis_block(config.net(), storage.clone(), storage2.clone(), dag.clone())?;
 
         let target_node = SyncNodeMocker::new(config.net().clone(), 300, 0)?;
         let local_node = SyncNodeMocker::new_with_storage(
             config.net().clone(),
             storage.clone(),
+            storage2.clone(),
             chain_info.clone(),
             AccountInfo::random(),
             300,
@@ -129,14 +136,16 @@ impl SyncTestSystem {
 
 #[cfg(test)]
 pub async fn full_sync_new_node() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
-
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    
+    // Create storage2 for test
+    let (_, test_storage2, _, _, _) = Genesis::init_storage_for_test(&net2)?;
     let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
 
     let target = arc_node1.sync_target();
@@ -146,12 +155,14 @@ pub async fn full_sync_new_node() -> Result<()> {
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    // Use the test_storage2 created above
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
         net2.time_service(),
         storage.clone(),
+        test_storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,
@@ -179,12 +190,14 @@ pub async fn full_sync_new_node() -> Result<()> {
     let (sender_2, _receiver_2) = unbounded();
     //sync again
     let target = arc_node1.sync_target();
+    // Use the test_storage2 created above
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
         net2.time_service(),
         storage.clone(),
+        test_storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,

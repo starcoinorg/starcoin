@@ -13,6 +13,7 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
@@ -24,7 +25,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{account_address, U256};
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
@@ -38,12 +39,14 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         test_helper::start_txpool_with_miner(1000, true).await;
     let startup_info = storage.get_startup_info()?.unwrap();
     let net = config.net();
+    let dag = BlockDAG::create_for_testing()?;
     let mut block_chain = BlockChain::new(
         net.time_service(),
         startup_info.main,
         storage,
         storage2,
         None,
+        dag,
     )?;
     let miner_account = AccountInfo::random();
 
@@ -112,7 +115,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(executed_block);
-    bus.broadcast(NewHeadBlock(block_detail))?;
+    bus.broadcast(NewHeadBlock { executed_block: block_detail })?;
 
     let mut receiver = receiver;
 

@@ -10,17 +10,19 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::startup_info::StartupInfo;
+use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 
 pub async fn create_writeable_dag_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,
+    Arc<Storage2>,
 ) {
-    let node_config = NodeConfig::random_for_dag_test();
+    let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
@@ -30,6 +32,7 @@ pub async fn create_writeable_dag_block_chain() -> (
             node_config.clone(),
             StartupInfo::new(chain_info.head().id()),
             storage.clone(),
+            storage2.clone(),
             txpool_service,
             bus,
             None,
@@ -38,6 +41,7 @@ pub async fn create_writeable_dag_block_chain() -> (
         .unwrap(),
         node_config,
         storage,
+        storage2,
     )
 }
 
@@ -45,11 +49,12 @@ pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,
+    Arc<Storage2>,
 ) {
-    let node_config = NodeConfig::random_for_dag_test();
+    let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, chain_info, _, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
@@ -59,6 +64,7 @@ pub async fn create_writeable_block_chain() -> (
             node_config.clone(),
             StartupInfo::new(chain_info.head().id()),
             storage.clone(),
+            storage2.clone(),
             txpool_service,
             bus,
             None,
@@ -67,5 +73,6 @@ pub async fn create_writeable_block_chain() -> (
         .unwrap(),
         node_config,
         storage,
+        storage2,
     )
 }

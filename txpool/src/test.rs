@@ -24,6 +24,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, TransactionPayload},
     U256,
 };
+use starcoin_vm2_types::account_address::AccountAddress as VM2AccountAddress;
 use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
 use tokio::time::sleep;
@@ -211,6 +212,11 @@ async fn test_rollback() -> Result<()> {
     let pack_txn_to_block = |txn: SignedUserTransaction| {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
+        // 直接生成VM2的AccountAddress
+        let vm2_account_address = {
+            let bytes = account_address.to_vec();
+            VM2AccountAddress::from_bytes(bytes).expect("valid address")
+        };
         let storage = storage.clone();
         let storage2 = storage2.clone();
         let main = storage.get_startup_info()?.unwrap().main;
@@ -219,14 +225,18 @@ async fn test_rollback() -> Result<()> {
         let mut open_block = OpenedBlock::new(
             storage,
             storage2,
-            block_header,
+            block_header.clone(),
             u64::MAX,
-            account_address,
+            vm2_account_address,
             (start_timestamp + 60 * 10) * 1000,
             vec![],
             U256::from(1024u64),
-            config.net().genesis_config().consensus(),
+            config.net().genesis_config2().consensus(),
             None,
+            vec![block_header.id()],  // tips_hash
+            block_header.version(),    // version
+            block_header.pruning_point(),  // pruning_point
+            0,  // red_blocks
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
@@ -246,12 +256,14 @@ async fn test_rollback() -> Result<()> {
     // BlockInfo is needed for multi-vm chain, It's easier to execute the block to update vm1 chain state
     {
         let main = storage.get_startup_info()?.unwrap().main;
+        let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing()?;
         let mut chain = BlockChain::new(
             config.net().time_service(),
             main,
             storage.clone(),
             storage2.clone(),
             None,
+            dag,
         )?;
         config.net().time_service().sleep(60 * 10 * 1000);
 

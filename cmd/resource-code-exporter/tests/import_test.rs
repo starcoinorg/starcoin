@@ -5,6 +5,7 @@
 mod import_test {
     use anyhow::format_err;
     use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
+    use starcoin_crypto::HashValue;
     use starcoin_chain::ChainReader;
     use starcoin_config::{ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_consensus::Consensus;

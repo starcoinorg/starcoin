@@ -1,5 +1,4 @@
 use anyhow::Result;
-use starcoin_account_api::AccountInfo;
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -9,7 +8,7 @@ use starcoin_types::U256;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
-use starcoin_vm2_types::{account_address, account_config};
+use starcoin_vm2_types::{account_config, account_address};
 use std::{convert::TryInto, sync::Arc};
 
 #[stest::test]
@@ -20,18 +19,24 @@ pub fn test_open_block() -> Result<()> {
     let block_gas_limit = 10000000;
 
     let mut opened_block = {
-        let miner_account = AccountInfo::random();
+        // Generate a vm2 AccountAddress for the miner
+        let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+        let miner_address = account_address::from_public_key(&public_key);
         OpenedBlock::new(
             chain.get_storage(),
             chain.get_storage2(),
-            header,
+            header.clone(),
             block_gas_limit,
-            miner_account.address,
+            miner_address,  // Use vm2 address
             config.net().time_service().now_millis(),
             vec![],
             U256::from(0),
             chain.consensus(),
             None,
+            vec![header.id()],  // tips_hash - use current header id for test
+            header.version(),  // version from header
+            header.pruning_point(),  // pruning_point from header
+            0,  // red_blocks - 0 for test
         )?
     };
 

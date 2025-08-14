@@ -17,7 +17,7 @@ use super::{
 };
 
 fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
-    BlockBody::new(vec![SignedUserTransaction::mock()], Some(uncles))
+    BlockBody::new(vec![SignedUserTransaction::mock().into()], Some(uncles))
 }
 
 fn build_version_0_block_header(body: HashValue, number: BlockNumber) -> BlockHeader {
@@ -33,7 +33,7 @@ fn build_version_0_block_header(body: HashValue, number: BlockNumber) -> BlockHe
         .with_gas_used(rand::random())
         .with_difficulty(U256::from(rand::random::<u64>()))
         .with_body_hash(body)
-        .with_chain_id(ChainId::vega())
+        .with_chain_id(ChainId::test())
         .with_nonce(rand::random())
         .with_extra(BlockHeaderExtra::new([
             rand::random::<u8>(),

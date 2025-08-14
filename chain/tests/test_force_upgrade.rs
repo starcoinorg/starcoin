@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::format_err;
 use starcoin_account_api::AccountInfo;
+use starcoin_crypto::HashValue;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
