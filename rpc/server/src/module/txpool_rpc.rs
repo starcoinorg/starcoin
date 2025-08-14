@@ -19,7 +19,6 @@ use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::convert::TryInto;
 
 /// Re-export the API
-
 pub struct TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService + 'static,

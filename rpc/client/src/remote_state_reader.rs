@@ -77,7 +77,7 @@ impl<'a> RemoteStateReader<'a> {
     }
 }
 
-impl<'a> ChainStateReader for RemoteStateReader<'a> {
+impl ChainStateReader for RemoteStateReader<'_> {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         self.client
             .state_get_with_proof_by_root(access_path.clone(), self.state_root)
@@ -121,7 +121,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
 }
 
-impl<'a> StateView for RemoteStateReader<'a> {
+impl StateView for RemoteStateReader<'_> {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match state_key {
             StateKey::AccessPath(access_path) => Ok(self

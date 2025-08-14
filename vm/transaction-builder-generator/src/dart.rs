@@ -151,7 +151,7 @@ fn write_script_call_files(
         .with_serialization(false);
     dart::CodeGenerator::new(&config)
         .output(install_dir, &script_registry)
-        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{}", err)))?;
+        .map_err(|err| std::io::Error::other(format!("{}", err)))?;
     Ok(())
 }
 
@@ -181,7 +181,7 @@ struct DartEmitter<'a, T> {
     package_name: &'a str,
 }
 
-impl<'a, T> DartEmitter<'a, T>
+impl<T> DartEmitter<'_, T>
 where
     T: Write,
 {

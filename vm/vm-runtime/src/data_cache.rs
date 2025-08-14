@@ -66,7 +66,7 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     }
 }
 
-impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
+impl<S: StateView> StateView for StateViewCache<'_, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
         match self.data_map.get(state_key) {
@@ -87,14 +87,14 @@ impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
     }
 }
 
-impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
+impl<S: StateView> ModuleResolver for StateViewCache<'_, S> {
     type Error = VMError;
 
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_module(module_id)
     }
 }
-impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
+impl<S: StateView> ResourceResolver for StateViewCache<'_, S> {
     type Error = VMError;
     fn get_resource(&self, address: &AccountAddress, tag: &StructTag) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_resource(address, tag)
@@ -116,7 +116,7 @@ impl<'a, S: StateView> RemoteStorage<'a, S> {
     }
 }
 
-impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
+impl<S: StateView> ModuleResolver for RemoteStorage<'_, S> {
     type Error = VMError;
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
@@ -124,7 +124,7 @@ impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
     }
 }
-impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
+impl<S: StateView> ResourceResolver for RemoteStorage<'_, S> {
     type Error = VMError;
     fn get_resource(
         &self,
@@ -143,7 +143,7 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
 //     }
 // }
 
-impl<'a, S> Deref for RemoteStorage<'a, S> {
+impl<S> Deref for RemoteStorage<'_, S> {
     type Target = S;
 
     fn deref(&self) -> &Self::Target {
@@ -151,7 +151,7 @@ impl<'a, S> Deref for RemoteStorage<'a, S> {
     }
 }
 
-impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
+impl<S: StateView> TableResolver for RemoteStorage<'_, S> {
     fn resolve_table_entry(
         &self,
         handle: &TableHandle,
@@ -163,11 +163,11 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> RemoteStorage<S>;
+    fn as_move_resolver(&self) -> RemoteStorage<'_, S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> RemoteStorage<S> {
+    fn as_move_resolver(&self) -> RemoteStorage<'_, S> {
         RemoteStorage::new(self)
     }
 }

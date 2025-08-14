@@ -193,7 +193,7 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
         python3::CodeGenerator::new(&config)
             .with_serde_package_name(self.serde_package_name.clone())
             .output(&mut self.out, &script_registry)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{}", err)))?;
+            .map_err(|err| std::io::Error::other(format!("{}", err)))?;
         Ok(())
     }
 

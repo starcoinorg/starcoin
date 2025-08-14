@@ -17,7 +17,6 @@
           "type": "object",
           "required": [
             "connectedPeers",
-            "externalAddresses",
             "listenedAddresses",
             "notConnectedPeers",
             "peerId",
@@ -124,15 +123,6 @@
                   }
                 }
               }
-            },
-            "externalAddresses": {
-              "description": "List of addresses the node knows it can be reached as.",
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "Multiaddr"
-              },
-              "uniqueItems": true
             },
             "listenedAddresses": {
               "description": "List of addresses the node is currently listening on.",
