@@ -118,6 +118,13 @@ impl TxPoolSyncService for MockTxPoolService {
     ) -> Option<u64> {
         todo!()
     }
+
+    fn next_sequence_number_in_batch(
+        &self,
+        _addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

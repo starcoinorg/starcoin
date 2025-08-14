@@ -181,6 +181,19 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.next_sequence_number(address)
     }
 
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_time
+                .with_label_values(&["next_sequence_number"])
+                .start_timer()
+        });
+        self.inner.next_sequence_number_in_batch(addresses)
+    }
+
     fn next_sequence_number_with_state(
         &self,
         address: AccountAddress,
@@ -367,6 +380,14 @@ impl Inner {
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
             .next_sequence_number(self.get_pool_client(), &address)
+    }
+
+    pub(crate) fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        self.queue
+            .next_sequence_number_in_batch(self.get_pool_client(), addresses)
     }
 
     pub(crate) fn next_sequence_number_with_header(

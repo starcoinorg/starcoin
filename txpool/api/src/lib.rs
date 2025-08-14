@@ -56,6 +56,13 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64>;
 
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>>;
+
     /// alike next_sequence_number, it needs the pool client with the specific account state
     fn next_sequence_number_with_state(
         &self,

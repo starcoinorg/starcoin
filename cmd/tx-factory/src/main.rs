@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Result};
+use anyhow::bail;
+use anyhow::{format_err, Result};
 use clap::Parser;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
@@ -19,6 +20,8 @@ use starcoin_types::transaction::RawUserTransaction;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Parser, Default)]
@@ -257,11 +260,16 @@ impl TxnMocker {
 
 impl TxnMocker {
     fn fetch_expiration_time(&self) -> u64 {
-        let node_info = self
-            .client
-            .node_info()
-            .expect("node_info() should not failed");
-        node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+        let now = SystemTime::now();
+        now.duration_since(UNIX_EPOCH)
+            .expect("time error")
+            .as_secs()
+            + DEFAULT_EXPIRATION_TIME
+        // let node_info = self
+        //     .client
+        //     .node_info()
+        //     .expect("node_info() should not failed");
+        // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
     }
     fn get_factory_status(&self) -> bool {
         self.client
@@ -347,6 +355,36 @@ impl TxnMocker {
                 )?;
 
                 self.account_unlock_time = Some(new_unlock_time);
+            }
+        }
+        Ok(())
+    }
+
+    fn submit_transaction_in_batch(
+        &self,
+        txns: Vec<(AccountAddress, Vec<RawUserTransaction>)>,
+        blocking: bool,
+    ) -> Result<()> {
+        info!("going to unlock accounts");
+        self.client.account_unlock_in_batch(
+            txns.iter()
+                .map(|(sender, _)| (sender.clone(), self.account_password.clone()))
+                .collect(),
+            self.unlock_duration,
+        )?;
+
+        let signed_transactions = self.client.account_sign_txn_in_batch(
+            txns.iter()
+                .flat_map(|(_, raw_txns)| raw_txns.clone())
+                .collect(),
+        )?;
+
+        let hashes = self.client.submit_transactions(signed_transactions)?;
+
+        if blocking {
+            for hash in hashes {
+                self.client
+                    .watch_txn(hash, Some(Duration::from_secs(self.watch_timeout as u64)))?;
             }
         }
         Ok(())
@@ -519,6 +557,39 @@ impl TxnMocker {
         Ok(account_list)
     }
 
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Result<Vec<(AccountAddress, Option<u64>)>> {
+        let seq_numbers = self
+            .client
+            .next_sequence_number_in_batch(addresses)?
+            .ok_or_else(|| format_err!("next_sequence_number_in_batch error"))?;
+        Ok(seq_numbers
+            .into_iter()
+            .map(|(address, seq_number)| match seq_number {
+                Some(seq_number) => (address, Some(seq_number)),
+                None => {
+                    let state_reader = self
+                        .client
+                        .state_reader(StateRootOption::Latest)
+                        .expect("state_reader error");
+                    let account_resource = state_reader
+                        .get_account_resource(address)
+                        .expect("get_account_resource error");
+                    let seq = match account_resource {
+                        None => None,
+                        Some(resource) => {
+                            info!("read from state {:?}", resource.sequence_number());
+                            Some(resource.sequence_number())
+                        }
+                    };
+                    (address, seq)
+                }
+            })
+            .collect())
+    }
+
     fn sequence_number(&self, address: AccountAddress) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
         info!(
@@ -542,6 +613,52 @@ impl TxnMocker {
         Ok(result)
     }
 
+    fn send_and_receive(
+        &self,
+        senders: Vec<(AccountAddress, Option<u64>)>,
+        receivers: Vec<AccountAddress>,
+        amount: u128,
+        round_num: u64,
+    ) -> Result<()> {
+        if receivers.len() < senders.len() {
+            bail!("receivers len {} is less than senders len {}, the account number should be better even", receivers.len(), senders.len());
+        }
+        let mut transactions = Vec::new();
+        let mut sender_transactions = Vec::new();
+        for (index, (sender_address, sequence_op)) in senders.iter().enumerate() {
+            let seq = match sequence_op {
+                Some(seq) => seq,
+                None => {
+                    info!("address {:?} seq is none", sender_address);
+                    continue;
+                }
+            };
+
+            for i in 0..round_num {
+                let txn = self.generator.generate_transfer_txn(
+                    *seq + i,
+                    sender_address.clone(),
+                    receivers[index],
+                    amount,
+                    1,
+                    self.fetch_expiration_time(),
+                )?;
+                transactions.push(txn);
+            }
+            sender_transactions.push((sender_address.clone(), transactions.clone()));
+            transactions.clear();
+        }
+
+        let result = self.submit_transaction_in_batch(sender_transactions, false);
+        if result.is_ok() {
+            info!("account transfer submit ok.");
+        } else {
+            info!("error: {:?}", result);
+        }
+
+        Ok(())
+    }
+
     fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
         //check node status
         let sync_status: SyncStatus = self.client.sync_status()?.into();
@@ -551,44 +668,75 @@ impl TxnMocker {
         }
 
         //unlock all account and get sequence
-        let mut sequences = vec![];
-        for account in &accounts {
-            sequences.push(self.sequence_number(account.address).unwrap().unwrap());
-        }
+        let mut sequences =
+            self.next_sequence_number_in_batch(accounts.iter().map(|a| a.address).collect())?;
+        let mid = sequences.len() >> 1;
+        self.send_and_receive(
+            sequences[..mid].to_vec(),
+            sequences[mid..]
+                .to_vec()
+                .into_iter()
+                .map(|(address, _)| address)
+                .collect(),
+            1,
+            round_num as u64,
+        )?;
+
+        sequences =
+            self.next_sequence_number_in_batch(accounts.iter().map(|a| a.address).collect())?;
+        sequences.reverse();
+        self.send_and_receive(
+            sequences[..mid].to_vec(),
+            sequences[mid..]
+                .to_vec()
+                .into_iter()
+                .map(|(address, _)| address)
+                .collect(),
+            1,
+            round_num as u64,
+        )?;
+
+        // let mut sequences = vec![];
+        // for account in &accounts {
+        //     sequences.push(self.sequence_number(account.address)?.ok_or_else(|| format_err!(
+        //         "account {} sequence number not found",
+        //         account.address
+        //     ))?);
+        // }
         //get  of all account
-        let expiration_timestamp = self.fetch_expiration_time();
-        let count = accounts.len();
-        for _ in 0..round_num {
-            for (index, _) in accounts.iter().enumerate() {
-                let mut j = index + 1;
-                if j >= count {
-                    j = 0;
-                }
-                let result = self.gen_and_submit_transfer_txn(
-                    accounts[index].address,
-                    accounts[j].address,
-                    1,
-                    1,
-                    sequences[index],
-                    false,
-                    expiration_timestamp,
-                );
-                //handle result
-                match result {
-                    Ok(_) => {
-                        // sequence add
-                        sequences[index] += 1;
-                    }
-                    Err(err) => {
-                        info!("error: {:?}, refresh the sequence number", err);
-                        for (index, account) in accounts.iter().enumerate() {
-                            sequences[index] =
-                                self.sequence_number(account.address).unwrap().unwrap();
-                        }
-                    }
-                }
-            }
-        }
+        // let expiration_timestamp = self.fetch_expiration_time();
+        // let count = accounts.len();
+        // for _ in 0..round_num {
+        //     for (index, _) in accounts.iter().enumerate() {
+        //         let mut j = index + 1;
+        //         if j >= count {
+        //             j = 0;
+        //         }
+        //         let result = self.gen_and_submit_transfer_txn(
+        //             accounts[index].address,
+        //             accounts[j].address,
+        //             1,
+        //             1,
+        //             sequences[index],
+        //             false,
+        //             expiration_timestamp,
+        //         );
+        //         //handle result
+        //         match result {
+        //             Ok(_) => {
+        //                 // sequence add
+        //                 sequences[index] += 1;
+        //             }
+        //             Err(err) => {
+        //                 info!("error: {:?}, refresh the sequence number", err);
+        //                 for (index, account) in accounts.iter().enumerate() {
+        //                     sequences[index] =
+        //                         self.sequence_number(account.address).unwrap().unwrap();
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         Ok(())
     }
 }

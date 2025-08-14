@@ -99,6 +99,25 @@ impl AccountManager {
         Ok(account.info())
     }
 
+    pub fn unlock_account_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: Duration,
+    ) -> AccountResult<Vec<AccountInfo>> {
+        let mut accounts = vec![];
+        for (address, password) in batch.into_iter() {
+            let account = Account::load(address, Some(password.to_string()), self.store.clone())?
+                .ok_or(AccountError::AccountNotExist(address))?;
+            let ttl = std::time::Instant::now().add(duration);
+            self.key_cache
+                .write()
+                .cache_pass(address, password.to_string(), ttl);
+            accounts.push(account.info());
+        }
+
+        Ok(accounts)
+    }
+
     pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
         let account_info = self
             .account_info(address)?
@@ -252,6 +271,30 @@ impl AccountManager {
                     .map_err(AccountError::TransactionSignError)
             }
         }
+    }
+
+    pub fn sign_txn_in_batch(
+        &self,
+        raw_txns: Vec<RawUserTransaction>,
+    ) -> AccountResult<Vec<SignedUserTransaction>> {
+        let mut signed_transactions = vec![];
+        for raw_txn in raw_txns {
+            let signer_address = raw_txn.sender(); // TODO: check if the signer is the same as the one in the txi
+            let pass = self.key_cache.write().get_pass(&signer_address);
+            match pass {
+                None => return Err(AccountError::AccountLocked(signer_address)),
+                Some(p) => {
+                    let account = Account::load(signer_address, Some(p), self.store.clone())?
+                        .ok_or(AccountError::AccountNotExist(signer_address))?;
+                    signed_transactions.push(
+                        account
+                            .sign_txn(raw_txn)
+                            .map_err(AccountError::TransactionSignError)?,
+                    );
+                }
+            }
+        }
+        Ok(signed_transactions)
     }
 
     pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
