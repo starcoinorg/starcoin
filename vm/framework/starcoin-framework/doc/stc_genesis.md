@@ -531,6 +531,7 @@ Create 100 genesis accounts from 0x0b to 0x6e
 
 <pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>() {
     <b>let</b> i = 0u64;
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"create_genesis_accounts looping"));
     <b>while</b> (i &lt; 100) {
         // Create a 32-byte <b>address</b> starting from 0x0b
         <b>let</b> addr_value = 0x0b + i;
@@ -555,7 +556,10 @@ Create 100 genesis accounts from 0x0b to 0x6e
             <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8)); // low byte
         };
 
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&i);
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr_value);
         <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(addr_bytes);
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&addr);
         <a href="account.md#0x1_account_create_account">account::create_account</a>(addr);
         i = i + 1;
     };

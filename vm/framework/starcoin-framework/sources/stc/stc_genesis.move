@@ -407,6 +407,7 @@ module starcoin_framework::stc_genesis {
     /// Create 100 genesis accounts from 0x0b to 0x6e
     fun create_genesis_accounts() {
         let i = 0u64;
+        debug::print(&std::string::utf8(b"create_genesis_accounts looping"));
         while (i < 100) {
             // Create a 32-byte address starting from 0x0b
             let addr_value = 0x0b + i;
@@ -431,7 +432,10 @@ module starcoin_framework::stc_genesis {
                 vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
             };
             
+            debug::print(&i);
+            debug::print(&addr_value);
             let addr = from_bcs::to_address(addr_bytes);
+            debug::print(&addr);
             account::create_account(addr);
             i = i + 1;
         };
