@@ -49,7 +49,9 @@ pub mod shared {
 }
 
 pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
-    let mapping = [
+    let mut result = BTreeMap::new();
+    
+    let base_mapping = [
         ("VMReserved", "0x0"),
         ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
@@ -64,10 +66,19 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
         ("starcoin_token_objects", "0x1"),
         ("core_resources", "0xA550C18"),
     ];
-    mapping
-        .iter()
-        .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap()))
-        .collect()
+
+    for (name, addr) in base_mapping.iter() {
+        result.insert(name.to_string(), NumericalAddress::parse_str(addr).unwrap());
+    }
+
+    // Add 100 genesis accounts from 0x0b to 0x6e
+    for i in 0..100 {
+        let addr = format!("0x{:x}", 0x0b + i);
+        let name = format!("reserved_account_{}", i);
+        result.insert(name, NumericalAddress::parse_str(&addr).unwrap());
+    }
+
+    result
 }
 
 // pub mod test_utils {

@@ -4,6 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::features;
     use std::option;
     use std::vector;
+    use starcoin_std::from_bcs;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -215,6 +216,9 @@ module starcoin_framework::stc_genesis {
         // Register oracle
         oracle_stc_usd::register(&starcoin_framework_account);
 
+        // Create 100 genesis accounts from 0x0b to 0x6e
+        create_genesis_accounts();
+
         debug::print(&std::string::utf8(b"stc_genesis::initialize | Exited"));
     }
 
@@ -398,5 +402,29 @@ module starcoin_framework::stc_genesis {
             0,
             vector::empty(),
         );
+    }
+
+    /// Create 100 genesis accounts from 0x0b to 0x6e
+    fun create_genesis_accounts() {
+        let i = 0u64;
+        while (i < 100) {
+            // Create a 32-byte address starting from 0x0b
+            let addr_value = 0x0b + i;
+            let addr_bytes = vector::empty<u8>();
+            
+            // Add 31 zero bytes
+            let j = 0;
+            while (j < 31) {
+                vector::push_back(&mut addr_bytes, 0u8);
+                j = j + 1;
+            };
+            
+            // Add the address value as the last byte (will wrap around after 255)
+            vector::push_back(&mut addr_bytes, (addr_value as u8));
+            
+            let addr = from_bcs::to_address(addr_bytes);
+            account::create_account(addr);
+            i = i + 1;
+        };
     }
 }

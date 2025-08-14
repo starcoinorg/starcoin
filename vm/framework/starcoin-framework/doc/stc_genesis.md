@@ -11,6 +11,7 @@ The module for init Genesis
 -  [Function `initialize_stc`](#0x1_stc_genesis_initialize_stc)
 -  [Function `initialize_stc_governance_allocation`](#0x1_stc_genesis_initialize_stc_governance_allocation)
 -  [Function `initialize_for_unit_tests`](#0x1_stc_genesis_initialize_for_unit_tests)
+-  [Function `create_genesis_accounts`](#0x1_stc_genesis_create_genesis_accounts)
 -  [Specification](#@Specification_0)
 
 
@@ -30,6 +31,7 @@ The module for init Genesis
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="flexi_dag_config.md#0x1_flexi_dag_config">0x1::flexi_dag_config</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
@@ -238,6 +240,9 @@ The module for init Genesis
 
     // Register <a href="oracle.md#0x1_oracle">oracle</a>
     <a href="oracle_stc_usd.md#0x1_oracle_stc_usd_register">oracle_stc_usd::register</a>(&starcoin_framework_account);
+
+    // Create 100 genesis accounts from 0x0b <b>to</b> 0x6e
+    <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>();
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | Exited"));
 }
@@ -501,6 +506,50 @@ Overall governance allocation strategy:
         0,
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_stc_genesis_create_genesis_accounts"></a>
+
+## Function `create_genesis_accounts`
+
+Create 100 genesis accounts from 0x0b to 0x6e
+
+
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>()
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>() {
+    <b>let</b> i = 0u64;
+    <b>while</b> (i &lt; 100) {
+        // Create a 32-byte <b>address</b> starting from 0x0b
+        <b>let</b> addr_value = 0x0b + i;
+        <b>let</b> addr_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+
+        // Add 31 zero bytes
+        <b>let</b> j = 0;
+        <b>while</b> (j &lt; 31) {
+            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, 0u8);
+            j = j + 1;
+        };
+
+        // Add the <b>address</b> value <b>as</b> the last byte (will wrap around after 255)
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> addr_bytes, (addr_value <b>as</b> u8));
+
+        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(addr_bytes);
+        <a href="account.md#0x1_account_create_account">account::create_account</a>(addr);
+        i = i + 1;
+    };
 }
 </code></pre>
 
