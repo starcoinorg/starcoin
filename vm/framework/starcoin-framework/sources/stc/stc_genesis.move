@@ -412,16 +412,24 @@ module starcoin_framework::stc_genesis {
             let addr_value = 0x0b + i;
             let addr_bytes = vector::empty<u8>();
             
-            // Add 30 zero bytes (not 31!)
-            let j = 0;
-            while (j < 30) {
-                vector::push_back(&mut addr_bytes, 0u8);
-                j = j + 1;
+            if (addr_value < 0x10) {
+                // For values < 0x10, add 31 zero bytes and 1 value byte
+                let j = 0;
+                while (j < 31) {
+                    vector::push_back(&mut addr_bytes, 0u8);
+                    j = j + 1;
+                };
+                vector::push_back(&mut addr_bytes, (addr_value as u8));
+            } else {
+                // For values >= 0x10, add 30 zero bytes and 2 value bytes
+                let j = 0;
+                while (j < 30) {
+                    vector::push_back(&mut addr_bytes, 0u8);
+                    j = j + 1;
+                };
+                vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
+                vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
             };
-            
-            // Add the address value as the last 2 bytes (to handle values > 255)
-            vector::push_back(&mut addr_bytes, ((addr_value >> 8) as u8)); // high byte
-            vector::push_back(&mut addr_bytes, (addr_value as u8)); // low byte
             
             let addr = from_bcs::to_address(addr_bytes);
             account::create_account(addr);
