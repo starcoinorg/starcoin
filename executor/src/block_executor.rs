@@ -31,6 +31,7 @@ use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 static LOGGER_BALANCE_AMOUNT: AtomicU64 = AtomicU64::new(1_000_000_u64);
 
@@ -77,13 +78,13 @@ impl BlockExecutedData {
 }
 
 pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
-    chain_state: &S,
+    chain_state: Arc<S>,
     txns: Vec<Transaction>,
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_outputs = execute_block_transactions(
-        chain_state,
+        chain_state.as_ref(),
         txns.clone(),
         block_gas_limit,
         vm_metrics.clone(),
