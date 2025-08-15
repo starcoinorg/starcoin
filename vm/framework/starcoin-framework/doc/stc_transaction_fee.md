@@ -139,11 +139,11 @@ Helper function to create a storage account address from predefined addresses
 <pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>(): <b>address</b> {
     // Increment counter and get which storage <a href="account.md#0x1_account">account</a> <b>to</b> <b>use</b>
     // <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-    // <b>let</b> counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
+    // <b>let</b> _counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
     // <b>let</b> storage_account_index = counter_value % 100;
 
     // <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
-    @0xa
+    @0x1
 }
 </code></pre>
 

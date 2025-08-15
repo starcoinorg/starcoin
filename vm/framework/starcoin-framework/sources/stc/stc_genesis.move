@@ -91,9 +91,6 @@ module starcoin_framework::stc_genesis {
         let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
 
-        let (_starcoin_framework_account2, _genesis_signer_cap2) =
-            account::create_framework_reserved_account(@0xa);
-
         // Initialize features
         features::initialize(
             &starcoin_framework_account,
@@ -171,6 +168,11 @@ module starcoin_framework::stc_genesis {
         );
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
+
+        let (starcoin_framework_account2, _genesis_signer_cap2) =
+            account::create_framework_reserved_account(@0xa);
+        // Register STC CoinStore for 0xa account
+        coin::register<STC>(&starcoin_framework_account2);
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
@@ -437,9 +439,11 @@ module starcoin_framework::stc_genesis {
             
         //     debug::print(&i);
         //     debug::print(&addr_value);
-            let addr = from_bcs::to_address(x"00000000000000000000000000000b0b");
-            // debug::print(&addr);
-            account::create_account(addr);
+            // let addr = from_bcs::to_address(x"0000000000000000000000000000000a");
+            // // debug::print(&addr);
+            // account::create_account(addr);
+            // let account_signer = create_signer::create_signer(addr);
+            // coin::register<STC>(&account_signer);
         //     i = i + 1;
         // };
     }

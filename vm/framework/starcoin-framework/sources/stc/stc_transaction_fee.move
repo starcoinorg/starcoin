@@ -58,8 +58,8 @@ module starcoin_framework::stc_transaction_fee {
     /// Helper function to create a storage account address from predefined addresses
     fun next_storage_address(): address {
         // Increment counter and get which storage account to use
-        aggregator_v2::add(&mut counter_resource.counter, 1);
-        let _counter_value = aggregator_v2::read(&counter_resource.counter);
+        // aggregator_v2::add(&mut counter_resource.counter, 1);
+        // let _counter_value = aggregator_v2::read(&counter_resource.counter);
         // let storage_account_index = counter_value % 100;
 
         // from_bcs::to_address(x"00000000000000000000000000000b0b")
