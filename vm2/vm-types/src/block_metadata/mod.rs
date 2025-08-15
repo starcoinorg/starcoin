@@ -185,4 +185,3 @@ impl Sample for BlockMetadata {
         )
     }
 }
-

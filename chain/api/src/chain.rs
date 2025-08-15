@@ -161,7 +161,7 @@ pub trait ChainWriter {
     fn chain_state(&mut self) -> &ChainStateDB;
 
     fn chain_state2(&mut self) -> &ChainStateDB2;
-    
+
     /// Apply block for sync without full verification
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock>;
 }

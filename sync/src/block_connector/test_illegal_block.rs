@@ -18,9 +18,9 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::Store;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
@@ -49,7 +49,15 @@ async fn new_block_and_main() -> (Block, BlockChain) {
         .current_header()
         .id();
     let dag = writeable_block_chain_service.get_main().dag();
-    let main = BlockChain::new(net.time_service(), head_id, storage.clone(), storage2, None, dag).unwrap();
+    let main = BlockChain::new(
+        net.time_service(),
+        head_id,
+        storage.clone(),
+        storage2,
+        None,
+        dag,
+    )
+    .unwrap();
     let new_block = new_dag_block(None, &mut writeable_block_chain_service, net)
         .expect("failed to create new block");
     (new_block, main)
@@ -80,8 +88,15 @@ async fn uncle_block_and_writeable_block_chain(
         .unwrap()
         .id();
     let dag = writeable_block_chain_service.get_main().dag();
-    let new_branch =
-        BlockChain::new(net.time_service(), tmp_head, storage.clone(), storage2.clone(), None, dag).unwrap();
+    let new_branch = BlockChain::new(
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+        storage2.clone(),
+        None,
+        dag,
+    )
+    .unwrap();
     let (block_template, _) = new_branch
         .create_block_template(
             *miner_account.address(),
@@ -135,7 +150,14 @@ fn apply_with_illegal_uncle(
         .current_header()
         .id();
     let dag = writeable_block_chain_service.get_main().dag();
-    let mut main = BlockChain::new(net.time_service(), head_id, storage.clone(), storage2, None, dag)?;
+    let mut main = BlockChain::new(
+        net.time_service(),
+        head_id,
+        storage.clone(),
+        storage2,
+        None,
+        dag,
+    )?;
     main.apply(new_block.clone())?;
     Ok(new_block)
 }
@@ -380,8 +402,15 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() -> anyhow::Result<
         .unwrap()
         .id();
     let dag = writeable_block_chain_service.get_main().dag();
-    let mut new_branch =
-        BlockChain::new(net.time_service(), tmp_head, storage.clone(), storage2.clone(), None, dag).unwrap();
+    let mut new_branch = BlockChain::new(
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+        storage2.clone(),
+        None,
+        dag,
+    )
+    .unwrap();
 
     for _i in 0..2 {
         let (block_template, _) = new_branch
@@ -463,8 +492,12 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     genesis_config.time_service_type = TimeServiceType::RealTimeService;
     genesis_config.consensus_config.strategy = ConsensusStrategy::CryptoNight.value();
     let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
-    let net =
-        ChainNetwork::new_custom("block_test".to_string(), ChainId::new(100), genesis_config, genesis_config2)?;
+    let net = ChainNetwork::new_custom(
+        "block_test".to_string(),
+        ChainId::new(100),
+        genesis_config,
+        genesis_config2,
+    )?;
     let mut mock_chain = MockChain::new(net.clone()).unwrap();
     let mut times = 3;
     mock_chain.produce_and_apply_times(times).unwrap();
@@ -752,10 +785,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let old_epoch_num = writeable_block_chain_service.get_main().epoch().number();
     // create block loop
     loop {
-        apply_legal_block(
-            Vec::new(),
-            &mut writeable_block_chain_service,
-        );
+        apply_legal_block(Vec::new(), &mut writeable_block_chain_service);
         let block_number = writeable_block_chain_service
             .get_main()
             .current_header()

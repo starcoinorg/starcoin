@@ -8,7 +8,10 @@ use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
-use starcoin_types::{account_address::AccountAddress, block::{Block, BlockHeader}};
+use starcoin_types::{
+    account_address::AccountAddress,
+    block::{Block, BlockHeader},
+};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::{
     iter::Iterator,

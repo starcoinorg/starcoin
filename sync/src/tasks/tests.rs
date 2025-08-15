@@ -648,10 +648,10 @@ impl BlockFetcher for MockBlockFetcher {
         block_ids.iter().for_each(|block_id| {
             if let Some(block) = blocks.get(block_id).cloned() {
                 for hash in block.header().parents_hash() {
-                    if result.contains(&hash) {
+                    if result.contains(hash) {
                         continue;
                     }
-                    result.push(hash.clone());
+                    result.push(*hash);
                 }
             } else {
                 info!("Can not find block by id: {:?}", block_id)
@@ -973,7 +973,7 @@ async fn test_sync_target() {
         0,
         peer_selector,
         Arc::new(SyncDagStore::create_for_testing().expect("failed to create the sync dag store")),
-        Some(storage2),  // Use the storage2 from Genesis
+        Some(storage2), // Use the storage2 from Genesis
     ));
     let full_target = node2
         .get_best_target(genesis_chain_info.total_difficulty())
@@ -991,7 +991,7 @@ async fn test_sync_target() {
 fn sync_block_in_async_connection(
     mut target_node: Arc<SyncNodeMocker>,
     local_node: Arc<SyncNodeMocker>,
-    _storage: Arc<dyn Store>,  // Not used anymore
+    _storage: Arc<dyn Store>, // Not used anymore
     block_count: u64,
     dag: BlockDAG,
 ) -> Result<Arc<SyncNodeMocker>> {

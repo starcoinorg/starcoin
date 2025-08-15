@@ -140,7 +140,9 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx.service_ref::<BlockConnectorService<TxPoolService>>()?.clone();
+                let connect_service = ctx
+                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
                     connect_service.send(ResetRequest { block_hash }).await?
@@ -301,7 +303,7 @@ impl NodeService {
         let storage2 = Arc::new(Storage2::new(storage_instance2)?);
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
-        
+
         // Initialize DAG
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             config.storage.dag_dir(),
@@ -313,7 +315,7 @@ impl NodeService {
             dag_storage.clone(),
         );
         registry.put_shared(dag.clone()).await?;
-        
+
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
             storage.clone(),
@@ -365,7 +367,9 @@ impl NodeService {
         registry.register::<ChainNotifyHandlerService>().await?;
 
         registry.register::<ExecuteService>().await?;
-        registry.register::<BlockConnectorService<TxPoolService>>().await?;
+        registry
+            .register::<BlockConnectorService<TxPoolService>>()
+            .await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;

@@ -77,9 +77,14 @@ impl From<LegacyGenesis> for Genesis {
             block: Block {
                 header: legacy_genesis.block.header.into(),
 
-                body: BlockBody::new(txns, legacy_genesis.block.body.uncles.map(|uncles| {
-                    uncles.into_iter().map(|uncle| uncle.into()).collect()
-                })),
+                body: BlockBody::new(
+                    txns,
+                    legacy_genesis
+                        .block
+                        .body
+                        .uncles
+                        .map(|uncles| uncles.into_iter().map(|uncle| uncle.into()).collect()),
+                ),
             },
         }
     }
@@ -92,9 +97,11 @@ impl From<Genesis> for LegacyGenesis {
                 header: genesis.block.header.into(),
                 body: legacy::BlockBody {
                     transactions: genesis.block.body.transactions,
-                    uncles: genesis.block.body.uncles.map(|uncles| {
-                        uncles.into_iter().map(|uncle| uncle.into()).collect()
-                    }),
+                    uncles: genesis
+                        .block
+                        .body
+                        .uncles
+                        .map(|uncles| uncles.into_iter().map(|uncle| uncle.into()).collect()),
                 },
             },
         }
@@ -493,7 +500,8 @@ impl Genesis {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
+        let chain_info =
+            genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
 
         Ok((storage, storage2, chain_info, genesis, dag))
     }
@@ -506,7 +514,8 @@ impl Genesis {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing_with_parameters(k)?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
+        let chain_info =
+            genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
         Ok((storage, storage2, chain_info, genesis, dag))
     }
 
@@ -522,7 +531,8 @@ impl Genesis {
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
+        let chain_info =
+            genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
         Ok((storage, storage2, chain_info, genesis, dag))
     }
 }

@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use crate::batch::WriteBatch;
+pub use crate::upgrade::DEFAULT_UPGRADE_BATCH_SIZE;
 use crate::{
     batch::WriteBatchWithColumn,
     cache_storage::CacheStorage,
     db_storage::{DBStorage, SchemaIterator},
     upgrade::DBUpgrade,
 };
-pub use crate::upgrade::DEFAULT_UPGRADE_BATCH_SIZE;
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use rocksdb::{DBPinnableSlice, WriteBatch as DBWriteBatch};

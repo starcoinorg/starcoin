@@ -8,7 +8,7 @@ use starcoin_types::U256;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
-use starcoin_vm2_types::{account_config, account_address};
+use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
 #[stest::test]
@@ -27,16 +27,16 @@ pub fn test_open_block() -> Result<()> {
             chain.get_storage2(),
             header.clone(),
             block_gas_limit,
-            miner_address,  // Use vm2 address
+            miner_address, // Use vm2 address
             config.net().time_service().now_millis(),
             vec![],
             U256::from(0),
             chain.consensus(),
             None,
-            vec![header.id()],  // tips_hash - use current header id for test
-            header.version(),  // version from header
-            header.pruning_point(),  // pruning_point from header
-            0,  // red_blocks - 0 for test
+            vec![header.id()],      // tips_hash - use current header id for test
+            header.version(),       // version from header
+            header.pruning_point(), // pruning_point from header
+            0,                      // red_blocks - 0 for test
         )?
     };
 

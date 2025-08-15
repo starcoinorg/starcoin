@@ -28,8 +28,8 @@ use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
-use starcoin_config::{G_MAX_PARENTS_COUNT, G_MERGE_DEPTH};
 use starcoin_config::temp_dir;
+use starcoin_config::{G_MAX_PARENTS_COUNT, G_MERGE_DEPTH};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, error, info, warn};
 use starcoin_state_api::AccountStateReader;
@@ -573,7 +573,7 @@ impl BlockDAG {
                         tips: tips_in_order
                             .into_iter()
                             .map(|(id, _)| id)
-                            .take(usize::try_from(G_MAX_PARENTS_COUNT)?)
+                            .take(G_MAX_PARENTS_COUNT)
                             .collect(),
                     },
                 )?;

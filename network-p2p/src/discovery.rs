@@ -24,13 +24,13 @@
 //! Substrate uses the following mechanisms in order to discover nodes that are part of the network:
 //!
 //! - Bootstrap nodes. These are hard-coded node identities and addresses passed in the constructor
-//! of the `DiscoveryBehaviour`. You can also call `add_known_address` later to add an entry.
+//!   of the `DiscoveryBehaviour`. You can also call `add_known_address` later to add an entry.
 //!
 //! - mDNS. Discovers nodes on the local network by broadcasting UDP packets.
 //!
 //! - Kademlia random walk. Once connected, we perform random Kademlia `FIND_NODE` requests on the
-//! configured Kademlia DHTs in order for nodes to propagate to us their view of the network. This
-//! is performed automatically by the `DiscoveryBehaviour`.
+//!   configured Kademlia DHTs in order for nodes to propagate to us their view of the network. This
+//!   is performed automatically by the `DiscoveryBehaviour`.
 //!
 //! Additionally, the `DiscoveryBehaviour` is also capable of storing and loading value in the
 //! configured DHTs.

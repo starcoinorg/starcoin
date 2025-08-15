@@ -20,16 +20,16 @@ use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::multi_state::MultiState;
-use starcoin_vm2_storage::Storage as Storage2;
+#[cfg(test)]
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm2_storage::Storage as Storage2;
 #[cfg(test)]
 use starcoin_vm_types::account_address::AccountAddress;
-#[cfg(test)]
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 // use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
@@ -228,7 +228,7 @@ where
     pub fn get_main(&self) -> &BlockChain {
         &self.main
     }
-    
+
     pub fn get_storage2(&self) -> Arc<Storage2> {
         self.storage2.clone()
     }

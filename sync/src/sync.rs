@@ -26,7 +26,6 @@ use starcoin_service_registry::{
 use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
@@ -37,6 +36,7 @@ use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
@@ -137,9 +137,7 @@ impl SyncService {
 
         loop {
             if peer_set.is_empty() || peer_set.len() < (config.net().min_peers() as usize) {
-                let level = if config.net().is_dev()
-                    || config.net().is_test()
-                {
+                let level = if config.net().is_dev() || config.net().is_test() {
                     Level::Debug
                 } else {
                     Level::Info

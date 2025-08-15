@@ -6,10 +6,10 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{

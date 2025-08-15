@@ -39,7 +39,7 @@
 //! left child and the new root. We should
 //!   1) create a new version for `key1` child.
 //!   2) update `root1'` directly instead of making another version.
-//! The resulting tree should look like:
+//!      The resulting tree should look like:
 //!
 //! ```text
 //!                   (on disk)                                     (in memory)
@@ -62,12 +62,12 @@
 //! collection of the following operations:
 //!   - Put a new node.
 //!   - Delete a node.
-//! When we apply these operations on a multi-version tree:
+//!     When we apply these operations on a multi-version tree:
 //!   1) Put a new node.
 //!   2) When we remove a node, if the node is in the previous on-disk version, we don't need to do
 //!      anything. Otherwise we delete it from the tree cache.
-//! Updating node could be operated as deletion of the node followed by insertion of the updated
-//! node.
+//!      Updating node could be operated as deletion of the node followed by insertion of the updated
+//!      node.
 
 #[cfg(test)]
 mod tree_cache_test;

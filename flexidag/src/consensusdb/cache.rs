@@ -39,7 +39,7 @@ where
         self.cache.lock().clear();
     }
 
-    pub(crate) fn remove_many<I>(&self, keys: I) 
+    pub(crate) fn remove_many<I>(&self, keys: I)
     where
         I: Iterator<Item = K>,
     {

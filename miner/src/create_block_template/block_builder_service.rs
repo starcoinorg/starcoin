@@ -5,8 +5,6 @@ use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
-use starcoin_vm2_account_service::AccountService;
 use starcoin_chain::{get_merge_bound_hash, BlockChain, ChainReader};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -31,10 +29,12 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
 };
+use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
+use starcoin_vm2_account_service::AccountService;
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
 
 use crate::NewHeaderChannel;
@@ -212,21 +212,33 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<MultiSignedUserTransaction>;
+    fn get_txns_with_header(
+        &self,
+        max: u64,
+        header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns_with_header(&self, _max: u64, _header: &BlockHeader) -> Vec<MultiSignedUserTransaction> {
+    fn get_txns_with_header(
+        &self,
+        _max: u64,
+        _header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction> {
         vec![]
     }
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<MultiSignedUserTransaction> {
+    fn get_txns_with_header(
+        &self,
+        max: u64,
+        header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction> {
         self.get_pending_with_header(max, None, header)
     }
 
@@ -485,20 +497,24 @@ where
         )?;
 
         let (txns, txns2) = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
-        info!("[BlockProcess] VM1 txns len: {}, VM2 txns len: {}", txns.len(), txns2.len());
-        
+        info!(
+            "[BlockProcess] VM1 txns len: {}, VM2 txns len: {}",
+            txns.len(),
+            txns2.len()
+        );
+
         // Process VM1 transactions
         let excluded_txns = opened_block.push_txns(txns)?;
         for invalid_txn in &excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-        
+
         // Process VM2 transactions
         let excluded_txns2 = opened_block.push_txns2(txns2)?;
         for invalid_txn in &excluded_txns2.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-        
+
         info!(
             "[BlockProcess] VM1 discarded: {}, VM2 discarded: {}, VM1 untouched: {}, VM2 untouched: {}",
             excluded_txns.discarded_txns.len(),
@@ -527,10 +543,12 @@ where
         // Separate VM1 and VM2 transactions
         let mut pending_transactions = vec![];
         let mut pending_transactions2 = vec![];
-        pending_multi_transactions.into_iter().for_each(|txn| match txn {
-            MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
-            MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
-        });
+        pending_multi_transactions
+            .into_iter()
+            .for_each(|txn| match txn {
+                MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
+                MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
+            });
 
         if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
             return Ok((pending_transactions, pending_transactions2));
@@ -546,7 +564,7 @@ where
                 .push(transaction);
         });
 
-        // Process VM2 transactions  
+        // Process VM2 transactions
         let mut pending_transaction2_map =
             HashMap::<AccountAddress2, Vec<SignedUserTransaction2>>::new();
         pending_transactions2.into_iter().for_each(|transaction| {
@@ -673,7 +691,7 @@ where
             pending_transaction2_map
                 .iter()
                 .flat_map(|(_sender, transactions)| transactions.clone())
-                .collect()
+                .collect(),
         ))
     }
 

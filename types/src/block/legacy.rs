@@ -274,7 +274,17 @@ impl From<crate::block::Block> for Block {
 }
 
 #[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+    Default,
+    Clone,
+    Debug,
+    Hash,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    CryptoHasher,
+    CryptoHash,
+    JsonSchema,
 )]
 pub struct BlockInfo {
     /// Block id

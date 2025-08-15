@@ -80,11 +80,14 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-    
+
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<starcoin_dag::consensusdb::consensus_state::DagStateView>;
-    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
-    
+    fn get_ghostdagdata(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
+
     fn get_transaction_proof2(
         &self,
         block_id: HashValue,
@@ -92,13 +95,13 @@ pub trait ReadableChainService {
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof2>>;
-    
+
     fn get_range_in_location(
         &self,
         start_id: HashValue,
         end_id: Option<HashValue>,
     ) -> Result<crate::range_locate::RangeInLocation>;
-    
+
     fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>>;
 }
 
@@ -187,14 +190,14 @@ pub trait ChainAsyncService:
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof2>>;
-    
+
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
-    
+
     async fn get_range_in_location(
         &self,
         req: starcoin_network_rpc_api::GetRangeInLocationRequest,
     ) -> Result<starcoin_network_rpc_api::GetRangeInLocationResponse>;
-    
+
     async fn get_absent_blocks(
         &self,
         req: starcoin_network_rpc_api::GetAbsentBlockRequest,
@@ -547,7 +550,7 @@ where
             bail!("get transaction proof2 error")
         }
     }
-    
+
     async fn get_dag_block_children(&self, block_ids: Vec<HashValue>) -> Result<Vec<HashValue>> {
         let response = self
             .send(ChainRequest::GetDagBlockChildren { block_ids })
@@ -558,7 +561,7 @@ where
             bail!("get dag block children error")
         }
     }
-    
+
     async fn get_range_in_location(
         &self,
         req: starcoin_network_rpc_api::GetRangeInLocationRequest,
@@ -584,7 +587,7 @@ where
             bail!("get range in location error")
         }
     }
-    
+
     async fn get_absent_blocks(
         &self,
         req: starcoin_network_rpc_api::GetAbsentBlockRequest,
@@ -596,9 +599,7 @@ where
             })
             .await??;
         if let ChainResponse::GetAbsentBlocks { absent_blocks } = response {
-            Ok(starcoin_network_rpc_api::GetAbsentBlockResponse {
-                absent_blocks,
-            })
+            Ok(starcoin_network_rpc_api::GetAbsentBlockResponse { absent_blocks })
         } else {
             bail!("get absent blocks error")
         }

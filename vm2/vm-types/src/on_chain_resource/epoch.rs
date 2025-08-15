@@ -107,7 +107,7 @@ impl Epoch {
     pub fn strategy(&self) -> ConsensusStrategy {
         ConsensusStrategy::try_from(self.strategy).expect("epoch consensus strategy must exist.")
     }
-    
+
     pub fn max_transaction_per_block(&self) -> u64 {
         self.max_transaction_per_block
     }

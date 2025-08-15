@@ -25,11 +25,11 @@
 //!
 //! - Create an instance of [`OutChannels`].
 //! - Create channels using the [`channel`] function. The receiving side implements the `Stream`
-//! trait.
+//!   trait.
 //! - You cannot directly send an event on a sender. Instead, you have to call
-//! [`OutChannels::push`] to put the sender within a [`OutChannels`].
+//!   [`OutChannels::push`] to put the sender within a [`OutChannels`].
 //! - Send events by calling [`OutChannels::send`]. Events are cloned for each sender in the
-//! collection.
+//!   collection.
 //!
 
 use crate::Event;

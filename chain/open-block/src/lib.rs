@@ -14,6 +14,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::block::Version;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME,
@@ -29,12 +30,12 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
@@ -47,7 +48,6 @@ use starcoin_vm_types::{
     state_view::{StateReaderExt, StateView},
 };
 use std::{convert::TryInto, sync::Arc};
-use starcoin_types::block::Version;
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
@@ -74,6 +74,7 @@ pub struct OpenedBlock {
 }
 
 impl OpenedBlock {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
@@ -133,7 +134,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author_v1,
-            None,  // author_auth_key
+            None, // author_auth_key
             uncles.len() as u64,
             previous_header.number() + 1,
             chain_id,

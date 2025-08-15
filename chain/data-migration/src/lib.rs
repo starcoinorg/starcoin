@@ -29,7 +29,7 @@ pub use state_filter::filter_chain_state_set;
 ///   1. Use resource-code-exporter to export the data of the specified height and calculate its hash
 ///   2. Copy it to the chain/migration directory
 ///   3. After starting the node, the block is generated normally.
-///     When the first block is reached, `migrate_data_to_statedb` is automatically executed to write the state data to the state storage
+///      When the first block is reached, `migrate_data_to_statedb` is automatically executed to write the state data to the state storage
 
 //
 #[derive(Clone)]

@@ -118,11 +118,11 @@ impl StorageConfig {
     pub fn dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_DB_DIR.as_path())
     }
-    
+
     pub fn dag_dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_DAG_DB_DIR.as_path())
     }
-    
+
     pub fn sync_dir(&self) -> PathBuf {
         self.base().data_dir().join(G_DEFAULT_SYNC_DB_DIR.as_path())
     }
@@ -138,7 +138,7 @@ impl StorageConfig {
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
-            parallelism: default.parallelism,  // Use default for now, can add option later if needed
+            parallelism: default.parallelism, // Use default for now, can add option later if needed
         }
     }
     pub fn cache_size(&self) -> usize {

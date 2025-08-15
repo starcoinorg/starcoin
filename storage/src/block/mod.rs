@@ -14,8 +14,8 @@ use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::block::legacy::{Block as LegacyBlock, BlockHeader as LegacyBlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {

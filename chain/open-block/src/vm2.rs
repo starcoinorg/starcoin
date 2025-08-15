@@ -22,7 +22,7 @@ use starcoin_vm2_types::{
 };
 
 fn convert_block_meta_with_dag(
-    block_meta: starcoin_types::block_metadata::BlockMetadata, 
+    block_meta: starcoin_types::block_metadata::BlockMetadata,
     parents_hash: Vec<HashValue>,
     red_blocks: u64,
 ) -> BlockMetadata {
@@ -51,10 +51,17 @@ fn convert_block_meta_with_dag(
 }
 
 impl OpenedBlock {
-    pub fn initialize_v2(&mut self, parents_hash: Vec<HashValue>, red_blocks: u64) -> anyhow::Result<()> {
+    pub fn initialize_v2(
+        &mut self,
+        parents_hash: Vec<HashValue>,
+        red_blocks: u64,
+    ) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
-        let block_metadata_txn =
-            Transaction2::BlockMetadata(convert_block_meta_with_dag(self.block_meta.clone(), parents_hash, red_blocks));
+        let block_metadata_txn = Transaction2::BlockMetadata(convert_block_meta_with_dag(
+            self.block_meta.clone(),
+            parents_hash,
+            red_blocks,
+        ));
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results = do_execute_block_transactions(
             state,

@@ -387,9 +387,9 @@ impl Scheduler {
 
     /// Grab an index to try and validate next (by fetch-and-incrementing validation_idx).
     /// - If the index is out of bounds, return None (and invoke a check of whether
-    /// all txns can be committed).
+    ///   all txns can be committed).
     /// - If the transaction is ready for validation (EXECUTED state), return the version
-    /// to the caller together with a guard to be used for the corresponding ValidationTask.
+    ///   to the caller together with a guard to be used for the corresponding ValidationTask.
     /// - Otherwise, return None.
     fn try_validate_next_version(&self) -> Option<(Version, TaskGuard)> {
         let idx_to_validate = self.validation_idx.load(Ordering::SeqCst);
@@ -415,11 +415,11 @@ impl Scheduler {
 
     /// Grab an index to try and execute next (by fetch-and-incrementing execution_idx).
     /// - If the index is out of bounds, return None (and invoke a check of whethre
-    /// all txns can be committed).
+    ///   all txns can be committed).
     /// - If the transaction is ready for execution (ReadyToExecute state), attempt
-    /// to create the next incarnation (should happen exactly once), and if successful,
-    /// return the version to the caller together with a guard to be used for the
-    /// corresponding ExecutionTask.
+    ///   to create the next incarnation (should happen exactly once), and if successful,
+    ///   return the version to the caller together with a guard to be used for the
+    ///   corresponding ExecutionTask.
     /// - Otherwise, return None.
     fn try_execute_next_version(&self) -> Option<(Version, Option<DependencyCondvar>, TaskGuard)> {
         let idx_to_execute = self.execution_idx.load(Ordering::SeqCst);
@@ -495,14 +495,14 @@ impl Scheduler {
     /// Updates the 'done_marker' so other threads can know by calling done() function below.
     ///
     /// 1. After the STM execution has completed:
-    /// validation_idx >= num_txn, execution_idx >= num_txn, num_active_tasks == 0,
-    /// and decrease_cnt does not change - so it will be successfully detected.
+    ///     validation_idx >= num_txn, execution_idx >= num_txn, num_active_tasks == 0,
+    ///     and decrease_cnt does not change - so it will be successfully detected.
     /// 2. If done_marker is set, all of these must hold at the same time, implying completion.
-    /// Proof: O.w. one of the indices must decrease from when it is read to be >= num_txns
-    /// to when num_active_tasks is read to be 0, but decreasing thread is performing an active task,
-    /// so it must first perform the next instruction in 'decrease_validation_idx' or
-    /// 'decrease_execution_idx' functions, which is to increment the decrease_cnt++.
-    /// Final check will then detect a change in decrease_cnt and not allow a false positive.
+    ///     Proof: O.w. one of the indices must decrease from when it is read to be >= num_txns
+    ///     to when num_active_tasks is read to be 0, but decreasing thread is performing an active task,
+    ///     so it must first perform the next instruction in 'decrease_validation_idx' or
+    ///     'decrease_execution_idx' functions, which is to increment the decrease_cnt++.
+    ///     Final check will then detect a change in decrease_cnt and not allow a false positive.
     fn check_done(&self) -> bool {
         let observed_cnt = self.decrease_cnt.load(Ordering::SeqCst);
 

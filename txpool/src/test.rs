@@ -233,10 +233,10 @@ async fn test_rollback() -> Result<()> {
             U256::from(1024u64),
             config.net().genesis_config2().consensus(),
             None,
-            vec![block_header.id()],  // tips_hash
-            block_header.version(),    // version
-            block_header.pruning_point(),  // pruning_point
-            0,  // red_blocks
+            vec![block_header.id()],      // tips_hash
+            block_header.version(),       // version
+            block_header.pruning_point(), // pruning_point
+            0,                            // red_blocks
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);

@@ -230,7 +230,13 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         _dag: BlockDAG,
     ) -> Result<Self> {
-        let chain = MockChain::new_with_storage(net, storage, storage2.clone(), chain_info.head().id(), miner)?;
+        let chain = MockChain::new_with_storage(
+            net,
+            storage,
+            storage2.clone(),
+            chain_info.head().id(),
+            miner,
+        )?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -361,8 +367,9 @@ impl SyncNodeMocker {
             // Fallback: create a new storage2 if not initialized
             Arc::new(
                 starcoin_vm2_storage::Storage::new(
-                    starcoin_vm2_storage::storage::StorageInstance::new_cache_instance()
-                ).unwrap()
+                    starcoin_vm2_storage::storage::StorageInstance::new_cache_instance(),
+                )
+                .unwrap(),
             )
         })
     }
@@ -372,10 +379,11 @@ impl SyncNodeMocker {
     }
 
     pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
-        // TODO: MockChain doesn't have produce_fork_chain anymore, 
+        // TODO: MockChain doesn't have produce_fork_chain anymore,
         // need to implement fork logic differently
         // For now, just produce blocks
-        self.chain_mocker.produce_and_apply_times(one_count + two_count)
+        self.chain_mocker
+            .produce_and_apply_times(one_count.saturating_add(two_count))
     }
 
     pub fn select_head(&mut self, block: Block) -> Result<()> {

@@ -910,8 +910,17 @@ impl StarcoinVM {
         let txn_sender = account_config::genesis_address();
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
-        let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash, _red_blocks) =
-            block_metadata.into_inner();
+        let (
+            parent_id,
+            timestamp,
+            author,
+            uncles,
+            number,
+            chain_id,
+            parent_gas_used,
+            parents_hash,
+            _red_blocks,
+        ) = block_metadata.into_inner();
         let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         // TODO: Add red_blocks support to block_prologue Move function
         // Currently red_blocks is extracted but not passed to the Move contract.

@@ -48,7 +48,14 @@ impl MockChain {
         miner: AccountInfo,
     ) -> Result<Self> {
         let dag = BlockDAG::create_for_testing()?;
-        let chain = BlockChain::new(net.time_service(), head_block_hash, storage, storage2, None, dag)?;
+        let chain = BlockChain::new(
+            net.time_service(),
+            head_block_hash,
+            storage,
+            storage2,
+            None,
+            dag,
+        )?;
         Ok(Self::new_inner(net, chain, miner))
     }
 
@@ -220,7 +227,9 @@ impl MockChain {
             tips,
             HashValue::zero(),
         )?;
-        let new_block = self.head.consensus()
+        let new_block = self
+            .head
+            .consensus()
             .create_block(block_template, self.net.time_service().as_ref())?;
         Ok(new_block)
     }

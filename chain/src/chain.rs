@@ -53,13 +53,13 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::{
     access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
     on_chain_resource::Epoch,
 };
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::collections::{BTreeMap, HashMap};
 use std::iter::Extend;
@@ -270,7 +270,7 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        ConsensusStrategy::try_from(self.epoch.strategy()).expect("epoch consensus must be valid")
+        self.epoch.strategy()
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -324,7 +324,15 @@ impl BlockChain {
         &self,
         author: AccountAddress,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, vec![], vec![], None, vec![], HashValue::zero())
+        self.create_block_template(
+            author,
+            None,
+            vec![],
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )
     }
 
     pub fn create_block_template_simple_with_txns(
@@ -332,7 +340,15 @@ impl BlockChain {
         author: AccountAddress,
         user_txns: Vec<MultiSignedUserTransaction>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, user_txns, vec![], None, vec![], HashValue::zero())
+        self.create_block_template(
+            author,
+            None,
+            user_txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )
     }
 
     pub fn create_block_template_simple_with_uncles(
@@ -340,7 +356,15 @@ impl BlockChain {
         author: AccountAddress,
         uncles: Vec<BlockHeader>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(author, None, vec![], uncles, None, vec![], HashValue::zero())
+        self.create_block_template(
+            author,
+            None,
+            vec![],
+            uncles,
+            None,
+            vec![],
+            HashValue::zero(),
+        )
     }
 
     pub fn create_block_template(
@@ -374,7 +398,6 @@ impl BlockChain {
             pruning_point,
         )
     }
-
 
     // This is only for testing.
     // Uncles, pruning point and tips must be coherent, if not,
@@ -443,7 +466,8 @@ impl BlockChain {
         };
 
         let parent_header = if ghostdata.selected_parent != previous_header.id() {
-            self.storage.0
+            self.storage
+                .0
                 .get_block_header_by_hash(ghostdata.selected_parent)?
                 .ok_or_else(|| {
                     format_err!(
@@ -477,7 +501,7 @@ impl BlockChain {
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
         )?;
-        
+
         // split user_txns to two parts for dual VM support
         let mut vm1_txns = vec![];
         let mut vm2_txns = vec![];
@@ -490,7 +514,7 @@ impl BlockChain {
         let excluded_txns = opened_block.push_txns(vm1_txns)?;
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
-        
+
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }
 
@@ -1628,7 +1652,11 @@ impl ChainReader for BlockChain {
 
         dag.check_bounded_merge_depth(
             &ghostdata,
-            get_merge_bound_hash(ghostdata.selected_parent, dag.clone(), self.storage.0.clone())?,
+            get_merge_bound_hash(
+                ghostdata.selected_parent,
+                dag.clone(),
+                self.storage.0.clone(),
+            )?,
         )?;
 
         Ok(ghostdata)
@@ -1829,13 +1857,13 @@ impl BlockChain {
         }
         Ok(event_with_infos)
     }
-    
+
     fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>> {
         self.dag()
             .get_dag_state(pruning_point)
             .map(|state| state.tips)
     }
-    
+
     fn renew_tips(
         &self,
         parent_header: &BlockHeader,
@@ -1863,7 +1891,7 @@ impl BlockChain {
         }
         Ok(())
     }
-    
+
     pub fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
         let (storage, _) = &self.storage;
         let header = match storage.get_block_header_by_hash(header_id)? {
@@ -1877,9 +1905,9 @@ impl BlockChain {
 
         self.dag().has_block_connected(&header)
     }
-    
+
     pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
-        header.parents_hash().into_iter().all(|parent| {
+        header.parents_hash().iter().all(|parent| {
             self.has_dag_block(*parent).unwrap_or_else(|e| {
                 warn!("check_parents_ready error: {:?}", e);
                 false
@@ -1896,7 +1924,7 @@ impl BlockChain {
             0
         }
     }
-    
+
     pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
         let new_pruning_point = if header.pruning_point() == HashValue::zero() {
             self.genesis_hash
@@ -1908,7 +1936,7 @@ impl BlockChain {
         } else {
             self.status().head().pruning_point()
         };
-        
+
         let chain = if current_pruning_point == new_pruning_point
             || current_pruning_point == HashValue::zero()
         {
@@ -1922,7 +1950,7 @@ impl BlockChain {
             // Handle pruning point change if needed
             bail!("Pruning point change not yet fully implemented")
         };
-        
+
         Ok(chain)
     }
 }
@@ -1938,10 +1966,10 @@ impl ChainWriter for BlockChain {
             executed_block.block().id(),
             executed_block.block().header().number(),
         );
-        
+
         let (storage, storage2) = &self.storage;
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-        
+
         // DAG logic: manage tips and select best parent
         let dag = self.dag().clone();
         let parent_header = storage
@@ -1952,7 +1980,7 @@ impl ChainWriter for BlockChain {
                     new_tip_block.header().parent_hash()
                 )
             })?;
-        
+
         // Get current tips based on pruning point
         let mut tips = if parent_header.pruning_point() == HashValue::zero() {
             self.current_tips_hash(self.genesis_hash)?
@@ -1974,7 +2002,7 @@ impl ChainWriter for BlockChain {
                 },
             }
         };
-        
+
         // Update tips: remove ancestors of new block
         let mut new_tips = vec![];
         for hash in tips {
@@ -1984,30 +2012,38 @@ impl ChainWriter for BlockChain {
         }
         tips = new_tips;
         tips.push(new_tip_block.id());
-        
+
         // Calculate ghostdata and select the best parent from tips
         let selected_block_hash = dag
             .ghost_dag_manager()
             .find_selected_parent(tips.iter().copied())?;
-        
+
         // Get the selected block (might not be the executed_block)
         let (block, block_info) = if selected_block_hash == new_tip_block.id() {
             (new_tip_block.clone(), executed_block.block_info().clone())
         } else {
-            let block = storage
-                .get_block(selected_block_hash)?
-                .ok_or_else(|| format_err!("DAG block should exist, block id: {:?}", selected_block_hash))?;
-            let block_info = storage.get_block_info(selected_block_hash)?.ok_or_else(|| {
-                format_err!("DAG block info should exist, block id: {:?}", selected_block_hash)
+            let block = storage.get_block(selected_block_hash)?.ok_or_else(|| {
+                format_err!(
+                    "DAG block should exist, block id: {:?}",
+                    selected_block_hash
+                )
             })?;
+            let block_info = storage
+                .get_block_info(selected_block_hash)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "DAG block info should exist, block id: {:?}",
+                        selected_block_hash
+                    )
+                })?;
             (block, block_info)
         };
-        
+
         // Update accumulators (keep vm_state_accumulator for multi-VM)
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
-        
+
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
@@ -2032,7 +2068,7 @@ impl ChainWriter for BlockChain {
             // Get multi_state from storage for selected block
             storage.get_vm_multi_state(selected_block_hash)?
         };
-        
+
         let (state_root1, state_root2) = (multi_state.state_root1(), multi_state.state_root2());
 
         // Update dual statedbs
@@ -2040,7 +2076,7 @@ impl ChainWriter for BlockChain {
             ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1)),
             ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2)),
         );
-        
+
         // Update status with selected block
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
@@ -2056,10 +2092,10 @@ impl ChainWriter for BlockChain {
                     .insert(uncle_header.id(), block.header().number());
             });
         }
-        
+
         // Save updated tips to DAG state
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
-        
+
         Ok(executed_block)
     }
 
@@ -2074,7 +2110,7 @@ impl ChainWriter for BlockChain {
     fn chain_state2(&mut self) -> &ChainStateDB2 {
         &self.statedb.1
     }
-    
+
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<FullVerifier>(block)
     }
@@ -2090,20 +2126,16 @@ impl BlockChain {
             .expect("selected parent must executed");
         let header = block.header();
         let block_id = header.id();
-        
+
         // Get selected head for gas_used
-        let selected_head = self
-            .get_block(selected_parent)?
-            .ok_or_else(|| {
-                format_err!("Can not find selected block by hash {:?}", selected_parent)
-            })?;
-            
+        let selected_head = self.get_block(selected_parent)?.ok_or_else(|| {
+            format_err!("Can not find selected block by hash {:?}", selected_parent)
+        })?;
+
         // Prepare transactions for VM1
         let vm1_offline = header.number() >= vm1_offline_height(header.chain_id().id().into());
         let transactions = if !vm1_offline {
-            let block_metadata = block.to_metadata(
-                selected_head.header().gas_used()
-            );
+            let block_metadata = block.to_metadata(selected_head.header().gas_used());
             let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
             txns.extend(
                 block
@@ -2116,13 +2148,13 @@ impl BlockChain {
         } else {
             vec![]
         };
-        
+
         // Prepare transactions for VM2
         let transactions2 = build_block_transactions(
             block.transactions2(),
             Some(block.to_metadata2(
-                selected_head.header().gas_used(), 
-                verified_block.ghostdata.mergeset_reds.len() as u64
+                selected_head.header().gas_used(),
+                verified_block.ghostdata.mergeset_reds.len() as u64,
             )),
         );
 
@@ -2131,10 +2163,10 @@ impl BlockChain {
         let multi_state = self.storage.0.get_vm_multi_state(selected_parent)?;
         let statedb = self.statedb.0.fork_at(multi_state.state_root1());
         let statedb2 = self.statedb.1.fork_at(multi_state.state_root2());
-        
+
         // Get epoch from forked statedb (read from VM2's statedb)
         let epoch = get_epoch_from_statedb(&statedb2)?;
-        
+
         // Execute VM1 transactions
         let executed_data = if !transactions.is_empty() {
             starcoin_executor::block_execute(
@@ -2152,7 +2184,7 @@ impl BlockChain {
                 write_sets: vec![],
             }
         };
-        
+
         // Apply write sets for VM1
         for write_set in executed_data.write_sets {
             statedb
@@ -2165,10 +2197,11 @@ impl BlockChain {
 
         // Execute VM2 transactions
         // Calculate gas used from VM1 transactions
-        let vm1_gas_used = executed_data.txn_infos
+        let vm1_gas_used = executed_data
+            .txn_infos
             .iter()
             .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
-        
+
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
@@ -2180,8 +2213,9 @@ impl BlockChain {
         let (state_root, multi_state) = {
             let state_root1 = executed_data.state_root;
             let state_root2 = executed_data2.state_root;
-            
-            self.vm_state_accumulator.append(&[state_root1, state_root2])?;
+
+            self.vm_state_accumulator
+                .append(&[state_root1, state_root2])?;
             (
                 self.vm_state_accumulator.root_hash(),
                 MultiState::new(state_root1, state_root2),
@@ -2198,15 +2232,17 @@ impl BlockChain {
             header.state_root(),
             multi_state
         );
-        
+
         // Verify gas_used
-        let block_gas_used = executed_data.txn_infos
+        let block_gas_used = executed_data
+            .txn_infos
             .iter()
             .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()))
             .saturating_add(
-                executed_data2.txn_infos
+                executed_data2
+                    .txn_infos
                     .iter()
-                    .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()))
+                    .fold(0u64, |acc, i| acc.saturating_add(i.gas_used())),
             );
         verify_block!(
             VerifyBlockField::State,
@@ -2215,7 +2251,7 @@ impl BlockChain {
             block_gas_used,
             header.gas_used()
         );
-        
+
         // Verify transaction count
         let total_txn_num = executed_data.txn_infos.len() + executed_data2.txn_infos.len();
         let expected_txn_num = transactions.len() + transactions2.len();
@@ -2252,14 +2288,20 @@ impl BlockChain {
         }
 
         let transaction_global_index = self.txn_accumulator.num_leaves();
-        
+
         // Update txn accumulator with both VM1 and VM2 transactions
         let executed_accumulator_root = {
-            let included_txn_info_hashes: Vec<_> =
-                executed_data.txn_infos.iter().map(|info| info.id()).collect();
-            let included_txn_info_hashes2: Vec<_> =
-                executed_data2.txn_infos.iter().map(|info| info.id()).collect();
-            
+            let included_txn_info_hashes: Vec<_> = executed_data
+                .txn_infos
+                .iter()
+                .map(|info| info.id())
+                .collect();
+            let included_txn_info_hashes2: Vec<_> = executed_data2
+                .txn_infos
+                .iter()
+                .map(|info| info.id())
+                .collect();
+
             if !included_txn_info_hashes.is_empty() {
                 self.txn_accumulator.append(&included_txn_info_hashes)?;
             }
@@ -2287,13 +2329,13 @@ impl BlockChain {
         let (storage, _storage2) = &self.storage;
         storage.save_block_info(block_info.clone())?;
         storage.commit_block(block.clone())?;
-        
+
         // DAG specific saves
         // Update k parameter for DAG
         self.dag()
             .ghost_dag_manager()
             .update_k(epoch.max_uncles_per_block().try_into().unwrap());
-        
+
         // Commit the DAG block
         self.dag()
             .commit_trusted_block(header.to_owned(), Arc::new(verified_block.ghostdata))?;
@@ -2303,38 +2345,40 @@ impl BlockChain {
         let txn_events = executed_data.txn_events;
         let vm2_txn_infos = executed_data2.txn_infos;
         let vm2_txn_events = executed_data2.txn_events;
-        
+
         // Merge table infos from both VMs
-        let txn_table_infos = executed_data.txn_table_infos
+        let txn_table_infos = executed_data
+            .txn_table_infos
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
             .chain(
-                executed_data2.txn_table_infos
+                executed_data2
+                    .txn_table_infos
                     .into_iter()
-                    .map(|(k, v)| (k.into(), v.into()))
+                    .map(|(k, v)| (k.into(), v.into())),
             )
             .collect::<Vec<_>>();
-        
+
         // Save events for VM1
         let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
         for (info_id, events) in txn_info_ids.iter().zip(
             txn_events
                 .into_iter()
-                .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>())
+                .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>()),
         ) {
             storage.save_contract_events_v2(*info_id, events)?;
         }
-        
+
         // Save events for VM2
         let vm2_txn_info_ids: Vec<_> = vm2_txn_infos.iter().map(|info| info.id()).collect();
         for (info_id, events) in vm2_txn_info_ids.iter().zip(
             vm2_txn_events
                 .into_iter()
-                .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>())
+                .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>()),
         ) {
             storage.save_contract_events_v2(*info_id, events)?;
         }
-        
+
         // Save transaction infos
         storage.save_transaction_infos(
             txn_infos
@@ -2355,7 +2399,7 @@ impl BlockChain {
                 })
                 .collect(),
         )?;
-        
+
         // Save transactions
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
@@ -2367,14 +2411,14 @@ impl BlockChain {
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         storage.save_transaction_batch(all_transactions)?;
-        
+
         // Save block's transaction ids and info ids
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(
             block_id,
             txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
         )?;
-        
+
         // Save table infos
         storage.save_table_infos(txn_table_infos)?;
 

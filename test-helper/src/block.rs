@@ -23,8 +23,15 @@ pub fn create_block_with_transactions(
         .into_iter()
         .map(|txn| MultiSignedUserTransaction::from(txn.as_signed_user_txn().unwrap().clone()))
         .collect();
-    let (block_template, _) =
-        chain.create_block_template(miner, Some(header.id()), multi_txns, vec![], None, vec![], HashValue::zero())?;
+    let (block_template, _) = chain.create_block_template(
+        miner,
+        Some(header.id()),
+        multi_txns,
+        vec![],
+        None,
+        vec![],
+        HashValue::zero(),
+    )?;
     let block = chain
         .consensus()
         .create_block(block_template, net.time_service().as_ref())?;

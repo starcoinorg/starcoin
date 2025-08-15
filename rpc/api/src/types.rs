@@ -735,8 +735,8 @@ impl Into<BlockMetadata> for BlockMetadataView {
             number,
             chain_id,
             parent_gas_used,
-            parents_hash: _,  // DAG field not used in VM1
-            red_blocks: _,    // DAG field not used in VM1
+            parents_hash: _, // DAG field not used in VM1
+            red_blocks: _,   // DAG field not used in VM1
         } = self;
         BlockMetadata::new(
             parent_hash,

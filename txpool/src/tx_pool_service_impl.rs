@@ -288,7 +288,8 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number2_with_header"])
                 .start_timer()
         });
-        self.inner.next_sequence_number2_with_header(address, header)
+        self.inner
+            .next_sequence_number2_with_header(address, header)
     }
 }
 
@@ -383,7 +384,7 @@ impl Inner {
             .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         self.queue.pending(self.get_pool_client(), pending_settings)
     }
-    
+
     pub fn get_pending_with_pool_client(
         &self,
         max_len: u64,
@@ -405,12 +406,12 @@ impl Inner {
     pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<crate::Pool>> {
         self.queue.try_read()
     }
-    
+
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
             .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM1(address))
     }
-    
+
     pub(crate) fn next_sequence_number_with_header(
         &self,
         address: AccountAddress,
@@ -423,7 +424,8 @@ impl Inner {
             NonceCache::new(0),
             self.vm_metrics.clone(),
         );
-        self.queue.next_sequence_number(pool_client, &MultiAccountAddress::VM1(address))
+        self.queue
+            .next_sequence_number(pool_client, &MultiAccountAddress::VM1(address))
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
@@ -501,6 +503,7 @@ impl Inner {
             NonceCache::new(0),
             self.vm_metrics.clone(),
         );
-        self.queue.next_sequence_number(pool_client, &MultiAccountAddress::VM2(address))
+        self.queue
+            .next_sequence_number(pool_client, &MultiAccountAddress::VM2(address))
     }
 }

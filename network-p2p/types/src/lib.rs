@@ -122,7 +122,7 @@ pub struct IncomingRequest {
     /// 1. Drop `pending_response` and thus not changing the reputation of the peer.
     ///
     /// 2. Sending an `Err(())` via `pending_response`, optionally including reputation changes for
-    /// the given peer.
+    ///    the given peer.
     pub pending_response: oneshot::Sender<OutgoingResponse>,
 }
 

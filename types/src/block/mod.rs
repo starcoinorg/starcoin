@@ -10,7 +10,6 @@ pub mod raw_block_header;
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::ChainId;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::multi_state::MultiState;
 use crate::multi_transaction::MultiSignedUserTransaction;
@@ -28,6 +27,7 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddressV2,
     block_metadata::BlockMetadata as BlockMetadataV2,
@@ -1044,8 +1044,8 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
-        version: u32,  // DAG: block version
-        pruning_point: HashValue,  // DAG: pruning point
+        version: u32,             // DAG: block version
+        pruning_point: HashValue, // DAG: pruning point
     ) -> Self {
         let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
             block_metadata.into_inner();
@@ -1065,7 +1065,7 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            parents_hash: vec![parent_hash],  // Default to single parent for VM1
+            parents_hash: vec![parent_hash], // Default to single parent for VM1
             version,
             pruning_point,
         }

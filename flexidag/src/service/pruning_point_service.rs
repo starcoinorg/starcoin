@@ -138,7 +138,7 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
                     //     .get_dag_config()
                     //     .unwrap_or_default()
                     //     .unwrap_or_default();
-                    
+
                     // Hardcoded values for now
                     let pruning_depth = 1000;
                     let pruning_finality = 100;

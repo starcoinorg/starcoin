@@ -566,7 +566,6 @@ impl ReadableChainService for ChainReaderServiceInner {
         Ok(results)
     }
 
-
     fn get_transaction_proof2(
         &self,
         block_id: HashValue,

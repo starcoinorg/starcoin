@@ -14,7 +14,6 @@ use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::ValueCodec;
@@ -24,6 +23,7 @@ use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
@@ -608,16 +608,23 @@ where
                     )?;
                     self.sync_dag_store.save_block(block.clone())?;
                     result.push(block.header().clone());
-                    filtered_set.extend(block.header().parents_hash().iter().filter(|id| {
-                        self.local_store
-                            .get_dag_sync_block(**id)
-                            .unwrap_or(None)
-                            .is_none()
-                            && match self.chain.has_dag_block(**id) {
-                                Ok(exist) => !exist,
-                                Err(_) => true,
-                            }
-                    }).cloned());
+                    filtered_set.extend(
+                        block
+                            .header()
+                            .parents_hash()
+                            .iter()
+                            .filter(|id| {
+                                self.local_store
+                                    .get_dag_sync_block(**id)
+                                    .unwrap_or(None)
+                                    .is_none()
+                                    && match self.chain.has_dag_block(**id) {
+                                        Ok(exist) => !exist,
+                                        Err(_) => true,
+                                    }
+                            })
+                            .cloned(),
+                    );
                 }
                 if filtered_set.is_empty() {
                     exp = 1;

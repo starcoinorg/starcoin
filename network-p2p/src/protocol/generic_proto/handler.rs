@@ -35,11 +35,11 @@
 //! Each protocol in the [`NotifsHandler`] can spontaneously switch between these states:
 //!
 //! - "Closed substream" to "Closed substream but open desired". When that happens, a
-//! [`NotifsHandlerOut::OpenDesiredByRemote`] is emitted.
+//!   [`NotifsHandlerOut::OpenDesiredByRemote`] is emitted.
 //! - "Closed substream but open desired" to "Closed substream" (i.e. the remote has cancelled
-//! their request). When that happens, a [`NotifsHandlerOut::CloseDesired`] is emitted.
+//!   their request). When that happens, a [`NotifsHandlerOut::CloseDesired`] is emitted.
 //! - "Open substream" to "Open substream but close desired". When that happens, a
-//! [`NotifsHandlerOut::CloseDesired`] is emitted.
+//!   [`NotifsHandlerOut::CloseDesired`] is emitted.
 //!
 //! The user can instruct a protocol in the `NotifsHandler` to switch from "closed" to "open" or
 //! vice-versa by sending either a [`NotifsHandlerIn::Open`] or a [`NotifsHandlerIn::Close`]. The

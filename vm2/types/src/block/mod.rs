@@ -1011,7 +1011,11 @@ impl BlockTemplate {
             difficulty,
             strategy,
             // for an upgraded binary, parents_hash should never be None.
-            parents_hash: Some(if parents_hash.is_empty() { vec![] } else { parents_hash }),
+            parents_hash: Some(if parents_hash.is_empty() {
+                vec![]
+            } else {
+                parents_hash
+            }),
         }
     }
 

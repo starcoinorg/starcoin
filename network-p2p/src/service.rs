@@ -563,9 +563,9 @@ impl NetworkService {
     /// a receiver. With a `NotificationSender` at hand, sending a notification is done in two steps:
     ///
     /// 1.  [`NotificationSender::ready`] is used to wait for the sender to become ready
-    /// for another notification, yielding a [`NotificationSenderReady`] token.
+    ///     for another notification, yielding a [`NotificationSenderReady`] token.
     /// 2.  [`NotificationSenderReady::send`] enqueues the notification for sending. This operation
-    /// can only fail if the underlying notification substream or connection has suddenly closed.
+    ///     can only fail if the underlying notification substream or connection has suddenly closed.
     ///
     /// An error is returned by [`NotificationSenderReady::send`] if there exists no open
     /// notifications substream with that combination of peer and protocol, or if the remote

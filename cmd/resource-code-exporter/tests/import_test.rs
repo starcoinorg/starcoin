@@ -5,10 +5,10 @@
 mod import_test {
     use anyhow::format_err;
     use resource_code_exporter::{export::export_from_statedb, import::import_from_statedb};
-    use starcoin_crypto::HashValue;
     use starcoin_chain::ChainReader;
     use starcoin_config::{ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_consensus::Consensus;
+    use starcoin_crypto::HashValue;
     use starcoin_logger::prelude::info;
     use starcoin_statedb::{ChainStateDB, ChainStateReader};
     use starcoin_transaction_builder::{
@@ -69,7 +69,7 @@ mod import_test {
         info!("=== Testing with temp directory storage ===");
         let temp_dir = TempDir::new()?;
         let (_temp_chain, temp_statedb) =
-            gen_chain_for_test_and_return_statedb_with_temp_storage(&net, temp_dir.into_path())?;
+            gen_chain_for_test_and_return_statedb_with_temp_storage(&net, temp_dir.keep())?;
 
         // Perform the same operations
         association_transfer_to(random_account, transfer_amount, &temp_statedb, &net)?;

@@ -22,15 +22,15 @@
 //! A request-response protocol works in the following way:
 //!
 //! - For every emitted request, a new substream is open and the protocol is negotiated. If the
-//! remote supports the protocol, the size of the request is sent as a LEB128 number, followed
-//! with the request itself. The remote then sends the size of the response as a LEB128 number,
-//! followed with the response.
+//!   remote supports the protocol, the size of the request is sent as a LEB128 number, followed
+//!   with the request itself. The remote then sends the size of the response as a LEB128 number,
+//!   followed with the response.
 //!
 //! - Requests have a certain time limit before they time out. This time includes the time it
-//! takes to send/receive the request and response.
+//!   takes to send/receive the request and response.
 //!
 //! - If provided, a ["requests processing"](ProtocolConfig::inbound_queue) channel
-//! is used to handle incoming requests.
+//!   is used to handle incoming requests.
 //!
 
 use futures::{

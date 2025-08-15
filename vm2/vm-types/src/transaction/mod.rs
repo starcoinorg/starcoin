@@ -1001,7 +1001,7 @@ pub struct LegacyBlockMetadata {
 
 impl LegacyBlockMetadata {
     pub fn id(&self) -> HashValue {
-        self.id.unwrap_or_else(|| HashValue::zero())
+        self.id.unwrap_or_else(HashValue::zero)
     }
 }
 
@@ -1031,7 +1031,8 @@ impl From<LegacyTransaction> for Transaction {
             LegacyTransaction::BlockMetadata(legacy_meta) => {
                 // Convert legacy BlockMetadata to new format with DAG support
                 // Use parent_hash as single parent and 0 red_blocks for non-DAG blocks
-                let author = crate::account_address::AccountAddress::new(legacy_meta.author.into_bytes());
+                let author =
+                    crate::account_address::AccountAddress::new(legacy_meta.author.into_bytes());
                 Self::BlockMetadata(BlockMetadata::new(
                     legacy_meta.parent_hash,
                     legacy_meta.timestamp,
@@ -1041,7 +1042,7 @@ impl From<LegacyTransaction> for Transaction {
                     legacy_meta.chain_id.id().into(),
                     legacy_meta.parent_gas_used,
                     vec![legacy_meta.parent_hash], // Convert single parent to parents_hash
-                    0, // No red blocks in legacy data
+                    0,                             // No red blocks in legacy data
                 ))
             }
         }
