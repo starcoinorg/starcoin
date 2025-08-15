@@ -91,6 +91,9 @@ module starcoin_framework::stc_genesis {
         let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
 
+        let (_starcoin_framework_account2, _genesis_signer_cap2) =
+            account::create_framework_reserved_account(@0xa);
+
         // Initialize features
         features::initialize(
             &starcoin_framework_account,
