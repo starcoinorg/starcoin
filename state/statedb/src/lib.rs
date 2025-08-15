@@ -246,28 +246,28 @@ impl ChainStateDB {
             state_tree_table_handles_list: vec![],
             update_table_handle_idx_list: Mutex::new(HashSet::new()),
         };
-        for (handle_address, table_path) in
-            TABLE_HANDLE_ADDRESS_LIST.iter().zip(TABLE_PATH_LIST.iter())
-        {
-            let account_state_object = chain_statedb
-                .get_account_state_object(handle_address, true)
-                .expect("get account state success");
-            let state_root = account_state_object
-                .get(table_path)
-                .expect("get state_root success");
-            match state_root {
-                Some(state_root) => {
-                    let hash =
-                        HashValue::from_slice(state_root.as_slice()).expect("hash value success");
-                    chain_statedb
-                        .state_tree_table_handles_list
-                        .push(StateTree::new(store.clone(), Some(hash)));
-                }
-                None => chain_statedb
-                    .state_tree_table_handles_list
-                    .push(StateTree::new(store.clone(), None)),
-            };
-        }
+        //for (handle_address, table_path) in
+        //    TABLE_HANDLE_ADDRESS_LIST.iter().zip(TABLE_PATH_LIST.iter())
+        //{
+        //    let account_state_object = chain_statedb
+        //        .get_account_state_object(handle_address, true)
+        //        .expect("get account state success");
+        //    let state_root = account_state_object
+        //        .get(table_path)
+        //        .expect("get state_root success");
+        //    match state_root {
+        //        Some(state_root) => {
+        //            let hash =
+        //                HashValue::from_slice(state_root.as_slice()).expect("hash value success");
+        //            chain_statedb
+        //                .state_tree_table_handles_list
+        //                .push(StateTree::new(store.clone(), Some(hash)));
+        //        }
+        //        None => chain_statedb
+        //            .state_tree_table_handles_list
+        //            .push(StateTree::new(store.clone(), None)),
+        //    };
+        //}
         chain_statedb
     }
 
