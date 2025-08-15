@@ -63,7 +63,7 @@ module starcoin_framework::stc_transaction_fee {
         // let storage_account_index = counter_value % 100;
 
         // from_bcs::to_address(x"00000000000000000000000000000b0b")
-        @0x1
+        @0xa
     }
 
     /// Deposit `token` into one of the storage accounts

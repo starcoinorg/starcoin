@@ -143,7 +143,7 @@ Helper function to create a storage account address from predefined addresses
     // <b>let</b> storage_account_index = counter_value % 100;
 
     // <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
-    @0x1
+    @0xa
 }
 </code></pre>
 
