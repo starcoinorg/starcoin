@@ -116,6 +116,9 @@ The module for init Genesis
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
         <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@starcoin_framework);
 
+    <b>let</b> (_starcoin_framework_account2, _genesis_signer_cap2) =
+        <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@0xa);
+
     // Initialize <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>
     <a href="../../move-stdlib/doc/features.md#0x1_features_initialize">features::initialize</a>(
         &starcoin_framework_account,
