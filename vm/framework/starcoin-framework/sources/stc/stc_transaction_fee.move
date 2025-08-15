@@ -62,7 +62,8 @@ module starcoin_framework::stc_transaction_fee {
         // let counter_value = aggregator_v2::read(&counter_resource.counter);
         // let storage_account_index = counter_value % 100;
 
-        from_bcs::to_address(x"00000000000000000000000000000b0b")
+        // from_bcs::to_address(x"00000000000000000000000000000b0b")
+        @starcoin_framework
     }
 
     /// Deposit `token` into one of the storage accounts

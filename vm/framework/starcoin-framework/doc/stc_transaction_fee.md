@@ -24,7 +24,6 @@ Uses aggregator_v2 for parallel execution and distributes fees across 100 genesi
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
-<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
@@ -143,7 +142,8 @@ Helper function to create a storage account address from predefined addresses
     // <b>let</b> counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
     // <b>let</b> storage_account_index = counter_value % 100;
 
-    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
+    // <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
+    @starcoin_framework
 }
 </code></pre>
 

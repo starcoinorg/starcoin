@@ -242,7 +242,7 @@ The module for init Genesis
     <a href="oracle_stc_usd.md#0x1_oracle_stc_usd_register">oracle_stc_usd::register</a>(&starcoin_framework_account);
 
     // Create 100 genesis accounts from 0x0b <b>to</b> 0x6e
-    <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>();
+    // <a href="stc_genesis.md#0x1_stc_genesis_create_genesis_accounts">create_genesis_accounts</a>();
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | Exited"));
 }
