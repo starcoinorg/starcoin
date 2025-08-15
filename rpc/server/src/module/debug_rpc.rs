@@ -4,6 +4,8 @@
 use crate::module::to_invalid_param_err;
 use crate::module::txfactory_rpc::TxFactoryStatusHandle;
 use jsonrpc_core::Result;
+use log::warn;
+use pprof::ProfilerGuard;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
 use starcoin_logger::structured_log::set_slog_level;
@@ -14,8 +16,39 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use std::fs::File;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock, RwLock};
+use std::thread::sleep;
+use std::time::Duration;
+
+static PPROF_PROFILER: OnceLock<Arc<RwLock<Option<ProfilerGuard<'static>>>>> = OnceLock::new();
+
+fn get_pprof_guard() -> Arc<RwLock<Option<ProfilerGuard<'static>>>> {
+    PPROF_PROFILER
+        .get_or_init(|| {
+            let freq = if cfg!(target_os = "macos") { 50 } else { 100 };
+            let blocklist = if cfg!(target_os = "macos") {
+                vec![
+                    "libc",
+                    "libgcc",
+                    "pthread",
+                    "vdso",
+                    "libsystem_kernel.dylib, libsystem_pthread.dylib",
+                ]
+            } else {
+                vec!["libc", "libgcc", "pthread", "vdso"]
+            };
+            Arc::new(RwLock::new(
+                pprof::ProfilerGuardBuilder::default()
+                    .frequency(freq)
+                    .blocklist(&blocklist)
+                    .build()
+                    .ok(),
+            ))
+        })
+        .clone()
+}
 
 pub struct DebugRpcImpl {
     config: Arc<NodeConfig>,
@@ -90,6 +123,30 @@ impl DebugApi for DebugRpcImpl {
     }
 
     fn get_concurrency_level(&self) -> Result<usize> {
+        let guard = get_pprof_guard();
+        // take and drop the guard to avoid holding the lock for too long.
+        let guard = if let Ok(mut guard) = guard.write() {
+            guard.take()
+        } else {
+            None
+        };
+
+        if let Some(g) = guard {
+            std::thread::spawn(move || {
+                sleep(Duration::from_secs(60));
+                let Ok(report) = g.report().build() else {
+                    warn!("Failed to build pprof report.");
+                    return;
+                };
+                let Ok(file) = File::create("flamegraph.svg") else {
+                    warn!("Failed to create flamegraph file.");
+                    return;
+                };
+                if report.flamegraph(file).is_err() {
+                    warn!("Failed to generate flamegraph report.");
+                }
+            });
+        }
         Ok(StarcoinVM::get_concurrency_level())
     }
 
