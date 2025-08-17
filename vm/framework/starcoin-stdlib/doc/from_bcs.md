@@ -28,6 +28,7 @@ assert!(from_bcs::to_address(bcs::to_bytes(&@0xabcdef)) == @0xabcdef, 0);
 -  [Function `to_address`](#0x1_from_bcs_to_address)
 -  [Function `to_bytes`](#0x1_from_bcs_to_bytes)
 -  [Function `to_string`](#0x1_from_bcs_to_string)
+-  [Function `u64_to_address`](#0x1_from_bcs_u64_to_address)
 -  [Function `from_bytes`](#0x1_from_bcs_from_bytes)
 -  [Specification](#@Specification_1)
     -  [Function `from_bytes`](#@Specification_1_from_bytes)
@@ -289,6 +290,46 @@ UTF8 check failed in conversion from bytes to string
     <b>let</b> s = <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;String&gt;(v);
     <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_internal_check_utf8">string::internal_check_utf8</a>(<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&s)), <a href="from_bcs.md#0x1_from_bcs_EINVALID_UTF8">EINVALID_UTF8</a>);
     s
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_from_bcs_u64_to_address"></a>
+
+## Function `u64_to_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u64_to_address">u64_to_address</a>(x: u64): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u64_to_address">u64_to_address</a>(x: u64): <b>address</b> {
+    <b>let</b> bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
+
+    <b>let</b> i = 0;
+    <b>while</b> (i &lt; 32) {
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, 0u8);
+        i = i + 1;
+    };
+
+    <b>let</b> i = 0;
+    <b>let</b> tmp = x;
+    <b>while</b> (i &lt; 8) {
+        *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> bytes, i) = ((tmp & 0xFF) <b>as</b> u8);
+        tmp = tmp &gt;&gt; 8;
+        i = i + 1;
+    };
+
+    <a href="from_bcs.md#0x1_from_bcs_to_address">to_address</a>(bytes)
 }
 </code></pre>
 

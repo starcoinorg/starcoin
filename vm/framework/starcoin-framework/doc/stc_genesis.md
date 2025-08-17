@@ -194,14 +194,14 @@ The module for init Genesis
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
 
-    <b>let</b> account_index = 0x1;
-    <b>while</b> (account_index &lt; 0xa) {
-        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;[account_index]);
+    <b>let</b> account_index = 0x1u64;
+    <b>while</b> (account_index &lt;= 0xau64) {
+        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u64_to_address">from_bcs::u64_to_address</a>(account_index);
         <b>let</b> (starcoin_framework_account2, _genesis_signer_cap2) =
-            <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@0xa);
+            <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(addr);
         // Register STC CoinStore for 0xa <a href="account.md#0x1_account">account</a>
         <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&starcoin_framework_account2);
-
+        account_index = account_index + 1;
     };
 
 

@@ -64,9 +64,8 @@ module starcoin_framework::stc_transaction_fee {
         aggregator_v2::add(&mut counter_resource.counter, 1);
         let counter = aggregator_v2::read(&counter_resource.counter);
         let offset = ((counter % 5) as u8);
-        let addr = 1u8 + offset;
 
-        from_bcs::to_address(vector<u8>[addr])
+        from_bcs::u64_to_address((1u64 + (offset as u64)))
     }
 
     /// Deposit `token` into one of the storage accounts

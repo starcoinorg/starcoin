@@ -12,6 +12,7 @@
 /// ```
 module starcoin_std::from_bcs {
     use std::string::{Self, String};
+    use std::vector;
 
     /// UTF8 check failed in conversion from bytes to string
     const EINVALID_UTF8: u64 = 0x1;
@@ -57,6 +58,26 @@ module starcoin_std::from_bcs {
         let s = from_bytes<String>(v);
         assert!(string::internal_check_utf8(string::bytes(&s)), EINVALID_UTF8);
         s
+    }
+
+    public fun u64_to_address(x: u64): address {
+        let bytes = vector::empty();
+        
+        let i = 0;
+        while (i < 32) {
+            vector::push_back(&mut bytes, 0u8);
+            i = i + 1;
+        };
+
+        let i = 0;
+        let tmp = x;
+        while (i < 8) {
+            *vector::borrow_mut(&mut bytes, i) = ((tmp & 0xFF) as u8);
+            tmp = tmp >> 8;
+            i = i + 1;
+        };
+
+        to_address(bytes)
     }
 
 

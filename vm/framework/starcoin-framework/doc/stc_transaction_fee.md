@@ -145,9 +145,8 @@ Helper function to create a storage account address from predefined addresses
     <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
     <b>let</b> counter = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
     <b>let</b> offset = ((counter % 5) <b>as</b> u8);
-    <b>let</b> addr = 1u8 + offset;
 
-    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;[addr])
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u64_to_address">from_bcs::u64_to_address</a>((1u64 + (offset <b>as</b> u64)))
 }
 </code></pre>
 
