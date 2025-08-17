@@ -56,11 +56,14 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     /// Helper function to create a storage account address from predefined addresses
-    fun next_storage_address(): address {
+    fun next_storage_address<TokenType>(): address acquires AutoIncrementCounter {
         // Increment counter and get which storage account to use
-        // aggregator_v2::add(&mut counter_resource.counter, 1);
-        // let _counter_value = aggregator_v2::read(&counter_resource.counter);
-        // let storage_account_index = counter_value % 100;
+        let counter_resource = borrow_global_mut<AutoIncrementCounter<TokenType>>(
+            system_addresses::get_starcoin_framework()
+        );
+        aggregator_v2::add(&mut counter_resource.counter, 1);
+        let _counter_value = aggregator_v2::read(&counter_resource.counter);
+        let _storage_account_index = _counter_value % 100;
 
         // from_bcs::to_address(x"00000000000000000000000000000b0b")
         @0xa
@@ -73,7 +76,7 @@ module starcoin_framework::stc_transaction_fee {
         );
         
         // Get the target genesis account address
-        let deposit_address = next_storage_address();
+        let deposit_address = next_storage_address<TokenType>();
         
         // Deposit the fee directly to the selected genesis account
         coin::deposit(deposit_address, token);
@@ -89,7 +92,7 @@ module starcoin_framework::stc_transaction_fee {
     /// This function iterates through all genesis accounts and withdraws available fees.
     public fun distribute_transaction_fees<TokenType>(
         account: &signer,
-    ): coin::Coin<TokenType> {
+    ): coin::Coin<TokenType> acquires AutoIncrementCounter {
         debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
 
         system_addresses::assert_starcoin_framework(account);
@@ -97,10 +100,10 @@ module starcoin_framework::stc_transaction_fee {
         // Create accumulator for all collected fees
         let total_fees = coin::zero<TokenType>();
         
-        let first_withdraw_address = next_storage_address();
+        let first_withdraw_address = next_storage_address<TokenType>();
 
         while (true) {
-            let withdraw_address = next_storage_address();
+            let withdraw_address = next_storage_address<TokenType>();
 
             // Check if the genesis account has any balance
             if (coin::balance<TokenType>(withdraw_address) > 0) {

@@ -127,7 +127,7 @@ publishing a wrapper of the <code><a href="stc_transaction_fee.md#0x1_stc_transa
 Helper function to create a storage account address from predefined addresses
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>(): <b>address</b>
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(): <b>address</b>
 </code></pre>
 
 
@@ -136,11 +136,14 @@ Helper function to create a storage account address from predefined addresses
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>(): <b>address</b> {
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
     // Increment counter and get which storage <a href="account.md#0x1_account">account</a> <b>to</b> <b>use</b>
-    // <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-    // <b>let</b> _counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
-    // <b>let</b> storage_account_index = counter_value % 100;
+    <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
+        <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
+    );
+    <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
+    <b>let</b> _counter_value = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
+    <b>let</b> _storage_account_index = _counter_value % 100;
 
     // <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(x"00000000000000000000000000000b0b")
     @0xa
@@ -173,7 +176,7 @@ Deposit <code>token</code> into one of the storage accounts
     );
 
     // Get the target genesis <a href="account.md#0x1_account">account</a> <b>address</b>
-    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
+    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
 
     // Deposit the fee directly <b>to</b> the selected genesis <a href="account.md#0x1_account">account</a>
     <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(deposit_address, token);
@@ -203,7 +206,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; {
+): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
@@ -211,10 +214,10 @@ This function iterates through all genesis accounts and withdraws available fees
     // Create accumulator for all collected fees
     <b>let</b> total_fees = <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;();
 
-    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
+    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
 
     <b>while</b> (<b>true</b>) {
-        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>();
+        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
 
         // Check <b>if</b> the genesis <a href="account.md#0x1_account">account</a> <b>has</b> <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> balance
         <b>if</b> (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address) &gt; 0) {

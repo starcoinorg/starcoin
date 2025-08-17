@@ -171,6 +171,10 @@ module starcoin_framework::stc_genesis {
 
         let (starcoin_framework_account2, _genesis_signer_cap2) =
             account::create_framework_reserved_account(@0xa);
+
+        let data = b"ff";
+        let _addr = from_bcs::to_address(data);
+        
         // Register STC CoinStore for 0xa account
         coin::register<STC>(&starcoin_framework_account2);
 
