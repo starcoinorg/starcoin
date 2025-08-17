@@ -31,6 +31,7 @@ The module for init Genesis
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="flexi_dag_config.md#0x1_flexi_dag_config">0x1::flexi_dag_config</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
@@ -193,10 +194,16 @@ The module for init Genesis
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
 
-    <b>let</b> (starcoin_framework_account2, _genesis_signer_cap2) =
-        <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@0xa);
-    // Register STC CoinStore for 0xa <a href="account.md#0x1_account">account</a>
-    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&starcoin_framework_account2);
+    <b>let</b> account_index = 0x1;
+    <b>while</b> (account_index &lt; 0xa) {
+        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;[account_index]);
+        <b>let</b> (starcoin_framework_account2, _genesis_signer_cap2) =
+            <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@0xa);
+        // Register STC CoinStore for 0xa <a href="account.md#0x1_account">account</a>
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&starcoin_framework_account2);
+
+    };
+
 
     // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);

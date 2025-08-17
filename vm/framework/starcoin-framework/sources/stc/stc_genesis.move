@@ -169,14 +169,16 @@ module starcoin_framework::stc_genesis {
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
 
-        let (starcoin_framework_account2, _genesis_signer_cap2) =
-            account::create_framework_reserved_account(@0xa);
+        let account_index = 0x1;
+        while (account_index < 0xa) {
+            let addr = from_bcs::to_address(vector<u8>[account_index]);
+            let (starcoin_framework_account2, _genesis_signer_cap2) =
+                account::create_framework_reserved_account(@0xa);
+            // Register STC CoinStore for 0xa account
+            coin::register<STC>(&starcoin_framework_account2);
+            
+        };
 
-        let data = b"ff";
-        let _addr = from_bcs::to_address(data);
-        
-        // Register STC CoinStore for 0xa account
-        coin::register<STC>(&starcoin_framework_account2);
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
