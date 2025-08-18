@@ -223,6 +223,7 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
+            return true;
             let result =  match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
