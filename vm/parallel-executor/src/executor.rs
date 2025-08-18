@@ -229,13 +229,13 @@ where
                 Err(None) => r.validate_storage(),
             };
             
-            if !result {
-                warn!("parallel execution met confliction, key{:?}", r.path());
-            }
-
             let key = format!("{:?}", r.path());
             if key.contains("0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>") {
                 return true;
+            }
+
+            if !result {
+                warn!("parallel execution met confliction, key{:?}", r.path());
             }
 
             result

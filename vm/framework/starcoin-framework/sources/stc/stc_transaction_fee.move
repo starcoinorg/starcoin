@@ -11,7 +11,7 @@ module starcoin_framework::stc_transaction_fee {
     use std::vector;
 
     const TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM: u128 = 0x2;
-    const TRANSACTION_FEE_RECEIVER_ACCOUNT_TO:   u128 = 0xa;
+    const TRANSACTION_FEE_RECEIVER_ACCOUNT_TO:   u128 = 0xfff;
     public fun transaction_fee_receiver_account_from(): u128 { TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM }
     public fun transaction_fee_receiver_account_to(): u128 { TRANSACTION_FEE_RECEIVER_ACCOUNT_TO }
 

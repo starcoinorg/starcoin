@@ -250,16 +250,17 @@ Return true if <code>addr</code> is 0x0 or under the on chain governance's contr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr: <b>address</b>): bool {
-    <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) ||
-        addr == @0x2 ||
-        addr == @0x3 ||
-        addr == @0x4 ||
-        addr == @0x5 ||
-        addr == @0x6 ||
-        addr == @0x7 ||
-        addr == @0x8 ||
-        addr == @0x9 ||
-        addr == @0xa
+    // <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) ||
+    //     addr == @0x2 ||
+    //     addr == @0x3 ||
+    //     addr == @0x4 ||
+    //     addr == @0x5 ||
+    //     addr == @0x6 ||
+    //     addr == @0x7 ||
+    //     addr == @0x8 ||
+    //     addr == @0x9 ||
+    //     addr == @0xa
+    <b>true</b>
 }
 </code></pre>
 
@@ -547,6 +548,20 @@ Return true if <code>addr</code> is either the VM address or an Starcoin Framewo
 </code></pre>
 
 
+Specifies that a function aborts if the account does not have the root address.
+
+
+<a id="0x1_system_addresses_AbortsIfNotCoreResource"></a>
+
+
+<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotCoreResource">AbortsIfNotCoreResource</a> {
+    addr: <b>address</b>;
+    // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
+    <b>aborts_if</b> addr != @core_resources <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
+}
+</code></pre>
+
+
 
 <a id="@Specification_1_assert_starcoin_framework"></a>
 
@@ -593,20 +608,6 @@ Return true if <code>addr</code> is either the VM address or an Starcoin Framewo
 
 
 <pre><code><b>aborts_if</b> !<a href="system_addresses.md#0x1_system_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr);
-</code></pre>
-
-
-Specifies that a function aborts if the account does not have the starcoin framework address.
-
-
-<a id="0x1_system_addresses_AbortsIfNotStarcoinFramework"></a>
-
-
-<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotStarcoinFramework">AbortsIfNotStarcoinFramework</a> {
-    <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    // This enforces <a id="high-level-req-2" href="#high-level-req">high-level requirement 2</a>:
-    <b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != @starcoin_framework <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
-}
 </code></pre>
 
 
