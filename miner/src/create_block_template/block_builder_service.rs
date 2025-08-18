@@ -145,6 +145,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.set_mailbox_capacity(1024);
+
         ctx.subscribe::<DefaultAccountChangeEvent>();
         ctx.subscribe::<BlockTemplateRequest>();
 
@@ -160,7 +162,7 @@ impl ActorService for BlockBuilderService {
                     .expect("get receiver error");
                 let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
                 while let std::result::Result::Ok(process_header_template) = receiver.try_recv() {
-                    let state_root = process_header_template.trans.state_root;
+                    let state_root = process_header_template.transaction_outputs.state_root;
 
                     let (uncles, _uncle_len) = if !process_header_template.uncles.is_empty() {
                         let uncle_len = process_header_template.uncles.len() as u64;
@@ -169,7 +171,7 @@ impl ActorService for BlockBuilderService {
                         (None, 0)
                     };
                     let body =
-                        BlockBody::new(process_header_template.trans.included_user_txns, uncles);
+                        BlockBody::new(process_header_template.transaction_outputs.included_user_txns, uncles);
 
                     let block_info = storage
                         .get_block_info(process_header_template.header.id())
@@ -179,9 +181,9 @@ impl ActorService for BlockBuilderService {
                     let version = 1;
                     let block_template = BlockTemplate::new(
                         block_info.block_accumulator_info.accumulator_root,
-                        process_header_template.trans.txn_accumulator_root,
+                        process_header_template.transaction_outputs.txn_accumulator_root,
                         state_root,
-                        process_header_template.trans.gas_used,
+                        process_header_template.transaction_outputs.gas_used,
                         body,
                         process_header_template.header.chain_id(),
                         process_header_template.difficulty,
@@ -549,7 +551,7 @@ where
                     uncles,
                     difficulty,
                     strategy,
-                    trans: result,
+                    transaction_outputs: result,
                     block_metadata: block_meta,
                     pruning_point,
                 })

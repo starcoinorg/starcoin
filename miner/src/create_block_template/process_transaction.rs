@@ -28,7 +28,7 @@ pub struct ProcessHeaderTemplate {
     pub uncles: Vec<BlockHeader>,
     pub difficulty: U256,
     pub strategy: ConsensusStrategy,
-    pub trans: ProcessedTransactions,
+    pub transaction_outputs: ProcessedTransactions,
     pub block_metadata: BlockMetadata,
     pub pruning_point: HashValue,
 }
