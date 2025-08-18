@@ -19,8 +19,10 @@ pub fn do_execute_block_transactions<S: StateView + Sync>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<TransactionOutput>> {
+    let _input = format!("{:?}", txns);
     let result =
         <StarcoinVM as VMExecutor>::execute_block(txns, chain_state, block_gas_limit, metrics)?;
+    let _output = format!("{:?}", result);
     Ok(result)
 }
 
