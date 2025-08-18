@@ -25,6 +25,7 @@ fn run() -> Result<()> {
         Some(G_APP_VERSION.as_str()),
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {}", opt);
+            warn!("***VM1 account provider has been disabled***");
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
             let (client, node_handle) = match connect {
                 Connect::IPC(ipc_file) => {
@@ -74,12 +75,6 @@ fn run() -> Result<()> {
             let node_info = client.node_info()?;
             let client = Arc::new(client);
 
-            let account_provider = ProviderFactory::create_provider(
-                client.clone(),
-                node_info.net.chain_id(),
-                &opt.account_provider,
-            )?;
-
             let account_provider2_option = Some(ProviderFactory::create_provider2(
                 client.clone(),
                 ChainId::new(node_info.net.chain_id().id()),
@@ -91,7 +86,7 @@ fn run() -> Result<()> {
                 client,
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
-                account_provider,
+                None,
                 account_provider2_option,
             );
             Ok(state)
