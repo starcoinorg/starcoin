@@ -4,7 +4,7 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use create_block_template::block_builder_service::{BlockTemplateError, BlockTemplateResponse};
+use create_block_template::block_builder_service::BlockTemplateResponse;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{

@@ -368,7 +368,7 @@ impl TxnMocker {
         info!("going to unlock accounts");
         self.client.account_unlock_in_batch(
             txns.iter()
-                .map(|(sender, _)| (sender.clone(), self.account_password.clone()))
+                .map(|(sender, _)| (*sender, self.account_password.clone()))
                 .collect(),
             self.unlock_duration,
         )?;
@@ -380,6 +380,7 @@ impl TxnMocker {
         )?;
 
         let hashes = self.client.submit_transactions(signed_transactions)?;
+        info!("submitted {} txns", hashes.len());
 
         if blocking {
             for hash in hashes {
@@ -424,6 +425,7 @@ impl TxnMocker {
         result
     }
 
+    #[allow(dead_code)]
     fn gen_and_submit_transfer_txn(
         &self,
         sender: AccountAddress,
@@ -577,19 +579,14 @@ impl TxnMocker {
                     let account_resource = state_reader
                         .get_account_resource(address)
                         .expect("get_account_resource error");
-                    let seq = match account_resource {
-                        None => None,
-                        Some(resource) => {
-                            info!("read from state {:?}", resource.sequence_number());
-                            Some(resource.sequence_number())
-                        }
-                    };
+                    let seq = account_resource.map(|resource| resource.sequence_number());
                     (address, seq)
                 }
             })
             .collect())
     }
 
+    #[allow(dead_code)]
     fn sequence_number(&self, address: AccountAddress) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
         info!(
@@ -601,13 +598,7 @@ impl TxnMocker {
             None => {
                 let state_reader = self.client.state_reader(StateRootOption::Latest)?;
                 let account_resource = state_reader.get_account_resource(address)?;
-                match account_resource {
-                    None => None,
-                    Some(resource) => {
-                        info!("read from state {:?}", resource.sequence_number());
-                        Some(resource.sequence_number())
-                    }
-                }
+                account_resource.map(|resource| resource.sequence_number())
             }
         };
         Ok(result)
@@ -629,7 +620,7 @@ impl TxnMocker {
             let seq = match sequence_op {
                 Some(seq) => seq,
                 None => {
-                    info!("address {:?} seq is none", sender_address);
+                    error!("address {:?} seq is none", sender_address);
                     continue;
                 }
             };
@@ -637,7 +628,7 @@ impl TxnMocker {
             for i in 0..round_num {
                 let txn = self.generator.generate_transfer_txn(
                     *seq + i,
-                    sender_address.clone(),
+                    *sender_address,
                     receivers[index],
                     amount,
                     1,
@@ -645,7 +636,7 @@ impl TxnMocker {
                 )?;
                 transactions.push(txn);
             }
-            sender_transactions.push((sender_address.clone(), transactions.clone()));
+            sender_transactions.push((*sender_address, transactions.clone()));
             transactions.clear();
         }
 
@@ -674,8 +665,8 @@ impl TxnMocker {
         self.send_and_receive(
             sequences[..mid].to_vec(),
             sequences[mid..]
-                .to_vec()
-                .into_iter()
+                .iter()
+                .copied()
                 .map(|(address, _)| address)
                 .collect(),
             1,
@@ -688,8 +679,8 @@ impl TxnMocker {
         self.send_and_receive(
             sequences[..mid].to_vec(),
             sequences[mid..]
-                .to_vec()
-                .into_iter()
+                .iter()
+                .copied()
                 .map(|(address, _)| address)
                 .collect(),
             1,

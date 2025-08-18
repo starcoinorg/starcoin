@@ -39,6 +39,8 @@ pub enum VerifyBlockField {
     Consensus,
     // block field verified base on block executed result.
     State,
+    Parents,
+    PruningPoint,
 }
 
 impl Display for VerifyBlockField {
@@ -49,6 +51,8 @@ impl Display for VerifyBlockField {
             Self::Uncle => write!(f, "uncle"),
             Self::Consensus => write!(f, "consensus"),
             Self::State => write!(f, "state"),
+            Self::Parents => write!(f, "Parents"),
+            Self::PruningPoint => write!(f, "PruningPoint"),
         }
     }
 }

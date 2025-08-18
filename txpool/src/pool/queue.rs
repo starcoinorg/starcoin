@@ -485,7 +485,7 @@ impl TransactionQueue {
                     let stale_id = None;
                     let state_readiness = ready::State::new(client.clone(), stale_id);
                     (
-                        address.clone(),
+                        *address,
                         pool.pending_from_sender(state_readiness, address)
                             .last()
                             .map(|tx| tx.signed().sequence_number().saturating_add(1)),

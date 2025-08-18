@@ -16,10 +16,7 @@ use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
-use starcoin_open_block::OpenedBlock;
-use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
-};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
@@ -38,17 +35,11 @@ use crate::create_block_template::process_transaction::ProcessTransactionData;
 use crate::NewHeaderChannel;
 
 use super::metrics::BlockBuilderMetrics;
-use super::process_transaction::{ProcessHeaderTemplate, ProcessedTransactions};
+use super::process_transaction::ProcessHeaderTemplate;
 
 enum MergesetIncreaseResult {
     Accepted { increase_size: u64 },
     Rejected { new_candidate: HashValue },
-}
-
-#[derive(Debug)]
-pub enum BlockTemplateError {
-    NoReceivedHeader,
-    Other(anyhow::Error),
 }
 
 #[derive(Debug, Clone)]
@@ -168,11 +159,10 @@ impl ActorService for BlockBuilderService {
                     .get_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>()
                     .expect("get receiver error");
                 let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
-                while let std::result::Result::Ok(mut process_header_template) = receiver.try_recv()
-                {
+                while let std::result::Result::Ok(process_header_template) = receiver.try_recv() {
                     let state_root = process_header_template.trans.state_root;
 
-                    let (uncles, uncle_len) = if !process_header_template.uncles.is_empty() {
+                    let (uncles, _uncle_len) = if !process_header_template.uncles.is_empty() {
                         let uncle_len = process_header_template.uncles.len() as u64;
                         (Some(process_header_template.uncles), uncle_len)
                     } else {
@@ -187,11 +177,6 @@ impl ActorService for BlockBuilderService {
                         .expect("block info is none");
 
                     let version = 1;
-
-                    info!(
-                        "jacktest: state root4: {:?}, transaction accumulator root: {:?}",
-                        state_root, process_header_template.trans.txn_accumulator_root
-                    );
                     let block_template = BlockTemplate::new(
                         block_info.block_accumulator_info.accumulator_root,
                         process_header_template.trans.txn_accumulator_root,
@@ -244,10 +229,9 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .genesis_config()
             .block_header_version;
         let result = match self.receive_header() {
-            ReceiveHeader::NotReceived | ReceiveHeader::Received => self
-                .inner
-                .create_block_template(header_version)
-                .map_err(BlockTemplateError::Other),
+            ReceiveHeader::NotReceived | ReceiveHeader::Received => {
+                self.inner.create_block_template(header_version)
+            }
         };
 
         if let Err(err) = result {
@@ -624,15 +608,15 @@ where
     fn fetch_transactions(
         &self,
         state_root: HashValue,
-        _blue_blocks: &[Block],
+        blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
+        let mut pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
-        Ok(pending_transactions)
-        // if pending_transactions.len() >= max_txns as usize {
-        //     return Ok(pending_transactions);
-        // }
+        // Ok(pending_transactions)
+        if pending_transactions.len() >= max_txns as usize {
+            return Ok(pending_transactions);
+        }
 
         // let mut pending_transaction_map =
         //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
@@ -645,14 +629,17 @@ where
 
         // let mut uncle_transaction_map =
         //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        // blue_blocks.iter().for_each(|block| {
-        //     block.transactions().iter().for_each(|transaction| {
-        //         uncle_transaction_map
-        //             .entry(transaction.sender())
-        //             .or_default()
-        //             .push(transaction.clone());
-        //     })
-        // });
+        blue_blocks.iter().for_each(|block| {
+            block.transactions().iter().for_each(|transaction| {
+                pending_transactions.push(transaction.clone());
+            })
+        });
+
+        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
+        Ok(pending_transactions)
 
         // for transactions in uncle_transaction_map.values_mut() {
         //     if transactions.len() <= 1 {
