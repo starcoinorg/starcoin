@@ -23,6 +23,9 @@ struct Opt {
 
     #[clap(long, default_value = "warn")]
     log_level: String,
+
+    #[clap(long, default_value = "true")]
+    bench_vm2: bool,
 }
 
 fn main() {
@@ -31,8 +34,8 @@ fn main() {
     starcoin_logger::init_with_default_level(&opt.log_level, None);
 
     if opt.bench_vm_exec {
-        let mut manager = vm_exec_benchmark::BenchmarkManager::new();
-        let reports = manager.run(&[2, 50, 100], &[2, 50, 100]);
+        let mut manager = vm_exec_benchmark::BenchmarkManager::new(opt.bench_vm2);
+        let reports = manager.run(&[2, 50, 100, 500], &[2, 50, 100, 500]);
         manager.pretty_print_reports(&reports);
     } else {
         rayon::ThreadPoolBuilder::new()
