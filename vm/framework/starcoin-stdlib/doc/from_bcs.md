@@ -28,13 +28,14 @@ assert!(from_bcs::to_address(bcs::to_bytes(&@0xabcdef)) == @0xabcdef, 0);
 -  [Function `to_address`](#0x1_from_bcs_to_address)
 -  [Function `to_bytes`](#0x1_from_bcs_to_bytes)
 -  [Function `to_string`](#0x1_from_bcs_to_string)
--  [Function `u64_to_address`](#0x1_from_bcs_u64_to_address)
+-  [Function `u128_to_address`](#0x1_from_bcs_u128_to_address)
 -  [Function `from_bytes`](#0x1_from_bcs_from_bytes)
 -  [Specification](#@Specification_1)
     -  [Function `from_bytes`](#@Specification_1_from_bytes)
 
 
-<pre><code><b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
+<pre><code><b>use</b> <a href="debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -297,13 +298,13 @@ UTF8 check failed in conversion from bytes to string
 
 </details>
 
-<a id="0x1_from_bcs_u64_to_address"></a>
+<a id="0x1_from_bcs_u128_to_address"></a>
 
-## Function `u64_to_address`
+## Function `u128_to_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u64_to_address">u64_to_address</a>(x: u64): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u128_to_address">u128_to_address</a>(x: u128): <b>address</b>
 </code></pre>
 
 
@@ -312,23 +313,24 @@ UTF8 check failed in conversion from bytes to string
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u64_to_address">u64_to_address</a>(x: u64): <b>address</b> {
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_u128_to_address">u128_to_address</a>(x: u128): <b>address</b> {
     <b>let</b> bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
 
     <b>let</b> i = 0;
-    <b>while</b> (i &lt; 32) {
+    <b>while</b> (i &lt; 16) {
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, 0u8);
         i = i + 1;
     };
 
     <b>let</b> i = 0;
     <b>let</b> tmp = x;
-    <b>while</b> (i &lt; 8) {
-        *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> bytes, i) = ((tmp & 0xFF) <b>as</b> u8);
+    <b>while</b> (i &lt; 16) {
+        *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> bytes, 15 - i) = ((tmp & 0xFF) <b>as</b> u8);
         tmp = tmp &gt;&gt; 8;
         i = i + 1;
     };
 
+    <a href="debug.md#0x1_debug_print">debug::print</a>(&bytes);
     <a href="from_bcs.md#0x1_from_bcs_to_address">to_address</a>(bytes)
 }
 </code></pre>

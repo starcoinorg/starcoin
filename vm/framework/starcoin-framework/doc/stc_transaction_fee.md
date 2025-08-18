@@ -8,22 +8,26 @@ Uses aggregator_v2 for parallel execution and distributes fees across 100 genesi
 
 
 -  [Resource `AutoIncrementCounter`](#0x1_stc_transaction_fee_AutoIncrementCounter)
+-  [Constants](#@Constants_0)
+-  [Function `transaction_fee_receiver_account_from`](#0x1_stc_transaction_fee_transaction_fee_receiver_account_from)
+-  [Function `transaction_fee_receiver_account_to`](#0x1_stc_transaction_fee_transaction_fee_receiver_account_to)
 -  [Function `initialize`](#0x1_stc_transaction_fee_initialize)
 -  [Function `add_txn_fee_token`](#0x1_stc_transaction_fee_add_txn_fee_token)
 -  [Function `next_storage_address`](#0x1_stc_transaction_fee_next_storage_address)
 -  [Function `pay_fee`](#0x1_stc_transaction_fee_pay_fee)
 -  [Function `distribute_transaction_fees`](#0x1_stc_transaction_fee_distribute_transaction_fees)
--  [Specification](#@Specification_0)
-    -  [Function `initialize`](#@Specification_0_initialize)
-    -  [Function `add_txn_fee_token`](#@Specification_0_add_txn_fee_token)
-    -  [Function `pay_fee`](#@Specification_0_pay_fee)
-    -  [Function `distribute_transaction_fees`](#@Specification_0_distribute_transaction_fees)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `add_txn_fee_token`](#@Specification_1_add_txn_fee_token)
+    -  [Function `pay_fee`](#@Specification_1_pay_fee)
+    -  [Function `distribute_transaction_fees`](#@Specification_1_distribute_transaction_fees)
 
 
 <pre><code><b>use</b> <a href="aggregator_v2.md#0x1_aggregator_v2">0x1::aggregator_v2</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
@@ -56,6 +60,73 @@ and tracks which genesis account to send fees to next.
  Counter that keeps incrementing to determine which genesis account to use
 </dd>
 </dl>
+
+
+</details>
+
+<a id="@Constants_0"></a>
+
+## Constants
+
+
+<a id="0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a>: u128 = 1;
+</code></pre>
+
+
+
+<a id="0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_TO"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_TO">TRANSACTION_FEE_RECEIVER_ACCOUNT_TO</a>: u128 = 10;
+</code></pre>
+
+
+
+<a id="0x1_stc_transaction_fee_transaction_fee_receiver_account_from"></a>
+
+## Function `transaction_fee_receiver_account_from`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_transaction_fee_receiver_account_from">transaction_fee_receiver_account_from</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_transaction_fee_receiver_account_from">transaction_fee_receiver_account_from</a>(): u128 { <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_stc_transaction_fee_transaction_fee_receiver_account_to"></a>
+
+## Function `transaction_fee_receiver_account_to`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_transaction_fee_receiver_account_to">transaction_fee_receiver_account_to</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_transaction_fee_receiver_account_to">transaction_fee_receiver_account_to</a>(): u128 { <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_TO">TRANSACTION_FEE_RECEIVER_ACCOUNT_TO</a> }
+</code></pre>
+
 
 
 </details>
@@ -142,11 +213,11 @@ Helper function to create a storage account address from predefined addresses
         <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
     );
     <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-    <b>let</b> counter = <a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter);
-    <b>let</b> offset = ((counter % 5) <b>as</b> u8);
+    <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
+    <b>let</b> range = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_TO">TRANSACTION_FEE_RECEIVER_ACCOUNT_TO</a> - <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a>;
+    <b>let</b> addr_u128 = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a> + (counter % range);
 
-    // <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u64_to_address">from_bcs::u64_to_address</a>((1u64 + (offset <b>as</b> u64)))
-    @0xa
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128)
 }
 </code></pre>
 
@@ -239,7 +310,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 </details>
 
-<a id="@Specification_0"></a>
+<a id="@Specification_1"></a>
 
 ## Specification
 
@@ -251,7 +322,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 
 
-<a id="@Specification_0_initialize"></a>
+<a id="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -268,7 +339,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 
 
-<a id="@Specification_0_add_txn_fee_token"></a>
+<a id="@Specification_1_add_txn_fee_token"></a>
 
 ### Function `add_txn_fee_token`
 
@@ -284,7 +355,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 
 
-<a id="@Specification_0_pay_fee"></a>
+<a id="@Specification_1_pay_fee"></a>
 
 ### Function `pay_fee`
 
@@ -300,7 +371,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 
 
-<a id="@Specification_0_distribute_transaction_fees"></a>
+<a id="@Specification_1_distribute_transaction_fees"></a>
 
 ### Function `distribute_transaction_fees`
 

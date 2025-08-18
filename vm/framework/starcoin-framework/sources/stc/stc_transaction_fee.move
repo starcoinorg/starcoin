@@ -10,6 +10,11 @@ module starcoin_framework::stc_transaction_fee {
     use starcoin_std::from_bcs;
     use std::vector;
 
+    const TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM: u128 = 0x1;
+    const TRANSACTION_FEE_RECEIVER_ACCOUNT_TO:   u128 = 0xa;
+    public fun transaction_fee_receiver_account_from(): u128 { TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM }
+    public fun transaction_fee_receiver_account_to(): u128 { TRANSACTION_FEE_RECEIVER_ACCOUNT_TO }
+
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -62,11 +67,11 @@ module starcoin_framework::stc_transaction_fee {
             system_addresses::get_starcoin_framework()
         );
         aggregator_v2::add(&mut counter_resource.counter, 1);
-        let counter = aggregator_v2::read(&counter_resource.counter);
-        let offset = ((counter % 5) as u8);
+        let counter = (aggregator_v2::read(&counter_resource.counter) as u128);
+        let range = TRANSACTION_FEE_RECEIVER_ACCOUNT_TO - TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM;
+        let addr_u128 = TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM + (counter % range);
 
-        // from_bcs::u128_to_address((1u64 + (offset as u64)))
-        @0xa
+        from_bcs::u128_to_address(addr_u128)
     }
 
     /// Deposit `token` into one of the storage accounts

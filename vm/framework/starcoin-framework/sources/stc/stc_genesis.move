@@ -169,20 +169,14 @@ module starcoin_framework::stc_genesis {
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
 
-        // let account_index = 0x1u64;
-        // while (account_index <= 0xau64) {
-        //     let addr = from_bcs::u128_to_address(account_index);
-        //     let (starcoin_framework_account2, _genesis_signer_cap2) =
-        //         account::create_framework_reserved_account(addr);
-        //     // Register STC CoinStore for 0xa account
-        //     coin::register<STC>(&starcoin_framework_account2);
-        //     account_index = account_index + 1;
-        // };
+        let txfee_receiver = stc_transaction_fee::transaction_fee_receiver_account_from();
+        while (txfee_receiver <= stc_transaction_fee::transaction_fee_receiver_account_to()) {
+            let addr = from_bcs::u128_to_address(txfee_receiver);
+            let (account, _cap) = account::create_framework_reserved_account(addr);
 
-        let (starcoin_framework_account2, _genesis_signer_cap2) =
-            account::create_framework_reserved_account(@0xa);
-        // Register STC CoinStore for 0xa account
-        coin::register<STC>(&starcoin_framework_account2);
+            coin::register<STC>(&account);
+            txfee_receiver = txfee_receiver + 1;
+        };
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
