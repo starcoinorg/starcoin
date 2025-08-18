@@ -171,7 +171,7 @@ module starcoin_framework::stc_genesis {
 
         // let account_index = 0x1u64;
         // while (account_index <= 0xau64) {
-        //     let addr = from_bcs::u64_to_address(account_index);
+        //     let addr = from_bcs::u128_to_address(account_index);
         //     let (starcoin_framework_account2, _genesis_signer_cap2) =
         //         account::create_framework_reserved_account(addr);
         //     // Register STC CoinStore for 0xa account

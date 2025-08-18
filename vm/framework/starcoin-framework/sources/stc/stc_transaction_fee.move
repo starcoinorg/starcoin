@@ -65,7 +65,7 @@ module starcoin_framework::stc_transaction_fee {
         let counter = aggregator_v2::read(&counter_resource.counter);
         let offset = ((counter % 5) as u8);
 
-        // from_bcs::u64_to_address((1u64 + (offset as u64)))
+        // from_bcs::u128_to_address((1u64 + (offset as u64)))
         @0xa
     }
 

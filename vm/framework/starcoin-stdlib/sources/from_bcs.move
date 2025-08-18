@@ -13,6 +13,7 @@
 module starcoin_std::from_bcs {
     use std::string::{Self, String};
     use std::vector;
+    use starcoin_std::debug;
 
     /// UTF8 check failed in conversion from bytes to string
     const EINVALID_UTF8: u64 = 0x1;
@@ -60,23 +61,24 @@ module starcoin_std::from_bcs {
         s
     }
 
-    public fun u64_to_address(x: u64): address {
+    public fun u128_to_address(x: u128): address {
         let bytes = vector::empty();
         
         let i = 0;
-        while (i < 32) {
+        while (i < 16) {
             vector::push_back(&mut bytes, 0u8);
             i = i + 1;
         };
 
         let i = 0;
         let tmp = x;
-        while (i < 8) {
-            *vector::borrow_mut(&mut bytes, i) = ((tmp & 0xFF) as u8);
+        while (i < 16) {
+            *vector::borrow_mut(&mut bytes, 15 - i) = ((tmp & 0xFF) as u8);
             tmp = tmp >> 8;
             i = i + 1;
         };
 
+        debug::print(&bytes);
         to_address(bytes)
     }
 
@@ -89,6 +91,19 @@ module starcoin_std::from_bcs {
     public native fun from_bytes<T>(bytes: vector<u8>): T;
     friend starcoin_std::any;
     friend starcoin_std::copyable_any;
+
+    #[test]
+    fun test_u128_to_address() {
+        let addr = @0x123;
+        let u128_addr = 0x123;
+        let addr_out = u128_to_address(u128_addr);
+        assert!(addr == addr_out, 0);
+
+        let addr = @0xfedcba9876543210fedcba9876543210;
+        let u128_addr = 0xfedcba9876543210fedcba9876543210u128;
+        let addr_out = u128_to_address(u128_addr);
+        assert!(addr == addr_out, 0);
+    }
 
 
     #[test_only]
