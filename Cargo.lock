@@ -12388,6 +12388,7 @@ dependencies = [
  "anyhow",
  "clap 3.2.25",
  "itertools 0.10.5",
+ "num_cpus",
  "rand 0.8.5",
  "rayon",
  "starcoin-accumulator 1.13.19",
@@ -12397,11 +12398,13 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
+ "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-state-api 1.13.19",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
  "starcoin-transaction-builder 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
 ]
 
