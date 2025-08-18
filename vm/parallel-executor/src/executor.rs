@@ -13,6 +13,7 @@ use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
+use starcoin_logger::prelude::warn;
 
 static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
     rayon::ThreadPoolBuilder::new()
@@ -218,11 +219,15 @@ where
             if key.contains("0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>") {
                 return true;
             }
-            match versioned_data_cache.read(r.path(), idx_to_validate) {
+           let result =  match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
                 Err(None) => r.validate_storage(),
-            }
+            };
+
+            warn!("parallel execution met confliction, key{:?}", r.path());
+
+            result
         });
 
         let aborted = !valid && scheduler.try_abort(idx_to_validate, incarnation);
