@@ -73,7 +73,7 @@ and tracks which genesis account to send fees to next.
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a>: u128 = 1;
+<pre><code><b>const</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM">TRANSACTION_FEE_RECEIVER_ACCOUNT_FROM</a>: u128 = 2;
 </code></pre>
 
 

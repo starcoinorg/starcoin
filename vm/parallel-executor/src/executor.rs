@@ -110,6 +110,7 @@ impl<T, E> ParallelTransactionExecutor<T, E>
 where
     T: Transaction,
     E: ExecutorTask<T = T>,
+    <T as Transaction>::Key: std::fmt::Debug,
 {
     /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
     /// be handled by sequential execution) and that concurrency_level <= num_cpus.
@@ -213,6 +214,10 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
+            let key = format!("{:?}", r.path());
+            if key.contains("0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>") {
+                return true;
+            }
             match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
