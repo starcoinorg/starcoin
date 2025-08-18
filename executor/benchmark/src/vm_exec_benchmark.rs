@@ -32,6 +32,7 @@ use starcoin_metrics::Registry;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 
 // vm2
+use starcoin_vm2_executor;
 use starcoin_vm2_genesis::{build_and_execute_genesis_transaction, execute_genesis_transaction};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDBVM2;
 use starcoin_vm2_statedb::ChainStateReader as ChainStateReaderVM2;
@@ -43,7 +44,6 @@ use starcoin_vm2_types::account_address as account_address_vm2;
 use starcoin_vm2_types::genesis_config::ChainId as ChainIdVM2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionVM2;
 use starcoin_vm2_types::transaction::Transaction as TransactionVM2;
-use starcoin_vm2_executor;
 
 // use starcoin_vm2_types:: as stc_vm2;
 
@@ -313,7 +313,6 @@ impl<'test, S: ChainStateReaderVM2 + ChainStateWriterVM2 + Sync> TransactionExec
         let registry = Registry::new();
         let vm_metrics = VMMetrics::register(&registry).ok();
 
-        let start_time = std::time::Instant::now();
         let _ = starcoin_vm2_executor::block_execute(
             self.chain_state,
             txns,
@@ -321,22 +320,30 @@ impl<'test, S: ChainStateReaderVM2 + ChainStateWriterVM2 + Sync> TransactionExec
             vm_metrics.clone(),
         )
         .expect("Execute txns fail.");
-        let elapsed = start_time.elapsed();
 
         self.chain_state.flush().expect("flush state should be ok");
 
-        let exec_milliseconds = elapsed.as_secs_f64() * 1000.0;
-        let tps = if elapsed.as_secs_f64() > 0.0 {
-            num_txns as f64 / elapsed.as_secs_f64()
-        } else {
-            0.0
-        };
+        if let Some(ref metrics_reader) = vm_metrics {
+            let execute_time_histogram = metrics_reader
+                .vm_txn_exe_time
+                .with_label_values(&["execute_transactions"]);
+            let count = execute_time_histogram.get_sample_count();
+            assert_eq!(count, 1);
+            let execute_time_sum = execute_time_histogram.get_sample_sum();
 
-        BenchmarkReport {
-            concurrency_level: 1, // VM2 doesn't have concurrency level concept like VM1
-            txns: num_txns,
-            exec_milliseconds,
-            tps,
+            BenchmarkReport {
+                concurrency_level: StarcoinVM::get_concurrency_level(),
+                txns: num_txns,
+                exec_milliseconds: execute_time_sum * 1000.0,
+                tps: num_txns as f64 / execute_time_sum,
+            }
+        } else {
+            BenchmarkReport {
+                concurrency_level: StarcoinVM::get_concurrency_level(),
+                txns: num_txns,
+                exec_milliseconds: 0.0,
+                tps: 0.0,
+            }
         }
     }
 }
