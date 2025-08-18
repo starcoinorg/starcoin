@@ -12,6 +12,7 @@ use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
 use starcoin_mvhashmap::MVHashMap;
+use std::sync::atomic::AtomicUsize;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 use starcoin_logger::prelude::warn;
 
@@ -105,6 +106,9 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     // threads that may be concurrently participating in parallel execution.
     concurrency_level: usize,
     phantom: PhantomData<(T, E)>,
+
+    execute_counter: AtomicUsize,
+    verify_counter: AtomicUsize,
 }
 
 impl<T, E> ParallelTransactionExecutor<T, E>
@@ -124,6 +128,8 @@ where
         Self {
             concurrency_level,
             phantom: PhantomData,
+            execute_counter: AtomicUsize::new(0),
+            verify_counter: AtomicUsize::new(0),
         }
     }
 
@@ -141,6 +147,7 @@ where
         scheduler: &'a Scheduler,
         executor: &E,
     ) -> SchedulerTask<'a> {
+        self.execute_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let (idx_to_execute, incarnation) = version;
         let txn = &signature_verified_block[idx_to_execute];
 
@@ -209,23 +216,27 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &'a Scheduler,
     ) -> SchedulerTask<'a> {
+        self.verify_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let (idx_to_validate, incarnation) = version_to_validate;
         let read_set = last_input_output
             .read_set(idx_to_validate)
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
-            let key = format!("{:?}", r.path());
-            if key.contains("0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>") {
-                return true;
-            }
-           let result =  match versioned_data_cache.read(r.path(), idx_to_validate) {
+            let result =  match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
                 Err(None) => r.validate_storage(),
             };
+            
+            if !result {
+                warn!("parallel execution met confliction, key{:?}", r.path());
+            }
 
-            warn!("parallel execution met confliction, key{:?}", r.path());
+            let key = format!("{:?}", r.path());
+            if key.contains("0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>") {
+                return true;
+            }
 
             result
         });
@@ -340,6 +351,8 @@ where
                 }
             };
         }
+
+        warn!("executed {} transactions, execute_counter: {}, verify_counter: {}", num_txns, self.execute_counter.load(std::sync::atomic::Ordering::Relaxed), self.verify_counter.load(std::sync::atomic::Ordering::Relaxed));
 
         spawn(move || {
             // Explicit async drops.
