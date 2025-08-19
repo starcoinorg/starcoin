@@ -615,17 +615,30 @@ impl StarcoinVM {
         // Run the validation logic
         {
             gas_meter.set_metering(false);
+            println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
             self.check_gas(txn_data)?;
+            println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
             self.run_prologue(&mut session, gas_meter, txn_data)?;
+            println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
         }
-
-        println!(
-            "[{}:{}:{}] Transaction execution cost {} millisecond",
-            file!(),
-            line!(),
-            column!(),
-            now.elapsed().as_millis()
-        );
 
         // Run the execution logic
         {
@@ -781,6 +794,7 @@ impl StarcoinVM {
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
+        let now = std::time::Instant::now();
         let genesis_address = genesis_address();
         let gas_token_ty =
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
@@ -811,9 +825,16 @@ impl StarcoinVM {
             ),
         };
 
+        println!(
+            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            file!(),
+            line!(),
+            column!(),
+            now.elapsed().as_millis()
+        );
         let traversal_storage = TraversalStorage::new();
         // Run prologue by genesis account
-        session
+        let result = session
             .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_VALIDATION_MODULE,
                 &G_PROLOGUE_NAME,
@@ -835,7 +856,15 @@ impl StarcoinVM {
                 &mut TraversalContext::new(&traversal_storage),
             )
             .map(|_return_vals| ())
-            .or_else(convert_prologue_runtime_error)
+            .or_else(convert_prologue_runtime_error);
+        println!(
+            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            file!(),
+            line!(),
+            column!(),
+            now.elapsed().as_millis()
+        );
+        result
     }
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
