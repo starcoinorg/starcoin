@@ -291,6 +291,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "250f629c0161ad8107cf89319e990051fae62832fd343083bea452d93e2205fd"
 
 [[package]]
+name = "aligned-vec"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc890384c8602f339876ded803c97ad529f3842aba97f6392b3dba0dd171769b"
+dependencies = [
+ "equator",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2048,6 +2057,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cpp_demangle"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96e58d342ad113c2b878f16d5d034c03be492ae460cdbc02b7f0f2284d310c7d"
+dependencies = [
+ "cfg-if 1.0.0",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3270,6 +3288,26 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "equator"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4711b213838dfee0117e3be6ac926007d7f433d7bbe33595975d4190cb07e6fc"
+dependencies = [
+ "equator-macro",
+]
+
+[[package]]
+name = "equator-macro"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44f23cf4b44bfce11a86ace86f8a73ffdec849c9fd00a386a53d278bd9e81fb3"
+dependencies = [
+ "proc-macro2 1.0.94",
+ "quote 1.0.40",
+ "syn 2.0.100",
 ]
 
 [[package]]
@@ -6140,6 +6178,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "memmap2"
+version = "0.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "483758ad303d734cec05e5c12b41d7e93e6a6390c5e9dae6bdeb7c1259012d28"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6174,7 +6221,7 @@ dependencies = [
  "anyhow",
  "arrayref",
  "log 0.4.27",
- "memmap2",
+ "memmap2 0.5.10",
  "positioned-io",
  "rayon",
  "serde 1.0.195",
@@ -9263,9 +9310,31 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "smallvec 1.14.0",
- "symbolic-demangle",
+ "symbolic-demangle 9.2.1",
  "tempfile",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "pprof"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38a01da47675efa7673b032bf8efd8214f1917d89685e07e395ab125ea42b187"
+dependencies = [
+ "aligned-vec",
+ "backtrace",
+ "cfg-if 1.0.0",
+ "findshlibs",
+ "inferno",
+ "libc",
+ "log 0.4.27",
+ "nix 0.26.4",
+ "once_cell",
+ "smallvec 1.14.0",
+ "spin 0.10.0",
+ "symbolic-demangle 12.16.2",
+ "tempfile",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -10262,7 +10331,7 @@ dependencies = [
  "clap 3.2.25",
  "csv",
  "hex",
- "pprof",
+ "pprof 0.10.1",
  "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -11498,6 +11567,15 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+
+[[package]]
+name = "spin"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
+dependencies = [
+ "lock_api 0.4.12",
+]
 
 [[package]]
 name = "spki"
@@ -13463,6 +13541,7 @@ dependencies = [
  "network-p2p-types",
  "network-types",
  "parking_lot 0.12.3",
+ "pprof 0.15.0",
  "serde 1.0.195",
  "serde_json",
  "starcoin-abi-decoder 1.13.19",
@@ -14841,7 +14920,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "800963ba330b09a2ae4a4f7c6392b81fbc2784099a98c1eac68c3437aa9382b2"
 dependencies = [
  "debugid",
- "memmap2",
+ "memmap2 0.5.10",
+ "stable_deref_trait",
+ "uuid",
+]
+
+[[package]]
+name = "symbolic-common"
+version = "12.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9da12f8fecbbeaa1ee62c1d50dc656407e007c3ee7b2a41afce4b5089eaef15e"
+dependencies = [
+ "debugid",
+ "memmap2 0.9.7",
  "stable_deref_trait",
  "uuid",
 ]
@@ -14852,9 +14943,20 @@ version = "9.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b940a1fdbc72bb3369e38714efe6cd332dbbe46d093cf03d668b9ac390d1ad0"
 dependencies = [
- "cpp_demangle",
+ "cpp_demangle 0.3.5",
  "rustc-demangle",
- "symbolic-common",
+ "symbolic-common 9.2.1",
+]
+
+[[package]]
+name = "symbolic-demangle"
+version = "12.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fd35afe0ef9d35d3dcd41c67ddf882fc832a387221338153b7cd685a105495c"
+dependencies = [
+ "cpp_demangle 0.4.4",
+ "rustc-demangle",
+ "symbolic-common 12.16.2",
 ]
 
 [[package]]
