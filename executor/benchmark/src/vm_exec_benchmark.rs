@@ -44,6 +44,7 @@ use starcoin_vm2_types::account_address as account_address_vm2;
 use starcoin_vm2_types::genesis_config::ChainId as ChainIdVM2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionVM2;
 use starcoin_vm2_types::transaction::Transaction as TransactionVM2;
+use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
 
 // use starcoin_vm2_types:: as stc_vm2;
 
@@ -332,14 +333,14 @@ impl<'test, S: ChainStateReaderVM2 + ChainStateWriterVM2 + Sync> TransactionExec
             let execute_time_sum = execute_time_histogram.get_sample_sum();
 
             BenchmarkReport {
-                concurrency_level: StarcoinVM::get_concurrency_level(),
+                concurrency_level: StarcoinVM2::get_concurrency_level(),
                 txns: num_txns,
                 exec_milliseconds: execute_time_sum * 1000.0,
                 tps: num_txns as f64 / execute_time_sum,
             }
         } else {
             BenchmarkReport {
-                concurrency_level: StarcoinVM::get_concurrency_level(),
+                concurrency_level: StarcoinVM2::get_concurrency_level(),
                 txns: num_txns,
                 exec_milliseconds: 0.0,
                 tps: 0.0,
@@ -455,8 +456,8 @@ impl BenchmarkManagerVM2 {
         }
 
         // this variable could only be set once, default is serialize, so we run serialize first.
-        StarcoinVM::set_concurrency_level_once(num_cpus::get());
-        assert_eq!(StarcoinVM::get_concurrency_level(), num_cpus::get());
+        StarcoinVM2::set_concurrency_level_once(num_cpus::get());
+        assert_eq!(StarcoinVM2::get_concurrency_level(), num_cpus::get());
 
         // run parallel txns
         for txns_num in parallel_bench_txns.iter() {

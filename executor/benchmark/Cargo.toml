@@ -27,6 +27,7 @@ starcoin-vm2-test-helper = { workspace = true }
 starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-genesis = { workspace = true }
+starcoin-vm2-vm-runtime = { workspace = true }
 
 [features]
 
