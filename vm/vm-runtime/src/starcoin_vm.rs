@@ -619,6 +619,14 @@ impl StarcoinVM {
             self.run_prologue(&mut session, gas_meter, txn_data)?;
         }
 
+        println!(
+            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            file!(),
+            line!(),
+            column!(),
+            now.elapsed().as_millis()
+        );
+
         // Run the execution logic
         {
             //let _timer = TXN_EXECUTION_SECONDS.start_timer();
@@ -632,19 +640,27 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-                    debug!("TransactionPayload::{:?}", script);
-                    Self::validate_execute_script(
+                    println!("TransactionPayload::{:?}", script);
+                    let result =      Self::validate_execute_script(
                         &mut session,
                         script.code().to_vec(),
                         script.ty_args().to_vec(),
                         script.args().to_vec(),
                         gas_meter,
                         txn_data.sender(),
-                    )
+                    );
+                    println!(
+                        "[{}:{}:{}] Transaction execution cost {} millisecond",
+                        file!(),
+                        line!(),
+                        column!(),
+                        now.elapsed().as_millis()
+                    );
+                    result
                 }
                 TransactionPayload::EntryFunction(script_function) => {
-                    debug!("TransactionPayload::{:?}", script_function);
-                    Self::validate_execute_entry_function(
+                    println!("TransactionPayload::{:?}", script_function);
+                  let result =   Self::validate_execute_entry_function(
                         &mut session,
                         script_function.module(),
                         script_function.function(),
@@ -652,7 +668,14 @@ impl StarcoinVM {
                         script_function.args().to_vec(),
                         gas_meter,
                         txn_data.sender(),
-                    )
+                    );println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
+            result
                 }
                 TransactionPayload::Package(_) => {
                     return Err(VMStatus::error(StatusCode::UNREACHABLE, None));
@@ -664,6 +687,13 @@ impl StarcoinVM {
                         e.into_vm_status()
                     })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
+            println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
 
             let result = self.success_transaction_cleanup(session, gas_meter, txn_data);
             println!(
