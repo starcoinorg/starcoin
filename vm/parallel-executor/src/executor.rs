@@ -13,6 +13,7 @@ use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
 use starcoin_mvhashmap::MVHashMap;
 use std::sync::atomic::AtomicUsize;
+use std::time::Instant;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 use starcoin_logger::prelude::warn;
 
@@ -147,6 +148,7 @@ where
         scheduler: &'a Scheduler,
         executor: &E,
     ) -> SchedulerTask<'a> {
+        let now = std::time::Instant::now();
         self.execute_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let (idx_to_execute, incarnation) = version;
         let txn = &signature_verified_block[idx_to_execute];
@@ -201,6 +203,8 @@ where
         }
 
         last_input_output.record(idx_to_execute, state_view.take_reads(), result);
+
+        println!("parallel execution cost {} milliseconds", now.elapsed().as_millis());
         scheduler.finish_execution(idx_to_execute, incarnation, writes_outside, guard)
     }
 

@@ -1592,12 +1592,17 @@ impl VMExecutor for StarcoinVM {
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {
+            let now = std::time::Instant::now();
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
                 block_gas_limit,
                 metrics,
             )?;
+            println!(
+                "serialize execute_block took {} ms",
+                now.elapsed().as_millis()
+            );
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)
