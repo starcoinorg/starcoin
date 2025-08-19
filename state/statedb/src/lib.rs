@@ -255,7 +255,23 @@ impl ChainStateDB {
 
     /// Fork a new statedb base current statedb
     pub fn fork(&self) -> Self {
-        Self::new(self.store.clone(), Some(self.state_root()))
+        // Clone state_tree_table_handles_list using current root hashes to avoid expensive re-initialization
+        let cloned_handles: Vec<StateTree<TableHandle>> = self
+            .state_tree_table_handles_list
+            .iter()
+            .map(|tree| StateTree::new(self.store.clone(), Some(tree.root_hash())))
+            .collect();
+
+        ChainStateDB {
+            store: self.store.clone(),
+            state_tree: StateTree::new(self.store.clone(), Some(self.state_root())),
+            cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
+            updates: RwLock::new(HashSet::new()),
+            updates_table_handle: RwLock::new(HashSet::new()),
+            cache_table_handle: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
+            state_tree_table_handles_list: cloned_handles,
+            update_table_handle_idx_list: Mutex::new(HashSet::new()),
+        }
     }
 
     /// Fork a new statedb at `root_hash`
