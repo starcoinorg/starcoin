@@ -6,7 +6,7 @@ use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
-use anyhow::Result;
+use anyhow::{format_err,Result};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
@@ -28,13 +28,19 @@ pub mod keccak;
 pub use consensus::{Consensus, ConsensusVerifyError};
 pub use starcoin_time_service::duration_since_epoch;
 
-pub fn target_to_difficulty(target: U256) -> U256 {
-    U256::MAX / target
+pub fn target_to_difficulty(target: U256) -> Result<U256> {
+    U256::MAX
+        .checked_div(target)
+        .ok_or(format_err!("zero-divisor"))
 }
 
-pub fn difficult_to_target(difficulty: U256) -> U256 {
-    U256::MAX / difficulty
+pub fn difficult_to_target(difficulty: U256) -> Result<U256> {
+    U256::MAX
+        .checked_div(difficulty)
+        .ok_or(format_err!("zero-divisor"))
 }
+
+
 
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {
     let len = header.len();

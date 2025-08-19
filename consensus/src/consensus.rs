@@ -46,7 +46,7 @@ pub trait Consensus {
                 .calculate_pow_hash(mining_hash, nonce, &extra)
                 .expect("calculate hash should work")
                 .into();
-            let target = difficult_to_target(difficulty);
+            let target = difficult_to_target(difficulty).expect("failed to calculate target");
             if pow_hash > target {
                 nonce = nonce.saturating_add(1);
                 continue;
@@ -57,6 +57,12 @@ pub trait Consensus {
     }
 
     fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        info!(
+            "current selected parent is: {:?}, header parent: {:?}, verify header: {:?}",
+            reader.current_header().id(),
+            header.parent_hash(),
+            header.id()
+        );
         let difficulty = self.calculate_next_difficulty(reader)?;
         self.verify_header_difficulty(difficulty, header)
     }
@@ -102,7 +108,7 @@ pub trait Consensus {
         let pow_hash: U256 = self
             .calculate_pow_hash(&pow_header_blob, nonce, extra)?
             .into();
-        let target = difficult_to_target(difficulty);
+        let target = difficult_to_target(difficulty)?;
         if pow_hash > target {
             return Err(ConsensusVerifyError::VerifyNonceError {
                 target,
@@ -124,7 +130,7 @@ pub trait Consensus {
         difficulty: U256,
     ) -> Result<()> {
         let pow_hash: U256 = self.calculate_pow_hash(&blob, nonce, &extra)?.into();
-        let target = difficult_to_target(difficulty);
+        let target = difficult_to_target(difficulty)?;
         if pow_hash > target {
             return Err(ConsensusVerifyError::VerifyNonceError {
                 target,
