@@ -70,11 +70,12 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
             Err(err) => ExecutionStatus::Abort(err),
         };
         println!(
-            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
             file!(),
             line!(),
             column!(),
-            now.elapsed().as_millis()
+            now.elapsed().as_millis(),
+            std::thread::current().id()
         );
         result
     }

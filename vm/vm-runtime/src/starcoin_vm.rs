@@ -616,27 +616,30 @@ impl StarcoinVM {
         {
             gas_meter.set_metering(false);
             println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(),
+                std::thread::current().id()
             );
             self.check_gas(txn_data)?;
             println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(),
+                std::thread::current().id()
             );
             self.run_prologue(&mut session, gas_meter, txn_data)?;
             println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(),
+                std::thread::current().id()
             );
         }
 
@@ -663,11 +666,11 @@ impl StarcoinVM {
                         txn_data.sender(),
                     );
                     println!(
-                        "[{}:{}:{}] Transaction execution cost {} millisecond",
+                        "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                         file!(),
                         line!(),
                         column!(),
-                        now.elapsed().as_millis()
+                        now.elapsed().as_millis(), std::thread::current().id()
                     );
                     result
                 }
@@ -682,11 +685,11 @@ impl StarcoinVM {
                         gas_meter,
                         txn_data.sender(),
                     );println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(), std::thread::current().id()
             );
             result
                 }
@@ -701,20 +704,22 @@ impl StarcoinVM {
                     })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
             println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(),
+                std::thread::current().id()
             );
 
             let result = self.success_transaction_cleanup(session, gas_meter, txn_data);
             println!(
-                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
                 file!(),
                 line!(),
                 column!(),
-                now.elapsed().as_millis()
+                now.elapsed().as_millis(),
+                std::thread::current().id()
             );
             result
         }
@@ -826,11 +831,12 @@ impl StarcoinVM {
         };
 
         println!(
-            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
             file!(),
             line!(),
             column!(),
-            now.elapsed().as_millis()
+            now.elapsed().as_millis(),
+            std::thread::current().id()
         );
         let traversal_storage = TraversalStorage::new();
         // Run prologue by genesis account
@@ -858,11 +864,12 @@ impl StarcoinVM {
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error);
         println!(
-            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
             file!(),
             line!(),
             column!(),
-            now.elapsed().as_millis()
+            now.elapsed().as_millis(),
+            std::thread::current().id()
         );
         result
     }
@@ -1087,11 +1094,12 @@ impl StarcoinVM {
             Err(e) => discard_error_vm_status(e),
         };
         println!(
-            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            "[{}:{}:{}] Transaction execution cost {} millisecond, tid {:?}",
             file!(),
             line!(),
             column!(),
-            now.elapsed().as_millis()
+            now.elapsed().as_millis(),
+            std::thread::current().id()
         );
         result
     }
@@ -1256,8 +1264,9 @@ impl StarcoinVM {
                         }
                         result.push((status, output));
                         println!(
-                            "Transaction executed in {} millisecond",
+                            "Transaction executed in {} millisecond, tid {:?}",
                             now.elapsed().as_millis(),
+                            std::thread::current().id(),
                         );
                     }
                 }
