@@ -102,7 +102,7 @@ fn verify_header_test_barnard_block3_ubuntu22() {
 // see https://stcscan.io/main/address/0x01/resources
 // 0x00000000000000000000000000000001::Config::Config<0x00000000000000000000000000000001::ConsensusConfig::ConsensusConfig> "strategy":3
 #[stest::test]
-#[ignore="legacy block issue"]
+#[ignore = "legacy block issue"]
 fn verify_header_test_barnard_block5061847_ubuntu20() {
     let str = r#"{"header":{"parent_hash":"0x45efb7914f0fe6bcd6baf4ed7a67da076953cf18128a25227e575a689236942f","timestamp":1654174610768,"number":5061847,"author":"0x7eec55ea1bafa8c4919101135b90b17b","author_auth_key":null,"txn_accumulator_root":"0x8c35c3d34ee16ca395c2a17668b61894b347c037d49d30477e7d2506dc69e936","block_accumulator_root":"0x0e602da30ea3f2f91b505f8a788dfc1c2b73619f328661a80ec6d59197527936","state_root":"0x42c63a367951160b01ce4e2c1e4559f08e786cf1e56a5e423da6db459f9507f7","gas_used":0,"difficulty":"0x0bee","body_hash":"0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97","chain_id":{"id":251},"nonce":2771673659,"extra":"0x00000000"},"body":{"transactions":[],"uncles":null}}"#;
     let block: Block = serde_json::from_str(str).unwrap();
@@ -126,18 +126,22 @@ fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
     for _ in 0..500 {
         let timestamp = liner_hash_pow(diff, now);
         now = timestamp;
-        blocks.push_front(BlockDiffInfo::new(timestamp, difficult_to_target(diff).unwrap()));
+        blocks.push_front(BlockDiffInfo::new(
+            timestamp,
+            difficult_to_target(diff).unwrap(),
+        ));
         let bf: Vec<&BlockDiffInfo> = blocks.iter().collect();
         let blocks: Vec<BlockDiffInfo> = bf.iter().map(|&b| b.clone()).collect();
-        
+
         // Calculate time_used from first to last block
         let time_used = if blocks.len() > 1 {
             blocks[0].timestamp - blocks[blocks.len() - 1].timestamp
         } else {
             time_plan
         };
-        
-        diff = target_to_difficulty(get_next_target_helper(blocks, time_used, time_plan).unwrap()).unwrap();
+
+        diff = target_to_difficulty(get_next_target_helper(blocks, time_used, time_plan).unwrap())
+            .unwrap();
     }
     blocks[0].timestamp - blocks[1].timestamp
 }
@@ -149,7 +153,7 @@ fn test_next_target_zero_one() {
         get_next_target_helper(vec![], 0, 10_000).is_err(),
         "expect get_next_target_helper error for empty blocks"
     );
-    
+
     // Test single block - should return the same target
     let target0: U256 = 10000.into();
     let next_target = get_next_target_helper(
@@ -169,7 +173,7 @@ fn test_next_target_dag_blocks() {
     // Test with DAG blocks scenario
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // Simulate DAG scenario: 2 blocks produced in time_plan
     let blocks = vec![
         BlockDiffInfo {
@@ -181,10 +185,10 @@ fn test_next_target_dag_blocks() {
             target,
         },
     ];
-    
+
     let time_used = 10_000;
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_target = 10000
     // avg_time = time_used / block_count = 10000 / 2 = 5000
     // new_target = avg_target * avg_time / time_plan = 10000 * 5000 / 10000 = 5000
@@ -205,11 +209,11 @@ fn test_next_target_many_no_change() {
             target: target0,
         })
         .collect::<Vec<_>>();
-    
+
     // Calculate time_used: from timestamp 0 to timestamp 23*time_plan
     let time_used = 23 * time_plan;
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 230000 / 24 ≈ 9583, close to time_plan
     // So target should be close to original
     assert!(next_target > target0 * 9 / 10 && next_target < target0 * 11 / 10);
@@ -226,11 +230,11 @@ fn test_next_target_many_increment_difficulty() {
             target: target0,
         })
         .collect::<Vec<_>>();
-    
+
     // Time used is half: from 0 to 23*5000 = 115000
     let time_used = 23 * (time_plan / 2);
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // Blocks produced twice as fast, should increase difficulty (decrease target)
     assert!(next_target < target0);
 }
@@ -246,11 +250,11 @@ fn test_next_target_many_reduce_difficulty() {
             target: target0,
         })
         .collect::<Vec<_>>();
-    
+
     // Time used is double: from 0 to 23*20000 = 460000
     let time_used = 23 * (time_plan * 2);
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // Blocks produced half as fast, should decrease difficulty (increase target)
     assert!(next_target > target0);
 }
@@ -259,7 +263,7 @@ fn test_next_target_many_reduce_difficulty() {
 fn test_next_target_increment_difficulty_compare() {
     let time_plan = 10_000;
     let target0: U256 = 10000.into();
-    
+
     // First scenario: blocks closer together in time
     let blocks_1 = vec![
         BlockDiffInfo {
@@ -276,8 +280,8 @@ fn test_next_target_increment_difficulty_compare() {
         },
     ];
     let time_used_1 = time_plan * 2; // 20000
-    
-    // Second scenario: blocks further apart in time  
+
+    // Second scenario: blocks further apart in time
     let blocks_2 = vec![
         BlockDiffInfo {
             timestamp: time_plan * 2,
@@ -296,7 +300,7 @@ fn test_next_target_increment_difficulty_compare() {
 
     let next_target_1 = get_next_target_helper(blocks_1, time_used_1, time_plan).unwrap();
     let next_target_2 = get_next_target_helper(blocks_2, time_used_2, time_plan).unwrap();
-    
+
     // Both have same avg_time (20000/3), so targets should be similar
     // avg_time = 20000/3 = 6666
     // new_target = 10000 * 6666 / 10000 = 6666
@@ -308,17 +312,26 @@ fn test_next_target_increase_difficulty() {
     // Blocks produced too fast - need to increase difficulty (decrease target)
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // 3 blocks in half the planned time
     let blocks = vec![
-        BlockDiffInfo { timestamp: 5000, target },
-        BlockDiffInfo { timestamp: 2500, target },
-        BlockDiffInfo { timestamp: 0, target },
+        BlockDiffInfo {
+            timestamp: 5000,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 2500,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target,
+        },
     ];
-    
+
     let time_used = 5000;
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 5000 / 3 = 1666
     // new_target = 10000 * 1666 / 10000 = 1666
     // This is < avg_target/2, so limited to 5000
@@ -330,16 +343,22 @@ fn test_next_target_decrease_difficulty() {
     // Blocks produced too slow - need to decrease difficulty (increase target)
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // 2 blocks in double the planned time
     let blocks = vec![
-        BlockDiffInfo { timestamp: 20000, target },
-        BlockDiffInfo { timestamp: 0, target },
+        BlockDiffInfo {
+            timestamp: 20000,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target,
+        },
     ];
-    
+
     let time_used = 20000;
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 20000 / 2 = 10000
     // new_target = 10000 * 10000 / 10000 = 10000
     // No change needed
@@ -351,17 +370,26 @@ fn test_next_target_time_used_zero() {
     // Edge case: time_used is 0 (should trigger warning and set to 1)
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // Multiple blocks at same timestamp
     let blocks = vec![
-        BlockDiffInfo { timestamp: 1000, target },
-        BlockDiffInfo { timestamp: 1000, target },
-        BlockDiffInfo { timestamp: 1000, target },
+        BlockDiffInfo {
+            timestamp: 1000,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 1000,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 1000,
+            target,
+        },
     ];
-    
+
     let time_used = 0; // All blocks at same time
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 0, but will be set to 1
     // new_target = 10000 * 1 / 10000 = 1
     // This is way less than avg_target/2, so limited to 5000
@@ -373,7 +401,7 @@ fn test_next_target_dag_many_blocks() {
     // DAG scenario: many parallel blocks
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // 10 blocks produced in planned time (DAG allows parallel mining)
     let mut blocks = Vec::new();
     for i in 0..10 {
@@ -382,10 +410,10 @@ fn test_next_target_dag_many_blocks() {
             target,
         });
     }
-    
+
     let time_used = 9000; // From 0 to 9000
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 9000 / 10 = 900
     // new_target = 10000 * 900 / 10000 = 900
     // This is < avg_target/2, so limited to 5000
@@ -397,16 +425,22 @@ fn test_next_target_limit_2x_increase() {
     // Test 2x limit on target increase (difficulty decrease)
     let time_plan = 10_000;
     let target: U256 = 10000.into();
-    
+
     // Blocks produced very slowly
     let blocks = vec![
-        BlockDiffInfo { timestamp: 100000, target },
-        BlockDiffInfo { timestamp: 0, target },
+        BlockDiffInfo {
+            timestamp: 100000,
+            target,
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target,
+        },
     ];
-    
+
     let time_used = 100000; // 10x slower than planned
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_time = 100000 / 2 = 50000
     // new_target = 10000 * 50000 / 10000 = 50000
     // This is > avg_target * 2, so limited to 20000
@@ -417,17 +451,29 @@ fn test_next_target_limit_2x_increase() {
 fn test_next_target_different_targets() {
     // Test with different target values (varying difficulties)
     let time_plan = 10_000;
-    
+
     let blocks = vec![
-        BlockDiffInfo { timestamp: 30000, target: 15000.into() },
-        BlockDiffInfo { timestamp: 20000, target: 10000.into() },
-        BlockDiffInfo { timestamp: 10000, target: 5000.into() },
-        BlockDiffInfo { timestamp: 0, target: 8000.into() },
+        BlockDiffInfo {
+            timestamp: 30000,
+            target: 15000.into(),
+        },
+        BlockDiffInfo {
+            timestamp: 20000,
+            target: 10000.into(),
+        },
+        BlockDiffInfo {
+            timestamp: 10000,
+            target: 5000.into(),
+        },
+        BlockDiffInfo {
+            timestamp: 0,
+            target: 8000.into(),
+        },
     ];
-    
+
     let time_used = 30000;
     let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-    
+
     // avg_target = (15000 + 10000 + 5000 + 8000) / 4 = 9500
     // avg_time = 30000 / 4 = 7500
     // new_target = 9500 * 7500 / 10000 = 7125

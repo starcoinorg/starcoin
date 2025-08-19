@@ -48,27 +48,31 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     }
 
     // Calculate time range from first and last selected parent's blues
-    let first_id = selected_blocks.first().ok_or_else(|| format_err!("selected_blocks is empty"))?;
-    let last_id = selected_blocks.last().ok_or_else(|| format_err!("selected_blocks is empty"))?;
-    
+    let first_id = selected_blocks
+        .first()
+        .ok_or_else(|| format_err!("selected_blocks is empty"))?;
+    let last_id = selected_blocks
+        .last()
+        .ok_or_else(|| format_err!("selected_blocks is empty"))?;
+
     // Get min timestamp from first selected parent's blues
     let first_ghostdata = chain.dag().storage.ghost_dag_store.get_data(*first_id)?;
     if first_ghostdata.mergeset_blues.is_empty() {
         bail!("First ghostdata has no blue blocks");
     }
-    
-    let first_header = chain.get_header(first_ghostdata.mergeset_blues[0])?.ok_or_else(|| {
-        format_err!("failed to get the first block header")
-    })?;
+
+    let first_header = chain
+        .get_header(first_ghostdata.mergeset_blues[0])?
+        .ok_or_else(|| format_err!("failed to get the first block header"))?;
     let mut min_timestamp = first_header.timestamp();
-    
+
     for blue_id in first_ghostdata.mergeset_blues.iter().skip(1) {
         let header = chain.get_header(*blue_id)?.ok_or_else(|| {
             format_err!("failed to get the block header when getting next work required")
         })?;
         min_timestamp = min_timestamp.min(header.timestamp());
     }
-    
+
     // Get max timestamp from last selected parent's blues (reuse if same block)
     let last_ghostdata = if first_id == last_id {
         first_ghostdata
@@ -78,26 +82,26 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     if last_ghostdata.mergeset_blues.is_empty() {
         bail!("Last ghostdata has no blue blocks");
     }
-    
-    let last_header = chain.get_header(last_ghostdata.mergeset_blues[0])?.ok_or_else(|| {
-        format_err!("failed to get the last block header")  
-    })?;
+
+    let last_header = chain
+        .get_header(last_ghostdata.mergeset_blues[0])?
+        .ok_or_else(|| format_err!("failed to get the last block header"))?;
     let mut max_timestamp = last_header.timestamp();
-    
+
     for blue_id in last_ghostdata.mergeset_blues.iter().skip(1) {
         let header = chain.get_header(*blue_id)?.ok_or_else(|| {
             format_err!("failed to get the block header when getting next work required")
         })?;
         max_timestamp = max_timestamp.max(header.timestamp());
     }
-    
+
     let time_used = max_timestamp.saturating_sub(min_timestamp);
-    
+
     // Collect all blue blocks for target calculation
     let mut blue_blocks = Vec::new();
     for id in selected_blocks.iter() {
         let ghostdata = chain.dag().storage.ghost_dag_store.get_data(*id)?;
-        
+
         for blue_id in ghostdata.mergeset_blues.iter() {
             let header = chain.get_header(*blue_id)?.ok_or_else(|| {
                 format_err!("failed to get the block header when getting next work required")
@@ -105,7 +109,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             blue_blocks.push(BlockDiffInfo::try_from(&header)?);
         }
     }
-    
+
     let next_block_time_target = epoch.block_time_target();
     info!(
         "next_block_time_target: {:?}, blue block count: {:?}, time_used: {:?}, selected parent id: {:?}",
@@ -134,9 +138,9 @@ pub fn get_next_target_helper(
     if blocks.is_empty() {
         bail!("block diff info is empty")
     }
-    
+
     let block_n = blocks.len() as u64;
-    
+
     if block_n == 1 {
         return Ok(blocks[0].target);
     }
@@ -148,16 +152,17 @@ pub fn get_next_target_helper(
             .checked_add(U512::from(&block.target))
             .ok_or_else(|| format_err!("calculate total target overflow"))?;
     }
-    
+
     let avg_target: U256 = total_target
         .checked_div(U512::from(block_n))
         .and_then(|avg_target| U256::try_from(&avg_target).ok())
         .ok_or_else(|| format_err!("calculate avg target overflow"))?;
 
     // Calculate average time per block
-    let mut avg_time = time_used.checked_div(block_n)
+    let mut avg_time = time_used
+        .checked_div(block_n)
         .ok_or_else(|| format_err!("calculate avg time overflow"))?;
-    
+
     info!(
         "[BlockProcess] time_used: {:?}, block_n: {:?}, avg_time: {:?}, avg_target: {:?}, time_plan: {:?}",
         time_used, block_n, avg_time, avg_target, time_plan

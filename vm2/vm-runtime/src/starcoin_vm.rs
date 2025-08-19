@@ -50,9 +50,7 @@ use starcoin_vm_types::{
     file_format::{CompiledModule, CompiledScript},
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
-    on_chain_config::{
-        FlexiDagConfig, GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
-    },
+    on_chain_config::{GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version},
     state_store::{state_key::StateKey, StateView, TStateView},
     state_view::StateReaderExt,
     transaction::{DryRunTransaction, Package, TransactionPayloadType},
@@ -79,7 +77,6 @@ pub struct StarcoinVM {
     native_params: NativeGasParameters,
     gas_params: Option<StarcoinGasParameters>,
     gas_schedule: Option<GasSchedule>,
-    flexi_dag_config: Option<FlexiDagConfig>,
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
@@ -107,7 +104,6 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
-            flexi_dag_config: None,
             metrics,
         }
     }
@@ -135,7 +131,6 @@ impl StarcoinVM {
             native_params,
             gas_params: Some(gas_params),
             gas_schedule: None,
-            flexi_dag_config: None,
         }
     }
 
@@ -208,12 +203,6 @@ impl StarcoinVM {
                 // todo: fetch gas schedule from GasSchedule Config on chain
                 VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
             };
-
-            self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
-            debug!(
-                "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
-                stdlib_version, self.flexi_dag_config,
-            );
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
@@ -225,11 +214,6 @@ impl StarcoinVM {
             }
         }
         Ok(())
-    }
-
-    pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
-        self.flexi_dag_config
-            .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
     pub fn get_gas_schedule(&self) -> Result<&GasSchedule, VMStatus> {
@@ -919,15 +903,9 @@ impl StarcoinVM {
             chain_id,
             parent_gas_used,
             parents_hash,
-            _red_blocks,
+            red_blocks,
         ) = block_metadata.into_inner();
         let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
-        // TODO: Add red_blocks support to block_prologue Move function
-        // Currently red_blocks is extracted but not passed to the Move contract.
-        // Need to update:
-        // 1. block_prologue function signature in stc_block.move
-        // 2. process_block_metadata to update on-chain red_blocks
-        // 3. Add red_blocks to args_vec below
         let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
@@ -942,7 +920,7 @@ impl StarcoinVM {
                 bcs_ext::to_bytes(&parents_hash)
                     .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
             ),
-            // MoveValue::U64(red_blocks), // TODO: Add when Move contract is updated
+            MoveValue::U64(red_blocks),
         ];
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);

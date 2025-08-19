@@ -313,9 +313,6 @@ pub struct GenesisConfig {
     pub time_service_type: TimeServiceType,
     /// transaction timeout
     pub transaction_timeout: u64,
-
-    /// Flexidag effective height
-    pub dag_effective_height: u64,
 }
 
 impl GenesisConfig {
@@ -383,13 +380,13 @@ impl GenesisConfig {
     }
 }
 
-static G_UNCLE_RATE_TARGET: u64 = 240;
+static G_UNCLE_RATE_TARGET: u64 = 1;
 static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
 static G_MIN_BLOCK_TIME_TARGET: u64 = 2000;
 static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
-pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
+pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 16;
 
 //for Private funding
 static G_DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
@@ -407,6 +404,10 @@ static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 
 pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 700;
+
+// DAG pruning parameters
+pub static G_PRUNING_DEPTH: u64 = 185798;
+pub static G_PRUNING_FINALITY: u64 = 86400;
 
 //static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
@@ -448,6 +449,8 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: 0, //ConsensusStrategy::Dummy.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (
             Some(Arc::new(association_private_key)),
@@ -463,7 +466,6 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
     }
 });
 
@@ -504,6 +506,8 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: 0, //ConsensusStrategy::Dummy.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (
             Some(Arc::new(association_private_key)),
@@ -519,7 +523,6 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
     }
 });
 
@@ -563,6 +566,8 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: 0, //ConsensusStrategy::Dummy.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (
             Some(Arc::new(association_private_key)),
@@ -578,7 +583,6 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
     }
 });
 
@@ -626,6 +630,8 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: 3, //ConsensusStrategy::CryptoNight.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (
             None,
@@ -642,7 +648,6 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
     }
 });
 
@@ -686,6 +691,8 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: 3, //ConsensusStrategy::CryptoNight.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (
             None,
@@ -702,7 +709,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
     }
 });
 
@@ -748,6 +754,8 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: 3, //ConsensusStrategy::CryptoNight.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
             .expect("create multi public key must success.")),
@@ -761,7 +769,6 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
     }
 });
 
@@ -821,6 +828,8 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: 3, //ConsensusStrategy::CryptoNight.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
             .expect("create multi public key must success.")),
@@ -834,7 +843,6 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
     }
 });
 
@@ -873,6 +881,8 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT,
             strategy: 1, //ConsensusStrategy::Argon.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
+            pruning_depth: G_PRUNING_DEPTH,
+            pruning_finality: G_PRUNING_FINALITY,
         },
         association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
             .expect("create multi public key must success.")),
@@ -886,7 +896,6 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
     }
 });
 

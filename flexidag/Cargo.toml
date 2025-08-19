@@ -33,6 +33,9 @@ starcoin-statedb = { workspace = true }
 starcoin-vm-runtime ={ workspace = true }
 crossbeam = { workspace = true }
 starcoin-service-registry = { workspace = true }
+starcoin-vm2-chain = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

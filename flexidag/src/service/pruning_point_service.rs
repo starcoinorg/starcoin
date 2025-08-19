@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::blockdag::BlockDAG;
 use anyhow::format_err;
 use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_crypto::HashValue;
@@ -7,10 +8,7 @@ use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
-// TODO: DAG - Add FlexiDagConfigV2 when on-chain config is ready
-// use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
-
-use crate::blockdag::BlockDAG;
+use starcoin_vm2_storage::Store as Store2;
 
 #[derive(Clone)]
 pub struct PruningPointMessage {
@@ -49,7 +47,7 @@ pub struct PruningPointService {
     dag: BlockDAG,
     pruning_channel: PruningPointInfoChannel,
     genesis_id: HashValue,
-    storage: Arc<Storage>,
+    storage2: Arc<dyn Store2>,
 }
 
 impl PruningPointService {
@@ -57,13 +55,13 @@ impl PruningPointService {
         dag: BlockDAG,
         pruning_channel: PruningPointInfoChannel,
         genesis_id: HashValue,
-        storage: Arc<Storage>,
+        storage2: Arc<dyn Store2>,
     ) -> Self {
         Self {
             dag,
             pruning_channel,
             genesis_id,
-            storage,
+            storage2,
         }
     }
 }
@@ -96,10 +94,11 @@ impl ServiceFactory<Self> for PruningPointService {
         let pruning_channel = PruningPointInfoChannel::new();
         ctx.put_shared(pruning_channel.clone())?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<dyn Store2>>()?;
         let genesis_id = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("genesis not found"))?;
-        anyhow::Ok(Self::new(dag, pruning_channel, genesis_id, storage))
+        anyhow::Ok(Self::new(dag, pruning_channel, genesis_id, storage2))
     }
 }
 
@@ -112,8 +111,7 @@ impl EventHandler<Self, SystemStarted> for PruningPointService {
 impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
     fn handle_event(&mut self, _: PruningPointInfoGeneration, ctx: &mut ServiceContext<Self>) {
         let pruning_point_receiver = self.pruning_channel.pruning_receiver.clone();
-        // TODO: DAG dep:
-        let _storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let dag = self.dag.clone();
         let genesis_id = self.genesis_id;
         let self_ref = ctx.self_ref();
@@ -121,27 +119,24 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
             match pruning_point_receiver.try_recv() {
                 std::result::Result::Ok(new_dag_block) => {
                     let block_header = new_dag_block.block_header;
-                    // TODO: DAG - Read from on-chain config when FlexiDagConfigV2 is available
-                    // use starcoin_state_api::AccountStateReader;
-                    // use starcoin_statedb::ChainStateDB;
-                    // use starcoin_storage::IntoSuper;
 
-                    // let chain_state = ChainStateDB::new(
-                    //     storage.clone().into_super_arc(),
-                    //     Some(block_header.state_root()),
-                    // );
-                    // let reader = AccountStateReader::new(&chain_state);
-                    // let FlexiDagConfigV2 {
-                    //     pruning_depth,
-                    //     pruning_finality,
-                    // } = reader
-                    //     .get_dag_config()
-                    //     .unwrap_or_default()
-                    //     .unwrap_or_default();
+                    // Get pruning config from VM2 epoch
+                    use starcoin_vm2_chain::get_epoch_from_statedb;
+                    use starcoin_vm2_statedb::ChainStateDB;
 
-                    // Hardcoded values for now
-                    let pruning_depth = 1000;
-                    let pruning_finality = 100;
+                    let chain_state = ChainStateDB::new(
+                        storage2.clone().into_super_arc(),
+                        Some(block_header.state_root()),
+                    );
+
+                    let (pruning_depth, pruning_finality) =
+                        match get_epoch_from_statedb(&chain_state) {
+                            Ok(epoch) => (epoch.pruning_depth(), epoch.pruning_finality()),
+                            Err(e) => {
+                                error!("Failed to get epoch from VM2 state: {:?}", e);
+                                return;
+                            }
+                        };
 
                     match dag
                         .generate_pruning_point(

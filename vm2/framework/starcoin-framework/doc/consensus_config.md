@@ -22,6 +22,9 @@ The module provide configuration of consensus parameters.
 -  [Function `base_max_uncles_per_block`](#0x1_consensus_config_base_max_uncles_per_block)
 -  [Function `base_block_gas_limit`](#0x1_consensus_config_base_block_gas_limit)
 -  [Function `strategy`](#0x1_consensus_config_strategy)
+-  [Function `max_transaction_per_block`](#0x1_consensus_config_max_transaction_per_block)
+-  [Function `pruning_depth`](#0x1_consensus_config_pruning_depth)
+-  [Function `pruning_finality`](#0x1_consensus_config_pruning_finality)
 -  [Function `compute_reward_per_block`](#0x1_consensus_config_compute_reward_per_block)
 -  [Function `do_compute_reward_per_block`](#0x1_consensus_config_do_compute_reward_per_block)
 -  [Specification](#@Specification_1)
@@ -122,6 +125,24 @@ consensus configurations.
 <dd>
  Strategy to calculate difficulty
 </dd>
+<dt>
+<code>max_transaction_per_block: u64</code>
+</dt>
+<dd>
+ Maximum number of transactions per block
+</dd>
+<dt>
+<code>pruning_depth: u64</code>
+</dt>
+<dd>
+ DAG pruning depth
+</dd>
+<dt>
+<code>pruning_finality: u64</code>
+</dt>
+<dd>
+ DAG pruning finality
+</dd>
 </dl>
 
 
@@ -148,7 +169,7 @@ consensus configurations.
 Initialization of the module.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, max_transaction_per_block: u64, pruning_depth: u64, pruning_finality: u64)
 </code></pre>
 
 
@@ -170,6 +191,9 @@ Initialization of the module.
     base_max_uncles_per_block: u64,
     base_block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
+    pruning_depth: u64,
+    pruning_finality: u64,
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
@@ -187,6 +211,9 @@ Initialization of the module.
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy,
+            max_transaction_per_block,
+            pruning_depth,
+            pruning_finality,
         ),
     );
 }
@@ -203,7 +230,7 @@ Initialization of the module.
 Create a new consensus config mainly used in DAO.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8): <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, max_transaction_per_block: u64, pruning_depth: u64, pruning_finality: u64): <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>
 </code></pre>
 
 
@@ -224,8 +251,11 @@ Create a new consensus config mainly used in DAO.
     base_max_uncles_per_block: u64,
     base_block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
+    pruning_depth: u64,
+    pruning_finality: u64,
 ): <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">ConsensusConfig</a> {
-    <b>assert</b>!(uncle_rate_target &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="consensus_config.md#0x1_consensus_config_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>!(uncle_rate_target &gt;= 1 && <a href="consensus_config.md#0x1_consensus_config_uncle_rate_target">uncle_rate_target</a> &lt;= base_max_uncles_per_block, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="consensus_config.md#0x1_consensus_config_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>!(base_block_time_target &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="consensus_config.md#0x1_consensus_config_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>!(base_reward_per_block &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="consensus_config.md#0x1_consensus_config_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>!(epoch_block_count &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="consensus_config.md#0x1_consensus_config_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
@@ -246,6 +276,9 @@ Create a new consensus config mainly used in DAO.
         base_max_uncles_per_block,
         base_block_gas_limit,
         strategy,
+        max_transaction_per_block,
+        pruning_depth,
+        pruning_finality,
     }
 }
 </code></pre>
@@ -554,6 +587,81 @@ Get strategy
 
 </details>
 
+<a id="0x1_consensus_config_max_transaction_per_block"></a>
+
+## Function `max_transaction_per_block`
+
+Get max_transaction_per_block
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_max_transaction_per_block">max_transaction_per_block</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_max_transaction_per_block">max_transaction_per_block</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">ConsensusConfig</a>): u64 {
+    config.max_transaction_per_block
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_consensus_config_pruning_depth"></a>
+
+## Function `pruning_depth`
+
+Get pruning_depth
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_pruning_depth">pruning_depth</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_pruning_depth">pruning_depth</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">ConsensusConfig</a>): u64 {
+    config.pruning_depth
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_consensus_config_pruning_finality"></a>
+
+## Function `pruning_finality`
+
+Get pruning_finality
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_pruning_finality">pruning_finality</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_pruning_finality">pruning_finality</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">ConsensusConfig</a>): u64 {
+    config.pruning_finality
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_consensus_config_compute_reward_per_block"></a>
 
 ## Function `compute_reward_per_block`
@@ -626,7 +734,7 @@ Compute block reward given the <code>new_epoch_block_time_target</code>, and the
 ### Function `initialize`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, max_transaction_per_block: u64, pruning_depth: u64, pruning_finality: u64)
 </code></pre>
 
 
@@ -651,7 +759,7 @@ Compute block reward given the <code>new_epoch_block_time_target</code>, and the
 ### Function `new_consensus_config`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8): <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="consensus_config.md#0x1_consensus_config_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, max_transaction_per_block: u64, pruning_depth: u64, pruning_finality: u64): <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>
 </code></pre>
 
 

@@ -36,6 +36,12 @@ module starcoin_framework::epoch {
         block_gas_limit: u64,
         /// Strategy to calculate difficulty in current epoch
         strategy: u8,
+        /// Maximum number of transactions per block in current epoch
+        max_transaction_per_block: u64,
+        /// Pruning depth for DAG
+        pruning_depth: u64,
+        /// Pruning finality for DAG
+        pruning_finality: u64,
         /// Switch Epoch Event
         new_epoch_events: event::EventHandle<NewEpochEvent>,
     }
@@ -66,6 +72,8 @@ module starcoin_framework::epoch {
         total_reward: u128,
         /// Up to now, Total gases during current epoch
         total_gas: u128,
+        /// Up to now, Number of red blocks during current epoch
+        red_blocks: u64,
     }
 
     const THOUSAND: u64 = 1000;
@@ -95,10 +103,13 @@ module starcoin_framework::epoch {
                 max_uncles_per_block: consensus_config::base_max_uncles_per_block(&config),
                 block_gas_limit: consensus_config::base_block_gas_limit(&config),
                 strategy: consensus_config::strategy(&config),
+                max_transaction_per_block: consensus_config::max_transaction_per_block(&config),
+                pruning_depth: consensus_config::pruning_depth(&config),
+                pruning_finality: consensus_config::pruning_finality(&config),
                 new_epoch_events: account::new_event_handle<NewEpochEvent>(account),
             },
         );
-        move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0 });
+        move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0, red_blocks: 0 });
     }
 
     /// compute next block time_target.
@@ -140,7 +151,8 @@ module starcoin_framework::epoch {
         block_number: u64,
         timestamp: u64,
         uncles: u64,
-        parent_gas_used: u64
+        parent_gas_used: u64,
+        red_blocks: u64
     ): u128
     acquires Epoch, EpochData {
         debug::print(&std::string::utf8(b"epoch::adjust_epoch | Entered"));
@@ -186,8 +198,12 @@ module starcoin_framework::epoch {
             epoch_ref.block_difficulty_window = consensus_config::base_block_difficulty_window(&config);
             epoch_ref.max_uncles_per_block = consensus_config::base_max_uncles_per_block(&config);
             epoch_ref.strategy = consensus_config::strategy(&config);
+            epoch_ref.max_transaction_per_block = consensus_config::max_transaction_per_block(&config);
+            epoch_ref.pruning_depth = consensus_config::pruning_depth(&config);
+            epoch_ref.pruning_finality = consensus_config::pruning_finality(&config);
 
             epoch_data.uncles = 0;
+            epoch_data.red_blocks = 0;
             let last_epoch_total_gas = epoch_data.total_gas + (parent_gas_used as u128);
             adjust_gas_limit(
                 &config,
@@ -204,7 +220,7 @@ module starcoin_framework::epoch {
         };
         let reward = reward_per_block +
             reward_per_block * (epoch_ref.reward_per_uncle_percent as u128) * (uncles as u128) / (HUNDRED as u128);
-        update_epoch_data(epoch_data, new_epoch, reward, uncles, parent_gas_used);
+        update_epoch_data(epoch_data, new_epoch, reward, uncles, parent_gas_used, red_blocks);
 
         debug::print(&std::string::utf8(b"epoch::adjust_epoch | Exited, reward: "));
         debug::print(&reward);
@@ -288,16 +304,19 @@ module starcoin_framework::epoch {
         new_epoch: bool,
         reward: u128,
         uncles: u64,
-        parent_gas_used: u64
+        parent_gas_used: u64,
+        red_blocks: u64
     ) {
         if (new_epoch) {
             epoch_data.total_reward = reward;
             epoch_data.uncles = uncles;
             epoch_data.total_gas = 0;
+            epoch_data.red_blocks = red_blocks;
         } else {
             epoch_data.total_reward = epoch_data.total_reward + reward;
             epoch_data.uncles = epoch_data.uncles + uncles;
             epoch_data.total_gas = epoch_data.total_gas + (parent_gas_used as u128);
+            epoch_data.red_blocks = epoch_data.red_blocks + red_blocks;
         }
     }
 
@@ -305,6 +324,7 @@ module starcoin_framework::epoch {
         aborts_if !new_epoch && epoch_data.total_reward + reward > MAX_U128;
         aborts_if !new_epoch && epoch_data.uncles + uncles > MAX_U64;
         aborts_if !new_epoch && epoch_data.total_gas + parent_gas_used > MAX_U128;
+        aborts_if !new_epoch && epoch_data.red_blocks + red_blocks > MAX_U64;
     }
 
     fun emit_epoch_event(epoch_ref: &mut Epoch, previous_epoch_total_reward: u128) {
@@ -403,6 +423,28 @@ module starcoin_framework::epoch {
     }
 
     spec block_time_target {
+        aborts_if !exists<Epoch>(system_addresses::get_starcoin_framework());
+    }
+
+    /// Get max transaction per block
+    public fun max_transaction_per_block(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(system_addresses::get_starcoin_framework());
+        epoch_ref.max_transaction_per_block
+    }
+
+    /// Get pruning depth
+    public fun pruning_depth(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(system_addresses::get_starcoin_framework());
+        epoch_ref.pruning_depth
+    }
+
+    /// Get pruning finality
+    public fun pruning_finality(): u64 acquires Epoch {
+        let epoch_ref = borrow_global<Epoch>(system_addresses::get_starcoin_framework());
+        epoch_ref.pruning_finality
+    }
+
+    spec max_transaction_per_block {
         aborts_if !exists<Epoch>(system_addresses::get_starcoin_framework());
     }
 }

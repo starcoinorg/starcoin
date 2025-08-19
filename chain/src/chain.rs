@@ -1671,10 +1671,9 @@ impl ChainReader for BlockChain {
     }
 
     fn get_pruning_config(&self) -> (u64, u64) {
-        // TODO: DAG - Get from on-chain config when FlexiDagConfigV2 is available
-        // For now, return default values
-        let pruning_depth = 1000u64;
-        let pruning_finality = 100u64;
+        // Get pruning config from epoch
+        let pruning_depth = self.epoch.pruning_depth();
+        let pruning_finality = self.epoch.pruning_finality();
         (pruning_depth, pruning_finality)
     }
 

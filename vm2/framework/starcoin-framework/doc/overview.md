@@ -37,7 +37,6 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::empty_scripts`](empty_scripts.md#0x1_empty_scripts)
 -  [`0x1::epoch`](epoch.md#0x1_epoch)
 -  [`0x1::event`](event.md#0x1_event)
--  [`0x1::flexi_dag_config`](flexi_dag_config.md#0x1_flexi_dag_config)
 -  [`0x1::function_info`](function_info.md#0x1_function_info)
 -  [`0x1::fungible_asset`](fungible_asset.md#0x1_fungible_asset)
 -  [`0x1::guid`](guid.md#0x1_guid)

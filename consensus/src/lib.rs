@@ -6,7 +6,7 @@ use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
-use anyhow::{format_err,Result};
+use anyhow::{format_err, Result};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
@@ -39,8 +39,6 @@ pub fn difficult_to_target(difficulty: U256) -> Result<U256> {
         .checked_div(difficulty)
         .ok_or(format_err!("zero-divisor"))
 }
-
-
 
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {
     let len = header.len();

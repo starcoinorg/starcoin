@@ -592,6 +592,8 @@ impl ChainNetwork {
             self.genesis_config2
                 .consensus_config
                 .max_transaction_per_block,
+            self.genesis_config2.consensus_config.pruning_depth,
+            self.genesis_config2.consensus_config.pruning_finality,
             //TODO conform new Epoch events salt value.
             EventHandle::new(EventKey::new(0, genesis_address()), 0),
         )

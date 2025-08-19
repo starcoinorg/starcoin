@@ -44,6 +44,8 @@ module starcoin_framework::stc_block {
         uncles: u64,
         /// An Array of the parents hash for a Dag block.
         parents_hash: vector<u8>,
+        /// Number of red blocks in DAG
+        red_blocks: u64,
         // Handle of events when new blocks are emitted
         new_block_events: event::EventHandle<NewBlockEvent>,
     }
@@ -70,6 +72,7 @@ module starcoin_framework::stc_block {
             author: system_addresses::get_starcoin_framework(),
             uncles: 0,
             parents_hash: vector::empty<u8>(),
+            red_blocks: 0,
             new_block_events: account::new_event_handle<NewBlockEvent>(account),
         };
 
@@ -110,6 +113,11 @@ module starcoin_framework::stc_block {
         borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
     }
 
+    /// Get the number of red blocks in current block
+    public fun get_red_blocks(): u64 acquires BlockMetadata {
+        borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).red_blocks
+    }
+
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
     public fun block_prologue(
@@ -123,8 +131,7 @@ module starcoin_framework::stc_block {
         chain_id: u8,
         parent_gas_used: u64,
         parents_hash: vector<u8>,
-        // TODO: Add red_blocks parameter for DAG support
-        // red_blocks: u64,
+        red_blocks: u64,
     ) acquires BlockMetadata {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
 
@@ -157,9 +164,10 @@ module starcoin_framework::stc_block {
             uncles,
             number,
             parents_hash,
+            red_blocks,
         );
 
-        let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
+        let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used, red_blocks);
 
         // pass in previous block gas fees.
         block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
@@ -176,8 +184,7 @@ module starcoin_framework::stc_block {
         uncles: u64,
         number: u64,
         parents_hash: vector<u8>,
-        // TODO: Add red_blocks parameter for DAG support
-        // red_blocks: u64,
+        red_blocks: u64,
     ) acquires BlockMetadata {
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Entered"));
 
@@ -193,8 +200,7 @@ module starcoin_framework::stc_block {
         block_metadata_ref.parent_hash = parent_hash;
         block_metadata_ref.uncles = uncles;
         block_metadata_ref.parents_hash = parents_hash;
-        // TODO: Update red_blocks for DAG support
-        // block_metadata_ref.red_blocks = red_blocks;
+        block_metadata_ref.red_blocks = red_blocks;
 
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to emit NewBlockEvent  "));
 
@@ -311,6 +317,7 @@ module starcoin_framework::stc_block {
             author: system_addresses::get_starcoin_framework(),
             uncles: 0,
             parents_hash: vector::empty<u8>(),
+            red_blocks: 0,
             new_block_events: account::new_event_handle<NewBlockEvent>(&test_framework),
         };
         let bcs = bcs::to_bytes(&block_metadata);
@@ -319,7 +326,7 @@ module starcoin_framework::stc_block {
         debug::print(&bcs);
 
         let BlockMetadata {
-            number: _, parent_hash: _, author: _, uncles: _, parents_hash: _, new_block_events: event
+            number: _, parent_hash: _, author: _, uncles: _, parents_hash: _, red_blocks: _, new_block_events: event
         } = block_metadata;
         event::destroy_handle(event);
     }

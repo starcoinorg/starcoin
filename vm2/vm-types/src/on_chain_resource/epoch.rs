@@ -27,6 +27,8 @@ pub struct Epoch {
     block_gas_limit: u64,
     strategy: u8,
     max_transaction_per_block: u64,
+    pruning_depth: u64,
+    pruning_finality: u64,
     new_epoch_events: EventHandle,
 }
 
@@ -45,6 +47,8 @@ impl Epoch {
         block_gas_limit: u64,
         strategy: u8,
         max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {
@@ -60,6 +64,8 @@ impl Epoch {
             block_gas_limit,
             strategy,
             max_transaction_per_block,
+            pruning_depth,
+            pruning_finality,
             new_epoch_events,
         }
     }
@@ -110,6 +116,14 @@ impl Epoch {
 
     pub fn max_transaction_per_block(&self) -> u64 {
         self.max_transaction_per_block
+    }
+
+    pub fn pruning_depth(&self) -> u64 {
+        self.pruning_depth
+    }
+
+    pub fn pruning_finality(&self) -> u64 {
+        self.pruning_finality
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
@@ -197,6 +211,7 @@ pub struct EpochData {
     uncles: u64,
     total_reward: u128,
     total_gas: u128,
+    red_blocks: u64,
 }
 
 impl MoveStructType for EpochData {
@@ -207,11 +222,12 @@ impl MoveStructType for EpochData {
 impl MoveResource for EpochData {}
 
 impl EpochData {
-    pub fn new(uncles: u64, total_reward: u128, total_gas: u128) -> Self {
+    pub fn new(uncles: u64, total_reward: u128, total_gas: u128, red_blocks: u64) -> Self {
         Self {
             uncles,
             total_reward,
             total_gas,
+            red_blocks,
         }
     }
 
@@ -225,6 +241,10 @@ impl EpochData {
 
     pub fn total_reward(&self) -> u128 {
         self.total_reward
+    }
+
+    pub fn red_blocks(&self) -> u64 {
+        self.red_blocks
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

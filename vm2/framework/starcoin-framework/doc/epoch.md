@@ -26,6 +26,9 @@ The module provide epoch functionality for starcoin.
 -  [Function `end_block_number`](#0x1_epoch_end_block_number)
 -  [Function `number`](#0x1_epoch_number)
 -  [Function `block_time_target`](#0x1_epoch_block_time_target)
+-  [Function `max_transaction_per_block`](#0x1_epoch_max_transaction_per_block)
+-  [Function `pruning_depth`](#0x1_epoch_pruning_depth)
+-  [Function `pruning_finality`](#0x1_epoch_pruning_finality)
 -  [Specification](#@Specification_1)
     -  [Function `initialize`](#@Specification_1_initialize)
     -  [Function `compute_next_block_time_target`](#@Specification_1_compute_next_block_time_target)
@@ -43,6 +46,7 @@ The module provide epoch functionality for starcoin.
     -  [Function `end_block_number`](#@Specification_1_end_block_number)
     -  [Function `number`](#@Specification_1_number)
     -  [Function `block_time_target`](#@Specification_1_block_time_target)
+    -  [Function `max_transaction_per_block`](#@Specification_1_max_transaction_per_block)
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
@@ -140,6 +144,24 @@ Current epoch info.
 </dt>
 <dd>
  Strategy to calculate difficulty in current epoch
+</dd>
+<dt>
+<code>max_transaction_per_block: u64</code>
+</dt>
+<dd>
+ Maximum number of transactions per block in current epoch
+</dd>
+<dt>
+<code>pruning_depth: u64</code>
+</dt>
+<dd>
+ Pruning depth for DAG
+</dd>
+<dt>
+<code>pruning_finality: u64</code>
+</dt>
+<dd>
+ Pruning finality for DAG
 </dd>
 <dt>
 <code>new_epoch_events: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="epoch.md#0x1_epoch_NewEpochEvent">epoch::NewEpochEvent</a>&gt;</code>
@@ -251,6 +273,12 @@ Epoch data.
 <dd>
  Up to now, Total gases during current epoch
 </dd>
+<dt>
+<code>red_blocks: u64</code>
+</dt>
+<dd>
+ Up to now, Number of red blocks during current epoch
+</dd>
 </dl>
 
 
@@ -341,10 +369,13 @@ Initialization of the module.
             max_uncles_per_block: <a href="consensus_config.md#0x1_consensus_config_base_max_uncles_per_block">consensus_config::base_max_uncles_per_block</a>(&config),
             block_gas_limit: <a href="consensus_config.md#0x1_consensus_config_base_block_gas_limit">consensus_config::base_block_gas_limit</a>(&config),
             strategy: <a href="consensus_config.md#0x1_consensus_config_strategy">consensus_config::strategy</a>(&config),
+            max_transaction_per_block: <a href="consensus_config.md#0x1_consensus_config_max_transaction_per_block">consensus_config::max_transaction_per_block</a>(&config),
+            pruning_depth: <a href="consensus_config.md#0x1_consensus_config_pruning_depth">consensus_config::pruning_depth</a>(&config),
+            pruning_finality: <a href="consensus_config.md#0x1_consensus_config_pruning_finality">consensus_config::pruning_finality</a>(&config),
             new_epoch_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="epoch.md#0x1_epoch_NewEpochEvent">NewEpochEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
         },
     );
-    <b>move_to</b>&lt;<a href="epoch.md#0x1_epoch_EpochData">EpochData</a>&gt;(<a href="account.md#0x1_account">account</a>, <a href="epoch.md#0x1_epoch_EpochData">EpochData</a> { uncles: 0, total_reward: 0, total_gas: 0 });
+    <b>move_to</b>&lt;<a href="epoch.md#0x1_epoch_EpochData">EpochData</a>&gt;(<a href="account.md#0x1_account">account</a>, <a href="epoch.md#0x1_epoch_EpochData">EpochData</a> { uncles: 0, total_reward: 0, total_gas: 0, red_blocks: 0 });
 }
 </code></pre>
 
@@ -412,7 +443,7 @@ compute next block time_target.
 adjust_epoch try to advance to next epoch if current epoch ends.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_adjust_epoch">adjust_epoch</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, block_number: u64, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_adjust_epoch">adjust_epoch</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, block_number: u64, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, parent_gas_used: u64, red_blocks: u64): u128
 </code></pre>
 
 
@@ -426,7 +457,8 @@ adjust_epoch try to advance to next epoch if current epoch ends.
     block_number: u64,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64,
     uncles: u64,
-    parent_gas_used: u64
+    parent_gas_used: u64,
+    red_blocks: u64
 ): u128
 <b>acquires</b> <a href="epoch.md#0x1_epoch_Epoch">Epoch</a>, <a href="epoch.md#0x1_epoch_EpochData">EpochData</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a> | Entered"));
@@ -472,8 +504,12 @@ adjust_epoch try to advance to next epoch if current epoch ends.
         epoch_ref.block_difficulty_window = <a href="consensus_config.md#0x1_consensus_config_base_block_difficulty_window">consensus_config::base_block_difficulty_window</a>(&config);
         epoch_ref.max_uncles_per_block = <a href="consensus_config.md#0x1_consensus_config_base_max_uncles_per_block">consensus_config::base_max_uncles_per_block</a>(&config);
         epoch_ref.strategy = <a href="consensus_config.md#0x1_consensus_config_strategy">consensus_config::strategy</a>(&config);
+        epoch_ref.max_transaction_per_block = <a href="consensus_config.md#0x1_consensus_config_max_transaction_per_block">consensus_config::max_transaction_per_block</a>(&config);
+        epoch_ref.pruning_depth = <a href="consensus_config.md#0x1_consensus_config_pruning_depth">consensus_config::pruning_depth</a>(&config);
+        epoch_ref.pruning_finality = <a href="consensus_config.md#0x1_consensus_config_pruning_finality">consensus_config::pruning_finality</a>(&config);
 
         epoch_data.uncles = 0;
+        epoch_data.red_blocks = 0;
         <b>let</b> last_epoch_total_gas = epoch_data.total_gas + (parent_gas_used <b>as</b> u128);
         <a href="epoch.md#0x1_epoch_adjust_gas_limit">adjust_gas_limit</a>(
             &config,
@@ -490,7 +526,7 @@ adjust_epoch try to advance to next epoch if current epoch ends.
     };
     <b>let</b> reward = reward_per_block +
         reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / (<a href="epoch.md#0x1_epoch_HUNDRED">HUNDRED</a> <b>as</b> u128);
-    <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles, parent_gas_used);
+    <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles, parent_gas_used, red_blocks);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a> | Exited, reward: "));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&reward);
@@ -638,7 +674,7 @@ Compute block's gas limit of next epoch.
 
 
 
-<pre><code><b>fun</b> <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="epoch.md#0x1_epoch_EpochData">epoch::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used: u64)
+<pre><code><b>fun</b> <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="epoch.md#0x1_epoch_EpochData">epoch::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used: u64, red_blocks: u64)
 </code></pre>
 
 
@@ -652,16 +688,19 @@ Compute block's gas limit of next epoch.
     new_epoch: bool,
     reward: u128,
     uncles: u64,
-    parent_gas_used: u64
+    parent_gas_used: u64,
+    red_blocks: u64
 ) {
     <b>if</b> (new_epoch) {
         epoch_data.total_reward = reward;
         epoch_data.uncles = uncles;
         epoch_data.total_gas = 0;
+        epoch_data.red_blocks = red_blocks;
     } <b>else</b> {
         epoch_data.total_reward = epoch_data.total_reward + reward;
         epoch_data.uncles = epoch_data.uncles + uncles;
         epoch_data.total_gas = epoch_data.total_gas + (parent_gas_used <b>as</b> u128);
+        epoch_data.red_blocks = epoch_data.red_blocks + red_blocks;
     }
 }
 </code></pre>
@@ -913,6 +952,84 @@ Get current block time target
 
 </details>
 
+<a id="0x1_epoch_max_transaction_per_block"></a>
+
+## Function `max_transaction_per_block`
+
+Get max transaction per block
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_max_transaction_per_block">max_transaction_per_block</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_max_transaction_per_block">max_transaction_per_block</a>(): u64 <b>acquires</b> <a href="epoch.md#0x1_epoch_Epoch">Epoch</a> {
+    <b>let</b> epoch_ref = <b>borrow_global</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+    epoch_ref.max_transaction_per_block
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_epoch_pruning_depth"></a>
+
+## Function `pruning_depth`
+
+Get pruning depth
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_pruning_depth">pruning_depth</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_pruning_depth">pruning_depth</a>(): u64 <b>acquires</b> <a href="epoch.md#0x1_epoch_Epoch">Epoch</a> {
+    <b>let</b> epoch_ref = <b>borrow_global</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+    epoch_ref.pruning_depth
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_epoch_pruning_finality"></a>
+
+## Function `pruning_finality`
+
+Get pruning finality
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_pruning_finality">pruning_finality</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_pruning_finality">pruning_finality</a>(): u64 <b>acquires</b> <a href="epoch.md#0x1_epoch_Epoch">Epoch</a> {
+    <b>let</b> epoch_ref = <b>borrow_global</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+    epoch_ref.pruning_finality
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="@Specification_1"></a>
 
 ## Specification
@@ -959,7 +1076,7 @@ Get current block time target
 ### Function `adjust_epoch`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_adjust_epoch">adjust_epoch</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, block_number: u64, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_adjust_epoch">adjust_epoch</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, block_number: u64, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, parent_gas_used: u64, red_blocks: u64): u128
 </code></pre>
 
 
@@ -1028,7 +1145,7 @@ Get current block time target
 ### Function `update_epoch_data`
 
 
-<pre><code><b>fun</b> <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="epoch.md#0x1_epoch_EpochData">epoch::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used: u64)
+<pre><code><b>fun</b> <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="epoch.md#0x1_epoch_EpochData">epoch::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used: u64, red_blocks: u64)
 </code></pre>
 
 
@@ -1037,6 +1154,7 @@ Get current block time target
 <pre><code><b>aborts_if</b> !new_epoch && epoch_data.total_reward + reward &gt; MAX_U128;
 <b>aborts_if</b> !new_epoch && epoch_data.uncles + uncles &gt; MAX_U64;
 <b>aborts_if</b> !new_epoch && epoch_data.total_gas + parent_gas_used &gt; MAX_U128;
+<b>aborts_if</b> !new_epoch && epoch_data.red_blocks + red_blocks &gt; MAX_U64;
 </code></pre>
 
 
@@ -1242,14 +1360,30 @@ Get current block time target
 
 
 
-<pre><code><b>pragma</b> verify;
-<b>pragma</b> aborts_if_is_strict;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+</code></pre>
+
+
+
+<a id="@Specification_1_max_transaction_per_block"></a>
+
+### Function `max_transaction_per_block`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_max_transaction_per_block">max_transaction_per_block</a>(): u64
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 

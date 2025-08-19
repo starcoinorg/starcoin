@@ -25,6 +25,8 @@ pub struct ConsensusConfig {
     pub base_block_gas_limit: u64,
     pub strategy: u8,
     pub max_transaction_per_block: u64,
+    pub pruning_depth: u64,
+    pub pruning_finality: u64,
 }
 
 impl OnChainConfig for ConsensusConfig {

@@ -34,6 +34,12 @@ module starcoin_framework::consensus_config {
         base_block_gas_limit: u64,
         /// Strategy to calculate difficulty
         strategy: u8,
+        /// Maximum number of transactions per block
+        max_transaction_per_block: u64,
+        /// DAG pruning depth
+        pruning_depth: u64,
+        /// DAG pruning finality
+        pruning_finality: u64,
     }
 
     const EINVALID_ARGUMENT: u64 = 18;
@@ -52,6 +58,9 @@ module starcoin_framework::consensus_config {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ) {
         system_addresses::assert_starcoin_framework(account);
 
@@ -69,6 +78,9 @@ module starcoin_framework::consensus_config {
                 base_max_uncles_per_block,
                 base_block_gas_limit,
                 strategy,
+                max_transaction_per_block,
+                pruning_depth,
+                pruning_finality,
             ),
         );
     }
@@ -87,8 +99,11 @@ module starcoin_framework::consensus_config {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ): ConsensusConfig {
-        assert!(uncle_rate_target > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(uncle_rate_target >= 1 && uncle_rate_target <= base_max_uncles_per_block, error::invalid_argument(EINVALID_ARGUMENT));
         assert!(base_block_time_target > 0, error::invalid_argument(EINVALID_ARGUMENT));
         assert!(base_reward_per_block > 0, error::invalid_argument(EINVALID_ARGUMENT));
         assert!(epoch_block_count > 0, error::invalid_argument(EINVALID_ARGUMENT));
@@ -109,6 +124,9 @@ module starcoin_framework::consensus_config {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy,
+            max_transaction_per_block,
+            pruning_depth,
+            pruning_finality,
         }
     }
 
@@ -170,6 +188,21 @@ module starcoin_framework::consensus_config {
     /// Get strategy
     public fun strategy(config: &ConsensusConfig): u8 {
         config.strategy
+    }
+
+    /// Get max_transaction_per_block
+    public fun max_transaction_per_block(config: &ConsensusConfig): u64 {
+        config.max_transaction_per_block
+    }
+
+    /// Get pruning_depth
+    public fun pruning_depth(config: &ConsensusConfig): u64 {
+        config.pruning_depth
+    }
+
+    /// Get pruning_finality
+    public fun pruning_finality(config: &ConsensusConfig): u64 {
+        config.pruning_finality
     }
 
     /// Compute block reward given the `new_epoch_block_time_target`.

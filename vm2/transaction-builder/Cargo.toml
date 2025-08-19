@@ -1,0 +1,21 @@
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-vm-types = { path = "../vm-types" }
+starcoin-types = { path = "../types" }
+starcoin-cached-packages = { path = "../framework/cached-packages" }
+
+[dev-dependencies]
+#stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-transaction-builder"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

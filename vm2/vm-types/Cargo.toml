@@ -43,10 +43,12 @@ rayon = { workspace = true }
 starcoin-infallible = { workspace = true }
 
 [dev-dependencies]
-proptest = { workspace = true }
+proptest = { workspace = true, features = ["std"] }
 proptest-derive = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", features = ["fuzzing"] }
 starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra", features = ["testing"] }
+vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format", features = ["fuzzing"] }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = ["fuzzing"] }
 
 [features]
 default = []

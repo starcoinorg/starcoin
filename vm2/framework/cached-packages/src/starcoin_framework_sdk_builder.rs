@@ -347,11 +347,9 @@ pub enum EntryFunctionCall {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
-        exec_delay: u64,
-    },
-
-    OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
-        new_height: u64,
+        max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
         exec_delay: u64,
     },
 
@@ -507,6 +505,9 @@ pub enum EntryFunctionCall {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
         script_allowed: bool,
         module_publishing_allowed: bool,
         gas_schedule_blob: Vec<u8>,
@@ -515,7 +516,6 @@ pub enum EntryFunctionCall {
         voting_quorum_rate: u8,
         min_action_delay: u64,
         transaction_timeout: u64,
-        dag_effective_height: u64,
         features: Vec<u8>,
     },
 
@@ -795,6 +795,9 @@ impl EntryFunctionCall {
                 base_max_uncles_per_block,
                 base_block_gas_limit,
                 strategy,
+                max_transaction_per_block,
+                pruning_depth,
+                pruning_finality,
                 exec_delay,
             } => on_chain_config_scripts_propose_update_consensus_config(
                 uncle_rate_target,
@@ -808,13 +811,10 @@ impl EntryFunctionCall {
                 base_max_uncles_per_block,
                 base_block_gas_limit,
                 strategy,
+                max_transaction_per_block,
+                pruning_depth,
+                pruning_finality,
                 exec_delay,
-            ),
-            OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
-                new_height,
-                exec_delay,
-            } => on_chain_config_scripts_propose_update_flexi_dag_effective_height(
-                new_height, exec_delay,
             ),
             OnChainConfigScriptsProposeUpdateMoveLanguageVersion {
                 new_version,
@@ -919,6 +919,9 @@ impl EntryFunctionCall {
                 base_max_uncles_per_block,
                 base_block_gas_limit,
                 strategy,
+                max_transaction_per_block,
+                pruning_depth,
+                pruning_finality,
                 script_allowed,
                 module_publishing_allowed,
                 gas_schedule_blob,
@@ -927,7 +930,6 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
-                dag_effective_height,
                 features,
             } => stc_genesis_initialize(
                 stdlib_version,
@@ -952,6 +954,9 @@ impl EntryFunctionCall {
                 base_max_uncles_per_block,
                 base_block_gas_limit,
                 strategy,
+                max_transaction_per_block,
+                pruning_depth,
+                pruning_finality,
                 script_allowed,
                 module_publishing_allowed,
                 gas_schedule_blob,
@@ -960,7 +965,6 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
-                dag_effective_height,
                 features,
             ),
             TransferScriptsBatchPeerToPeer {
@@ -1771,6 +1775,9 @@ pub fn on_chain_config_scripts_propose_update_consensus_config(
     base_max_uncles_per_block: u64,
     base_block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
+    pruning_depth: u64,
+    pruning_finality: u64,
     exec_delay: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -1792,24 +1799,9 @@ pub fn on_chain_config_scripts_propose_update_consensus_config(
             bcs::to_bytes(&base_max_uncles_per_block).unwrap(),
             bcs::to_bytes(&base_block_gas_limit).unwrap(),
             bcs::to_bytes(&strategy).unwrap(),
-            bcs::to_bytes(&exec_delay).unwrap(),
-        ],
-    ))
-}
-
-pub fn on_chain_config_scripts_propose_update_flexi_dag_effective_height(
-    new_height: u64,
-    exec_delay: u64,
-) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("on_chain_config_scripts").to_owned(),
-        ),
-        ident_str!("propose_update_flexi_dag_effective_height").to_owned(),
-        vec![],
-        vec![
-            bcs::to_bytes(&new_height).unwrap(),
+            bcs::to_bytes(&max_transaction_per_block).unwrap(),
+            bcs::to_bytes(&pruning_depth).unwrap(),
+            bcs::to_bytes(&pruning_finality).unwrap(),
             bcs::to_bytes(&exec_delay).unwrap(),
         ],
     ))
@@ -2181,6 +2173,9 @@ pub fn stc_genesis_initialize(
     base_max_uncles_per_block: u64,
     base_block_gas_limit: u64,
     strategy: u8,
+    max_transaction_per_block: u64,
+    pruning_depth: u64,
+    pruning_finality: u64,
     script_allowed: bool,
     module_publishing_allowed: bool,
     gas_schedule_blob: Vec<u8>,
@@ -2189,7 +2184,6 @@ pub fn stc_genesis_initialize(
     voting_quorum_rate: u8,
     min_action_delay: u64,
     transaction_timeout: u64,
-    dag_effective_height: u64,
     features: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -2222,6 +2216,9 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&base_max_uncles_per_block).unwrap(),
             bcs::to_bytes(&base_block_gas_limit).unwrap(),
             bcs::to_bytes(&strategy).unwrap(),
+            bcs::to_bytes(&max_transaction_per_block).unwrap(),
+            bcs::to_bytes(&pruning_depth).unwrap(),
+            bcs::to_bytes(&pruning_finality).unwrap(),
             bcs::to_bytes(&script_allowed).unwrap(),
             bcs::to_bytes(&module_publishing_allowed).unwrap(),
             bcs::to_bytes(&gas_schedule_blob).unwrap(),
@@ -2230,7 +2227,6 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&voting_quorum_rate).unwrap(),
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&transaction_timeout).unwrap(),
-            bcs::to_bytes(&dag_effective_height).unwrap(),
             bcs::to_bytes(&features).unwrap(),
         ],
     ))
@@ -2908,22 +2904,10 @@ mod decoder {
                     base_max_uncles_per_block: bcs::from_bytes(script.args().get(8)?).ok()?,
                     base_block_gas_limit: bcs::from_bytes(script.args().get(9)?).ok()?,
                     strategy: bcs::from_bytes(script.args().get(10)?).ok()?,
-                    exec_delay: bcs::from_bytes(script.args().get(11)?).ok()?,
-                },
-            )
-        } else {
-            None
-        }
-    }
-
-    pub fn on_chain_config_scripts_propose_update_flexi_dag_effective_height(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(
-                EntryFunctionCall::OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
-                    new_height: bcs::from_bytes(script.args().get(0)?).ok()?,
-                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    max_transaction_per_block: bcs::from_bytes(script.args().get(11)?).ok()?,
+                    pruning_depth: bcs::from_bytes(script.args().get(12)?).ok()?,
+                    pruning_finality: bcs::from_bytes(script.args().get(13)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(14)?).ok()?,
                 },
             )
         } else {
@@ -3222,16 +3206,18 @@ mod decoder {
                 base_max_uncles_per_block: bcs::from_bytes(script.args().get(19)?).ok()?,
                 base_block_gas_limit: bcs::from_bytes(script.args().get(20)?).ok()?,
                 strategy: bcs::from_bytes(script.args().get(21)?).ok()?,
-                script_allowed: bcs::from_bytes(script.args().get(22)?).ok()?,
-                module_publishing_allowed: bcs::from_bytes(script.args().get(23)?).ok()?,
-                gas_schedule_blob: bcs::from_bytes(script.args().get(24)?).ok()?,
-                voting_delay: bcs::from_bytes(script.args().get(25)?).ok()?,
-                voting_period: bcs::from_bytes(script.args().get(26)?).ok()?,
-                voting_quorum_rate: bcs::from_bytes(script.args().get(27)?).ok()?,
-                min_action_delay: bcs::from_bytes(script.args().get(28)?).ok()?,
-                transaction_timeout: bcs::from_bytes(script.args().get(29)?).ok()?,
-                dag_effective_height: bcs::from_bytes(script.args().get(30)?).ok()?,
-                features: bcs::from_bytes(script.args().get(31)?).ok()?,
+                max_transaction_per_block: bcs::from_bytes(script.args().get(22)?).ok()?,
+                pruning_depth: bcs::from_bytes(script.args().get(23)?).ok()?,
+                pruning_finality: bcs::from_bytes(script.args().get(24)?).ok()?,
+                script_allowed: bcs::from_bytes(script.args().get(25)?).ok()?,
+                module_publishing_allowed: bcs::from_bytes(script.args().get(26)?).ok()?,
+                gas_schedule_blob: bcs::from_bytes(script.args().get(27)?).ok()?,
+                voting_delay: bcs::from_bytes(script.args().get(28)?).ok()?,
+                voting_period: bcs::from_bytes(script.args().get(29)?).ok()?,
+                voting_quorum_rate: bcs::from_bytes(script.args().get(30)?).ok()?,
+                min_action_delay: bcs::from_bytes(script.args().get(31)?).ok()?,
+                transaction_timeout: bcs::from_bytes(script.args().get(32)?).ok()?,
+                features: bcs::from_bytes(script.args().get(33)?).ok()?,
             })
         } else {
             None
@@ -3525,10 +3511,6 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "on_chain_config_scripts_propose_update_consensus_config".to_string(),
             Box::new(decoder::on_chain_config_scripts_propose_update_consensus_config),
-        );
-        map.insert(
-            "on_chain_config_scripts_propose_update_flexi_dag_effective_height".to_string(),
-            Box::new(decoder::on_chain_config_scripts_propose_update_flexi_dag_effective_height),
         );
         map.insert(
             "on_chain_config_scripts_propose_update_move_language_version".to_string(),

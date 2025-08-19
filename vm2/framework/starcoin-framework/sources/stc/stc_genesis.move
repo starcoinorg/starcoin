@@ -18,7 +18,6 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::dao_treasury_withdraw_proposal;
     use starcoin_framework::dao_upgrade_module_proposal;
     use starcoin_framework::epoch;
-    use starcoin_framework::flexi_dag_config;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::on_chain_config_dao;
     use starcoin_framework::oracle_stc_usd;
@@ -69,6 +68,9 @@ module starcoin_framework::stc_genesis {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
+        max_transaction_per_block: u64,
+        pruning_depth: u64,
+        pruning_finality: u64,
         //vm config
         script_allowed: bool,
         module_publishing_allowed: bool,
@@ -80,7 +82,6 @@ module starcoin_framework::stc_genesis {
         min_action_delay: u64,
         // transaction timeout config
         transaction_timeout: u64,
-        dag_effective_height: u64,
         features: vector<u8>,
     ) {
         debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
@@ -125,8 +126,6 @@ module starcoin_framework::stc_genesis {
             gas_schedule_blob,
         );
 
-        flexi_dag_config::initialize(&starcoin_framework_account, dag_effective_height);
-
         stc_transaction_timeout_config::initialize(&starcoin_framework_account, transaction_timeout);
         consensus_config::initialize(
             &starcoin_framework_account,
@@ -141,6 +140,9 @@ module starcoin_framework::stc_genesis {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy,
+            max_transaction_per_block,
+            pruning_depth,
+            pruning_finality,
         );
 
         epoch::initialize(&starcoin_framework_account);
@@ -280,7 +282,6 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, consensus_config::ConsensusConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
-        on_chain_config_dao::plugin<STC, flexi_dag_config::FlexiDagConfig>(starcoin_framework);
 
 
         debug::print(&std::string::utf8(b"initialize_stc | Exited"));
@@ -336,7 +337,7 @@ module starcoin_framework::stc_genesis {
         let genesis_timestamp: u64 = 0;
 
         //consensus config
-        let uncle_rate_target: u64 = 80;
+        let uncle_rate_target: u64 = 1;  // DAG mode: expect few uncles
         let epoch_block_count: u64 = 240;
         let base_block_time_target: u64 = 10000;
         let base_block_difficulty_window: u64 = 24;
@@ -347,6 +348,9 @@ module starcoin_framework::stc_genesis {
         let base_max_uncles_per_block: u64 = 2;
         let base_block_gas_limit: u64 = 500000000;
         let strategy: u8 = 0;
+        let max_transaction_per_block: u64 = 3000;  // DAG: limit transactions per block
+        let pruning_depth: u64 = 185798;  // DAG pruning parameters
+        let pruning_finality: u64 = 86400;
 
         //vm config
         let script_allowed: bool = true;
@@ -387,6 +391,9 @@ module starcoin_framework::stc_genesis {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy,
+            max_transaction_per_block,
+            pruning_depth,
+            pruning_finality,
             script_allowed,
             module_publishing_allowed,
             gas_schedule_blob,
@@ -395,7 +402,6 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
             transaction_timeout,
-            0,
             vector::empty(),
         );
     }
