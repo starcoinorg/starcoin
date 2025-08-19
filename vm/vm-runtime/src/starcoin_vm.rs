@@ -632,7 +632,7 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-                    println!("TransactionPayload::{:?}", script);
+                    debug!("TransactionPayload::{:?}", script);
                     Self::validate_execute_script(
                         &mut session,
                         script.code().to_vec(),
@@ -643,7 +643,7 @@ impl StarcoinVM {
                     )
                 }
                 TransactionPayload::EntryFunction(script_function) => {
-                    println!("TransactionPayload::{:?}", script_function);
+                    debug!("TransactionPayload::{:?}", script_function);
                     Self::validate_execute_entry_function(
                         &mut session,
                         script_function.module(),
