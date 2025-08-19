@@ -1117,6 +1117,7 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        let now = std::time::Instant::now();
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
@@ -1177,6 +1178,10 @@ impl StarcoinVM {
                                 .inc();
                         }
                         result.push((status, output));
+                        println!(
+                            "Transaction executed in {} ms",
+                            now.elapsed().as_millis(),
+                        );
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
@@ -1592,19 +1597,14 @@ impl VMExecutor for StarcoinVM {
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {
-            let now = std::time::Instant::now();
-            let txn_num = transactions.len();
+            println!("begin executing serialize block execution");
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
                 block_gas_limit,
                 metrics,
             )?;
-            println!(
-                "serialize execute_block took {} ms, txn_num:{}",
-                now.elapsed().as_millis(),
-                txn_num
-            );
+            println!("end executing serialize block execution");
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)
