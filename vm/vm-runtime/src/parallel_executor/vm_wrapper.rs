@@ -46,8 +46,8 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
-
-        match self.vm.execute_single_transaction(txn, &versioned_view) {
+        let now = std::time::Instant::now();
+        let result = match self.vm.execute_single_transaction(txn, &versioned_view) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
                     match sender {
@@ -68,6 +68,14 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
                 }
             }
             Err(err) => ExecutionStatus::Abort(err),
-        }
+        };
+        println!(
+            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            file!(),
+            line!(),
+            column!(),
+            now.elapsed().as_millis()
+        );
+        result
     }
 }

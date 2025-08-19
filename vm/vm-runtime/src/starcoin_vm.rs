@@ -611,6 +611,7 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
+        let now = std::time::Instant::now();
         // Run the validation logic
         {
             gas_meter.set_metering(false);
@@ -631,7 +632,7 @@ impl StarcoinVM {
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
                         self.check_move_version(s.version() as u64)?;
                     };
-                    debug!("TransactionPayload::{:?}", script);
+                    println!("TransactionPayload::{:?}", script);
                     Self::validate_execute_script(
                         &mut session,
                         script.code().to_vec(),
@@ -642,7 +643,7 @@ impl StarcoinVM {
                     )
                 }
                 TransactionPayload::EntryFunction(script_function) => {
-                    debug!("TransactionPayload::{:?}", script_function);
+                    println!("TransactionPayload::{:?}", script_function);
                     Self::validate_execute_entry_function(
                         &mut session,
                         script_function.module(),
@@ -664,7 +665,15 @@ impl StarcoinVM {
                     })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
-            self.success_transaction_cleanup(session, gas_meter, txn_data)
+            let result = self.success_transaction_cleanup(session, gas_meter, txn_data);
+            println!(
+                "[{}:{}:{}] Transaction execution cost {} millisecond",
+                file!(),
+                line!(),
+                column!(),
+                now.elapsed().as_millis()
+            );
+            result
         }
     }
 
@@ -952,6 +961,7 @@ impl StarcoinVM {
         storage: &S,
         txn: SignedUserTransaction,
     ) -> (VMStatus, TransactionOutput) {
+        let now = std::time::Instant::now();
         let txn_data = match TransactionMetadata::new(&txn) {
             Ok(txn_data) => txn_data,
             Err(e) => {
@@ -979,7 +989,7 @@ impl StarcoinVM {
             Err(_) => Err(VMStatus::error(StatusCode::INVALID_SIGNATURE, None)),
         };
 
-        match signature_checked_txn {
+        let result = match signature_checked_txn {
             Ok(txn) => {
                 let result = match txn.payload() {
                     payload @ TransactionPayload::Script(_)
@@ -1016,7 +1026,15 @@ impl StarcoinVM {
                 }
             }
             Err(e) => discard_error_vm_status(e),
-        }
+        };
+        println!(
+            "[{}:{}:{}] Transaction execution cost {} millisecond",
+            file!(),
+            line!(),
+            column!(),
+            now.elapsed().as_millis()
+        );
+        result
     }
 
     pub fn dry_run_transaction<S: StarcoinMoveResolver + StateView>(
@@ -1179,7 +1197,7 @@ impl StarcoinVM {
                         }
                         result.push((status, output));
                         println!(
-                            "Transaction executed in {} ms",
+                            "Transaction executed in {} millisecond",
                             now.elapsed().as_millis(),
                         );
                     }
