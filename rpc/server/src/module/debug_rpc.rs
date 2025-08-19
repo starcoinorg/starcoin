@@ -27,7 +27,7 @@ static PPROF_PROFILER: OnceLock<Arc<RwLock<Option<ProfilerGuard<'static>>>>> = O
 fn get_pprof_guard() -> Arc<RwLock<Option<ProfilerGuard<'static>>>> {
     PPROF_PROFILER
         .get_or_init(|| {
-            let freq = if cfg!(target_os = "macos") { 25 } else { 100 };
+            let freq = if cfg!(target_os = "macos") { 50 } else { 100 };
             let blocklist = if cfg!(target_os = "macos") {
                 vec![
                     "libc",

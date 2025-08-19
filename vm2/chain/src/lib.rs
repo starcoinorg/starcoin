@@ -9,10 +9,9 @@ use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
-use std::sync::Arc;
 
 pub fn execute_transactions(
-    statedb: Arc<ChainStateDB>,
+    statedb: &ChainStateDB,
     transactions: Vec<Transaction>,
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
@@ -20,7 +19,7 @@ pub fn execute_transactions(
     // This function will execute the transactions in the block using vm2
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
-        block_executor::block_execute(statedb.as_ref(), transactions, gas_limit, vm_metrics)?;
+        block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
 
     Ok(executed_data)
 }

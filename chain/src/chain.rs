@@ -204,7 +204,7 @@ impl BlockChain {
         let statedb2 = ChainStateDB2::new(storage2.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
             storage.as_ref(),
-            (Arc::new(statedb), Arc::new(statedb2)),
+            (statedb, statedb2),
             txn_accumulator,
             block_accumulator,
             vm_state_accumulator,
@@ -457,7 +457,7 @@ impl BlockChain {
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
         storage: &dyn Store,
-        statedb: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
+        statedb: (ChainStateDB, ChainStateDB2),
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
         vm_state_accumulator: MerkleAccumulator,
@@ -508,32 +508,19 @@ impl BlockChain {
         assert!(!transactions2.is_empty());
 
         watch(CHAIN_WATCH_NAME, "n21");
-        let (handle1, handle2) = {
-            let transactions = transactions.clone();
-            let vm_metrics = vm_metrics.clone();
-            let transactions2 = transactions2.clone();
-            let vm_metrics2 = vm_metrics.clone();
-            let block_gas_limit = epoch.block_gas_limit();
-            let statedb = statedb.clone();
-            let statedb2 = statedb2.clone();
+        let executed_data = starcoin_executor::block_execute(
+            &statedb,
+            transactions.clone(),
+            epoch.block_gas_limit(),
+            vm_metrics.clone(),
+        )?;
 
-            let handle1 = std::thread::spawn(move || {
-                starcoin_executor::block_execute(statedb, transactions, block_gas_limit, vm_metrics)
-            });
-
-            let handle2 = std::thread::spawn(move || {
-                starcoin_vm2_chain::execute_transactions(
-                    statedb2,
-                    transactions2,
-                    block_gas_limit,
-                    vm_metrics2,
-                )
-            });
-            (handle1, handle2)
-        };
-        let executed_data = handle1.join().unwrap()?;
-        let executed_data2 = handle2.join().unwrap()?;
-
+        let executed_data2 = starcoin_vm2_chain::execute_transactions(
+            &statedb2,
+            transactions2.clone(),
+            epoch.block_gas_limit() - executed_data.gas_used(),
+            vm_metrics,
+        )?;
         watch(CHAIN_WATCH_NAME, "n22");
 
         let (state_root, multi_state) = {
@@ -899,7 +886,7 @@ impl BlockChain {
     }
 
     fn execute_block_without_save(
-        statedb: Arc<ChainStateDB>,
+        statedb: ChainStateDB,
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
         epoch: &Epoch,
@@ -932,7 +919,7 @@ impl BlockChain {
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
-            statedb,
+            &statedb,
             transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
@@ -1292,10 +1279,7 @@ impl ChainReader for BlockChain {
         } else {
             Self::execute_block_and_save(
                 self.storage.0.as_ref(),
-                (
-                    Arc::new(self.statedb.0.fork()),
-                    Arc::new(self.statedb.1.fork()),
-                ),
+                (self.statedb.0.fork(), self.statedb.1.fork()),
                 self.txn_accumulator.fork(None),
                 self.block_accumulator.fork(None),
                 self.vm_state_accumulator.fork(None),
@@ -1309,7 +1293,7 @@ impl ChainReader for BlockChain {
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         Self::execute_block_without_save(
-            Arc::new(self.statedb.0.fork()),
+            self.statedb.0.fork(),
             self.txn_accumulator.fork(None),
             self.block_accumulator.fork(None),
             &self.epoch,
