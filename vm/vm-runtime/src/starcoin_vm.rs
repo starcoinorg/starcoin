@@ -1593,6 +1593,7 @@ impl VMExecutor for StarcoinVM {
             Ok(result)
         } else {
             let now = std::time::Instant::now();
+            let txn_num = transactions.len();
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
@@ -1600,8 +1601,9 @@ impl VMExecutor for StarcoinVM {
                 metrics,
             )?;
             println!(
-                "serialize execute_block took {} ms",
-                now.elapsed().as_millis()
+                "serialize execute_block took {} ms, txn_num:{}",
+                now.elapsed().as_millis(),
+                txn_num
             );
             Ok(output
                 .into_iter()

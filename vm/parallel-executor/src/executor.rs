@@ -204,7 +204,7 @@ where
 
         last_input_output.record(idx_to_execute, state_view.take_reads(), result);
 
-        println!("parallel execution cost {} milliseconds", now.elapsed().as_millis());
+        println!("parallel execution cost {} ms", now.elapsed().as_millis());
         scheduler.finish_execution(idx_to_execute, incarnation, writes_outside, guard)
     }
 
