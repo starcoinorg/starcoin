@@ -253,15 +253,11 @@ mod import_test {
                 );
 
                 let header = source_chain.current_header();
-                let (block_template1, excluded_txns) = source_chain.create_block_template(
-                    random_account_miner,
-                    Some(header.id()),
-                    vec![txn1.into()],
-                    vec![],
-                    None,
-                    vec![],
-                    HashValue::zero(),
-                )?;
+                let (block_template1, excluded_txns) = source_chain
+                    .create_block_template_simple_with_txns(
+                        random_account_miner,
+                        vec![txn1.into()],
+                    )?;
 
                 let block1 = source_chain
                     .consensus()
@@ -307,15 +303,11 @@ mod import_test {
                 );
 
                 let header = source_chain.current_header();
-                let (block_template2, excluded_txns) = source_chain.create_block_template(
-                    random_account_miner,
-                    Some(header.id()),
-                    vec![txn2.into()],
-                    vec![],
-                    None,
-                    vec![],
-                    HashValue::zero(),
-                )?;
+                let (block_template2, excluded_txns) = source_chain
+                    .create_block_template_simple_with_txns(
+                        random_account_miner,
+                        vec![txn2.into()],
+                    )?;
 
                 let block2 = source_chain
                     .consensus()

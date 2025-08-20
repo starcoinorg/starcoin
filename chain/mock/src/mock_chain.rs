@@ -93,7 +93,7 @@ impl MockChain {
             Some(id) => id,
             None => self.head.current_header().id(),
         };
-        assert!(self.head.exist_block(block_id)?);
+        assert!(self.head.has_dag_block(block_id)?);
         BlockChain::new(
             self.head.time_service(),
             block_id,
@@ -170,6 +170,23 @@ impl MockChain {
         Ok(())
     }
 
+    pub fn produce_and_apply_times_for_fork(
+        &mut self,
+        fork_point: BlockHeader,
+        times: u64,
+    ) -> Result<BlockHeader> {
+        let mut parent_header = fork_point;
+        let mut tips = vec![parent_header.id()];
+        let mut last = parent_header.clone();
+        for _i in 0..times {
+            let block_header = self.produce_and_apply_by_tips(parent_header, tips)?;
+            parent_header = block_header.clone();
+            tips = vec![block_header.id()];
+            last = block_header.clone();
+        }
+        Ok(last)
+    }
+
     pub fn connect(&mut self, executed_block: ExecutedBlock) -> Result<()> {
         self.head.connect(executed_block)?;
         Ok(())
@@ -181,10 +198,7 @@ impl MockChain {
     ) -> Result<Vec<ExecutedBlock>> {
         let mut blocks = Vec::new();
         for _i in 0..times {
-            let header = self.produce_and_apply_by_tips(
-                self.head.current_header(),
-                vec![self.head.current_header().id()],
-            )?;
+            let header = self.produce_and_apply()?;
             let block = self
                 .head
                 .get_storage()
@@ -207,25 +221,38 @@ impl MockChain {
         parent_header: BlockHeader,
         tips: Vec<HashValue>,
     ) -> Result<BlockHeader> {
-        let block = self.produce_block_by_tips(&parent_header, tips)?;
-        self.head.apply(block.clone())?;
+        let block = self.produce_block_by_tips(tips)?;
         let header = block.header().clone();
+
+        // In fork scenarios, we need to update head to the parent first
+        // to ensure BasicVerifier's expectations are met
+        if self.head.current_header().id() != parent_header.id() {
+            // Fork the chain at the parent to set it as the current head
+            self.head = BlockChain::new(
+                self.head.time_service(),
+                parent_header.id(),
+                self.head.get_storage(),
+                self.head.get_storage2(),
+                None,
+                self.head.dag(),
+            )?;
+        }
+
+        // Now apply the block with the correct head
+        self.apply(block)?;
         Ok(header)
     }
 
-    pub fn produce_block_by_tips(
-        &mut self,
-        parent_header: &BlockHeader,
-        tips: Vec<HashValue>,
-    ) -> Result<Block> {
+    pub fn produce_block_by_tips(&mut self, tips: Vec<HashValue>) -> Result<Block> {
+        // Our version of create_block_template doesn't have parent_hash parameter
+        // We must ensure self.head is at the correct parent before calling it
         let (block_template, _) = self.head.create_block_template(
             *self.miner.address(),
-            Some(parent_header.id()),
-            Vec::new(),
-            vec![],
-            None,
-            tips,
-            HashValue::zero(),
+            Vec::new(),        // user_txns
+            None,              // uncles
+            None,              // block_gas_limit
+            Some(tips),        // tips
+            HashValue::zero(), // pruning_point
         )?;
         let new_block = self
             .head

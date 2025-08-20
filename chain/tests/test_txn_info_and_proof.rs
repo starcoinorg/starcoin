@@ -66,15 +66,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .collect();
 
         let (template, _) = block_chain
-            .create_block_template(
-                *miner_account.address(),
-                Some(current_header.id()),
-                txns.clone(),
-                vec![],
-                None,
-                vec![],
-                HashValue::zero(),
-            )
+            .create_block_template_simple_with_txns(*miner_account.address(), txns.clone())
             .unwrap();
 
         let block = block_chain

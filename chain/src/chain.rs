@@ -21,7 +21,7 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
@@ -332,11 +332,10 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
-            None,
             vec![],
-            vec![],
-            None,
-            vec![],
+            None, // uncles will be derived from blue blocks
+            None, // use default gas limit
+            None, // tips will be fetched automatically
             HashValue::zero(),
         )
     }
@@ -348,11 +347,10 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
-            None,
             user_txns,
-            vec![],
-            None,
-            vec![],
+            None, // uncles will be derived from blue blocks
+            None, // use default gas limit
+            None, // tips will be fetched automatically
             HashValue::zero(),
         )
     }
@@ -364,11 +362,10 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
-            None,
             vec![],
-            uncles,
-            None,
-            vec![],
+            Some(uncles),
+            None, // use default gas limit
+            None, // tips will be fetched automatically
             HashValue::zero(),
         )
     }
@@ -376,47 +373,10 @@ impl BlockChain {
     pub fn create_block_template(
         &self,
         author: AccountAddress,
-        parent_hash: Option<HashValue>,
         user_txns: Vec<MultiSignedUserTransaction>,
-        uncles: Vec<BlockHeader>,
+        uncles: Option<Vec<BlockHeader>>,
         block_gas_limit: Option<u64>,
-        tips: Vec<HashValue>,
-        pruning_point: HashValue,
-    ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        //FIXME create block template by parent may be use invalid chain state, such as epoch.
-        //So the right way should be creating a BlockChain by parent_hash, then create block template.
-        //the timestamp should be an argument, if want to mock an early block.
-        let previous_header = match parent_hash {
-            Some(hash) => self
-                .get_storage()
-                .get_block_header_by_hash(hash)?
-                .ok_or_else(|| format_err!("Can find block header by {:?}", hash))?,
-            None => self.current_header(),
-        };
-
-        self.create_block_template_by_header(
-            author,
-            previous_header,
-            user_txns,
-            uncles,
-            block_gas_limit,
-            tips,
-            pruning_point,
-        )
-    }
-
-    // This is only for testing.
-    // Uncles, pruning point and tips must be coherent, if not,
-    // there will be some unexpected behaviour happening.
-    // Input empty vec for uncles and zero for pruning point simply if you do not know what to do.
-    pub fn create_block_template_by_header(
-        &self,
-        author: AccountAddress,
-        previous_header: BlockHeader,
-        user_txns: Vec<MultiSignedUserTransaction>,
-        uncles: Vec<BlockHeader>,
-        block_gas_limit: Option<u64>,
-        tips: Vec<HashValue>,
+        tips: Option<Vec<HashValue>>,
         pruning_point: HashValue,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let epoch = self.epoch();
@@ -427,24 +387,24 @@ impl BlockChain {
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
 
-        let (ghostdata, tips) = if tips.is_empty() {
-            let tips = self.get_dag_state()?.tips;
-            (self.dag().ghostdata(&tips)?, tips)
-        } else {
-            (self.dag().ghostdata(&tips)?, tips)
-        };
+        // Get tips: use provided tips or fetch current DAG tips
+        let tips = tips.unwrap_or_else(|| self.get_dag_state().unwrap().tips);
 
-        let MineNewDagBlockInfo {
-            selected_parents,
-            ghostdata,
-            pruning_point: _,
-        } = {
-            MineNewDagBlockInfo {
-                selected_parents: tips,
-                ghostdata,
-                pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
-            }
-        };
+        // Calculate ghostdata from tips
+        let ghostdata = self.dag().ghostdata(&tips)?;
+        let selected_parents = tips.clone();
+
+        // Get the parent header from ghostdata's selected_parent
+        let parent_header = self
+            .storage
+            .0
+            .get_block_header_by_hash(ghostdata.selected_parent)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by {:?}",
+                    ghostdata.selected_parent
+                )
+            })?;
 
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
@@ -462,27 +422,13 @@ impl BlockChain {
             .map(|op_block| op_block.expect("failed to get a block"))
             .collect::<Vec<_>>();
 
-        let uncles = if uncles.is_empty() {
-            blue_blocks
+        // Use provided uncles or derive from blue blocks
+        let uncles = match uncles {
+            Some(u) if !u.is_empty() => u,
+            _ => blue_blocks
                 .iter()
                 .map(|block| block.header().clone())
-                .collect::<Vec<_>>()
-        } else {
-            uncles
-        };
-
-        let parent_header = if ghostdata.selected_parent != previous_header.id() {
-            self.storage
-                .0
-                .get_block_header_by_hash(ghostdata.selected_parent)?
-                .ok_or_else(|| {
-                    format_err!(
-                        "Cannot find block header by {:?}",
-                        ghostdata.selected_parent
-                    )
-                })?
-        } else {
-            previous_header
+                .collect::<Vec<_>>(),
         };
 
         // Convert VM1's AccountAddress to VM2's for OpenedBlock

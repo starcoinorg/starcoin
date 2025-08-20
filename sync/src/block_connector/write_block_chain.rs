@@ -246,7 +246,6 @@ where
     pub fn create_block(
         &self,
         author: AccountAddress,
-        parent_hash: Option<HashValue>,
         multi_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
@@ -254,11 +253,10 @@ where
     ) -> Result<Block> {
         let (block_template, _transactions) = self.main.create_block_template(
             author,
-            parent_hash,
             multi_txns,
-            uncles,
+            Some(uncles),
             block_gas_limit,
-            tips,
+            Some(tips),
             HashValue::zero(),
         )?;
         Ok(self

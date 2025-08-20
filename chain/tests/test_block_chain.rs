@@ -10,7 +10,6 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
-use starcoin_crypto::HashValue;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::{Filter, FilterType};
@@ -182,12 +181,17 @@ fn test_find_ancestor_genesis() -> Result<()> {
 fn test_find_ancestor_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
     mock_chain.produce_and_apply_times(3)?;
-    let header = mock_chain.head().current_header();
-    let mut mock_chain2 = mock_chain.fork(None)?;
-    mock_chain.produce_and_apply_times(2)?;
-    mock_chain2.produce_and_apply_times(3)?;
+    let header = mock_chain.head().current_header().clone();
 
-    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    let mut mock_chain2 = mock_chain.fork(None)?;
+    let last2 = mock_chain2.produce_and_apply_times_for_fork(header.clone(), 3)?;
+
+    let last = mock_chain.produce_and_apply_times_for_fork(header.clone(), 2)?;
+
+    let compare_chain = mock_chain.fork(Some(last.id()))?;
+    let compare_chain2 = mock_chain2.fork(Some(last2.id()))?;
+
+    let ancestor = compare_chain.head().find_ancestor(compare_chain2.head())?;
     assert!(ancestor.is_some());
     assert_eq!(ancestor.unwrap().id, header.id());
     Ok(())
@@ -222,6 +226,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
         .unwrap()
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 120)]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
@@ -241,6 +246,7 @@ fn test_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 120)]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
@@ -265,6 +271,7 @@ fn test_uncle_exist() {
     assert!(mock_chain.apply(block).is_err());
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 120)]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
@@ -281,6 +288,7 @@ fn test_uncle_son() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 120)]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
@@ -293,6 +301,7 @@ fn test_random_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 480)]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
@@ -331,6 +340,7 @@ fn test_switch_epoch() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
+#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
 #[stest::test(timeout = 480)]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
@@ -368,17 +378,8 @@ fn test_uncle_in_diff_epoch() {
 fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
-    let header = block_chain.current_header();
     let miner_account = AccountInfo::random();
-    let (template_b1, _) = block_chain.create_block_template(
-        *miner_account.address(),
-        Some(header.id()),
-        vec![],
-        vec![],
-        None,
-        vec![],
-        HashValue::zero(),
-    )?;
+    let (template_b1, _) = block_chain.create_block_template_simple(*miner_account.address())?;
 
     let block_b1 = block_chain
         .consensus()
@@ -402,14 +403,9 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let txn_hash = signed_txn_t2.id();
-    let (template_b2, excluded) = block_chain.create_block_template(
+    let (template_b2, excluded) = block_chain.create_block_template_simple_with_txns(
         *miner_account.address(),
-        Some(block_b1.id()),
         vec![signed_txn_t2.clone().into()],
-        vec![],
-        None,
-        vec![],
-        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = block_chain
@@ -417,14 +413,9 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .create_block(template_b2, config.net().time_service().as_ref())?;
 
     block_chain.apply(block_b2.clone())?;
-    let (template_b3, excluded) = block_chain2.create_block_template(
+    let (template_b3, excluded) = block_chain2.create_block_template_simple_with_txns(
         *miner_account.address(),
-        Some(block_b1.id()),
         vec![signed_txn_t2.into()],
-        vec![],
-        None,
-        vec![],
-        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b3 = block_chain2

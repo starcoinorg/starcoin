@@ -66,11 +66,10 @@ pub fn new_dag_block(
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
-            Some(block_chain.current_header().id()),
             Vec::new(),
-            vec![],
-            None,
-            tips,
+            None,       // uncles
+            None,       // block_gas_limit
+            Some(tips), // tips
             HashValue::zero(),
         )
         .unwrap();
@@ -123,11 +122,10 @@ fn gen_fork_dag_block_chain(
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
-                    None,
                     Vec::new(),
-                    vec![],
-                    None,
-                    vec![parent_id],
+                    None,                  // uncles
+                    None,                  // block_gas_limit
+                    Some(vec![parent_id]), // tips
                     HashValue::zero(),
                 )
                 .unwrap();

@@ -43,7 +43,7 @@ pub fn gen_chain_for_test_and_return_statedb(
 pub fn init_storage_for_test_with_temp_dir(
     net: &ChainNetwork,
     temp_dir: &Path,
-) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
+) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis, BlockDAG)> {
     debug!("init storage by genesis for test with temp dir.");
 
     // Create temporary directory
@@ -71,7 +71,7 @@ pub fn init_storage_for_test_with_temp_dir(
     let chain_info =
         genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
 
-    Ok((storage, storage2, chain_info, genesis))
+    Ok((storage, storage2, chain_info, genesis, dag))
 }
 
 /// Generate chain for test with specified storage type
@@ -81,11 +81,11 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
 ) -> Result<(BlockChain, ChainStateDB)> {
     match storage_type {
         StorageType::Cache(capacity) => {
-            let (storage, storage2, chain_info, _, _dag) =
+            let (storage, storage2, chain_info, _, dag) =
                 Genesis::init_cache_storage_for_test(net, capacity)
                     .expect("init storage by genesis fail.");
 
-            let dag = BlockDAG::create_for_testing().expect("Failed to create test DAG");
+            // Use the same DAG instance that was used for genesis execution
             let block_chain = BlockChain::new(
                 net.time_service(),
                 chain_info.head().id(),
@@ -98,10 +98,10 @@ fn gen_chain_for_test_and_return_statedb_with_storage_type(
             Ok((block_chain, ChainStateDB::new(storage, Some(state_root))))
         }
         StorageType::TempDir(temp_dir) => {
-            let (storage, storage2, chain_info, _) =
+            let (storage, storage2, chain_info, _, dag) =
                 init_storage_for_test_with_temp_dir(net, &temp_dir)?;
 
-            let dag = BlockDAG::create_for_testing().expect("Failed to create test DAG");
+            // Use the same DAG instance that was used for genesis execution
             let block_chain = BlockChain::new(
                 net.time_service(),
                 chain_info.head().id(),
