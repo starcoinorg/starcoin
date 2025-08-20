@@ -199,12 +199,12 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
     ) -> BlockHeader {
-        Self::new_with_auth_key(
+        // Default DAG fields for backward compatibility with tests
+        Self::new_with_dag(
             parent_hash,
             timestamp,
             number,
             author,
-            None,
             txn_accumulator_root,
             block_accumulator_root,
             state_root,
@@ -214,16 +214,17 @@ impl BlockHeader {
             chain_id,
             nonce,
             extra,
+            vec![parent_hash], // Default to single parent for tests
+            0,                 // Default version
+            HashValue::zero(), // Default pruning point
         )
     }
 
-    // the author_auth_key field is deprecated, but keep this fn for compat with old block.
-    fn new_with_auth_key(
+    pub fn new_with_dag(
         parent_hash: HashValue,
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         txn_accumulator_root: HashValue,
         block_accumulator_root: HashValue,
         state_root: HashValue,
@@ -233,6 +234,9 @@ impl BlockHeader {
         chain_id: ChainId,
         nonce: u32,
         extra: BlockHeaderExtra,
+        parents_hash: Vec<HashValue>,
+        version: u32,
+        pruning_point: HashValue,
     ) -> BlockHeader {
         let mut header = BlockHeader {
             id: None,
@@ -241,7 +245,7 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_auth_key,
+            author_auth_key: None,
             txn_accumulator_root,
             state_root,
             gas_used,
@@ -250,9 +254,9 @@ impl BlockHeader {
             body_hash,
             chain_id,
             extra,
-            parents_hash: vec![],
-            version: 0,
-            pruning_point: HashValue::zero(),
+            parents_hash,
+            version,
+            pruning_point,
         };
         header.id = Some(header.crypto_hash());
         header
@@ -1044,8 +1048,9 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
-        version: u32,             // DAG: block version
-        pruning_point: HashValue, // DAG: pruning point
+        version: u32,                 // DAG: block version
+        pruning_point: HashValue,     // DAG: pruning point
+        parents_hash: Vec<HashValue>, // DAG: parent hashes
     ) -> Self {
         let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
             block_metadata.into_inner();
@@ -1065,14 +1070,14 @@ impl BlockTemplate {
             chain_id,
             difficulty,
             strategy,
-            parents_hash: vec![parent_hash], // Default to single parent for VM1
+            parents_hash,
             version,
             pruning_point,
         }
     }
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
-        let header = BlockHeader::new(
+        let header = BlockHeader::new_with_dag(
             self.parent_hash,
             self.timestamp,
             self.number,
@@ -1086,6 +1091,9 @@ impl BlockTemplate {
             self.chain_id,
             nonce,
             extra,
+            self.parents_hash,
+            self.version,
+            self.pruning_point,
         );
         Block {
             header,

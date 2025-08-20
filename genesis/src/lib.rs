@@ -384,10 +384,31 @@ impl Genesis {
             storage2.clone(),
             net.genesis_epoch(),
             self.block.clone(),
-            dag,
+            dag.clone(),
         )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info)?;
+
+        // Save pruning point info for genesis block
+        use starcoin_dag::consensusdb::consensus_pruning_info::{
+            PruningPointInfo, PruningPointInfoWriter,
+        };
+        use starcoin_dag::consensusdb::consensus_state::{DagState, DagStateStore};
+
+        dag.storage
+            .pruning_point_store
+            .write()
+            .insert(PruningPointInfo {
+                pruning_point: self.block.id(),
+            })?;
+
+        // Save initial DAG state with genesis as the only tip
+        dag.storage.state_store.write().insert(
+            self.block.id(),
+            DagState {
+                tips: vec![self.block.id()],
+            },
+        )?;
 
         storage
             .get_chain_info()?

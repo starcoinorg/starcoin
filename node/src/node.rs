@@ -303,6 +303,10 @@ impl NodeService {
         let storage2 = Arc::new(Storage2::new(storage_instance2)?);
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
+        // Also share storage2 as Arc<dyn Store2> for PruningPointService
+        registry
+            .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
+            .await?;
 
         // Initialize DAG
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -319,7 +323,7 @@ impl NodeService {
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
             storage.clone(),
-            storage2,
+            storage2.clone(),
             dag.clone(),
             config.data_dir(),
         )?;
@@ -332,6 +336,10 @@ impl NodeService {
         );
 
         registry.put_shared(genesis).await?;
+
+        // Register PruningPointService after genesis is available
+        use starcoin_dag::service::pruning_point_service::PruningPointService;
+        registry.register::<PruningPointService>().await?;
 
         let node_service = registry.register::<NodeService>().await?;
 
@@ -391,6 +399,11 @@ impl NodeService {
 
         info!("Self peer_id is: {}", peer_id.to_base58());
         info!("Self address is: {}", config.network.self_address());
+
+        // Create NewHeaderChannel for miner services
+        use starcoin_miner::{NewHeaderChannel, NewHeaderService};
+        registry.put_shared(NewHeaderChannel::new()).await?;
+        registry.register::<NewHeaderService>().await?;
 
         registry.register::<BlockBuilderService>().await?;
         let miner_service = registry.register::<MinerService>().await?;

@@ -742,7 +742,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: 500,
+            uncle_rate_target: G_UNCLE_RATE_TARGET,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: STCUnit::STC.value_of(1).scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,

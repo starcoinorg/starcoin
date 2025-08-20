@@ -239,7 +239,8 @@ impl BlockChain {
     }
 
     fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
-        match dag.get_dag_state(genesis_header.id()) {
+        let genesis_id = genesis_header.id();
+        match dag.get_dag_state(genesis_id) {
             anyhow::Result::Ok(_dag_state) => (),
             Err(e) => match e.downcast::<StoreError>()? {
                 StoreError::KeyNotFound(_) => {
@@ -262,7 +263,12 @@ impl BlockChain {
     }
 
     pub fn get_dag_state(&self) -> Result<DagState> {
-        self.dag.get_dag_state(self.status.status.head().id())
+        let current_pruning_point = self.status().head().pruning_point();
+        if current_pruning_point == HashValue::zero() {
+            self.dag.get_dag_state(self.genesis_hash)
+        } else {
+            self.dag.get_dag_state(current_pruning_point)
+        }
     }
 
     pub fn current_block_accumulator_info(&self) -> AccumulatorInfo {
@@ -1349,7 +1355,7 @@ impl ChainReader for BlockChain {
     fn fork(&self, block_id: HashValue) -> Result<Self> {
         let (storage, storage2) = &self.storage;
         ensure!(
-            self.exist_block(block_id)?,
+            self.has_dag_block(block_id)?,
             "Block with id{} do not exists in current chain.",
             block_id
         );
@@ -2315,6 +2321,19 @@ impl BlockChain {
             executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
+
+        // Flush state to ensure state tree nodes are persisted
+        // This is critical for dual-VM: both VM1 and VM2 states must be flushed
+        statedb.flush()?;
+        statedb2.flush()?;
+
+        // Append block to accumulator and flush
+        self.block_accumulator.append(&[block_id])?;
+
+        // Flush accumulators
+        self.txn_accumulator.flush()?;
+        self.vm_state_accumulator.flush()?;
+        self.block_accumulator.flush()?;
 
         let block_info = BlockInfo::new(
             block_id,

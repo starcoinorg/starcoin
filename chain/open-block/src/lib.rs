@@ -387,6 +387,7 @@ impl OpenedBlock {
             self.block_meta,
             self.version,
             self.pruning_point,
+            self.parents_hash.clone(),
         );
         Ok(block_template)
     }
