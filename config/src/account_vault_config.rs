@@ -39,8 +39,16 @@ impl AccountVaultConfig {
         }
     }
 
+    // "/path/to/account_vaults -> /path/to/account_vaults2"
+    // "/path/to/account_vaults/ -> /path/to/account_vaults2"
     pub fn dir2(&self) -> PathBuf {
-        self.dir().join("vm2")
+        let mut dir = self.dir();
+        let last = dir
+            .file_name()
+            .expect("account dir should be set properly")
+            .to_string_lossy();
+        dir.set_file_name(format!("{last}2"));
+        dir
     }
 }
 
@@ -51,5 +59,52 @@ impl ConfigModule for AccountVaultConfig {
             self.dir = opt.vault.dir.clone();
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::account_vault_config::AccountVaultConfig;
+    use crate::{BaseConfig, ChainNetwork};
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    #[test]
+    fn test_dir2() {
+        use super::*;
+        let config = AccountVaultConfig {
+            dir: Some(PathBuf::from("/path/to/account_vaults")),
+            base: None,
+        };
+        assert_eq!(config.dir2(), PathBuf::from("/path/to/account_vaults2"));
+
+        let config = AccountVaultConfig {
+            dir: Some(PathBuf::from("/path/to/account_vaults/")),
+            base: None,
+        };
+        assert_eq!(config.dir2(), PathBuf::from("/path/to/account_vaults2"));
+    }
+    #[test]
+    #[should_panic(expected = "account dir should be set properly")]
+    fn test_dir2_panic1() {
+        let config = AccountVaultConfig {
+            dir: Some(PathBuf::new()),
+            base: Some(Arc::new(BaseConfig {
+                net: ChainNetwork::new_test(),
+                base_data_dir: Default::default(),
+                data_dir: PathBuf::from("/"),
+            })),
+        };
+        let _ = config.dir2();
+    }
+
+    #[test]
+    #[should_panic(expected = "account dir should be set properly")]
+    fn test_dir2_panic2() {
+        let config = AccountVaultConfig {
+            dir: Some(PathBuf::from("/")),
+            base: None,
+        };
+        let _ = config.dir2();
     }
 }

@@ -22,7 +22,6 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-dag = { workspace = true }
 thiserror = { workspace = true }

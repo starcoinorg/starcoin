@@ -29,12 +29,7 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 
 cargo nextest run --workspace \
 -E "\
-not (test(tests::test_storage::test_db_upgrade)) \
-and not (test(test_force_upgrade_1)) \
-and not (test(test_force_upgrade_2)) \
-and not (test(test_frozen_account)) \
-and not (test(test_frozen_for_global_frozen)) \
-and not (test(block_connector::test_illegal_block::test_verify_illegal_uncle_consensus_failed)) \
+not (test(block_connector::test_illegal_block::test_verify_illegal_uncle_consensus_failed)) \
 and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
 and not (test(service_test::test_handshake_message)) \
 and not (test(tests::test_custom_genesis)) \
