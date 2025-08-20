@@ -9,7 +9,6 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::force_upgrade_management::{get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER};
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
@@ -293,11 +292,7 @@ impl StarcoinVM {
         self.move_version
     }
 
-    fn check_move_version(
-        &self,
-        package_or_script_bytecode_version: u64,
-        block_number: u64,
-    ) -> Result<(), VMStatus> {
+    fn check_move_version(&self, package_or_script_bytecode_version: u64) -> Result<(), VMStatus> {
         // if move_version config is not exists on chain, this check will do no harm.
         if let Some(supported_move_version) = &self.move_version {
             if package_or_script_bytecode_version > supported_move_version.major {
@@ -305,9 +300,6 @@ impl StarcoinVM {
                 // return `FEATURE_UNDER_GATING` error, and the txn will not be included in blocks.
                 return Err(VMStatus::Error(StatusCode::FEATURE_UNDER_GATING));
             }
-        }
-        if block_number > FORCE_UPGRADE_BLOCK_NUMBER && package_or_script_bytecode_version < 6 {
-            return Err(VMStatus::Error(StatusCode::UNKNOWN_VERSION));
         }
         Ok(())
     }
@@ -390,11 +382,6 @@ impl StarcoinVM {
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
-        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
         let mut session: SessionAdapter<_> = self
             .move_vm
             .new_session(&data_cache, SessionId::txn(transaction))
@@ -408,7 +395,7 @@ impl StarcoinVM {
                 for module in package.modules() {
                     if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                         // check module's bytecode version.
-                        self.check_move_version(compiled_module.version() as u64, block_number)?;
+                        self.check_move_version(compiled_module.version() as u64)?;
                     };
                 }
                 let enforced =
@@ -441,7 +428,7 @@ impl StarcoinVM {
             }
             TransactionPayload::Script(s) => {
                 if let Ok(s) = CompiledScript::deserialize(s.code()) {
-                    self.check_move_version(s.version() as u64, block_number)?;
+                    self.check_move_version(s.version() as u64)?;
                 };
                 session
                     .verify_script_args(
@@ -548,31 +535,20 @@ impl StarcoinVM {
         storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let data_cache = StateViewCache::new(storage);
-        let block_number = if let Ok(block_meta) = data_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
-        let is_force_upgrade = !data_cache.is_genesis()
-            && block_number
-                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
-                    warn!("[VM] execute_package error, get_chain_id error: {:?}", e);
-                    VMStatus::Error(StatusCode::STORAGE_ERROR)
-                })?);
         {
             // Run the validation logic
             gas_meter.set_metering(false);
 
-            // // genesis txn and force upgrade txn skip check gas and txn prologue.
-            if !data_cache.is_genesis() && !is_force_upgrade {
+            // genesis txn skip check gas and txn prologue.
+            if !data_cache.is_genesis() {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
                 self.run_prologue(&mut session, gas_meter, txn_data)?;
             }
         }
         {
-            // Genesis txn and force upgrade txn not enable gas charge.
-            if !data_cache.is_genesis() && !is_force_upgrade {
+            // Genesis txn not enable gas charge.
+            if !data_cache.is_genesis() {
                 gas_meter.set_metering(true);
             }
 
@@ -583,7 +559,7 @@ impl StarcoinVM {
             for module in package.modules() {
                 if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                     // check module's bytecode version.
-                    self.check_move_version(compiled_module.version() as u64, block_number)?;
+                    self.check_move_version(compiled_module.version() as u64)?;
                 };
             }
 
@@ -605,7 +581,7 @@ impl StarcoinVM {
                         .map(|m| m.code().to_vec())
                         .collect(),
                     package.package_address(), // be careful with the sender.
-                     gas_meter,
+                    gas_meter,
                     PublishModuleBundleOption {
                         force_publish: enforced,
                         only_new_module,
@@ -661,14 +637,7 @@ impl StarcoinVM {
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
-        storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
-        let remote_cache = StateViewCache::new(storage);
-        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
-            block_meta.number
-        } else {
-            0
-        };
         // Run the validation logic
         {
             gas_meter.set_metering(false);
@@ -687,7 +656,7 @@ impl StarcoinVM {
                 TransactionPayload::Script(script) => {
                     // we only use the ok path, let move vm handle the wrong path.
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
-                        self.check_move_version(s.version() as u64, block_number)?;
+                        self.check_move_version(s.version() as u64)?;
                     };
                     debug!("TransactionPayload::{:?}", script);
                     session.execute_script(
@@ -713,11 +682,11 @@ impl StarcoinVM {
                     return Err(VMStatus::Error(StatusCode::UNREACHABLE));
                 }
             }
-            .map_err(|e|
-                {
-                    warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
-                    e.into_vm_status()
-                })?;
+                .map_err(|e|
+                    {
+                        warn!("[VM] execute_script_function error, status_type: {:?}, status_code:{:?}, message:{:?}, location:{:?}", e.status_type(), e.major_status(), e.message(), e.location());
+                        e.into_vm_status()
+                    })?;
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
             self.success_transaction_cleanup(session, gas_meter, txn_data)
@@ -971,7 +940,6 @@ impl StarcoinVM {
                             &mut gas_meter,
                             &txn_data,
                             payload,
-                            storage,
                         ),
                     TransactionPayload::Package(p) => {
                         self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
@@ -1035,14 +1003,9 @@ impl StarcoinVM {
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
-            | payload @ TransactionPayload::ScriptFunction(_) => self
-                .execute_script_or_script_function(
-                    session,
-                    &mut gas_meter,
-                    &txn_data,
-                    payload,
-                    storage,
-                ),
+            | payload @ TransactionPayload::ScriptFunction(_) => {
+                self.execute_script_or_script_function(session, &mut gas_meter, &txn_data, payload)
+            }
             TransactionPayload::Package(p) => {
                 self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
             }
