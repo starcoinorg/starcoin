@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::{
-    BlockBuilderService, BlockTemplateRequest, EmptyProvider, Inner,
+    BlockBuilderService, BlockTemplateRequest, Inner, TemplateTxProvider,
 };
 use anyhow::Result;
 use starcoin_chain::BlockChain;
@@ -10,15 +10,26 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetworkID;
 use starcoin_config::{temp_dir, NodeConfig, StarcoinOpt};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_time_service::MockTimeService;
 use starcoin_txpool::TxPoolService;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_account_service::AccountService;
 use std::sync::Arc;
+
+pub struct EmptyProvider;
+
+impl TemplateTxProvider for EmptyProvider {
+    fn get_txns(&self, _max: u64) -> Vec<MultiSignedUserTransaction> {
+        vec![]
+    }
+    fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
+}
 
 #[stest::test]
 fn test_create_block_template() {

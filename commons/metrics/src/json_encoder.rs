@@ -8,6 +8,7 @@ use prometheus::{
 };
 use std::{collections::HashMap, io::Write};
 
+#[allow(dead_code)]
 const JSON_FORMAT: &str = "application/json";
 
 /// An implementation of an [`Encoder`](::Encoder) that converts a `MetricFamily` proto message
@@ -17,6 +18,7 @@ const JSON_FORMAT: &str = "application/json";
 /// e.g., "requests{method="GET", service="accounts"} -> 8 into
 /// requests.GET.account -> 8
 /// For now, it ignores timestamps (if set on the metric)
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub struct JsonEncoder;
 

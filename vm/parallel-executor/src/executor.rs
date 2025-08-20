@@ -36,7 +36,7 @@ pub struct MVHashMapView<'a, K, V> {
     captured_reads: Mutex<Vec<ReadDescriptor<K>>>,
 }
 
-impl<'a, K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'a, K, V> {
+impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_, K, V> {
     /// Drains the captured reads.
     pub fn take_reads(&self) -> Vec<ReadDescriptor<K>> {
         let mut reads = self.captured_reads.lock();

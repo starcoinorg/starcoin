@@ -119,7 +119,7 @@ impl BlockIdFetcher for MockBlockIdFetcher {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
     }
@@ -288,7 +288,7 @@ impl BlockIdFetcher for SyncNodeMocker {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let result = self.chain().get_block_ids(start_number, reverse, max_size);
         async move {
             let _ = self.select_a_peer()?;
@@ -328,7 +328,7 @@ impl BlockInfoFetcher for SyncNodeMocker {
         &self,
         _peer_id: Option<PeerId>,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>> {
         let mut result: Vec<Option<BlockInfo>> = Vec::new();
         block_ids.into_iter().for_each(|hash| {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());

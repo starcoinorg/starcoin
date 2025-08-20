@@ -143,7 +143,7 @@ fn write_script_call_files(
         .with_serialization(false);
     java::CodeGenerator::new(&config)
         .write_source_files(install_dir, &script_registry)
-        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{}", err)))?;
+        .map_err(|err| std::io::Error::other(format!("{}", err)))?;
     Ok(())
 }
 
@@ -173,7 +173,7 @@ struct JavaEmitter<'a, T> {
     package_name: &'a str,
 }
 
-impl<'a, T> JavaEmitter<'a, T>
+impl<T> JavaEmitter<'_, T>
 where
     T: Write,
 {

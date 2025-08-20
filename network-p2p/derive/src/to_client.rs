@@ -27,7 +27,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                 let user_arg_indent = arg_names[1];
                 rpc_info.push(name.clone());
                 Some(quote! {
-                    pub fn #name(&self, #args)-> BoxFuture<anyhow::Result::<#returns>> {
+                    pub fn #name(&self, #args)-> BoxFuture<'_, anyhow::Result::<#returns>> {
                         async move {
                             let input_arg_serialized = match #user_arg_indent.encode(){
                                 Ok(arg_ser) => arg_ser,
