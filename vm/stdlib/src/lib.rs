@@ -114,7 +114,7 @@ pub fn stdlib_latest_stable_version() -> Option<StdlibVersion> {
     G_STDLIB_VERSIONS
         .iter()
         .filter(|version| !version.is_latest())
-        .last()
+        .next_back()
         .cloned()
 }
 

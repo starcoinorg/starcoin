@@ -1,11 +1,3 @@
-[patch."https://github.com/starcoinorg/starcoin"]
-starcoin-vm-types = { path = "vm2/vm-types" }
-starcoin-types = { path = "vm2/types" }
-starcoin-vm-runtime = { path = "vm2/vm-runtime" }
-starcoin-cached-packages = { path = "vm2/framework/cached-packages" }
-starcoin-framework = { path = "vm2/framework" }
-starcoin-transaction-builder = { path = "vm2/transaction-builder", package = "starcoin-vm2-transaction-builder" }
-
 [workspace]
 resolver = "2"
 members = [
@@ -274,7 +266,7 @@ homepage = "https://starcoin.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
-rust-version = "1.82"
+rust-version = "1.86"
 version = "1.13.19"
 
 [workspace.dependencies]
@@ -454,7 +446,7 @@ network-types = { path = "network/types" }
 cmd-utils = { path = "cmd/cmd-utils" }
 
 num = "0.4.0"
-num-derive = "0.3.3"
+num-derive = "0.4.2"
 num-traits = "0.2"
 num_cpus = "1.13"
 num_enum = "0.5.7"
@@ -470,7 +462,7 @@ pretty = "0.10.0"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"
 proptest = "1.0.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.6.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand = "0.8.5"
@@ -684,3 +676,12 @@ debug = false
 [patch.crates-io]
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 merlin = { git = "https://github.com/aptos-labs/merlin" }
+
+[patch."https://github.com/starcoinorg/starcoin"]
+starcoin-vm-types = { path = "vm2/vm-types" }
+starcoin-types = { path = "vm2/types" }
+starcoin-vm-runtime = { path = "vm2/vm-runtime" }
+starcoin-cached-packages = { path = "vm2/framework/cached-packages" }
+starcoin-framework = { path = "vm2/framework" }
+starcoin-transaction-builder = { path = "vm2/transaction-builder", package = "starcoin-vm2-transaction-builder" }
+

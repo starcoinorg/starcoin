@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unexpected_cfgs)]
+
 use crate::{LeafCount, MAX_ACCUMULATOR_LEAVES};
 use mirai_annotations::*;
 use once_cell::sync::Lazy;

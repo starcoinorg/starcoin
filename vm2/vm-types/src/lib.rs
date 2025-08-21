@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+
 //TODO FIXME for fuzzing Arbitrary;
 #![allow(clippy::unit_arg)]
+#![allow(unexpected_cfgs)]
+
 mod language_storage_ext;
 
 pub mod account_address;

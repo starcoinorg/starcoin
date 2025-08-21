@@ -438,7 +438,6 @@ where
         for _i in 0..msg.count {
             let block = self.chain_service.create_block(
                 msg.author,
-                msg.parent_hash,
                 msg.multi_txns.clone(),
                 msg.uncles.clone(),
                 msg.block_gas_limit,

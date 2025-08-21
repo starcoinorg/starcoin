@@ -78,8 +78,7 @@ impl CommandAction for GetContractDataCommand {
                 ctx.state()
                     .vm2()?
                     .client()
-                    .get_resource2(*address, resource_type.0.clone())?
-                    .map(Into::into),
+                    .get_resource2(*address, resource_type.0.clone())?,
             ),
         };
         Ok(result)

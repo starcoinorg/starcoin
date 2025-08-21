@@ -945,7 +945,7 @@ pub struct NotificationSenderReady<'a> {
     notification_size_metric: Option<Histogram>,
 }
 
-impl<'a> NotificationSenderReady<'a> {
+impl NotificationSenderReady<'_> {
     /// Consumes this slots reservation and actually queues the notification.
     pub fn send(self, notification: impl Into<Vec<u8>>) -> Result<(), NotificationSenderError> {
         let notification = notification.into();
