@@ -493,10 +493,7 @@ impl Inner {
                 self.network_service.update_business_status(status);
             }
             Err(error) => {
-                error!(
-                    "failed to chain_status.encode(), reason: {}",
-                    error.to_string()
-                );
+                error!("failed to chain_status.encode(), reason: {}", error);
             }
         }
     }

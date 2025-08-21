@@ -60,7 +60,7 @@ impl GhostDagDataWrapper {
     pub fn ascending_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
-    ) -> impl Iterator<Item = Result<SortableBlock, StoreError>> + '_ {
+    ) -> impl Iterator<Item = Result<SortableBlock, StoreError>> + 'a {
         self.0
             .mergeset_blues
             .iter()
@@ -94,7 +94,7 @@ impl GhostDagDataWrapper {
     pub fn descending_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
-    ) -> impl Iterator<Item = Result<SortableBlock, StoreError>> + '_ {
+    ) -> impl Iterator<Item = Result<SortableBlock, StoreError>> + 'a {
         self.0
             .mergeset_blues
             .iter()
@@ -132,7 +132,7 @@ impl GhostDagDataWrapper {
     pub fn consensus_ordered_mergeset<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
-    ) -> impl Iterator<Item = Result<Hash, StoreError>> + '_ {
+    ) -> impl Iterator<Item = Result<Hash, StoreError>> + 'a {
         once(Ok(self.0.selected_parent)).chain(
             self.ascending_mergeset_without_selected_parent(store)
                 .map(|s| s.map(|s| s.hash)),
@@ -143,7 +143,7 @@ impl GhostDagDataWrapper {
     pub fn consensus_ordered_mergeset_without_selected_parent<'a>(
         &'a self,
         store: &'a (impl GhostdagStoreReader + ?Sized),
-    ) -> impl Iterator<Item = Result<Hash, StoreError>> + '_ {
+    ) -> impl Iterator<Item = Result<Hash, StoreError>> + 'a {
         self.ascending_mergeset_without_selected_parent(store)
             .map(|s| s.map(|s| s.hash))
     }

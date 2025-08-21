@@ -14,7 +14,7 @@ use rocksdb::{
     WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
-use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
+use std::{collections::HashSet, marker::PhantomData, path::Path};
 
 const RES_FDS: u64 = 4096;
 
@@ -345,7 +345,7 @@ where
     }
 }
 
-impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>
+impl<K, V> Iterator for SchemaIterator<'_, K, V>
 where
     K: KeyCodec,
     V: ValueCodec,
@@ -507,9 +507,7 @@ impl InnerStore for DBStorage {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name);
-            let cf_handles = iter::repeat(&cf_handle)
-                .take(keys.len())
-                .collect::<Vec<_>>();
+            let cf_handles = std::iter::repeat_n(&cf_handle, keys.len()).collect::<Vec<_>>();
             let keys_multi = keys
                 .iter()
                 .zip(cf_handles)

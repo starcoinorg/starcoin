@@ -474,7 +474,7 @@ struct TransactionParameters {
     pub chainid: ChainId,
 }
 
-impl<'a> StarcoinTestAdapter<'a> {
+impl StarcoinTestAdapter<'_> {
     fn sign(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
         let keypair = genesis_key_pair();
         let account_private_key: AccountPrivateKey = keypair.0.into();

@@ -24,7 +24,6 @@ pub struct EventKey {
 }
 
 /// The number of bytes in an EventKey.
-
 impl EventKey {
     pub const LENGTH: usize = AccountAddress::LENGTH + 8;
 

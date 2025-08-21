@@ -538,10 +538,7 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        let pool = match self.pool.try_read() {
-            Some(pool) => pool,
-            None => return None,
-        };
+        let pool = self.pool.try_read()?;
 
         pool.pending_from_sender(state_readiness, address)
             .last()

@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unexpected_cfgs)]
+
 mod legacy;
 #[cfg(test)]
 mod tests;

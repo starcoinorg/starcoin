@@ -415,7 +415,6 @@ impl AccountData {
     //         false,
     //     )
     // }
-
     /// Creates a new `AccountData` with the provided account.
     pub fn with_keypair(
         privkey: Ed25519PrivateKey,
@@ -455,7 +454,6 @@ impl AccountData {
     //     self.coin_store
     //         .insert(balance_token_code.to_string(), Balance::new(0));
     // }
-
     /// Changes the keys for this account to the provided ones.
     pub fn rotate_key(&mut self, privkey: AccountPrivateKey) {
         self.account.rotate_key(privkey)
@@ -503,7 +501,6 @@ impl AccountData {
     //         .expect("token code to type tag should be ok");
     //     BalanceResource::struct_tag_for_token(token_type_tag)
     // }
-
     //TODO create account by Move, avoid serialize data in rust.
     /// Creates a writeset that contains the account data and can be patched to the storage
     /// directly.

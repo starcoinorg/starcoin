@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unexpected_cfgs)]
+
 use crate::access_path::DataType;
 use anyhow::Result;
 use bcs_ext::BCSCodec;

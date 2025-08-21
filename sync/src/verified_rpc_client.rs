@@ -838,7 +838,6 @@ impl VerifiedRpcClient {
                 self.get_blocks_inner(peer_id.clone(), ids.clone())
                     .await?
                     .into_iter()
-                    .map(|opt_block| opt_block.map(Into::into))
                     .collect()
             }
         };
