@@ -425,7 +425,7 @@ impl StarcoinVM {
         let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
-        self.check_gas(&txn_data)?;
+        // self.check_gas(&txn_data)?;
         match transaction.payload() {
             TransactionPayload::Package(package) => {
                 for module in package.modules() {
@@ -584,7 +584,7 @@ impl StarcoinVM {
             // // genesis txn skip check gas and txn prologue.
             if !data_cache.is_genesis() {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
-                self.check_gas(txn_data)?;
+                // self.check_gas(txn_data)?;
                 self.run_prologue(&mut session, gas_meter, txn_data)?;
             }
         }
@@ -684,14 +684,14 @@ impl StarcoinVM {
         // Run the validation logic
         {
             gas_meter.set_metering(false);
-            self.check_gas(txn_data)?;
+            // self.check_gas(txn_data)?;
             self.run_prologue(&mut session, gas_meter, txn_data)?;
         }
 
         // Run the execution logic
         {
             //let _timer = TXN_EXECUTION_SECONDS.start_timer();
-            gas_meter.set_metering(true);
+            gas_meter.set_metering(false);
             gas_meter
                 .charge_intrinsic_gas_for_transaction(txn_data.transaction_size())
                 .map_err(|e| e.into_vm_status())?;

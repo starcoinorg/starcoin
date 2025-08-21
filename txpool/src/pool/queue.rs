@@ -437,7 +437,7 @@ impl TransactionQueue {
             trace_time!("pool::cull::chunk");
             let state_readiness = ready::State::new(client.clone(), stale_id);
             // also remove expired txns.
-            let readiness = (ready::Expiration::new(now), state_readiness);
+            let readiness = (ready::Expiration::new(now + 600), state_readiness);
             removed += self.pool.write().cull(Some(chunk), readiness);
         }
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());
@@ -455,10 +455,7 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        let pool = match self.pool.try_read() {
-            Some(pool) => pool,
-            None => return None,
-        };
+        let pool = self.pool.read();
 
         pool.pending_from_sender(state_readiness, address)
             .last()
@@ -472,10 +469,7 @@ impl TransactionQueue {
         client: C,
         addresses: Vec<Address>,
     ) -> Option<Vec<(Address, Option<u64>)>> {
-        let pool = match self.pool.try_read() {
-            Some(pool) => pool,
-            None => return None,
-        };
+        let pool = self.pool.read();
 
         Some(
             addresses

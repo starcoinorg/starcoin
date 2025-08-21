@@ -136,6 +136,10 @@ impl TxPoolSyncService for TxPoolService {
         });
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
+        info!(
+            "jacktest: ***************** current_timestamp_secs {}",
+            current_timestamp_secs
+        );
         let r = self
             .inner
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
@@ -162,6 +166,10 @@ impl TxPoolSyncService for TxPoolService {
             self.inner.storage.clone(),
             NonceCache::new(0),
             self.inner.vm_metrics.clone(),
+        );
+        info!(
+            "jacktest: ***************** state id: {:?}, current_timestamp_secs {}",
+            state_root, current_timestamp_secs
         );
         let r =
             self.inner
@@ -434,7 +442,7 @@ impl Inner {
         }
 
         // remove outdated txns.
-        self.cull();
+        // self.cull();
 
         // import retracted txns.
         let txns = retracted

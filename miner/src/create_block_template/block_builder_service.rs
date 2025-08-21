@@ -170,8 +170,12 @@ impl ActorService for BlockBuilderService {
                     } else {
                         (None, 0)
                     };
-                    let body =
-                        BlockBody::new(process_header_template.transaction_outputs.included_user_txns, uncles);
+                    let body = BlockBody::new(
+                        process_header_template
+                            .transaction_outputs
+                            .included_user_txns,
+                        uncles,
+                    );
 
                     let block_info = storage
                         .get_block_info(process_header_template.header.id())
@@ -181,7 +185,9 @@ impl ActorService for BlockBuilderService {
                     let version = 1;
                     let block_template = BlockTemplate::new(
                         block_info.block_accumulator_info.accumulator_root,
-                        process_header_template.transaction_outputs.txn_accumulator_root,
+                        process_header_template
+                            .transaction_outputs
+                            .txn_accumulator_root,
                         state_root,
                         process_header_template.transaction_outputs.gas_used,
                         body,
@@ -615,6 +621,10 @@ where
     ) -> Result<Vec<SignedUserTransaction>> {
         let mut pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
+        info!(
+            "[CreateBlockTemplate] pending transactions len: {}",
+            pending_transactions.len()
+        );
         // Ok(pending_transactions)
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
@@ -641,6 +651,7 @@ where
             std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
             other => other,
         });
+        info!("[CreateBlockTemplate] after adding transactions of blue blocks pending transactions len: {}", pending_transactions.len());
         Ok(pending_transactions)
 
         // for transactions in uncle_transaction_map.values_mut() {

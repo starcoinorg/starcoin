@@ -57,6 +57,7 @@ impl<C> State<C> {
 impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         // Check max seq number
+        info!("jacktest: *************** 1");
         match self.max_seq_number {
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
                 return tx_pool::Readiness::Future;
@@ -74,14 +75,25 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .nonces
             .get_mut(sender)
             .expect("sender nonce should exists");
+        info!("jacktest: ************* 2");
         match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
-                Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
-                _ => tx_pool::Readiness::Future,
+                Some(id) if tx.insertion_id() < id => {
+                    info!("jacktest: *********** Transaction is stale");
+                    tx_pool::Readiness::Stale
+                }
+                _ => {
+                    info!("jacktest: *********** Transaction is future");
+                    tx_pool::Readiness::Future
+                }
             },
-            cmp::Ordering::Less => tx_pool::Readiness::Stale,
+            cmp::Ordering::Less => {
+                info!("jacktest: *********** Transaction is stale");
+                tx_pool::Readiness::Stale
+            }
             cmp::Ordering::Equal => {
+                info!("jacktest: *********** Transaction is ready");
                 *nonce = nonce.saturating_add(1);
                 tx_pool::Readiness::Ready
             }
@@ -128,12 +140,20 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
             Some(transaction::Condition::Number(block)) if block > self.block_number => {
+                info!(
+                    "jacktest: ************* is future block number {}, now {}",
+                    block, self.block_number
+                );
                 tx_pool::Readiness::Future
             }
-            Some(transaction::Condition::Timestamp(time)) if time > self.now => {
-                tx_pool::Readiness::Future
+            // Some(transaction::Condition::Timestamp(time)) if time > self.now => {
+            //     info!("jacktest: is future block time {}, now {}", time, self.now);
+            //     tx_pool::Readiness::Future
+            // }
+            _ => {
+                info!("jacktest: *************Transaction is ready");
+                tx_pool::Readiness::Ready
             }
-            _ => tx_pool::Readiness::Ready,
         }
     }
 }
