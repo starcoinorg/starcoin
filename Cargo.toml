@@ -1,11 +1,3 @@
-[patch."https://github.com/starcoinorg/starcoin"]
-starcoin-vm-types = { path = "vm2/vm-types" }
-starcoin-types = { path = "vm2/types" }
-starcoin-vm-runtime = { path = "vm2/vm-runtime" }
-starcoin-cached-packages = { path = "vm2/framework/cached-packages" }
-starcoin-framework = { path = "vm2/framework" }
-starcoin-transaction-builder = { path = "vm2/transaction-builder", package = "starcoin-vm2-transaction-builder" }
-
 [workspace]
 resolver = "2"
 members = [
@@ -274,7 +266,7 @@ homepage = "https://starcoin.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
-rust-version = "1.82"
+rust-version = "1.86"
 version = "1.13.19"
 
 [workspace.dependencies]
@@ -684,3 +676,12 @@ debug = false
 [patch.crates-io]
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 merlin = { git = "https://github.com/aptos-labs/merlin" }
+
+[patch."https://github.com/starcoinorg/starcoin"]
+starcoin-vm-types = { path = "vm2/vm-types" }
+starcoin-types = { path = "vm2/types" }
+starcoin-vm-runtime = { path = "vm2/vm-runtime" }
+starcoin-cached-packages = { path = "vm2/framework/cached-packages" }
+starcoin-framework = { path = "vm2/framework" }
+starcoin-transaction-builder = { path = "vm2/transaction-builder", package = "starcoin-vm2-transaction-builder" }
+
