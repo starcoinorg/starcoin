@@ -8,7 +8,7 @@ mod import_test {
     use starcoin_chain::ChainReader;
     use starcoin_config::{ChainNetwork, DEFAULT_CACHE_SIZE};
     use starcoin_consensus::Consensus;
-    use starcoin_crypto::HashValue;
+
     use starcoin_logger::prelude::info;
     use starcoin_statedb::{ChainStateDB, ChainStateReader};
     use starcoin_transaction_builder::{
@@ -252,7 +252,6 @@ mod import_test {
                     &net,
                 );
 
-                let header = source_chain.current_header();
                 let (block_template1, excluded_txns) = source_chain
                     .create_block_template_simple_with_txns(
                         random_account_miner,
@@ -302,7 +301,6 @@ mod import_test {
                     &net,
                 );
 
-                let header = source_chain.current_header();
                 let (block_template2, excluded_txns) = source_chain
                     .create_block_template_simple_with_txns(
                         random_account_miner,
