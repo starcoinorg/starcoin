@@ -2101,17 +2101,23 @@ impl BlockChain {
         };
 
         // Prepare transactions for VM2
-        let transactions2 = build_block_transactions(
-            block.transactions2(),
-            Some(block.to_metadata2(
-                selected_head.header().gas_used(),
-                verified_block.ghostdata.mergeset_reds.len() as u64,
-            )),
-        );
+        let red_blocks_count = verified_block.ghostdata.mergeset_reds.len() as u64;
+        let block_metadata2 =
+            block.to_metadata2(selected_head.header().gas_used(), red_blocks_count);
+        let transactions2 = build_block_transactions(block.transactions2(), Some(block_metadata2));
 
         // Fork statedb from selected parent's state root
         // Get MultiState from storage using block hash
+        let parent_block_info =
+            self.storage
+                .0
+                .get_block_info(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("Can not find block info for parent {:?}", selected_parent)
+                })?;
+
         let multi_state = self.storage.0.get_vm_multi_state(selected_parent)?;
+
         let statedb = self.statedb.0.fork_at(multi_state.state_root1());
         let statedb2 = self.statedb.1.fork_at(multi_state.state_root2());
 
@@ -2165,10 +2171,24 @@ impl BlockChain {
             let state_root1 = executed_data.state_root;
             let state_root2 = executed_data2.state_root;
 
+            // Fork vm_state_accumulator from parent's accumulator info (same as OpenedBlock does)
+            let parent_vm_state_accumulator_info =
+                parent_block_info.get_vm_state_accumulator_info();
+            let forked_vm_state_accumulator = MerkleAccumulator::new_with_info(
+                parent_vm_state_accumulator_info.clone(),
+                self.storage
+                    .0
+                    .get_accumulator_store(AccumulatorStoreType::VMState),
+            );
+
+            forked_vm_state_accumulator.append(&[state_root1, state_root2])?;
+            let computed_state_root = forked_vm_state_accumulator.root_hash();
+            // Now update the chain's vm_state_accumulator
             self.vm_state_accumulator
                 .append(&[state_root1, state_root2])?;
+
             (
-                self.vm_state_accumulator.root_hash(),
+                computed_state_root,
                 MultiState::new(state_root1, state_root2),
             )
         };
@@ -2253,13 +2273,32 @@ impl BlockChain {
                 .map(|info| info.id())
                 .collect();
 
+            // Fork txn_accumulator from parent's accumulator info (same as OpenedBlock does)
+            let parent_txn_accumulator_info = parent_block_info.get_txn_accumulator_info();
+            let forked_txn_accumulator = MerkleAccumulator::new_with_info(
+                parent_txn_accumulator_info.clone(),
+                self.storage
+                    .0
+                    .get_accumulator_store(AccumulatorStoreType::Transaction),
+            );
+
+            if !included_txn_info_hashes.is_empty() {
+                forked_txn_accumulator.append(&included_txn_info_hashes)?;
+            }
+            if !included_txn_info_hashes2.is_empty() {
+                forked_txn_accumulator.append(&included_txn_info_hashes2)?;
+            }
+            let computed_accumulator_root = forked_txn_accumulator.root_hash();
+
+            // Now update the chain's txn_accumulator
             if !included_txn_info_hashes.is_empty() {
                 self.txn_accumulator.append(&included_txn_info_hashes)?;
             }
             if !included_txn_info_hashes2.is_empty() {
                 self.txn_accumulator.append(&included_txn_info_hashes2)?;
             }
-            self.txn_accumulator.root_hash()
+
+            computed_accumulator_root
         };
 
         verify_block!(
