@@ -59,18 +59,18 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let min_timestamp = if first_ghostdata.mergeset_blues.is_empty() {
         // Genesis block has no blues, use the block itself
         let first_header = chain
-            .get_header(*first_id)?
+            .get_header_by_hash(*first_id)?
             .ok_or_else(|| format_err!("failed to get the first block header"))?;
         first_header.timestamp()
     } else {
         let first_header = chain
-            .get_header(first_ghostdata.mergeset_blues[0])?
+            .get_header_by_hash(first_ghostdata.mergeset_blues[0])?
             .ok_or_else(|| format_err!("failed to get the first block header"))?;
         let mut min_ts = first_header.timestamp();
 
         for blue_id in first_ghostdata.mergeset_blues.iter().skip(1) {
-            let header = chain.get_header(*blue_id)?.ok_or_else(|| {
-                format_err!("failed to get the block header when getting next work required")
+            let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
+                format_err!("failed to get the block header when getting next work required for min_ts, blue_id: {:?}", blue_id)
             })?;
             min_ts = min_ts.min(header.timestamp());
         }
@@ -86,18 +86,18 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let max_timestamp = if last_ghostdata.mergeset_blues.is_empty() {
         // Genesis block has no blues, use the block itself
         let last_header = chain
-            .get_header(*last_id)?
+            .get_header_by_hash(*last_id)?
             .ok_or_else(|| format_err!("failed to get the last block header"))?;
         last_header.timestamp()
     } else {
         let last_header = chain
-            .get_header(last_ghostdata.mergeset_blues[0])?
+            .get_header_by_hash(last_ghostdata.mergeset_blues[0])?
             .ok_or_else(|| format_err!("failed to get the last block header"))?;
         let mut max_ts = last_header.timestamp();
 
         for blue_id in last_ghostdata.mergeset_blues.iter().skip(1) {
-            let header = chain.get_header(*blue_id)?.ok_or_else(|| {
-                format_err!("failed to get the block header when getting next work required")
+            let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
+                format_err!("failed to get the block header when getting next work required for max_ts, blue_id: {:?}", blue_id)
             })?;
             max_ts = max_ts.max(header.timestamp());
         }
@@ -113,14 +113,14 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 
         if ghostdata.mergeset_blues.is_empty() {
             // Genesis block has no blues, use the block itself
-            let header = chain.get_header(*id)?.ok_or_else(|| {
+            let header = chain.get_header_by_hash(*id)?.ok_or_else(|| {
                 format_err!("failed to get the block header when getting next work required")
             })?;
             blue_blocks.push(BlockDiffInfo::try_from(&header)?);
         } else {
             for blue_id in ghostdata.mergeset_blues.iter() {
-                let header = chain.get_header(*blue_id)?.ok_or_else(|| {
-                    format_err!("failed to get the block header when getting next work required")
+                let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
+                    format_err!("failed to get the block header when getting next work required, blue_id: {:?}", blue_id)
                 })?;
                 blue_blocks.push(BlockDiffInfo::try_from(&header)?);
             }

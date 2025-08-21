@@ -6,7 +6,7 @@ use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
 use starcoin_vm2_storage::Store as Store2;
 
@@ -115,6 +115,7 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
         let dag = self.dag.clone();
         let genesis_id = self.genesis_id;
         let self_ref = ctx.self_ref();
+        let storage = ctx.get_shared::<Arc<Storage>>().unwrap();
         ctx.spawn(async move {
             match pruning_point_receiver.try_recv() {
                 std::result::Result::Ok(new_dag_block) => {
@@ -124,9 +125,18 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
                     use starcoin_vm2_chain::get_epoch_from_statedb;
                     use starcoin_vm2_statedb::ChainStateDB;
 
+                    // Get the correct VM2 state root from multi_state
+                    let multi_state = match storage.get_vm_multi_state(block_header.id()) {
+                        Ok(ms) => ms,
+                        Err(e) => {
+                            error!("Failed to get multi_state for block {}: {:?}", block_header.id(), e);
+                            return;
+                        }
+                    };
+
                     let chain_state = ChainStateDB::new(
                         storage2.clone().into_super_arc(),
-                        Some(block_header.state_root()),
+                        Some(multi_state.state_root2()),
                     );
 
                     let (pruning_depth, pruning_finality) =

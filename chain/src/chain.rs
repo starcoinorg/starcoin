@@ -1138,6 +1138,9 @@ impl ChainReader for BlockChain {
         self.status.status.head().clone()
     }
 
+    /// Get header by hash with filtering - only returns headers that exist on the main chain.
+    /// WARNING: This function filters out uncle/fork blocks in DAG mode!
+    /// Use get_header_by_hash() if you need to access all blocks including uncles.
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
         let (storage, _storage2) = &self.storage;
         storage

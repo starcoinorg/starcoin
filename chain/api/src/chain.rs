@@ -37,6 +37,9 @@ pub trait ChainReader {
     /// Get latest block with block_info
     fn head_block(&self) -> ExecutedBlock;
     fn current_header(&self) -> BlockHeader;
+    /// Get header by hash - WARNING: This filters out uncle/fork blocks in DAG mode!
+    /// Only returns headers that exist on the main chain.
+    /// Use get_header_by_hash() if you need to access all blocks including uncles.
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
