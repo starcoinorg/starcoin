@@ -76,7 +76,7 @@ members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
-    "vm/mvhashmap",
+    "commons/mvhashmap",
     "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
@@ -205,7 +205,7 @@ default-members = [
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
-    "vm/mvhashmap",
+    "commons/mvhashmap",
     "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
@@ -574,7 +574,7 @@ stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
-starcoin-mvhashmap = { path = "vm/mvhashmap" }
+starcoin-mvhashmap = { path = "commons/mvhashmap" }
 starcoin-infallible = { path = "commons/infallible" }
 starcoin-parallel-executor = { path = "vm/parallel-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
