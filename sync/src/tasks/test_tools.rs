@@ -100,7 +100,10 @@ impl SyncTestSystem {
                     .put_shared(dag)
                     .await
                     .expect("failed to put dag in registry");
-                registry.put_shared(MockTxPoolService::new()).await.unwrap();
+                registry
+                    .put_shared(MockTxPoolService::new(storage.clone()))
+                    .await
+                    .unwrap();
 
                 Delay::new(Duration::from_secs(2)).await;
 

@@ -21,7 +21,7 @@ use starcoin_state_api::{ChainStateAsyncService, StateWithProof, StateWithTableI
 use starcoin_state_service::ChainStateService;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     account_state::AccountState,
@@ -34,7 +34,7 @@ use std::sync::Arc;
 pub struct NetworkRpcImpl {
     storage: Arc<dyn Store>,
     chain_service: ServiceRef<ChainReaderService>,
-    txpool_service: TxPoolService,
+    txpool_service: MockTxPoolService,
     state_service: ServiceRef<ChainStateService>,
 }
 
@@ -42,7 +42,7 @@ impl NetworkRpcImpl {
     pub fn new(
         storage: Arc<dyn Store>,
         chain_service: ServiceRef<ChainReaderService>,
-        txpool: TxPoolService,
+        txpool: MockTxPoolService,
         state_service: ServiceRef<ChainStateService>,
     ) -> Self {
         Self {

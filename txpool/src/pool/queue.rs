@@ -302,10 +302,11 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
+        let mut pool = self.pool.write();
         for transaction in transactions.into_iter() {
             let hash = transaction.hash();
 
-            if self.pool.read().find(&hash).is_some() {
+            if pool.find(&hash).is_some() {
                 results.push(Err(transaction::TransactionError::AlreadyImported));
             }
 
@@ -316,12 +317,7 @@ impl TransactionQueue {
 
             let imported = verifier
                 .verify_transaction(transaction)
-                .and_then(|verified| {
-                    self.pool
-                        .write()
-                        .import(verified, &replace)
-                        .map_err(convert_error)
-                });
+                .and_then(|verified| pool.import(verified, &replace).map_err(convert_error));
 
             results.push(match imported {
                 Ok(_) => Ok(()),
@@ -333,8 +329,9 @@ impl TransactionQueue {
         }
 
         // Notify about imported transactions.
-        (self.pool.write().listener_mut().1).0.notify();
+        (pool.listener_mut().1).0.notify();
 
+        drop(pool);
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }

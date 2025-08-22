@@ -21,7 +21,7 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::blockhash::BlockHashSet;
@@ -56,7 +56,7 @@ pub struct BlockTemplateResponse {
 }
 
 pub struct BlockBuilderService {
-    inner: Inner<TxPoolService>,
+    inner: Inner<MockTxPoolService>,
     new_header_channel: NewHeaderChannel,
 }
 
@@ -114,7 +114,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .ok_or_else(|| {
                 format_err!("Default account should exist when BlockBuilderService start.")
             })?;
-        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let txpool = ctx.get_shared::<MockTxPoolService>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let metrics = config
@@ -260,6 +260,16 @@ impl TemplateTxProvider for EmptyProvider {
         vec![]
     }
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
+}
+
+impl TemplateTxProvider for MockTxPoolService {
+    fn get_txns_with_state(&self, max: u64, state_root: HashValue) -> Vec<SignedUserTransaction> {
+        self.get_pending_with_state(max, None, state_root)
+    }
+
+    fn remove_invalid_txn(&self, txn_hash: HashValue) {
+        let _ = self.remove_txn(txn_hash, true);
+    }
 }
 
 impl TemplateTxProvider for TxPoolService {

@@ -4,7 +4,7 @@ use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::sync::Arc;
@@ -27,7 +27,7 @@ impl ActorService for TxnSyncService {
 impl TxnSyncService {
     pub fn sync_txn(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let txpool = ctx.get_shared::<MockTxPoolService>()?;
         let inner = Inner::new(txpool, network);
 
         // sync txn after block sync task done.
@@ -57,13 +57,13 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxnSyncService {
 
 #[derive(Clone)]
 struct Inner {
-    pool: TxPoolService,
+    pool: MockTxPoolService,
     rpc_client: NetworkRpcClient,
     peer_provider: Arc<dyn PeerProvider>,
 }
 
 impl Inner {
-    pub fn new<N>(txpool: TxPoolService, network: N) -> Self
+    pub fn new<N>(txpool: MockTxPoolService, network: N) -> Self
     where
         N: NetworkService + RawRpcClient + 'static,
     {

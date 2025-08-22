@@ -689,7 +689,7 @@ impl TxnMocker {
             transactions.clear();
         }
 
-        self.submit_transaction_in_batch(sender_transactions, true)
+        self.submit_transaction_in_batch(sender_transactions, false)
     }
 
     fn stress_test(

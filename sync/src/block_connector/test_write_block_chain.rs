@@ -24,7 +24,7 @@ pub async fn create_writeable_dag_block_chain() -> (
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
-    let txpool_service = MockTxPoolService::new();
+    let txpool_service = MockTxPoolService::new(storage.clone());
     (
         WriteBlockChainService::new_with_dag_fork_number(
             node_config.clone(),
@@ -53,7 +53,7 @@ pub async fn create_writeable_block_chain() -> (
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
-    let txpool_service = MockTxPoolService::new();
+    let txpool_service = MockTxPoolService::new(storage.clone());
     (
         WriteBlockChainService::new(
             node_config.clone(),
