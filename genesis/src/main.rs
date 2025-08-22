@@ -77,9 +77,7 @@ fn main() {
             std::env::set_current_dir(base_path).expect("failed to change directory");
 
             let path = Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string());
-            new_genesis
-                .save(path.as_path(), false)
-                .expect("save genesis fail");
+            new_genesis.save(path.as_path()).expect("save genesis fail");
         } else {
             info!(
                 "Chain net {} previous generated genesis same as new genesis, do nothing. id: {:?}",
