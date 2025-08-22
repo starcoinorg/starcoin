@@ -932,14 +932,24 @@ impl BlockView {
         let (header, body) = block.into_inner();
         let BlockBody {
             transactions,
-            transactions2: _,
+            transactions2,
             uncles,
         } = body;
         let txns_view = if thin {
             BlockTransactionsView::Hashes(transactions.into_iter().map(|t| t.id()).collect())
         } else {
-            transactions.try_into()?
+            transactions
+                .into_iter()
+                .map(MultiSignedUserTransaction::VM1)
+                .chain(
+                    transactions2
+                        .into_iter()
+                        .map(MultiSignedUserTransaction::VM2),
+                )
+                .collect::<Vec<_>>()
+                .try_into()?
         };
+
         Ok(BlockView {
             header: header.into(),
             uncles: uncles

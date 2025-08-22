@@ -45,7 +45,6 @@ pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_types::block::{legacy, BlockBody};
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
@@ -56,56 +55,6 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename = "Genesis")]
-pub struct LegacyGenesis {
-    block: legacy::Block,
-}
-
-impl From<LegacyGenesis> for Genesis {
-    fn from(legacy_genesis: LegacyGenesis) -> Self {
-        let txns = legacy_genesis
-            .block
-            .body
-            .transactions
-            .into_iter()
-            .map(|tx| tx.into())
-            .collect();
-        Genesis {
-            block: Block {
-                header: legacy_genesis.block.header.into(),
-
-                body: BlockBody::new(
-                    txns,
-                    legacy_genesis
-                        .block
-                        .body
-                        .uncles
-                        .map(|uncles| uncles.into_iter().map(|uncle| uncle.into()).collect()),
-                ),
-            },
-        }
-    }
-}
-
-impl From<Genesis> for LegacyGenesis {
-    fn from(genesis: Genesis) -> Self {
-        LegacyGenesis {
-            block: legacy::Block {
-                header: genesis.block.header.into(),
-                body: legacy::BlockBody {
-                    transactions: genesis.block.body.transactions,
-                    uncles: genesis
-                        .block
-                        .body
-                        .uncles
-                        .map(|uncles| uncles.into_iter().map(|uncle| uncle.into()).collect()),
-                },
-            },
-        }
-    }
 }
 
 impl Display for Genesis {
@@ -126,10 +75,6 @@ impl Display for Genesis {
         write!(f, "}}")?;
         Ok(())
     }
-}
-
-pub fn net_with_legacy_genesis(net: &BuiltinNetworkID) -> bool {
-    !(net.is_test_or_dev() || net.is_proxima())
 }
 
 impl Genesis {
@@ -328,7 +273,7 @@ impl Genesis {
         &self.block
     }
 
-    pub fn load_from_dir<P>(data_dir: P, legacy: bool) -> Result<Option<Self>>
+    pub fn load_from_dir<P>(data_dir: P) -> Result<Option<Self>>
     where
         P: AsRef<Path>,
     {
@@ -339,12 +284,7 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = if legacy {
-            let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?;
-            legacy_genesis.into()
-        } else {
-            bcs_ext::from_bytes(&content)?
-        };
+        let genesis = bcs_ext::from_bytes(&content)?;
         Ok(Some(genesis))
     }
 
@@ -415,7 +355,7 @@ impl Genesis {
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
     }
 
-    pub fn save<P>(&self, data_dir: P, legacy: bool) -> Result<()>
+    pub fn save<P>(&self, data_dir: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
@@ -425,21 +365,14 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = if legacy {
-            let legacy_genesis = LegacyGenesis::from(self.clone());
-            bcs_ext::to_bytes(&legacy_genesis)?
-        } else {
-            bcs_ext::to_bytes(self)?
-        };
+        let contents = bcs_ext::to_bytes(self)?;
         file.write_all(&contents)?;
 
         Ok(())
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        // todo: how and when upgrade legacy genesis?
-        let legacy_genesis = false;
-        let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
+        let genesis = match Genesis::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
@@ -455,7 +388,7 @@ impl Genesis {
             Ok(None) => {
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
-                    genesis.save(data_dir, legacy_genesis)?;
+                    genesis.save(data_dir)?;
                     info!(
                         "Genesis::load_and_check_genesis | Build and save new genesis: {}",
                         genesis
@@ -606,7 +539,7 @@ mod tests {
             }
             let net = ChainNetwork::new_builtin(id);
             let temp_dir = starcoin_config::temp_dir();
-            do_test_genesis(&net, temp_dir.path(), false)?;
+            do_test_genesis(&net, temp_dir.path())?;
         }
         Ok(())
     }
@@ -620,10 +553,10 @@ mod tests {
             BuiltinNetworkID::Test.genesis_config2().clone(),
         )?;
         let temp_dir = starcoin_config::temp_dir();
-        do_test_genesis(&net, temp_dir.path(), false)
+        do_test_genesis(&net, temp_dir.path())
     }
 
-    pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path, legacy: bool) -> Result<()> {
+    pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let dag1 = BlockDAG::create_for_testing()?;
@@ -743,10 +676,7 @@ mod tests {
             .expect("Genesis block info must exist.");
 
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        assert_eq!(
-            txn_accumulator_info.num_leaves,
-            1 + if legacy { 0 } else { 1 }
-        );
+        assert_eq!(txn_accumulator_info.num_leaves, 2);
         //assert_eq!(txn_accumulator_info.frozen_subtree_roots.len(), 1);
 
         let txn_accumulator = MerkleAccumulator::new_with_info(

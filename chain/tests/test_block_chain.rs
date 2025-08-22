@@ -491,7 +491,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     );
 
     // Verify they belong to different blocks
-    let block_ids = vec![block_b2.id(), block_b3.id()];
+    let block_ids = [block_b2.id(), block_b3.id()];
     assert!(
         block_ids.contains(&txn_info1.block_id()),
         "txn_info1 should be in b2 or b3"
