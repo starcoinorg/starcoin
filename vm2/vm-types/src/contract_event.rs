@@ -207,8 +207,7 @@ impl ContractEventV1 {
     }
 
     pub fn decode_event<EventType: MoveResource>(&self) -> Result<EventType> {
-        bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
-    }
+        bcs_ext::from_bytes(self.event_data.as_slice())}
 
     pub fn type_tag(&self) -> &TypeTag {
         &self.type_tag
@@ -271,8 +270,7 @@ impl ContractEventV2 {
     }
 
     pub fn decode_event<EventType: MoveResource>(&self) -> Result<EventType> {
-        bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
-    }
+        bcs_ext::from_bytes(self.event_data.as_slice())}
 }
 
 impl std::fmt::Debug for ContractEventV2 {

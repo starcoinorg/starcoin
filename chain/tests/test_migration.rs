@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Temporarily disable migration tests
+#![allow(unexpected_cfgs)]
+
 #[cfg(test)]
 #[cfg(feature = "migration_tests_enabled")]
 mod migration_tests {

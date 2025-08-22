@@ -11,12 +11,10 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
-use starcoin_vm2_types::{
-    transaction::{
-        SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-        TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
-        TransactionStatus as TransactionStatus2,
-    },
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+    TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
+    TransactionStatus as TransactionStatus2,
 };
 
 impl OpenedBlock {

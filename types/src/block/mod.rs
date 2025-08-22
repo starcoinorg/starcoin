@@ -1031,8 +1031,17 @@ impl BlockTemplate {
         pruning_point: HashValue,     // DAG: pruning point
         parents_hash: Vec<HashValue>, // DAG: parent hashes
     ) -> Self {
-        let (parent_hash, timestamp, author_v2, _, number, _chain_id, _parent_gas_used, _parents_hash, _red_blocks) =
-            block_metadata.into_inner();
+        let (
+            parent_hash,
+            timestamp,
+            author_v2,
+            _,
+            number,
+            _chain_id,
+            _parent_gas_used,
+            _parents_hash,
+            _red_blocks,
+        ) = block_metadata.into_inner();
         // Convert VM2 AccountAddress to VM1 AccountAddress
         let author_bytes = author_v2.to_vec();
         let mut author_array = [0u8; 16];
