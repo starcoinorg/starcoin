@@ -66,7 +66,8 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         } else {
             MAX_TXN_REQUEST_SIZE
         };
-        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        // let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        let fut = async move { Ok(vec![]) };
         Box::pin(fut)
     }
 
@@ -78,9 +79,9 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let txpool = self.txpool_service.clone();
         let fut = async move {
             let mut data = vec![];
-            for id in req.ids {
-                data.push(txpool.find_txn(&id));
-            }
+            // for id in req.ids {
+            //     data.push(txpool.find_txn(&id));
+            // }
             Ok(data)
         };
         Box::pin(fut)
