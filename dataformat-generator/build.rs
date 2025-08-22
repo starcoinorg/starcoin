@@ -15,7 +15,7 @@ use starcoin_types::account_config::{
     AccountResource, BlockRewardEvent, BurnEvent, DepositEvent, MintEvent, ProposalCreatedEvent,
     VoteChangedEvent, WithdrawEvent,
 };
-use starcoin_types::block_metadata::BlockMetadata;
+use starcoin_types::block_metadata::BlockMetadataLegacy as BlockMetadata;
 use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;

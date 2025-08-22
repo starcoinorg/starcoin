@@ -21,7 +21,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::{
     account_address,
     account_address::AccountAddress,
-    block_metadata::BlockMetadata,
+    block_metadata::BlockMetadataLegacy as BlockMetadata, 
     transaction::{Transaction, TransactionPayload},
 };
 use starcoin_vm_types::genesis_config::StdlibVersion;

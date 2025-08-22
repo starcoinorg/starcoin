@@ -18,7 +18,7 @@ use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
-    block_metadata::BlockMetadata,
+    block_metadata::{self, BlockMetadataLegacy},
     error::BlockExecutorError,
     genesis_config::ChainId,
     transaction::{
@@ -31,6 +31,7 @@ use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
@@ -111,20 +112,16 @@ impl OpenedBlock {
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
-        // Convert VM2's AccountAddress to VM1's AccountAddress for BlockMetadata
-        let author_bytes = author.to_vec();
-        let mut author_array = [0u8; 16];
-        author_array.copy_from_slice(&author_bytes[..16]);
-        let author_v1 = starcoin_types::account_address::AccountAddress::from(author_array);
         let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
-            author_v1,
-            None, // author_auth_key
+            author,
             uncles.len() as u64,
             previous_header.number() + 1,
-            chain_id,
+            chain_id.id().into(),
             previous_header.gas_used(),
+            tips_hash.clone(),
+            red_blocks,
         );
 
         let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
@@ -180,6 +177,11 @@ impl OpenedBlock {
 
     pub fn block_meta(&self) -> &BlockMetadata {
         &self.block_meta
+    }
+
+    /// Convert VM2 BlockMetadata to VM1 format with uncles set to 0
+    fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
+        block_metadata::from(self.block_meta.clone())
     }
     pub fn block_number(&self) -> u64 {
         self.block_meta.number()
@@ -287,7 +289,8 @@ impl OpenedBlock {
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
-        let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
+        let vm1_metadata = self.convert_block_meta_to_legacy();
+        let block_metadata_txn = Transaction::BlockMetadata(vm1_metadata);
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results =
             execute_transactions(state, vec![block_metadata_txn], self.vm_metrics.clone())
@@ -366,7 +369,7 @@ impl OpenedBlock {
             )
         };
         let uncles = if !self.uncles.is_empty() {
-            Some(self.uncles)
+            Some(self.uncles.clone())
         } else {
             None
         };
@@ -384,7 +387,7 @@ impl OpenedBlock {
             self.chain_id,
             self.difficulty,
             self.strategy,
-            self.block_meta,
+            self.block_meta.clone(),
             self.version,
             self.pruning_point,
             self.parents_hash.clone(),

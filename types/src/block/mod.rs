@@ -30,7 +30,6 @@ use starcoin_crypto::{
 use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddressV2,
-    block_metadata::BlockMetadata as BlockMetadataV2,
     transaction::SignedUserTransaction as SignedUserTransactionV2,
 };
 use starcoin_vm_types::{
@@ -845,7 +844,7 @@ impl Block {
         }
     }
 
-    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -854,26 +853,6 @@ impl Block {
             .unwrap_or(0);
 
         BlockMetadata::new(
-            self.header.parent_hash(),
-            self.header.timestamp,
-            self.header.author,
-            self.header.author_auth_key,
-            uncles,
-            self.header.number,
-            self.header.chain_id,
-            parent_gas_used,
-        )
-    }
-
-    pub fn to_metadata2(&self, parent_gas_used: u64, red_blocks: u64) -> BlockMetadataV2 {
-        let uncles = self
-            .body
-            .uncles
-            .as_ref()
-            .map(|uncles| uncles.len() as u64)
-            .unwrap_or(0);
-
-        BlockMetadataV2::new(
             self.header.parent_hash(),
             self.header.timestamp,
             AccountAddressV2::new(self.header.author.into_bytes()),
@@ -1052,8 +1031,13 @@ impl BlockTemplate {
         pruning_point: HashValue,     // DAG: pruning point
         parents_hash: Vec<HashValue>, // DAG: parent hashes
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        let (parent_hash, timestamp, author_v2, _, number, _chain_id, _parent_gas_used, _parents_hash, _red_blocks) =
             block_metadata.into_inner();
+        // Convert VM2 AccountAddress to VM1 AccountAddress
+        let author_bytes = author_v2.to_vec();
+        let mut author_array = [0u8; 16];
+        author_array.copy_from_slice(&author_bytes[..16]);
+        let author = AccountAddress::from(author_array);
         Self {
             parent_hash,
             block_accumulator_root: parent_block_accumulator_root,

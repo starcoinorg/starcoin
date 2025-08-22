@@ -42,6 +42,7 @@ use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
+    block_metadata::{self},
     contract_event::ContractEvent,
     error::BlockExecutorError,
     transaction::Transaction,
@@ -577,7 +578,7 @@ impl BlockChain {
                 Some(parent) => {
                     let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
                     if header.number() < vm1_offline {
-                        let block_metadata = block.to_metadata(parent.head().gas_used());
+                        let block_metadata = block_metadata::from(block.to_metadata(parent.head().gas_used(), 0));
                         (false, vec![Transaction::BlockMetadata(block_metadata)])
                     } else {
                         (true, vec![])
@@ -601,7 +602,7 @@ impl BlockChain {
             block.transactions2(),
             parent_status
                 .as_ref()
-                .map(|p| block.to_metadata2(p.head.gas_used(), red_blocks)),
+                .map(|p| block.to_metadata(p.head.gas_used(), red_blocks)),
         );
 
         assert!(!transactions2.is_empty());
@@ -853,7 +854,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block_metadata::from(block.to_metadata(parent.head().gas_used(), 0));
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -1002,7 +1003,7 @@ impl BlockChain {
             let mut t = match &parent_status {
                 None => vec![],
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
+                    let block_metadata = block_metadata::from(block.to_metadata(parent.head().gas_used(), 0));
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
@@ -2089,7 +2090,7 @@ impl BlockChain {
         // Prepare transactions for VM1
         let vm1_offline = header.number() >= vm1_offline_height(header.chain_id().id().into());
         let transactions = if !vm1_offline {
-            let block_metadata = block.to_metadata(selected_head.header().gas_used());
+            let block_metadata = block_metadata::from(block.to_metadata(selected_head.header().gas_used(), 0));
             let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
             txns.extend(
                 block
@@ -2106,7 +2107,7 @@ impl BlockChain {
         // Prepare transactions for VM2
         let red_blocks_count = verified_block.ghostdata.mergeset_reds.len() as u64;
         let block_metadata2 =
-            block.to_metadata2(selected_head.header().gas_used(), red_blocks_count);
+            block.to_metadata(selected_head.header().gas_used(), red_blocks_count);
         let transactions2 = build_block_transactions(block.transactions2(), Some(block_metadata2));
 
         // Fork statedb from selected parent's state root

@@ -30,7 +30,7 @@ use starcoin_types::account_config::{
 };
 use starcoin_types::{
     account_config,
-    block_metadata::BlockMetadata,
+    block_metadata::BlockMetadataLegacy as BlockMetadata,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
         TransactionPayload, TransactionStatus,

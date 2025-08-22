@@ -12,8 +12,6 @@ use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
 use starcoin_vm2_types::{
-    account_address::AccountAddress,
-    block_metadata::BlockMetadata,
     transaction::{
         SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
         TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
@@ -21,47 +19,15 @@ use starcoin_vm2_types::{
     },
 };
 
-fn convert_block_meta_with_dag(
-    block_meta: starcoin_types::block_metadata::BlockMetadata,
-    parents_hash: Vec<HashValue>,
-    red_blocks: u64,
-) -> BlockMetadata {
-    let (
-        parent_hash,
-        timestamp,
-        author,
-        _author_auth_key,
-        uncles,
-        number,
-        chain_id,
-        parent_gas_used,
-    ) = block_meta.into_inner();
-    let author = AccountAddress::new(author.into_bytes());
-    BlockMetadata::new(
-        parent_hash,
-        timestamp,
-        author,
-        uncles,
-        number,
-        chain_id.id().into(),
-        parent_gas_used,
-        parents_hash,
-        red_blocks,
-    )
-}
-
 impl OpenedBlock {
     pub fn initialize_v2(
         &mut self,
-        parents_hash: Vec<HashValue>,
-        red_blocks: u64,
+        _parents_hash: Vec<HashValue>,
+        _red_blocks: u64,
     ) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
-        let block_metadata_txn = Transaction2::BlockMetadata(convert_block_meta_with_dag(
-            self.block_meta.clone(),
-            parents_hash,
-            red_blocks,
-        ));
+        // Directly use VM2 BlockMetadata
+        let block_metadata_txn = Transaction2::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results = do_execute_block_transactions(
             state,

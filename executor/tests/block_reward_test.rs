@@ -1,6 +1,6 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_types::block_metadata::BlockMetadata;
+use starcoin_types::block_metadata::BlockMetadataLegacy as BlockMetadata;
 use starcoin_vm_types::account_config::BlockRewardEvent;
 use test_helper::executor::expect_decode_event;
 use test_helper::{

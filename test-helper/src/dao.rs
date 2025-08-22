@@ -17,7 +17,7 @@ use starcoin_transaction_builder::build_empty_script;
 use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{association_address, genesis_address, stc_type_tag};
-use starcoin_types::block_metadata::BlockMetadata;
+use starcoin_types::block_metadata::BlockMetadataLegacy as BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{ScriptFunction, TransactionPayload};

@@ -30,7 +30,32 @@ pub mod compact_block;
 pub mod consensus_header;
 
 pub mod block_metadata {
-    pub use starcoin_vm_types::block_metadata::BlockMetadata;
+    pub use starcoin_vm_types::block_metadata::BlockMetadata as BlockMetadataLegacy;
+    pub use starcoin_vm2_vm_types::block_metadata::BlockMetadata;
+    use crate::genesis_config::ChainId;
+    
+    /// Convert VM2 BlockMetadata to VM1 BlockMetadata
+    pub fn from(meta: BlockMetadata) -> BlockMetadataLegacy {
+        let author_bytes = meta.author().to_vec();
+        let mut author_array = [0u8; 16];
+        author_array.copy_from_slice(&author_bytes[..16]);
+        let author_v1 = crate::account_address::AccountAddress::from(author_array);
+        
+        // Get parent_gas_used from VM2 metadata
+        let (parent_hash, timestamp, _, _uncles, number, chain_id, parent_gas_used, _, _) = 
+            meta.into_inner();
+        
+        BlockMetadataLegacy::new(
+            parent_hash,
+            timestamp,
+            author_v1,
+            None, // author_auth_key
+            0,    // Always set uncles to 0 for VM1
+            number,
+            ChainId::new(chain_id.id()),
+            parent_gas_used,
+        )
+    }
 }
 
 pub mod contract_event;

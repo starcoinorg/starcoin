@@ -417,7 +417,7 @@ impl ChainNetworkID {
     pub fn limit_peers(&self) -> u8 {
         match self {
             Self::Builtin(BuiltinNetworkID::Main) => 5,
-            _ => 1,
+            _ => 0,
         }
     }
 }

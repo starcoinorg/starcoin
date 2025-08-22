@@ -19,7 +19,7 @@ use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureChecke
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader},
-    block_metadata::BlockMetadata,
+    block_metadata::BlockMetadataLegacy as BlockMetadata,
     U256,
 };
 use starcoin_vm2_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};

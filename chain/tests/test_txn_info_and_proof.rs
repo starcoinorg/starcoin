@@ -9,6 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::block_metadata;
 use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -75,12 +76,12 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
         all_txns.extend_from_slice(&[Transaction::BlockMetadata(
-            block.to_metadata(current_header.gas_used()),
+            block_metadata::from(block.to_metadata(current_header.gas_used(), 0)),
         )
         .into()]);
         all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
-            block.to_metadata2(current_header.gas_used(), 0),
+            block.to_metadata(current_header.gas_used(), 0),
         )
         .into()]);
         current_header = block.header().clone();

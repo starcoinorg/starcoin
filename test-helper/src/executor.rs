@@ -13,7 +13,7 @@ use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdlibVersion};
 use starcoin_types::account_config::{association_address, genesis_address};
-use starcoin_types::block_metadata::BlockMetadata;
+use starcoin_types::block_metadata::BlockMetadataLegacy as BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::{

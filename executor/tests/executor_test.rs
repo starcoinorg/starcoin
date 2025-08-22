@@ -15,7 +15,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::{
-    account_config, block_metadata::BlockMetadata, transaction::Transaction,
+    account_config, block_metadata::BlockMetadataLegacy as BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
 use starcoin_vm_types::account_config::genesis_address;
