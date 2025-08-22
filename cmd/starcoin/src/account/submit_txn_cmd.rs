@@ -5,11 +5,9 @@ use anyhow::Result;
 use clap::Parser;
 
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm2_types::transaction::SignedUserTransaction;
 
-use crate::cli_state::CliState;
-use crate::view::{ExecutionOutputView, FilePathOrHex};
-use crate::StarcoinOpt;
+use crate::{cli_state::CliState, view::FilePathOrHex, view_vm2::ExecutionOutputView, StarcoinOpt};
 
 #[derive(Debug, Parser)]
 /// Submit a SignedUserTransaction file or hex to transaction pool.
@@ -45,6 +43,6 @@ impl CommandAction for SubmitSignedTxnCommand {
         let signed_txn: SignedUserTransaction =
             bcs_ext::from_bytes(opt.signed_txn_file_or_hex.as_bytes()?.as_slice())?;
 
-        ctx.state().submit_txn(signed_txn, opt.blocking)
+        ctx.state().vm2()?.submit_txn(signed_txn, opt.blocking)
     }
 }

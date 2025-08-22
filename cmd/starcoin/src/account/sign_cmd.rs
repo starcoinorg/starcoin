@@ -7,8 +7,10 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_types::{
+    account_address::AccountAddress,
+    sign_message::{SignedMessage, SigningMessage},
+};
 
 /// Sign a message by the account's private key.
 #[derive(Debug, Parser)]
@@ -35,8 +37,8 @@ impl CommandAction for SignMessageCmd {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().account_client();
-        let sender = ctx.state().get_account_or_default(opt.sender)?;
+        let client = ctx.state().vm2()?.account_client();
+        let sender = ctx.state().vm2()?.get_account_or_default(opt.sender)?;
         let signed_message = client.sign_message(sender.address, opt.message.clone())?;
 
         let hex = signed_message.to_string();

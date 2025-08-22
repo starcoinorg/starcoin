@@ -30,9 +30,9 @@ impl CommandAction for SetConcurrencyLevelCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         let concurrency_level = std::cmp::min(opt.level, num_cpus::get());
-        client.set_concurrency_level(opt.level)?;
+        client.set_concurrency_level(concurrency_level)?;
         info!("client set vm concurrency_level {}", concurrency_level);
         Ok(format!("set concurrency_level to {}", concurrency_level))
     }
@@ -55,7 +55,7 @@ impl CommandAction for GetConcurrencyLevelCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().client();
+        let client = ctx.state().vm2()?.client();
         let level = client.get_concurrency_level()?;
         info!("client get vm concurrency_level {}", level);
         Ok(format!("get concurrency_level is {}", level))
