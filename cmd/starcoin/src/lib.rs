@@ -49,7 +49,9 @@ pub fn add_command(
                 .subcommand(account::DeriveAddressCommand)
                 .subcommand(account::receipt_identifier_cmd::ReceiptIdentifierCommand)
                 .subcommand(account::generate_keypair::GenerateKeypairCommand)
-                .subcommand(account::rotate_auth_key_cmd::RotateAuthenticationKeyCommand), // .subcommand(account::nft_cmd::NFTCommand),
+                .subcommand(account::rotate_auth_key_cmd::RotateAuthenticationKeyCommand),
+            // TODO(BobOng): [multi-vm] to handle nft related command for vm2
+            // .subcommand(account::nft_cmd::NFTCommand),
         )
         .command(
             CustomCommand::with_name("state")
