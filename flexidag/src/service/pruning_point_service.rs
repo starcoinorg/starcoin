@@ -129,7 +129,11 @@ impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
                     let multi_state = match storage.get_vm_multi_state(block_header.id()) {
                         Ok(ms) => ms,
                         Err(e) => {
-                            error!("Failed to get multi_state for block {}: {:?}", block_header.id(), e);
+                            error!(
+                                "Failed to get multi_state for block {}: {:?}",
+                                block_header.id(),
+                                e
+                            );
                             return;
                         }
                     };
