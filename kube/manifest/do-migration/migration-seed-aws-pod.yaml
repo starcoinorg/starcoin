@@ -132,10 +132,10 @@ metadata:
   name: migration-seed-pod-service
   namespace: starcoin-main
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # 使用网络负载均衡器
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"  # 确保外部可访问
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
-  type: LoadBalancer  # 关键修改
+  type: LoadBalancer
   selector:
     app: migration-seed-pod
   ports:
