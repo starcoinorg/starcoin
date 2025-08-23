@@ -1,0 +1,47 @@
+---
+# PVC for storing migrated data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: migration-seed-do-pvc
+  namespace: starcoin-main
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: do-block-storage
+---
+# Pod for receiving migrated data
+apiVersion: v1
+kind: Pod
+metadata:
+  name: migration-seed-do-pod
+  namespace: starcoin-main
+  labels:
+    app: migration-seed-do
+    purpose: data-migration
+spec:
+  containers:
+  - name: migration-seed-do
+    image: ubuntu:22.04
+    command: ["/bin/bash"]
+    args: ["-c", "apt-get update && apt-get install -y rsync netcat-openbsd && tail -f /dev/null"]
+    ports:
+      - containerPort: 873
+        name: rsync
+    volumeMounts:
+      - name: migration-seed-do-volume
+        mountPath: /sc-data
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+  volumes:
+    - name: migration-seed-do-volume
+      persistentVolumeClaim:
+        claimName: migration-seed-do-pvc

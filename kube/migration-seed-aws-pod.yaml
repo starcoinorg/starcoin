@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-aws-scripts
+  namespace: starcoin-main
+data:
+  install.sh: |
+    #!/bin/bash
+    
+    # AWS Pod environment configuration script
+    # Used to configure rsync, SSH, etc.
+    
+    set -e
+    
+    echo "Start configuring AWS Pod environment..."
+    
+    echo "Update package manager..."
+    apt-get update
+    
+
+    echo "Install rsync, SSH, etc..."
+    apt-get install -y rsync openssh-server netcat-openbsd
+    
+    # 
+    echo "Config SSH service"
+    mkdir -p /var/run/sshd
+    echo 'root:password123' | chpasswd
+    
+    # Modify SSH configuration
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    
+  
+    echo "Create rsync configuration file..."
+    cat > /etc/rsyncd.conf << 'EOF'
+    port = 873
+    log file = /var/log/rsyncd.log
+    pid file = /var/run/rsyncd.pid
+    
+    [sc-data]
+        path = /sc-data
+        comment = Starcoin data directory
+        read only = yes
+        list = yes
+        uid = root
+        gid = root
+    EOF
+    
+    # Start SSH service
+    /usr/sbin/sshd -D &
+    
+    # Wait for SSH service to start
+    sleep 3
+    
+    # Start rsync daemon
+    rsync --daemon --port=873
+    
+    # Wait for rsync daemon to start
+    sleep 2
+    
+
+    echo "Verify service status..."
+    echo "=== SSH service status ==="
+    ps aux | grep sshd | grep -v grep || echo "SSH service not running"
+    
+    echo "=== rsync daemon status ==="
+    ps aux | grep rsync | grep -v grep || echo "rsync daemon not running"
+    
+    echo "=== port listening status ==="
+    netstat -tlnp | grep -E ':(22|873)' || echo "port not listening"
+    
+    echo "=== service configuration completed ==="
+    echo "SSH port: 22"
+    echo "rsync port: 873"
+    echo "data directory: /sc-data"
+    
+    # Keep container running
+    echo "Container environment configuration completed, keep running..."
+    tail -f /dev/null
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: migration-seed-pod
+  namespace: starcoin-main
+  labels:
+    app: migration-seed-pod
+    purpose: data-migration-source
+spec:
+  restartPolicy: Never
+  containers:
+    - name: migration-container
+      image: ubuntu:22.04
+      command: ["/bin/bash"]
+      args: ["-c", "cp /scripts/install.sh /tmp/install.sh && chmod +x /tmp/install.sh && /tmp/install.sh"]
+      ports:
+        - containerPort: 22
+          name: ssh
+        - containerPort: 873
+          name: rsync
+      volumeMounts:
+        - name: starcoin-volume
+          mountPath: /sc-data
+        - name: scripts-volume
+          mountPath: /scripts
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "500m"
+        limits:
+          memory: "2Gi"
+          cpu: "1000m"
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        allowPrivilegeEscalation: true
+        capabilities:
+          add: ["SYS_ADMIN", "NET_ADMIN"]
+  volumes:
+    - name: starcoin-volume
+      persistentVolumeClaim:
+        claimName: starcoin-volume-starcoin-8
+    - name: scripts-volume
+      configMap:
+        name: migration-aws-scripts
+        defaultMode: 0755
+---
+# migration-seed-pod-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-seed-pod-service
+  namespace: starcoin-main
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # 使用网络负载均衡器
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"  # 确保外部可访问
+spec:
+  type: LoadBalancer  # 关键修改
+  selector:
+    app: migration-seed-pod
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
+      name: ssh
+    - protocol: TCP
+      port: 873
+      targetPort: 873
+      name: rsync

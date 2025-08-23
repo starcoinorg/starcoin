@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: migration-seed-debug
+  namespace: starcoin-main
+spec:
+  containers:
+    - name: migration-seed-debug
+      image: alpine:latest
+      command: ["sh", "-c"]
+      args:
+        - ls -l /sc-data;
+          sleep 3600
+      volumeMounts:
+        - name: pvc-volume
+          mountPath: /sc-data/
+  volumes:
+    - name: pvc-volume
+      persistentVolumeClaim:
+        claimName: starcoin-volume-starcoin-0
+  restartPolicy: Never
