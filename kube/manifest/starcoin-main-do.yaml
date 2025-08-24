@@ -21,49 +21,6 @@ spec:
     spec:
       nodeSelector:
         starcoin/node-pool: seed-pool
-      initContainers:
-        - name: init-data
-          image: alpine:latest
-          command:
-            - sh
-            - -c
-          args:
-            - |
-              if [ ! -f /sc-data/.initialized ]; then
-                echo "Pod $POD_NAME: Starting rsync data copy...";
-                apk add --no-cache rsync
-              
-                echo "Copying data with rsync..."
-                rsync -av --progress --checksum /source-data/ /sc-data/
-                if [ $? -ne 0 ]; then
-                  echo "ERROR: rsync copy failed, Timestamp: $(date)"
-                  exit 1
-                fi
-              
-                echo "Verifying data copy with rsync..."
-                verification_output=$(rsync -avn --checksum /source-data/ /sc-data/ 2>&1)
-                if [ $? -ne 0 ]; then
-                  echo "ERROR: rsync verification failed: $verification_output, Timestamp: $(date)"
-                  exit 1
-                fi
-                
-                touch /sc-data/.initialized;
-                echo "Pod $POD_NAME: Data copy completed and verified";
-              else
-                echo "Pod $POD_NAME: Data already initialized, skipping copy";
-              fi
-          volumeMounts:
-            - name: source-volume
-              mountPath: /source-data
-              readOnly: true
-            - name: starcoin-volume
-              mountPath: /sc-data
-      volumes:
-        - name: source-volume
-          persistentVolumeClaim:
-            claimName: migration-seed-do-pvc
-            readOnly: true
-
       # starcoin template
       containers:
         - name: starcoin
@@ -78,7 +35,6 @@ spec:
               /starcoin/starcoin -n main --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data
           ports:
             - containerPort: 9840
-              hostPort: 9840
           volumeMounts:
             - name: starcoin-volume
               mountPath: /sc-data
@@ -117,3 +73,8 @@ spec:
         resources:
           requests:
             storage: 500Gi
+        storageClassName: do-block-storage
+        dataSource:
+          name: migration-seed-do-snapshot
+          kind: VolumeSnapshot
+          apiGroup: snapshot.storage.k8s.io
