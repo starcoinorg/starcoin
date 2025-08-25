@@ -1,16 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, view::TransactionOptions, view_vm2::ExecuteResultView, StarcoinOpt,
+};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_transaction_builder::build_module_upgrade_plan;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_vm2_transaction_builder::build_module_upgrade_plan;
+use starcoin_vm2_types::{account_address::AccountAddress, transaction::TransactionPayload};
+use starcoin_vm2_vm_types::account_config::token_code::TokenCode;
 
 /// Execute the module upgrade proposal and submit module upgrade plan.
 #[derive(Debug, Parser)]
@@ -34,7 +33,7 @@ pub struct UpgradeModulePlanOpt {
     #[clap(
         name = "dao-token",
         long = "dao-token",
-        default_value = "0x1::STC::STC"
+        default_value = "0x1::starcoin_coin::STC"
     )]
     /// The token for dao governance, default is 0x1::STC::STC
     dao_token: TokenCode,
@@ -54,17 +53,17 @@ impl CommandAction for UpgradeModulePlanCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let proposer_address = if let Some(address) = ctx.opt().proposer_address {
-            address
+            AccountAddress::from_hex(address.to_hex())?
         } else if let Some(sender) = ctx.opt().transaction_opts.sender {
-            sender
+            AccountAddress::from_hex(sender.to_hex())?
         } else {
-            ctx.state().default_account()?.address
+            ctx.state().vm2()?.default_account()?.address
         };
         let module_upgrade_plan =
             build_module_upgrade_plan(proposer_address, opt.proposal_id, opt.dao_token.clone());
-        ctx.state().build_and_execute_transaction(
+        ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(module_upgrade_plan),
+            TransactionPayload::EntryFunction(module_upgrade_plan),
         )
     }
 }

@@ -1,21 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::dev::dev_helper;
-use crate::dev::sign_txn_helper::get_dao_config;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, dev::sign_txn_helper::get_dao_config, subcommand_vm2::dev::dev_helper_vm2,
+    view::TransactionOptions, view_vm2::ExecuteResultView, StarcoinOpt,
+};
 use anyhow::{bail, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::StateReaderExt;
-use starcoin_transaction_builder::build_module_upgrade_proposal;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_vm2_transaction_builder::build_module_upgrade_proposal;
+use starcoin_vm2_vm_types::{
+    genesis_config::StdlibVersion, on_chain_config::Version, state_view::StateReaderExt,
+    token::token_code::TokenCode, transaction::TransactionPayload,
+};
 use std::path::PathBuf;
 
 /// Submit a module upgrade proposal
@@ -45,7 +43,7 @@ pub struct UpgradeModuleProposalOpt {
     #[clap(
         name = "dao-token",
         long = "dao-token",
-        default_value = "0x1::STC::STC"
+        default_value = "0x1::starcoin_coin::STC"
     )]
     /// The token for dao governance, default is 0x1::STC::STC
     dao_token: TokenCode,
@@ -66,7 +64,8 @@ impl CommandAction for UpgradeModuleProposalCommand {
         let opt = ctx.opt();
         let cli_state = ctx.state();
         let module_version = opt.version;
-        let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
+        let upgrade_package =
+            dev_helper_vm2::load_package_from_file(opt.mv_or_package_file.as_path())?;
         eprintln!(
             "upgrade package address : {}",
             upgrade_package.package_address()
@@ -79,9 +78,12 @@ impl CommandAction for UpgradeModuleProposalCommand {
             );
         }
         let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
-        let chain_state_reader = ctx.state().client().state_reader(StateRootOption::Latest)?;
+        let chain_state_reader = ctx
+            .state()
+            .client()
+            .state_reader2(StateRootOption::Latest)?;
         let stdlib_version = chain_state_reader
-            .get_on_chain_config::<Version>()?
+            .get_on_chain_config::<Version>()
             .map(|version| version.major)
             .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
         eprintln!(
@@ -94,12 +96,12 @@ impl CommandAction for UpgradeModuleProposalCommand {
             min_action_delay,
             opt.enforced,
             opt.dao_token.clone(),
-            StdlibVersion::new(stdlib_version),
+            true,
         );
         eprintln!("package_hash {:?}", package_hash);
-        ctx.state().build_and_execute_transaction(
+        ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(module_upgrade_proposal),
+            TransactionPayload::EntryFunction(module_upgrade_proposal),
         )
     }
 }
