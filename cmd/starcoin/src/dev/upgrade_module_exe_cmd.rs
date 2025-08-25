@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::dev::dev_helper;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, subcommand_vm2::dev::dev_helper_vm2, view::TransactionOptions,
+    view_vm2::ExecuteResultView, StarcoinOpt,
+};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_vm2_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
 
 /// Execute module upgrade plan, submit a package transaction.
@@ -41,8 +41,9 @@ impl CommandAction for UpgradeModuleExeCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let upgrade_package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
-        ctx.state().build_and_execute_transaction(
+        let upgrade_package =
+            dev_helper_vm2::load_package_from_file(opt.mv_or_package_file.as_path())?;
+        ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
             TransactionPayload::Package(upgrade_package),
         )

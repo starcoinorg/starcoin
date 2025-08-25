@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::dev::sign_txn_helper::get_dao_config;
-use crate::view::TransactionOptions;
-use crate::StarcoinOpt;
-use crate::{cli_state::CliState, view_vm2::ExecuteResultView};
+use crate::{
+    cli_state::CliState, dev::sign_txn_helper::get_dao_config, view::TransactionOptions,
+    view_vm2::ExecuteResultView, StarcoinOpt,
+};
 use anyhow::Result;
 use clap::Parser;
 use move_command_line_common::testing::format_diff;
