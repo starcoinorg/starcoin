@@ -145,7 +145,12 @@ pub fn add_command(
                 .subcommand(dev2::SetConcurrencyLevelCommand)
                 .subcommand(dev2::GetConcurrencyLevelCommand)
                 .subcommand(dev::SetLoggerBalanceAmoutCommand)
-                .subcommand(dev::GetLoggerBalanceAmountCommand),
+                .subcommand(dev::GetLoggerBalanceAmountCommand)
+                .subcommand(dev::UpgradeModuleProposalCommand)
+                .subcommand(dev::UpgradeModulePlanCommand)
+                .subcommand(dev::UpgradeModuleQueueCommand)
+                .subcommand(dev::UpgradeModuleExeCommand)
+                .subcommand(dev::UpgradeVMConfigProposalCommand)
         )
         .command(CustomCommand::with_name("contract").subcommand(contract2::GetContractDataCommand))
 }

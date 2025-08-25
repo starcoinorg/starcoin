@@ -11775,6 +11775,7 @@ dependencies = [
  "starcoin-transaction-builder",
  "starcoin-txpool-api",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",

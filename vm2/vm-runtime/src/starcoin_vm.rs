@@ -217,9 +217,15 @@ impl StarcoinVM {
     }
 
     pub fn get_gas_schedule(&self) -> Result<&GasSchedule, VMStatus> {
-        self.vm_config
+        if self.vm_config.is_some() {
+            return self
+                .vm_config
+                .as_ref()
+                .map(|config| &config.gas_schedule)
+                .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
+        }
+        self.gas_schedule
             .as_ref()
-            .map(|config| &config.gas_schedule)
             .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
