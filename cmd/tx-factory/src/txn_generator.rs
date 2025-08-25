@@ -58,7 +58,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount,
             gas_price,
-            40000000,
+            1,
             expiration_timestamp,
             self.chain_id,
         );

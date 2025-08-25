@@ -9,18 +9,18 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockTransactionInfoStore, Storage};
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::transaction::TransactionError;
 
 /// Service which handle Announcement message
 pub struct AnnouncementService {
     storage: Arc<Storage>,
-    txpool: TxPoolService,
+    txpool: MockTxPoolService,
 }
 
 impl AnnouncementService {
-    fn new(storage: Arc<Storage>, txpool: TxPoolService) -> Self {
+    fn new(storage: Arc<Storage>, txpool: MockTxPoolService) -> Self {
         Self { storage, txpool }
     }
 }
@@ -30,7 +30,7 @@ impl ActorService for AnnouncementService {}
 impl ServiceFactory<Self> for AnnouncementService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let txpool_service = ctx.get_shared::<TxPoolService>()?;
+        let txpool_service = ctx.get_shared::<MockTxPoolService>()?;
 
         Ok(Self::new(storage, txpool_service))
     }

@@ -11,14 +11,14 @@ use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
 use starcoin_sync::block_connector::BlockConnectorService;
-use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_txpool::{MockTxPoolService, TxPoolActorService, TxPoolService};
 use std::sync::Arc;
 use std::time::Duration;
 
 pub async fn start_txpool_with_size(
     pool_size: u64,
 ) -> (
-    TxPoolService,
+    MockTxPoolService,
     Arc<Storage>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
@@ -32,7 +32,7 @@ pub async fn start_txpool_with_miner(
     pool_size: u64,
     enable_miner: bool,
 ) -> (
-    TxPoolService,
+    MockTxPoolService,
     Arc<Storage>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
@@ -65,7 +65,7 @@ pub async fn start_txpool_with_miner(
 
     if enable_miner {
         registry
-            .register::<BlockConnectorService<TxPoolService>>()
+            .register::<BlockConnectorService<MockTxPoolService>>()
             .await
             .unwrap();
         registry.put_shared(NewHeaderChannel::new()).await.unwrap();
@@ -76,7 +76,7 @@ pub async fn start_txpool_with_miner(
     //registry.register::<MinerService>().await.unwrap();
     let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
     Delay::new(Duration::from_secs(1)).await;
-    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
+    let txpool_service = registry.get_shared::<MockTxPoolService>().await.unwrap();
 
     (
         txpool_service,
@@ -89,7 +89,7 @@ pub async fn start_txpool_with_miner(
 }
 
 pub async fn start_txpool() -> (
-    TxPoolService,
+    MockTxPoolService,
     Arc<Storage>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,

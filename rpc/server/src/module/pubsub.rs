@@ -24,7 +24,7 @@ use starcoin_service_registry::{
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
@@ -190,7 +190,7 @@ impl ServiceFactory<PubSubService> for PubSubServiceFactory {
         let miner_service = ctx.service_ref::<MinerService>()?.clone();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         Ok(PubSubService::new(
-            ctx.get_shared::<TxPoolService>()?,
+            ctx.get_shared::<MockTxPoolService>()?,
             miner_service,
             storage,
         ))
@@ -199,7 +199,7 @@ impl ServiceFactory<PubSubService> for PubSubServiceFactory {
 
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
-    txpool: TxPoolService,
+    txpool: MockTxPoolService,
     miner_service: ServiceRef<MinerService>,
     storage: Arc<Storage>,
     new_header_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewHeadNotification>>,
@@ -211,7 +211,7 @@ pub struct PubSubService {
 
 impl PubSubService {
     fn new(
-        txpool: TxPoolService,
+        txpool: MockTxPoolService,
         miner_service: ServiceRef<MinerService>,
         storage: Arc<Storage>,
     ) -> Self {

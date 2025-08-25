@@ -137,6 +137,9 @@ impl ServiceHandler<Self, AccountRequest> for AccountService {
                 txn: raw_txn,
                 signer,
             } => AccountResponse::SignedTxn(Box::new(self.manager.sign_txn(signer, *raw_txn)?)),
+            AccountRequest::SignTxnInBatch { txns } => {
+                AccountResponse::SignedTxnList(self.manager.sign_txn_in_batch(txns)?)
+            }
             AccountRequest::SignMessage { message, signer } => AccountResponse::SignedMessage(
                 Box::new(self.manager.sign_message(signer, message)?),
             ),
@@ -145,6 +148,10 @@ impl ServiceHandler<Self, AccountRequest> for AccountService {
                     self.manager
                         .unlock_account(address, password.as_str(), duration)?;
                 AccountResponse::AccountInfo(Box::new(account_info))
+            }
+            AccountRequest::UnlockAccountInBatch(batch, duration) => {
+                let account_infos = self.manager.unlock_account_in_batch(batch, duration)?;
+                AccountResponse::AccountList(account_infos)
             }
             AccountRequest::LockAccount(address) => {
                 AccountResponse::AccountInfo(Box::new(self.manager.lock_account(address)?))

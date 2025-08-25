@@ -136,17 +136,21 @@ impl TxPoolSyncService for TxPoolService {
         });
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
+        info!(
+            "jacktest: ***************** current_timestamp_secs {}",
+            current_timestamp_secs
+        );
         let r = self
             .inner
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         current_timestamp_secs: Option<u64>,
-        header: &BlockHeader,
+        state_root: HashValue,
     ) -> Vec<SignedUserTransaction> {
         let _timer: Option<starcoin_metrics::HistogramTimer> =
             self.inner.metrics.as_ref().map(|metrics| {
@@ -158,10 +162,14 @@ impl TxPoolSyncService for TxPoolService {
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let pool_client = PoolClient::new(
-            header.clone(),
+            state_root,
             self.inner.storage.clone(),
             NonceCache::new(0),
             self.inner.vm_metrics.clone(),
+        );
+        info!(
+            "jacktest: ***************** state id: {:?}, current_timestamp_secs {}",
+            state_root, current_timestamp_secs
         );
         let r =
             self.inner
@@ -181,10 +189,23 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.next_sequence_number(address)
     }
 
-    fn next_sequence_number_with_header(
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_time
+                .with_label_values(&["next_sequence_number"])
+                .start_timer()
+        });
+        self.inner.next_sequence_number_in_batch(addresses)
+    }
+
+    fn next_sequence_number_with_state(
         &self,
         address: AccountAddress,
-        header: &BlockHeader,
+        state_root: HashValue,
     ) -> Option<u64> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
@@ -192,7 +213,8 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number_with_header"])
                 .start_timer()
         });
-        self.inner.next_sequence_number_with_header(address, header)
+        self.inner
+            .next_sequence_number_with_header(address, state_root)
     }
 
     /// subscribe
@@ -368,13 +390,21 @@ impl Inner {
             .next_sequence_number(self.get_pool_client(), &address)
     }
 
+    pub(crate) fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        self.queue
+            .next_sequence_number_in_batch(self.get_pool_client(), addresses)
+    }
+
     pub(crate) fn next_sequence_number_with_header(
         &self,
         address: AccountAddress,
-        header: &BlockHeader,
+        state_root: HashValue,
     ) -> Option<u64> {
         let pool_client = PoolClient::new(
-            header.clone(),
+            state_root,
             self.storage.clone(),
             NonceCache::new(0),
             self.vm_metrics.clone(),
@@ -412,7 +442,7 @@ impl Inner {
         }
 
         // remove outdated txns.
-        self.cull();
+        // self.cull();
 
         // import retracted txns.
         let txns = retracted
@@ -432,7 +462,7 @@ impl Inner {
 
     fn get_pool_client(&self) -> PoolClient {
         PoolClient::new(
-            self.chain_header.read().clone(),
+            self.chain_header.read().state_root(),
             self.storage.clone(),
             self.sequence_number_cache.clone(),
             self.vm_metrics.clone(),
