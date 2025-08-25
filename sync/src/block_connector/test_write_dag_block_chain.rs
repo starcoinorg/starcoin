@@ -10,7 +10,8 @@ use starcoin_chain_service::WriteableChainService;
 use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_txpool_mock_service::MockTxPoolService;
+
+use starcoin_txpool::MockTxPoolService;
 use starcoin_types::block::Block;
 use std::sync::Arc;
 

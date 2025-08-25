@@ -265,7 +265,7 @@ impl TxnMocker {
         now.duration_since(UNIX_EPOCH)
             .expect("time error")
             .as_secs()
-            + DEFAULT_EXPIRATION_TIME
+            + 600 // 10 minutes
         // let node_info = self
         //     .client
         //     .node_info()
@@ -318,7 +318,7 @@ impl TxnMocker {
             Ok(txn) => txn,
         };
         info!(
-            "prepare to submit txn, sender:{},seq:{},id:{}",
+            "prepare to submit txn, sender2:{},seq:{},id:{}",
             user_txn.sender(),
             user_txn.sequence_number(),
             user_txn.id(),

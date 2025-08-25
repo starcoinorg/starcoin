@@ -280,9 +280,20 @@ impl TxPoolSyncService for MockTxPoolService {
         &self,
         txns: Vec<SignedUserTransaction>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
+        if txns.is_empty() {
+            return vec![Ok(())];
+        }
+        let id = txns[0].id();
         let len = txns.len();
-        self.pool.lock().unwrap().append(&mut txns.into());
         let mut results = vec![];
+        let mut pool = match self.pool.lock() {
+            Ok(pool) => pool,
+            Err(e) => {
+                results.resize_with(len, || Ok(()));
+                return results;
+            }
+        };
+        pool.append(&mut txns.into());
         results.resize_with(len, || Ok(()));
         results
     }
@@ -292,12 +303,11 @@ impl TxPoolSyncService for MockTxPoolService {
     /// Attempts to "cancel" a transaction. If it was not propagated yet (or not accepted by other peers)
     /// there is a good chance that the transaction will actually be removed.
     fn remove_txn(&self, txn_hash: HashValue, _is_invalid: bool) -> Option<SignedUserTransaction> {
-        self.pool
-            .lock()
-            .unwrap()
-            .iter()
-            .position(|t| t.id() == txn_hash)
-            .map(|i| self.pool.lock().unwrap().remove(i).unwrap())
+        self.pool.lock().ok().and_then(|mut lock| {
+            lock.iter()
+                .position(|t| t.id() == txn_hash)
+                .and_then(|i| lock.remove(i))
+        })
     }
 
     /// Get all pending txns which is ok to be packaged to mining.
@@ -310,10 +320,15 @@ impl TxPoolSyncService for MockTxPoolService {
             Some(max) => self
                 .pool
                 .lock()
-                .unwrap()
-                .drain(0..max as usize)
-                .collect::<Vec<_>>(),
-            None => self.pool.lock().unwrap().drain(..).collect::<Vec<_>>(),
+                .ok()
+                .and_then(|mut pool| Some(pool.drain(0..max as usize).collect::<Vec<_>>()))
+                .unwrap(),
+            None => self
+                .pool
+                .lock()
+                .ok()
+                .and_then(|mut pool| Some(pool.drain(..).collect::<Vec<_>>()))
+                .unwrap(),
         }
     }
 
@@ -325,13 +340,22 @@ impl TxPoolSyncService for MockTxPoolService {
 
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
-        todo!()
+        unimplemented!("not implemented yet")
     }
     fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
-        todo!()
+        unimplemented!("not implemented yet")
     }
 
     fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
+        if retracted.is_empty() {
+            return Ok(());
+        }
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u64;
+
         let state_root = enacted.first().unwrap().header().state_root();
         let storage = self.storage.clone();
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root));
@@ -344,8 +368,12 @@ impl TxPoolSyncService for MockTxPoolService {
                     }
                     Err(e) => bail!("Get account {} resource from statedb error: {:?}, return 0 as sequence_number", sender, e),
                 };
-                if transaction.sequence_number() > sequence_number {
-                    self.pool.lock().unwrap().push_front(transaction.clone());
+                if transaction.expiration_timestamp_secs() >= now && transaction.sequence_number() >= sequence_number {
+                    self.pool
+                        .lock()
+                        .ok()
+                        .and_then(|mut pool| Some(pool.push_front(transaction.clone())))
+                        .unwrap();
                 }
             }
         }
@@ -353,11 +381,11 @@ impl TxPoolSyncService for MockTxPoolService {
     }
 
     fn status(&self) -> TxPoolStatus {
-        unimplemented!()
+        unimplemented!("not implemented yet")
     }
 
     fn find_txn(&self, _hash: &HashValue) -> Option<SignedUserTransaction> {
-        unimplemented!()
+        None // force to get the transactio from peer's storage
     }
 
     fn txns_of_sender(
@@ -377,9 +405,26 @@ impl TxPoolSyncService for MockTxPoolService {
         let mut result = vec![];
         let storage = self.storage.clone();
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root));
-        let max = std::cmp::max(self.pool.lock().unwrap().len() as u64, max_len);
+        let mut pool = match self.pool.lock() {
+            Ok(pool) => pool,
+            Err(e) => {
+                error!(
+                    "MockTxPoolService get_pending_with_state lock pool error: {:?}",
+                    e
+                );
+                return result;
+            }
+        };
+        let max = std::cmp::min(pool.len() as u64, max_len);
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         for i in 0..max {
-            let txn = self.pool.lock().unwrap().get(i as usize).cloned().unwrap();
+            let txn = match pool.get(i as usize).cloned() {
+                Some(txn) => txn,
+                None => break,
+            };
             let sender = txn.sender();
             let sequence_number = match statedb.get_account_resource(sender) {
                 Ok(op_resource) => {
@@ -387,10 +432,10 @@ impl TxPoolSyncService for MockTxPoolService {
                 }
                 Err(e) => panic!("in get_pending_with_state, Get account {} resource from statedb error: {:?}, return 0 as sequence_number", sender, e),
             };
-            if txn.sequence_number() > sequence_number {
+            if txn.expiration_timestamp_secs()>= now && txn.sequence_number() >= sequence_number {
                 result.push(txn);
             } else {
-                self.pool.lock().unwrap().remove(i as usize);
+                pool.remove(i as usize);
             }
         }
 

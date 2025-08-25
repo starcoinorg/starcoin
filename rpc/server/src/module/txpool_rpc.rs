@@ -128,7 +128,7 @@ mod tests {
     use super::*;
     use futures::executor::block_on;
     use jsonrpc_core::IoHandler;
-    use starcoin_txpool_mock_service::MockTxPoolService;
+    // use starcoin_txpool_mock_service::MockTxPoolService;
 
     // #[test]
     // fn test_submit_transaction() {

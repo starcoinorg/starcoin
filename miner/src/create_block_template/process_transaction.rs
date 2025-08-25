@@ -22,7 +22,7 @@ use starcoin_types::{
 
 use super::block_builder_service::TemplateTxProvider;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ProcessHeaderTemplate {
     pub header: BlockHeader,
     pub uncles: Vec<BlockHeader>,
@@ -33,7 +33,7 @@ pub struct ProcessHeaderTemplate {
     pub pruning_point: HashValue,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ProcessedTransactions {
     pub included_user_txns: Vec<SignedUserTransaction>,
     pub state_root: HashValue,

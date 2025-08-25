@@ -324,13 +324,13 @@ impl MinerService {
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<Self>) {
-        debug!("Handle GenerateBlockEvent:{:?}", event);
+        info!("Handle GenerateBlockEvent:{:?}", event);
         if !event.break_current_task && self.is_minting() {
-            debug!("Miner has mint job so just ignore this event.");
+            info!("Miner has mint job so just ignore this event.");
             return;
         }
         if self.config.miner.disable_miner_client() && self.client_subscribers_num == 0 {
-            debug!("No miner client connected, ignore GenerateBlockEvent.");
+            info!("No miner client connected, ignore GenerateBlockEvent.");
             // Once Miner client connect, we should dispatch task.
             ctx.run_later(Duration::from_secs(2), |ctx| {
                 ctx.notify(GenerateBlockEvent::default());

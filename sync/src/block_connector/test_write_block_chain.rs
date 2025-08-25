@@ -8,7 +8,8 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
-use starcoin_txpool_mock_service::MockTxPoolService;
+
+use starcoin_txpool::MockTxPoolService;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 

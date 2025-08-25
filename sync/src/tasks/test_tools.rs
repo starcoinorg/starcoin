@@ -21,8 +21,8 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRe
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
+use starcoin_txpool::MockTxPoolService;
 #[cfg(test)]
-use starcoin_txpool_mock_service::MockTxPoolService;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
