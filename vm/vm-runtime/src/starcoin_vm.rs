@@ -1664,6 +1664,7 @@ impl VMExecutor for StarcoinVM {
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
         let concurrency_level = Self::get_concurrency_level();
         if concurrency_level > 1 {
+            info!("TurboSTM executor concurrency_level {}", concurrency_level);
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
                 state_view,
@@ -1671,7 +1672,7 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
+            debug!("TurboSTM executor concurrency_level {}", concurrency_level);
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(
