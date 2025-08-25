@@ -500,7 +500,7 @@ pub fn build_module_upgrade_proposal(
         EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("ModuleUpgradeScripts").unwrap(),
+                Identifier::new("dao_upgrade_module_proposal").unwrap(),
             ),
             Identifier::new(function_name).unwrap(),
             vec![token_code
@@ -520,7 +520,7 @@ pub fn build_module_upgrade_plan(
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("ModuleUpgradeScripts").unwrap(),
+            Identifier::new("dao_upgrade_module_proposal").unwrap(),
         ),
         Identifier::new("submit_module_upgrade_plan").unwrap(),
         vec![token_code
@@ -542,21 +542,21 @@ pub fn build_module_upgrade_queue(
     let upgrade_module = if stdlib_2_or_bigger {
         TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
-            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            module: Identifier::new("dao_upgrade_module_proposal").unwrap(),
             name: Identifier::new("UpgradeModuleV2").unwrap(),
             type_args: vec![],
         }))
     } else {
         TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
-            module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+            module: Identifier::new("dao_upgrade_module_proposal").unwrap(),
             name: Identifier::new("UpgradeModule").unwrap(),
             type_args: vec![],
         }))
     };
 
     EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("dao").unwrap()),
         Identifier::new("queue_proposal_action").unwrap(),
         vec![
             token_code

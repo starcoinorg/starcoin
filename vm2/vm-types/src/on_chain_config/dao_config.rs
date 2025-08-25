@@ -18,7 +18,7 @@ pub struct DaoConfig {
 }
 
 impl OnChainConfig for DaoConfig {
-    const MODULE_IDENTIFIER: &'static str = "Dao";
+    const MODULE_IDENTIFIER: &'static str = "dao";
     const TYPE_IDENTIFIER: &'static str = "DaoConfig";
 
     fn type_params() -> Vec<TypeTag> {
