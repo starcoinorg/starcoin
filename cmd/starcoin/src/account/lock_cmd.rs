@@ -7,7 +7,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::account_address::AccountAddress;
 
 /// Lock the account
 #[derive(Debug, Parser, Default)]
@@ -15,7 +15,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 pub struct LockOpt {
     #[clap(
         name = "account_address",
-        help = "The wallet account address witch to lock, if absent, lock the default wallet."
+        help = "The wallet account address which to lock, if absent, lock the default wallet."
     )]
     account_address: Option<AccountAddress>,
 }
@@ -32,9 +32,12 @@ impl CommandAction for LockCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &LockOpt = ctx.opt();
-        let account = ctx.state().get_account_or_default(opt.account_address)?;
+        let account = ctx
+            .state()
+            .vm2()?
+            .get_account_or_default(opt.account_address)?;
 
         client.lock_account(account.address)?;
         Ok(StringView {

@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::{AccountInfo, AccountPublicKey};
-use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey;
 
 /// Import a readonly account by public key
 #[derive(Debug, Parser)]
@@ -34,7 +35,7 @@ impl CommandAction for ImportReadonlyCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let opt: &ImportReadonlyOpt = ctx.opt();
 
         let public_key = AccountPublicKey::from_encoded_string(opt.from_input.as_str())?;

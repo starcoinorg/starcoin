@@ -35,7 +35,7 @@ impl CommandAction for SleepCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        let net = ctx.state().net();
+        let net = ctx.state().vm2()?.net();
         if !net.is_test_or_dev() {
             bail!(
                 "This command only available in test or dev network, current network is: {}",

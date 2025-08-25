@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::dev::dev_helper;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use crate::{
+    cli_state::CliState, dev::dev_helper_vm2, view::TransactionOptions,
+    view_vm2::ExecuteResultView, StarcoinOpt,
+};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::transaction::TransactionPayload;
+use starcoin_types::account_address::AccountAddress as AccountAddress1;
+use starcoin_vm2_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
 
 /// Deploy Move modules
@@ -36,7 +37,7 @@ impl CommandAction for DeployCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-        let package = dev_helper::load_package_from_file(opt.mv_or_package_file.as_path())?;
+        let package = dev_helper_vm2::load_package_from_file(opt.mv_or_package_file.as_path())?;
 
         let package_address = package.package_address();
         let mut transaction_opts = opt.transaction_opts.clone();
@@ -47,11 +48,12 @@ impl CommandAction for DeployCommand {
                     "Use package address ({}) as transaction sender",
                     package_address
                 );
-                transaction_opts.sender = Some(package_address);
+                transaction_opts.sender = Some(AccountAddress1::new(package_address.into_bytes()));
             }
         };
 
         ctx.state()
+            .vm2()?
             .build_and_execute_transaction(transaction_opts, TransactionPayload::Package(package))
     }
 }

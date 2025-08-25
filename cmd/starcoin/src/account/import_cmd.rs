@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
-use crate::StarcoinOpt;
+use crate::CliState;
 use anyhow::{bail, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::{AccountInfo, AccountPrivateKey};
-use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_config::StarcoinOpt;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use std::path::PathBuf;
 
 /// Import account by private key to node wallet.
@@ -47,7 +48,7 @@ impl CommandAction for ImportCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt: &ImportOpt = ctx.opt();
-        let client = ctx.state().account_client();
+        let client = ctx.state().vm2()?.account_client();
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
             (Some(p), _) => AccountPrivateKey::from_encoded_string(p)?,
             (None, Some(p)) => {

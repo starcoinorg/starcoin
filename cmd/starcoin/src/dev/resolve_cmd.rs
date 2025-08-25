@@ -7,8 +7,8 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
-use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
-use starcoin_rpc_api::types::{FunctionIdView, ModuleIdView, StructTagView};
+use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
+use starcoin_vm2_types::view::{FunctionIdView, ModuleIdView, StructTagView};
 
 /// Resolve Function/Struct/Module get ABI.
 #[derive(Debug, Parser)]
@@ -66,21 +66,18 @@ impl CommandAction for ResolveCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
+        let rpc_client = ctx.state().vm2()?.client();
         let result = match opt {
-            ResolveOpt::Function { function_id } => ResolveResult::Function(
-                ctx.state()
-                    .client()
-                    .contract_resolve_function(function_id.clone())?,
-            ),
-            ResolveOpt::Struct { struct_tag } => ResolveResult::Struct(
-                ctx.state()
-                    .client()
-                    .contract_resolve_struct(struct_tag.clone())?,
-            ),
+            ResolveOpt::Function { function_id } => {
+                ResolveResult::Function(rpc_client.contract_resolve_function2(function_id.clone())?)
+            }
+            ResolveOpt::Struct { struct_tag } => {
+                ResolveResult::Struct(rpc_client.contract_resolve_struct2(struct_tag.clone())?)
+            }
             ResolveOpt::Module { module_id } => ResolveResult::Module(
                 ctx.state()
                     .client()
-                    .contract_resolve_module(module_id.clone())?,
+                    .contract_resolve_module2(module_id.clone())?,
             ),
         };
         Ok(result)
