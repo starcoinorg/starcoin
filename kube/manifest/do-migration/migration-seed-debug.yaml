@@ -6,7 +6,7 @@ metadata:
 spec:
   containers:
     - name: migration-seed-debug
-      image: alpine:latest
+      image: ubuntu:22.04
       command: ["sh", "-c"]
       args:
         - ls -l /sc-data;
@@ -17,5 +17,5 @@ spec:
   volumes:
     - name: pvc-volume
       persistentVolumeClaim:
-        claimName: starcoin-volume-starcoin-0
+        claimName: starcoin-volume-starcoin-2
   restartPolicy: Never
