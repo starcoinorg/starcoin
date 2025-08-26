@@ -15,6 +15,7 @@ use crate::{
 use anyhow::Result;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
+use starcoin_types::table::StcTableInfo;
 use starcoin_types::transaction::StcRichTransactionInfo;
 use starcoin_types::{
     account_address::AccountAddress, language_storage::TypeTag, startup_info::SnapshotRange,
@@ -302,11 +303,11 @@ fn test_table_info_storage() -> Result<()> {
     );
     let storage = Storage::new(instance)?;
     let key1 = TableHandle(AccountAddress::random()).into();
-    let table_info1 = TableInfo::new(TypeTag::U8, TypeTag::U8);
-    storage.save_table_info(key1, table_info1.clone().into())?;
+    let table_info1: StcTableInfo = TableInfo::new(TypeTag::U8, TypeTag::U8).into();
+    storage.save_table_info(key1, table_info1.clone())?;
     let val = storage.get_table_info(key1);
     assert!(val.is_ok());
-    assert_eq!(val.unwrap().unwrap(), table_info1.into());
+    assert_eq!(val.unwrap().unwrap(), table_info1);
     let key2 = TableHandle(AccountAddress::random()).into();
     let val = storage.get_table_info(key2);
     assert!(val.is_ok());
