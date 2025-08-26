@@ -158,9 +158,4 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         let reader = self.state_db().fork_at(state_root);
         reader.get_with_table_item_proof(&handle, &key)
     }
-
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let reader = self.state_db().fork();
-        reader.get_table_info(address)
-    }
 }
