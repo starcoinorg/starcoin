@@ -20,8 +20,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
@@ -32,7 +30,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
@@ -279,11 +276,6 @@ impl StateNodeStore for Storage {
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
         self.state_node_storage.write_batch(batch)
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let handle = TableHandle(address).into();
-        Ok(self.table_info_storage.get(handle)?.and_then(|i| i.to_v1()))
     }
 }
 
