@@ -3,20 +3,20 @@
 
 use std::path::PathBuf;
 
+use crate::{view::TransactionOptions, view_vm2::ExecuteResultView, CliState};
 use anyhow::{bail, Result};
 use clap::Parser;
-
 use scmd::{CommandAction, ExecContext};
+use starcoin_config::StarcoinOpt;
 use starcoin_move_compiler::load_bytecode_file;
-use starcoin_types::transaction::{
-    parse_transaction_argument_advance, Script, TransactionArgument, TransactionPayload,
+use starcoin_vm2_vm_types::{
+    language_storage::TypeTag,
+    parser::parse_type_tag,
+    transaction::{Script, TransactionPayload},
+    transaction_argument::{convert_txn_args, TransactionArgument},
 };
-use starcoin_vm_types::transaction_argument::convert_txn_args;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
-use crate::cli_state::CliState;
-use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::StarcoinOpt;
+use starcoin_vm2_types::transaction::parse_transaction_argument_advance;
 
 /// Execute a script
 #[derive(Debug, Parser)]
@@ -69,6 +69,7 @@ impl CommandAction for ExecuteScriptCommand {
             }
         };
         ctx.state()
+            .vm2()?
             .build_and_execute_transaction(opt.transaction_opts.clone(), txn_payload)
     }
 }

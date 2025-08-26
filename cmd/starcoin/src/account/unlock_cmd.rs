@@ -6,8 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_types::account_address::AccountAddress;
 use std::time::Duration;
 
 /// Unlock the account
@@ -24,7 +24,7 @@ pub struct UnlockOpt {
     duration: u32,
     #[clap(
         name = "account_address",
-        help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
+        help = "The wallet account address which to unlock, if absent, unlock the default wallet."
     )]
     account_address: Option<AccountAddress>,
 }
@@ -41,12 +41,12 @@ impl CommandAction for UnlockCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let account_client = ctx.state().account_client();
+        let account_client = ctx.state().vm2()?.account_client();
         let opt: &UnlockOpt = ctx.opt();
         let account_address = if let Some(account_address) = opt.account_address {
             account_address
         } else {
-            ctx.state().default_account()?.address
+            ctx.state().vm2()?.default_account()?.address
         };
 
         let duration = Duration::from_secs(opt.duration as u64);

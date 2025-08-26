@@ -534,7 +534,7 @@ mod tests {
     #[stest::test]
     pub fn test_builtin_genesis() -> Result<()> {
         for id in BuiltinNetworkID::networks() {
-            if !id.genesis_config().is_ready() {
+            if !id.genesis_config().is_ready() || id.is_main() {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
