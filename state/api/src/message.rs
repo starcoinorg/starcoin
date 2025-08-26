@@ -25,7 +25,6 @@ pub enum StateRequest {
     StateRoot(),
     GetWithTableItemProof(TableHandle, Vec<u8>),
     GetWithTableItemProofByRoot(TableHandle, Vec<u8>, HashValue),
-    GetTableInfo(AccountAddress),
 }
 
 impl ServiceRequest for StateRequest {
