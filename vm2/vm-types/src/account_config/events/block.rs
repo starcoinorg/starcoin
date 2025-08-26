@@ -16,7 +16,8 @@ pub struct NewBlockEvent {
 }
 impl NewBlockEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        bcs_ext::from_bytes(bytes)}
+        bcs_ext::from_bytes(bytes)
+    }
 }
 
 impl MoveStructType for NewBlockEvent {

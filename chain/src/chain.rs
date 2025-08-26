@@ -402,17 +402,16 @@ impl BlockChain {
         // Get the parent header: use provided header or calculate from ghostdata
         let parent_header = match parent_header {
             Some(header) => header,
-            None => {
-                self.storage
-                    .0
-                    .get_block_header_by_hash(ghostdata.selected_parent)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Cannot find block header by {:?}",
-                            ghostdata.selected_parent
-                        )
-                    })?
-            }
+            None => self
+                .storage
+                .0
+                .get_block_header_by_hash(ghostdata.selected_parent)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find block header by {:?}",
+                        ghostdata.selected_parent
+                    )
+                })?,
         };
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
@@ -2077,7 +2076,8 @@ impl BlockChain {
         let block_id = header.id();
 
         let selected_head = self
-            .storage.0
+            .storage
+            .0
             .get_block_by_hash(selected_parent)?
             .ok_or_else(|| {
                 format_err!("Can not find selected block by hash {:?}", selected_parent)
@@ -2265,7 +2265,7 @@ impl BlockChain {
                 .0
                 .get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        
+
         let transaction_global_index = txn_accumulator.num_leaves();
 
         // Update txn accumulator with both VM1 and VM2 transactions
@@ -2287,7 +2287,7 @@ impl BlockChain {
             if !included_txn_info_hashes2.is_empty() {
                 txn_accumulator.append(&included_txn_info_hashes2)?;
             }
-            
+
             txn_accumulator.root_hash()
         };
 
@@ -2310,7 +2310,7 @@ impl BlockChain {
                 .0
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
-        
+
         // Append block to accumulator and flush
         block_accumulator.append(&[block_id])?;
 

@@ -412,7 +412,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Miner1 creates block b2 with the transaction
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner1.address(),
-        None,               // No specific parent header
+        None, // No specific parent header
         vec![signed_txn.clone().into()],
         None,               // uncles
         None,               // block_gas_limit
@@ -441,7 +441,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Use explicit tips [b1] to simulate miner2 hasn't seen b2 yet
     let (template_b3, excluded) = block_chain.create_block_template(
         *miner2.address(),
-        None,                      // No specific parent header
+        None, // No specific parent header
         vec![signed_txn.clone().into()],
         None,                      // uncles
         None,                      // block_gas_limit

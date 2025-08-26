@@ -290,7 +290,9 @@ impl OpenedBlock {
     fn initialize(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
         let vm1_metadata = self.convert_block_meta_to_legacy();
-        let block_metadata_txn = Transaction::BlockMetadata(vm1_metadata);
+        debug!("VM1 BlockMetadata: {:?}", vm1_metadata);
+        debug!("VM2 BlockMetadata (original): {:?}", self.block_meta);
+        let block_metadata_txn = Transaction::BlockMetadata(vm1_metadata.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
         let mut results =
             execute_transactions(state, vec![block_metadata_txn], self.vm_metrics.clone())
@@ -301,7 +303,7 @@ impl OpenedBlock {
             TransactionStatus::Discard(status) => {
                 bail!(
                     "block_metadata txn {:?} is discarded, vm status: {:?}",
-                    self.block_meta,
+                    vm1_metadata,
                     status
                 );
             }

@@ -167,10 +167,8 @@ module starcoin_framework::epoch {
             (false, epoch_ref.reward_per_block)
         } else if (block_number == epoch_ref.end_block_number) {
             //start a new epoch
-            assert!(uncles == 0, error::invalid_argument(EINVALID_UNCLES_COUNT));
             // block time target unit is milli_seconds.
             let now_milli_seconds = timestamp;
-
             let config = consensus_config::get_config();
             let last_epoch_time_target = epoch_ref.block_time_target;
             let new_epoch_block_time_target = compute_next_block_time_target(

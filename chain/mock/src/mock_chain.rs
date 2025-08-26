@@ -253,14 +253,16 @@ impl MockChain {
 
         let mut parent_one = start_header.clone();
         for _i in 0..one_count {
-            let new_block = self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id()])?;
+            let new_block =
+                self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id()])?;
             parent_one = new_block.header().clone();
             self.apply(new_block)?;
         }
 
         let mut parent_two = start_header;
         for _i in 0..two_count {
-            let new_block = self.produce_block_by_tips(parent_two.clone(), vec![parent_two.id()])?;
+            let new_block =
+                self.produce_block_by_tips(parent_two.clone(), vec![parent_two.id()])?;
             parent_two = new_block.header().clone();
             self.apply(new_block)?;
         }

@@ -473,10 +473,8 @@ adjust_epoch try to advance to next epoch if current epoch ends.
         (<b>false</b>, epoch_ref.reward_per_block)
     } <b>else</b> <b>if</b> (block_number == epoch_ref.end_block_number) {
         //start a new <a href="epoch.md#0x1_epoch">epoch</a>
-        <b>assert</b>!(uncles == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="epoch.md#0x1_epoch_EINVALID_UNCLES_COUNT">EINVALID_UNCLES_COUNT</a>));
         // block time target unit is milli_seconds.
         <b>let</b> now_milli_seconds = <a href="timestamp.md#0x1_timestamp">timestamp</a>;
-
         <b>let</b> config = <a href="consensus_config.md#0x1_consensus_config_get_config">consensus_config::get_config</a>();
         <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
         <b>let</b> new_epoch_block_time_target = <a href="epoch.md#0x1_epoch_compute_next_block_time_target">compute_next_block_time_target</a>(

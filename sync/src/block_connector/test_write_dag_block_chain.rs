@@ -66,7 +66,7 @@ pub fn new_dag_block(
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
-            None,       // No specific parent header
+            None, // No specific parent header
             Vec::new(),
             None,       // uncles
             None,       // block_gas_limit
@@ -123,7 +123,7 @@ fn gen_fork_dag_block_chain(
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
-                    None,                  // No specific parent header
+                    None, // No specific parent header
                     Vec::new(),
                     None,                  // uncles
                     None,                  // block_gas_limit
