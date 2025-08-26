@@ -333,6 +333,7 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
+            None, // No specific parent header
             vec![],
             None, // uncles will be derived from blue blocks
             None, // use default gas limit
@@ -348,6 +349,7 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
+            None, // No specific parent header
             user_txns,
             None, // uncles will be derived from blue blocks
             None, // use default gas limit
@@ -363,6 +365,7 @@ impl BlockChain {
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         self.create_block_template(
             author,
+            None, // No specific parent header
             vec![],
             Some(uncles),
             None, // use default gas limit
@@ -374,6 +377,7 @@ impl BlockChain {
     pub fn create_block_template(
         &self,
         author: AccountAddress,
+        parent_header: Option<BlockHeader>,
         user_txns: Vec<MultiSignedUserTransaction>,
         uncles: Option<Vec<BlockHeader>>,
         block_gas_limit: Option<u64>,
@@ -395,18 +399,21 @@ impl BlockChain {
         let ghostdata = self.dag().ghostdata(&tips)?;
         let selected_parents = tips.clone();
 
-        // Get the parent header from ghostdata's selected_parent
-        let parent_header = self
-            .storage
-            .0
-            .get_block_header_by_hash(ghostdata.selected_parent)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot find block header by {:?}",
-                    ghostdata.selected_parent
-                )
-            })?;
-
+        // Get the parent header: use provided header or calculate from ghostdata
+        let parent_header = match parent_header {
+            Some(header) => header,
+            None => {
+                self.storage
+                    .0
+                    .get_block_header_by_hash(ghostdata.selected_parent)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Cannot find block header by {:?}",
+                            ghostdata.selected_parent
+                        )
+                    })?
+            }
+        };
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
             ghostdata.mergeset_blues
@@ -482,20 +489,6 @@ impl BlockChain {
             .get_hash_by_number(block_number)?
             .filter(|hash| hash == &block_id)
             .is_some())
-    }
-
-    // filter block by check exist
-    fn exist_block_filter(&self, block: Option<Block>) -> Result<Option<Block>> {
-        Ok(match block {
-            Some(block) => {
-                if self.check_exist_block(block.id(), block.header().number())? {
-                    Some(block)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        })
     }
 
     // filter header by check exist
@@ -1211,9 +1204,7 @@ impl ChainReader for BlockChain {
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
         let (storage, _storage2) = &self.storage;
-        storage
-            .get_block_by_hash(hash)
-            .and_then(|block| self.exist_block_filter(block))
+        storage.get_block_by_hash(hash)
     }
 
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>> {
@@ -2085,10 +2076,12 @@ impl BlockChain {
         let header = block.header();
         let block_id = header.id();
 
-        // Get selected head for gas_used
-        let selected_head = self.get_block(selected_parent)?.ok_or_else(|| {
-            format_err!("Can not find selected block by hash {:?}", selected_parent)
-        })?;
+        let selected_head = self
+            .storage.0
+            .get_block_by_hash(selected_parent)?
+            .ok_or_else(|| {
+                format_err!("Can not find selected block by hash {:?}", selected_parent)
+            })?;
 
         // Prepare transactions for VM1
         let vm1_offline = header.number() >= vm1_offline_height(header.chain_id().id().into());
@@ -2175,29 +2168,27 @@ impl BlockChain {
         )?;
 
         // Update state roots
-        let (state_root, multi_state) = {
+        let (state_root, multi_state, vm_state_accumulator) = {
             let state_root1 = executed_data.state_root;
             let state_root2 = executed_data2.state_root;
 
-            // Fork vm_state_accumulator from parent's accumulator info (same as OpenedBlock does)
+            // Create local vm_state_accumulator from parent's accumulator info
             let parent_vm_state_accumulator_info =
                 parent_block_info.get_vm_state_accumulator_info();
-            let forked_vm_state_accumulator = MerkleAccumulator::new_with_info(
+            let vm_state_accumulator = MerkleAccumulator::new_with_info(
                 parent_vm_state_accumulator_info.clone(),
                 self.storage
                     .0
                     .get_accumulator_store(AccumulatorStoreType::VMState),
             );
 
-            forked_vm_state_accumulator.append(&[state_root1, state_root2])?;
-            let computed_state_root = forked_vm_state_accumulator.root_hash();
-            // Now update the chain's vm_state_accumulator
-            self.vm_state_accumulator
-                .append(&[state_root1, state_root2])?;
+            vm_state_accumulator.append(&[state_root1, state_root2])?;
+            let computed_state_root = vm_state_accumulator.root_hash();
 
             (
                 computed_state_root,
                 MultiState::new(state_root1, state_root2),
+                vm_state_accumulator,
             )
         };
 
@@ -2266,7 +2257,16 @@ impl BlockChain {
                 });
         }
 
-        let transaction_global_index = self.txn_accumulator.num_leaves();
+        // Create local txn_accumulator from parent's accumulator info
+        let parent_txn_accumulator_info = parent_block_info.get_txn_accumulator_info();
+        let txn_accumulator = MerkleAccumulator::new_with_info(
+            parent_txn_accumulator_info.clone(),
+            self.storage
+                .0
+                .get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
+        
+        let transaction_global_index = txn_accumulator.num_leaves();
 
         // Update txn accumulator with both VM1 and VM2 transactions
         let executed_accumulator_root = {
@@ -2281,32 +2281,14 @@ impl BlockChain {
                 .map(|info| info.id())
                 .collect();
 
-            // Fork txn_accumulator from parent's accumulator info (same as OpenedBlock does)
-            let parent_txn_accumulator_info = parent_block_info.get_txn_accumulator_info();
-            let forked_txn_accumulator = MerkleAccumulator::new_with_info(
-                parent_txn_accumulator_info.clone(),
-                self.storage
-                    .0
-                    .get_accumulator_store(AccumulatorStoreType::Transaction),
-            );
-
             if !included_txn_info_hashes.is_empty() {
-                forked_txn_accumulator.append(&included_txn_info_hashes)?;
+                txn_accumulator.append(&included_txn_info_hashes)?;
             }
             if !included_txn_info_hashes2.is_empty() {
-                forked_txn_accumulator.append(&included_txn_info_hashes2)?;
+                txn_accumulator.append(&included_txn_info_hashes2)?;
             }
-            let computed_accumulator_root = forked_txn_accumulator.root_hash();
-
-            // Now update the chain's txn_accumulator
-            if !included_txn_info_hashes.is_empty() {
-                self.txn_accumulator.append(&included_txn_info_hashes)?;
-            }
-            if !included_txn_info_hashes2.is_empty() {
-                self.txn_accumulator.append(&included_txn_info_hashes2)?;
-            }
-
-            computed_accumulator_root
+            
+            txn_accumulator.root_hash()
         };
 
         verify_block!(
@@ -2320,20 +2302,29 @@ impl BlockChain {
         statedb.flush()?;
         statedb2.flush()?;
 
+        // Create local block_accumulator from parent's accumulator info
+        let parent_block_accumulator_info = parent_block_info.get_block_accumulator_info();
+        let block_accumulator = MerkleAccumulator::new_with_info(
+            parent_block_accumulator_info.clone(),
+            self.storage
+                .0
+                .get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        
         // Append block to accumulator and flush
-        self.block_accumulator.append(&[block_id])?;
+        block_accumulator.append(&[block_id])?;
 
         // Flush accumulators
-        self.txn_accumulator.flush()?;
-        self.vm_state_accumulator.flush()?;
-        self.block_accumulator.flush()?;
+        txn_accumulator.flush()?;
+        vm_state_accumulator.flush()?;
+        block_accumulator.flush()?;
 
         let block_info = BlockInfo::new(
             block_id,
             total_difficulty,
-            self.txn_accumulator.get_info(),
-            self.block_accumulator.get_info(),
-            self.vm_state_accumulator.get_info(),
+            txn_accumulator.get_info(),
+            block_accumulator.get_info(),
+            vm_state_accumulator.get_info(),
         );
 
         // Save block info and commit

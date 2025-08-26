@@ -253,6 +253,7 @@ where
     ) -> Result<Block> {
         let (block_template, _transactions) = self.main.create_block_template(
             author,
+            None, // No specific parent header
             multi_txns,
             Some(uncles),
             block_gas_limit,

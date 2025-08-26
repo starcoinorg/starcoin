@@ -46,8 +46,8 @@ impl MockChain {
         storage2: Arc<Storage2>,
         head_block_hash: HashValue,
         miner: AccountInfo,
+        dag: BlockDAG,
     ) -> Result<Self> {
-        let dag = BlockDAG::create_for_testing()?;
         let chain = BlockChain::new(
             net.time_service(),
             head_block_hash,
@@ -221,44 +221,62 @@ impl MockChain {
         parent_header: BlockHeader,
         tips: Vec<HashValue>,
     ) -> Result<BlockHeader> {
-        let block = self.produce_block_by_tips(tips)?;
+        let block = self.produce_block_by_tips(parent_header, tips)?;
         let header = block.header().clone();
-
-        // In fork scenarios, we need to update head to the parent first
-        // to ensure BasicVerifier's expectations are met
-        if self.head.current_header().id() != parent_header.id() {
-            // Fork the chain at the parent to set it as the current head
-            self.head = BlockChain::new(
-                self.head.time_service(),
-                parent_header.id(),
-                self.head.get_storage(),
-                self.head.get_storage2(),
-                None,
-                self.head.dag(),
-            )?;
-        }
-
-        // Now apply the block with the correct head
         self.apply(block)?;
         Ok(header)
     }
 
-    pub fn produce_block_by_tips(&mut self, tips: Vec<HashValue>) -> Result<Block> {
-        // Our version of create_block_template doesn't have parent_hash parameter
-        // We must ensure self.head is at the correct parent before calling it
+    pub fn produce_block_by_tips(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<Block> {
         let (block_template, _) = self.head.create_block_template(
             *self.miner.address(),
-            Vec::new(),        // user_txns
-            None,              // uncles
-            None,              // block_gas_limit
-            Some(tips),        // tips
-            HashValue::zero(), // pruning_point
+            Some(parent_header), // parent_header
+            Vec::new(),          // user_txns
+            None,                // uncles
+            None,                // block_gas_limit
+            Some(tips),          // tips
+            HashValue::zero(),   // pruning_point
         )?;
         let new_block = self
             .head
             .consensus()
             .create_block(block_template, self.net.time_service().as_ref())?;
         Ok(new_block)
+    }
+
+    pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
+        let start_header = self.head.current_header();
+
+        let mut parent_one = start_header.clone();
+        for _i in 0..one_count {
+            let new_block = self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id()])?;
+            parent_one = new_block.header().clone();
+            self.apply(new_block)?;
+        }
+
+        let mut parent_two = start_header;
+        for _i in 0..two_count {
+            let new_block = self.produce_block_by_tips(parent_two.clone(), vec![parent_two.id()])?;
+            parent_two = new_block.header().clone();
+            self.apply(new_block)?;
+        }
+
+        // Create a meetup block that has both branches as parents
+        let meetup_block = if one_count < two_count {
+            self.produce_block_by_tips(parent_two.clone(), vec![parent_one.id(), parent_two.id()])?
+        } else {
+            self.produce_block_by_tips(parent_one.clone(), vec![parent_one.id(), parent_two.id()])?
+        };
+        let new_header_id = meetup_block.header().id();
+        self.apply(meetup_block)?;
+
+        assert_eq!(self.head.current_header().id(), new_header_id);
+
+        Ok(())
     }
 
     pub fn miner(&self) -> &AccountInfo {

@@ -228,7 +228,7 @@ impl SyncNodeMocker {
         miner: AccountInfo,
         delay_milliseconds: u64,
         random_error_percent: u32,
-        _dag: BlockDAG,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let chain = MockChain::new_with_storage(
             net,
@@ -236,6 +236,7 @@ impl SyncNodeMocker {
             storage2.clone(),
             chain_info.head().id(),
             miner,
+            dag,
         )?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(

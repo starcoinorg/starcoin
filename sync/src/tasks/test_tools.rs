@@ -107,6 +107,12 @@ impl SyncTestSystem {
 
                 registry.put_shared(config.clone()).await.unwrap();
                 registry.put_shared(storage.clone()).await.unwrap();
+                registry.put_shared(storage2.clone()).await.unwrap();
+                // Also share storage2 as Arc<dyn Store2> for PruningPointService
+                registry
+                    .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
+                    .await
+                    .unwrap();
                 registry.put_shared(genesis).await.unwrap();
                 registry
                     .put_shared(dag)

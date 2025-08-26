@@ -190,7 +190,7 @@ impl BlockVerifier for BasicVerifier {
         // In DAG mode, parent doesn't need to be current head
         // Just verify parent exists and number is correct
         let parent_header = current_chain
-            .get_header(new_block_parent)?
+            .get_header_by_hash(new_block_parent)?
             .ok_or_else(|| format_err!("Parent block {:?} not found in chain", new_block_parent))?;
 
         // Check block number = parent.number + 1

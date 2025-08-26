@@ -398,13 +398,25 @@ where
         if parents.is_empty() {
             return Ok(());
         }
+        debug!(
+            "Finding absent parents for block {} at height {}, parents: {:?}",
+            block_header.id(),
+            block_header.number(),
+            parents
+        );
         for parent in parents {
             if absent_blocks.contains(parent) {
                 continue;
             }
             if self.chain.has_dag_block(*parent)? {
+                debug!("Parent {} exists in chain", parent);
                 continue;
             }
+            debug!(
+                "Parent {} is absent, adding to fetch list (block number: {})",
+                parent,
+                block_header.number()
+            );
             absent_blocks.push(*parent);
         }
         Ok(())
@@ -422,12 +434,18 @@ where
     }
 
     async fn find_absent_ancestor(&self, mut block_headers: Vec<BlockHeader>) -> Result<()> {
+        debug!(
+            "find_absent_ancestor called with {} headers, first: {:?}",
+            block_headers.len(),
+            block_headers.first().map(|h| (h.id(), h.number()))
+        );
         loop {
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
                 return Ok(());
             }
+            debug!("Found {} absent blocks to fetch", absent_blocks.len());
             block_headers = self.fetch_blocks(absent_blocks).await?;
         }
     }
@@ -745,6 +763,9 @@ where
 
     fn finish(self) -> Result<Self::Output> {
         self.local_store.delete_all_dag_sync_blocks()?;
+        // Fork to latest_block_id to ensure the returned chain has its head/state
+        // pointing to a specific block, making it ready for subsequent operations.
+        // In DAG mode, this sets the execution context to the latest processed block.
         self.chain.fork(self.latest_block_id)
     }
 }
