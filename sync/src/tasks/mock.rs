@@ -193,9 +193,9 @@ impl SyncNodeMocker {
         delay_milliseconds: u64,
         random_error_percent: u32,
     ) -> Result<Self> {
-        let chain = MockChain::new(net.clone())?;
-        // Create storage2 for test when using new()
-        let (_, storage2, _, _, _) = starcoin_genesis::Genesis::init_storage_for_test(&net)?;
+        // Use new_and_get_storage2 to get both chain and storage2
+        // This ensures parallel executor uses the same storage2 that contains genesis state
+        let (chain, storage2) = MockChain::new_and_get_storage2(net.clone())?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),

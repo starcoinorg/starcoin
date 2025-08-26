@@ -40,6 +40,23 @@ impl MockChain {
         Ok(Self::new_inner(net, chain, miner))
     }
 
+    pub fn new_and_get_storage2(net: ChainNetwork) -> Result<(Self, Arc<Storage2>)> {
+        let (storage, storage2, chain_info, _, dag) =
+            Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+
+        let storage2_clone = storage2.clone();
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage,
+            storage2,
+            None,
+            dag,
+        )?;
+        let miner = AccountInfo::random();
+        Ok((Self::new_inner(net, chain, miner), storage2_clone))
+    }
+
     pub fn new_with_storage(
         net: ChainNetwork,
         storage: Arc<Storage>,

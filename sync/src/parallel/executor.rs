@@ -215,6 +215,10 @@ impl DagBlockExecutor {
                                     executed_block.header().number(),
                                     executed_block.header().id()
                                 );
+                                // Adjust time after successful block execution to ensure proper time synchronization
+                                // This is important for validating subsequent blocks in the parallel execution pipeline
+                                self.time_service
+                                    .adjust(executed_block.header().timestamp());
                                 match self
                                     .sender
                                     .send(ExecuteState::Executed(Box::new(executed_block)))

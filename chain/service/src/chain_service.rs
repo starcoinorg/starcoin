@@ -628,12 +628,13 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, storage2, chain_info, _, _dag) =
+        let (storage, storage2, chain_info, _, dag) =
             test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         registry.put_shared(storage2).await?;
+        registry.put_shared(dag).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
         let chain_status = service_ref.main_status().await?;
         assert_eq!(&chain_status, chain_info.status());

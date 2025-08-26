@@ -140,25 +140,35 @@ impl BlockChain {
         );
 
         let (state_root1, state_root2) = {
-            assert!(vm_state_accumulator.num_leaves() > 1,);
-            (
-                vm_state_accumulator
-                    .get_leaf(vm_state_accumulator.num_leaves() - 2)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find acc leaf {}",
-                            vm_state_accumulator.num_leaves() - 2
-                        )
-                    })?,
-                vm_state_accumulator
-                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find acc leaf {}",
-                            vm_state_accumulator.num_leaves() - 1
-                        )
-                    })?,
-            )
+            debug!(
+                "vm_state_accumulator num_leaves: {}, root: {:?}",
+                vm_state_accumulator.num_leaves(),
+                vm_state_accumulator.root_hash()
+            );
+            assert!(
+                vm_state_accumulator.num_leaves() > 1,
+                "vm_state_accumulator must have at least 2 leaves, but has {}",
+                vm_state_accumulator.num_leaves()
+            );
+
+            let leaf1_idx = vm_state_accumulator.num_leaves() - 2;
+            let leaf2_idx = vm_state_accumulator.num_leaves() - 1;
+
+            debug!("Getting leaf at index {} and {}", leaf1_idx, leaf2_idx);
+
+            let state_root1 = vm_state_accumulator
+                .get_leaf(leaf1_idx)?
+                .ok_or_else(|| format_err!("Can not find acc leaf at index {}", leaf1_idx))?;
+
+            let state_root2 = vm_state_accumulator
+                .get_leaf(leaf2_idx)?
+                .ok_or_else(|| format_err!("Can not find acc leaf at index {}", leaf2_idx))?;
+
+            debug!(
+                "Retrieved state_root1: {:?}, state_root2: {:?}",
+                state_root1, state_root2
+            );
+            (state_root1, state_root2)
         };
 
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
@@ -2031,8 +2041,11 @@ impl ChainWriter for BlockChain {
             head: block.clone(),
             multi_state,
         };
+        // Update epoch from statedb after each block connection in DAG mode
+        // This ensures epoch is always up-to-date during sync
+        self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
+
         if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
             block_uncles.iter().for_each(|uncle_header| {

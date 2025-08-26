@@ -148,32 +148,33 @@ impl SyncTestSystem {
 #[cfg(test)]
 pub async fn full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
+    // Reduce delay from 300ms to 10ms to speed up test
+    let mut node1 = SyncNodeMocker::new(net1, 10, 0)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
     let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
 
-    // Create storage2 for test
-    let (_, test_storage2, _, _, _) = Genesis::init_storage_for_test(&net2)?;
-    let node2 = SyncNodeMocker::new(net2.clone(), 300, 0)?;
+    // Reduce delay from 300ms to 10ms to speed up test
+    let node2 = SyncNodeMocker::new(net2.clone(), 10, 0)?;
 
     let target = arc_node1.sync_target();
 
     let current_block_header = node2.chain().current_header();
     let storage = node2.chain().get_storage();
+    // Use storage2 from node2 to ensure consistency
+    let storage2 = node2.get_storage2();
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
-    // Use the test_storage2 created above
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
         net2.time_service(),
         storage.clone(),
-        test_storage2.clone(),
+        storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,
@@ -201,14 +202,14 @@ pub async fn full_sync_new_node() -> Result<()> {
     let (sender_2, _receiver_2) = unbounded();
     //sync again
     let target = arc_node1.sync_target();
-    // Use the test_storage2 created above
+    // Use the same storage2 from node2
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
         net2.time_service(),
         storage.clone(),
-        test_storage2.clone(),
+        storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,

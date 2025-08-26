@@ -1108,8 +1108,9 @@ pub async fn test_range_location() -> Result<()> {
     );
 
     blocks.into_iter().try_for_each(|block| {
+        // Only apply the block, which will execute it and generate state tree nodes
+        // Don't connect directly as that would require state tree nodes we don't have
         mock_chain_remote.apply(block.block().clone())?;
-        mock_chain_remote.connect(block)?;
         anyhow::Ok(())
     })?;
 

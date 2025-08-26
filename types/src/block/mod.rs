@@ -386,7 +386,7 @@ impl BlockHeader {
             HashValue::random(),
             HashValue::random(),
             rand::random(),
-            U256::MAX,
+            rand::random::<u64>().into(),
             HashValue::random(),
             ChainId::test(),
             0,

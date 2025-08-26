@@ -234,16 +234,19 @@ where
     }
 
     fn notify(&mut self, executed_block: ExecutedBlock) -> anyhow::Result<CollectorState> {
-        let block = executed_block.block();
-        let block_id = block.id();
-        let block_info = self
-            .local_store
-            .get_block_info(block_id)?
-            .ok_or_else(|| format_err!("block info should exist, id: {:?}", block_id))?;
+        let block = executed_block.block().clone();
+        let block_info = executed_block.block_info().clone();
+
+        // Save the executed block info to storage (includes multi_state via vm_state_accumulator)
+        self.local_store.save_block_info(block_info.clone())?;
+
+        // Update the chain's internal state with the executed block
+        self.chain.connect(executed_block)?;
+
         self.notify_connected_block(
-            block.clone(),
+            block,
             block_info.clone(),
-            BlockConnectAction::ConnectNewBlock,
+            BlockConnectAction::ConnectExecutedBlock,
             self.check_enough_by_info(block_info)?,
         )
         .context("Failed to notify connected block")
