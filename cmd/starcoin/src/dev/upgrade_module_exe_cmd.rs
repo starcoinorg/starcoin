@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    cli_state::CliState, subcommand_vm2::dev::dev_helper_vm2, view::TransactionOptions,
+    cli_state::CliState, dev::dev_helper_vm2, view::TransactionOptions,
     view_vm2::ExecuteResultView, StarcoinOpt,
 };
 use anyhow::Result;

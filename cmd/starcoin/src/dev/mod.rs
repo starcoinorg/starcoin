@@ -19,10 +19,16 @@ pub(crate) mod resolve_cmd;
 pub(crate) mod sign_txn_helper;
 pub(crate) mod sleep_cmd;
 pub mod subscribe_cmd;
+pub mod upgrade_module_exe_cmd;
+pub mod upgrade_module_plan_cmd;
+pub mod upgrade_module_proposal_cmd;
+pub mod upgrade_module_queue_cmd;
+pub mod upgrade_vm_config_proposal_cmd;
 
 pub use {
     call_api_cmd::*, call_contract_cmd::*, compile_cmd::*, concurrency_level_cmd::*, deploy_cmd::*,
     gen_block_cmd::*, get_coin_cmd::*, log_cmd::*, logger_balance_amount_cmd::*, move_explain::*,
     package_cmd::*, panic_cmd::*, resolve_cmd::*, sign_txn_helper::*, sleep_cmd::*,
-    subscribe_cmd::*,
+    subscribe_cmd::*, upgrade_module_exe_cmd::*, upgrade_module_plan_cmd::*,
+    upgrade_module_proposal_cmd::*, upgrade_module_queue_cmd::*, upgrade_vm_config_proposal_cmd::*,
 };

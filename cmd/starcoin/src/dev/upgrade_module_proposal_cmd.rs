@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    cli_state::CliState, dev::sign_txn_helper::get_dao_config, subcommand_vm2::dev::dev_helper_vm2,
-    view::TransactionOptions, view_vm2::ExecuteResultView, StarcoinOpt,
+    cli_state::CliState,
+    dev::{dev_helper_vm2, sign_txn_helper::get_dao_config},
+    view::TransactionOptions,
+    view_vm2::ExecuteResultView,
+    StarcoinOpt,
 };
 use anyhow::{bail, format_err, Result};
 use clap::Parser;
