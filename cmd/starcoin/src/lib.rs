@@ -5,7 +5,6 @@ pub mod account;
 pub mod chain;
 pub mod cli_state;
 mod cli_state_vm2;
-pub mod contract;
 pub mod dev;
 pub mod helper;
 pub mod mutlisig_transaction;
@@ -150,5 +149,4 @@ pub fn add_command(
                 .subcommand(dev::UpgradeModuleQueueCommand)
                 .subcommand(dev::UpgradeVMConfigProposalCommand),
         )
-        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }
