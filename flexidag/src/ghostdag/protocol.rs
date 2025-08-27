@@ -317,10 +317,14 @@ impl<
 
             // This is a sanity check that validates that a blue
             // block's blue anticone is not already larger than K.
-            assert!(
-                *candidate_blues_anticone_sizes.get(&block).unwrap() <= k,
-                "found blue anticone larger than K"
-            );
+            // Return Red instead of panic to prevent DoS attacks
+            if *candidate_blues_anticone_sizes.get(&block).unwrap() > k {
+                warn!(
+                    "Found blue anticone larger than K for block {:?}, marking as red",
+                    block
+                );
+                return Ok(ColoringState::Red);
+            }
         }
 
         Ok(ColoringState::Pending)

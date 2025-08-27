@@ -15,7 +15,6 @@ use starcoin_account_service::{AccountEventService, AccountService, AccountStora
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
-use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
@@ -313,9 +312,16 @@ impl NodeService {
             config.storage.dag_dir(),
             config.storage.clone().into(),
         )?;
+        // Get K from genesis config instead of using constant directly
+        let k = config
+            .net()
+            .genesis_config2()
+            .consensus_config
+            .base_max_uncles_per_block;
         let dag = starcoin_dag::blockdag::BlockDAG::new(
-            starcoin_types::blockhash::KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
+            starcoin_types::blockhash::KType::try_from(k)?,
             config.miner.dag_merge_depth(),
+            config.miner.maximum_parents_count(),
             dag_storage.clone(),
         );
         registry.put_shared(dag.clone()).await?;

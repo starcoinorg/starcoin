@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -119,7 +119,7 @@ impl Default for MinerClientConfig {
 
 impl ConfigModule for MinerConfig {
     fn merge_with_opt(&mut self, opt: &StarcoinOpt, base: Arc<BaseConfig>) -> Result<()> {
-        self.base = Some(base);
+        self.base = Some(base.clone());
         if opt.miner.miner_thread.is_some() {
             self.miner_thread = opt.miner.miner_thread;
         }
@@ -143,6 +143,21 @@ impl ConfigModule for MinerConfig {
 
         if opt.miner.dag_merge_depth.is_some() {
             self.dag_merge_depth = opt.miner.dag_merge_depth;
+        }
+
+        // Validate DAG parameters: K must be >= max_parents_count
+        let max_parents = self.maximum_parents_count();
+        let k = base
+            .net()
+            .genesis_config2()
+            .consensus_config
+            .base_max_uncles_per_block;
+        if (k as usize) < max_parents {
+            bail!(
+                "Invalid DAG configuration: GHOSTDAG K (base_max_uncles_per_block={}) must be >= max_parents_count ({})",
+                k,
+                max_parents
+            );
         }
 
         Ok(())

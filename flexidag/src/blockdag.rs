@@ -29,7 +29,6 @@ use itertools::Itertools;
 use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
-use starcoin_config::{G_MAX_PARENTS_COUNT, G_MERGE_DEPTH};
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, error, info, warn};
 use starcoin_types::block::BlockHeader;
@@ -40,8 +39,6 @@ use starcoin_types::{
 use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
-
-pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -66,15 +63,24 @@ pub struct BlockDAG {
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
     block_depth_manager: BlockDepthManager,
+    max_parents_count: usize,
     commit_lock: Arc<Mutex<FlexiDagStorage>>,
 }
 
 impl BlockDAG {
     pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
-        Self::new(DEFAULT_GHOSTDAG_K, G_MERGE_DEPTH, dag_storage)
+        // Test defaults: k=8, merge_depth=3600, max_parents=8 (k >= max_parents)
+        Self::new(8, 3600, 8, dag_storage)
     }
 
-    pub fn new(k: KType, merge_depth: u64, db: FlexiDagStorage) -> Self {
+    pub fn new(k: KType, merge_depth: u64, max_parents_count: usize, db: FlexiDagStorage) -> Self {
+        // Ensure k >= max_parents_count to prevent protocol violations
+        assert!(
+            k as usize >= max_parents_count,
+            "GHOSTDAG K ({}) must be greater than or equal to max_parents_count ({}) to prevent protocol violations",
+            k,
+            max_parents_count
+        );
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -101,32 +107,39 @@ impl BlockDAG {
             storage: db.clone(),
             pruning_point_manager,
             block_depth_manager,
+            max_parents_count,
             commit_lock: Arc::new(Mutex::new(db)),
         }
     }
 
+    /// For testing only - do not use in production code
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let config = FlexiDagStorageConfig {
             cache_size: 1024,
             ..Default::default()
         };
         let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
-        Ok(Self::create_blockdag(dag_storage))
+        // Test defaults: k=8, merge_depth=3600, max_parents=8 (k >= max_parents)
+        Ok(Self::new(8, 3600, 8, dag_storage))
     }
 
+    /// For testing only - do not use in production code
     pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, G_MERGE_DEPTH, dag_storage))
+        // Test defaults: merge_depth=3600, max_parents=3
+        Ok(Self::new(k, 3600, 3, dag_storage))
     }
 
+    /// For testing only - do not use in production code
     pub fn create_for_testing_with_k_and_merge_depth(
         k: KType,
         merge_depth: u64,
     ) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, merge_depth, dag_storage))
+        // Test default: max_parents=3 (safe for small k values)
+        Ok(Self::new(k, merge_depth, 3, dag_storage))
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
@@ -567,7 +580,7 @@ impl BlockDAG {
                         tips: tips_in_order
                             .into_iter()
                             .map(|(id, _)| id)
-                            .take(G_MAX_PARENTS_COUNT)
+                            .take(self.max_parents_count)
                             .collect(),
                     },
                 )?;
