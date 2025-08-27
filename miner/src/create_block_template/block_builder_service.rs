@@ -170,8 +170,12 @@ impl ActorService for BlockBuilderService {
                     } else {
                         (None, 0)
                     };
-                    let body =
-                        BlockBody::new(process_header_template.transaction_outputs.included_user_txns, uncles);
+                    let body = BlockBody::new(
+                        process_header_template
+                            .transaction_outputs
+                            .included_user_txns,
+                        uncles,
+                    );
 
                     let block_info = storage
                         .get_block_info(process_header_template.header.id())
@@ -181,7 +185,9 @@ impl ActorService for BlockBuilderService {
                     let version = 1;
                     let block_template = BlockTemplate::new(
                         block_info.block_accumulator_info.accumulator_root,
-                        process_header_template.transaction_outputs.txn_accumulator_root,
+                        process_header_template
+                            .transaction_outputs
+                            .txn_accumulator_root,
                         state_root,
                         process_header_template.transaction_outputs.gas_used,
                         body,
