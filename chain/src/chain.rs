@@ -542,6 +542,10 @@ impl BlockChain {
             epoch.block_gas_limit(), //TODO: Fix me
             self.vm_metrics.clone(),
         )?;
+        info!(
+            "execute transaction after entering vm, block id: {:?}",
+            block_id,
+        );
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
@@ -568,6 +572,10 @@ impl BlockChain {
         } else {
             vec_transaction_info.len() == transactions.len()
         };
+        info!(
+            "execute transaction after entering vm, block id: {:?}, valid txn num: {:?}",
+            block_id, valid_txn_num
+        );
         verify_block!(
             VerifyBlockField::State,
             valid_txn_num,
@@ -584,6 +592,10 @@ impl BlockChain {
             self.storage.as_ref(),
         );
         let transaction_global_index = txn_accumulator.num_leaves();
+        info!(
+            "execute transaction after entering vm, block id: {:?}, transaction_global_index: {:?}",
+            block_id, transaction_global_index
+        );
 
         // txn accumulator verify.
         let executed_accumulator_root = {
@@ -591,6 +603,8 @@ impl BlockChain {
                 vec_transaction_info.iter().map(|info| info.id()).collect();
             txn_accumulator.append(&included_txn_info_hashes)?
         };
+
+        info!("execute transaction before verifying state root, block id: {:?}, executed_accumulator_root: {:?}, ", block_id, executed_accumulator_root);
 
         verify_block!(
             VerifyBlockField::State,
@@ -602,15 +616,27 @@ impl BlockChain {
         self.statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+        info!(
+            "execute transaction after state db flush, block id: {:?}",
+            block_id
+        );
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
         watch(CHAIN_WATCH_NAME, "n24");
         txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+        info!(
+            "execute transaction after txn accumulator db flush, block id: {:?}",
+            block_id
+        );
 
         block_accumulator.append(&[block_id])?;
         block_accumulator.flush()?;
+        info!(
+            "execute transaction after block accumulator db flush, block id: {:?}",
+            block_id
+        );
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();

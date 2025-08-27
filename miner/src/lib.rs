@@ -129,6 +129,7 @@ impl ServiceFactory<Self> for MinerService {
 
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<GenerateBlockEvent>();
         ctx.subscribe::<BlockTemplateResponse>();
         Ok(())

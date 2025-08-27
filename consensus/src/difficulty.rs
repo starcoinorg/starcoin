@@ -136,9 +136,9 @@ pub fn get_next_target_helper(
         }
         block_n = block_n.saturating_add(diff_infos.len() as u64);
     }
-    let avg_target: U256 = total_target
+    let avg_target: U512 = total_target
         .checked_div(U512::from(block_n))
-        .and_then(|avg_target| U256::try_from(&avg_target).ok())
+        // .and_then(|avg_target| U256::try_from(&avg_target).ok())
         .ok_or_else(|| format_err!("calculate avg target overflow"))?;
 
     let mut avg_time = match block_n.cmp(&2) {
@@ -198,7 +198,7 @@ pub fn get_next_target_helper(
         .and_then(|r| r.checked_mul(avg_time.into()))
     {
         // the divisor is `2` and never be `0`
-        if new_target.checked_div(2.into()).unwrap() > avg_target {
+        let new_target = if new_target.checked_div(2.into()).unwrap() > avg_target {
             debug!("target increase too fast, limit to 2 times");
             avg_target.saturating_mul(2.into())
         } else if new_target < avg_target.checked_div(2.into()).unwrap() {
@@ -206,6 +206,12 @@ pub fn get_next_target_helper(
             avg_target.checked_div(2.into()).unwrap()
         } else {
             new_target
+        };
+        if let std::result::Result::Ok(new_target) = U256::try_from(&new_target) {
+            new_target
+        } else {
+            warn!("target large than max value, set to 1_difficulty");
+            U256::MAX
         }
     } else {
         warn!("target large than max value, set to 1_difficulty");

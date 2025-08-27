@@ -368,7 +368,9 @@ impl TxPoolSyncService for MockTxPoolService {
                     }
                     Err(e) => bail!("Get account {} resource from statedb error: {:?}, return 0 as sequence_number", sender, e),
                 };
-                if transaction.expiration_timestamp_secs() >= now && transaction.sequence_number() >= sequence_number {
+                if transaction.expiration_timestamp_secs() >= now
+                    && transaction.sequence_number() >= sequence_number
+                {
                     self.pool
                         .lock()
                         .ok()
@@ -432,7 +434,7 @@ impl TxPoolSyncService for MockTxPoolService {
                 }
                 Err(e) => panic!("in get_pending_with_state, Get account {} resource from statedb error: {:?}, return 0 as sequence_number", sender, e),
             };
-            if txn.expiration_timestamp_secs()>= now && txn.sequence_number() >= sequence_number {
+            if txn.expiration_timestamp_secs() >= now && txn.sequence_number() >= sequence_number {
                 result.push(txn);
             } else {
                 pool.remove(i as usize);

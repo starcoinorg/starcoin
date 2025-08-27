@@ -82,7 +82,7 @@ impl ExecuteService {
         let id = new_block.id();
 
         for parent_id in new_block.header().parents_hash() {
-            let mut count: u64 = 3000;
+            let mut count: u64 = 60 * 100 * 60; //  60 mins fro waiting the parent ready
             while !Self::check_parent_ready(parent_id, storage.clone(), dag.clone())? && count > 0 {
                 async_std::task::sleep(std::time::Duration::from_millis(10)).await;
                 count = count.saturating_sub(1);

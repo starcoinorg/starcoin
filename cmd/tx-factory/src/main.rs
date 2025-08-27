@@ -266,11 +266,11 @@ impl TxnMocker {
             .expect("time error")
             .as_secs()
             + 600 // 10 minutes
-        // let node_info = self
-        //     .client
-        //     .node_info()
-        //     .expect("node_info() should not failed");
-        // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+                  // let node_info = self
+                  //     .client
+                  //     .node_info()
+                  //     .expect("node_info() should not failed");
+                  // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
     }
     fn get_factory_status(&self) -> bool {
         self.client
@@ -567,7 +567,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     association_address(),
                     addr_vec.clone(),
-                    10000,
+                    1000000000,
                     1,
                     expiration_timestamp,
                 )?;
@@ -591,7 +591,7 @@ impl TxnMocker {
                 self.next_sequence_number,
                 association_address(),
                 addr_vec.clone(),
-                10000,
+                1000000000,
                 1,
                 expiration_timestamp,
             )?;
@@ -720,7 +720,7 @@ impl TxnMocker {
                     .copied()
                     .map(|(address, _)| address)
                     .collect(),
-                100,
+                1,
                 round_num as u64,
             )?;
 
