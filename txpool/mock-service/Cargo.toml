@@ -7,6 +7,10 @@ futures-channel = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-miner = { workspace = true }
 
 [dev-dependencies]
 

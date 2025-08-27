@@ -22,7 +22,7 @@ use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
 use starcoin_sync::sync::SyncService;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use std::sync::Arc;
 
 pub struct RpcServiceFactory;
@@ -53,7 +53,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                     service_ref.clone(),
                 )
             });
-        let txpool_service = ctx.get_shared::<TxPoolService>()?;
+        let txpool_service = ctx.get_shared::<MockTxPoolService>()?;
         let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));
 
         let state_api = ctx
