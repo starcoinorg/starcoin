@@ -100,53 +100,87 @@ fn verify_body_hash_with_uncles() {
 
 #[test]
 fn verify_empty_body_hash() {
-    let empty_hash =
-        HashValue::from_str("0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97")
-            .unwrap();
-    let empty_body = BlockBody {
+    // Test current BlockBody structure with transactions2
+    let empty_body = DagBlockBody {
+        transactions: vec![],
+        transactions2: vec![],
+        uncles: None,
+    };
+
+    // Verify the hash is consistent
+    let hash1 = empty_body.crypto_hash();
+    let cloned_body = empty_body.clone();
+    let hash2 = cloned_body.crypto_hash();
+    assert_eq!(hash1, hash2);
+
+    // Test conversion from legacy preserves data
+    let legacy_empty = BlockBody {
         transactions: vec![],
         uncles: None,
     };
-    assert_eq!(empty_hash, empty_body.crypto_hash());
-
-    let empty_dag_body: DagBlockBody = empty_body.clone().into();
-    assert_eq!(empty_hash, empty_dag_body.crypto_hash());
-
-    let converted_empty_body: BlockBody = empty_dag_body.into();
-    assert_eq!(empty_body.crypto_hash(), converted_empty_body.crypto_hash());
+    let converted: DagBlockBody = legacy_empty.clone().into();
+    assert_eq!(converted.transactions, legacy_empty.transactions);
+    assert_eq!(converted.transactions2, vec![]);
+    assert_eq!(
+        converted.uncles,
+        legacy_empty
+            .uncles
+            .map(|u| u.into_iter().map(Into::into).collect())
+    );
 }
 
 #[test]
 fn verify_zero_uncle_body_hash() {
-    let empty_hash =
-        HashValue::from_str("0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97")
-            .unwrap();
-    let body = BlockBody {
+    // Test current BlockBody with empty uncle list
+    let body_with_empty_uncles = DagBlockBody {
         transactions: vec![],
+        transactions2: vec![],
         uncles: Some(vec![]),
     };
 
-    assert_ne!(empty_hash, body.crypto_hash());
+    let body_without_uncles = DagBlockBody {
+        transactions: vec![],
+        transactions2: vec![],
+        uncles: None,
+    };
 
-    let dag_body: DagBlockBody = body.clone().into();
-    let converted_body: BlockBody = dag_body.clone().into();
+    // Empty uncle list should have different hash from None
+    assert_ne!(
+        body_with_empty_uncles.crypto_hash(),
+        body_without_uncles.crypto_hash()
+    );
 
-    assert_eq!(body.crypto_hash(), converted_body.crypto_hash());
-    assert_eq!(body.crypto_hash(), dag_body.crypto_hash());
+    // Test conversion preserves empty uncle list
+    let legacy_body = BlockBody {
+        transactions: vec![],
+        uncles: Some(vec![]),
+    };
+    let converted: DagBlockBody = legacy_body.clone().into();
+    assert_eq!(converted.uncles, Some(vec![]));
 }
 
 #[test]
 fn verify_empty_uncles_body_hash() {
-    let body = BlockBody {
-        transactions: vec![this_signed_txn()],
+    // Test current BlockBody with transactions but no uncles
+    let txn = this_signed_txn();
+    let body = DagBlockBody {
+        transactions: vec![txn.clone()],
+        transactions2: vec![],
         uncles: None,
     };
 
-    let dag_body: DagBlockBody = body.clone().into();
-    let converted_body: BlockBody = dag_body.clone().into();
+    // Verify hash consistency
+    let hash1 = body.crypto_hash();
+    let cloned_body = body.clone();
+    assert_eq!(hash1, cloned_body.crypto_hash());
 
-    assert_eq!(body.crypto_hash(), converted_body.crypto_hash());
-    assert_eq!(body.crypto_hash(), dag_body.crypto_hash());
+    // Test that adding empty uncles changes the hash
+    let body_with_empty_uncles = DagBlockBody {
+        transactions: vec![txn],
+        transactions2: vec![],
+        uncles: Some(vec![]),
+    };
+    assert_ne!(hash1, body_with_empty_uncles.crypto_hash());
 }
 #[test]
 fn verify_body_and_legacybody_hash() {

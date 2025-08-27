@@ -12350,6 +12350,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-executor",
  "starcoin-logger 2.1.1",
+ "starcoin-state-api 2.0.1",
  "starcoin-state-api 2.1.1",
  "starcoin-statedb 2.0.1",
  "starcoin-statedb 2.1.1",

@@ -12,8 +12,10 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_crypto::{
+    ed25519::Ed25519PrivateKey, Genesis as CryptoGenesis, HashValue, PrivateKey,
+};
+use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
@@ -39,7 +41,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         test_helper::start_txpool_with_miner(1000, true).await;
     let startup_info = storage.get_startup_info()?.unwrap();
     let net = config.net();
-    let dag = BlockDAG::create_for_testing()?;
+    // Use properly initialized DAG from Genesis instead of empty test DAG
+    let (_storage_new, _storage2_new, _chain_info, _, dag) = Genesis::init_storage_for_test(net)?;
     let mut block_chain = BlockChain::new(
         net.time_service(),
         startup_info.main,

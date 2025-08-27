@@ -3039,6 +3039,8 @@
                 "number",
                 "parent_gas_used",
                 "parent_hash",
+                "parents_hash",
+                "red_blocks",
                 "timestamp",
                 "uncles"
               ],
@@ -3069,6 +3071,16 @@
                   "description": "Parent block hash.",
                   "type": "string",
                   "format": "HashValue"
+                },
+                "parents_hash": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
+                "red_blocks": {
+                  "type": "string"
                 },
                 "timestamp": {
                   "type": "string"
@@ -3690,6 +3702,7 @@
                 "number",
                 "parent_gas_used",
                 "parent_hash",
+                "red_blocks",
                 "timestamp",
                 "uncles"
               ],
@@ -3730,6 +3743,9 @@
                     "type": "string",
                     "format": "HashValue"
                   }
+                },
+                "red_blocks": {
+                  "type": "string"
                 },
                 "timestamp": {
                   "type": "string"
@@ -5972,7 +5988,7 @@
           "name": "access_path",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
+            "title": "Nullable_starcoin_vm1_vm_types::access_path::AccessPath",
             "type": [
               "string",
               "null"
@@ -6323,7 +6339,7 @@
           "name": "access_path",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
+            "title": "Nullable_starcoin_vm1_vm_types::access_path::AccessPath",
             "type": [
               "string",
               "null"

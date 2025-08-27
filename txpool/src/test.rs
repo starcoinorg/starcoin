@@ -10,6 +10,7 @@ use parking_lot::RwLock;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_genesis::Genesis;
 // use starcoin_executor::{
 //     create_signed_txn_with_association_account, encode_transfer_script_function,
 //     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
@@ -256,7 +257,9 @@ async fn test_rollback() -> Result<()> {
     // BlockInfo is needed for multi-vm chain, It's easier to execute the block to update vm1 chain state
     {
         let main = storage.get_startup_info()?.unwrap().main;
-        let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing()?;
+        // Use properly initialized DAG from Genesis instead of empty test DAG
+        let (_storage, _storage2, _chain_info, _, dag) =
+            Genesis::init_storage_for_test(config.net())?;
         let mut chain = BlockChain::new(
             config.net().time_service(),
             main,

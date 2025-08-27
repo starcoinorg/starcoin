@@ -404,7 +404,7 @@
         "name": "SignedMessageView",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "starcoin_vm_types::sign_message::SignedMessage",
+          "title": "starcoin_vm1_vm_types::sign_message::SignedMessage",
           "type": "string"
         }
       }

@@ -47,6 +47,7 @@ pub struct PruningPointService {
     dag: BlockDAG,
     pruning_channel: PruningPointInfoChannel,
     genesis_id: HashValue,
+    storage: Arc<Storage>,
     storage2: Arc<dyn Store2>,
 }
 
@@ -55,12 +56,14 @@ impl PruningPointService {
         dag: BlockDAG,
         pruning_channel: PruningPointInfoChannel,
         genesis_id: HashValue,
+        storage: Arc<Storage>,
         storage2: Arc<dyn Store2>,
     ) -> Self {
         Self {
             dag,
             pruning_channel,
             genesis_id,
+            storage,
             storage2,
         }
     }
@@ -98,7 +101,13 @@ impl ServiceFactory<Self> for PruningPointService {
         let genesis_id = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("genesis not found"))?;
-        anyhow::Ok(Self::new(dag, pruning_channel, genesis_id, storage2))
+        anyhow::Ok(Self::new(
+            dag,
+            pruning_channel,
+            genesis_id,
+            storage,
+            storage2,
+        ))
     }
 }
 
@@ -111,11 +120,11 @@ impl EventHandler<Self, SystemStarted> for PruningPointService {
 impl EventHandler<Self, PruningPointInfoGeneration> for PruningPointService {
     fn handle_event(&mut self, _: PruningPointInfoGeneration, ctx: &mut ServiceContext<Self>) {
         let pruning_point_receiver = self.pruning_channel.pruning_receiver.clone();
+        let storage = self.storage.clone();
         let storage2 = self.storage2.clone();
         let dag = self.dag.clone();
         let genesis_id = self.genesis_id;
         let self_ref = ctx.self_ref();
-        let storage = ctx.get_shared::<Arc<Storage>>().unwrap();
         ctx.spawn(async move {
             match pruning_point_receiver.try_recv() {
                 std::result::Result::Ok(new_dag_block) => {
