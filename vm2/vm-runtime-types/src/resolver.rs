@@ -5,9 +5,9 @@ use bytes::Bytes;
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use starcoin_aggregator::resolver::{TAggregatorV1View, TDelayedFieldView};
-use starcoin_vm_types::errors::PartialVMResult;
-use starcoin_vm_types::write_set::WriteOp;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::errors::PartialVMResult;
+use starcoin_vm2_vm_types::write_set::WriteOp;
+use starcoin_vm2_vm_types::{
     language_storage::StructTag,
     state_store::{
         state_key::StateKey,

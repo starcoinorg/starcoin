@@ -11,12 +11,12 @@ use starcoin_aggregator::delayed_change::DelayedChange;
 use starcoin_aggregator::delta_change_set::DeltaOp;
 use starcoin_aggregator::resolver::AggregatorV1Resolver;
 use starcoin_aggregator::types::code_invariant_error;
-use starcoin_types::delayed_fields::PanicError;
-use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::transaction::{TransactionAuxiliaryData, TransactionOutput};
-use starcoin_vm_types::write_set::WriteOp;
-use starcoin_vm_types::{fee_statement::FeeStatement, transaction::TransactionStatus};
+use starcoin_vm2_types::delayed_fields::PanicError;
+use starcoin_vm2_vm_types::contract_event::ContractEvent;
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::transaction::{TransactionAuxiliaryData, TransactionOutput};
+use starcoin_vm2_vm_types::write_set::WriteOp;
+use starcoin_vm2_vm_types::{fee_statement::FeeStatement, transaction::TransactionStatus};
 use std::collections::BTreeMap;
 
 /// Output produced by the VM after executing a transaction.

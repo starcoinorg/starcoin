@@ -18,7 +18,7 @@ use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
 
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     account_config::{
         self, coin_store::CoinStoreResource, core_code_address, stc_type_tag, AccountResource,
     },

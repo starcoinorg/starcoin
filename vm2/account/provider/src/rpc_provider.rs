@@ -1,11 +1,11 @@
 use starcoin_account_api::AccountInfo;
 use starcoin_account_api::AccountProvider;
 use starcoin_rpc_client::RpcClient;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_config::token_code::TokenCode;
+use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
 
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 

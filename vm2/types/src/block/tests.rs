@@ -8,8 +8,8 @@ use bcs_ext::Sample;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::genesis_key_pair, HashValue};
 use starcoin_uint::U256;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::{
+use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::transaction::{
     Package, RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use std::str::FromStr;

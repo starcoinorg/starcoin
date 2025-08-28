@@ -14,9 +14,9 @@ starcoin-accumulator = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { path = "../vm-types" }
-starcoin-resource-viewer = { workspace = true }
-starcoin-abi-decoder = { workspace = true }
-starcoin-abi-types = { workspace = true }
+starcoin-vm2-resource-viewer = { workspace = true }
+starcoin-vm2-abi-decoder = { workspace = true }
+starcoin-vm2-abi-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }

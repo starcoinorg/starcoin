@@ -20,7 +20,7 @@ use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use starcoin_vm_types::on_chain_config::FeatureFlag;
+use starcoin_vm2_vm_types::on_chain_config::FeatureFlag;
 use std::{collections::VecDeque, fmt::Write, ops::Deref};
 
 // Error codes from Move contracts:

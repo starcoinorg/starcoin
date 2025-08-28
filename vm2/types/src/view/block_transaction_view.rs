@@ -5,7 +5,7 @@ use crate::view::signed_user_transaction_view::SignedUserTransactionView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum BlockTransactionsView {

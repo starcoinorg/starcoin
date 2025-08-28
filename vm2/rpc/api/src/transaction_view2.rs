@@ -4,7 +4,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use starcoin_types::block::Block as Block1;
+use starcoin_vm2_types::block::Block as Block1;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::{
     block::BlockNumber,

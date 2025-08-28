@@ -9,7 +9,7 @@ use crate::{
     module_cache::ModuleCache,
 };
 use anyhow::{anyhow, Result};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access::ModuleAccess,
     account_address::AccountAddress,
     errors::PartialVMError,

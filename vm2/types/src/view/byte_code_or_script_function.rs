@@ -3,7 +3,7 @@
 
 use crate::view::{function_arg_type_view::ModuleIdView, ByteCode};
 use move_core_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::FunctionId;
+use starcoin_vm2_vm_types::language_storage::FunctionId;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
@@ -46,7 +46,7 @@ impl FromStr for ByteCodeOrScriptFunction {
 mod tests {
     use crate::view::{byte_code_or_script_function::ByteCodeOrScriptFunction, str_view::StrView};
     use move_core_types::{account_address::AccountAddress, u256};
-    use starcoin_vm_types::language_storage::FunctionId;
+    use starcoin_vm2_vm_types::language_storage::FunctionId;
 
     #[test]
     fn test_script_data() {

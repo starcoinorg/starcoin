@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_types::{block::BlockInfo, U256};
+use starcoin_vm2_types::{block::BlockInfo, U256};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::view::{AccumulatorInfoView, StrView};
 

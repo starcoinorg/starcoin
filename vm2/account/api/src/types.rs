@@ -4,10 +4,10 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
-use starcoin_types::account::Account;
-use starcoin_types::account_address::AccountAddress;
-pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
-use starcoin_types::{
+use starcoin_vm2_types::account::Account;
+use starcoin_vm2_types::account_address::AccountAddress;
+pub use starcoin_vm2_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
+use starcoin_vm2_types::{
     account_address::{self},
     transaction::authenticator::AuthenticationKey,
 };

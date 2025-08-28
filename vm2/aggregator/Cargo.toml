@@ -13,8 +13,8 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-types = { workspace = true }
-starcoin-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 bcs = { workspace = true }
 claims = { workspace = true }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }

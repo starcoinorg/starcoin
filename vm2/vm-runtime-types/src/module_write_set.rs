@@ -3,8 +3,8 @@
 
 use crate::{change_set::WriteOpInfo, resolver::ExecutorView};
 use move_core_types::vm_status::StatusCode;
-use starcoin_vm_types::errors::{PartialVMError, PartialVMResult};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::errors::{PartialVMError, PartialVMResult};
+use starcoin_vm2_vm_types::{
     state_store::state_key::StateKey,
     write_set::{TransactionWrite, WriteOp, WriteOpSize},
 };

@@ -1,6 +1,6 @@
 //! Blockchain filter
 
-use starcoin_vm_types::language_storage::type_tag_match;
+use starcoin_vm2_vm_types::language_storage::type_tag_match;
 
 use crate::account_address::AccountAddress;
 use crate::block::BlockNumber;

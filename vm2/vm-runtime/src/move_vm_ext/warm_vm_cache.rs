@@ -12,8 +12,8 @@ use once_cell::sync::Lazy;
 use starcoin_framework::natives::code::PackageRegistry;
 use starcoin_metrics::TimerHelper;
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_vm_types::on_chain_config::OnChainConfig;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::on_chain_config::OnChainConfig;
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use std::collections::HashMap;
 use std::sync::RwLock;
 

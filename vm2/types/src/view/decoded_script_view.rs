@@ -8,7 +8,7 @@ use crate::view::{
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_abi_decoder::{
+use starcoin_vm2_abi_decoder::{
     DecodedMoveValue, DecodedPackage, DecodedScript, DecodedScriptFunction,
 };
 

@@ -14,7 +14,7 @@ use serde_generate::{
     rust, CodeGeneratorConfig,
 };
 use serde_reflection::ContainerFormat;
-use starcoin_vm_types::transaction::{
+use starcoin_vm2_vm_types::transaction::{
     ArgumentABI, EntryABI, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 use std::{

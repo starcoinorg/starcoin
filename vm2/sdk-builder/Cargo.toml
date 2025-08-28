@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-starcoin-vm-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 bcs = { workspace = true }
 clap = { workspace = true }
 heck = { workspace = true }

@@ -1,4 +1,4 @@
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_address::AccountAddress;
 use thiserror::Error;
 
 /// wallet error is used in wallet impl, to decouple from service.

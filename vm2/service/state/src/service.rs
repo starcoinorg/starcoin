@@ -8,7 +8,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_vm2_types::system_events::NewHeadBlock;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     message::{StateRequest, StateResponse},

@@ -9,7 +9,7 @@ use crate::{
 use anyhow::{anyhow, Context};
 use clap::Parser;
 use starcoin_sdk_builder::rust;
-use starcoin_vm_types::transaction::EntryABI;
+use starcoin_vm2_vm_types::transaction::EntryABI;
 use std::path::{Path, PathBuf};
 
 pub const RELEASE_BUNDLE_EXTENSION: &str = "mrb";

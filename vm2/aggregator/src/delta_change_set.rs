@@ -230,8 +230,8 @@ mod test {
     use move_binary_format::errors::{PartialVMError, PartialVMResult};
     use move_core_types::{value::MoveTypeLayout, vm_status::StatusCode};
     use once_cell::sync::Lazy;
-    use starcoin_types::delayed_fields::PanicError;
-    use starcoin_vm_types::{
+    use starcoin_vm2_types::delayed_fields::PanicError;
+    use starcoin_vm2_vm_types::{
         state_store::{
             state_key::StateKey,
             state_value::{StateValue, StateValueMetadata},

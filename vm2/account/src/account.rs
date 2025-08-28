@@ -11,12 +11,12 @@ use starcoin_account_api::{
 use starcoin_crypto::PrivateKey;
 use starcoin_logger::prelude::*;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_types::account_address;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::genesis_config::ChainId;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::account_address;
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::genesis_config::ChainId;
+use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_vm2_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 pub struct Account {
     addr: AccountAddress,

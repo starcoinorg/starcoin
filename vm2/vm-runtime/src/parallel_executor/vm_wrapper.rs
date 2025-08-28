@@ -14,7 +14,7 @@ use starcoin_parallel_executor::{
 
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     state_store::state_key::StateKey, state_store::StateView, write_set::WriteOp,
 };
 

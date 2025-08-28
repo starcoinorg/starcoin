@@ -13,7 +13,7 @@ use bytes::Bytes;
 use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access_path::{AccessPath, DataPath},
     state_store::state_key::inner::StateKeyInner,
     transaction::TransactionOutput,

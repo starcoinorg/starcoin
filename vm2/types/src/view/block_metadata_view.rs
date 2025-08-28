@@ -6,7 +6,7 @@ use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     block_metadata::BlockMetadata, transaction::authenticator::AuthenticationKey,
 };
 

@@ -4,7 +4,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm_types::{file_format::CompiledModule, language_storage::ModuleId};
+use starcoin_vm2_vm_types::{file_format::CompiledModule, language_storage::ModuleId};
 use std::{cell::RefCell, collections::hash_map::HashMap, hash::Hash, rc::Rc};
 
 #[derive(Clone)]

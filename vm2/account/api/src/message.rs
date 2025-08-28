@@ -4,10 +4,10 @@
 use crate::AccountInfo;
 use anyhow::Result;
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_config::token_code::TokenCode;
+use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]

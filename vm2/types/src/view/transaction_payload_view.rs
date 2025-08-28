@@ -3,7 +3,7 @@ use crate::view::decoded_script_view::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_abi_decoder::DecodedTransactionPayload;
+use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayloadView {

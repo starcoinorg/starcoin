@@ -1,7 +1,7 @@
 use super::*;
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::BlockHeader;
+use starcoin_vm2_types::block::BlockHeader;
 
 #[test]
 fn test() {

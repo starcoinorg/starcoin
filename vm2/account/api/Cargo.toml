@@ -12,7 +12,7 @@ serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-service-registry = { workspace = true }
-starcoin-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

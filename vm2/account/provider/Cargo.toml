@@ -5,7 +5,7 @@ starcoin-account-api = { features = ["mock"], workspace = true }
 #starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 #starcoin-rpc-client = { workspace = true }
-starcoin-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [package]
 edition = { workspace = true }
