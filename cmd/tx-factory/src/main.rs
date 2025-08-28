@@ -37,6 +37,13 @@ pub struct TxFactoryOpt {
     pub interval: u64,
     #[clap(
         long,
+        short = 'f',
+        default_value = "800",
+        help = "The number of accounts participating in each round of transactions: the first half are sender accounts, and the second half are receiver accounts, with a default total of 800."
+    )]
+    pub transfer_account_size: usize,
+    #[clap(
+        long,
         short = 'a',
         help = "account used to send txn, use default account if not specified"
     )]
@@ -121,6 +128,7 @@ fn main() {
 
     let account_address = opts.account_address;
     let interval = Duration::from_millis(opts.interval);
+    let transfer_account_size = opts.transfer_account_size;
     let account_password = opts.account_password.clone();
 
     let is_stress = opts.stress;
@@ -177,7 +185,12 @@ fn main() {
             if tx_mocker.get_factory_status() {
                 if is_stress {
                     info!("stress account: {}", accounts.len());
-                    let success = tx_mocker.stress_test(accounts.clone(), round_num, interval);
+                    let success = tx_mocker.stress_test(
+                        accounts.clone(),
+                        round_num,
+                        interval,
+                        transfer_account_size,
+                    );
                     if let Err(e) = success {
                         error!("fail to run stress test, err: {:?}", &e);
                         // if txn is rejected, recheck sequence number, and start over
@@ -495,34 +508,10 @@ impl TxnMocker {
         if (available_list.len() as u32) < account_num {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            // account has enough STC
-            // let start_balance = INITIAL_BALANCE * lack_len as u128;
-            // let mut balance = state_reader.get_balance(self.account_address)?;
-            // while balance.unwrap() < start_balance {
-            //     std::thread::sleep(Duration::from_millis(1000));
-            //     balance = state_reader.get_balance(self.account_address)?;
-            //     info!(
-            //         "account balance is {:?}, min is: {}",
-            //         balance, start_balance
-            //     );
-            // }
             let lack = self.create_accounts(lack_len, batch_size)?;
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;
             for account in lack {
-                // loop {
-                //     if let Some(_account_resource) = state_reader
-                //         .get_account_resource(*account.address())
-                //         .unwrap_or(None)
-                //     {
-                //         available_list.push(account.clone());
-                //         break;
-                //     } else {
-                //         info!("waiting for the account to be created");
-                //         std::thread::sleep(Duration::from_millis(1000));
-                //         continue;
-                //     }
-                // }
                 let account_resource = state_reader
                     .get_account_resource(*account.address())
                     .unwrap_or(None);
@@ -563,7 +552,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     association_address(),
                     addr_vec.clone(),
-                    10000,
+                    10000000,
                     1,
                     expiration_timestamp,
                 )?;
@@ -693,6 +682,7 @@ impl TxnMocker {
         accounts: Vec<AccountInfo>,
         round_num: u32,
         interval: Duration,
+        transfer_account_size: usize,
     ) -> Result<()> {
         //check node status
         let sync_status: SyncStatus = self.client.sync_status()?.into();
@@ -705,7 +695,7 @@ impl TxnMocker {
         let sequences =
             self.next_sequence_number_in_batch(accounts.iter().map(|a| a.address).collect())?;
 
-        for addresses in sequences.chunks(800) {
+        for addresses in sequences.chunks(transfer_account_size) {
             let mid = addresses.len() / 2;
             let senders = &addresses[..mid];
             let receivers = &addresses[mid..];
@@ -723,7 +713,7 @@ impl TxnMocker {
             std::thread::sleep(interval);
         }
 
-        for addresses in sequences.rchunks(800) {
+        for addresses in sequences.rchunks(transfer_account_size) {
             let mid = addresses.len() / 2;
             let senders = &addresses[..mid];
             let receivers = &addresses[mid..];
@@ -740,48 +730,6 @@ impl TxnMocker {
 
             std::thread::sleep(interval);
         }
-
-        // let mut sequences = vec![];
-        // for account in &accounts {
-        //     sequences.push(self.sequence_number(account.address)?.ok_or_else(|| format_err!(
-        //         "account {} sequence number not found",
-        //         account.address
-        //     ))?);
-        // }
-        //get  of all account
-        // let expiration_timestamp = self.fetch_expiration_time();
-        // let count = accounts.len();
-        // for _ in 0..round_num {
-        //     for (index, _) in accounts.iter().enumerate() {
-        //         let mut j = index + 1;
-        //         if j >= count {
-        //             j = 0;
-        //         }
-        //         let result = self.gen_and_submit_transfer_txn(
-        //             accounts[index].address,
-        //             accounts[j].address,
-        //             1,
-        //             1,
-        //             sequences[index],
-        //             false,
-        //             expiration_timestamp,
-        //         );
-        //         //handle result
-        //         match result {
-        //             Ok(_) => {
-        //                 // sequence add
-        //                 sequences[index] += 1;
-        //             }
-        //             Err(err) => {
-        //                 info!("error: {:?}, refresh the sequence number", err);
-        //                 for (index, account) in accounts.iter().enumerate() {
-        //                     sequences[index] =
-        //                         self.sequence_number(account.address).unwrap().unwrap();
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
         Ok(())
     }
 }
