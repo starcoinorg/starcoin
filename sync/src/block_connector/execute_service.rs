@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::{Ok, Result};
+use futures::channel::mpsc;
+use futures::SinkExt;
 use network_api::PeerId;
 use starcoin_chain::{verifier::FullVerifier, BlockChain};
 use starcoin_chain::{ChainReader, ChainWriter};
@@ -20,11 +22,13 @@ use starcoin_types::system_events::{MinedBlock, NewDagBlock, NewDagBlockFromPeer
 
 use crate::sync::CheckSyncEvent;
 
+#[derive(Debug, Clone)]
 enum ExecuteBlockFrom {
     LocalMinedBlock(HashValue),
     PeerMinedBlock(HashValue, PeerId),
 }
 
+#[derive(Debug, Clone)]
 struct ExecutedBlockInfo {
     executed_block: Option<ExecutedBlock>,
     from: ExecuteBlockFrom,
@@ -34,19 +38,16 @@ pub struct ExecuteService {
     time_service: Arc<dyn TimeService>,
     storage: Arc<Storage>,
     dag: BlockDAG,
-    receiver: crossbeam::channel::Receiver<Arc<ExecutedBlockInfo>>,
-    sender: crossbeam::channel::Sender<Arc<ExecutedBlockInfo>>,
+    sender: Option<mpsc::UnboundedSender<ExecutedBlockInfo>>,
 }
 
 impl ExecuteService {
     fn new(time_service: Arc<dyn TimeService>, storage: Arc<Storage>, dag: BlockDAG) -> Self {
-        let (sender, receiver) = crossbeam::channel::unbounded::<Arc<ExecutedBlockInfo>>();
         Self {
             time_service,
             storage,
             dag,
-            receiver,
-            sender,
+            sender: None,
         }
     }
 
@@ -178,55 +179,9 @@ impl ActorService for ExecuteService {
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<PeerNewBlock>();
 
-        ctx.put_shared::<crossbeam::channel::Receiver<Arc<ExecutedBlockInfo>>>(
-            self.receiver.clone(),
-        )?;
-
-        ctx.run_interval(
-            std::time::Duration::from_millis(10),
-            |ctx: &mut ServiceContext<'_, Self>| {
-                let receiver = ctx
-                    .get_shared::<crossbeam::channel::Receiver<Arc<ExecutedBlockInfo>>>()
-                    .expect("get receiver error");
-
-                while let std::result::Result::Ok(executed_block_info) = receiver.try_recv() {
-                    match &executed_block_info.from {
-                        ExecuteBlockFrom::LocalMinedBlock(block_id) => {
-                            let bus = ctx.bus_ref().clone();
-                            match &executed_block_info.executed_block {
-                                Some(executed_block) => {
-                                    let _ = bus.broadcast(NewDagBlock {
-                                        executed_block: Arc::new(executed_block.clone()),
-                                    });
-                                }
-                                None => {
-                                    error!("failed to execute the mined block, id: {:?} ", block_id)
-                                }
-                            }
-                        }
-                        ExecuteBlockFrom::PeerMinedBlock(block_id, peer_id) => {
-                            match &executed_block_info.executed_block {
-                                Some(executed_block) => {
-                                    let bus = ctx.bus_ref().clone();
-                                    let _ = bus.broadcast(NewDagBlockFromPeer {
-                                        executed_block: Arc::new(executed_block.header().clone()),
-                                    });
-                                    let bus = ctx.bus_ref().clone();
-                                    let _ = bus.broadcast(SelectHeaderState::new(
-                                        peer_id.clone(),
-                                        executed_block.block().clone(),
-                                    ));
-                                }
-                                None => {
-                                    warn!("failed to execute the peer block, id: {:?} ", block_id);
-                                    ctx.broadcast(CheckSyncEvent::default());
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-        );
+        let (sender, receiver) = mpsc::unbounded::<ExecutedBlockInfo>();
+        self.sender = Some(sender);
+        ctx.add_stream(receiver);
 
         Ok(())
     }
@@ -238,23 +193,66 @@ impl ActorService for ExecuteService {
     }
 }
 
+impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
+    fn handle_event(
+        &mut self,
+        executed_block_info: ExecutedBlockInfo,
+        ctx: &mut ServiceContext<Self>,
+    ) {
+        match &executed_block_info.from {
+            ExecuteBlockFrom::LocalMinedBlock(block_id) => {
+                let bus = ctx.bus_ref().clone();
+                match &executed_block_info.executed_block {
+                    Some(executed_block) => {
+                        let _ = bus.broadcast(NewDagBlock {
+                            executed_block: Arc::new(executed_block.clone()),
+                        });
+                    }
+                    None => {
+                        error!("failed to execute the mined block, id: {:?} ", block_id)
+                    }
+                }
+            }
+            ExecuteBlockFrom::PeerMinedBlock(block_id, peer_id) => {
+                match &executed_block_info.executed_block {
+                    Some(executed_block) => {
+                        let bus = ctx.bus_ref().clone();
+                        let _ = bus.broadcast(NewDagBlockFromPeer {
+                            executed_block: Arc::new(executed_block.header().clone()),
+                        });
+                        let bus = ctx.bus_ref().clone();
+                        let _ = bus.broadcast(SelectHeaderState::new(
+                            peer_id.clone(),
+                            executed_block.block().clone(),
+                        ));
+                    }
+                    None => {
+                        warn!("failed to execute the peer block, id: {:?} ", block_id);
+                        ctx.broadcast(CheckSyncEvent::default());
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, _ctx: &mut ServiceContext<Self>) {
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let dag = self.dag.clone();
-        let sender = self.sender.clone();
+        let mut sender = self.sender.clone();
 
         async_std::task::spawn(async move {
             match Self::execute(msg.get_block().clone(), time_service, storage, dag).await {
                 std::result::Result::Ok(executed_block) => {
-                    match sender.send(Arc::new(ExecutedBlockInfo {
+                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
                         executed_block: Some(executed_block),
                         from: ExecuteBlockFrom::PeerMinedBlock(
                             msg.get_block().id(),
                             msg.get_peer_id(),
                         ),
-                    })) {
+                    }) {
                         std::result::Result::Ok(_) => (),
                         Err(e) => error!(
                             "execute a peer block {:?} error: {}",
@@ -269,13 +267,13 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                         msg.get_block().id(),
                         e
                     );
-                    match sender.send(Arc::new(ExecutedBlockInfo {
+                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
                         executed_block: None,
                         from: ExecuteBlockFrom::PeerMinedBlock(
                             msg.get_block().id(),
                             msg.get_peer_id(),
                         ),
-                    })) {
+                    }) {
                         std::result::Result::Ok(_) => (),
                         Err(e) => error!(
                             "execute a peer block {:?} error: {}",
@@ -298,17 +296,17 @@ impl EventHandler<Self, MinedBlock> for ExecuteService {
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let dag = self.dag.clone();
-        let sender = self.sender.clone();
+        let mut sender = self.sender.clone();
         let block = new_block.as_ref().clone();
         let block_id = block.id();
 
         async_std::task::spawn(async move {
             match Self::execute(block, time_service, storage, dag).await {
                 std::result::Result::Ok(executed_block) => {
-                    match sender.send(Arc::new(ExecutedBlockInfo {
+                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
                         executed_block: Some(executed_block),
                         from: ExecuteBlockFrom::LocalMinedBlock(block_id),
-                    })) {
+                    }) {
                         std::result::Result::Ok(_) => (),
                         Err(e) => error!("execute a local block {:?} error: {}", block_id, e),
                     }

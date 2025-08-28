@@ -8,22 +8,31 @@ extern crate log;
 extern crate trace_time;
 extern crate transaction_pool as tx_pool;
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
+use futures_channel::mpsc;
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::queue::Pool;
 pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_state_api::AccountStateReader;
-use starcoin_storage::{BlockStore, Storage};
-use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use starcoin_state_api::{AccountStateReader, StateReaderExt};
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_txpool_api::{
+    PropagateTransactions, TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent,
+};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::Block;
+use starcoin_types::transaction;
 use starcoin_types::{
     sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
     transaction::SignedUserTransaction,
 };
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tx_pool_service_impl::Inner;
 pub use tx_pool_service_impl::TxPoolService;

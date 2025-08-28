@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
+use futures::channel::mpsc;
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -58,6 +59,7 @@ pub struct BlockTemplateResponse {
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
     new_header_channel: NewHeaderChannel,
+    storage: Arc<Storage>,
 }
 
 enum ReceiveHeader {
@@ -126,7 +128,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let inner = Inner::new(
             current_block_header,
-            storage,
+            storage.clone(),
             txpool,
             config.miner.block_gas_limit,
             miner_account,
@@ -139,6 +141,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
         Ok(Self {
             inner,
             new_header_channel,
+            storage,
         })
     }
 }
@@ -150,61 +153,10 @@ impl ActorService for BlockBuilderService {
         ctx.subscribe::<DefaultAccountChangeEvent>();
         ctx.subscribe::<BlockTemplateRequest>();
 
-        ctx.put_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>(
-            self.inner.receiver.clone(),
-        )?;
+        let (sender, receiver) = mpsc::unbounded::<ProcessHeaderTemplate>();
+        self.inner.sender = Some(sender);
+        ctx.add_stream(receiver);
 
-        ctx.run_interval(
-            std::time::Duration::from_millis(10),
-            |ctx: &mut ServiceContext<'_, Self>| {
-                let receiver = ctx
-                    .get_shared::<crossbeam::channel::Receiver<ProcessHeaderTemplate>>()
-                    .expect("get receiver error");
-                let storage = ctx.get_shared::<Arc<Storage>>().expect("get storage error");
-                while let std::result::Result::Ok(process_header_template) = receiver.try_recv() {
-                    let state_root = process_header_template.transaction_outputs.state_root;
-
-                    let (uncles, _uncle_len) = if !process_header_template.uncles.is_empty() {
-                        let uncle_len = process_header_template.uncles.len() as u64;
-                        (Some(process_header_template.uncles), uncle_len)
-                    } else {
-                        (None, 0)
-                    };
-                    let body = BlockBody::new(
-                        process_header_template
-                            .transaction_outputs
-                            .included_user_txns,
-                        uncles,
-                    );
-
-                    let block_info = storage
-                        .get_block_info(process_header_template.header.id())
-                        .expect("get block info error")
-                        .expect("block info is none");
-
-                    let version = 1;
-                    let block_template = BlockTemplate::new(
-                        block_info.block_accumulator_info.accumulator_root,
-                        process_header_template
-                            .transaction_outputs
-                            .txn_accumulator_root,
-                        state_root,
-                        process_header_template.transaction_outputs.gas_used,
-                        body,
-                        process_header_template.header.chain_id(),
-                        process_header_template.difficulty,
-                        process_header_template.strategy,
-                        process_header_template.block_metadata,
-                        version,
-                        process_header_template.pruning_point,
-                    );
-                    ctx.broadcast(BlockTemplateResponse {
-                        parent: process_header_template.header,
-                        template: block_template,
-                    });
-                }
-            },
-        );
         Ok(())
     }
 
@@ -212,6 +164,56 @@ impl ActorService for BlockBuilderService {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
         ctx.unsubscribe::<BlockTemplateRequest>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, ProcessHeaderTemplate> for BlockBuilderService {
+    fn handle_event(
+        &mut self,
+        process_header_template: ProcessHeaderTemplate,
+        ctx: &mut ServiceContext<Self>,
+    ) {
+        let state_root = process_header_template.transaction_outputs.state_root;
+
+        let (uncles, _uncle_len) = if !process_header_template.uncles.is_empty() {
+            let uncle_len = process_header_template.uncles.len() as u64;
+            (Some(process_header_template.uncles), uncle_len)
+        } else {
+            (None, 0)
+        };
+        let body = BlockBody::new(
+            process_header_template
+                .transaction_outputs
+                .included_user_txns,
+            uncles,
+        );
+
+        let block_info = self
+            .storage
+            .get_block_info(process_header_template.header.id())
+            .expect("get block info error")
+            .expect("block info is none");
+
+        let version = 1;
+        let block_template = BlockTemplate::new(
+            block_info.block_accumulator_info.accumulator_root,
+            process_header_template
+                .transaction_outputs
+                .txn_accumulator_root,
+            state_root,
+            process_header_template.transaction_outputs.gas_used,
+            body,
+            process_header_template.header.chain_id(),
+            process_header_template.difficulty,
+            process_header_template.strategy,
+            process_header_template.block_metadata,
+            version,
+            process_header_template.pruning_point,
+        );
+        ctx.broadcast(BlockTemplateResponse {
+            parent: process_header_template.header,
+            template: block_template,
+        });
     }
 }
 
@@ -284,8 +286,7 @@ pub struct Inner<P> {
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
 
-    sender: crossbeam::channel::Sender<ProcessHeaderTemplate>,
-    receiver: crossbeam::channel::Receiver<ProcessHeaderTemplate>,
+    pub sender: Option<mpsc::UnboundedSender<ProcessHeaderTemplate>>,
 }
 
 impl<P> Inner<P>
@@ -306,7 +307,6 @@ where
         let genesis_hash = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash"))?;
-        let (sender, receiver) = crossbeam::channel::unbounded::<ProcessHeaderTemplate>();
         Ok(Self {
             storage: storage.clone(),
             tx_provider,
@@ -318,8 +318,7 @@ where
             metrics,
             vm_metrics,
             genesis_hash,
-            sender,
-            receiver,
+            sender: None,
         })
     }
 
@@ -483,12 +482,12 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
-        let _ = self.tx_provider.add_txns(
-            red_blocks
-                .into_iter()
-                .flat_map(|block| block.body.transactions)
-                .collect(),
-        );
+        // let _ = self.tx_provider.add_txns(
+        //     red_blocks
+        //         .into_iter()
+        //         .flat_map(|block| block.body.transactions)
+        //         .collect(),
+        // );
 
         let uncles = blue_blocks
             .iter()
@@ -516,7 +515,7 @@ where
         let selected_header = previous_header.id();
         let txn_provider = self.tx_provider.clone();
         let vm_metrics = self.vm_metrics.clone();
-        let sender = self.sender.clone();
+        let mut sender = self.sender.clone();
 
         let block_meta = BlockMetadata::new_with_parents(
             previous_header.id(),
@@ -552,7 +551,9 @@ where
                 .expect("failed to process transaction");
 
             sender
-                .send(ProcessHeaderTemplate {
+                .as_mut()
+                .unwrap()
+                .start_send(ProcessHeaderTemplate {
                     header: previous_header,
                     uncles,
                     difficulty,
@@ -621,6 +622,10 @@ where
     ) -> Result<Vec<SignedUserTransaction>> {
         let mut pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
+        info!(
+            "[CreateBlockTemplate] pending transactions len: {}",
+            pending_transactions.len()
+        );
         // Ok(pending_transactions)
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
@@ -647,6 +652,7 @@ where
             std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
             other => other,
         });
+        info!("[CreateBlockTemplate] after adding transactions of blue blocks pending transactions len: {}", pending_transactions.len());
         Ok(pending_transactions)
 
         // for transactions in uncle_transaction_map.values_mut() {

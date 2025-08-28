@@ -22,7 +22,7 @@ use starcoin_types::{
 
 use super::block_builder_service::TemplateTxProvider;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ProcessHeaderTemplate {
     pub header: BlockHeader,
     pub uncles: Vec<BlockHeader>,
@@ -33,7 +33,7 @@ pub struct ProcessHeaderTemplate {
     pub pruning_point: HashValue,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ProcessedTransactions {
     pub included_user_txns: Vec<SignedUserTransaction>,
     pub state_root: HashValue,
@@ -132,6 +132,10 @@ where
         let mut txns = vec![];
         txns.extend(self.user_txns.into_iter().map(Transaction::UserTransaction));
 
+        info!(
+            "[BlockProcess] now start to pre execute the transactions {:?}",
+            txns.len()
+        );
         let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
@@ -147,6 +151,10 @@ where
                 self.vm_metrics.clone(),
             )?
         };
+        info!(
+            "[BlockProcess] now end to pre execute the transactions {:?}",
+            txn_outputs.len()
+        );
         let _untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
             vec![]
         } else {
