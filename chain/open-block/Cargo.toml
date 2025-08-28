@@ -12,14 +12,12 @@ starcoin-chain-api = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
-starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 
 # dependencies for move2
 starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-executor = { workspace = true }

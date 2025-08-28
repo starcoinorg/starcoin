@@ -27,7 +27,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 #[cfg(test)]
 use starcoin_vm_types::account_address::AccountAddress;
 // use std::collections::HashSet;

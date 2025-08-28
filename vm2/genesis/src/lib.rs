@@ -7,7 +7,7 @@ use starcoin_vm2_executor::{
 };
 use starcoin_vm2_state_api::ChainStateWriter;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::{storage::StorageInstance, Storage};
+use starcoin_storage::{storage::StorageInstance, Storage};
 use starcoin_vm2_transaction_builder::build_stdlib_package;
 use starcoin_vm2_types::{
     account_config::CORE_CODE_ADDRESS,

@@ -15,7 +15,6 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
-starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 
 [dev-dependencies]
@@ -23,7 +22,6 @@ starcoin-node = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-storage = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 

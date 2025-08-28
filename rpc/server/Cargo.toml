@@ -58,7 +58,6 @@ starcoin-state-api = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
-starcoin-storage = { workspace = true }
 starcoin-sync-api = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
@@ -72,7 +71,6 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }

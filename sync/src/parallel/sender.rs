@@ -6,7 +6,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::info;
 use starcoin_storage::Store;
 use starcoin_types::block::Block;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,

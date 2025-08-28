@@ -28,7 +28,6 @@ starcoin-config = { workspace = true }
 test-helper = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-chain = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }

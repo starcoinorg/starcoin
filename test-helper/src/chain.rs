@@ -17,7 +17,7 @@ use starcoin_storage::{
     cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
 };
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_vm2_storage::{
+use starcoin_storage::{
     cache_storage::CacheStorage as CacheStorage2,
     db_storage::{DBStorage as DBStorage2, RocksdbConfig as RocksdbConfig2},
     storage::StorageInstance as StorageInstance2,

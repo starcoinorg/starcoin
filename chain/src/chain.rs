@@ -53,7 +53,7 @@ use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Store as Store2;
+use starcoin_storage::Store as Store2;
 use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::{

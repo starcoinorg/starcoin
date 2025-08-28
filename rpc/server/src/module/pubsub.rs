@@ -33,7 +33,7 @@ use starcoin_types::system_events::MintBlockEvent;
 use starcoin_vm2_abi_decoder::decode_move_value as decode_move_value2;
 use starcoin_vm2_abi_resolver::ABIResolver as ABIResolver2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use starcoin_vm2_types::view::{
     TransactionEventResponse as TransactionEventResponse2,
     TransactionEventView as TransactionEventView2,

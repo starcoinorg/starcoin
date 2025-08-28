@@ -56,7 +56,7 @@ use starcoin_vm2_account_service::{
     AccountStorage as AccountStorage2,
 };
 use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
-use starcoin_vm2_storage::{
+use starcoin_storage::{
     cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
     storage::StorageInstance as StorageInstance2, Storage as Storage2,
 };

@@ -20,7 +20,7 @@ use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
 use starcoin_vm2_state_api::AccountStateReader;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;

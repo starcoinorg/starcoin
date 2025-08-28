@@ -22,7 +22,7 @@ use starcoin_types::{
     block_metadata::BlockMetadataLegacy as BlockMetadata,
     U256,
 };
-use starcoin_vm2_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
+use starcoin_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
 use std::convert::TryFrom;
 use std::sync::Arc;
 
