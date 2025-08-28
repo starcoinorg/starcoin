@@ -13,7 +13,7 @@ use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
     StateWithTableItemProof,
 };
-use starcoin_state_tree::AccountStateSetIterator;
+use starcoin_state_api::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::state_set::AccountStateSet;
