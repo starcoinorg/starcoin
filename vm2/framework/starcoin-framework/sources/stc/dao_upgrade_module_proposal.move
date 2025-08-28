@@ -59,7 +59,7 @@ module starcoin_framework::dao_upgrade_module_proposal {
         aborts_if stc_transaction_package_validation::account_address(cap) != module_address;
     }
 
-    public fun propose_module_upgrade_v2<TokenT>(
+    public entry fun propose_module_upgrade_v2<TokenT>(
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,
@@ -67,15 +67,8 @@ module starcoin_framework::dao_upgrade_module_proposal {
         exec_delay: u64,
         enforced: bool,
     ) acquires UpgradeModuleCapability {
-        debug::print(&std::string::utf8(b"dao_upgrade_module_proposal::propose_module_upgrade_v2 | entered"));
         let cap = borrow_global<UpgradeModuleCapability<TokenT>>(stc_util::token_issuer<TokenT>());
         let account_address = stc_transaction_package_validation::account_address(&cap.cap);
-
-        debug::print(&std::string::utf8(b"dao_upgrade_module_proposal::propose_module_upgrade_v2 | cap"));
-        debug::print(cap);
-
-        debug::print(&std::string::utf8(b"dao_upgrade_module_proposal::propose_module_upgrade_v2 | account_address"));
-        debug::print(&account_address);
 
         assert!(account_address == module_address, error::permission_denied(ERR_ADDRESS_MISSMATCH));
         dao::propose<TokenT, UpgradeModuleV2>(
@@ -83,7 +76,6 @@ module starcoin_framework::dao_upgrade_module_proposal {
             UpgradeModuleV2 { module_address, package_hash, version, enforced },
             exec_delay,
         );
-        debug::print(&std::string::utf8(b"dao_upgrade_module_proposal::propose_module_upgrade_v2 | exited"));
     }
 
     spec propose_module_upgrade_v2 {
@@ -92,7 +84,7 @@ module starcoin_framework::dao_upgrade_module_proposal {
     }
 
     /// Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
-    public fun submit_module_upgrade_plan<TokenT>(
+    public entry fun submit_module_upgrade_plan<TokenT>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires UpgradeModuleCapability {

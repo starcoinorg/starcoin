@@ -12,6 +12,10 @@ use starcoin_cached_packages::starcoin_framework_sdk_builder::{
     transfer_scripts_peer_to_peer_v2,
 };
 
+use starcoin_cached_packages::starcoin_stdlib::{
+    dao_queue_proposal_action, dao_upgrade_module_proposal_propose_module_upgrade_v2,
+    dao_upgrade_module_proposal_submit_module_upgrade_plan,
+};
 use starcoin_crypto::_once_cell::sync::Lazy;
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::{ChainId, GenesisConfig};
@@ -469,116 +473,60 @@ pub fn build_module_upgrade_proposal(
     exec_delay: u64,
     enforced: bool,
     token_code: TokenCode,
-    stdlib_2_or_bigger: bool,
-) -> (EntryFunction, HashValue) {
+) -> Result<(TransactionPayload, HashValue)> {
     let package_hash = package.crypto_hash();
-    // propose_module_upgrade_v2 is available after v2 upgrade.
-    let (function_name, args) = if stdlib_2_or_bigger {
-        (
-            "propose_module_upgrade_v2",
-            vec![
-                bcs_ext::to_bytes(&package.package_address()).unwrap(),
-                bcs_ext::to_bytes(&package_hash.clone().to_vec()).unwrap(),
-                bcs_ext::to_bytes(&version).unwrap(),
-                bcs_ext::to_bytes(&exec_delay).unwrap(),
-                bcs_ext::to_bytes(&enforced).unwrap(),
-            ],
-        )
-    } else {
-        (
-            "propose_module_upgrade",
-            vec![
-                bcs_ext::to_bytes(&package.package_address()).unwrap(),
-                bcs_ext::to_bytes(&package_hash.to_vec()).unwrap(),
-                bcs_ext::to_bytes(&version).unwrap(),
-                bcs_ext::to_bytes(&exec_delay).unwrap(),
-            ],
-        )
-    };
-
-    (
-        EntryFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("dao_upgrade_module_proposal").unwrap(),
-            ),
-            Identifier::new(function_name).unwrap(),
-            vec![token_code
-                .try_into()
-                .expect("Token code to type tag should success")],
-            args,
+    Ok((
+        dao_upgrade_module_proposal_propose_module_upgrade_v2(
+            token_code.try_into()?,
+            package.package_address(),
+            package_hash.clone().to_vec(),
+            version,
+            exec_delay,
+            enforced,
         ),
         package_hash,
-    )
+    ))
 }
 
 pub fn build_module_upgrade_plan(
     proposer_address: AccountAddress,
     proposal_id: u64,
     token_code: TokenCode,
-) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("dao_upgrade_module_proposal").unwrap(),
-        ),
-        Identifier::new("submit_module_upgrade_plan").unwrap(),
-        vec![token_code
-            .try_into()
-            .expect("Token code to type tag should success")],
-        vec![
-            bcs_ext::to_bytes(&proposer_address).unwrap(),
-            bcs_ext::to_bytes(&proposal_id).unwrap(),
-        ],
-    )
+) -> Result<TransactionPayload> {
+    Ok(dao_upgrade_module_proposal_submit_module_upgrade_plan(
+        token_code.try_into()?,
+        proposer_address,
+        proposal_id,
+    ))
 }
 
 pub fn build_module_upgrade_queue(
     proposal_address: AccountAddress,
     proposal_id: u64,
     token_code: TokenCode,
-    stdlib_2_or_bigger: bool,
-) -> EntryFunction {
-    let upgrade_module = if stdlib_2_or_bigger {
-        TypeTag::Struct(Box::new(StructTag {
-            address: genesis_address(),
-            module: Identifier::new("dao_upgrade_module_proposal").unwrap(),
-            name: Identifier::new("UpgradeModuleV2").unwrap(),
-            type_args: vec![],
-        }))
-    } else {
-        TypeTag::Struct(Box::new(StructTag {
-            address: genesis_address(),
-            module: Identifier::new("dao_upgrade_module_proposal").unwrap(),
-            name: Identifier::new("UpgradeModule").unwrap(),
-            type_args: vec![],
-        }))
-    };
-
-    EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("dao").unwrap()),
-        Identifier::new("queue_proposal_action").unwrap(),
-        vec![
-            token_code
-                .try_into()
-                .expect("Token code to type tag should success"),
-            upgrade_module,
-        ],
-        vec![
-            bcs_ext::to_bytes(&proposal_address).unwrap(),
-            bcs_ext::to_bytes(&proposal_id).unwrap(),
-        ],
-    )
+) -> Result<TransactionPayload> {
+    let action_type_tag = TypeTag::Struct(Box::new(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("dao_upgrade_module_proposal").unwrap(),
+        name: Identifier::new("UpgradeModuleV2").unwrap(),
+        type_args: vec![],
+    }));
+    Ok(dao_queue_proposal_action(
+        token_code.try_into()?,
+        action_type_tag,
+        proposal_address,
+        proposal_id,
+    ))
 }
 
 pub fn build_vm_config_upgrade_proposal(
     vm_config: VMConfig,
     exec_delay: u64,
-) -> TransactionPayload {
-    on_chain_config_scripts_propose_update_vm_config(
-        bcs_ext::to_bytes(&vm_config.gas_schedule).unwrap(),
+) -> Result<TransactionPayload> {
+    Ok(on_chain_config_scripts_propose_update_vm_config(
+        bcs_ext::to_bytes(&vm_config.gas_schedule)?,
         exec_delay,
-    )
+    ))
 }
 
 pub fn empty_txn_payload() -> TransactionPayload {
