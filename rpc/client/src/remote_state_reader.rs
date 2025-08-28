@@ -5,7 +5,7 @@ use crate::RpcClient;
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
-use starcoin_state_tree::AccountStateSetIterator;
+use starcoin_state_api::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;

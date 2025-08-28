@@ -8,7 +8,7 @@ use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_state_tree::AccountStateSetIterator;
+use crate::AccountStateSetIterator;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;

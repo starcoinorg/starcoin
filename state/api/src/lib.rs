@@ -24,9 +24,12 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::table::TableHandle;
 pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 
+mod account_state_iterator;
 mod chain_state;
 pub mod message;
 pub mod mock;
+
+pub use account_state_iterator::AccountStateSetIterator;
 
 pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
     let mut path_list = vec![];

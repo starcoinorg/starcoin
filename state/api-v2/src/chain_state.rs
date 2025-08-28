@@ -7,13 +7,13 @@ use anyhow::{ensure, Result};
 use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::view::{StateWithProofView, StateWithTableItemProofView, StrView};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::AccountStateSet, state_set::ChainStateSet,
     write_set::WriteSet,
 };
+use starcoin_vm2_state_api::AccountStateSetIterator;
 use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
