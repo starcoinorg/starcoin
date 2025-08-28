@@ -28,7 +28,7 @@ tempfile = { workspace = true }
 [dev-dependencies]
 dir-diff = "0.3.2"
 file_diff = "1.0.0"
-tempfile = "3.2.0"
+tempfile = "3.21.0"
 
 [features]
 testing = []
