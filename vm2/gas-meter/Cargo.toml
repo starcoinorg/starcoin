@@ -1,11 +1,11 @@
 [dependencies]
 starcoin-gas-schedule = { workspace = true }
 clap = { workspace = true }
-move-binary-format = { workspace = true }
-move-core-types = { workspace = true }
-move-stdlib = { workspace = true }
-move-table-extension = { workspace = true }
-move-vm-types = { workspace = true }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 starcoin-logger = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
 
@@ -14,7 +14,7 @@ authors = { workspace = true }
 description = "starcoin Move VM starcoin-gas-meter"
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm2-gas-meter"
+name = "starcoin-gas-meter"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }

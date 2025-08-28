@@ -22,7 +22,7 @@ starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
-starcoin-vm2-move-compiler = { workspace = true }
+starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 starcoin-vm2-transaction-builder = { workspace = true }
 
 [dev-dependencies]

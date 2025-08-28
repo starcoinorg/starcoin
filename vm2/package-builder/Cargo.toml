@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-vm2-package-builder"
+name = "starcoin-package-builder"
 description = "Helper for building Move packages for tests"
 version = "0.1.0"
 
@@ -16,6 +16,6 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 starcoin-framework = { workspace = true }
 itertools = { workspace = true }
-move-command-line-common = { workspace = true }
-move-package = { workspace = true }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 tempfile = { workspace = true }

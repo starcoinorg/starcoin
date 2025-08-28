@@ -14,16 +14,16 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-starcoin-aggregator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-aggregator" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
-starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
-starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-aggregator = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-gas-algebra = { path = "../gas-algebra" }
+starcoin-gas-schedule = { path = "../gas-schedule" }
 starcoin-move-stdlib = { path = "move-stdlib", package = "starcoin-move-stdlib" }
-starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
-starcoin-sdk-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-sdk-builder" }
+starcoin-native-interface = { path = "../native-interface" }
+starcoin-sdk-builder = { path = "../sdk-builder" }
 starcoin-types = { path = "../types" }
 starcoin-vm-types = { path = "../vm-types" }
-starcoin-vm-runtime-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime-types" }
+starcoin-vm-runtime-types = { path = "../vm-runtime-types" }
 ark-bls12-381 = { workspace = true }
 ark-bn254 = { workspace = true }
 ark-ec = { workspace = true }
@@ -80,8 +80,8 @@ thiserror = { workspace = true }
 tiny-keccak = { workspace = true }
 
 [dev-dependencies]
-starcoin-aggregator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-aggregator", features = ["testing"] }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", features = ["fuzzing"] }
+starcoin-aggregator = { workspace = true, features = ["testing"] }
+starcoin-vm2-crypto = { workspace = true, features = ["fuzzing"] }
 # starcoin-gas-meter = { workspace = true }
 starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"] }
 claims = { workspace = true }

@@ -3,7 +3,7 @@ anyhow = { workspace = true }
 bcs = { workspace = true }
 bcs-ext = { workspace = true }
 hex = { workspace = true }
-move-binary-format = { workspace = true }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 ordinal = { workspace = true }
 schemars = { workspace = true }
 serde = { features = ["derive", "rc"], workspace = true }
