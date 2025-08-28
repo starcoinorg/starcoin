@@ -17,7 +17,7 @@ use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_address::AccountAddress;
 use std::collections::VecDeque;
 
 /***************************************************************************************************

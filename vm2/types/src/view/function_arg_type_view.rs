@@ -3,7 +3,7 @@
 
 use crate::view::{byte_code_or_script_function::ByteCodeOrScriptFunction, str_view::StrView};
 use move_core_types::{parser::parse_transaction_argument, u256};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access_path::AccessPath,
     language_storage::{parse_module_id, FunctionId, ModuleId, StructTag, TypeTag},
     parser::parse_type_tag,

@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use starcoin_account_api::{AccountProvider, AccountProviderStrategy};
 use starcoin_config::account_provider_config::AccountProviderConfig;
 use starcoin_rpc_client::RpcClient;
-use starcoin_types::genesis_config::ChainId;
+use starcoin_vm2_types::genesis_config::ChainId;
 use std::sync::Arc;
 
 pub struct ProviderFactory;

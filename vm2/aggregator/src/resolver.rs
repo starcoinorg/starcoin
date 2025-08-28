@@ -14,8 +14,8 @@ use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout, vm_status::StatusCode};
 
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
-use starcoin_types::delayed_fields::PanicError;
-use starcoin_vm_types::{
+use starcoin_vm2_types::delayed_fields::PanicError;
+use starcoin_vm2_vm_types::{
     state_store::{
         state_key::StateKey,
         state_value::{StateValue, StateValueMetadata},

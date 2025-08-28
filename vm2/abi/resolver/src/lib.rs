@@ -4,20 +4,20 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use move_model::script_into_module;
-use starcoin_abi_types::{
+use starcoin_vm2_abi_types::{
     FieldABI, FunctionABI, FunctionParameterABI, ModuleABI, StructABI, StructInstantiation,
     TransactionScriptABI, TypeInstantiation, TypeParameterABI,
 };
-use starcoin_resource_viewer::module_cache::ModuleCache;
-use starcoin_resource_viewer::resolver::Resolver;
-use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::file_format::{
+use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
+use starcoin_vm2_resource_viewer::resolver::Resolver;
+use starcoin_vm2_vm_types::access::ModuleAccess;
+use starcoin_vm2_vm_types::file_format::{
     CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
 };
-use starcoin_vm_types::identifier::{IdentStr, Identifier};
-use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_vm_types::normalized::{Function, Module, Struct, Type};
-use starcoin_vm_types::state_store::StateView;
+use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
+use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
+use starcoin_vm2_vm_types::normalized::{Function, Module, Struct, Type};
+use starcoin_vm2_vm_types::state_store::StateView;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct ABIResolver<'a> {
@@ -360,20 +360,20 @@ fn find_struct_def_in_module(
 mod tests {
     use crate::ABIResolver;
     use anyhow::Result;
-    use starcoin_vm_types::access_path::DataPath;
-    use starcoin_vm_types::account_address::AccountAddress;
-    use starcoin_vm_types::account_config::genesis_address;
-    use starcoin_vm_types::file_format::CompiledModule;
-    use starcoin_vm_types::identifier::Identifier;
-    use starcoin_vm_types::language_storage::ModuleId;
-    use starcoin_vm_types::normalized::Module;
-    use starcoin_vm_types::parser::parse_struct_tag;
-    use starcoin_vm_types::state_store::errors::StateviewError;
-    use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
-    use starcoin_vm_types::state_store::state_key::StateKey;
-    use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
-    use starcoin_vm_types::state_store::state_value::StateValue;
-    use starcoin_vm_types::state_store::TStateView;
+    use starcoin_vm2_vm_types::access_path::DataPath;
+    use starcoin_vm2_vm_types::account_address::AccountAddress;
+    use starcoin_vm2_vm_types::account_config::genesis_address;
+    use starcoin_vm2_vm_types::file_format::CompiledModule;
+    use starcoin_vm2_vm_types::identifier::Identifier;
+    use starcoin_vm2_vm_types::language_storage::ModuleId;
+    use starcoin_vm2_vm_types::normalized::Module;
+    use starcoin_vm2_vm_types::parser::parse_struct_tag;
+    use starcoin_vm2_vm_types::state_store::errors::StateviewError;
+    use starcoin_vm2_vm_types::state_store::state_key::inner::StateKeyInner;
+    use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+    use starcoin_vm2_vm_types::state_store::state_storage_usage::StateStorageUsage;
+    use starcoin_vm2_vm_types::state_store::state_value::StateValue;
+    use starcoin_vm2_vm_types::state_store::TStateView;
     use std::collections::BTreeMap;
 
     pub struct InMemoryStateView {

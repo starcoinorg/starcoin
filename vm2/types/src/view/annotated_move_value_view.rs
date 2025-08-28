@@ -5,7 +5,7 @@ use crate::view::{annotated_move_struct_view::AnnotatedMoveStructView, str_view:
 use move_core_types::{account_address::AccountAddress, u256};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_resource_viewer::AnnotatedMoveValue;
+use starcoin_vm2_resource_viewer::AnnotatedMoveValue;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum AnnotatedMoveValueView {

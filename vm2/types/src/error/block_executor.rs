@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::vm_status::DiscardedVMStatus;
+use starcoin_vm2_vm_types::vm_status::DiscardedVMStatus;
 use std::error::Error;
 use thiserror::Error;
 

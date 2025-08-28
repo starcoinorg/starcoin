@@ -14,7 +14,7 @@ starcoin-crypto = { workspace = true }
 starcoin-decrypt = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-storage = { workspace = true }
-starcoin-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

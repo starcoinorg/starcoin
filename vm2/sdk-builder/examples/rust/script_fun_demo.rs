@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_framework::{starcoin_coin_transfer, EntryFunctionCall};
-use starcoin_types::AccountAddress;
+use starcoin_vm2_types::AccountAddress;
 
 fn demo_p2p_entry_function() {
     let payee = AccountAddress([

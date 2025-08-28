@@ -23,7 +23,7 @@ use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use starcoin_vm_types::on_chain_config::FeatureFlag;
+use starcoin_vm2_vm_types::on_chain_config::FeatureFlag;
 use std::{collections::VecDeque, rc::Rc};
 
 fn feature_flag_of_group_scalar_mul(

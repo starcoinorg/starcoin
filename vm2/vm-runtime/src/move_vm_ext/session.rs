@@ -41,7 +41,7 @@ use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
 use starcoin_vm_runtime_types::{
     change_set::VMChangeSet, storage::change_set_configs::ChangeSetConfigs,
 };
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     block_metadata::BlockMetadata, contract_event::ContractEvent, on_chain_config::Features,
     state_store::state_key::StateKey, transaction::SignatureCheckedTransaction,
     transaction_metadata::TransactionMetadata,

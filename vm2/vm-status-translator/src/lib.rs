@@ -3,7 +3,7 @@ use move_core_types::errmap;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access::ModuleAccess,
     file_format::{CompiledModule, FunctionDefinitionIndex},
     identifier::Identifier,

@@ -15,7 +15,7 @@ use move_vm_types::delayed_values::derived_string_snapshot::{
     is_derived_string_struct_layout,
 };
 use move_vm_types::values::{Struct, Value};
-use starcoin_types::delayed_fields::PanicError;
+use starcoin_vm2_types::delayed_fields::PanicError;
 
 // Wrapping another error, to add a variant that represents
 // something that should never happen - i.e. a code invariant error,

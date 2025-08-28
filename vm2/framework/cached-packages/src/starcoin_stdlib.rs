@@ -11,7 +11,7 @@ pub use crate::{
 use move_core_types::{ident_str, language_storage::ModuleId};
 use starcoin_framework::{BuildOptions, BuiltPackage};
 use starcoin_package_builder::PackageBuilder;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
     transaction::{EntryFunction, TransactionPayload},
 };

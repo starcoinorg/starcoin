@@ -29,7 +29,7 @@ use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
 use once_cell::sync::Lazy;
 use starcoin_native_interface::{RawSafeNative, SafeNativeBuilder};
-use starcoin_vm_types::on_chain_config::FeatureFlag;
+use starcoin_vm2_vm_types::on_chain_config::FeatureFlag;
 use std::{any::Any, hash::Hash, rc::Rc};
 
 pub mod arithmetics;

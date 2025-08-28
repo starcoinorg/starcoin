@@ -13,7 +13,7 @@ use starcoin_aggregator::{
     delta_change_set::DeltaOp,
     resolver::{AggregatorV1Resolver, DelayedFieldResolver},
 };
-use starcoin_vm_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
+use starcoin_vm2_vm_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashSet},
@@ -159,7 +159,7 @@ mod test {
         delta_math::DeltaHistory, tests::types::FAKE_AGGREGATOR_VIEW_GEN_ID_START,
         types::DelayedFieldValue, FakeAggregatorView,
     };
-    use starcoin_types::delayed_fields::{
+    use starcoin_vm2_types::delayed_fields::{
         calculate_width_for_integer_embedded_string, SnapshotToStringFormula,
     };
 

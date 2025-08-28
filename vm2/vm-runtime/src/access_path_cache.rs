@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},

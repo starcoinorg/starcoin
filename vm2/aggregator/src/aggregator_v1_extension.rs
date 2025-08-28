@@ -10,7 +10,7 @@ use crate::{
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::StatusCode;
-use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
+use starcoin_vm2_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// When `Addition` operation overflows the `limit`.

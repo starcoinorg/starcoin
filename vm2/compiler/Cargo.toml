@@ -8,7 +8,7 @@ petgraph = { workspace = true }
 regex = { features = ["std", "perf"], workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-vm-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 tempfile = { workspace = true }
 walkdir = { workspace = true }
 starcoin-framework = { workspace = true }

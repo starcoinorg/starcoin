@@ -7,11 +7,11 @@ use move_core_types::u256;
 use schemars::JsonSchema;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::file_format::AbilitySet;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
+use starcoin_vm2_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::file_format::AbilitySet;
+use starcoin_vm2_vm_types::identifier::Identifier;
+use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
+use starcoin_vm2_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use std::fmt;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]

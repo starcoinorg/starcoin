@@ -7,7 +7,7 @@ use starcoin_native_interface::{
 };
 
 use starcoin_vm_runtime_types::resolver::StateStorageView;
-use starcoin_vm_types::vm_status::StatusCode;
+use starcoin_vm2_vm_types::vm_status::StatusCode;
 
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMError;

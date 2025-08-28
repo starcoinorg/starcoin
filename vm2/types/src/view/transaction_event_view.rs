@@ -9,7 +9,7 @@ use crate::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::{contract_event::ContractEvent, event::EventKey};
+use starcoin_vm2_vm_types::{contract_event::ContractEvent, event::EventKey};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, JsonSchema)]
 pub struct TransactionEventView {

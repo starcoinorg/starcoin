@@ -13,7 +13,7 @@ use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeError,
     SafeNativeResult,
 };
-use starcoin_vm_types::vm_status::StatusCode;
+use starcoin_vm2_vm_types::vm_status::StatusCode;
 use std::collections::VecDeque;
 
 /// The size of a serialized scalar, in bytes.

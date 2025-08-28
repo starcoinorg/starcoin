@@ -18,12 +18,12 @@ use starcoin_aggregator::delta_change_set::serialize;
 use starcoin_aggregator::resolver::AggregatorV1Resolver;
 use starcoin_aggregator::types::code_invariant_error;
 use starcoin_aggregator::{delayed_change::DelayedChange, delta_change_set::DeltaOp};
-use starcoin_types::delayed_fields::PanicError;
-use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
-use starcoin_vm_types::state_store::state_value::StateValueMetadata;
-use starcoin_vm_types::write_set::{TransactionWrite, WriteOpSize};
-use starcoin_vm_types::{
+use starcoin_vm2_types::delayed_fields::PanicError;
+use starcoin_vm2_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use starcoin_vm2_vm_types::state_store::state_key::inner::StateKeyInner;
+use starcoin_vm2_vm_types::state_store::state_value::StateValueMetadata;
+use starcoin_vm2_vm_types::write_set::{TransactionWrite, WriteOpSize};
+use starcoin_vm2_vm_types::{
     contract_event::ContractEvent,
     state_store::state_key::StateKey,
     transaction::ChangeSet as StorageChangeSet,

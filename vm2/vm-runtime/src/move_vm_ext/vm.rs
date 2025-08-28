@@ -17,8 +17,8 @@ use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
 use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_table_natives::NativeTableContext;
-use starcoin_types::vm::config::starcoin_prod_vm_config;
-use starcoin_vm_types::{
+use starcoin_vm2_types::vm::config::starcoin_prod_vm_config;
+use starcoin_vm2_vm_types::{
     errors::PartialVMResult,
     on_chain_config::{Features, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder},
 };

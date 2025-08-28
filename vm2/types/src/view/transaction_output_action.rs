@@ -4,7 +4,7 @@
 use crate::view::{write_op_value_view::WriteOpValueView, write_op_view::WriteOpView};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm2_vm_types::access_path::AccessPath;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {

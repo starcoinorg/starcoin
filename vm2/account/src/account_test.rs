@@ -10,13 +10,13 @@ use starcoin_account_api::AccountPublicKey;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{SigningKey, ValidCryptoMaterial};
-use starcoin_types::access_path::AccessPath;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::genesis_config::ChainId;
-use starcoin_types::identifier::{IdentStr, Identifier};
-use starcoin_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::{
+use starcoin_vm2_types::access_path::AccessPath;
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::genesis_config::ChainId;
+use starcoin_vm2_types::identifier::{IdentStr, Identifier};
+use starcoin_vm2_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
+use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_vm2_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionPayload,
 };
 use std::str::FromStr;
@@ -173,7 +173,7 @@ pub fn test_wallet_account() -> Result<()> {
     use core::convert::{From, TryFrom};
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};
     use starcoin_crypto::{hash::CryptoHash, HashValue};
-    use starcoin_types::transaction::authenticator::AuthenticationKey;
+    use starcoin_vm2_types::transaction::authenticator::AuthenticationKey;
 
     let bytes = hex::decode("2c78c6fd8829de80451cda02310250b27307360ddc972d614fa0c8462ae41b3e")?;
     let private_key = Ed25519PrivateKey::try_from(&bytes[..])?;

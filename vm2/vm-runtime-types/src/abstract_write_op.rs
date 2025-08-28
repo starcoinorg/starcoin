@@ -5,10 +5,10 @@
 use crate::resolver::{ExecutorView, ResourceGroupSize};
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
-use starcoin_vm_types::errors::PartialVMResult;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::state_value::StateValueMetadata;
-use starcoin_vm_types::write_set::{TransactionWrite, WriteOp, WriteOpSize};
+use starcoin_vm2_vm_types::errors::PartialVMResult;
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::state_store::state_value::StateValueMetadata;
+use starcoin_vm2_vm_types::write_set::{TransactionWrite, WriteOp, WriteOpSize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

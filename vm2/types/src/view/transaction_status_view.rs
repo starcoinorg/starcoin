@@ -5,7 +5,7 @@ use crate::view::str_view::StrView;
 use move_core_types::vm_status::StatusCode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     transaction::TransactionStatus,
     vm_status::{AbortLocation, DiscardedVMStatus, KeptVMStatus},
 };

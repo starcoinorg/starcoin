@@ -4,7 +4,7 @@
 use crate::view::chain_info_view::ChainInfoView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::PeerId;
+use starcoin_vm2_vm_types::PeerId;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PeerInfoView {

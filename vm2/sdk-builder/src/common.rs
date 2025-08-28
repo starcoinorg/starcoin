@@ -6,7 +6,7 @@ use heck::ToUpperCamelCase;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use once_cell::sync::Lazy;
 use serde_reflection::{ContainerFormat, Format, Named, VariantFormat};
-use starcoin_vm_types::transaction::{
+use starcoin_vm2_vm_types::transaction::{
     ArgumentABI, EntryABI, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 use std::{

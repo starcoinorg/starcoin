@@ -8,7 +8,7 @@ use crate::view::{
 use move_core_types::identifier::Identifier;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_resource_viewer::AnnotatedMoveStruct;
+use starcoin_vm2_resource_viewer::AnnotatedMoveStruct;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct AnnotatedMoveStructView {

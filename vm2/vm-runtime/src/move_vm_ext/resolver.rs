@@ -8,8 +8,8 @@ use move_core_types::resolver::{MoveResolver, ResourceResolver};
 use move_table_extension::TableResolver;
 use starcoin_aggregator::resolver::{AggregatorV1Resolver, DelayedFieldResolver};
 use starcoin_vm_runtime_types::resolver::{ExecutorView, ResourceGroupSize};
-use starcoin_vm_types::on_chain_config::ConfigStorage;
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::on_chain_config::ConfigStorage;
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use std::collections::{BTreeMap, HashMap};
 
 /// A general resolver used by StarcoinVM. Allows to implement custom hooks on

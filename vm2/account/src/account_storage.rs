@@ -17,8 +17,8 @@ use starcoin_storage::{
     define_storage,
     storage::{CodecKVStore, ColumnFamilyName, StorageInstance},
 };
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_config::token_code::TokenCode;
 use std::convert::TryFrom;
 use std::path::Path;
 

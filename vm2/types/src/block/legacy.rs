@@ -5,7 +5,7 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm2_vm_types::transaction::authenticator::AuthenticationKey;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 #[serde(rename = "BlockHeader")]

@@ -4,7 +4,7 @@
 use crate::view::function_arg_type_view::TypeTagView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::state_store::table::TableInfo;
+use starcoin_vm2_vm_types::state_store::table::TableInfo;
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "table_info")]

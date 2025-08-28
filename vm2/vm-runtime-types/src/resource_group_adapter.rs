@@ -8,8 +8,8 @@ use bytes::Bytes;
 use move_core_types::vm_status::StatusCode;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use serde::Serialize;
-use starcoin_vm_types::errors::{PartialVMError, PartialVMResult};
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::errors::{PartialVMError, PartialVMResult};
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashMap},
@@ -75,7 +75,7 @@ pub fn group_size_as_sum<T: Serialize + Clone + Debug>(
 #[test]
 fn test_group_size_same_as_bcs() {
     use move_core_types::identifier::Identifier;
-    use starcoin_vm_types::PeerId;
+    use starcoin_vm2_vm_types::PeerId;
 
     let reused_vec = Bytes::from(vec![5; 20000]);
 
@@ -281,7 +281,7 @@ mod tests {
     use move_core_types::account_address::AccountAddress;
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::TypeTag;
-    use starcoin_vm_types::state_store::{
+    use starcoin_vm2_vm_types::state_store::{
         errors::StateviewError, state_storage_usage::StateStorageUsage, state_value::StateValue,
         TStateView,
     };

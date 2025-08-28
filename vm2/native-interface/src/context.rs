@@ -9,7 +9,7 @@ use starcoin_gas_algebra::{
     AbstractValueSize, DynamicExpression, GasExpression, GasQuantity, InternalGasUnit,
 };
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
-use starcoin_vm_types::on_chain_config::{Features, TimedFeatureFlag, TimedFeatures};
+use starcoin_vm2_vm_types::on_chain_config::{Features, TimedFeatureFlag, TimedFeatures};
 use std::ops::{Deref, DerefMut};
 
 /// A proxy between the VM and the native functions, allowing the latter to query VM configurations

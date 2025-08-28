@@ -4,11 +4,11 @@ use starcoin_account::{
     AccountManager,
 };
 use starcoin_account_api::{AccountInfo, AccountProvider};
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::token_code::TokenCode;
-use starcoin_types::genesis_config::ChainId;
-use starcoin_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_config::token_code::TokenCode;
+use starcoin_vm2_types::genesis_config::ChainId;
+use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::path::Path;
 use std::time::Duration;
 pub struct AccountLocalProvider {
