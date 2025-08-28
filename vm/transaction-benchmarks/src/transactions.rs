@@ -16,7 +16,9 @@ use starcoin_language_e2e_tests::{
     gas_costs::TXN_RESERVED,
 };
 
-use starcoin_types::{block_metadata::BlockMetadata, transaction::Transaction};
+use starcoin_types::{
+    block_metadata::BlockMetadataLegacy as BlockMetadata, transaction::Transaction,
+};
 
 use starcoin_vm_runtime::{
     parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
