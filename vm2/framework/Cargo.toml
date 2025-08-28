@@ -72,7 +72,7 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 sha2 = "0.9.3"
 sha2_0_10_6 = { workspace = true }
-sha3 = "0.9.1"
+sha3 = "0.10.1"
 siphasher = { workspace = true }
 smallvec = { workspace = true }
 tempfile = { workspace = true }
