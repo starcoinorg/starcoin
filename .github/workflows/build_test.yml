@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - multi-move-vm
+      - dual-verse-dag
 
 jobs:
   build-and-test:

@@ -99,14 +99,14 @@ pub enum EntryFunctionCall {
     /// Generic authentication key rotation function that allows the user to rotate their authentication key from any scheme to any scheme.
     /// To authorize the rotation, we need two signatures:
     /// - the first signature `cap_rotate_key` refers to the signature by the account owner's current key on a valid `RotationProofChallenge`,
-    /// demonstrating that the user intends to and has the capability to rotate the authentication key of this account;
+    ///   demonstrating that the user intends to and has the capability to rotate the authentication key of this account;
     /// - the second signature `cap_update_table` refers to the signature by the new key (that the account owner wants to rotate to) on a
-    /// valid `RotationProofChallenge`, demonstrating that the user owns the new private key, and has the authority to update the
-    /// `OriginatingAddress` map with the new address mapping `<new_address, originating_address>`.
-    /// To verify these two signatures, we need their corresponding public key and public key scheme: we use `from_scheme` and `from_public_key_bytes`
-    /// to verify `cap_rotate_key`, and `to_scheme` and `to_public_key_bytes` to verify `cap_update_table`.
-    /// A scheme of 0 refers to an Ed25519 key and a scheme of 1 refers to Multi-Ed25519 keys.
-    /// `originating address` refers to an account's original/first address.
+    ///   valid `RotationProofChallenge`, demonstrating that the user owns the new private key, and has the authority to update the
+    ///   `OriginatingAddress` map with the new address mapping `<new_address, originating_address>`.
+    ///   To verify these two signatures, we need their corresponding public key and public key scheme: we use `from_scheme` and `from_public_key_bytes`
+    ///   to verify `cap_rotate_key`, and `to_scheme` and `to_public_key_bytes` to verify `cap_update_table`.
+    ///   A scheme of 0 refers to an Ed25519 key and a scheme of 1 refers to Multi-Ed25519 keys.
+    ///   `originating address` refers to an account's original/first address.
     ///
     /// Here is an example attack if we don't ask for the second signature `cap_update_table`:
     /// Alice has rotated her account `addr_a` to `new_addr_a`. As a result, the following entry is created, to help Alice when recovering her wallet:
@@ -1167,14 +1167,14 @@ pub fn account_revoke_signer_capability(
 /// Generic authentication key rotation function that allows the user to rotate their authentication key from any scheme to any scheme.
 /// To authorize the rotation, we need two signatures:
 /// - the first signature `cap_rotate_key` refers to the signature by the account owner's current key on a valid `RotationProofChallenge`,
-/// demonstrating that the user intends to and has the capability to rotate the authentication key of this account;
+///   demonstrating that the user intends to and has the capability to rotate the authentication key of this account;
 /// - the second signature `cap_update_table` refers to the signature by the new key (that the account owner wants to rotate to) on a
-/// valid `RotationProofChallenge`, demonstrating that the user owns the new private key, and has the authority to update the
-/// `OriginatingAddress` map with the new address mapping `<new_address, originating_address>`.
-/// To verify these two signatures, we need their corresponding public key and public key scheme: we use `from_scheme` and `from_public_key_bytes`
-/// to verify `cap_rotate_key`, and `to_scheme` and `to_public_key_bytes` to verify `cap_update_table`.
-/// A scheme of 0 refers to an Ed25519 key and a scheme of 1 refers to Multi-Ed25519 keys.
-/// `originating address` refers to an account's original/first address.
+///   valid `RotationProofChallenge`, demonstrating that the user owns the new private key, and has the authority to update the
+///   `OriginatingAddress` map with the new address mapping `<new_address, originating_address>`.
+///   To verify these two signatures, we need their corresponding public key and public key scheme: we use `from_scheme` and `from_public_key_bytes`
+///   to verify `cap_rotate_key`, and `to_scheme` and `to_public_key_bytes` to verify `cap_update_table`.
+///   A scheme of 0 refers to an Ed25519 key and a scheme of 1 refers to Multi-Ed25519 keys.
+///   `originating address` refers to an account's original/first address.
 ///
 /// Here is an example attack if we don't ask for the second signature `cap_update_table`:
 /// Alice has rotated her account `addr_a` to `new_addr_a`. As a result, the following entry is created, to help Alice when recovering her wallet:
