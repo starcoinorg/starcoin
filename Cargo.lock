@@ -15405,7 +15405,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "heck 0.3.3",
+ "heck 0.5.0",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "regex",
  "serde-generate",
