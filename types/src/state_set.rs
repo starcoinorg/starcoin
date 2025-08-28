@@ -73,9 +73,9 @@ impl AccountStateSet {
         self.data_set(DataType::CODE)
     }
 
-    pub fn resource_group_set(&self) -> Option<&StateSet> {
-        self.data_set(DataType::RESOURCEGROUP)
-    }
+    //pub fn resource_group_set(&self) -> Option<&StateSet> {
+    //    self.data_set(DataType::RESOURCEGROUP)
+    //}
 
     #[inline]
     pub fn data_set(&self, data_type: DataType) -> Option<&StateSet> {

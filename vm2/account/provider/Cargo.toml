@@ -1,0 +1,19 @@
+[dependencies]
+anyhow = { workspace = true }
+starcoin-account = { workspace = true }
+starcoin-account-api = { features = ["mock"], workspace = true }
+#starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+#starcoin-rpc-client = { workspace = true }
+starcoin-types = { workspace = true }
+
+[package]
+edition = { workspace = true }
+name = "starcoin-vm2-account-provider"
+version = "2.0.1"
+authors = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

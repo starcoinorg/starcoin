@@ -1,0 +1,26 @@
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+once_cell = { workspace = true }
+bytes = { workspace = true }
+
+[dev-dependencies]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-state-api"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
