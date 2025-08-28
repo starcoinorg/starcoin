@@ -55,13 +55,11 @@ starcoin-rpc-server = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
-starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }

@@ -18,4 +18,4 @@ starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
+starcoin-storage = { workspace = true }

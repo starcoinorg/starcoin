@@ -33,7 +33,7 @@ use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,

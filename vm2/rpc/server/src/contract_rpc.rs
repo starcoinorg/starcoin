@@ -18,7 +18,7 @@ use starcoin_vm2_resource_viewer::{module_cache::ModuleCache, MoveValueAnnotator
 use starcoin_vm2_rpc_api::{contract_api::ContractApi, FutureResult};
 use starcoin_vm2_state_api::ChainStateAsyncService;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Storage;
+use starcoin_storage::Storage;
 use starcoin_vm2_types::view::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,

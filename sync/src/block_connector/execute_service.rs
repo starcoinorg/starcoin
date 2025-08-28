@@ -16,7 +16,7 @@ use starcoin_sync_api::{PeerNewBlock, SelectHeaderState};
 use starcoin_types::block::Block;
 use starcoin_types::consensus_header::ConsensusHeader;
 use starcoin_types::system_events::{MinedBlock, NewDagBlock, NewDagBlockFromPeer};
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 
 use crate::sync::CheckSyncEvent;
 

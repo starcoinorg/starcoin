@@ -23,7 +23,7 @@ use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;

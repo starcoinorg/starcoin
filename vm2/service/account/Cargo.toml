@@ -14,7 +14,7 @@ tokio = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
+starcoin-storage = { workspace = true }
 
 [package]
 authors = { workspace = true }

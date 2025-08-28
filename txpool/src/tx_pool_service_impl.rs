@@ -29,7 +29,7 @@ use starcoin_types::{
     block::{Block, BlockHeader},
 };
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Store as Store2;
+use starcoin_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 

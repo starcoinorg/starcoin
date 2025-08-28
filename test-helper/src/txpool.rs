@@ -13,7 +13,7 @@ use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_vm2_account_service::{
     AccountService as AccountService2, AccountStorage as AccountStorage2,
 };
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use std::sync::Arc;
 use std::time::Duration;
 

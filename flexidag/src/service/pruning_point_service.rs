@@ -8,7 +8,7 @@ use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
-use starcoin_vm2_storage::Store as Store2;
+use starcoin_storage::Store as Store2;
 
 #[derive(Clone)]
 pub struct PruningPointMessage {

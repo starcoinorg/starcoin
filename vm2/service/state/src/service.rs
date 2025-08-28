@@ -16,7 +16,7 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_state_tree::AccountStateSetIterator;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_storage::Storage as Storage2;
 use starcoin_vm2_types::{
     account_address::AccountAddress, account_state::AccountState, state_set::AccountStateSet,
     state_set::ChainStateSet,

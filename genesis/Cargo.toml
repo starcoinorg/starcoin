@@ -25,7 +25,6 @@ stest = { workspace = true }
 thiserror = { workspace = true }
 
 # dependencies for move2
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-genesis = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
