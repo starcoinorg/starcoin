@@ -36,7 +36,6 @@ use starcoin_vm2_types::{
         TransactionPayload, TransactionStatus,
     },
 };
-use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm2_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm2_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm2_vm_types::{
@@ -58,6 +57,7 @@ use starcoin_vm2_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
 use crate::{verifier, VMExecutor};

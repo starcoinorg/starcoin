@@ -43,6 +43,10 @@ use starcoin_storage::{
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
     Storage,
 };
+use starcoin_storage::{
+    cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
+    storage::StorageInstance as StorageInstance2, Storage as Storage2,
+};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
@@ -56,10 +60,6 @@ use starcoin_vm2_account_service::{
     AccountStorage as AccountStorage2,
 };
 use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
-use starcoin_storage::{
-    cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
-    storage::StorageInstance as StorageInstance2, Storage as Storage2,
-};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 

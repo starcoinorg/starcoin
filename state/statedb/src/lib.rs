@@ -11,10 +11,10 @@ use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::AccountStateSetIterator;
 pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
 use starcoin_state_tree::mock::MockStateNodeStore;
-use starcoin_state_api::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{

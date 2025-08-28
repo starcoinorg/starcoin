@@ -7,9 +7,9 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
+use starcoin_storage::Storage as Storage2;
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_storage::Storage as Storage2;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,

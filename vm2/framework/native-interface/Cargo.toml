@@ -13,8 +13,8 @@ rust-version = { workspace = true }
 
 
 [dependencies]
-starcoin-gas-algebra = { workspace = true }
-starcoin-gas-schedule = { workspace = true }
+starcoin-gas-algebra = { path = "../gas-algebra" }
+starcoin-gas-schedule = { path = "../gas-schedule" }
 starcoin-vm2-vm-types = { workspace = true }
 bcs = { workspace = true }
 bytes = { workspace = true }

@@ -16,6 +16,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
+use starcoin_storage::Storage as Storage2;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
@@ -27,7 +28,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_storage::Storage as Storage2;
 #[cfg(test)]
 use starcoin_vm_types::account_address::AccountAddress;
 // use std::collections::HashSet;

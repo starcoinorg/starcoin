@@ -21,6 +21,7 @@ use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
+use starcoin_storage::Storage as Storage2;
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_vm2_account_service::AccountService as AccountService2;
@@ -30,7 +31,6 @@ use starcoin_vm2_rpc_server::{
     contract_rpc::ContractRpcImpl as ContractRpcImpl2, state_rpc::StateRpcImpl as StateRpcImpl2,
 };
 use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
-use starcoin_storage::Storage as Storage2;
 use std::sync::Arc;
 
 pub struct RpcServiceFactory;

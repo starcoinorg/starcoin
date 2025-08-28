@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 starcoin-framework = { path = ".." }
-starcoin-package-builder = { path = "../package-builder" }
+starcoin-package-builder = { path = "../../package-builder" }
 starcoin-vm-types = { path = "../../vm-types" }
 bcs = { workspace = true }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }

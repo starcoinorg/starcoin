@@ -19,6 +19,7 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
+use starcoin_storage::Store as Store2;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
@@ -29,7 +30,6 @@ use starcoin_types::{
     block::{Block, BlockHeader},
 };
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 

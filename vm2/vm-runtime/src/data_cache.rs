@@ -15,10 +15,6 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::vm::config::starcoin_prod_deserializer_config;
-use starcoin_vm_runtime_types::resolver::{
-    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
-};
-use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm2_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm2_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -30,6 +26,10 @@ use starcoin_vm2_vm_types::{
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
+use starcoin_vm_runtime_types::resolver::{
+    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
+};
+use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use std::collections::HashMap;
 use std::{
     cell::RefCell,

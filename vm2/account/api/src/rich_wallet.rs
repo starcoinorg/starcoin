@@ -5,7 +5,9 @@ use serde::{Deserialize, Deserializer};
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::account_config::token_code::TokenCode;
 use starcoin_vm2_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload};
+use starcoin_vm2_types::transaction::{
+    RawUserTransaction, SignedUserTransaction, TransactionPayload,
+};
 use std::fmt;
 use std::marker::PhantomData;
 use std::str::FromStr;

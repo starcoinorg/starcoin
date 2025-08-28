@@ -31,12 +31,12 @@ move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 starcoin-metrics = { optional = true, workspace = true }
-starcoin-gas-schedule = { path = "../gas-schedule" }
-starcoin-gas-algebra = { path = "../gas-algebra" }
-starcoin-gas-meter = { path = "../gas-meter" }
+starcoin-gas-schedule = { path = "../framework/gas-schedule" }
+starcoin-gas-algebra = { path = "../framework/gas-algebra" }
+starcoin-gas-meter = { path = "../framework/gas-meter" }
 starcoin-parallel-executor = { workspace = true }
 starcoin-vm-runtime-types = { path = "../vm-runtime-types" }
-starcoin-native-interface = { path = "../native-interface" }
+starcoin-native-interface = { path = "../framework/native-interface" }
 serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 rayon = { workspace = true }
@@ -44,7 +44,7 @@ num_cpus = { workspace = true }
 hex = "0.4.3"
 bytes = { workspace = true }
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-starcoin-aggregator = { workspace = true }
+starcoin-aggregator = { path = "../aggregator" }
 move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", optional = true }
 

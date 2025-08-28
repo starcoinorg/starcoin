@@ -11,10 +11,10 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::{Storage, Store};
+use starcoin_storage::{Storage as Storage2, Store as Store2};
 use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
 
 pub struct MockChain {
