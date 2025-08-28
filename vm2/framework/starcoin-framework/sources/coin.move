@@ -1040,7 +1040,7 @@ module starcoin_framework::coin {
 
     #[legacy_entry_fun]
     /// Freeze a CoinStore to prevent transfers
-    public entry fun freeze_coin_store<CoinType>(
+    public fun freeze_coin_store<CoinType>(
         account_addr: address,
         _freeze_cap: &FreezeCapability<CoinType>,
     ) acquires CoinStore {
@@ -1050,7 +1050,7 @@ module starcoin_framework::coin {
 
     #[legacy_entry_fun]
     /// Unfreeze a CoinStore to allow transfers
-    public entry fun unfreeze_coin_store<CoinType>(
+    public fun unfreeze_coin_store<CoinType>(
         account_addr: address,
         _freeze_cap: &FreezeCapability<CoinType>,
     ) acquires CoinStore {

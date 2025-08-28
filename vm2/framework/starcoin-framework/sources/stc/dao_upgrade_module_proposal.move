@@ -3,7 +3,6 @@ module starcoin_framework::dao_upgrade_module_proposal {
 
     use std::error;
     use std::signer;
-    use starcoin_std::debug;
 
     use starcoin_framework::dao;
     use starcoin_framework::stc_transaction_package_validation;
