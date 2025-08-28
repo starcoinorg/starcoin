@@ -225,6 +225,22 @@ pub enum EntryFunctionCall {
         exec_delay: u64,
     },
 
+    DaoUpgradeModuleProposalProposeModuleUpgradeV2 {
+        token_t: TypeTag,
+        module_address: AccountAddress,
+        package_hash: Vec<u8>,
+        version: u64,
+        exec_delay: u64,
+        enforced: bool,
+    },
+
+    /// Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
+    DaoUpgradeModuleProposalSubmitModuleUpgradePlan {
+        token_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
     DaoVoteScriptsCastVote {
         token: TypeTag,
         action_t: TypeTag,
@@ -693,6 +709,30 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 exec_delay,
+            ),
+            DaoUpgradeModuleProposalProposeModuleUpgradeV2 {
+                token_t,
+                module_address,
+                package_hash,
+                version,
+                exec_delay,
+                enforced,
+            } => dao_upgrade_module_proposal_propose_module_upgrade_v2(
+                token_t,
+                module_address,
+                package_hash,
+                version,
+                exec_delay,
+                enforced,
+            ),
+            DaoUpgradeModuleProposalSubmitModuleUpgradePlan {
+                token_t,
+                proposer_address,
+                proposal_id,
+            } => dao_upgrade_module_proposal_submit_module_upgrade_plan(
+                token_t,
+                proposer_address,
+                proposal_id,
             ),
             DaoVoteScriptsCastVote {
                 token,
@@ -1464,6 +1504,51 @@ pub fn dao_modify_config_proposal_propose(
             bcs::to_bytes(&voting_quorum_rate).unwrap(),
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn dao_upgrade_module_proposal_propose_module_upgrade_v2(
+    token_t: TypeTag,
+    module_address: AccountAddress,
+    package_hash: Vec<u8>,
+    version: u64,
+    exec_delay: u64,
+    enforced: bool,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_upgrade_module_proposal").to_owned(),
+        ),
+        ident_str!("propose_module_upgrade_v2").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&module_address).unwrap(),
+            bcs::to_bytes(&package_hash).unwrap(),
+            bcs::to_bytes(&version).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+            bcs::to_bytes(&enforced).unwrap(),
+        ],
+    ))
+}
+
+/// Once the proposal is agreed, anyone can call this method to generate the upgrading plan.
+pub fn dao_upgrade_module_proposal_submit_module_upgrade_plan(
+    token_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_upgrade_module_proposal").to_owned(),
+        ),
+        ident_str!("submit_module_upgrade_plan").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
         ],
     ))
 }
@@ -2669,6 +2754,41 @@ mod decoder {
         }
     }
 
+    pub fn dao_upgrade_module_proposal_propose_module_upgrade_v2(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::DaoUpgradeModuleProposalProposeModuleUpgradeV2 {
+                    token_t: script.ty_args().get(0)?.clone(),
+                    module_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    package_hash: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    version: bcs::from_bytes(script.args().get(2)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(3)?).ok()?,
+                    enforced: bcs::from_bytes(script.args().get(4)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_upgrade_module_proposal_submit_module_upgrade_plan(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::DaoUpgradeModuleProposalSubmitModuleUpgradePlan {
+                    token_t: script.ty_args().get(0)?.clone(),
+                    proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
     pub fn dao_vote_scripts_cast_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DaoVoteScriptsCastVote {
@@ -3439,6 +3559,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "dao_modify_config_proposal_propose".to_string(),
             Box::new(decoder::dao_modify_config_proposal_propose),
+        );
+        map.insert(
+            "dao_upgrade_module_proposal_propose_module_upgrade_v2".to_string(),
+            Box::new(decoder::dao_upgrade_module_proposal_propose_module_upgrade_v2),
+        );
+        map.insert(
+            "dao_upgrade_module_proposal_submit_module_upgrade_plan".to_string(),
+            Box::new(decoder::dao_upgrade_module_proposal_submit_module_upgrade_plan),
         );
         map.insert(
             "dao_vote_scripts_cast_vote".to_string(),
