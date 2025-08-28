@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::{Ok, Result};
-use futures::channel::mpsc;
-use futures::SinkExt;
 use network_api::PeerId;
+use once_cell::sync::Lazy;
 use starcoin_chain::{verifier::FullVerifier, BlockChain};
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
@@ -22,6 +21,14 @@ use starcoin_types::system_events::{MinedBlock, NewDagBlock, NewDagBlockFromPeer
 
 use crate::sync::CheckSyncEvent;
 
+static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_cpus::get())
+        .thread_name(|index| format!("parallel_executor_{}", index))
+        .build()
+        .expect("failed to build rayon thread pool for executing block service")
+});
+
 #[derive(Debug, Clone)]
 enum ExecuteBlockFrom {
     LocalMinedBlock(HashValue),
@@ -29,8 +36,14 @@ enum ExecuteBlockFrom {
 }
 
 #[derive(Debug, Clone)]
+enum ExecuteResult {
+    Executed(Box<ExecutedBlock>),
+    TryLater,
+}
+
+#[derive(Debug, Clone)]
 struct ExecutedBlockInfo {
-    executed_block: Option<ExecutedBlock>,
+    executed_block: Option<Box<ExecutedBlock>>,
     from: ExecuteBlockFrom,
 }
 
@@ -38,7 +51,6 @@ pub struct ExecuteService {
     time_service: Arc<dyn TimeService>,
     storage: Arc<Storage>,
     dag: BlockDAG,
-    sender: Option<mpsc::UnboundedSender<ExecutedBlockInfo>>,
 }
 
 impl ExecuteService {
@@ -47,7 +59,6 @@ impl ExecuteService {
             time_service,
             storage,
             dag,
-            sender: None,
         }
     }
 
@@ -68,12 +79,12 @@ impl ExecuteService {
         dag.has_block_connected(&header)
     }
 
-    async fn execute(
+    fn execute(
         new_block: Block,
         time_service: Arc<dyn TimeService>,
         storage: Arc<Storage>,
         dag: BlockDAG,
-    ) -> Result<ExecutedBlock> {
+    ) -> Result<ExecuteResult> {
         info!(
             "[BlockProcess] now start to execute the block and try to check the parents: {:?}",
             new_block.id()
@@ -82,16 +93,8 @@ impl ExecuteService {
         let id = new_block.id();
 
         for parent_id in new_block.header().parents_hash() {
-            let mut count: u64 = 3000;
-            while !Self::check_parent_ready(parent_id, storage.clone(), dag.clone())? && count > 0 {
-                async_std::task::sleep(std::time::Duration::from_millis(10)).await;
-                count = count.saturating_sub(1);
-                if count == 0 {
-                    return Err(anyhow::anyhow!(
-                        "wait dag block timeout, for block id: {:?}",
-                        parent_id
-                    ));
-                }
+            if !Self::check_parent_ready(parent_id, storage.clone(), dag.clone())? {
+                return Ok(ExecuteResult::TryLater);
             }
         }
 
@@ -159,7 +162,7 @@ impl ExecuteService {
             executed_block.block.id()
         );
 
-        Ok(executed_block)
+        Ok(ExecuteResult::Executed(Box::new(executed_block)))
     }
 }
 
@@ -178,10 +181,7 @@ impl ActorService for ExecuteService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<PeerNewBlock>();
-
-        let (sender, receiver) = mpsc::unbounded::<ExecutedBlockInfo>();
-        self.sender = Some(sender);
-        ctx.add_stream(receiver);
+        ctx.subscribe::<ExecutedBlockInfo>();
 
         Ok(())
     }
@@ -189,6 +189,7 @@ impl ActorService for ExecuteService {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<PeerNewBlock>();
+        ctx.unsubscribe::<ExecutedBlockInfo>();
         Ok(())
     }
 }
@@ -205,7 +206,7 @@ impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
                 match &executed_block_info.executed_block {
                     Some(executed_block) => {
                         let _ = bus.broadcast(NewDagBlock {
-                            executed_block: Arc::new(executed_block.clone()),
+                            executed_block: Arc::new(*executed_block.clone()),
                         });
                     }
                     None => {
@@ -237,28 +238,37 @@ impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
 }
 
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
-    fn handle_event(&mut self, msg: PeerNewBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let dag = self.dag.clone();
-        let mut sender = self.sender.clone();
+        let self_ref = ctx.self_ref();
 
-        async_std::task::spawn(async move {
-            match Self::execute(msg.get_block().clone(), time_service, storage, dag).await {
-                std::result::Result::Ok(executed_block) => {
-                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
-                        executed_block: Some(executed_block),
-                        from: ExecuteBlockFrom::PeerMinedBlock(
-                            msg.get_block().id(),
-                            msg.get_peer_id(),
-                        ),
-                    }) {
-                        std::result::Result::Ok(_) => (),
-                        Err(e) => error!(
-                            "execute a peer block {:?} error: {}",
+        RAYON_EXEC_POOL.spawn(move || {
+            match Self::execute(msg.get_block().clone(), time_service, storage, dag) {
+                std::result::Result::Ok(execute_result) => {
+                    if let Err(e) = match execute_result {
+                        ExecuteResult::Executed(executed_block) => self_ref
+                            .notify(ExecutedBlockInfo {
+                                executed_block: Some(executed_block),
+                                from: ExecuteBlockFrom::PeerMinedBlock(
+                                    msg.get_block().id(),
+                                    msg.get_peer_id(),
+                                ),
+                            })
+                            .map_err(anyhow::Error::from),
+                        ExecuteResult::TryLater => self_ref
+                            .notify(PeerNewBlock::new(
+                                msg.get_peer_id(),
+                                msg.get_block().clone(),
+                            ))
+                            .map_err(anyhow::Error::from),
+                    } {
+                        error!(
+                            "execute a peer block {:?} error: {:?}",
                             msg.get_block().id(),
                             e
-                        ),
+                        );
                     }
                 }
                 Err(e) => {
@@ -267,19 +277,14 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                         msg.get_block().id(),
                         e
                     );
-                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
-                        executed_block: None,
+                    if let Err(e) = self_ref.notify(ExecutedBlockInfo {
+                        executed_block: None, // force to star sync
                         from: ExecuteBlockFrom::PeerMinedBlock(
                             msg.get_block().id(),
                             msg.get_peer_id(),
                         ),
                     }) {
-                        std::result::Result::Ok(_) => (),
-                        Err(e) => error!(
-                            "execute a peer block {:?} error: {}",
-                            msg.get_block().id(),
-                            e
-                        ),
+                        error!("notify error: {:?}", e);
                     }
                 }
             }
@@ -288,7 +293,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
 }
 
 impl EventHandler<Self, MinedBlock> for ExecuteService {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
@@ -296,25 +301,31 @@ impl EventHandler<Self, MinedBlock> for ExecuteService {
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let dag = self.dag.clone();
-        let mut sender = self.sender.clone();
         let block = new_block.as_ref().clone();
         let block_id = block.id();
+        let self_ref = ctx.self_ref();
 
-        async_std::task::spawn(async move {
-            match Self::execute(block, time_service, storage, dag).await {
-                std::result::Result::Ok(executed_block) => {
-                    match sender.as_mut().unwrap().start_send(ExecutedBlockInfo {
-                        executed_block: Some(executed_block),
-                        from: ExecuteBlockFrom::LocalMinedBlock(block_id),
-                    }) {
-                        std::result::Result::Ok(_) => (),
-                        Err(e) => error!("execute a local block {:?} error: {}", block_id, e),
+        RAYON_EXEC_POOL.spawn(
+            move || match Self::execute(block, time_service, storage, dag) {
+                std::result::Result::Ok(executed_result) => {
+                    if let Err(e) = match executed_result {
+                        ExecuteResult::Executed(executed_block) => self_ref
+                            .notify(ExecutedBlockInfo {
+                                executed_block: Some(executed_block),
+                                from: ExecuteBlockFrom::LocalMinedBlock(block_id),
+                            })
+                            .map_err(anyhow::Error::from),
+                        ExecuteResult::TryLater => self_ref
+                            .notify(MinedBlock(new_block))
+                            .map_err(anyhow::Error::from),
+                    } {
+                        error!("execute a local block {:?} error: {:?}", block_id, e);
                     }
                 }
                 Err(e) => {
                     error!("execute a local block {:?} error: {:?}", block_id, e);
                 }
-            }
-        });
+            },
+        );
     }
 }

@@ -4,6 +4,7 @@ use std::{cmp::min, sync::Arc};
 use anyhow::{format_err, Result};
 use futures::channel::mpsc;
 use futures::executor::block_on;
+use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
@@ -46,9 +47,13 @@ enum MergesetIncreaseResult {
 #[derive(Debug, Clone)]
 pub struct BlockTemplateRequest;
 
-// impl ServiceRequest for BlockTemplateRequest {
-//     type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
-// }
+static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_cpus::get())
+        .thread_name(|index| format!("parallel_executor_{}", index))
+        .build()
+        .expect("failed to build rayon thread pool for building block service")
+});
 
 #[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
@@ -451,14 +456,6 @@ where
             .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
             .address();
 
-        // if now_millis <= previous_header.timestamp() {
-        //     info!(
-        //         "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
-        //         previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
-        //     );
-        //     now_millis = previous_header.timestamp() + 1;
-        // }
-
         let blue_blocks = ghostdata
             .mergeset_blues
             .iter()
@@ -470,24 +467,6 @@ where
                 op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
             })
             .collect::<Result<Vec<Block>>>()?;
-
-        let red_blocks = ghostdata
-            .mergeset_reds
-            .iter()
-            .map(|hash| self.storage.get_block_by_hash(*hash))
-            .collect::<Result<Vec<Option<Block>>>>()?
-            .into_iter()
-            .map(|op_block_header| {
-                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
-            })
-            .collect::<Result<Vec<Block>>>()?;
-
-        // let _ = self.tx_provider.add_txns(
-        //     red_blocks
-        //         .into_iter()
-        //         .flat_map(|block| block.body.transactions)
-        //         .collect(),
-        // );
 
         let uncles = blue_blocks
             .iter()
@@ -531,8 +510,7 @@ where
         );
 
         // the data pass to
-
-        async_std::task::spawn(async move {
+        RAYON_EXEC_POOL.spawn(move || {
             let process_trans = ProcessTransactionData::new(
                 storage,
                 selected_header,
@@ -566,52 +544,6 @@ where
         });
 
         Ok(())
-        //////////
-
-        // let mut opened_block = OpenedBlock::new(
-        //     self.storage.clone(),
-        //     previous_header.clone(),
-        //     block_gas_limit,
-        //     author,
-        //     now_millis,
-        //     uncles,
-        //     difficulty,
-        //     strategy,
-        //     self.vm_metrics.clone(),
-        //     selected_parents,
-        //     header_version,
-        //     pruning_point,
-        //     ghostdata.mergeset_reds.len() as u64,
-        //     main.into_statedb(),
-        // )?;
-
-        // info!("[BlockProcess] fetch transactions");
-
-        // info!("[BlockProcess] txns len: {}", txn.len());
-        // let excluded_txns = opened_block.push_txns(txn)?;
-        // for invalid_txn in &excluded_txns.discarded_txns {
-        //     self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        // }
-        // info!(
-        //     "[BlockProcess] discarded len: {}, untouched txns len: {}",
-        //     excluded_txns.discarded_txns.len(),
-        //     excluded_txns.untouched_txns.len()
-        // );
-
-        // info!(
-        //     "[BlockProcess] included txns len: {}",
-        //     opened_block.included_user_txns().len()
-        // );
-        // info!(
-        //     "[BlockProcess] end of create the template, parent: {:?}",
-        //     opened_block.block_meta().parent_hash()
-        // );
-
-        // let template = opened_block.finalize()?;
-        // Ok(BlockTemplateResponse {
-        //     parent: previous_header,
-        //     template,
-        // })
     }
 
     fn fetch_transactions(
@@ -626,22 +558,10 @@ where
             "[CreateBlockTemplate] pending transactions len: {}",
             pending_transactions.len()
         );
-        // Ok(pending_transactions)
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
         }
 
-        // let mut pending_transaction_map =
-        //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        // pending_transactions.into_iter().for_each(|transaction| {
-        //     pending_transaction_map
-        //         .entry(transaction.sender())
-        //         .or_default()
-        //         .push(transaction);
-        // });
-
-        // let mut uncle_transaction_map =
-        //     HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
         blue_blocks.iter().for_each(|block| {
             block.transactions().iter().for_each(|transaction| {
                 pending_transactions.push(transaction.clone());
@@ -654,55 +574,6 @@ where
         });
         info!("[CreateBlockTemplate] after adding transactions of blue blocks pending transactions len: {}", pending_transactions.len());
         Ok(pending_transactions)
-
-        // for transactions in uncle_transaction_map.values_mut() {
-        //     if transactions.len() <= 1 {
-        //         continue;
-        //     }
-
-        //     let mut index = 1;
-        //     while index < transactions.len() {
-        //         if transactions[index].sequence_number()
-        //             != transactions[index - 1].sequence_number() + 1
-        //         {
-        //             break;
-        //         }
-        //         index += 1;
-        //     }
-        //     transactions.truncate(index);
-        // }
-
-        // for (sender, uncle_transactions) in uncle_transaction_map.iter() {
-        //     if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
-        //         let pending_last_seq = pending_transactions
-        //             .last()
-        //             .expect("transaction not found in pending transactions")
-        //             .sequence_number();
-        //         if let Some(index) = uncle_transactions
-        //             .iter()
-        //             .position(|transaction| transaction.sequence_number() == pending_last_seq)
-        //         {
-        //             pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
-        //         }
-        //     } else if let Some(next_seq) = self
-        //         .tx_provider
-        //         .next_sequence_number_with_state(*sender, state_root)
-        //     {
-        //         if let Some(index) = uncle_transactions
-        //             .iter()
-        //             .position(|transaction| transaction.sequence_number() == next_seq)
-        //         {
-        //             pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
-        //         } else {
-        //             pending_transaction_map.insert(*sender, uncle_transactions.to_vec());
-        //         }
-        //     }
-        // }
-
-        // Ok(pending_transaction_map
-        //     .iter()
-        //     .flat_map(|(_sender, transactions)| transactions.clone())
-        //     .collect())
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

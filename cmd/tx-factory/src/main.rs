@@ -5,7 +5,6 @@ use anyhow::bail;
 use anyhow::{format_err, Result};
 use clap::Parser;
 use starcoin_account_api::AccountInfo;
-use starcoin_config::G_HALLEY_CONFIG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
@@ -13,7 +12,6 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::sync_status::SyncStatus;
@@ -84,8 +82,6 @@ pub struct TxFactoryOpt {
     )]
     pub batch_size: u32,
 }
-
-const INITIAL_BALANCE: u128 = 1_000_000_000;
 
 fn get_account_or_default(
     client: &RpcClient,
@@ -266,11 +262,11 @@ impl TxnMocker {
             .expect("time error")
             .as_secs()
             + 600 // 10 minutes
-        // let node_info = self
-        //     .client
-        //     .node_info()
-        //     .expect("node_info() should not failed");
-        // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+                  // let node_info = self
+                  //     .client
+                  //     .node_info()
+                  //     .expect("node_info() should not failed");
+                  // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
     }
     fn get_factory_status(&self) -> bool {
         self.client
