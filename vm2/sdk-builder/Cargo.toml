@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-vm2-sdk-builder"
+name = "starcoin-sdk-builder"
 description = "Starcoin transaction-builder"
 version = "0.2.0"
 
@@ -18,7 +18,7 @@ starcoin-vm-types = { workspace = true }
 bcs = { workspace = true }
 clap = { workspace = true }
 heck = { workspace = true }
-move-core-types = { workspace = true }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 once_cell = { workspace = true }
 serde-generate = { workspace = true }
 serde-reflection = { workspace = true }

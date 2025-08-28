@@ -13,8 +13,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 # starcoin-gas-algebra-ext = { workspace = true }
-starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
-starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-native-interface = { path = "../native-interface" }
+starcoin-gas-schedule = { path = "../gas-schedule" }
 better_any = { workspace = true }
 bytes = { workspace = true }
 sha3 = "0.9.1"
