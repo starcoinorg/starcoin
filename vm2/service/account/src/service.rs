@@ -197,8 +197,8 @@ mod tests {
     use super::*;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-    use starcoin_vm2_account_api::AccountAsyncService;
     use starcoin_storage::db_storage::RocksdbConfig;
+    use starcoin_vm2_account_api::AccountAsyncService;
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());

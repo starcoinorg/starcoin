@@ -6,9 +6,9 @@ use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::Store as Store2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
-use starcoin_storage::Store as Store2;
 
 #[derive(Clone)]
 pub struct PruningPointMessage {

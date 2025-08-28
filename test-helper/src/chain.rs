@@ -16,13 +16,13 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{
     cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
 };
-use starcoin_types::startup_info::ChainInfo;
 use starcoin_storage::{
     cache_storage::CacheStorage as CacheStorage2,
     db_storage::{DBStorage as DBStorage2, RocksdbConfig as RocksdbConfig2},
     storage::StorageInstance as StorageInstance2,
     Storage as Storage2,
 };
+use starcoin_types::startup_info::ChainInfo;
 use std::{path::Path, path::PathBuf, sync::Arc};
 
 /// Storage type for testing

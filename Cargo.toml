@@ -98,7 +98,11 @@ members = [
     "vm2/vm-runtime",
     "vm2/framework",
     "vm2/framework/cached-packages",
+    "vm2/framework/gas-algebra",
+    "vm2/framework/gas-schedule",
+    "vm2/framework/gas-meter",
     "vm2/framework/move-stdlib",
+    "vm2/framework/native-interface",
     "vm2/framework/table-natives",
     "vm2/transaction-builder",
     "vm2/executor",
@@ -591,9 +595,13 @@ starcoin-vm2-rpc-api = { path = "vm2/rpc/api" }
 starcoin-vm2-rpc-server = { path = "vm2/rpc/server" }
 starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
-starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
+starcoin-vm2-vm-types = { path = "vm2/vm-types" }
 starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework" }
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
+starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
+starcoin-vm2-gas-schedule = { path = "vm2/framework/gas-schedule", package = "starcoin-gas-schedule" }
+starcoin-vm2-gas-meter = { path = "vm2/framework/gas-meter", package = "starcoin-gas-meter" }
+starcoin-vm2-native-interface = { path = "vm2/framework/native-interface", package = "starcoin-native-interface" }
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
 starcoin-vm2-dev = { path = "vm2/dev" }
 starcoin-vm2-statedb = { path = "state/statedb-v2" }
@@ -622,6 +630,7 @@ syn = { version = "1.0.107", features = [
 ] }
 sysinfo = "0.29.0"
 tempfile = "3.2.0"
+test-case = "3.3.1"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
 thiserror = "1.0"

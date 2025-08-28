@@ -7,8 +7,9 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::Storage as Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_vm2_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     message::{StateRequest, StateResponse},
@@ -16,7 +17,6 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_state_tree::AccountStateSetIterator;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_storage::Storage as Storage2;
 use starcoin_vm2_types::{
     account_address::AccountAddress, account_state::AccountState, state_set::AccountStateSet,
     state_set::ChainStateSet,

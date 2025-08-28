@@ -9,11 +9,11 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_state_api::message::{StateRequest, StateResponse};
+use starcoin_state_api::AccountStateSetIterator;
 use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
     StateWithTableItemProof,
 };
-use starcoin_state_api::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::state_set::AccountStateSet;

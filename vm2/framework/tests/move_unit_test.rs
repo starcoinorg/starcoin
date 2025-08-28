@@ -10,10 +10,10 @@ use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_framework::{extended_checks, path_in_crate};
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_vm_runtime::natives;
 use starcoin_vm2_vm_types::on_chain_config::{
     starcoin_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
 };
+use starcoin_vm_runtime::natives;
 use tempfile::tempdir;
 
 fn run_tests_for_pkg(path_to_pkg: impl Into<String>) {

@@ -20,9 +20,9 @@ proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { workspace = true }
 bcs-ext = { workspace = true }
-starcoin-gas-algebra = { path = "../gas-algebra" }
-starcoin-gas-schedule = { path = "../gas-schedule" }
-starcoin-gas-meter = { path = "../gas-meter" }
+starcoin-gas-algebra = { path = "../framework/gas-algebra" }
+starcoin-gas-schedule = { path = "../framework/gas-schedule" }
+starcoin-gas-meter = { path = "../framework/gas-meter" }
 fxhash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
@@ -46,7 +46,7 @@ starcoin-infallible = { workspace = true }
 proptest = { workspace = true, features = ["std"] }
 proptest-derive = { workspace = true }
 starcoin-vm2-crypto = { workspace = true, features = ["fuzzing"] }
-starcoin-gas-algebra = { path = "../gas-algebra", features = ["testing"] }
+starcoin-gas-algebra = { path = "../framework/gas-algebra", features = ["testing"] }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format", features = ["fuzzing"] }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = ["fuzzing"] }
 
@@ -56,7 +56,7 @@ fuzzing = [
     "proptest",
     "proptest-derive",
     "vm/fuzzing",
-    "starcoin-crypto/fuzzing",
+    "starcoin-vm2-crypto/fuzzing",
     "move-core-types/fuzzing",
 ]
 print_gas_info = []
@@ -65,7 +65,7 @@ print_gas_info = []
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-vm-types"
+name = "starcoin-vm2-vm-types"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }

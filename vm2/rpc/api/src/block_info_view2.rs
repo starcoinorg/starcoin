@@ -1,9 +1,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_vm2_types::{block::BlockInfo, U256};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::view::{AccumulatorInfoView, StrView};
+use starcoin_vm2_types::{block::BlockInfo, U256};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct BlockInfoView2 {
