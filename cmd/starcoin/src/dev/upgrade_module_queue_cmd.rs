@@ -9,9 +9,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 
 use starcoin_vm2_transaction_builder::build_module_upgrade_queue;
-use starcoin_vm2_vm_types::{
-    account_address::AccountAddress, token::token_code::TokenCode,
-};
+use starcoin_vm2_vm_types::{account_address::AccountAddress, token::token_code::TokenCode};
 
 /// Queue the upgrade module proposal
 #[derive(Debug, Parser)]
