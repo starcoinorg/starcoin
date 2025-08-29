@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scheme: 'http'
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '9101'
+    prometheus.io/path: '/metrics'
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
+    service.beta.kubernetes.io/do-loadbalancer-algorithm: "round_robin"
+  name: starcoin-svc
+  namespace: starcoin-proxima
+spec:
+  selector:
+    app: starcoin
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9850
+      name: http-rpc-80
+    - protocol: TCP
+      port: 9850
+      targetPort: 9850
+      name: http-rpc
+    - protocol: TCP
+      port: 9870
+      targetPort: 9870
+      name: ws-rpc
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  type: LoadBalancer
