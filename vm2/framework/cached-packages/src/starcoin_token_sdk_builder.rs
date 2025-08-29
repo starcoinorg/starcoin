@@ -19,7 +19,7 @@ use move_core_types::{
     ident_str,
     language_storage::{ModuleId, TypeTag},
 };
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::{
     account_address::AccountAddress,
     transaction::{EntryFunction, TransactionPayload},
 };

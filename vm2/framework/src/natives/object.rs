@@ -17,7 +17,7 @@ use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext,
     SafeNativeResult,
 };
-use starcoin_vm2_types::transaction::authenticator::AuthenticationKey;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use std::{
     cell::RefCell,
     collections::{HashMap, VecDeque},

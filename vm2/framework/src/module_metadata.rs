@@ -21,7 +21,7 @@ use move_core_types::{
 use move_model::metadata::{CompilationMetadata, COMPILATION_METADATA_KEY};
 use move_vm_runtime::move_vm::MoveVM;
 use serde::{Deserialize, Serialize};
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::{
     on_chain_config::{FeatureFlag, Features, TimedFeatures},
     transaction::AbortInfo,
 };

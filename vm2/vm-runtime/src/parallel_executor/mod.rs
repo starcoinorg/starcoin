@@ -16,8 +16,8 @@ use starcoin_parallel_executor::{
     executor::ParallelTransactionExecutor,
     task::{Transaction as PTransaction, TransactionOutput as PTransactionOutput},
 };
-use starcoin_vm2_vm_types::transaction::TransactionAuxiliaryData;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::transaction::TransactionAuxiliaryData;
+use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},

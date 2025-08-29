@@ -27,8 +27,8 @@ use starcoin_gas_schedule::{
     G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
-use starcoin_vm2_types::account_config::config_change::ConfigChangeEvent;
-use starcoin_vm2_types::{
+use starcoin_types::account_config::config_change::ConfigChangeEvent;
+use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
     transaction::{
@@ -36,9 +36,10 @@ use starcoin_vm2_types::{
         TransactionPayload, TransactionStatus,
     },
 };
-use starcoin_vm2_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
-use starcoin_vm2_vm_types::transaction::TransactionAuxiliaryData;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
+use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
+use starcoin_vm_types::transaction::TransactionAuxiliaryData;
+use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
     account_config::{
@@ -57,7 +58,6 @@ use starcoin_vm2_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
-use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
 use crate::{verifier, VMExecutor};

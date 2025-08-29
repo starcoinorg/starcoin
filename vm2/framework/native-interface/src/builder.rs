@@ -13,7 +13,7 @@ use move_vm_types::{
 use smallvec::SmallVec;
 use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, ToOnChainGasSchedule};
-use starcoin_vm2_vm_types::on_chain_config::{Features, TimedFeatures};
+use starcoin_vm_types::on_chain_config::{Features, TimedFeatures};
 use std::{collections::VecDeque, sync::Arc};
 
 /// Data shared by all native functions, mostly on-chain configurations.

@@ -21,10 +21,10 @@ use starcoin_native_interface::{
     SafeNativeResult,
 };
 #[cfg(feature = "testing")]
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::contract_event::ContractEvent;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::contract_event::ContractEvent;
 #[cfg(feature = "testing")]
-use starcoin_vm2_types::event::EventKey;
+use starcoin_types::event::EventKey;
 use std::collections::VecDeque;
 
 /// Cached emitted module events.

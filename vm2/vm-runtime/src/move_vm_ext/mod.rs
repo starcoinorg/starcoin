@@ -20,7 +20,7 @@ use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     account_address::AccountAddress, language_storage::StructTag, vm_status::StatusCode,
 };
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_key::StateKey;
 
 pub(crate) fn resource_state_key(
     address: &AccountAddress,

@@ -21,13 +21,13 @@ pub mod parallel_executor;
 mod verifier;
 
 use starcoin_metrics::metrics::VMMetrics;
-use starcoin_vm2_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm2_vm_types::on_chain_config::GasSchedule;
-use starcoin_vm2_vm_types::transaction::{
+use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::on_chain_config::GasSchedule;
+use starcoin_vm_types::transaction::{
     SignedUserTransaction, TransactionAuxiliaryData, TransactionStatus,
 };
-use starcoin_vm2_vm_types::write_set::WriteSet;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::write_set::WriteSet;
+use starcoin_vm_types::{
     state_store::StateView,
     transaction::{Transaction, TransactionOutput},
 };

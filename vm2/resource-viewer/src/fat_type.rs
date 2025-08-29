@@ -8,7 +8,7 @@
 
 use move_binary_format::file_format::AbilitySet;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::{
     account_address::AccountAddress,
     errors::{PartialVMError, PartialVMResult},
     identifier::Identifier,

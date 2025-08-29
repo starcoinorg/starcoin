@@ -15,11 +15,11 @@ use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, File
 use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
-use starcoin_vm2_vm_types::account_address::AccountAddress;
-use starcoin_vm2_vm_types::compatibility::Compatibility;
-use starcoin_vm2_vm_types::file_format::CompiledModule;
-use starcoin_vm2_vm_types::normalized::Module;
-use starcoin_vm2_vm_types::{errors::Location, errors::VMResult};
+use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::compatibility::Compatibility;
+use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::normalized::Module;
+use starcoin_vm_types::{errors::Location, errors::VMResult};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -263,7 +263,7 @@ pub fn load_bytecode_file<P: AsRef<Path>>(file_path: P) -> Result<(Vec<u8>, bool
 mod tests {
     use super::*;
     use crate::command_line::parse_address;
-    use starcoin_vm2_vm_types::language_storage::CORE_CODE_ADDRESS;
+    use starcoin_vm_types::language_storage::CORE_CODE_ADDRESS;
 
     #[test]
     fn test_unknown_place_holder() {
