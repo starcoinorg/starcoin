@@ -279,7 +279,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "csv",
  "elasticsearch",
@@ -1098,16 +1098,6 @@ dependencies = [
 
 [[package]]
 name = "bcs-ext"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79#401ce6289a78b9f44e62e2b9f907030ad26d8d79"
-dependencies = [
- "anyhow",
- "bcs 0.1.5",
- "serde 1.0.205",
-]
-
-[[package]]
-name = "bcs-ext"
 version = "2.1.1"
 dependencies = [
  "anyhow",
@@ -1892,7 +1882,7 @@ version = "2.1.1"
 dependencies = [
  "hex",
  "serde 1.0.205",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
 ]
 
 [[package]]
@@ -2024,7 +2014,7 @@ name = "contrib-contracts"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "ethereum-types",
  "hex",
  "rlp",
@@ -3648,37 +3638,17 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forkable-jellyfish-merkle"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79#401ce6289a78b9f44e62e2b9f907030ad26d8d79"
-dependencies = [
- "anyhow",
- "backtrace",
- "bcs-ext 1.13.19",
- "byteorder",
- "hex",
- "mirai-annotations",
- "num-derive 0.3.3",
- "num-traits 0.2.19",
- "serde 1.0.205",
- "serde_bytes",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-logger 1.13.19",
- "thiserror",
-]
-
-[[package]]
-name = "forkable-jellyfish-merkle"
 version = "2.1.1"
 dependencies = [
  "anyhow",
  "backtrace",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "byteorder",
  "criterion",
  "hex",
  "mirai-annotations",
- "num-derive 0.4.2",
+ "num-derive",
  "num-traits 0.2.19",
  "proptest",
  "proptest-derive 0.6.0",
@@ -3942,7 +3912,7 @@ name = "genesis-nft-miner"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5919,7 +5889,7 @@ name = "merkle-generator"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "csv",
  "hex",
@@ -6942,7 +6912,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "datatest-stable 0.1.1",
  "difference",
@@ -6980,7 +6950,7 @@ dependencies = [
  "stdlib",
  "tempfile",
  "tokio",
- "vm-status-translator 2.1.1",
+ "vm-status-translator",
  "walkdir",
 ]
 
@@ -7506,7 +7476,6 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "serde 1.0.205",
@@ -7774,7 +7743,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "itertools 0.10.5",
@@ -7799,7 +7768,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "asynchronous-codec 0.5.0",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bitflags 1.3.2",
  "bs58 0.3.1",
  "bytes 1.6.1",
@@ -7844,7 +7813,7 @@ name = "network-p2p-core"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "log 0.4.27",
  "network-p2p-derive",
@@ -8064,17 +8033,6 @@ name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
-
-[[package]]
-name = "num-derive"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
-dependencies = [
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 1.0.107",
-]
 
 [[package]]
 name = "num-derive"
@@ -9986,7 +9944,7 @@ name = "resource-code-exporter"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "flate2",
  "starcoin-chain",
@@ -10012,7 +9970,7 @@ name = "resource-exporter"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "csv",
  "hex",
@@ -10020,7 +9978,7 @@ dependencies = [
  "serde 1.0.205",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
@@ -10656,7 +10614,7 @@ dependencies = [
 name = "serde-helpers"
 version = "2.1.1"
 dependencies = [
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
  "serde 1.0.205",
  "serde_bytes",
@@ -11230,32 +11188,11 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "starcoin-abi-decoder"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "bcs 0.1.5",
- "bcs-ext 1.13.19",
- "hex",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "ordinal",
- "schemars",
- "serde 1.0.205",
- "serde_bytes",
- "serde_json",
- "starcoin-abi-resolver 2.0.1",
- "starcoin-abi-types 2.0.1",
- "starcoin-resource-viewer 2.0.1",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
-]
-
-[[package]]
-name = "starcoin-abi-decoder"
 version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "ordinal",
@@ -11263,22 +11200,10 @@ dependencies = [
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
+ "starcoin-resource-viewer",
  "starcoin-vm1-vm-types",
-]
-
-[[package]]
-name = "starcoin-abi-resolver"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "starcoin-abi-types 2.0.1",
- "starcoin-resource-viewer 2.0.1",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
 ]
 
 [[package]]
@@ -11288,26 +11213,11 @@ dependencies = [
  "anyhow",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "serde_json",
- "starcoin-abi-types 2.1.1",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-abi-types",
+ "starcoin-resource-viewer",
  "starcoin-vm1-vm-types",
  "stdlib",
  "test-helper",
-]
-
-[[package]]
-name = "starcoin-abi-types"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "hex",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "schemars",
- "serde 1.0.205",
- "serde_bytes",
- "serde_json",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
 ]
 
 [[package]]
@@ -11330,7 +11240,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "parking_lot 0.12.1",
@@ -11354,7 +11264,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "rand 0.8.5",
@@ -11379,7 +11289,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-rpc-client",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm1-types",
  "starcoin-vm2-account-api",
  "starcoin-vm2-account-provider",
@@ -11391,7 +11301,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "starcoin-account",
  "starcoin-account-api",
@@ -11408,29 +11318,10 @@ dependencies = [
 
 [[package]]
 name = "starcoin-accumulator"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79#401ce6289a78b9f44e62e2b9f907030ad26d8d79"
-dependencies = [
- "anyhow",
- "bcs-ext 1.13.19",
- "byteorder",
- "itertools 0.10.5",
- "lru 0.7.8",
- "mirai-annotations",
- "once_cell",
- "parking_lot 0.12.1",
- "schemars",
- "serde 1.0.205",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-logger 1.13.19",
-]
-
-[[package]]
-name = "starcoin-accumulator"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "byteorder",
  "itertools 0.10.5",
  "lru 0.7.8",
@@ -11450,7 +11341,6 @@ dependencies = [
 [[package]]
 name = "starcoin-aggregator"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
@@ -11458,9 +11348,11 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "starcoin-logger 1.13.19",
- "starcoin-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "once_cell",
+ "starcoin-logger 2.1.1",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "test-case",
 ]
 
 [[package]]
@@ -11469,7 +11361,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "network-api",
@@ -11484,7 +11376,7 @@ dependencies = [
  "starcoin-service-registry 1.13.19",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-time-service 2.1.1",
+ "starcoin-time-service",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-vm1-types",
@@ -11504,7 +11396,7 @@ dependencies = [
  "proptest-derive 0.6.0",
  "starcoin-framework 0.1.0",
  "starcoin-package-builder",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -11512,7 +11404,7 @@ name = "starcoin-chain"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "flate2",
  "log 0.4.27",
@@ -11524,7 +11416,7 @@ dependencies = [
  "serde_json",
  "sp-utils",
  "starcoin-account-api",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-chain-mock",
  "starcoin-config",
@@ -11540,17 +11432,17 @@ dependencies = [
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api",
  "starcoin-statedb",
- "starcoin-time-service 2.1.1",
+ "starcoin-test-helper",
+ "starcoin-time-service",
  "starcoin-transaction-builder",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-chain",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
- "starcoin-vm2-test-helper",
  "stest",
  "tar",
  "tempfile",
@@ -11564,13 +11456,13 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "network-api",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.205",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dag",
  "starcoin-network-rpc-api",
@@ -11578,9 +11470,9 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-time-service 2.1.1",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-time-service",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-state-api",
@@ -11594,14 +11486,14 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "futures-timer",
  "parking_lot 0.12.1",
  "proptest",
  "proptest-derive 0.6.0",
  "starcoin-account-api",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-consensus",
@@ -11627,7 +11519,7 @@ dependencies = [
  "starcoin-logger 2.1.1",
  "starcoin-service-registry 1.13.19",
  "starcoin-storage",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
 ]
 
@@ -11650,8 +11542,8 @@ dependencies = [
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -11666,11 +11558,11 @@ name = "starcoin-cmd"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bytes 1.6.1",
  "clap 3.2.23",
  "crossbeam-channel",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "futures 0.3.31",
  "hex",
  "itertools 0.10.5",
@@ -11685,9 +11577,9 @@ dependencies = [
  "scmd",
  "serde 1.0.205",
  "serde_json",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
+ "starcoin-abi-decoder",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-account-api",
  "starcoin-account-provider",
  "starcoin-cached-packages",
@@ -11706,18 +11598,19 @@ dependencies = [
  "starcoin-network-rpc-api",
  "starcoin-node",
  "starcoin-node-api",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api",
+ "starcoin-status-translator",
  "starcoin-storage",
  "starcoin-sync-api",
  "starcoin-transaction-builder",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm-runtime",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -11730,13 +11623,12 @@ dependencies = [
  "starcoin-vm2-rpc-api",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
- "starcoin-vm2-status-translator",
  "starcoin-vm2-transaction-builder",
  "stdlib",
  "stest",
  "test-helper",
  "tokio",
- "vm-status-translator 2.1.1",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -11769,9 +11661,9 @@ dependencies = [
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-system",
- "starcoin-time-service 2.1.1",
- "starcoin-uint 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-time-service",
+ "starcoin-uint",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "strum 0.27.2",
@@ -11803,8 +11695,8 @@ dependencies = [
  "starcoin-dag",
  "starcoin-logger 2.1.1",
  "starcoin-state-api",
- "starcoin-time-service 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-time-service",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "stest",
@@ -11874,7 +11766,7 @@ name = "starcoin-dag"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bincode",
  "byteorder",
  "crossbeam",
@@ -11894,14 +11786,14 @@ dependencies = [
  "schemars",
  "serde 1.0.205",
  "sha3",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api",
  "starcoin-statedb",
- "starcoin-time-service 2.1.1",
+ "starcoin-time-service",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -11918,7 +11810,7 @@ name = "starcoin-data-migration"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "flate2",
  "log 0.4.27",
  "starcoin-config",
@@ -11937,7 +11829,7 @@ name = "starcoin-dataformat-generator"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "serde 1.0.205",
  "serde-reflection 0.3.2",
  "serde_yaml",
@@ -11965,21 +11857,21 @@ name = "starcoin-dev"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
+ "bcs-ext",
+ "starcoin-abi-decoder",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-state-api",
  "starcoin-statedb",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
  "thiserror",
- "vm-status-translator 2.1.1",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -11987,22 +11879,22 @@ name = "starcoin-executor"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
  "log 0.4.27",
  "move-transactional-test-runner 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "once_cell",
  "serde 1.0.205",
  "serde_json",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dev",
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
@@ -12025,7 +11917,7 @@ dependencies = [
  "itertools 0.10.5",
  "rand 0.8.5",
  "rayon",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -12127,83 +12019,13 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-gas-algebra",
  "starcoin-gas-schedule",
- "starcoin-move-stdlib 0.1.1",
+ "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-sdk-builder",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-runtime-types",
- "starcoin-vm-types 2.0.1",
- "tempfile",
- "thiserror",
- "tiny-keccak",
-]
-
-[[package]]
-name = "starcoin-framework"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "ark-bls12-381",
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "ark-serialize",
- "ark-std",
- "bcs 0.1.5",
- "better_any",
- "blake2-rfc",
- "bulletproofs 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder",
- "clap 4.5.43",
- "codespan-reporting",
- "curve25519-dalek-ng",
- "either",
- "flate2",
- "hex",
- "itertools 0.10.5",
- "libsecp256k1",
- "log 0.4.27",
- "lru 0.7.8",
- "merlin",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-cli 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-compiler-v2",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-docgen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-package 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-prover 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-prover-boogie-backend 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "num-traits 0.2.19",
- "once_cell",
- "rand 0.8.5",
- "rand_core 0.5.1",
- "ripemd",
- "serde 1.0.205",
- "serde_bytes",
- "sha2 0.10.6",
- "sha2 0.9.9",
- "sha3",
- "siphasher",
- "smallvec 1.10.0",
- "starcoin-aggregator",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-gas-algebra",
- "starcoin-gas-schedule",
- "starcoin-move-stdlib 0.1.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
- "starcoin-native-interface",
- "starcoin-sdk-builder",
- "starcoin-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
- "starcoin-vm-runtime-types",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "starcoin-vm-types",
  "tempfile",
  "thiserror",
  "tiny-keccak",
@@ -12240,7 +12062,6 @@ dependencies = [
 [[package]]
 name = "starcoin-gas-algebra"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "either",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12270,9 +12091,8 @@ dependencies = [
 [[package]]
 name = "starcoin-gas-meter"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
- "clap 4.5.43",
+ "clap 3.2.23",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-stdlib 0.1.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12280,13 +12100,12 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "starcoin-gas-algebra",
  "starcoin-gas-schedule",
- "starcoin-logger 1.13.19",
+ "starcoin-logger 2.1.1",
 ]
 
 [[package]]
 name = "starcoin-gas-schedule"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "either",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12305,12 +12124,12 @@ name = "starcoin-genesis"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "include_dir",
  "once_cell",
  "serde 1.0.205",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-consensus",
@@ -12323,8 +12142,8 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-transaction-builder",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -12340,14 +12159,6 @@ dependencies = [
 [[package]]
 name = "starcoin-infallible"
 version = "2.0.1"
-dependencies = [
- "time 0.3.41",
-]
-
-[[package]]
-name = "starcoin-infallible"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79#401ce6289a78b9f44e62e2b9f907030ad26d8d79"
 dependencies = [
  "time 0.3.41",
 ]
@@ -12458,7 +12269,7 @@ name = "starcoin-miner"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "crossbeam",
  "futures 0.3.31",
  "futures-timer",
@@ -12469,7 +12280,7 @@ dependencies = [
  "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-account-service",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
@@ -12490,11 +12301,11 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-sync",
  "starcoin-sync-api",
- "starcoin-time-service 2.1.1",
+ "starcoin-time-service",
  "starcoin-txpool",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-account-api",
@@ -12541,8 +12352,8 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-service-registry 1.13.19",
  "starcoin-stratum",
- "starcoin-time-service 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-time-service",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "stest",
  "thiserror",
@@ -12583,7 +12394,7 @@ dependencies = [
 name = "starcoin-move-explain"
 version = "2.1.1"
 dependencies = [
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "stdlib",
@@ -12639,26 +12450,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-move-stdlib"
-version = "0.1.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "include_dir",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "once_cell",
- "sha2 0.9.9",
- "sha3",
- "smallvec 1.10.0",
- "starcoin-gas-schedule",
- "starcoin-logger 1.13.19",
- "starcoin-native-interface",
- "tempfile",
-]
-
-[[package]]
 name = "starcoin-mvhashmap"
 version = "2.1.1"
 dependencies = [
@@ -12675,7 +12466,6 @@ dependencies = [
 [[package]]
 name = "starcoin-native-interface"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "bcs 0.1.5",
  "bytes 1.6.1",
@@ -12686,7 +12476,7 @@ dependencies = [
  "smallvec 1.10.0",
  "starcoin-gas-algebra",
  "starcoin-gas-schedule",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -12711,7 +12501,7 @@ dependencies = [
  "ripemd160",
  "smallvec 1.10.0",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-uint 2.1.1",
+ "starcoin-uint",
  "tiny-keccak",
  "walkdir",
 ]
@@ -12723,7 +12513,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bitflags 1.3.2",
  "bytes 1.6.1",
  "derive_more",
@@ -12766,12 +12556,12 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "api-limiter",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "network-api",
  "network-p2p-core",
  "network-p2p-types",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain-service",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -12792,7 +12582,7 @@ name = "starcoin-network-rpc-api"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "network-p2p-core",
  "network-p2p-derive",
@@ -12800,7 +12590,7 @@ dependencies = [
  "network-types",
  "once_cell",
  "serde 1.0.205",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
  "starcoin-state-api",
@@ -12896,10 +12686,10 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "parking_lot 0.12.1",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
@@ -12909,8 +12699,8 @@ dependencies = [
  "starcoin-logger 2.1.1",
  "starcoin-state-api",
  "starcoin-statedb",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -12924,13 +12714,12 @@ dependencies = [
 [[package]]
 name = "starcoin-package-builder"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "itertools 0.10.5",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-package 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "starcoin-framework 0.1.0 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "starcoin-framework 0.1.0",
  "tempfile",
 ]
 
@@ -12948,7 +12737,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.6.0",
  "rayon",
- "starcoin-infallible 2.0.1",
+ "starcoin-infallible",
  "starcoin-logger 2.1.1",
  "starcoin-mvhashmap",
 ]
@@ -12960,20 +12749,6 @@ dependencies = [
  "crossbeam",
  "proptest",
  "proptest-derive 0.6.0",
-]
-
-[[package]]
-name = "starcoin-resource-viewer"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "hex",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.205",
- "serde_json",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
 ]
 
 [[package]]
@@ -12995,7 +12770,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "futures 0.3.31",
  "hex",
@@ -13014,27 +12789,27 @@ dependencies = [
  "serde 1.0.205",
  "serde-helpers",
  "serde_json",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-abi-types 2.1.1",
+ "starcoin-abi-decoder",
+ "starcoin-abi-types",
  "starcoin-account-api",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api",
  "starcoin-sync-api",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-rpc-api",
  "test-helper",
  "thiserror",
- "vm-status-translator 2.1.1",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -13045,7 +12820,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-std",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "futures-timer",
  "hex",
@@ -13063,7 +12838,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "serde 1.0.205",
  "serde_json",
- "starcoin-abi-types 2.1.1",
+ "starcoin-abi-types",
  "starcoin-account-api",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
@@ -13076,8 +12851,8 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-sync-api",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-abi-types",
@@ -13117,7 +12892,7 @@ dependencies = [
  "anyhow",
  "api-limiter",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "dashmap",
  "futures 0.3.31",
  "futures-channel",
@@ -13140,9 +12915,9 @@ dependencies = [
  "parking_lot 0.12.1",
  "serde 1.0.205",
  "serde_json",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
+ "starcoin-abi-decoder",
+ "starcoin-abi-resolver",
+ "starcoin-abi-types",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-chain",
@@ -13161,7 +12936,7 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-node-api",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-rpc-middleware",
@@ -13175,8 +12950,8 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -13189,25 +12964,28 @@ dependencies = [
  "test-helper",
  "thiserror",
  "tokio",
- "vm-status-translator 2.1.1",
+ "vm-status-translator",
 ]
 
 [[package]]
 name = "starcoin-sdk-builder"
 version = "0.2.0"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 4.5.43",
- "heck 0.5.0",
+ "clap 3.2.23",
+ "heck 0.3.3",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "serde-generate",
  "serde-reflection 0.3.2",
  "serde_yaml",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "starcoin-cached-packages",
+ "starcoin-framework 0.1.0",
+ "starcoin-vm-types",
+ "tempfile",
  "textwrap 0.14.2",
+ "which",
 ]
 
 [[package]]
@@ -13255,8 +13033,8 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
  "once_cell",
  "serde 1.0.205",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -13293,7 +13071,7 @@ name = "starcoin-state-store-api"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "serde 1.0.205",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-vm1-vm-types",
@@ -13304,8 +13082,8 @@ name = "starcoin-state-tree"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
  "parking_lot 0.12.1",
  "serde 1.0.205",
  "starcoin-config",
@@ -13322,8 +13100,8 @@ name = "starcoin-statedb"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
  "lru 0.7.8",
  "once_cell",
  "parking_lot 0.12.1",
@@ -13338,15 +13116,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-status-translator"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "schemars",
+ "serde 1.0.205",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-storage"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "byteorder",
  "chrono",
  "coarsetime",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "lru 0.7.8",
  "network-p2p-types",
  "network-types",
@@ -13358,13 +13147,13 @@ dependencies = [
  "rand 0.8.5",
  "rocksdb",
  "serde 1.0.205",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-state-store-api",
- "starcoin-uint 2.1.1",
+ "starcoin-uint",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "stest",
@@ -13402,10 +13191,10 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "byteorder",
  "crossbeam",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "futures 0.3.31",
  "futures-retry",
  "futures-timer",
@@ -13419,7 +13208,7 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.205",
  "starcoin-account-api",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-chain",
  "starcoin-chain-api",
@@ -13444,13 +13233,13 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-sync-api",
- "starcoin-time-service 2.1.1",
+ "starcoin-time-service",
  "starcoin-transaction-builder",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-state-service",
@@ -13472,7 +13261,7 @@ dependencies = [
  "network-api",
  "schemars",
  "serde 1.0.205",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
  "starcoin-service-registry 1.13.19",
@@ -13506,12 +13295,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-time-service"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79#401ce6289a78b9f44e62e2b9f907030ad26d8d79"
+name = "starcoin-test-helper"
+version = "2.1.1"
 dependencies = [
- "log 0.4.27",
- "serde 1.0.205",
+ "anyhow",
+ "bcs-ext",
+ "starcoin-config",
+ "starcoin-framework 0.1.0",
+ "starcoin-logger 2.1.1",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "starcoin-vm2-executor",
+ "starcoin-vm2-genesis",
+ "starcoin-vm2-move-compiler",
+ "starcoin-vm2-state-api",
+ "starcoin-vm2-statedb",
+ "starcoin-vm2-transaction-builder",
+ "stest",
 ]
 
 [[package]]
@@ -13544,7 +13345,7 @@ name = "starcoin-transaction-builder"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 2.1.1",
@@ -13561,7 +13362,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "dashmap",
  "datatest-stable 0.1.3",
@@ -13585,22 +13386,22 @@ dependencies = [
  "once_cell",
  "serde 1.0.205",
  "serde_json",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-accumulator 2.1.1",
+ "starcoin-abi-decoder",
+ "starcoin-accumulator",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dev",
  "starcoin-genesis",
- "starcoin-resource-viewer 2.1.1",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-rpc-server",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
@@ -13638,7 +13439,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "futures 0.3.31",
  "futures-channel",
  "linked-hash-map",
@@ -13666,8 +13467,8 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-transaction-builder",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
@@ -13691,7 +13492,7 @@ dependencies = [
  "schemars",
  "serde 1.0.205",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm1-types",
 ]
 
@@ -13704,7 +13505,7 @@ dependencies = [
  "futures-channel",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm1-types",
  "stest",
  "tokio",
@@ -13715,10 +13516,10 @@ name = "starcoin-types"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "bcs-ext 1.13.19",
+ "bcs-ext",
  "bytes 1.6.1",
  "claims",
- "forkable-jellyfish-merkle 1.13.19",
+ "forkable-jellyfish-merkle",
  "hex",
  "lazy_static 1.4.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -13734,66 +13535,22 @@ dependencies = [
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-abi-decoder 2.0.1",
- "starcoin-abi-types 2.0.1",
- "starcoin-accumulator 1.13.19",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-resource-viewer 2.0.1",
- "starcoin-uint 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-status-translator",
+ "starcoin-uint",
+ "starcoin-vm-types",
+ "starcoin-vm2-abi-decoder",
+ "starcoin-vm2-abi-types",
+ "starcoin-vm2-resource-viewer",
  "thiserror",
- "vm-status-translator 2.0.1",
-]
-
-[[package]]
-name = "starcoin-types"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "bcs-ext 1.13.19",
- "bytes 1.6.1",
- "forkable-jellyfish-merkle 1.13.19",
- "hex",
- "lazy_static 1.4.0",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "once_cell",
- "rand 0.8.5",
- "schemars",
- "serde 1.0.205",
- "serde_bytes",
- "serde_json",
- "starcoin-abi-decoder 2.0.1",
- "starcoin-abi-types 2.0.1",
- "starcoin-accumulator 1.13.19",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-resource-viewer 2.0.1",
- "starcoin-uint 2.0.1",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
- "thiserror",
- "vm-status-translator 2.0.1",
-]
-
-[[package]]
-name = "starcoin-uint"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "hex",
- "serde 1.0.205",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "uint 0.9.5",
 ]
 
 [[package]]
 name = "starcoin-uint"
 version = "2.1.1"
 dependencies = [
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
  "serde 1.0.205",
  "serde_json",
@@ -13807,7 +13564,7 @@ name = "starcoin-vm-runtime"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bytes 1.6.1",
  "claims",
  "hex",
@@ -13837,24 +13594,24 @@ dependencies = [
  "starcoin-gas-schedule",
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-move-stdlib 0.1.1",
+ "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-parallel-executor",
  "starcoin-table-natives",
- "starcoin-types 2.0.1",
+ "starcoin-types",
  "starcoin-vm-runtime-types",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
  "tracing",
 ]
 
 [[package]]
 name = "starcoin-vm-runtime-types"
 version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "bytes 1.6.1",
+ "claims",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "rand 0.8.5",
@@ -13862,8 +13619,9 @@ dependencies = [
  "starcoin-aggregator",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
- "starcoin-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "test-case",
 ]
 
 [[package]]
@@ -13873,11 +13631,11 @@ dependencies = [
  "anyhow",
  "arr_macro",
  "bcs 0.1.5",
- "bcs-ext 1.13.19",
+ "bcs-ext",
  "bech32",
  "bytes 1.6.1",
  "chrono",
- "forkable-jellyfish-merkle 1.13.19",
+ "forkable-jellyfish-merkle",
  "fxhash",
  "hashbrown 0.14.5",
  "hex",
@@ -13889,7 +13647,7 @@ dependencies = [
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "num-derive 0.4.2",
+ "num-derive",
  "num-traits 0.2.19",
  "num_enum",
  "once_cell",
@@ -13901,63 +13659,16 @@ dependencies = [
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-accumulator 1.13.19",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
- "starcoin-infallible 2.0.1",
- "starcoin-time-service 2.1.1",
- "starcoin-uint 2.1.1",
+ "starcoin-infallible",
+ "starcoin-time-service",
+ "starcoin-uint",
  "strum 0.24.1",
  "strum_macros 0.24.3",
- "thiserror",
-]
-
-[[package]]
-name = "starcoin-vm-types"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "arr_macro",
- "bcs 0.1.5",
- "bcs-ext 1.13.19",
- "bech32",
- "bytes 1.6.1",
- "chrono",
- "forkable-jellyfish-merkle 1.13.19",
- "fxhash",
- "hashbrown 0.14.5",
- "hex",
- "log 0.4.27",
- "mirai-annotations",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "num-derive 0.3.3",
- "num-traits 0.2.19",
- "num_enum",
- "once_cell",
- "rand 0.8.5",
- "rayon",
- "schemars",
- "serde 1.0.205",
- "serde_bytes",
- "serde_json",
- "starcoin-accumulator 1.13.19",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-gas-algebra",
- "starcoin-gas-meter",
- "starcoin-gas-schedule",
- "starcoin-infallible 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-time-service 1.13.19",
- "starcoin-uint 2.0.1",
- "strum 0.26.3",
- "strum_macros 0.26.4",
  "thiserror",
 ]
 
@@ -13966,10 +13677,10 @@ name = "starcoin-vm1-types"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "byteorder",
  "bytes 1.6.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "hex",
  "num_enum",
  "proptest",
@@ -13979,12 +13690,12 @@ dependencies = [
  "schemars",
  "serde 1.0.205",
  "serde_json",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-types 2.0.1",
- "starcoin-uint 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-uint",
+ "starcoin-vm-types",
  "starcoin-vm1-vm-types",
  "thiserror",
 ]
@@ -13994,7 +13705,7 @@ name = "starcoin-vm1-vm-runtime"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-stdlib 0.1.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -14015,7 +13726,7 @@ dependencies = [
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-natives",
  "starcoin-parallel-executor",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
  "stdlib",
@@ -14027,10 +13738,10 @@ name = "starcoin-vm1-vm-types"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bech32",
  "chrono",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "hex",
  "log 0.4.27",
  "mirai-annotations",
@@ -14049,11 +13760,11 @@ dependencies = [
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-gas-algebra-ext",
- "starcoin-time-service 2.1.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-time-service",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -14062,18 +13773,18 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "hex",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
+ "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "ordinal",
  "schemars",
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
- "starcoin-resource-viewer 2.1.1",
- "starcoin-vm1-vm-types",
+ "starcoin-vm-types",
+ "starcoin-vm2-abi-resolver",
+ "starcoin-vm2-abi-types",
+ "starcoin-vm2-resource-viewer",
 ]
 
 [[package]]
@@ -14081,11 +13792,11 @@ name = "starcoin-vm2-abi-resolver"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
+ "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "serde_json",
- "starcoin-abi-types 2.1.1",
- "starcoin-resource-viewer 2.1.1",
- "starcoin-vm1-vm-types",
+ "starcoin-vm-types",
+ "starcoin-vm2-abi-types",
+ "starcoin-vm2-resource-viewer",
 ]
 
 [[package]]
@@ -14094,12 +13805,12 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "hex",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "schemars",
  "serde 1.0.205",
  "serde_bytes",
  "serde_json",
- "starcoin-vm1-vm-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -14108,7 +13819,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "parking_lot 0.12.1",
@@ -14121,7 +13832,7 @@ dependencies = [
  "starcoin-decrypt",
  "starcoin-logger 2.1.1",
  "starcoin-storage",
- "starcoin-vm1-types",
+ "starcoin-types",
  "tempfile",
 ]
 
@@ -14131,7 +13842,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "hex",
  "rand 0.8.5",
@@ -14142,7 +13853,7 @@ dependencies = [
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-service-registry 1.13.19",
- "starcoin-vm1-types",
+ "starcoin-types",
  "thiserror",
 ]
 
@@ -14154,7 +13865,7 @@ dependencies = [
  "starcoin-account",
  "starcoin-account-api",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-vm1-types",
+ "starcoin-types",
 ]
 
 [[package]]
@@ -14168,9 +13879,8 @@ dependencies = [
  "starcoin-logger 2.1.1",
  "starcoin-service-registry 1.13.19",
  "starcoin-storage",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
- "starcoin-vm1-types",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-account",
  "starcoin-vm2-account-api",
  "stest",
@@ -14184,8 +13894,8 @@ dependencies = [
  "anyhow",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-storage",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
@@ -14196,18 +13906,18 @@ name = "starcoin-vm2-dev"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "starcoin-abi-decoder 2.1.1",
- "starcoin-abi-resolver 2.1.1",
- "starcoin-abi-types 2.1.1",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-resource-viewer 2.1.1",
  "starcoin-state-api",
  "starcoin-statedb",
- "starcoin-vm1-types",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-vm-runtime",
- "starcoin-vm1-vm-types",
- "vm-status-translator 2.1.1",
+ "starcoin-vm2-abi-decoder",
+ "starcoin-vm2-abi-resolver",
+ "starcoin-vm2-abi-types",
+ "starcoin-vm2-resource-viewer",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -14215,19 +13925,19 @@ name = "starcoin-vm2-executor"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-transactional-test-runner 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "serde 1.0.205",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
- "starcoin-types 2.0.1",
+ "starcoin-test-helper",
+ "starcoin-types",
  "starcoin-vm-runtime",
- "starcoin-vm-types 2.0.1",
+ "starcoin-vm-types",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
- "starcoin-vm2-test-helper",
  "starcoin-vm2-transaction-builder",
  "stest",
 ]
@@ -14239,8 +13949,8 @@ dependencies = [
  "anyhow",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-storage",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
@@ -14252,16 +13962,16 @@ name = "starcoin-vm2-move-compiler"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
+ "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "petgraph 0.5.1",
  "regex",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-framework 12.0.0",
  "starcoin-logger 2.1.1",
- "starcoin-vm1-vm-types",
+ "starcoin-vm-types",
  "tempfile",
  "walkdir",
 ]
@@ -14272,11 +13982,11 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "hex",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
+ "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "serde 1.0.205",
  "serde_json",
- "starcoin-vm1-vm-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -14294,11 +14004,10 @@ dependencies = [
  "schemars",
  "serde 1.0.205",
  "serde_json",
- "starcoin-accumulator 2.1.1",
+ "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
- "starcoin-vm1-types",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-abi-decoder",
  "starcoin-vm2-abi-types",
  "starcoin-vm2-account-api",
@@ -14309,7 +14018,7 @@ name = "starcoin-vm2-rpc-server"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bytes 1.6.1",
  "clap 3.2.23",
  "futures 0.3.31",
@@ -14325,10 +14034,11 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
+ "starcoin-status-translator",
  "starcoin-storage",
  "starcoin-txpool-api",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-abi-decoder",
  "starcoin-vm2-abi-resolver",
  "starcoin-vm2-abi-types",
@@ -14338,7 +14048,6 @@ dependencies = [
  "starcoin-vm2-rpc-api",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
- "starcoin-vm2-status-translator",
 ]
 
 [[package]]
@@ -14347,9 +14056,9 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "bytes 1.6.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "forkable-jellyfish-merkle",
  "once_cell",
  "serde 1.0.205",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -14371,8 +14080,8 @@ dependencies = [
  "starcoin-logger 2.1.1",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-tree",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
@@ -14386,50 +14095,18 @@ name = "starcoin-vm2-statedb"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
- "forkable-jellyfish-merkle 2.1.1",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
  "lru 0.7.8",
  "parking_lot 0.12.1",
  "serde 1.0.205",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger 2.1.1",
  "starcoin-state-tree",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-state-api",
  "thiserror",
-]
-
-[[package]]
-name = "starcoin-vm2-status-translator"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "schemars",
- "serde 1.0.205",
- "starcoin-vm1-vm-types",
-]
-
-[[package]]
-name = "starcoin-vm2-test-helper"
-version = "2.1.1"
-dependencies = [
- "anyhow",
- "bcs-ext 2.1.1",
- "starcoin-config",
- "starcoin-framework 0.1.0",
- "starcoin-logger 2.1.1",
- "starcoin-types 2.0.1",
- "starcoin-vm-runtime",
- "starcoin-vm-types 2.0.1",
- "starcoin-vm2-executor",
- "starcoin-vm2-genesis",
- "starcoin-vm2-move-compiler",
- "starcoin-vm2-state-api",
- "starcoin-vm2-statedb",
- "starcoin-vm2-transaction-builder",
- "stest",
 ]
 
 [[package]]
@@ -14437,11 +14114,11 @@ name = "starcoin-vm2-transaction-builder"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "starcoin-cached-packages",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -14455,7 +14132,7 @@ name = "stdlib"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "clap 3.2.23",
  "datatest-stable 0.1.3",
  "fs_extra",
@@ -14622,12 +14299,6 @@ checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 
 [[package]]
 name = "strum"
-version = "0.26.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
-
-[[package]]
-name = "strum"
 version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
@@ -14646,19 +14317,6 @@ dependencies = [
  "quote 1.0.36",
  "rustversion",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.26.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
-dependencies = [
- "heck 0.5.0",
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "rustversion",
- "syn 2.0.106",
 ]
 
 [[package]]
@@ -14951,13 +14609,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-case"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
+dependencies = [
+ "test-case-macros",
+]
+
+[[package]]
+name = "test-case-core"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
+dependencies = [
+ "cfg-if 1.0.0",
+ "proc-macro2 1.0.101",
+ "quote 1.0.36",
+ "syn 2.0.106",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
+dependencies = [
+ "proc-macro2 1.0.101",
+ "quote 1.0.36",
+ "syn 2.0.106",
+ "test-case-core",
+]
+
+[[package]]
 name = "test-helper"
 version = "2.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "backtrace",
- "bcs-ext 2.1.1",
+ "bcs-ext",
  "futures 0.3.31",
  "futures-timer",
  "hex",
@@ -15042,8 +14733,8 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-storage",
  "starcoin-transaction-builder",
- "starcoin-types 2.0.1",
- "starcoin-vm-types 2.0.1",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm2-account-api",
  "starcoin-vm2-state-api",
  "starcoin-vm2-transaction-builder",
@@ -16052,18 +15743,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "vm-status-translator"
-version = "2.0.1"
-source = "git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea#a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea"
-dependencies = [
- "anyhow",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "schemars",
- "serde 1.0.205",
- "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea)",
-]
 
 [[package]]
 name = "vm-status-translator"
