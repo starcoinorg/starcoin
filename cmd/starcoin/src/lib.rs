@@ -5,7 +5,6 @@ pub mod account;
 pub mod chain;
 pub mod cli_state;
 mod cli_state_vm2;
-pub mod contract;
 pub mod dev;
 pub mod helper;
 pub mod mutlisig_transaction;
@@ -116,10 +115,8 @@ pub fn add_command(
         .command(
             CustomCommand::with_name("dev")
                 .subcommand(dev::GetCoinCommand)
-                .subcommand(dev::move_explain::MoveExplain)
-                .subcommand(dev::CompileCommand)
+                .subcommand(dev::MoveExplain)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::PackageCmd)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(dev::ResolveCommand)
                 .subcommand(dev::CallApiCommand)
@@ -150,5 +147,4 @@ pub fn add_command(
                 .subcommand(dev::UpgradeModuleQueueCommand)
                 .subcommand(dev::UpgradeVMConfigProposalCommand),
         )
-        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }
