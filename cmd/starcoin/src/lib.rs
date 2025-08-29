@@ -117,7 +117,6 @@ pub fn add_command(
                 .subcommand(dev::GetCoinCommand)
                 .subcommand(dev::MoveExplain)
                 .subcommand(dev::DeployCommand)
-                .subcommand(dev::PackageCmd)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(dev::ResolveCommand)
                 .subcommand(dev::CallApiCommand)
