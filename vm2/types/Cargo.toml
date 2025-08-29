@@ -26,12 +26,11 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 once_cell = { workspace = true }
 serde_bytes = { workspace = true }
-vm-status-translator = { workspace = true }
+vm-status-translator = { path = "../vm-status-translator", package = "starcoin-status-translator" }
 
 
 [dev-dependencies]
 claims = { workspace = true }
-starcoin-vm-types = { path = "../vm-types" }
 
 [features]
 default = []
