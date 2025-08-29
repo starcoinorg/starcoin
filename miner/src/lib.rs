@@ -4,7 +4,6 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use create_block_template::block_builder_service::BlockTemplateResponse;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -22,7 +21,8 @@ pub mod task;
 
 pub use create_block_template::{
     block_builder_service::BlockBuilderService, block_builder_service::BlockTemplateRequest,
-    new_header_service::NewHeaderChannel, new_header_service::NewHeaderService,
+    block_builder_service::BlockTemplateResponse, new_header_service::NewHeaderChannel,
+    new_header_service::NewHeaderService,
 };
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
@@ -203,44 +203,6 @@ impl MinerService {
             std::result::Result::Ok(_) => (),
             Err(e) => error!("BlockTemplateRequest delivery failed: {:?}", e),
         }
-        //     .await
-        // {
-        //     Ok(send_result) => match send_result {
-        //         Ok(block_template) => block_template,
-        //         Err(block_template_error) => {
-        //             match block_template_error {
-        //                 BlockTemplateError::NoReceivedHeader => {
-        //                     return;
-        //                 }
-        //                 BlockTemplateError::Other(e) => {
-        //                     error!("BlockTemplateRequest processing failed: {:?}", e);
-        //                 }
-        //             }
-        //             return;
-        //         }
-        //     },
-        //     Err(e) => {
-        //         error!("BlockTemplateRequest delivery failed: {:?}", e);
-        //         return;
-        //     }
-        // };
-
-        // let parent = block_template.parent;
-        // let block_template = block_template.template;
-        // let block_time_gap = block_template.timestamp - parent.timestamp();
-
-        // let should_skip = !event.skip_empty_block_check
-        //     && block_template.body.transactions.is_empty()
-        //     && config.miner.is_disable_mint_empty_block()
-        //     && block_time_gap < 3600 * 1000;
-        // if should_skip {
-        //     info!("Skipping minting empty block");
-        // } else if let Err(e) = addr
-        //     .send(DispatchMintBlockTemplate { block_template })
-        //     .await
-        // {
-        //     warn!("Failed to dispatch block template: {}", e);
-        // }
         Ok(())
     }
 
