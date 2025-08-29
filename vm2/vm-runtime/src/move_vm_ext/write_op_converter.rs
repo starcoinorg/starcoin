@@ -8,14 +8,14 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::{effects::Op as MoveStorageOp, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_types::delayed_values::error::code_invariant_error;
 use starcoin_aggregator::delta_change_set::serialize;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_runtime_types::abstract_write_op::GroupWrite;
+use starcoin_vm_runtime_types::resolver::ResourceGroupSize;
+use starcoin_vm_runtime_types::resource_group_adapter::group_tagged_resource_size;
+use starcoin_vm_types::{
     on_chain_config::{CurrentTimeMicroseconds, OnChainConfig},
     state_store::{state_key::StateKey, state_value::StateValueMetadata},
     write_set::WriteOp,
 };
-use starcoin_vm_runtime_types::abstract_write_op::GroupWrite;
-use starcoin_vm_runtime_types::resolver::ResourceGroupSize;
-use starcoin_vm_runtime_types::resource_group_adapter::group_tagged_resource_size;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -345,7 +345,7 @@ mod tests {
         language_storage::{StructTag, TypeTag},
     };
     //use starcoin_vm_runtime_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
-    use starcoin_vm2_vm_types::{
+    use starcoin_vm_types::{
         account_address::AccountAddress,
         state_store::{
             errors::StateviewError, state_storage_usage::StateStorageUsage,

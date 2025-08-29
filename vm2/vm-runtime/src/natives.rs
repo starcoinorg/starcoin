@@ -4,7 +4,7 @@
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
 };
@@ -205,7 +205,7 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     use starcoin_framework::natives::event::NativeEventContext;
     use starcoin_framework::natives::transaction_context::NativeTransactionContext;
     use starcoin_table_natives::NativeTableContext;
-    use starcoin_vm2_vm_types::genesis_config::ChainId;
+    use starcoin_vm_types::genesis_config::ChainId;
 
     exts.add(NativeTableContext::new([0u8; 32], &*DUMMY_RESOLVER));
     exts.add(NativeCodeContext::default());

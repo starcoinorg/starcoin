@@ -27,7 +27,7 @@ fxhash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-vm2-crypto = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-uint = { workspace = true }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format" }
 bytes = { workspace = true }
@@ -45,7 +45,7 @@ starcoin-infallible = { workspace = true }
 [dev-dependencies]
 proptest = { workspace = true, features = ["std"] }
 proptest-derive = { workspace = true }
-starcoin-vm2-crypto = { workspace = true, features = ["fuzzing"] }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", features = ["fuzzing"] }
 starcoin-gas-algebra = { path = "../framework/gas-algebra", features = ["testing"] }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format", features = ["fuzzing"] }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = ["fuzzing"] }
@@ -56,7 +56,7 @@ fuzzing = [
     "proptest",
     "proptest-derive",
     "vm/fuzzing",
-    "starcoin-vm2-crypto/fuzzing",
+    "starcoin-crypto/fuzzing",
     "move-core-types/fuzzing",
 ]
 print_gas_info = []

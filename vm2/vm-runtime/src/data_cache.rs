@@ -13,23 +13,23 @@ use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver}
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::vm::config::starcoin_prod_deserializer_config;
-use starcoin_vm2_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
-use starcoin_vm2_vm_types::state_store::{
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::vm::config::starcoin_prod_deserializer_config;
+use starcoin_vm_runtime_types::resolver::{
+    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
+};
+use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
+use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
+use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
     state_value::StateValue, StateView, TStateView,
 };
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::{
     errors::*,
     language_storage::{ModuleId, StructTag},
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
-use starcoin_vm_runtime_types::resolver::{
-    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
-};
-use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use std::collections::HashMap;
 use std::{
     cell::RefCell,
@@ -451,7 +451,7 @@ impl<S: StateView> IntoMoveResolver<S> for S {
 pub(crate) mod tests {
     use super::*;
     use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
-    //use starcoin_vm2_vm_types::on_chain_config::{Features, OnChainConfig};
+    //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
 
     // Expose a method to create a storage adapter with a provided group size kind.
     #[allow(dead_code)]

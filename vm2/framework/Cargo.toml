@@ -15,7 +15,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 starcoin-aggregator = { path = "../aggregator" }
-starcoin-vm2-crypto = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-gas-algebra = { path = "gas-algebra" }
 starcoin-gas-schedule = { path = "gas-schedule" }
 starcoin-move-stdlib = { path = "move-stdlib", package = "starcoin-move-stdlib" }
@@ -81,7 +81,7 @@ tiny-keccak = { workspace = true }
 
 [dev-dependencies]
 starcoin-aggregator = { path = "../aggregator", features = ["testing"] }
-starcoin-vm2-crypto = { workspace = true, features = ["fuzzing"] }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 # starcoin-gas-meter = { workspace = true }
 starcoin-vm-runtime = { path = "../vm-runtime", features = ["testing"] }
 claims = { workspace = true }
@@ -92,7 +92,7 @@ move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
-testing = ["starcoin-move-stdlib/testing", "starcoin-vm2-crypto/fuzzing"]
+testing = ["starcoin-move-stdlib/testing", "starcoin-crypto/fuzzing"]
 
 [lib]
 doctest = false

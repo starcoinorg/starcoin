@@ -8,7 +8,7 @@ use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXT
 use move_core_types::language_storage::ModuleId;
 use move_model::{code_writer::CodeWriter, emit, emitln, model::Loc};
 use serde::{Deserialize, Serialize};
-use starcoin_vm2_types::account_address::AccountAddress;
+use starcoin_types::account_address::AccountAddress;
 use std::{collections::BTreeMap, path::PathBuf};
 
 /// A release bundle consists of a list of release packages.

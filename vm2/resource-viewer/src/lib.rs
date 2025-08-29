@@ -10,13 +10,13 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use move_core_types::u256;
-use starcoin_vm2_vm_types::language_storage::TypeTag;
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::state_store::state_storage_usage::StateStorageUsage;
-use starcoin_vm2_vm_types::state_store::state_value::StateValue;
-use starcoin_vm2_vm_types::state_store::{StateView, TStateView};
-use starcoin_vm2_vm_types::value::MoveTypeLayout;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
+use starcoin_vm_types::state_store::state_value::StateValue;
+use starcoin_vm_types::state_store::{StateView, TStateView};
+use starcoin_vm_types::value::MoveTypeLayout;
+use starcoin_vm_types::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
     errors::{Location, PartialVMError},

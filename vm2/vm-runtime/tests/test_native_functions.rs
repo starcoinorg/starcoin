@@ -3,8 +3,8 @@ use anyhow::Result;
 //use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_framework::get_metadata_from_compiled_module;
 use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
-use starcoin_vm2_vm_types::access::ModuleAccess;
-use starcoin_vm2_vm_types::normalized::Function;
+use starcoin_vm_types::access::ModuleAccess;
+use starcoin_vm_types::normalized::Function;
 use std::collections::{HashMap, HashSet};
 use stdlib::StdLibOptions;
 

@@ -32,7 +32,7 @@ use move_package::{
     BuildConfig, CompilerConfig, ModelConfig,
 };
 use serde::{Deserialize, Serialize};
-use starcoin_vm2_vm_types::{account_address::AccountAddress, transaction::EntryABI};
+use starcoin_vm_types::{account_address::AccountAddress, transaction::EntryABI};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{stderr, Write},
