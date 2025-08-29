@@ -451,7 +451,7 @@ dependencies = [
  "serde_bytes",
  "sha2 0.10.6",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "signature 2.2.0",
  "static_assertions",
  "thiserror",
@@ -1469,7 +1469,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde 1.0.205",
  "serde_derive",
- "sha3",
+ "sha3 0.9.1",
  "subtle-ng",
  "thiserror",
 ]
@@ -1488,7 +1488,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde 1.0.205",
  "serde_derive",
- "sha3",
+ "sha3 0.9.1",
  "subtle-ng",
  "thiserror",
 ]
@@ -1526,7 +1526,7 @@ dependencies = [
  "curve25519-dalek-fiat",
  "ed25519-dalek-fiat",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
 ]
 
 [[package]]
@@ -5926,7 +5926,7 @@ dependencies = [
  "merkletree",
  "serde 1.0.205",
  "serde_json",
- "sha3",
+ "sha3 0.10.1",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-vm1-vm-types",
 ]
@@ -6420,7 +6420,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "sha3",
+ "sha3 0.9.1",
  "tempfile",
 ]
 
@@ -6448,7 +6448,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "sha3",
+ "sha3 0.9.1",
  "tempfile",
  "walkdir",
 ]
@@ -7254,7 +7254,7 @@ dependencies = [
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "smallvec 1.10.0",
  "walkdir",
 ]
@@ -7277,7 +7277,7 @@ dependencies = [
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "smallvec 1.10.0",
  "walkdir",
 ]
@@ -7311,7 +7311,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "sha3",
+ "sha3 0.9.1",
  "smallvec 1.10.0",
 ]
 
@@ -7328,7 +7328,7 @@ dependencies = [
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "once_cell",
- "sha3",
+ "sha3 0.9.1",
  "smallvec 1.10.0",
 ]
 
@@ -7473,7 +7473,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.1",
  "serde 1.0.205",
- "sha3",
+ "sha3 0.9.1",
  "tracing",
  "triomphe",
  "typed-arena",
@@ -7492,7 +7492,7 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "once_cell",
  "parking_lot 0.11.2",
- "sha3",
+ "sha3 0.9.1",
  "tracing",
 ]
 
@@ -10921,6 +10921,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "881bf8156c87b6301fc5ca6b27f11eeb2761224c7081e69b409d5a1951a70c86"
+dependencies = [
+ "digest 0.10.7",
+ "keccak",
+]
+
+[[package]]
 name = "shell-words"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11860,7 +11870,7 @@ dependencies = [
  "rust-argon2",
  "serde 1.0.205",
  "serde_json",
- "sha3",
+ "sha3 0.10.1",
  "starcoin-chain-api",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dag",
@@ -11956,7 +11966,7 @@ dependencies = [
  "rust-argon2",
  "schemars",
  "serde 1.0.205",
- "sha3",
+ "sha3 0.10.1",
  "starcoin-accumulator 2.1.1",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -12221,7 +12231,7 @@ dependencies = [
  "serde_bytes",
  "sha2 0.10.6",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.10.1",
  "siphasher",
  "smallvec 1.10.0",
  "starcoin-aggregator",
@@ -12676,7 +12686,7 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.10.1",
  "smallvec 1.10.0",
  "starcoin-gas-schedule",
  "starcoin-logger 2.1.1",
@@ -13631,7 +13641,7 @@ dependencies = [
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "sha3",
+ "sha3 0.10.1",
  "smallvec 1.10.0",
  "starcoin-gas-schedule",
  "starcoin-native-interface",
