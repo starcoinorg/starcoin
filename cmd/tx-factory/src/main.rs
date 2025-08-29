@@ -274,7 +274,7 @@ impl TxnMocker {
         now.duration_since(UNIX_EPOCH)
             .expect("time error")
             .as_secs()
-            + 600 // 10 minutes
+            + 180 // 3 minutes
                   // let node_info = self
                   //     .client
                   //     .node_info()
@@ -552,7 +552,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     association_address(),
                     addr_vec.clone(),
-                    10000000,
+                    100000000,
                     1,
                     expiration_timestamp,
                 )?;
@@ -706,7 +706,7 @@ impl TxnMocker {
                     .copied()
                     .map(|(address, _)| address)
                     .collect(),
-                100,
+                1,
                 round_num as u64,
             )?;
 
