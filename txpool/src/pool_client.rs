@@ -1,13 +1,13 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::{
     account_address::AccountAddress,
-    block::BlockHeader,
     transaction,
     transaction::{CallError, SignedUserTransaction, TransactionError},
 };
@@ -114,7 +114,7 @@ impl AccountSeqNumberClient for CachedSeqNumberClient {
 
 #[derive(Clone)]
 pub struct PoolClient {
-    best_block_header: BlockHeader,
+    state_root: HashValue,
     nonce_client: CachedSeqNumberClient,
     vm_metrics: Option<VMMetrics>,
 }
@@ -127,16 +127,15 @@ impl std::fmt::Debug for PoolClient {
 
 impl PoolClient {
     pub fn new(
-        best_block_header: BlockHeader,
+        state_root: HashValue,
         storage: Arc<dyn Store>,
         cache: NonceCache,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
-        let root_hash = best_block_header.state_root();
-        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(root_hash));
+        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root));
         let nonce_client = CachedSeqNumberClient::new(statedb, cache);
         Self {
-            best_block_header,
+            state_root,
             nonce_client,
             vm_metrics,
         }
