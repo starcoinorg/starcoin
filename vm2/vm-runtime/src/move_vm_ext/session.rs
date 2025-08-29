@@ -491,13 +491,13 @@ impl<'r, 'l> Deref for SessionExt<'r, 'l> {
     }
 }
 
-impl<'r, 'l> DerefMut for SessionExt<'r, 'l> {
+impl DerefMut for SessionExt<'_, '_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<'r, 'l> SessionExt<'r, 'l> {
+impl SessionExt<'_, '_> {
     ///// wrapper of Session, push signer as the first argument of function.
     //pub fn execute_entry_function(
     //    &mut self,

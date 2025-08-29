@@ -111,7 +111,7 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     }
 }
 
-impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
+impl<S: StateView> TStateView for StateViewCache<'_, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.
@@ -140,7 +140,7 @@ impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
     }
 }
 
-impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
+impl<S: StateView> ModuleResolver for StateViewCache<'_, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
@@ -151,7 +151,7 @@ impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
         self.as_move_resolver().get_module(module_id)
     }
 }
-impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
+impl<S: StateView> ResourceResolver for StateViewCache<'_, S> {
     type Error = PartialVMError;
 
     fn get_resource_bytes_with_metadata_and_layout(
@@ -187,7 +187,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     }
 }
 
-impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
+impl<S: StateView> ModuleResolver for StorageAdapter<'_, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
@@ -211,7 +211,7 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
         self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
     }
 }
-impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
+impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
     type Error = PartialVMError;
 
     fn get_resource_bytes_with_metadata_and_layout(
@@ -248,7 +248,7 @@ impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     }
 }
 
-impl<'a, S: StateView> ResourceGroupResolver for StorageAdapter<'a, S> {
+impl<S: StateView> ResourceGroupResolver for StorageAdapter<'_, S> {
     fn release_resource_group_cache(
         &self,
     ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
@@ -278,7 +278,7 @@ impl<'a, S: StateView> ResourceGroupResolver for StorageAdapter<'a, S> {
     }
 }
 
-impl<'a, S> Deref for StorageAdapter<'a, S> {
+impl<S> Deref for StorageAdapter<'_, S> {
     type Target = S;
 
     fn deref(&self) -> &Self::Target {
@@ -286,7 +286,7 @@ impl<'a, S> Deref for StorageAdapter<'a, S> {
     }
 }
 
-impl<'a, S: StateView> TableResolver for StorageAdapter<'a, S> {
+impl<S: StateView> TableResolver for StorageAdapter<'_, S> {
     // TODO(simon): don't ignore maybe_layout
     fn resolve_table_entry_bytes_with_layout(
         &self,
@@ -302,7 +302,7 @@ impl<'a, S: StateView> TableResolver for StorageAdapter<'a, S> {
             })
     }
 }
-impl<'a, S: StateView> CompiledModuleView for StorageAdapter<'a, S> {
+impl<S: StateView> CompiledModuleView for StorageAdapter<'_, S> {
     type Item = CompiledModule;
     fn view_compiled_module(&self, id: &ModuleId) -> anyhow::Result<Option<Self::Item>> {
         let module = match self.get_module(id) {
@@ -338,7 +338,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
     }
 }
 
-impl<'a, S: StateView> AsExecutorView for StorageAdapter<'a, S> {
+impl<S: StateView> AsExecutorView for StorageAdapter<'_, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
         self.executor_view
     }

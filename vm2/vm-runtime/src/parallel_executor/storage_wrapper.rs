@@ -27,7 +27,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
     }
 }
 
-impl<'a, S: StateView> TStateView for VersionedView<'a, S> {
+impl<S: StateView> TStateView for VersionedView<'_, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.

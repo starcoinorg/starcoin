@@ -27,15 +27,7 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.1
 # - and not (test(tests::test_builtin_genesis))"
 # - and not (test(tests::test_genesis_load))"
 
-cargo nextest run --workspace \
--E "\
-not (test(block_connector::test_illegal_block::test_verify_illegal_uncle_consensus_failed)) \
-and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
-and not (test(service_test::test_handshake_message)) \
-and not (test(tests::test_custom_genesis)) \
-and not (test(tests::test_builtin_genesis)) \
-and not (test(tests::test_genesis_load))" \
---retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
+RUST_LOG=info cargo nextest run --workspace --retries 3 --build-jobs 8 --failure-output immediate-final
 
 
 # please ensure the two test commands' arguments (e.g. `-j 15`) are the same to avoid recompilation
