@@ -9,9 +9,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 
 use starcoin_vm2_transaction_builder::build_module_upgrade_queue;
-use starcoin_vm2_vm_types::{
-    account_address::AccountAddress, token::token_code::TokenCode, transaction::TransactionPayload,
-};
+use starcoin_vm2_vm_types::{account_address::AccountAddress, token::token_code::TokenCode};
 
 /// Queue the upgrade module proposal
 #[derive(Debug, Parser)]
@@ -64,12 +62,7 @@ impl CommandAction for UpgradeModuleQueueCommand {
 
         ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::EntryFunction(build_module_upgrade_queue(
-                proposer_address,
-                opt.proposal_id,
-                opt.dao_token.clone(),
-                true,
-            )),
+            build_module_upgrade_queue(proposer_address, opt.proposal_id, opt.dao_token.clone())?,
         )
     }
 }

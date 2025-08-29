@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm2_transaction_builder::build_module_upgrade_plan;
-use starcoin_vm2_types::{account_address::AccountAddress, transaction::TransactionPayload};
+use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::account_config::token_code::TokenCode;
 
 /// Execute the module upgrade proposal and submit module upgrade plan.
@@ -59,11 +59,9 @@ impl CommandAction for UpgradeModulePlanCommand {
         } else {
             ctx.state().vm2()?.default_account()?.address
         };
-        let module_upgrade_plan =
-            build_module_upgrade_plan(proposer_address, opt.proposal_id, opt.dao_token.clone());
         ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::EntryFunction(module_upgrade_plan),
+            build_module_upgrade_plan(proposer_address, opt.proposal_id, opt.dao_token.clone())?,
         )
     }
 }
