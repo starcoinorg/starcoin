@@ -32,7 +32,7 @@ starcoin-uint = { workspace = true }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format" }
 bytes = { workspace = true }
 strum = "0.24.1"
-strum_macros = "0.24.3"
+strum_macros = "0.27.2"
 bcs = { workspace = true }
 thiserror = { workspace = true }
 num-traits = { workspace = true }
