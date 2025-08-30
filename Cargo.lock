@@ -12213,7 +12213,6 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "num-traits 0.2.19",
  "once_cell",
- "rand 0.7.3",
  "rand 0.8.5",
  "rand_core 0.5.1",
  "ripemd",
@@ -12243,7 +12242,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "12.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=198d236f071819257ebdf54ed4502099a7daaaf5#198d236f071819257ebdf54ed4502099a7daaaf5"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=6486837ca8b0578ed569a256a7605b1ad5735973#6486837ca8b0578ed569a256a7605b1ad5735973"
 dependencies = [
  "anyhow",
  "include_dir",
