@@ -88,7 +88,6 @@ claims = { workspace = true }
 move-cli = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-prover = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-rand_0_7_3 = { workspace = true }
 
 [features]
 default = []
