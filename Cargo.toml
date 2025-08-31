@@ -109,6 +109,7 @@ members = [
     "vm2/chain",
     "vm2/rpc/api",
     "vm2/rpc/server",
+    "vm2/starcoin-transactional-test-harness",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -227,6 +228,7 @@ default-members = [
     "vm2/rpc/server",
     "vm2/service/state",
     "vm2/service/account",
+    "vm2/starcoin-transactional-test-harness",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -593,6 +595,7 @@ starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runt
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
 starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework" }
+starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness"}
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
 starcoin-vm2-dev = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-dev" }
