@@ -19,6 +19,16 @@ pub struct GenesisGeneratorOpt {
 fn main() {
     let _logger = starcoin_logger::init();
     let opts = GenesisGeneratorOpt::parse();
+
+    let exec_path = std::env::current_exe().expect("cannot find path of the executable");
+    info!("found exec_path: {:?} ", exec_path);
+    let work_dir_path = exec_path
+        .parent()
+        .map(|p| p.join("../../genesis"))
+        .and_then(|p| p.canonicalize().ok())
+        .expect("cannot find work dir");
+    info!("work_dir_path: {:?} ", work_dir_path);
+
     let networks: Vec<BuiltinNetworkID> = match opts.net {
         Some(network) => {
             vec![network]
@@ -68,16 +78,12 @@ fn main() {
             }
         };
         if regenerate {
-            let exec_path = std::env::args().next().expect("path of the executable");
-            let base_path = std::path::Path::new(&exec_path)
-                .parent()
-                .unwrap()
-                .join("../../genesis");
-
-            std::env::set_current_dir(base_path).expect("failed to change directory");
-
-            let path = Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string());
-            new_genesis.save(path.as_path()).expect("save genesis fail");
+            let save_path =
+                work_dir_path.join(Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string()));
+            info!("save path: {:?} ", save_path);
+            new_genesis
+                .save(save_path.as_path())
+                .expect("save genesis fail");
         } else {
             info!(
                 "Chain net {} previous generated genesis same as new genesis, do nothing. id: {:?}",

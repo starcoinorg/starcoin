@@ -15,7 +15,7 @@ use starcoin_rpc_client::StateRootOption;
 use starcoin_vm2_transaction_builder::build_module_upgrade_proposal;
 use starcoin_vm2_vm_types::{
     genesis_config::StdlibVersion, on_chain_config::Version, state_view::StateReaderExt,
-    token::token_code::TokenCode, transaction::TransactionPayload,
+    token::token_code::TokenCode,
 };
 use std::path::PathBuf;
 
@@ -99,12 +99,10 @@ impl CommandAction for UpgradeModuleProposalCommand {
             min_action_delay,
             opt.enforced,
             opt.dao_token.clone(),
-            true,
-        );
+        )?;
         eprintln!("package_hash {:?}", package_hash);
-        ctx.state().vm2()?.build_and_execute_transaction(
-            opt.transaction_opts.clone(),
-            TransactionPayload::EntryFunction(module_upgrade_proposal),
-        )
+        ctx.state()
+            .vm2()?
+            .build_and_execute_transaction(opt.transaction_opts.clone(), module_upgrade_proposal)
     }
 }

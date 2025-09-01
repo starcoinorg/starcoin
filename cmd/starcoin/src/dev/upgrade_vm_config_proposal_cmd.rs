@@ -60,7 +60,7 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
 
         let min_action_delay = get_dao_config(ctx.state())?.min_action_delay;
         let vm_config_upgrade_proposal =
-            build_vm_config_upgrade_proposal(onchain_vm_config, min_action_delay);
+            build_vm_config_upgrade_proposal(onchain_vm_config, min_action_delay)?;
         ctx.state()
             .vm2()?
             .build_and_execute_transaction(opt.transaction_opts.clone(), vm_config_upgrade_proposal)
