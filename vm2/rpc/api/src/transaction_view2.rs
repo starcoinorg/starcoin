@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_vm1_types::block::Block;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::{
-    block::BlockNumber,
     view::{BlockMetadataView, SignedUserTransactionView, StrView},
+    BlockNumber,
 };
 use starcoin_vm2_vm_types::transaction::Transaction;
 

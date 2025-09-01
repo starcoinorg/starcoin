@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    block::BlockNumber,
     contract_event::ContractEventInfo,
     view::{function_arg_type_view::TypeTagView, str_view::StrView},
+    BlockNumber,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

@@ -3,10 +3,10 @@
 use starcoin_vm2_vm_types::language_storage::type_tag_match;
 
 use crate::account_address::AccountAddress;
-use crate::block::BlockNumber;
 use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
 use crate::language_storage::TypeTag;
+use crate::BlockNumber;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filter {
@@ -58,9 +58,9 @@ impl Filter {
         if self.from_block <= block_number
             && block_number <= self.to_block
             && (self.event_keys.is_empty()
-                || self.event_keys.contains(&e.event_key())
-                    && (self.addrs.is_empty()
-                        || self.addrs.contains(&e.event_key().get_creator_address())))
+            || self.event_keys.contains(&e.event_key())
+            && (self.addrs.is_empty()
+            || self.addrs.contains(&e.event_key().get_creator_address())))
         {
             if self.type_tags.is_empty() {
                 return true;

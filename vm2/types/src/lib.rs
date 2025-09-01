@@ -21,10 +21,6 @@ pub mod account;
 
 pub mod account_state;
 
-#[allow(clippy::too_many_arguments)]
-pub mod block;
-pub mod compact_block;
-
 pub mod block_metadata {
     pub use starcoin_vm2_vm_types::block_metadata::BlockMetadata;
 }
@@ -49,9 +45,6 @@ pub mod filter;
 pub mod sign_message {
     pub use starcoin_vm2_vm_types::sign_message::*;
 }
-pub mod startup_info;
-pub mod system_events;
-
 pub mod transaction {
     pub use starcoin_vm2_vm_types::transaction::*;
 
@@ -95,14 +88,10 @@ pub mod genesis_config {
 }
 
 pub mod stress_test;
-pub mod sync_status;
-
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 }
 
-pub mod blockhash;
-pub mod consensus_header;
 pub mod serde_helper;
 
 pub mod delayed_fields;
@@ -110,3 +99,6 @@ pub mod vm;
 
 pub mod state_set;
 pub mod view;
+
+/// Type alias for block number
+pub type BlockNumber = u64;
