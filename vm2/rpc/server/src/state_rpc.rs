@@ -20,7 +20,6 @@ use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_vm2_types::view::{
     AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
     ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
-    TableInfoView,
 };
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm2_vm_types::{
@@ -182,16 +181,6 @@ where
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
-            .map_err(map_err);
-        Box::pin(fut)
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<TableInfoView> {
-        let fut = self
-            .service
-            .clone()
-            .get_table_info(address)
-            .map_ok(|v| v.into())
             .map_err(map_err);
         Box::pin(fut)
     }
@@ -367,7 +356,6 @@ where
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
-
     fn list_code(
         &self,
         addr: AccountAddress,
