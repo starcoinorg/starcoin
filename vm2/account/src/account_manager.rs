@@ -11,9 +11,9 @@ use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, Acc
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{Uniform, ValidCryptoMaterial};
 use starcoin_logger::prelude::*;
-use starcoin_vm2_types::genesis_config::ChainId;
-use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_vm2_types::{
+use starcoin_types::genesis_config::ChainId;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_types::{
     account_address::AccountAddress,
     account_config::token_code::TokenCode,
     transaction::{RawUserTransaction, SignedUserTransaction},

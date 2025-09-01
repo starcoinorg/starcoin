@@ -15,11 +15,11 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
-starcoin-crypto = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-state-api = { workspace = true }
-starcoin-statedb = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm-runtime = { path = "../vm-runtime" }
 starcoin-vm2-vm-types = { workspace = true }
-vm-status-translator = { workspace = true }
+vm-status-translator = { path = "../vm-status-translator", package = "starcoin-status-translator" }
 starcoin-metrics = { workspace = true }

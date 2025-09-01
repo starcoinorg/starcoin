@@ -10,7 +10,6 @@ use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::*;
 use starcoin_logger::prelude::debug;
 use starcoin_state_store_api::*;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
 use std::convert::TryInto;

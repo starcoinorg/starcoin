@@ -8,13 +8,13 @@ rand_0_7_3 = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-starcoin-account-api = { workspace = true }
-#starcoin-config = { workspace = true }
-starcoin-crypto = { workspace = true }
+starcoin-account-api = { path = "api", package = "starcoin-vm2-account-api" }
+starcoin-config = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 starcoin-decrypt = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-storage = { workspace = true }
-starcoin-vm2-types = { workspace = true }
+starcoin-types = { path = "../types" }
 
 [dev-dependencies]
 hex = { workspace = true }

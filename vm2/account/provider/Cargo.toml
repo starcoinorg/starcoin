@@ -1,11 +1,11 @@
 [dependencies]
 anyhow = { workspace = true }
-starcoin-account = { workspace = true }
-starcoin-account-api = { features = ["mock"], workspace = true }
-#starcoin-config = { workspace = true }
-starcoin-crypto = { workspace = true }
+starcoin-account = { path = "../../account", package = "starcoin-vm2-account" }
+starcoin-account-api = { features = ["mock"], path = "../../account/api", package = "starcoin-vm2-account-api" }
+starcoin-config = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 #starcoin-rpc-client = { workspace = true }
-starcoin-vm2-types = { workspace = true }
+starcoin-types = { path = "../../types" }
 
 [package]
 edition = { workspace = true }

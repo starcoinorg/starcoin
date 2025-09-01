@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use starcoin_storage::db_storage::RocksdbConfig;
+use starcoin_config::RocksdbConfig;
 
 use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
@@ -17,8 +17,8 @@ use starcoin_storage::{
     define_storage,
     storage::{CodecKVStore, ColumnFamilyName, StorageInstance},
 };
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::account_config::token_code::TokenCode;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use std::convert::TryFrom;
 use std::path::Path;
 

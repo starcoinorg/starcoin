@@ -3,8 +3,9 @@
 
 use crate::access_path::DataType;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::account_address::AccountAddress;
 
+/// StateSet is represent a single state-tree or sub state-tree dump result.
 pub use starcoin_state_store_api::StateSet;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -21,6 +22,10 @@ impl AccountStateSet {
 
     pub fn code_set(&self) -> Option<&StateSet> {
         self.data_set(DataType::CODE)
+    }
+
+    pub fn resource_group_set(&self) -> Option<&StateSet> {
+        self.data_set(DataType::RESOURCEGROUP)
     }
 
     #[inline]

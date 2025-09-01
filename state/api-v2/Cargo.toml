@@ -6,8 +6,8 @@ serde = { features = ["derive"], workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-tree = { workspace = true }
-starcoin-types = { workspace = true }
-starcoin-vm-types = { workspace = true }
+starcoin-types = { path = "../../vm2/types" }
+starcoin-vm-types = { path = "../../vm2/vm-types" }
 forkable-jellyfish-merkle = { workspace = true }
 once_cell = { workspace = true }
 bytes = { workspace = true }

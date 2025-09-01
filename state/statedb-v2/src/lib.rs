@@ -8,25 +8,25 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
 use parking_lot::{Mutex, RwLock};
+use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
-use starcoin_vm2_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
-use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_state_api::AccountStateSetIterator;
-pub use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
-use starcoin_vm2_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
-use starcoin_vm2_types::identifier::Identifier;
-use starcoin_vm2_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use starcoin_vm2_types::{
+use starcoin_types::identifier::Identifier;
+use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
+use starcoin_vm2_state_api::AccountStateSetIterator;
+pub use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
+use starcoin_vm2_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
 #[cfg(test)]
-use starcoin_vm2_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
-use starcoin_vm2_vm_types::{
+use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
+use starcoin_vm_types::{
     access_path::{DataPath, ModuleName},
     account_config::TABLE_HANDLE_ADDRESS_LIST,
     language_storage::StructTag,
@@ -35,7 +35,7 @@ use starcoin_vm2_vm_types::{
         state_key::{inner::StateKeyInner, StateKey},
         state_storage_usage::StateStorageUsage,
         state_value::StateValue,
-        table::{TableHandle, TableInfo},
+        table::TableHandle,
         TStateView,
     },
 };
@@ -654,15 +654,6 @@ impl ChainStateReader for ChainStateDB {
                 table_handle_state_object.root_hash(),
             ),
         ))
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
-        let v = self.store.get_table_info(address);
-        match v {
-            Ok(Some(v)) => Ok(v),
-            Ok(None) => Err(format_err!("table info not found")),
-            Err(e) => Err(e),
-        }
     }
 }
 

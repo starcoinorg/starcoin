@@ -1,14 +1,12 @@
 use anyhow::Result;
-use starcoin_account::{
-    account_storage::{AccountStorage, RocksdbConfig},
-    AccountManager,
-};
+use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::{AccountInfo, AccountProvider};
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::account_config::token_code::TokenCode;
-use starcoin_vm2_types::genesis_config::ChainId;
-use starcoin_vm2_types::sign_message::{SignedMessage, SigningMessage};
-use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_config::RocksdbConfig;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
+use starcoin_types::genesis_config::ChainId;
+use starcoin_types::sign_message::{SignedMessage, SigningMessage};
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::path::Path;
 use std::time::Duration;
 pub struct AccountLocalProvider {

@@ -5,12 +5,12 @@ use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_state_api::StateNodeStore;
-use starcoin_statedb::ChainStateDB;
 use starcoin_vm2_abi_decoder::decode_move_value;
 use starcoin_vm2_abi_resolver::ABIResolver;
 use starcoin_vm2_abi_types::TypeInstantiation;
 use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
 use starcoin_vm2_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::view::{
     dry_run_output_view::DryRunOutputView, transaction_output_view::TransactionOutputView,
     write_op_value_view::WriteOpValueView,

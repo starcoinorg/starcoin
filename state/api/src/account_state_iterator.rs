@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use forkable_jellyfish_merkle::iterator::JellyfishMerkleIntoIterator;
 use starcoin_state_store_api::StateNodeStore;
 use starcoin_state_tree::{StateTree, StorageTreeReader};

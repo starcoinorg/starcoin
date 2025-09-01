@@ -32,7 +32,6 @@ use starcoin_types::{
 use starcoin_vm_types::contract_event::ContractEvent;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::Deref;
 use std::sync::Arc;
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;

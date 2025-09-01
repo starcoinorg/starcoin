@@ -9,6 +9,6 @@ mod state_tree;
 #[cfg(test)]
 mod state_tree_test;
 
-pub use starcoin_state_store_api::{StateNode, StateNodeStore};
+pub use starcoin_state_store_api::{StateNode, StateNodeStore, StateSet};
 pub use state_tree::StateTree;
 pub use state_tree::StorageTreeReader;

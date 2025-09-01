@@ -11,6 +11,7 @@ use starcoin_types::{
 };
 use std::str::FromStr;
 
+use bytes::Bytes;
 pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
     StateWithTableItemProof,
@@ -24,10 +25,12 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub use starcoin_vm_types::state_view::StateReaderExt;
 
+mod account_state_iterator;
 mod chain_state;
 pub mod message;
 pub mod mock;
-use bytes::Bytes;
+
+pub use account_state_iterator::AccountStateSetIterator;
 
 pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
     let mut path_list = vec![];
