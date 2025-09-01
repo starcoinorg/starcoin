@@ -22,6 +22,7 @@ starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }

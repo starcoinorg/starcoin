@@ -31,6 +31,7 @@ starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-state-tree = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-sync-api = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-transaction-builder = { workspace = true }

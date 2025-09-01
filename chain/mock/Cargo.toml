@@ -20,6 +20,7 @@ starcoin-genesis = { workspace = true }
 starcoin-open-block = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }

@@ -21,6 +21,7 @@ thiserror = { workspace = true }
 rocksdb = { workspace = true }
 bincode = { version = "1", default-features = false }
 serde = { workspace = true }
+starcoin-storage = { workspace = true }
 parking_lot = { workspace = true }
 lru = { workspace = true }
 itertools = { workspace = true }
@@ -29,7 +30,7 @@ bcs-ext = { workspace = true }
 starcoin-accumulator = { workspace = true }
 schemars = { workspace = true }
 starcoin-statedb = { workspace = true }
-starcoin-vm-runtime ={ workspace = true }
+starcoin-vm-runtime = { workspace = true }
 crossbeam = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-chain = { workspace = true }

@@ -739,7 +739,7 @@ pub fn full_sync_task<H, A, F, N>(
     skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
-    storage2: Arc<starcoin_vm2_storage::Storage>,
+    storage2: Arc<starcoin_storage::Storage>,
     block_event_handle: H,
     fetcher: Arc<F>,
     ancestor_event_handle: A,
