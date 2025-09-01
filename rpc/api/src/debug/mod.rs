@@ -41,6 +41,14 @@ pub trait DebugApi {
     #[rpc(name = "debug.set_logger_balance_amount")]
     fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()>;
 
+    /// Set minimum pending txn threshold (dev only)
+    #[rpc(name = "debug.set_min_pending_txn_threshold")]
+    fn set_min_pending_txn_threshold(&self, threshold: usize) -> Result<()>;
+
+    /// Get minimum pending txn threshold (dev only)
+    #[rpc(name = "debug.get_min_pending_txn_threshold")]
+    fn get_min_pending_txn_threshold(&self) -> Result<usize>;
+
     /// Get logger balance amount
     #[rpc(name = "debug.get_logger_balance_amount")]
     fn get_logger_balance_amount(&self) -> Result<u64>;

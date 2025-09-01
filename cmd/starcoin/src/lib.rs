@@ -115,6 +115,7 @@ pub fn add_command(
         .command(
             CustomCommand::with_name("dev")
                 .subcommand(dev::GetCoinCommand)
+                .subcommand(dev::MinimalTxnsEachBlockCommand)
                 .subcommand(dev::MoveExplain)
                 .subcommand(dev::DeployCommand)
                 .subcommand(dev::CallContractCommand)

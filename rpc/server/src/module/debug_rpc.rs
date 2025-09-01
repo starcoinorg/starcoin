@@ -16,6 +16,7 @@ use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::str::FromStr;
 use std::sync::Arc;
+use starcoin_txpool::{set_min_pending_txn_threshold, get_min_pending_txn_threshold};
 
 pub struct DebugRpcImpl {
     config: Arc<NodeConfig>,
@@ -96,6 +97,23 @@ impl DebugApi for DebugRpcImpl {
     fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()> {
         starcoin_executor::set_logger_balance_amount_once(balance_amount);
         Ok(())
+    }
+
+    fn set_min_pending_txn_threshold(&self, threshold: usize) -> Result<()> {
+        // Only allow in dev or test
+        if !self.config.net().is_test() && !self.config.net().is_dev() {
+            return Err(jsonrpc_core::Error::invalid_request());
+        }
+        // Directly set the threshold in txpool crate
+        set_min_pending_txn_threshold(threshold);
+        Ok(())
+    }
+
+    fn get_min_pending_txn_threshold(&self) -> Result<usize> {
+        if !self.config.net().is_test() && !self.config.net().is_dev() {
+            return Err(jsonrpc_core::Error::invalid_request());
+        }
+        Ok(get_min_pending_txn_threshold())
     }
 
     fn get_logger_balance_amount(&self) -> Result<u64> {

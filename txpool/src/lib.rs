@@ -12,6 +12,7 @@ use anyhow::{format_err, Result};
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::queue::Pool;
 pub use pool::TxStatus;
+pub use pool::queue::{get_min_pending_txn_threshold, set_min_pending_txn_threshold};
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};

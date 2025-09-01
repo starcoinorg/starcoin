@@ -53,6 +53,22 @@ const TIMESTAMP_CACHE: u64 = 1000;
 /// This parameter controls how many (best) senders at once will be processed.
 const CULL_SENDERS_CHUNK: usize = 1024;
 
+/// For testing purposes, only RPC in dev mode has the privilege to call this.
+/// Transactions will be returned only if the number of pending txns is greater than `MIN_PENDING_TXN_THRESHOLD`.
+static MIN_PENDING_TXN_THRESHOLD: AtomicUsize = AtomicUsize::new(1);
+
+pub fn set_min_pending_txn_threshold(mut min_pending_txn_threshold: usize) {
+    min_pending_txn_threshold = std::cmp::max(min_pending_txn_threshold, 1);
+    MIN_PENDING_TXN_THRESHOLD.store(
+        min_pending_txn_threshold,
+        std::sync::atomic::Ordering::SeqCst,
+    );
+}
+
+pub fn get_min_pending_txn_threshold() -> usize {
+    MIN_PENDING_TXN_THRESHOLD.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 /// Transaction queue status.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Status {
@@ -460,7 +476,7 @@ impl TransactionQueue {
 
         let ready = Self::ready(client, block_number, current_timestamp);
 
-        match ordering {
+        let txns = match ordering {
             // In case we don't have a cached set, but we don't care about order
             // just return the unordered set.
             PendingOrdering::Unordered => self
@@ -473,6 +489,12 @@ impl TransactionQueue {
                 Some(pool) => pool.pending(ready).take(max_len).collect(),
                 None => vec![],
             },
+        };
+
+        if txns.len() < get_min_pending_txn_threshold() {
+            vec![]
+        } else {
+            txns
         }
     }
 
