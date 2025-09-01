@@ -305,7 +305,7 @@ impl FunctionParameterABI {
     pub fn doc(&self) -> &str {
         &self.doc
     }
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<FunctionParameterABI> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         let mut this = self.clone();
         this.type_tag = this.type_tag.subst(ty_args)?;
         Ok(this)
@@ -514,7 +514,7 @@ impl StructInstantiation {
     }
 
     /// Substitute all the type parameter in this type instantiation with given `ty_args`
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<StructInstantiation> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         Ok(Self {
             name: self.name.clone(),
             module_name: self.module_name.clone(),
@@ -558,7 +558,7 @@ impl FieldABI {
         &self.type_abi
     }
     /// passing by the type arguments of StructDefinition or FunctionDefinition
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<FieldABI> {
+    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<Self> {
         Ok(Self {
             name: self.name.clone(),
             doc: self.doc.clone(),
@@ -586,7 +586,7 @@ pub enum TypeInstantiation {
     U256,
 }
 impl TypeInstantiation {
-    pub fn new_vector(subtype: TypeInstantiation) -> Self {
+    pub fn new_vector(subtype: Self) -> Self {
         Self::Vector(Box::new(subtype))
     }
     pub fn new_struct_instantiation(s: StructInstantiation) -> Self {
@@ -629,7 +629,7 @@ impl TypeInstantiation {
             Self::U256 => TypeTag::U256,
         })
     }
-    pub fn subst(&self, ty_args: &[TypeInstantiation]) -> Result<TypeInstantiation> {
+    pub fn subst(&self, ty_args: &[Self]) -> Result<Self> {
         use TypeInstantiation as T;
         Ok(match self {
             T::TypeParameter(idx) => match ty_args.get(*idx) {
@@ -682,6 +682,7 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
             T::Reference(_, _) => Err(D::Error::custom("type abi cannot be Reference variant")),
             T::U16 => u16::deserialize(deserializer).map(Into::into),
             T::U32 => u32::deserialize(deserializer).map(Into::into),
+            // XXX FIXME YSG is it right?
             T::U256 => u256::U256::deserialize(deserializer).map(|val| V::String(val.to_string())),
         }
     }
@@ -770,8 +771,8 @@ impl<'de> Deserialize<'de> for WrappedAbilitySet {
         D: Deserializer<'de>,
     {
         let byte = u8::deserialize(deserializer)?;
-        Ok(WrappedAbilitySet(AbilitySet::from_u8(byte).ok_or_else(
-            || serde::de::Error::custom(format!("Invalid ability set: {:X}", byte)),
-        )?))
+        Ok(Self(AbilitySet::from_u8(byte).ok_or_else(|| {
+            serde::de::Error::custom(format!("Invalid ability set: {:X}", byte))
+        })?))
     }
 }

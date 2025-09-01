@@ -137,7 +137,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     fn handle(
         &mut self,
         msg: ChainRequest,
-        _ctx: &mut ServiceContext<ChainReaderService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
@@ -394,6 +394,34 @@ impl ChainReaderServiceInner {
         )?;
         Ok(())
     }
+
+    fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
+        let result = self
+            .dag
+            .get_absent_blocks(GetAbsentBlock { absent_id, exp })?;
+
+        let origin_id = self.config.net().genesis_block_parameter().parent_hash;
+        let genesis_id = self
+            .storage
+            .get_genesis()?
+            .unwrap_or_else(|| panic!("genesis not exist"));
+
+        result
+            .absent_blocks
+            .into_iter()
+            .filter(|id| *id != origin_id && *id != genesis_id)
+            .map(|block_id| match self.storage.get_block(block_id) {
+                Ok(op_block) => {
+                    op_block.ok_or_else(|| format_err!("block {:?} should exist", block_id))
+                }
+                Err(e) => bail!(
+                    "in get absent blocks, get block {:?} err: {:?}",
+                    block_id,
+                    e
+                ),
+            })
+            .collect::<anyhow::Result<Vec<Block>>>()
+    }
 }
 
 impl ReadableChainService for ChainReaderServiceInner {
@@ -587,34 +615,6 @@ impl ReadableChainService for ChainReaderServiceInner {
         end_id: Option<HashValue>,
     ) -> Result<RangeInLocation> {
         range_locate::get_range_in_location(self.get_main(), self.storage.clone(), start_id, end_id)
-    }
-
-    fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
-        let result = self
-            .dag
-            .get_absent_blocks(GetAbsentBlock { absent_id, exp })?;
-
-        let origin_id = self.config.net().genesis_block_parameter().parent_hash;
-        let genesis_id = self
-            .storage
-            .get_genesis()?
-            .unwrap_or_else(|| panic!("genesis not exist"));
-
-        result
-            .absent_blocks
-            .into_iter()
-            .filter(|id| *id != origin_id && *id != genesis_id)
-            .map(|block_id| match self.storage.get_block(block_id) {
-                Ok(op_block) => {
-                    op_block.ok_or_else(|| format_err!("block {:?} should exist", block_id))
-                }
-                Err(e) => bail!(
-                    "in get absent blocks, get block {:?} err: {:?}",
-                    block_id,
-                    e
-                ),
-            })
-            .collect()
     }
 }
 

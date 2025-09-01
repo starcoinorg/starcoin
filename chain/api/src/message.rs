@@ -13,6 +13,7 @@ use starcoin_types::multi_state::MultiState;
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
+    contract_event::ContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,

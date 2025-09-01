@@ -1,26 +1,30 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
+use starcoin_types::blockhash::KType;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
+use std::vec;
 
 pub struct MockChain {
     net: ChainNetwork,
     head: BlockChain,
     miner: AccountInfo,
+    storage: Arc<Storage>,
 }
 
 impl MockChain {
@@ -31,15 +35,29 @@ impl MockChain {
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
-            storage,
-            storage2,
+            storage.clone(),
+	    storage2,
             None,
             dag,
         )?;
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
+    pub fn new_with_params(net: ChainNetwork, k: KType) -> Result<Self> {
+        let (storage, storage2, chain_info, _, dag) = Genesis::init_storage_for_test_with_param(&net, k)?;
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+	    storage2,
+            None,
+            dag,
+        )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+    
     pub fn new_and_get_storage2(net: ChainNetwork) -> Result<(Self, Arc<Storage2>)> {
         let (storage, storage2, chain_info, _, dag) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
@@ -55,6 +73,29 @@ impl MockChain {
         )?;
         let miner = AccountInfo::random();
         Ok((Self::new_inner(net, chain, miner), storage2_clone))
+    }
+
+    pub fn new_with_genesis_for_test(
+        net: ChainNetwork,
+        genesis: Genesis,
+        k: KType,
+    ) -> anyhow::Result<Self> {
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+	let storage2 = Arc::new(Storage::new(StorageInstance2::new_cache_instance())?);
+        let dag = BlockDAG::create_for_testing_with_parameters(k)?;
+        let chain_info = genesis.execute_genesis_block(&net, storage.clone(), storage2.clone(), dag.clone())?;
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+	    storage2.clone(),
+            None,
+            dag,
+        )?;
+
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
     pub fn new_with_storage(
@@ -73,16 +114,30 @@ impl MockChain {
             None,
             dag,
         )?;
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    pub fn new_with_chain(net: ChainNetwork, chain: BlockChain) -> Result<Self> {
+    pub fn new_with_chain(
+        net: ChainNetwork,
+        chain: BlockChain,
+        storage: Arc<Storage>,
+    ) -> Result<Self> {
         let miner = AccountInfo::random();
-        Ok(Self::new_inner(net, chain, miner))
+        Ok(Self::new_inner(net, chain, miner, storage))
     }
 
-    fn new_inner(net: ChainNetwork, head: BlockChain, miner: AccountInfo) -> Self {
-        Self { net, head, miner }
+    fn new_inner(
+        net: ChainNetwork,
+        head: BlockChain,
+        miner: AccountInfo,
+        storage: Arc<Storage>,
+    ) -> Self {
+        Self {
+            net,
+            head,
+            miner,
+            storage,
+        }
     }
 
     pub fn net(&self) -> &ChainNetwork {
@@ -121,12 +176,13 @@ impl MockChain {
         )
     }
 
-    pub fn fork(&self, head_id: Option<HashValue>) -> Result<MockChain> {
+    pub fn fork(&self, head_id: Option<HashValue>) -> Result<Self> {
         let chain = self.fork_new_branch(head_id)?;
         Ok(Self {
             head: chain,
             net: self.net.clone(),
             miner: AccountInfo::random(),
+            storage: self.storage.clone(),
         })
     }
 

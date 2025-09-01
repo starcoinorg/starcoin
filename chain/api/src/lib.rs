@@ -22,6 +22,12 @@ pub mod message;
 pub mod range_locate;
 mod service;
 
+#[derive(Clone, Debug)]
+pub struct ExcludedTxns {
+    pub discarded_txns: Vec<SignedUserTransaction>,
+    pub untouched_txns: Vec<SignedUserTransaction>,
+}
+
 pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};
 pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};

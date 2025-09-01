@@ -2,9 +2,16 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
+use crate::range_locate::RangeInLocation;
+use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
+use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_network_rpc_api::{
+    GetAbsentBlockRequest, GetAbsentBlockResponse, GetRangeInLocationRequest,
+    GetRangeInLocationResponse,
+};
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -80,7 +87,6 @@ pub trait ReadableChainService {
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<starcoin_dag::consensusdb::consensus_state::DagStateView>;
     fn get_ghostdagdata(
@@ -100,9 +106,7 @@ pub trait ReadableChainService {
         &self,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> Result<crate::range_locate::RangeInLocation>;
-
-    fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>>;
+    ) -> Result<RangeInLocation>;
 }
 
 /// Writeable block chain service trait
@@ -192,16 +196,19 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof2>>;
 
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
-
     async fn get_range_in_location(
         &self,
-        req: starcoin_network_rpc_api::GetRangeInLocationRequest,
-    ) -> Result<starcoin_network_rpc_api::GetRangeInLocationResponse>;
-
-    async fn get_absent_blocks(
+        req: GetRangeInLocationRequest,
+    ) -> Result<GetRangeInLocationResponse>;
+    async fn get_dag_state(&self) -> Result<DagStateView>;
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>>;
+    async fn is_ancestor_of(
         &self,
-        req: starcoin_network_rpc_api::GetAbsentBlockRequest,
-    ) -> Result<starcoin_network_rpc_api::GetAbsentBlockResponse>;
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> Result<starcoin_dag::consensusdb::consensus_state::ReachabilityView>;
+    async fn get_absent_blocks(&self, req: GetAbsentBlockRequest)
+        -> Result<GetAbsentBlockResponse>;
 }
 
 #[async_trait::async_trait]
@@ -564,8 +571,8 @@ where
 
     async fn get_range_in_location(
         &self,
-        req: starcoin_network_rpc_api::GetRangeInLocationRequest,
-    ) -> Result<starcoin_network_rpc_api::GetRangeInLocationResponse> {
+        req: GetRangeInLocationRequest,
+    ) -> Result<GetRangeInLocationResponse> {
         let response = self
             .send(ChainRequest::GetRangeInLocation {
                 start_id: req.start_id,
@@ -573,25 +580,28 @@ where
             })
             .await??;
         if let ChainResponse::GetRangeInLocation { range } = response {
-            Ok(starcoin_network_rpc_api::GetRangeInLocationResponse {
-                range: match range {
-                    crate::range_locate::RangeInLocation::NotInSelectedChain => {
-                        starcoin_network_rpc_api::RangeInLocation::NotInSelectedChain
-                    }
-                    crate::range_locate::RangeInLocation::InSelectedChain(hash, hashes) => {
-                        starcoin_network_rpc_api::RangeInLocation::InSelectedChain(hash, hashes)
-                    }
-                },
-            })
+            match range {
+                RangeInLocation::NotInSelectedChain => Ok(GetRangeInLocationResponse {
+                    range: starcoin_network_rpc_api::RangeInLocation::NotInSelectedChain,
+                }),
+                RangeInLocation::InSelectedChain(hash_value, hash_values) => {
+                    Ok(GetRangeInLocationResponse {
+                        range: starcoin_network_rpc_api::RangeInLocation::InSelectedChain(
+                            hash_value,
+                            hash_values,
+                        ),
+                    })
+                }
+            }
         } else {
-            bail!("get range in location error")
+            bail!("get range in location error");
         }
     }
 
     async fn get_absent_blocks(
         &self,
-        req: starcoin_network_rpc_api::GetAbsentBlockRequest,
-    ) -> Result<starcoin_network_rpc_api::GetAbsentBlockResponse> {
+        req: GetAbsentBlockRequest,
+    ) -> Result<GetAbsentBlockResponse> {
         let response = self
             .send(ChainRequest::GetAbsentBlocks {
                 absent_id: req.absent_id,
@@ -599,9 +609,44 @@ where
             })
             .await??;
         if let ChainResponse::GetAbsentBlocks { absent_blocks } = response {
-            Ok(starcoin_network_rpc_api::GetAbsentBlockResponse { absent_blocks })
+            Ok(GetAbsentBlockResponse { absent_blocks })
         } else {
-            bail!("get absent blocks error")
+            bail!("get range in location error");
+        }
+    }
+
+    async fn get_dag_state(&self) -> Result<DagStateView> {
+        let response = self.send(ChainRequest::GetDagStateView).await??;
+        if let ChainResponse::DagStateView(dag_state) = response {
+            Ok(*dag_state)
+        } else {
+            bail!("get dag state error")
+        }
+    }
+
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
+        let response = self.send(ChainRequest::GetGhostdagData(ids)).await??;
+        if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
+            Ok(*ghostdag_data)
+        } else {
+            bail!("failed to get ghostdag data")
+        }
+    }
+    async fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> Result<ReachabilityView> {
+        let response = self
+            .send(ChainRequest::IsAncestorOfCommand {
+                ancestor,
+                descendants,
+            })
+            .await??;
+        if let ChainResponse::IsAncestorOfCommand { reachability_view } = response {
+            Ok(reachability_view)
+        } else {
+            bail!("failed to get ghostdag data")
         }
     }
 }

@@ -59,7 +59,7 @@ pub struct Setting {
 
 impl Setting {
     pub fn readonly() -> Self {
-        Setting {
+        Self {
             default_expiration_timeout: 3600,
             default_gas_price: 1,
             default_gas_token: G_STC_TOKEN_CODE.clone(),
@@ -71,7 +71,7 @@ impl Setting {
 
 impl std::default::Default for Setting {
     fn default() -> Self {
-        Setting {
+        Self {
             default_expiration_timeout: 3600,
             default_gas_price: 1,
             default_gas_token: G_STC_TOKEN_CODE.clone(),

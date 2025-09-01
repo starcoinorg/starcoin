@@ -77,39 +77,19 @@ impl OpenedBlock {
         version: Version,
         pruning_point: HashValue,
         red_blocks: u64,
+        chain_state: ChainStateDB,
+	chain_state2: ChainStateDB2,
+	vm_state_accumulator: 
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
             .get_block_info(previous_block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", previous_block_id))?;
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        let vm_state_accumulator = MerkleAccumulator::new_with_info(
-            vm_state_accumulator_info.clone(),
-            storage.get_accumulator_store(AccumulatorStoreType::VMState),
-        );
-        let (state_root1, state_root2) = {
-            let num_leaves = vm_state_accumulator.num_leaves();
-            ensure!(
-                num_leaves > 1,
-                "vm_state_accumulator num_leaves should have 2 leaves at least",
-            );
-            (
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 2)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 1)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
-            )
-        };
-
-        let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
-        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
@@ -171,6 +151,12 @@ impl OpenedBlock {
         self.gas_limit - self.gas_used
     }
 
+    pub fn included_user_txns(&self) -> &[SignedUserTransaction] {
+        &self.included_user_txns
+    }
+    pub fn state_root(&self) -> HashValue {
+        self.state.state_root()
+    }
     pub fn accumulator_root(&self) -> HashValue {
         self.txn_accumulator.root_hash()
     }

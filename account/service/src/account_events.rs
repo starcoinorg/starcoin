@@ -25,8 +25,8 @@ impl ActorService for AccountEventService {
     }
 }
 
-impl ServiceFactory<AccountEventService> for AccountEventService {
-    fn create(ctx: &mut ServiceContext<AccountEventService>) -> Result<AccountEventService> {
+impl ServiceFactory<Self> for AccountEventService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             storage: ctx.get_shared::<AccountStorage>()?,
         })

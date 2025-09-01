@@ -9,6 +9,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -42,15 +43,22 @@ impl ChainBencher {
             ))
             .unwrap(),
         );
+        let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
         let (chain_info, _) =
-            Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
+            Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-            .expect("create block chain should success.");
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage,
+            None,
+            dag,
+        )
+        .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
-        ChainBencher {
+        Self {
             net,
             chain: Arc::new(RwLock::new(chain)),
             block_num: num.unwrap_or(100),
@@ -66,7 +74,15 @@ impl ChainBencher {
             let (block_template, _) = self
                 .chain
                 .read()
-                .create_block_template_simple(*self.account.address())
+                .create_block_template(
+                    *self.account.address(),
+                    None,
+                    vec![],
+                    vec![],
+                    None,
+                    vec![],
+                    HashValue::zero(),
+                )
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())

@@ -21,7 +21,7 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
@@ -29,7 +29,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -197,11 +197,6 @@ impl BlockChain {
             dag: dag.clone(),
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        match uncles {
-            Some(data) => chain.uncles = data,
-            None => chain.update_uncle_cache()?,
-        }
-        watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
 
@@ -265,9 +260,6 @@ impl BlockChain {
         Ok(dag)
     }
 
-    pub fn current_epoch_uncles_size(&self) -> u64 {
-        self.uncles.len() as u64
-    }
 
     pub fn dag(&self) -> BlockDAG {
         self.dag.clone()
@@ -293,50 +285,10 @@ impl BlockChain {
         self.time_service.clone()
     }
 
-    //TODO lazy init uncles cache.
-    fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?;
-        Ok(())
+    pub fn dag(&self) -> BlockDAG {
+        self.dag.clone()
     }
-
-    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
-        let epoch = &self.epoch;
-        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let executed_block = self.head_block();
-        let head_block = executed_block.block();
-        let head_number = head_block.header().number();
-        if head_number < epoch.start_block_number() || head_number >= epoch.end_block_number() {
-            return Err(format_err!(
-                "head block {} not in current epoch: {:?}.",
-                head_number,
-                epoch
-            ));
-        }
-        for block_number in epoch.start_block_number()..epoch.end_block_number() {
-            let block_uncles = if block_number == head_number {
-                head_block.uncle_ids()
-            } else {
-                self.get_block_by_number(block_number)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by number {}, head block number: {}",
-                            block_number,
-                            head_number
-                        )
-                    })?
-                    .uncle_ids()
-            };
-            block_uncles.into_iter().for_each(|uncle_id| {
-                uncles.insert(uncle_id, block_number);
-            });
-            if block_number == head_number {
-                break;
-            }
-        }
-
-        Ok(uncles)
-    }
-
+    
     pub fn create_block_template_simple(
         &self,
         author: AccountAddress,
@@ -351,7 +303,6 @@ impl BlockChain {
             HashValue::zero(),
         )
     }
-
     pub fn create_block_template_simple_with_txns(
         &self,
         author: AccountAddress,
@@ -368,23 +319,7 @@ impl BlockChain {
         )
     }
 
-    pub fn create_block_template_simple_with_uncles(
-        &self,
-        author: AccountAddress,
-        uncles: Vec<BlockHeader>,
-    ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        self.create_block_template(
-            author,
-            None, // No specific parent header
-            vec![],
-            Some(uncles),
-            None, // use default gas limit
-            None, // tips will be fetched automatically
-            HashValue::zero(),
-        )
-    }
-
-    pub fn create_block_template(
+pub fn create_block_template(
         &self,
         author: AccountAddress,
         parent_header: Option<BlockHeader>,
@@ -487,10 +422,172 @@ impl BlockChain {
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }
 
+
+    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+        let new_pruning_point = if header.pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            header.pruning_point()
+        };
+        let current_pruning_point = if self.status().head().pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            self.status().head().pruning_point()
+        };
+        let chain = if current_pruning_point == new_pruning_point
+            || current_pruning_point == HashValue::zero()
+        {
+            let state = self.dag.get_dag_state(new_pruning_point).unwrap();
+            let block_id = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(state.tips)
+                .unwrap();
+            self.fork(block_id)?
+        } else {
+            let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
+            let current_state = self.dag.get_dag_state(current_pruning_point).unwrap();
+
+            let new_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(new_state.tips)
+                .unwrap();
+            let current_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(current_state.tips)
+                .unwrap();
+
+            let selected_header = self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent([new_header, current_header])
+                .unwrap();
+
+            self.fork(selected_header)?
+        };
+
+        Ok(chain)
+    }
+
+    // This is only for testing.
+    // Uncles, pruning point and tips must be coherent, if not,
+    // there will be some unexpected behaviour happening.
+    // Input empty vec for uncles and zero for pruning point simply if you do not know what to do.
+    pub fn create_block_template_by_header(
+        &self,
+        author: AccountAddress,
+        previous_header: BlockHeader,
+        user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
+        tips: Vec<HashValue>,
+        pruning_point: HashValue,
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        let epoch = self.epoch();
+        let on_chain_block_gas_limit = epoch.block_gas_limit();
+        let final_block_gas_limit = block_gas_limit
+            .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
+            .unwrap_or(on_chain_block_gas_limit);
+        let strategy = epoch.strategy();
+        let difficulty = strategy.calculate_next_difficulty(self)?;
+
+        let (ghostdata, tips) = if tips.is_empty() {
+            let tips = self.get_dag_state()?.tips;
+            (self.dag().ghostdata(&tips)?, tips)
+        } else {
+            (self.dag().ghostdata(&tips)?, tips)
+        };
+
+        let MineNewDagBlockInfo {
+            selected_parents,
+            ghostdata,
+            pruning_point: _,
+        } = {
+            MineNewDagBlockInfo {
+                selected_parents: tips,
+                ghostdata,
+                pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
+            }
+        };
+
+        debug!(
+            "Blue blocks:{:?} in chain/create_block_template_by_header",
+            ghostdata.mergeset_blues
+        );
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .as_ref()
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|block| self.storage.get_block_by_hash(block))
+            .collect::<Result<Vec<Option<Block>>>>()?
+            .into_iter()
+            .map(|op_block| op_block.expect("failed to get a block"))
+            .collect::<Vec<_>>();
+
+        let uncles = if uncles.is_empty() {
+            blue_blocks
+                .iter()
+                .map(|block| block.header().clone())
+                .collect::<Vec<_>>()
+        } else {
+            uncles
+        };
+
+        let parent_header = if ghostdata.selected_parent != previous_header.id() {
+            self.storage
+                .get_block_header_by_hash(ghostdata.selected_parent)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find block header by {:?}",
+                        ghostdata.selected_parent
+                    )
+                })?
+        } else {
+            previous_header
+        };
+
+        let mut opened_block = OpenedBlock::new(
+            self.storage.clone(),
+            parent_header.clone(),
+            final_block_gas_limit,
+            author,
+            self.time_service.now_millis(),
+            uncles,
+            difficulty,
+            strategy,
+            None,
+            selected_parents,
+            0,
+            pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
+            ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(parent_header.state_root()),
+            ),
+        )?;
+        let excluded_txns = opened_block.push_txns(user_txns)?;
+        let template = opened_block.finalize()?;
+
+        Ok((template, excluded_txns))
+    }
+
     /// Get block hash by block number, if not exist, return Error.
     pub fn get_hash_by_number_ensure(&self, number: BlockNumber) -> Result<HashValue> {
         self.get_hash_by_number(number)?
             .ok_or_else(|| format_err!("Can not find block hash by number {}", number))
+    }
+
+    pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
+        header.parents_hash().into_iter().all(|parent| {
+            self.has_dag_block(parent).unwrap_or_else(|e| {
+                warn!("check_parents_ready error: {:?}", e);
+                false
+            })
+        })
     }
 
     fn check_exist_block(&self, block_id: HashValue, block_number: BlockNumber) -> Result<bool> {
@@ -532,7 +629,18 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        V::verify_block(self, block)
+        if self.head_block().header().id() != block.parent_hash() {
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
+            V::verify_block(&selected_chain, block)
+        } else {
+            V::verify_block(self, block)
+        }
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
@@ -554,6 +662,253 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n1");
         self.execute_without_save(verified_block)
     }
+
+    //TODO remove this function.
+    pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
+        let block_info = self
+            .storage
+            .get_block_info(block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
+        self.connect(ExecutedBlock { block, block_info })
+    }
+
+    fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        let block_id = verified_block.block.header().id();
+        info!("execute dag block:{:?}", block_id);
+        let block = verified_block.block;
+        let selected_parent = block.parent_hash();
+        let block_info_past = self
+            .storage
+            .get_block_info(selected_parent)?
+            .expect("selected parent must executed");
+        let header = block.header();
+        let block_id = header.id();
+        //TODO::FIXEME
+        let selected_head = self
+            .storage
+            .get_block_by_hash(selected_parent)?
+            .ok_or_else(|| {
+                format_err!("Can not find selected block by hash {:?}", selected_parent)
+            })?;
+        let block_metadata = block.to_metadata(
+            selected_head.header().gas_used(),
+            verified_block.ghostdata.mergeset_reds.len() as u64,
+        );
+        let mut transactions = vec![Transaction::BlockMetadata(block_metadata)];
+        let mut total_difficulty = header
+            .difficulty()
+            .checked_add(block_info_past.total_difficulty)
+            .unwrap_or_else(|| {
+                panic!(
+                    "header difficulty overflowed: current {} previous total_difficulty {}",
+                    header.difficulty(),
+                    block_info_past.total_difficulty
+                )
+            });
+
+        for blue in block.body.uncles.as_ref().unwrap_or(&vec![]) {
+            total_difficulty = total_difficulty
+                .checked_add(blue.difficulty())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "total difficulty overflowed total_difficulty {} blue block difficulty {}",
+                        total_difficulty,
+                        blue.difficulty(),
+                    )
+                });
+        }
+
+        transactions.extend(
+            block
+                .transactions()
+                .iter()
+                .cloned()
+                .map(Transaction::UserTransaction),
+        );
+        watch(CHAIN_WATCH_NAME, "n21");
+        if self.statedb.state_root() != selected_head.header.state_root() {
+            warn!("state root not equal to selected head state root, please ensure the state db is consistent before execution, avoid fork");
+            self.statedb = self.statedb.fork_at(selected_head.header.state_root());
+        }
+        assert_eq!(self.statedb.state_root(), selected_head.header.state_root());
+        let epoch = get_epoch_from_statedb(&self.statedb)?;
+        info!(
+            "execute transaction before entering vm, block id: {:?}",
+            block_id,
+        );
+        let executed_data = starcoin_executor::block_execute(
+            &self.statedb,
+            transactions.clone(),
+            epoch.block_gas_limit(), //TODO: Fix me
+            self.vm_metrics.clone(),
+        )?;
+        watch(CHAIN_WATCH_NAME, "n22");
+        let state_root = executed_data.state_root;
+        let vec_transaction_info = &executed_data.txn_infos;
+        verify_block!(
+            VerifyBlockField::State,
+            state_root == header.state_root(),
+            "verify block:{:?} state_root fail, expected: {:?}, actual: {:?}",
+            block_id,
+            state_root,
+            header.state_root(),
+        );
+        let block_gas_used = vec_transaction_info
+            .iter()
+            .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
+        verify_block!(
+            VerifyBlockField::State,
+            block_gas_used == header.gas_used(),
+            "invalid block: gas_used is not match"
+        );
+        let valid_txn_num = if header.number() == get_force_upgrade_block_number(&header.chain_id())
+            && executed_data.with_extra_txn
+        {
+            vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
+        } else {
+            vec_transaction_info.len() == transactions.len()
+        };
+        verify_block!(
+            VerifyBlockField::State,
+            valid_txn_num,
+            "invalid txn num in the block"
+        );
+        let txn_accumulator = info_2_accumulator(
+            block_info_past.txn_accumulator_info,
+            AccumulatorStoreType::Transaction,
+            self.storage.as_ref(),
+        );
+        let block_accumulator = info_2_accumulator(
+            block_info_past.block_accumulator_info,
+            AccumulatorStoreType::Block,
+            self.storage.as_ref(),
+        );
+        let transaction_global_index = txn_accumulator.num_leaves();
+
+        // txn accumulator verify.
+        let executed_accumulator_root = {
+            let included_txn_info_hashes: Vec<_> =
+                vec_transaction_info.iter().map(|info| info.id()).collect();
+            txn_accumulator.append(&included_txn_info_hashes)?
+        };
+
+        verify_block!(
+            VerifyBlockField::State,
+            executed_accumulator_root == header.txn_accumulator_root(),
+            "verify block: txn accumulator root mismatch, executed accumulator root: {:?}, txn accumulator root: {:?}", executed_accumulator_root, header.txn_accumulator_root()
+        );
+
+        watch(CHAIN_WATCH_NAME, "n23");
+        self.statedb
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        // If chain state is matched, and accumulator is matched,
+        // then, we save flush states, and save block data.
+        watch(CHAIN_WATCH_NAME, "n24");
+        txn_accumulator
+            .flush()
+            .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+
+        block_accumulator.append(&[block_id])?;
+        block_accumulator.flush()?;
+
+        let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
+        let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
+        let block_info = BlockInfo::new(
+            block_id,
+            total_difficulty,
+            txn_accumulator_info,
+            block_accumulator_info,
+        );
+
+        watch(CHAIN_WATCH_NAME, "n25");
+
+        // save block's transaction relationship and save transaction
+
+        let block_id = block.id();
+        let txn_infos = executed_data.txn_infos;
+        let txn_events = executed_data.txn_events;
+        let txn_table_infos = executed_data
+            .txn_table_infos
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        debug_assert!(
+            txn_events.len() == txn_infos.len(),
+            "events' length should be equal to txn infos' length"
+        );
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
+        for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
+            self.storage.save_contract_events(*info_id, events)?;
+        }
+
+        self.storage.save_transaction_infos(
+            txn_infos
+                .into_iter()
+                .enumerate()
+                .map(|(transaction_index, info)| {
+                    RichTransactionInfo::new(
+                        block_id,
+                        block.header().number(),
+                        info,
+                        transaction_index as u32,
+                        transaction_global_index
+                            .checked_add(transaction_index as u64)
+                            .expect("transaction_global_index overflow."),
+                    )
+                })
+                .collect(),
+        )?;
+
+        let txn_id_vec = transactions
+            .iter()
+            .map(|user_txn| user_txn.id())
+            .collect::<Vec<HashValue>>();
+        // save transactions
+        self.storage.save_transaction_batch(transactions)?;
+
+        // save block's transactions
+        self.storage
+            .save_block_transaction_ids(block_id, txn_id_vec)?;
+        self.storage
+            .save_block_txn_info_ids(block_id, txn_info_ids)?;
+        self.storage.commit_block(block.clone())?;
+        self.storage.save_block_info(block_info.clone())?;
+
+        self.storage.save_table_infos(txn_table_infos)?;
+        self.dag()
+            .ghost_dag_manager()
+            .update_k(epoch.max_uncles_per_block().try_into().unwrap());
+        match self
+            .dag()
+            .commit_trusted_block(header.to_owned(), Arc::new(verified_block.ghostdata))
+        {
+            anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
+            Err(e) => {
+                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
+                    info!("dag block already exist, ignore");
+                } else {
+                    return Err(e);
+                }
+            }
+        }
+        watch(CHAIN_WATCH_NAME, "n26");
+
+        Self::print_transaction_execution_info(&block);
+
+        Ok(ExecutedBlock { block, block_info })
+    }
+
+    fn print_transaction_execution_info(block: &Block) {
+        info!(
+            "block id: {:?}, number: {:?}, timestamp: {:?}, transaction len: {:?}",
+            block.id(),
+            block.header().number(),
+            block.header().timestamp(),
+            block.transactions().len(),
+        );
+    }
+
 
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(

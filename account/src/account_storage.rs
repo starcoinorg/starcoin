@@ -92,7 +92,7 @@ impl KeyCodec for GlobalSettingKey {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, Error> {
-        GlobalSettingKey::decode(data)
+        Self::decode(data)
     }
 }
 
@@ -102,7 +102,7 @@ impl ValueCodec for GlobalValue {
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        <Vec<AccountAddress>>::decode(data).map(|addresses| GlobalValue { addresses })
+        <Vec<AccountAddress>>::decode(data).map(|addresses| Self { addresses })
     }
 }
 
@@ -139,7 +139,7 @@ impl ValueCodec for SettingWrapper {
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        Ok(SettingWrapper(serde_json::from_slice(data)?))
+        Ok(Self(serde_json::from_slice(data)?))
     }
 }
 
@@ -157,7 +157,7 @@ impl ValueCodec for EncryptedPrivateKey {
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        Ok(EncryptedPrivateKey(data.to_vec()))
+        Ok(Self(data.to_vec()))
     }
 }
 

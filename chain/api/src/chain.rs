@@ -4,6 +4,7 @@
 use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_time_service::TimeService;
@@ -150,7 +151,6 @@ pub trait ChainReader {
         ghostdata: &starcoin_dag::types::ghostdata::GhostdagData,
         pruning_point: HashValue,
     ) -> Result<()>;
-    fn check_parents_ready(&self, block_header: &BlockHeader) -> bool;
 }
 
 pub trait ChainWriter {
