@@ -1,6 +1,7 @@
 use crate::move_vm_ext::StarcoinMoveResolver;
 use crate::{counters::TIMER, natives::starcoin_natives_with_builder};
 use bytes::Bytes;
+use move_binary_format::errors::VMError;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_core_types::{
     ident_str,
@@ -69,18 +70,20 @@ impl WarmVmCache {
                 starcoin_natives_with_builder(&mut native_builder),
                 vm_config,
             )?;
-            Self::warm_vm_up(&vm, resolver);
 
             // Not using LruCache because its `::get()` requires &mut self
             if cache_locked.len() >= WARM_VM_CACHE_SIZE {
                 cache_locked.clear();
             }
-            cache_locked.insert(id, vm.clone());
+
+            if let Ok(_) = Self::warm_vm_up(&vm, resolver) {
+                cache_locked.insert(id, vm.clone());
+            }
             Ok(vm)
         }
     }
 
-    fn warm_vm_up(vm: &MoveVM, resolver: &impl StarcoinMoveResolver) {
+    fn warm_vm_up(vm: &MoveVM, resolver: &impl StarcoinMoveResolver) -> Result<(), VMError> {
         #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["vm_warm_up"]);
 
@@ -91,10 +94,11 @@ impl WarmVmCache {
         //
         // Loading up `0x1::account` should be sufficient as this is the most common module
         // used for prologue, epilogue and transfer functionality.
-        let _ = vm.load_module(
+        vm.load_module(
             &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("account").to_owned()),
             resolver,
-        );
+        )
+        .map(|_| ())
     }
 }
 
