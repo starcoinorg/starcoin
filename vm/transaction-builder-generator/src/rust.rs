@@ -14,7 +14,7 @@ use starcoin_vm_types::transaction::{
     ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 
-use heck::{CamelCase, ShoutySnakeCase};
+use heck::{ToShoutySnakeCase, ToUpperCamelCase};
 use std::{
     collections::BTreeMap,
     io::{Result, Write},
@@ -147,7 +147,7 @@ where
                             "ScriptFunctionCall"
                         }
                         .to_string(),
-                        abi.name().to_camel_case(),
+                        abi.name().to_upper_camel_case(),
                     ],
                     common::prepare_doc_string(abi.doc()),
                 )
@@ -293,7 +293,7 @@ pub fn encode(self) -> TransactionPayload {{"#
         writeln!(
             self.out,
             "{0}{{{2}}} => encode_{1}_script{3}({2}),",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
             abi.name(),
             params,
             if is_script_fun { "_function" } else { "" },
@@ -488,7 +488,7 @@ TransactionPayload::ScriptFunction(ScriptFunction {{
         writeln!(
             self.out,
             "Some(ScriptFunctionCall::{} {{",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         self.out.indent();
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
@@ -541,7 +541,7 @@ TransactionPayload::ScriptFunction(ScriptFunction {{
         writeln!(
             self.out,
             "Some(ScriptCall::{} {{",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         self.out.indent();
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
