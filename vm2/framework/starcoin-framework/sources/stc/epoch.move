@@ -82,6 +82,7 @@ module starcoin_framework::epoch {
 
     const EUNREACHABLE: u64 = 19;
     const EINVALID_UNCLES_COUNT: u64 = 101;
+    const EINVALID_RATIO: u64 = 102;
 
     /// Initialization of the module.
     public fun initialize(account: &signer) {
@@ -112,36 +113,64 @@ module starcoin_framework::epoch {
         move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0, red_blocks: 0 });
     }
 
-    /// compute next block time_target.
+    /// compute next block time_target using DAG-based algorithm
     public fun compute_next_block_time_target(
         config: &ConsensusConfig,
         last_epoch_time_target: u64,
         epoch_start_time: u64,
         now_milli_second: u64,
-        start_block_number: u64,
-        end_block_number: u64,
-        total_uncles: u64
+        total_uncles: u64,
+        red_blocks: u64
     ): u64 {
-        let total_time = now_milli_second - epoch_start_time;
-        let blocks = end_block_number - start_block_number;
-        let avg_block_time = total_time / blocks;
-        let uncles_rate = total_uncles * THOUSAND / blocks;
-        let new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time /
-            (consensus_config::uncle_rate_target(config) + THOUSAND);
-        if (new_epoch_block_time_target > last_epoch_time_target * 2) {
-            new_epoch_block_time_target = last_epoch_time_target * 2;
-        };
-        if (new_epoch_block_time_target < last_epoch_time_target / 2) {
-            new_epoch_block_time_target = last_epoch_time_target / 2;
-        };
+        // blue_blocks: uncle blocks in this epoch (not on selected chain)
+        // red_blocks: red blocks in DAG (conflicting blocks)
+        // selected_count: number of blocks in the selected chain (epoch_block_count from config)
+        
+        let blue_blocks = total_uncles;
+        let selected_count = consensus_config::epoch_block_count(config);
         let min_block_time_target = consensus_config::min_block_time_target(config);
         let max_block_time_target = consensus_config::max_block_time_target(config);
-        if (new_epoch_block_time_target < min_block_time_target) {
-            new_epoch_block_time_target = min_block_time_target;
+        let k = consensus_config::base_max_uncles_per_block(config); // DAG width parameter (max uncle rate)
+        let ratio = consensus_config::uncle_rate_target(config); // Target uncle rate
+        
+        // Validate ratio
+        assert!(ratio >= 1 && ratio <= k, error::invalid_argument(EINVALID_RATIO));
+        
+        let duration = now_milli_second - epoch_start_time;
+        
+        let total_blue_count = blue_blocks + selected_count;
+        let total_block_count = total_blue_count + red_blocks;
+        let expected_blue_count = (selected_count * THOUSAND * k / ratio - selected_count * THOUSAND) / THOUSAND;
+        
+        let average_time = duration * THOUSAND / total_block_count;
+        
+        // Calculate target based on actual performance and blue/red ratio
+        let new_epoch_block_time_target = if (blue_blocks < expected_blue_count) {
+            average_time / 2 / THOUSAND
+        } else if (blue_blocks > expected_blue_count) {
+            average_time * 2 / THOUSAND
+        } else {
+            average_time / THOUSAND
         };
-        if (new_epoch_block_time_target > max_block_time_target) {
-            new_epoch_block_time_target = max_block_time_target;
+        
+        // Apply stability constraints (limit change to 50%-200% of last epoch)
+        let new_epoch_block_time_target = if (new_epoch_block_time_target > last_epoch_time_target * 2) {
+            last_epoch_time_target * 2
+        } else if (new_epoch_block_time_target < last_epoch_time_target / 2) {
+            last_epoch_time_target / 2
+        } else {
+            new_epoch_block_time_target
         };
+        
+        // Apply absolute bounds
+        let new_epoch_block_time_target = if (new_epoch_block_time_target < min_block_time_target) {
+            min_block_time_target
+        } else if (new_epoch_block_time_target > max_block_time_target) {
+            max_block_time_target
+        } else {
+            new_epoch_block_time_target
+        };
+        
         new_epoch_block_time_target
     }
 
@@ -176,9 +205,8 @@ module starcoin_framework::epoch {
                 last_epoch_time_target,
                 epoch_ref.start_time,
                 now_milli_seconds,
-                epoch_ref.start_block_number,
-                epoch_ref.end_block_number,
-                epoch_data.uncles
+                epoch_data.uncles,
+                epoch_data.red_blocks
             );
             let new_reward_per_block = consensus_config::do_compute_reward_per_block(
                 &config,

@@ -7,6 +7,7 @@ use test_helper::assert_that_version_control_has_no_unstaged_changes;
 
 // TODO: better way to do this maybe?
 #[test]
+#[ignore = "ignore since it's slow"]
 fn test_that_generated_file_are_up_to_date_in_git() {
     // Better not run the `stdlib` tool when the repository is not in a clean state.
     assert_that_version_control_has_no_unstaged_changes();

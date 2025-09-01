@@ -381,11 +381,11 @@ impl GenesisConfig {
 }
 
 static G_UNCLE_RATE_TARGET: u64 = 1;
-static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
-static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
+static G_DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 1000;
+static G_DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 48;
 static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static G_MIN_BLOCK_TIME_TARGET: u64 = 2000;
-static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
+static G_MIN_BLOCK_TIME_TARGET: u64 = 1000;
+static G_MAX_BLOCK_TIME_TARGET: u64 = 2000;
 pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 16;
 
 //for Private funding
@@ -618,7 +618,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 13,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
@@ -628,7 +628,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
-            strategy: 3, //ConsensusStrategy::CryptoNight.value(),
+            strategy: 1, //ConsensusStrategy::Argon.value()
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
             pruning_depth: G_PRUNING_DEPTH,
             pruning_finality: G_PRUNING_FINALITY,
