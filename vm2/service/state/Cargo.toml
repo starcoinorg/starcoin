@@ -5,9 +5,9 @@ futures = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
-starcoin-state-tree = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-types = { workspace = true }
 stest = { workspace = true }
