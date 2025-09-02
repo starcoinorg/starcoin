@@ -15,7 +15,7 @@ use starcoin_config::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_storage::Store;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;

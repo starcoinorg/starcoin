@@ -20,8 +20,8 @@ use starcoin_dag::consensusdb::schema::ValueCodec;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
-use starcoin_storage::Storage as Storage2;
 use starcoin_storage::Store;
+use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::{HashMap, HashSet};
@@ -212,7 +212,7 @@ pub struct BlockCollector<N, H> {
     peer_provider: N,
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
@@ -266,7 +266,7 @@ where
         peer_provider: N,
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {

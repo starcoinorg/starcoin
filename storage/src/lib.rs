@@ -36,6 +36,7 @@ use std::sync::Arc;
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
 pub use version::StorageVersion;
+pub use vm2::{Storage2, Store2};
 
 pub mod accumulator;
 pub mod batch;

@@ -16,8 +16,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ServiceContext, ServiceRef};
-use starcoin_storage::Storage as Storage2;
-use starcoin_storage::Store;
+use starcoin_storage::{Store, Store2};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::multi_state::MultiState;
@@ -45,7 +44,7 @@ where
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
@@ -116,7 +115,7 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
@@ -156,7 +155,7 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
@@ -229,7 +228,7 @@ where
         &self.main
     }
 
-    pub fn get_storage2(&self) -> Arc<Storage2> {
+    pub fn get_storage2(&self) -> Arc<dyn Store2> {
         self.storage2.clone()
     }
 
@@ -530,11 +529,11 @@ where
             ghostdata.mergeset_reds.len()
         );
         let red_blocks = ghostdata
-        .mergeset_reds
-        .iter()
-        .map(|id| Ok(self.main.get_storage().get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
-        .collect::<Result<Vec<Block>>>()?
-        .into_iter().sorted_by(|a, b| {
+            .mergeset_reds
+            .iter()
+            .map(|id| Ok(self.main.get_storage().get_block_by_hash(*id)?.ok_or_else(|| format_err!("cannot find the block by id {:?} in find_red_blocks for selecting new head", id))?))
+            .collect::<Result<Vec<Block>>>()?
+            .into_iter().sorted_by(|a, b| {
             match a.header().number().cmp(&b.header().number()) {
                 std::cmp::Ordering::Equal => a.header().id().cmp(&b.header().id()),
                 other => other,

@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
+use starcoin_storage::{storage::StorageInstance2, Storage2};
 use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;

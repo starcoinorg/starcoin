@@ -41,7 +41,7 @@ use starcoin_storage::storage::DEFAULT_UPGRADE_BATCH_SIZE;
 use starcoin_storage::{
     block_info::BlockInfoStore, cache_storage::CacheStorage, db_storage::DBStorage,
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
-    Storage,
+    Storage, Storage2,
 };
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
@@ -283,13 +283,10 @@ impl NodeService {
         storage_instance.check_upgrade(DEFAULT_UPGRADE_BATCH_SIZE)?;
 
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
-        let storage = Arc::new(Storage::new(storage_instance.clone())?);
-        let storage2 = Arc::new(Storage::new(storage_instance)?);
+        let storage = Arc::new(Storage::new(storage_instance)?);
+        let storage2 = Arc::new(Storage2(storage.clone()));
         registry.put_shared(storage.clone()).await?;
-        // Also share storage2 as Arc<dyn Store2> for PruningPointService
-        registry
-            .put_shared(storage.clone() as Arc<dyn starcoin_storage::Store>)
-            .await?;
+        registry.put_shared(storage2.clone()).await?;
 
         // Initialize DAG
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -313,7 +310,6 @@ impl NodeService {
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
             storage.clone(),
-            storage2.clone(),
             dag.clone(),
             config.data_dir(),
         )?;

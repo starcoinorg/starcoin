@@ -15,7 +15,7 @@ pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;

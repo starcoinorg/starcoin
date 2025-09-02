@@ -25,7 +25,7 @@ use starcoin_service_registry::{
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::contract_event::StcContractEvent;

@@ -5,8 +5,8 @@ use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
-use starcoin_storage::Storage as Storage2;
 use starcoin_storage::Store;
+use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
@@ -32,7 +32,7 @@ where
     ancestor: BlockIdAndNumber,
     target: SyncTarget,
     storage: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     block_event_handle: H,
     fetcher: Arc<F>,
     event_handle: Arc<dyn TaskEventHandle>,
@@ -53,7 +53,7 @@ where
         ancestor: BlockIdAndNumber,
         target: SyncTarget,
         storage: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         block_event_handle: H,
         fetcher: Arc<F>,
         event_handle: Arc<dyn TaskEventHandle>,

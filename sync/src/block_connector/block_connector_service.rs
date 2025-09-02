@@ -26,7 +26,7 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Storage2};
 use starcoin_sync_api::SelectHeaderState;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -160,7 +160,7 @@ where
         let bus = ctx.bus_ref().clone();
         let txpool = ctx.get_shared::<TransactionPoolServiceT>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let storage2 = ctx.get_shared::<Arc<starcoin_storage::Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;

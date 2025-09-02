@@ -25,7 +25,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,

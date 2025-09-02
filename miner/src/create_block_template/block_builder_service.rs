@@ -20,7 +20,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
-use starcoin_storage::{Storage as Storage2, Store as Store2};
+use starcoin_storage::{Storage2, Store2};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;

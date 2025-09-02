@@ -12,7 +12,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage;
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_sync_api::{PeerNewBlock, SelectHeaderState};
 use starcoin_types::block::Block;
 use starcoin_types::consensus_header::ConsensusHeader;

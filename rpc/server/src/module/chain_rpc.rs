@@ -22,7 +22,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::Storage as Storage2;
+use starcoin_storage::Storage2;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;

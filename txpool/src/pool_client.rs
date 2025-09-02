@@ -5,7 +5,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_storage::Store as Store2;
+use starcoin_storage::Store2;
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
     MultiTransactionError,

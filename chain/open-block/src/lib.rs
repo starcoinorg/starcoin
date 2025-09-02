@@ -12,8 +12,7 @@ use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetr
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::Store;
-use starcoin_storage::Store as Store2;
+use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Version;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{

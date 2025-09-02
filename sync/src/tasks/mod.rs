@@ -21,7 +21,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{RangeInLocation, MAX_BLOCK_IDS_REQUEST_SIZE};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
-use starcoin_storage::Store;
+use starcoin_storage::{Store, Store2};
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_txpool::TxPoolService;
@@ -739,7 +739,7 @@ pub fn full_sync_task<H, A, F, N>(
     skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
-    storage2: Arc<starcoin_storage::Storage>,
+    storage2: Arc<dyn Store2>,
     block_event_handle: H,
     fetcher: Arc<F>,
     ancestor_event_handle: A,

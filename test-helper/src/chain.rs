@@ -14,7 +14,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{
-    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage,
+    cache_storage::CacheStorage, db_storage::DBStorage, storage::StorageInstance, Storage, Storage2,
 };
 use starcoin_types::startup_info::ChainInfo;
 use std::{path::Path, path::PathBuf, sync::Arc};
@@ -37,12 +37,11 @@ pub fn gen_chain_for_test_and_return_statedb(
 pub fn init_storage_for_test_with_temp_dir(
     net: &ChainNetwork,
     temp_dir: &Path,
-) -> Result<(Arc<Storage>, Arc<Storage>, ChainInfo, Genesis, BlockDAG)> {
+) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis, BlockDAG)> {
     debug!("init storage by genesis for test with temp dir.");
 
     // Create temporary directory
     let db_path = temp_dir.join("starcoindb");
-    let db_path2 = temp_dir.join("starcoindb2");
 
     // Create storage instances with temporary directories
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -50,10 +49,7 @@ pub fn init_storage_for_test_with_temp_dir(
         DBStorage::new(&db_path, RocksdbConfig::default(), None)?,
     ))?);
 
-    let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        CacheStorage::new_with_capacity(DEFAULT_CACHE_SIZE, None), // Small cache for testing
-        DBStorage::new(&db_path2, RocksdbConfig::default(), None)?,
-    ))?);
+    let storage2 = Arc::new(Storage2(storage.clone()));
 
     // Load or build genesis
     let genesis = Genesis::load_or_build(net)?;

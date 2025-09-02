@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::storage::{CodecKVStore, CodecWriteBatch};
-use crate::Storage;
+use crate::{IntoSuper, Storage};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
-pub struct StorageV2(Storage);
+#[derive(Debug)]
+pub struct Storage2(pub Arc<Storage>);
 
-impl StateNodeStore for StorageV2 {
+impl StateNodeStore for Storage2 {
     fn get(&self, hash: &HashValue) -> anyhow::Result<Option<StateNode>> {
         self.deref().state_node_storage2.get(*hash)
     }
@@ -25,7 +27,11 @@ impl StateNodeStore for StorageV2 {
     }
 }
 
-impl Deref for StorageV2 {
+pub trait Store2: StateNodeStore + IntoSuper<dyn StateNodeStore> {}
+
+impl Store2 for Storage2 {}
+
+impl Deref for Storage2 {
     type Target = Storage;
 
     fn deref(&self) -> &Self::Target {
