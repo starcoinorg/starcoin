@@ -76,7 +76,7 @@ impl WarmVmCache {
                 cache_locked.clear();
             }
 
-            if let Ok(_) = Self::warm_vm_up(&vm, resolver) {
+            if Self::warm_vm_up(&vm, resolver).is_ok() {
                 cache_locked.insert(id, vm.clone());
             }
             Ok(vm)
@@ -97,8 +97,9 @@ impl WarmVmCache {
         vm.load_module(
             &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("account").to_owned()),
             resolver,
-        )
-        .map(|_| ())
+        )?;
+
+        Ok(())
     }
 }
 
