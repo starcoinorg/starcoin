@@ -323,11 +323,6 @@ impl BaseConfig {
         data_dir: &Path,
         genesis_config_name: Option<String>,
     ) -> Result<(GenesisConfig, GenesisConfig2)> {
-        println!(
-            "Loading genesis config, network: {:?}, dir: {:?}",
-            id, data_dir
-        );
-
         let config_path = data_dir.join(G_GENESIS_CONFIG_FILE_NAME);
         let config_path2 = data_dir.join(G_GENESIS_CONFIG_FILE_NAME_2);
         // todo: handle the case with only one genesis_config missed
