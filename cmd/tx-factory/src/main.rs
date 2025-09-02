@@ -552,7 +552,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     association_address(),
                     addr_vec.clone(),
-                    100000000,
+                    10000000000,
                     1,
                     expiration_timestamp,
                 )?;
