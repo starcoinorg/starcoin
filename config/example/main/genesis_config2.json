@@ -270,6 +270,38 @@
           28
         ],
         [
+          "instr.vec_pack.per_elem",
+          85
+        ],
+        [
+          "instr.vec_len.base",
+          99
+        ],
+        [
+          "instr.vec_imm_borrow.base",
+          1335
+        ],
+        [
+          "instr.vec_mut_borrow.base",
+          1903
+        ],
+        [
+          "instr.vec_push_back.per_abs_mem_unit",
+          54
+        ],
+        [
+          "instr.vec_pop_back.base",
+          228
+        ],
+        [
+          "instr.vec_unpack.per_expected_elem",
+          573
+        ],
+        [
+          "instr.vec_swap.base",
+          1437
+        ],
+        [
           "instr.ld_u16",
           3
         ],
@@ -370,6 +402,110 @@
           65
         ],
         [
+          "starcoin_natives.hash.ripemd160.per_byte",
+          65
+        ],
+        [
+          "starcoin_natives.signature.ec_recover.per_byte",
+          129
+        ],
+        [
+          "starcoin_natives.u256.from_bytes.per_byte",
+          3
+        ],
+        [
+          "starcoin_natives.u256.add.base",
+          5
+        ],
+        [
+          "starcoin_natives.u256.sub.base",
+          5
+        ],
+        [
+          "starcoin_natives.u256.mul.base",
+          5
+        ],
+        [
+          "starcoin_natives.u256.div.base",
+          11
+        ],
+        [
+          "starcoin_natives.u256.rem.base",
+          5
+        ],
+        [
+          "starcoin_natives.u256.pow.base",
+          9
+        ],
+        [
+          "move_stdlib.vector.append.legacy_per_abstract_memory_unit",
+          41
+        ],
+        [
+          "move_stdlib.vector.remove.legacy_per_abstract_memory_unit",
+          21
+        ],
+        [
+          "move_stdlib.vector.reverse.legacy_per_abstract_memory_unit",
+          11
+        ],
+        [
+          "table.new_table_handle.base",
+          5
+        ],
+        [
+          "table.add_box.per_byte_serialized",
+          5
+        ],
+        [
+          "table.borrow_box.per_byte_serialized",
+          11
+        ],
+        [
+          "table.remove_box.per_byte_serialized",
+          9
+        ],
+        [
+          "table.contains_box.per_byte_serialized",
+          41
+        ],
+        [
+          "table.destroy_empty_box.base",
+          21
+        ],
+        [
+          "table.drop_unchecked_box.base",
+          74
+        ],
+        [
+          "move_stdlib.string.check_utf8.per_byte",
+          5
+        ],
+        [
+          "move_stdlib.string.sub_string.per_byte",
+          5
+        ],
+        [
+          "move_stdlib.string.is_char_boundary.base",
+          5
+        ],
+        [
+          "move_stdlib.string.index_of.per_byte_searched",
+          5
+        ],
+        [
+          "starcoin_natives.frombcs.base",
+          5
+        ],
+        [
+          "starcoin_natives.secp256k1.base",
+          5
+        ],
+        [
+          "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit",
+          5
+        ],
+        [
           "nursery.debug.print.base_cost",
           1
         ],
@@ -427,7 +563,7 @@
         ],
         [
           "txn.max_transaction_size_in_bytes",
-          60000
+          131072
         ],
         [
           "txn.gas_unit_scaling_factor",
@@ -1761,7 +1897,7 @@
     "module_publishing_allowed": false
   },
   "consensus_config": {
-    "uncle_rate_target": 240,
+    "uncle_rate_target": 1,
     "base_block_time_target": 10000,
     "base_reward_per_block": 10000000000,
     "base_reward_per_uncle_percent": 10,
@@ -1769,9 +1905,12 @@
     "base_block_difficulty_window": 24,
     "min_block_time_target": 5000,
     "max_block_time_target": 60000,
-    "base_max_uncles_per_block": 2,
+    "base_max_uncles_per_block": 16,
     "base_block_gas_limit": 50000000,
-    "strategy": 3
+    "strategy": 3,
+    "max_transaction_per_block": 700,
+    "pruning_depth": 185798,
+    "pruning_finality": 86400
   },
   "association_key_pair": [
     null,
@@ -1779,7 +1918,7 @@
   ],
   "genesis_key_pair": null,
   "stdlib_version": {
-    "Version": 4
+    "Version": 12
   },
   "dao_config": {
     "voting_delay": 3600000,
@@ -1788,6 +1927,5 @@
     "min_action_delay": 86400000
   },
   "time_service_type": "RealTimeService",
-  "transaction_timeout": 86400,
-  "dag_effective_height": 18446744073709551615
+  "transaction_timeout": 86400
 }
