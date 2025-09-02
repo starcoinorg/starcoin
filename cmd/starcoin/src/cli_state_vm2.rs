@@ -225,6 +225,40 @@ impl CliStateVM2 {
         self.execute_transaction(raw_txn, txn_opts.dry_run, txn_opts.blocking)
     }
 
+    pub fn build_and_detach_execute_transaction(
+        &self,
+        txn_opts: TransactionOptions,
+        payload: TransactionPayload,
+    ) -> Result<()> {
+        let (raw_txn, future_transaction) = self.build_transaction(
+            txn_opts
+                .sender
+                .map(|addr| AccountAddress::new(addr.into_bytes())),
+            txn_opts.sequence_number,
+            txn_opts.gas_unit_price,
+            txn_opts.max_gas_amount,
+            txn_opts.expiration_time_secs,
+            payload,
+            txn_opts.gas_token,
+        )?;
+        if future_transaction {
+            //TODO figure out more graceful method to handle future transaction.
+            bail!("there is transaction from sender({}) in the txpool, please wait it to been executed or use sequence_number({}) to replace it.",
+                raw_txn.sender(), raw_txn.sequence_number() - 1);
+        }
+        self.detach_execute_transaction(raw_txn)
+    }
+
+    pub fn next_sequence_number2(&self, address: AccountAddress) -> Result<u64> {
+        match self.client.next_sequence_number2_in_txpool(address)? {
+            Some(sequence_number) => {
+                info!("get sequence_number {} from txpool", sequence_number);
+                Ok(sequence_number)
+            }
+            None => Ok(self.get_account_resource(address)?.sequence_number()),
+        }
+    }
+
     fn build_transaction(
         &self,
         sender: Option<AccountAddress>,
@@ -277,6 +311,72 @@ impl CliStateVM2 {
     pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
         let state_reader = self.client().state_reader2(StateRootOption::Latest)?;
         playground::dry_run_explain(&state_reader, txn, None)
+    }
+
+    pub fn detach_execute_transaction(&self, raw_txn: RawUserTransaction) -> Result<()> {
+        let sender = self.get_account(raw_txn.sender())?;
+        let public_key = sender.public_key;
+        let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
+
+        match &public_key {
+            AccountPublicKey::Single(_) => {
+                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                self.client.submit_hex_transaction2(signed_txn_hex)?;
+                return Ok(());
+            }
+
+            AccountPublicKey::Multi(multisig_public_key) => {
+                let my_signatures =
+                    if let TransactionAuthenticator::MultiEd25519 { signature, .. } =
+                        signed_txn.authenticator()
+                    {
+                        MultiEd25519SignatureShard::new(signature, *multisig_public_key.threshold())
+                    } else {
+                        unreachable!()
+                    };
+
+                // merge my signatures with existing signatures of other participants.
+                let merged_signatures = {
+                    let mut signatures = vec![];
+                    signatures.push(my_signatures);
+                    MultiEd25519SignatureShard::merge(signatures)?
+                };
+                eprintln!(
+                    "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
+                    sender.address,
+                    merged_signatures.threshold(),
+                    merged_signatures.signatures().len()
+                );
+
+                let signatures_is_enough = merged_signatures.is_enough();
+
+                if !signatures_is_enough {
+                    let err = format!(
+                        "still require {} signatures",
+                        merged_signatures.threshold() as usize
+                            - merged_signatures.signatures().len()
+                    );
+                    eprintln!("{}", err);
+                    return Err(anyhow!(err));
+                }
+
+                eprintln!(
+                    "enough signatures collected for the multisig txn, txn can be submitted now"
+                );
+                // construct the signed txn with merged signatures.
+                let signed_txn = {
+                    let authenticator = TransactionAuthenticator::MultiEd25519 {
+                        public_key: multisig_public_key.clone(),
+                        signature: merged_signatures.into(),
+                    };
+                    SignedUserTransaction::new(signed_txn.into_raw_transaction(), authenticator)
+                };
+
+                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                self.client.submit_hex_transaction2(signed_txn_hex)?;
+                return Ok(());
+            }
+        };
     }
 
     pub fn execute_transaction(

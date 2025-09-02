@@ -35,6 +35,9 @@ pub struct GetCoinOpt {
     #[clap(name = "address_or_receipt")]
     /// The account's address or receipt to send coin, if absent, send to the default account.
     address_or_receipt: Option<AccountAddress>,
+
+    #[clap(short = 'r', default_value = "1")]
+    repeat: usize,
 }
 
 pub struct GetCoinCommand;
@@ -59,24 +62,32 @@ impl CommandAction for GetCoinCommand {
             ctx.state().vm2()?.default_account()?.address
         };
 
-        let transaction_info = if net.is_test_or_dev() {
+        if net.is_test_or_dev() {
             let sender = association_address();
-            let txn_opt = TransactionOptions {
+            let mut txn_opt = TransactionOptions {
                 sender: Some(AccountAddressV1::new(sender.into_bytes())),
                 blocking: !opt.no_blocking,
                 ..Default::default()
             };
             account_client.unlock_account(sender, "".to_string(), Duration::from_secs(300))?;
-            state
-                .build_and_execute_transaction(
-                    txn_opt,
-                    encode_transfer_script_by_token_code(
-                        to,
-                        opt.amount.scaling(),
-                        G_STC_TOKEN_CODE.clone(),
-                    ),
-                )?
-                .get_transaction_info()
+            let payload = encode_transfer_script_by_token_code(
+                to,
+                opt.amount.scaling(),
+                G_STC_TOKEN_CODE.clone(),
+            );
+
+            if opt.repeat > 1 {
+                let sequence_number = state.next_sequence_number2(sender)?;
+                // skip dry run and directly submit txns to server
+                for offset in 0..opt.repeat {
+                    txn_opt.sequence_number = Some(sequence_number + offset as u64);
+                    state.build_and_detach_execute_transaction(txn_opt.clone(), payload.clone())?;
+                }
+            } else {
+                state
+                    .build_and_execute_transaction(txn_opt, payload)?
+                    .get_transaction_info();
+            }
         } else {
             bail!(
                 "The network {} does not support the get-coin command, please go to https://faucet.starcoin.org/",
@@ -84,6 +95,6 @@ impl CommandAction for GetCoinCommand {
             );
         };
 
-        Ok(transaction_info)
+        Ok(None)
     }
 }
