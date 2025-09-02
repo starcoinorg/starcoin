@@ -1,8 +1,10 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
+use futures::channel::mpsc;
 use futures::executor::block_on;
+use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
@@ -16,44 +18,42 @@ use starcoin_dag::consensusdb::schemadb::RelationsStoreReader;
 use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
-use starcoin_open_block::OpenedBlock;
-use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
-};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::MinerResponse;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockTemplate, Version},
+    block::{Block, BlockBody, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
 };
 use std::sync::RwLock;
 
+use crate::create_block_template::process_transaction::ProcessTransactionData;
 use crate::NewHeaderChannel;
 
 use super::metrics::BlockBuilderMetrics;
+use super::process_transaction::ProcessHeaderTemplate;
 
 enum MergesetIncreaseResult {
     Accepted { increase_size: u64 },
     Rejected { new_candidate: HashValue },
 }
 
-#[derive(Debug)]
-pub enum BlockTemplateError {
-    NoReceivedHeader,
-    Other(anyhow::Error),
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockTemplateRequest;
 
-impl ServiceRequest for BlockTemplateRequest {
-    type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
-}
+static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_cpus::get())
+        .thread_name(|index| format!("parallel_executor_{}", index))
+        .build()
+        .expect("failed to build rayon thread pool for building block service")
+});
 
 #[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
@@ -64,6 +64,7 @@ pub struct BlockTemplateResponse {
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
     new_header_channel: NewHeaderChannel,
+    storage: Arc<Storage>,
 }
 
 enum ReceiveHeader {
@@ -132,7 +133,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let inner = Inner::new(
             current_block_header,
-            storage,
+            storage.clone(),
             txpool,
             config.miner.block_gas_limit,
             miner_account,
@@ -145,19 +146,79 @@ impl ServiceFactory<Self> for BlockBuilderService {
         Ok(Self {
             inner,
             new_header_channel,
+            storage,
         })
     }
 }
 
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.set_mailbox_capacity(1024);
+
         ctx.subscribe::<DefaultAccountChangeEvent>();
+        ctx.subscribe::<BlockTemplateRequest>();
+
+        let (sender, receiver) = mpsc::unbounded::<ProcessHeaderTemplate>();
+        self.inner.sender = Some(sender);
+        ctx.add_stream(receiver);
+
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
+        ctx.unsubscribe::<BlockTemplateRequest>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, ProcessHeaderTemplate> for BlockBuilderService {
+    fn handle_event(
+        &mut self,
+        process_header_template: ProcessHeaderTemplate,
+        ctx: &mut ServiceContext<Self>,
+    ) {
+        let state_root = process_header_template.transaction_outputs.state_root;
+
+        let (uncles, _uncle_len) = if !process_header_template.uncles.is_empty() {
+            let uncle_len = process_header_template.uncles.len() as u64;
+            (Some(process_header_template.uncles), uncle_len)
+        } else {
+            (None, 0)
+        };
+        let body = BlockBody::new(
+            process_header_template
+                .transaction_outputs
+                .included_user_txns,
+            uncles,
+        );
+
+        let block_info = self
+            .storage
+            .get_block_info(process_header_template.header.id())
+            .expect("get block info error")
+            .expect("block info is none");
+
+        let version = 1;
+        let block_template = BlockTemplate::new(
+            block_info.block_accumulator_info.accumulator_root,
+            process_header_template
+                .transaction_outputs
+                .txn_accumulator_root,
+            state_root,
+            process_header_template.transaction_outputs.gas_used,
+            body,
+            process_header_template.header.chain_id(),
+            process_header_template.difficulty,
+            process_header_template.strategy,
+            process_header_template.block_metadata,
+            version,
+            process_header_template.pruning_point,
+        );
+        ctx.broadcast(BlockTemplateResponse {
+            parent: process_header_template.header,
+            template: block_template,
+        });
     }
 }
 
@@ -174,44 +235,44 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
-impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
-    fn handle(
-        &mut self,
-        _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<Self>,
-    ) -> <BlockTemplateRequest as ServiceRequest>::Response {
+impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
+    fn handle_event(&mut self, _msg: BlockTemplateRequest, _ctx: &mut ServiceContext<Self>) {
         let header_version = self
             .inner
             .config
             .net()
             .genesis_config()
             .block_header_version;
-        let _ = self.receive_header();
-        self.inner
-            .create_block_template(header_version)
-            .map_err(BlockTemplateError::Other)
+        let result = match self.receive_header() {
+            ReceiveHeader::NotReceived | ReceiveHeader::Received => {
+                self.inner.create_block_template(header_version)
+            }
+        };
+
+        if let Err(err) = result {
+            error!("Block template request failed: {:?}", err);
+        }
     }
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction>;
+    fn get_txns_with_state(&self, max: u64, state_root: HashValue) -> Vec<SignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns_with_header(&self, _max: u64, _header: &BlockHeader) -> Vec<SignedUserTransaction> {
+    fn get_txns_with_state(&self, _max: u64, _state_root: HashValue) -> Vec<SignedUserTransaction> {
         vec![]
     }
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns_with_header(&self, max: u64, header: &BlockHeader) -> Vec<SignedUserTransaction> {
-        self.get_pending_with_header(max, None, header)
+    fn get_txns_with_state(&self, max: u64, state_root: HashValue) -> Vec<SignedUserTransaction> {
+        self.get_pending_with_state(max, None, state_root)
     }
-
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
         self.remove_txn(txn_hash, true);
     }
@@ -229,11 +290,13 @@ pub struct Inner<P> {
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+
+    pub sender: Option<mpsc::UnboundedSender<ProcessHeaderTemplate>>,
 }
 
 impl<P> Inner<P>
 where
-    P: TemplateTxProvider + TxPoolSyncService,
+    P: TemplateTxProvider + TxPoolSyncService + 'static,
 {
     pub fn new(
         header: BlockHeader,
@@ -260,6 +323,7 @@ where
             metrics,
             vm_metrics,
             genesis_hash,
+            sender: None,
         })
     }
 
@@ -360,7 +424,8 @@ where
         ))
     }
 
-    pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(&mut self, _version: Version) -> Result<()> {
+        info!("[BlockProcess] now create the template");
         let (
             MinerResponse {
                 previous_header,
@@ -391,14 +456,6 @@ where
             .map_err(|e| format_err!("Failed to acquire read lock for miner_account: {:?}", e))?
             .address();
 
-        if now_millis <= previous_header.timestamp() {
-            info!(
-                "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
-                previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
-            );
-            now_millis = previous_header.timestamp() + 1;
-        }
-
         let blue_blocks = ghostdata
             .mergeset_blues
             .iter()
@@ -411,29 +468,17 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
-        let red_blocks = ghostdata
-            .mergeset_reds
-            .iter()
-            .map(|hash| self.storage.get_block_by_hash(*hash))
-            .collect::<Result<Vec<Option<Block>>>>()?
-            .into_iter()
-            .map(|op_block_header| {
-                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
-            })
-            .collect::<Result<Vec<Block>>>()?;
-
-        let _ = self.tx_provider.add_txns(
-            red_blocks
-                .into_iter()
-                .flat_map(|block| block.body.transactions)
-                .collect(),
-        );
-
         let uncles = blue_blocks
             .iter()
             .map(|block| block.header().clone())
             .collect::<Vec<_>>();
-
+        if now_millis <= previous_header.timestamp() {
+            info!(
+                        "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
+                        previous_header.timestamp(), now_millis, previous_header.timestamp() - now_millis,
+                    );
+            now_millis = previous_header.timestamp() + 1;
+        }
         info!(
             "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, uncles len: {}, timestamp: {}",
             previous_header,
@@ -443,124 +488,92 @@ where
             now_millis,
         );
 
-        let header_version = 1;
+        let txn = self.fetch_transactions(previous_header.state_root(), &blue_blocks, max_txns)?;
 
-        let mut opened_block = OpenedBlock::new(
-            self.storage.clone(),
-            previous_header.clone(),
-            block_gas_limit,
-            author,
+        let storage = self.storage.clone();
+        let selected_header = previous_header.id();
+        let txn_provider = self.tx_provider.clone();
+        let vm_metrics = self.vm_metrics.clone();
+        let mut sender = self.sender.clone();
+
+        let block_meta = BlockMetadata::new_with_parents(
+            previous_header.id(),
             now_millis,
-            uncles,
-            difficulty,
-            strategy,
-            self.vm_metrics.clone(),
+            author,
+            None,
+            uncles.len() as u64,
+            previous_header.number() + 1,
+            previous_header.chain_id(),
+            previous_header.gas_used(),
             selected_parents,
-            header_version,
-            pruning_point,
             ghostdata.mergeset_reds.len() as u64,
-            main.into_statedb(),
-        )?;
-
-        let txn = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
-        info!("[BlockProcess] txns len: {}", txn.len());
-        let excluded_txns = opened_block.push_txns(txn)?;
-        for invalid_txn in &excluded_txns.discarded_txns {
-            self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        }
-        info!(
-            "[BlockProcess] discarded len: {}, untouched txns len: {}",
-            excluded_txns.discarded_txns.len(),
-            excluded_txns.untouched_txns.len()
         );
 
-        let template = opened_block.finalize()?;
-        Ok(BlockTemplateResponse {
-            parent: previous_header,
-            template,
-        })
+        // the data pass to
+        RAYON_EXEC_POOL.spawn(move || {
+            let process_trans = ProcessTransactionData::new(
+                storage,
+                selected_header,
+                Arc::new(main.into_statedb()),
+                txn_provider,
+                txn,
+                block_gas_limit,
+                0,
+                block_meta.clone(),
+                vm_metrics,
+            )
+            .expect("failed to init process transaction");
+
+            let result = process_trans
+                .process()
+                .expect("failed to process transaction");
+
+            sender
+                .as_mut()
+                .unwrap()
+                .start_send(ProcessHeaderTemplate {
+                    header: previous_header,
+                    uncles,
+                    difficulty,
+                    strategy,
+                    transaction_outputs: result,
+                    block_metadata: block_meta,
+                    pruning_point,
+                })
+                .expect("failed to send result");
+        });
+
+        Ok(())
     }
 
     fn fetch_transactions(
         &self,
-        selected_header: &BlockHeader,
+        state_root: HashValue,
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<Vec<SignedUserTransaction>> {
-        let pending_transactions = self
-            .tx_provider
-            .get_txns_with_header(max_txns, selected_header);
+        let mut pending_transactions = self.tx_provider.get_txns_with_state(max_txns, state_root);
 
+        info!(
+            "[CreateBlockTemplate] pending transactions len: {}",
+            pending_transactions.len()
+        );
         if pending_transactions.len() >= max_txns as usize {
             return Ok(pending_transactions);
         }
 
-        let mut pending_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        pending_transactions.into_iter().for_each(|transaction| {
-            pending_transaction_map
-                .entry(transaction.sender())
-                .or_default()
-                .push(transaction);
-        });
-
-        let mut uncle_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
         blue_blocks.iter().for_each(|block| {
             block.transactions().iter().for_each(|transaction| {
-                uncle_transaction_map
-                    .entry(transaction.sender())
-                    .or_default()
-                    .push(transaction.clone());
+                pending_transactions.push(transaction.clone());
             })
         });
 
-        for transactions in uncle_transaction_map.values_mut() {
-            if transactions.len() <= 1 {
-                continue;
-            }
-
-            let mut index = 1;
-            while index < transactions.len() {
-                if transactions[index].sequence_number()
-                    != transactions[index - 1].sequence_number() + 1
-                {
-                    break;
-                }
-                index += 1;
-            }
-            transactions.truncate(index);
-        }
-
-        for (sender, uncle_transactions) in uncle_transaction_map.iter() {
-            if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
-                let pending_last_seq = pending_transactions
-                    .last()
-                    .expect("transaction not found in pending transactions")
-                    .sequence_number();
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
-                {
-                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
-                }
-            } else if let Some(next_seq) = self
-                .tx_provider
-                .next_sequence_number_with_header(*sender, selected_header)
-            {
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == next_seq)
-                {
-                    pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
-                }
-            }
-        }
-
-        Ok(pending_transaction_map
-            .iter()
-            .flat_map(|(_sender, transactions)| transactions.clone())
-            .collect())
+        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
+        info!("[CreateBlockTemplate] after adding transactions of blue blocks pending transactions len: {}", pending_transactions.len());
+        Ok(pending_transactions)
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

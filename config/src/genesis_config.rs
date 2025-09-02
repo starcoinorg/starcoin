@@ -754,8 +754,8 @@ static G_DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
-pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
-pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 700;
+pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 500_040_000; //must big than maximum_number_of_gas_units
+pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 1200;
 
 pub static G_PRUNING_DEPTH: u64 = 17280;
 pub static G_PRUNING_FINALITY: u64 = 8640;
@@ -935,7 +935,9 @@ pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Latest;
     //let stdlib_version = StdlibVersion::Version(12);
-    let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
+    // let association_public_key = "068b8493d8c533fd08568429274e49639518a8517f6ab03a0f0cc37edcbdfdd0071855fd941dbcefeb9e4da9f417c7b0f39f73226c9310d39881ae13b45017fa67cc9cb01386e9f5e321b078d4d3a2925b520f955cf7dfd9f6891de366c186ce6ec4a3d5a1c6c795126e5ee1222e23f9a28266c07ecce3e2cd19c6e123b465c091bc45a1fa7f778c66c37af15f3e81ff511e69ff0481bcfaab7b4673f469a3d29760cacf5dd0105a541b5f50720b9577a4c3ff7475554afedbf6a884777f9db4c461fe9aca18df90ed31ee967fe49ed47756311eaa2a6042b7aff1422e48643dc7a0004e0ca3e6b8e548c80d76eeb88e84a82f6b863a1346eabadfe4d5d9be86f98fa72c63f1e1a3f193d4ff71e10dbf364200b221e1a7f71cfab55cc7f7ad2a05";
+    let (association_private_key, association_public_key) = genesis_multi_key_pair();
+    let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     let mut gas_constant = G_TEST_GAS_CONSTANTS.clone();
     gas_constant.min_price_per_gas_unit = 1;
@@ -970,11 +972,10 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
         },
         association_key_pair: (
-            None,
-            MultiEd25519PublicKey::from_encoded_string(association_public_key)
-                .expect("create multi public key must success."),
+            Some(Arc::new(association_private_key)),
+            association_public_key,
         ),
-        genesis_key_pair: None,
+        genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version,
         dao_config: DaoConfig {

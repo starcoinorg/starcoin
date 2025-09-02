@@ -79,10 +79,10 @@ impl BlockRelayer {
         network: NetworkServiceRef,
         executed_block: Arc<ExecutedBlock>,
     ) {
-        if !self.is_nearly_synced() {
-            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
-            return;
-        }
+        // if !self.is_nearly_synced() {
+        //     debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
+        //     return;
+        // }
         let compact_block = executed_block.block().clone().into();
         let compact_block_msg =
             CompactBlockMessage::new(compact_block, executed_block.block_info.clone());

@@ -50,6 +50,9 @@ serde = { workspace = true }
 byteorder = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 crossbeam = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
