@@ -689,7 +689,7 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
 
 struct VectorElementVisitor<'a>(&'a TypeInstantiation);
 
-impl<'d, 'a> serde::de::Visitor<'d> for VectorElementVisitor<'a> {
+impl<'d> serde::de::Visitor<'d> for VectorElementVisitor<'_> {
     type Value = Vec<serde_json::Value>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -710,7 +710,7 @@ impl<'d, 'a> serde::de::Visitor<'d> for VectorElementVisitor<'a> {
 
 struct StructFieldVisitor<'a>(&'a [FieldABI]);
 
-impl<'d, 'a> serde::de::Visitor<'d> for StructFieldVisitor<'a> {
+impl<'d> serde::de::Visitor<'d> for StructFieldVisitor<'_> {
     type Value = Vec<serde_json::Value>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

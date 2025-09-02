@@ -57,7 +57,7 @@ impl ModuleWriteSet {
     pub fn write_op_info_iter_mut<'a>(
         &'a mut self,
         executor_view: &'a dyn ExecutorView,
-    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo>> {
+    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo<'a>>> + 'a {
         self.write_ops.iter_mut().map(|(key, op)| {
             Ok(WriteOpInfo {
                 key,

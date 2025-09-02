@@ -149,7 +149,7 @@ impl<'a> AbstractValueSizeVisitor<'a> {
     }
 }
 
-impl<'a> ValueVisitor for AbstractValueSizeVisitor<'a> {
+impl ValueVisitor for AbstractValueSizeVisitor<'_> {
     #[inline]
     fn visit_u8(&mut self, _depth: usize, _val: u8) {
         self.size += self.params.u8;
@@ -313,7 +313,7 @@ impl AbstractValueSizeGasParameters {
             res: Option<AbstractValueSize>,
         }
 
-        impl<'a> ValueVisitor for Visitor<'a> {
+        impl ValueVisitor for Visitor<'_> {
             fn visit_delayed(&mut self, _depth: usize, _id: DelayedFieldID) {
                 todo!()
             }
@@ -454,7 +454,7 @@ impl AbstractValueSizeGasParameters {
             res: Option<AbstractValueSize>,
         }
 
-        impl<'a> ValueVisitor for Visitor<'a> {
+        impl ValueVisitor for Visitor<'_> {
             fn visit_delayed(&mut self, _depth: usize, _id: DelayedFieldID) {
                 todo!()
             }

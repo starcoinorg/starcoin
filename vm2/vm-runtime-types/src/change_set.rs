@@ -200,10 +200,11 @@ impl VMChangeSet {
         ))
     }
 
-    /// Converts VM-native change set into its storage representation with fully
-    /// serialized changes. The conversion fails if:
+    /// Converts VM-native change set into its storage representation with fully serialized changes.
+    /// The conversion fails if:
     /// - deltas are not materialized.
     /// - resource group writes are not (combined &) converted to resource writes.
+    ///
     /// In addition, the caller can include changes to published modules.
     pub fn try_combine_into_storage_change_set(
         self,
@@ -838,7 +839,7 @@ pub trait ChangeSetInterface {
     fn write_op_info_iter_mut<'a>(
         &'a mut self,
         executor_view: &'a dyn ExecutorView,
-    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo>>;
+    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo<'a>>> + 'a;
 }
 
 impl ChangeSetInterface for VMChangeSet {
@@ -862,7 +863,7 @@ impl ChangeSetInterface for VMChangeSet {
     fn write_op_info_iter_mut<'a>(
         &'a mut self,
         executor_view: &'a dyn ExecutorView,
-    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo>> {
+    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo<'a>>> + 'a {
         let resources = self.resource_write_set.iter_mut().map(|(key, op)| {
             Ok(WriteOpInfo {
                 key,

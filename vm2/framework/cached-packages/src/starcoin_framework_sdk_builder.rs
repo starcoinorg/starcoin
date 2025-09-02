@@ -14,6 +14,7 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::arc_with_non_send_sync)]
 #![allow(clippy::get_first)]
+#![allow(clippy::doc_lazy_continuation)]
 #![allow(unused_imports)]
 use move_core_types::{
     ident_str,

@@ -364,6 +364,7 @@ mod tests {
     //     }
     // }
 
+    #[allow(dead_code)]
     fn do_test_compat(pre_source_code: &str, new_source_code: &str, expect: bool) {
         let pre_code = compile_source_string_no_report(pre_source_code, &[], CORE_CODE_ADDRESS)
             .unwrap()

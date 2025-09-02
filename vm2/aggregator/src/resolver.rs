@@ -31,7 +31,7 @@ use std::{
 
 /// We differentiate between deprecated way to interact with aggregators (TAggregatorV1View),
 /// and new, more general, TDelayedFieldView.
-
+///
 /// Allows to query AggregatorV1 values from the state storage.
 pub trait TAggregatorV1View {
     type Identifier: Debug;
@@ -40,8 +40,7 @@ pub trait TAggregatorV1View {
     /// the same pattern as for modules or resources:
     ///   -  Ok(None)         if aggregator value is not in storage,
     ///   -  Ok(Some(...))    if aggregator value exists in storage,
-    ///   -  Err(...)         otherwise (e.g. storage error or failed delta
-    ///                       application).
+    ///   -  Err(...)         otherwise (e.g. storage error or failed delta application).
     fn get_aggregator_v1_state_value(
         &self,
         id: &Self::Identifier,
@@ -181,8 +180,8 @@ pub trait TDelayedFieldView {
     /// 1. The resource is read during the transaction execution.
     /// 2. The resource is not present in write set of the VM Change Set.
     /// 3. The resource has a delayed field in it that is part of delayed field change set.
-    /// We get the keys of these resources and metadata to include them in the write set
-    /// of the transaction output after value exchange.
+    ///    We get the keys of these resources and metadata to include them in the write set
+    ///    of the transaction output after value exchange.
     fn get_reads_needing_exchange(
         &self,
         delayed_write_set_ids: &HashSet<Self::Identifier>,
@@ -196,10 +195,10 @@ pub trait TDelayedFieldView {
     /// 1. At least one of the resource in the group is read during the transaction execution.
     /// 2. The resource group is not present in the write set of the VM Change Set.
     /// 3. At least one of the resources in the group has a delayed field in it that is part.
-    /// of delayed field change set.
-    /// We get the keys of these resource groups and metadata to include them in the write set
-    /// of the transaction output after value exchange. For each such resource group, this function
-    /// outputs:(resource key, (metadata, resource group size))
+    ///    of delayed field change set.
+    ///    We get the keys of these resource groups and metadata to include them in the write set
+    ///    of the transaction output after value exchange. For each such resource group, this function
+    ///    outputs:(resource key, (metadata, resource group size))
     fn get_group_reads_needing_exchange(
         &self,
         delayed_write_set_ids: &HashSet<Self::Identifier>,
