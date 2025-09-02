@@ -314,6 +314,7 @@ impl CliStateVM2 {
     }
 
     pub fn detach_execute_transaction(&self, raw_txn: RawUserTransaction) -> Result<()> {
+        let sequence_number = raw_txn.sequence_number();
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
         let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
@@ -321,6 +322,10 @@ impl CliStateVM2 {
         match &public_key {
             AccountPublicKey::Single(_) => {
                 let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                eprintln!(
+                    "txn can be submitted now, sender:{}, sequence number:{}",
+                    sender.address, sequence_number
+                );
                 self.client.submit_hex_transaction2(signed_txn_hex)?;
                 return Ok(());
             }
@@ -341,12 +346,6 @@ impl CliStateVM2 {
                     signatures.push(my_signatures);
                     MultiEd25519SignatureShard::merge(signatures)?
                 };
-                eprintln!(
-                    "mutlisig txn(address: {}, threshold: {}): {} signatures collected",
-                    sender.address,
-                    merged_signatures.threshold(),
-                    merged_signatures.signatures().len()
-                );
 
                 let signatures_is_enough = merged_signatures.is_enough();
 
@@ -360,9 +359,6 @@ impl CliStateVM2 {
                     return Err(anyhow!(err));
                 }
 
-                eprintln!(
-                    "enough signatures collected for the multisig txn, txn can be submitted now"
-                );
                 // construct the signed txn with merged signatures.
                 let signed_txn = {
                     let authenticator = TransactionAuthenticator::MultiEd25519 {
@@ -373,6 +369,11 @@ impl CliStateVM2 {
                 };
 
                 let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                eprintln!(
+                    "enough signatures collected for the multisig txn, txn can be submitted now, sender:{}, sequence number:{}",
+                    sender.address,
+                    sequence_number
+                );
                 self.client.submit_hex_transaction2(signed_txn_hex)?;
                 return Ok(());
             }
