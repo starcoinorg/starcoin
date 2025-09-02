@@ -7,7 +7,7 @@ starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-# stdlib = { workspace = true }
+starcoin-framework = { path = "../../framework" }
 test-helper = { path = "../../../vm2/test-helper", package = "starcoin-test-helper" }
 
 [package]

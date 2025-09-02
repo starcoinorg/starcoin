@@ -53,12 +53,12 @@ impl SyncTestSystem {
             .unwrap(),
         );
         // Create storage2 using cache instance for simplicity in tests
-        let storage2 = Arc::new(
-            starcoin_vm2_storage::Storage::new(
-                starcoin_vm2_storage::storage::StorageInstance::new_cache_instance(),
+        let storage2 = Arc::new(starcoin_storage::Storage2(Arc::new(
+            starcoin_storage::Storage::new(
+                starcoin_storage::storage::StorageInstance::new_cache_instance(),
             )
             .unwrap(),
-        );
+        )));
         let genesis = Genesis::load_or_build(config.net())?;
         // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -108,11 +108,6 @@ impl SyncTestSystem {
                 registry.put_shared(config.clone()).await.unwrap();
                 registry.put_shared(storage.clone()).await.unwrap();
                 registry.put_shared(storage2.clone()).await.unwrap();
-                // Also share storage2 as Arc<dyn Store2> for PruningPointService
-                registry
-                    .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
-                    .await
-                    .unwrap();
                 registry.put_shared(genesis).await.unwrap();
                 registry
                     .put_shared(dag)

@@ -11,8 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{storage::StorageInstance2, Storage2};
-use starcoin_storage::{Storage, Store};
+use starcoin_storage::{Storage, Storage2, Store};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -40,7 +39,7 @@ pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
         BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let genesis = Genesis::load_or_build(&net).unwrap();
-    let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance()).unwrap());
+    let storage2 = Arc::new(Storage2(storage.clone()));
     let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
     genesis
         .execute_genesis_block(&net, storage, storage2, dag)

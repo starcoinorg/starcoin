@@ -560,6 +560,7 @@ mod tests {
         let (chain_info1, genesis1) =
             Genesis::init_and_check_storage(net, storage1.clone(), dag1, data_dir)?;
         let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2_2 = Arc::new(Storage2(storage1_2.clone()));
         let dag2 = BlockDAG::create_for_testing()?;
         let (chain_info2, genesis2) =
             Genesis::init_and_check_storage(net, storage1_2.clone(), dag2, data_dir)?;

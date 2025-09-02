@@ -360,6 +360,7 @@ fn find_struct_def_in_module(
 mod tests {
     use crate::ABIResolver;
     use anyhow::Result;
+    use starcoin_framework;
     use starcoin_vm2_vm_types::access_path::DataPath;
     use starcoin_vm2_vm_types::account_address::AccountAddress;
     use starcoin_vm2_vm_types::account_config::genesis_address;
@@ -415,7 +416,7 @@ mod tests {
             }
         }
 
-        fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        fn get_usage(&self) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
             todo!()
         }
 
@@ -426,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_resolver_abi() {
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         // test module ok
@@ -466,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_normalized() {
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
         let dao = modules
             .iter()
             .find(|m| {
@@ -488,11 +489,11 @@ mod tests {
         }
         "#;
         let address = AccountAddress::random();
-        let module: starcoin_vm_types::transaction::Module =
+        let module: starcoin_vm2_vm_types::transaction::Module =
             test_helper::executor::compile_modules_with_address(address, test_source)
                 .pop()
                 .unwrap();
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         let _abi = r.resolve_module_code(module.code()).unwrap();

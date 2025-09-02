@@ -13808,6 +13808,7 @@ dependencies = [
  "anyhow",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "serde_json",
+ "starcoin-framework 0.1.0",
  "starcoin-test-helper",
  "starcoin-vm-types",
  "starcoin-vm2-abi-types",
