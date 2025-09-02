@@ -289,6 +289,15 @@ Epoch data.
 ## Constants
 
 
+<a id="0x1_epoch_EINVALID_RATIO"></a>
+
+
+
+<pre><code><b>const</b> <a href="epoch.md#0x1_epoch_EINVALID_RATIO">EINVALID_RATIO</a>: u64 = 102;
+</code></pre>
+
+
+
 <a id="0x1_epoch_EINVALID_UNCLES_COUNT"></a>
 
 
@@ -387,10 +396,10 @@ Initialization of the module.
 
 ## Function `compute_next_block_time_target`
 
-compute next block time_target.
+compute next block time_target using DAG-based algorithm
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, total_uncles: u64, red_blocks: u64): u64
 </code></pre>
 
 
@@ -404,30 +413,58 @@ compute next block time_target.
     last_epoch_time_target: u64,
     epoch_start_time: u64,
     now_milli_second: u64,
-    start_block_number: u64,
-    end_block_number: u64,
-    total_uncles: u64
+    total_uncles: u64,
+    red_blocks: u64
 ): u64 {
-    <b>let</b> total_time = now_milli_second - epoch_start_time;
-    <b>let</b> blocks = end_block_number - start_block_number;
-    <b>let</b> avg_block_time = total_time / blocks;
-    <b>let</b> uncles_rate = total_uncles * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> / blocks;
-    <b>let</b> new_epoch_block_time_target = (<a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> + uncles_rate) * avg_block_time /
-        (<a href="consensus_config.md#0x1_consensus_config_uncle_rate_target">consensus_config::uncle_rate_target</a>(config) + <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>);
-    <b>if</b> (new_epoch_block_time_target &gt; last_epoch_time_target * 2) {
-        new_epoch_block_time_target = last_epoch_time_target * 2;
-    };
-    <b>if</b> (new_epoch_block_time_target &lt; last_epoch_time_target / 2) {
-        new_epoch_block_time_target = last_epoch_time_target / 2;
-    };
+    // blue_blocks: uncle blocks in this <a href="epoch.md#0x1_epoch">epoch</a> (not on selected chain)
+    // red_blocks: red blocks in DAG (conflicting blocks)
+    // selected_count: number of blocks in the selected chain (epoch_block_count from config)
+
+    <b>let</b> blue_blocks = total_uncles;
+    <b>let</b> selected_count = <a href="consensus_config.md#0x1_consensus_config_epoch_block_count">consensus_config::epoch_block_count</a>(config);
     <b>let</b> min_block_time_target = <a href="consensus_config.md#0x1_consensus_config_min_block_time_target">consensus_config::min_block_time_target</a>(config);
     <b>let</b> max_block_time_target = <a href="consensus_config.md#0x1_consensus_config_max_block_time_target">consensus_config::max_block_time_target</a>(config);
-    <b>if</b> (new_epoch_block_time_target &lt; min_block_time_target) {
-        new_epoch_block_time_target = min_block_time_target;
+    <b>let</b> k = <a href="consensus_config.md#0x1_consensus_config_base_max_uncles_per_block">consensus_config::base_max_uncles_per_block</a>(config); // DAG width parameter (max uncle rate)
+    <b>let</b> ratio = <a href="consensus_config.md#0x1_consensus_config_uncle_rate_target">consensus_config::uncle_rate_target</a>(config); // Target uncle rate
+
+    // Validate ratio
+    <b>assert</b>!(ratio &gt;= 1 && ratio &lt;= k, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="epoch.md#0x1_epoch_EINVALID_RATIO">EINVALID_RATIO</a>));
+
+    <b>let</b> duration = now_milli_second - epoch_start_time;
+
+    <b>let</b> total_blue_count = blue_blocks + selected_count;
+    <b>let</b> total_block_count = total_blue_count + red_blocks;
+    <b>let</b> expected_blue_count = (selected_count * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> * k / ratio - selected_count * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>) / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>;
+
+    <b>let</b> average_time = duration * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> / total_block_count;
+
+    // Calculate target based on actual performance and blue/red ratio
+    <b>let</b> new_epoch_block_time_target = <b>if</b> (blue_blocks &lt; expected_blue_count) {
+        average_time / 2 / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
+    } <b>else</b> <b>if</b> (blue_blocks &gt; expected_blue_count) {
+        average_time * 2 / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
+    } <b>else</b> {
+        average_time / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
     };
-    <b>if</b> (new_epoch_block_time_target &gt; max_block_time_target) {
-        new_epoch_block_time_target = max_block_time_target;
+
+    // Apply stability constraints (limit change <b>to</b> 50%-200% of last <a href="epoch.md#0x1_epoch">epoch</a>)
+    <b>let</b> new_epoch_block_time_target = <b>if</b> (new_epoch_block_time_target &gt; last_epoch_time_target * 2) {
+        last_epoch_time_target * 2
+    } <b>else</b> <b>if</b> (new_epoch_block_time_target &lt; last_epoch_time_target / 2) {
+        last_epoch_time_target / 2
+    } <b>else</b> {
+        new_epoch_block_time_target
     };
+
+    // Apply absolute bounds
+    <b>let</b> new_epoch_block_time_target = <b>if</b> (new_epoch_block_time_target &lt; min_block_time_target) {
+        min_block_time_target
+    } <b>else</b> <b>if</b> (new_epoch_block_time_target &gt; max_block_time_target) {
+        max_block_time_target
+    } <b>else</b> {
+        new_epoch_block_time_target
+    };
+
     new_epoch_block_time_target
 }
 </code></pre>
@@ -482,9 +519,8 @@ adjust_epoch try to advance to next epoch if current epoch ends.
             last_epoch_time_target,
             epoch_ref.start_time,
             now_milli_seconds,
-            epoch_ref.start_block_number,
-            epoch_ref.end_block_number,
-            epoch_data.uncles
+            epoch_data.uncles,
+            epoch_data.red_blocks
         );
         <b>let</b> new_reward_per_block = <a href="consensus_config.md#0x1_consensus_config_do_compute_reward_per_block">consensus_config::do_compute_reward_per_block</a>(
             &config,
@@ -1058,7 +1094,7 @@ Get pruning finality
 ### Function `compute_next_block_time_target`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, total_uncles: u64, red_blocks: u64): u64
 </code></pre>
 
 
