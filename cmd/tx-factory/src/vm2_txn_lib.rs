@@ -24,7 +24,6 @@ use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
-use serde::{Deserialize, Serialize};
 use tokio::{
     fs::{self, File},
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -36,7 +35,7 @@ use tokio::{
 use starcoin_logger::prelude::{info, warn};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
-use starcoin_vm2_account_api::{AccountPrivateKey, AccountPublicKey};
+use starcoin_vm2_account_api::AccountPrivateKey;
 use starcoin_vm2_crypto::{keygen::KeyGen, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_vm2_transaction_builder::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm2_types::{
@@ -61,7 +60,6 @@ pub static FUNDING_ACCOUNT: Lazy<AccountEntry> = Lazy::new(|| {
     let address = public_key.derived_address();
     AccountEntry {
         address,
-        public_key,
         private_key,
     }
 });
@@ -83,10 +81,8 @@ fn set_info(info: NodeInfo) {
         .expect("GLOBAL_NODE_INFO already initialized");
 }
 
-#[derive(Debug, Serialize, Deserialize)]
 pub struct AccountEntry {
     address: AccountAddress,
-    public_key: AccountPublicKey,
     private_key: AccountPrivateKey,
 }
 
@@ -126,7 +122,6 @@ async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
         let private_key = AccountPrivateKey::from_encoded_string(&line)?;
         let ae = AccountEntry {
             address: private_key.public_key().derived_address(),
-            public_key: private_key.public_key(),
             private_key,
         };
         accounts.push(ae);
@@ -148,10 +143,8 @@ async fn create_account(account_path: &str) -> Result<AccountEntry> {
     let mut key_gen = KeyGen::from_os_rng();
     let (private_key, public_key) = key_gen.generate_keypair();
     let address = account_address::from_public_key(&public_key);
-    let account_public_key = AccountPublicKey::Single(public_key);
     let entry = AccountEntry {
         address,
-        public_key: account_public_key,
         private_key: AccountPrivateKey::Single(private_key),
     };
     append_account(account_path, &entry).await?;
