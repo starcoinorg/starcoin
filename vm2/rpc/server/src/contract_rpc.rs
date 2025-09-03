@@ -8,6 +8,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_config::NodeConfig;
 use starcoin_metrics::metrics::VMMetrics;
+use starcoin_storage::Storage2;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm2_abi_decoder::{decode_move_value, DecodedMoveValue};
 use starcoin_vm2_abi_resolver::ABIResolver;
@@ -18,7 +19,6 @@ use starcoin_vm2_resource_viewer::{module_cache::ModuleCache, MoveValueAnnotator
 use starcoin_vm2_rpc_api::{contract_api::ContractApi, FutureResult};
 use starcoin_vm2_state_api::ChainStateAsyncService;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Storage;
 use starcoin_vm2_types::view::{
     AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
     DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
@@ -43,7 +43,7 @@ pub struct ContractRpcImpl<Account, Pool, State> {
     pub(crate) chain_state: State,
     pub(crate) node_config: Arc<NodeConfig>,
     playground: PlaygroudService,
-    storage: Arc<Storage>,
+    storage: Arc<Storage2>,
 }
 
 impl<Account, Pool, State> ContractRpcImpl<Account, Pool, State>
@@ -58,7 +58,7 @@ where
         pool: Pool,
         chain_state: State,
         playground: PlaygroudService,
-        storage: Arc<Storage>,
+        storage: Arc<Storage2>,
     ) -> Self {
         Self {
             account,

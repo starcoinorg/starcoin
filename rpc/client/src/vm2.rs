@@ -19,8 +19,8 @@ use starcoin_vm2_types::{
         AccountStateSetView, AnnotatedMoveStructView, CodeView, ContractCall, DryRunOutputView,
         DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
         ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
-        StructTagView, TableInfoView, TransactionEventResponse as TransactionEventResponse2,
-        TransactionInfoView, TransactionInfoWithProofView, TransactionRequest,
+        StructTagView, TransactionEventResponse as TransactionEventResponse2, TransactionInfoView,
+        TransactionInfoWithProofView, TransactionRequest,
     },
 };
 use starcoin_vm2_vm_types::{
@@ -345,11 +345,6 @@ impl RpcClient {
                 .get_with_table_item_proof_by_root(handle, key, state_root)
         })
         .map_err(map_err)
-    }
-
-    pub fn state_get_table_info2(&self, address: AccountAddress) -> anyhow::Result<TableInfoView> {
-        self.call_rpc_blocking(|inner| inner.state_client2.get_table_info(address))
-            .map_err(map_err)
     }
 
     pub fn get_state_node_by_node_hash2(

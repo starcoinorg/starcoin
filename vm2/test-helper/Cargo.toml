@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-vm2-test-helper"
+name = "starcoin-test-helper"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true

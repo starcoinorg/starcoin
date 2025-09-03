@@ -8,8 +8,8 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
+use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_vm2_storage::Storage as Storage2;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,
@@ -31,7 +31,7 @@ pub struct DagBlockExecutor {
     receiver: Receiver<Option<Block>>,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
 }
@@ -42,7 +42,7 @@ impl DagBlockExecutor {
         buffer_size: usize,
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {

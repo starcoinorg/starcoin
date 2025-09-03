@@ -5,7 +5,7 @@ use crate::view::str_view::StrView;
 use move_core_types::identifier::Identifier;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_abi_types::ModuleABI;
+use starcoin_vm2_abi_types::ModuleABI;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

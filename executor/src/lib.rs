@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[cfg(feature = "testing")]
-#[macro_use]
 extern crate log;
 
 pub use block_executor::{

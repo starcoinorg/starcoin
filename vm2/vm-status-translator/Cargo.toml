@@ -1,0 +1,17 @@
+[dependencies]
+anyhow = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+starcoin-vm-types = { path = "../vm-types" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-status-translator"
+version = "2.0.1"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

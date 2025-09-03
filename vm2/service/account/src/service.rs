@@ -198,18 +198,12 @@ mod tests {
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
     use starcoin_vm2_account_api::AccountAsyncService;
-    use starcoin_vm2_storage::db_storage::RocksdbConfig;
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let registry = RegistryService::launch();
         let vault_config = &config.vault;
-        let rocksdb_config = RocksdbConfig::new(
-            config.storage.rocksdb_config().max_open_files,
-            config.storage.rocksdb_config().max_total_wal_size,
-            config.storage.rocksdb_config().wal_bytes_per_sync,
-            config.storage.rocksdb_config().bytes_per_sync,
-        );
+        let rocksdb_config = config.storage.rocksdb_config();
         let account_storage =
             AccountStorage::create_from_path(vault_config.dir2(), rocksdb_config)?;
         registry.put_shared(config).await?;

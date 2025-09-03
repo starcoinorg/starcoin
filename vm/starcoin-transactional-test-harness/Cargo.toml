@@ -61,7 +61,6 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }

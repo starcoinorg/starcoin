@@ -21,7 +21,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_store::table::TableHandle;
 use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
@@ -71,10 +71,6 @@ impl StateNodeStore for MockStateNodeStore {
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
         self.local_storage.write_batch(batch)
-    }
-
-    fn get_table_info(&self, _address: AccountAddress) -> Result<Option<TableInfo>> {
-        Ok(None)
     }
 }
 
@@ -161,10 +157,5 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
     ) -> Result<StateWithTableItemProof> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_with_table_item_proof(&handle, &key)
-    }
-
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let reader = self.state_db().fork();
-        reader.get_table_info(address)
     }
 }

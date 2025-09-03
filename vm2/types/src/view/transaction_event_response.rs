@@ -4,7 +4,7 @@
 use crate::view::transaction_event_view::TransactionEventView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_abi_decoder::DecodedMoveValue;
+use starcoin_vm2_abi_decoder::DecodedMoveValue;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct TransactionEventResponse {

@@ -16,6 +16,7 @@ starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-state-store-api = { workspace = true }
 thiserror = { workspace = true }
 
 # dependencies for move2

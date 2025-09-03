@@ -5,6 +5,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_storage::Store2;
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
     MultiTransactionError,
@@ -15,7 +16,6 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_vm_types::transaction::{
     CallError as CallError2, TransactionError as TransactionError2,
 };

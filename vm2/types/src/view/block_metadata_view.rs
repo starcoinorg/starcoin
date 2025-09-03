@@ -1,12 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{block::BlockNumber, genesis_config, view::str_view::StrView};
+use crate::{genesis_config, view::str_view::StrView, BlockNumber};
 use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     block_metadata::BlockMetadata, transaction::authenticator::AuthenticationKey,
 };
 

@@ -4,11 +4,11 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use starcoin_types::block::Block as Block1;
+use starcoin_vm1_types::block::Block;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::{
-    block::BlockNumber,
     view::{BlockMetadataView, SignedUserTransactionView, StrView},
+    BlockNumber,
 };
 use starcoin_vm2_vm_types::transaction::Transaction;
 
@@ -23,7 +23,7 @@ pub struct TransactionView2 {
 }
 
 impl TransactionView2 {
-    pub fn new(txn: Transaction, block: &Block1) -> anyhow::Result<Self> {
+    pub fn new(txn: Transaction, block: &Block) -> anyhow::Result<Self> {
         let transaction_hash = txn.id();
         let block_hash = block.id();
         let block_number = block.header.number();

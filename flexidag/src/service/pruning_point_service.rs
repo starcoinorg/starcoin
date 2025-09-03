@@ -6,9 +6,8 @@ use crossbeam::channel::{self, Receiver, Sender};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{error, info, warn};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage::{BlockStore, Storage, Storage2, Store, Store2};
 use starcoin_types::{block::BlockHeader, system_events::SystemStarted};
-use starcoin_vm2_storage::Store as Store2;
 
 #[derive(Clone)]
 pub struct PruningPointMessage {
@@ -97,7 +96,7 @@ impl ServiceFactory<Self> for PruningPointService {
         let pruning_channel = PruningPointInfoChannel::new();
         ctx.put_shared(pruning_channel.clone())?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let storage2 = ctx.get_shared::<Arc<dyn Store2>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let genesis_id = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("genesis not found"))?;

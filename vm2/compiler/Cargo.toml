@@ -1,0 +1,28 @@
+[dependencies]
+anyhow = { workspace = true }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+once_cell = { workspace = true }
+petgraph = { workspace = true }
+regex = { features = ["std", "perf"], workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-logger = { workspace = true }
+starcoin-vm-types = { path = "../vm-types" }
+tempfile = { workspace = true }
+walkdir = { workspace = true }
+starcoin-framework = { path = "../framework" }
+
+#[dev-dependencies]
+#stest = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-move-compiler"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

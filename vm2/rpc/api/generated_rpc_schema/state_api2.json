@@ -1438,40 +1438,6 @@
       }
     },
     {
-      "name": "state2.get_table_info",
-      "params": [
-        {
-          "name": "address",
-          "schema": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccountAddress",
-            "type": "string",
-            "format": "AccountAddress"
-          }
-        }
-      ],
-      "result": {
-        "name": "TableInfoView",
-        "schema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "table_info",
-          "type": "object",
-          "required": [
-            "key_type",
-            "value_type"
-          ],
-          "properties": {
-            "key_type": {
-              "type": "string"
-            },
-            "value_type": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    {
       "name": "state2.get_with_table_item_proof",
       "params": [
         {

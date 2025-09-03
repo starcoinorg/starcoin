@@ -12,7 +12,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
-starcoin-crypto = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 once_cell = { workspace = true }
 tracing = { workspace = true }
@@ -31,12 +31,12 @@ move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 starcoin-metrics = { optional = true, workspace = true }
-starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
-starcoin-gas-algebra = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-algebra" }
-starcoin-gas-meter = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-meter" }
+starcoin-gas-schedule = { path = "../framework/gas-schedule" }
+starcoin-gas-algebra = { path = "../framework/gas-algebra" }
+starcoin-gas-meter = { path = "../framework/gas-meter" }
 starcoin-parallel-executor = { workspace = true }
-starcoin-vm-runtime-types = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-vm-runtime-types" }
-starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
+starcoin-vm-runtime-types = { path = "../vm-runtime-types" }
+starcoin-native-interface = { path = "../framework/native-interface" }
 serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 rayon = { workspace = true }
@@ -44,7 +44,7 @@ num_cpus = { workspace = true }
 hex = "0.4.3"
 bytes = { workspace = true }
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-starcoin-aggregator = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-aggregator" }
+starcoin-aggregator = { path = "../aggregator" }
 move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", optional = true }
 

@@ -7,27 +7,23 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     message::{StateRequest, StateResponse},
-    ChainStateReader, StateNodeStore, StateReaderExt, StateWithProof, StateWithTableItemProof,
+    AccountStateSetIterator, ChainStateReader, StateNodeStore, StateReaderExt, StateWithProof,
+    StateWithTableItemProof,
 };
-use starcoin_vm2_state_tree::AccountStateSetIterator;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::{
     account_address::AccountAddress, account_state::AccountState, state_set::AccountStateSet,
     state_set::ChainStateSet,
 };
 use starcoin_vm2_vm_types::state_store::{
-    errors::StateviewError,
-    state_key::inner::StateKeyInner,
-    state_key::StateKey,
-    state_storage_usage::StateStorageUsage,
-    state_value::StateValue,
-    table::{TableHandle, TableInfo},
+    errors::StateviewError, state_key::inner::StateKeyInner, state_key::StateKey,
+    state_storage_usage::StateStorageUsage, state_value::StateValue, table::TableHandle,
     TStateView,
 };
 use std::sync::Arc;
@@ -136,9 +132,6 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                     self.service
                         .get_with_table_item_proof_by_root(handle, key, state_root)?,
                 ))
-            }
-            StateRequest::GetTableInfo(address) => {
-                StateResponse::TableInfo(Some(self.service.get_table_info(address)?))
             }
         };
         Ok(response)
@@ -260,10 +253,6 @@ impl ChainStateReader for Inner {
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
         self.state_db.get_with_table_item_proof(handle, key)
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
-        self.state_db.get_table_info(address)
     }
 }
 

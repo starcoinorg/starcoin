@@ -1,0 +1,32 @@
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { workspace = true }
+futures = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+schemars = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
+serde_json = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-service-registry = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+[features]
+mock = []
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-account-api"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

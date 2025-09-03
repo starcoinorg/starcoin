@@ -9,7 +9,7 @@ use bcs_ext::BCSCodec;
 use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::transaction::{RawUserTransaction, TransactionPayload};
+use starcoin_vm2_vm_types::transaction::{RawUserTransaction, TransactionPayload};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RawUserTransactionView {

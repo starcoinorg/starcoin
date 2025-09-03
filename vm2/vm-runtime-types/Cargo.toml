@@ -1,0 +1,35 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm-runtime-types"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-gas-meter = { path = "../framework/gas-meter" }
+starcoin-gas-schedule = { path = "../framework/gas-schedule" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+anyhow = { workspace = true }
+bytes = { workspace = true }
+bcs = { workspace = true }
+serde = { workspace = true }
+starcoin-aggregator = { path = "../aggregator" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+rand = { workspace = true }
+
+
+
+[dev-dependencies]
+claims = { workspace = true }
+#stdlib = { workspace = true }
+test-case = { workspace = true }
+
+[features]
+default = []
+

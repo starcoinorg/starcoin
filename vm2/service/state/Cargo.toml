@@ -5,17 +5,15 @@ futures = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-storage = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
-starcoin-vm2-state-tree = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
-starcoin-vm2-types = { workspace = true }
+starcoin-types = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
-starcoin-types = { workspace = true }
-starcoin-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }

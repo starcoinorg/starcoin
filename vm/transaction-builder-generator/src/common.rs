@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use heck::CamelCase;
+use heck::ToUpperCamelCase;
 use move_core_types::language_storage::TypeTag;
 use serde_reflection::{ContainerFormat, Format, Named, VariantFormat};
 use starcoin_vm_types::transaction::{
@@ -73,7 +73,7 @@ pub(crate) fn make_abi_enum_container(abis: &[ScriptABI]) -> ContainerFormat {
         variants.insert(
             index as u32,
             Named {
-                name: abi.name().to_camel_case(),
+                name: abi.name().to_upper_camel_case(),
                 value: format,
             },
         );

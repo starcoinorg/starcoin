@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::AccountStateSetIterator;
 use crate::StateReaderExt;
 use crate::TABLE_PATH_LIST;
 use anyhow::{ensure, Result};
@@ -8,7 +9,6 @@ use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::write_set::WriteSet;
@@ -19,7 +19,7 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
@@ -135,8 +135,6 @@ pub trait ChainStateReader: StateView {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof>;
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>>;
 }
 
 pub trait ChainStateWriter {

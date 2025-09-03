@@ -1,12 +1,12 @@
 //! Blockchain filter
 
-use starcoin_vm_types::language_storage::type_tag_match;
+use starcoin_vm2_vm_types::language_storage::type_tag_match;
 
 use crate::account_address::AccountAddress;
-use crate::block::BlockNumber;
 use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
 use crate::language_storage::TypeTag;
+use crate::BlockNumber;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filter {
