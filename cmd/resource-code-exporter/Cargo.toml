@@ -13,7 +13,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 clap = { workspace = true }
-tempfile = "3.19.1"
+tempfile = "3.21.0"
 
 starcoin-crypto = { workspace = true }
 starcoin-statedb = { workspace = true }
