@@ -329,7 +329,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: Vec<Cow<'static, str>>,
         rpc_protocols: Vec<Cow<'static, str>>,
-    ) -> errors::Result<(Protocol<T>, sc_peerset::PeersetHandle)> {
+    ) -> errors::Result<(Self, sc_peerset::PeersetHandle)> {
         let mut important_peers = HashSet::new();
         important_peers.extend(boot_node_ids.iter());
         for peer_set in peerset_config.sets.iter() {
@@ -356,7 +356,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
             GenericProto::new(peerset, notif_protocol_wth_handshake)
         };
 
-        let protocol = Protocol {
+        let protocol = Self {
             tick_timeout: Box::pin(interval(TICK_TIMEOUT)),
             important_peers,
             peerset_handle: peerset_handle.clone(),
@@ -501,13 +501,13 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
         }
         out
     }
-    /// Notify the protocol that we have learned about the existence of nodes on the default set.
-    ///
-    /// Can be called multiple times with the same `PeerId`s.
-    pub fn add_default_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
+
+    pub fn add_set_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         for peer_id in peer_ids {
-            self.peerset_handle
-                .add_to_peers_set(HARD_CORE_PROTOCOL_ID, peer_id);
+            for (set_id, _) in self.notif_protocols.iter().enumerate() {
+                self.peerset_handle
+                    .add_to_peers_set(SetId::from(set_id), peer_id);
+            }
         }
     }
 }

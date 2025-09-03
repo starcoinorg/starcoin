@@ -34,7 +34,7 @@ impl TaskError {
     pub fn map(error: anyhow::Error) -> Self {
         match error.downcast::<Self>() {
             Ok(task_err) => task_err,
-            Err(err) => TaskError::BreakError(err),
+            Err(err) => Self::BreakError(err),
         }
     }
 

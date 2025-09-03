@@ -125,7 +125,7 @@ impl Seeds {
     pub fn into_vec(self) -> Vec<MultiaddrWithPeerId> {
         self.into()
     }
-    pub fn merge(&mut self, other: &Seeds) {
+    pub fn merge(&mut self, other: &Self) {
         let mut seeds = HashSet::new();
         seeds.extend(self.0.clone());
         seeds.extend(other.0.clone());
@@ -147,7 +147,7 @@ impl FromStr for Seeds {
             .filter(|s| !s.is_empty())
             .map(MultiaddrWithPeerId::from_str)
             .collect::<Result<Vec<MultiaddrWithPeerId>, network_p2p_types::ParseErr>>()?;
-        Ok(Seeds(seeds))
+        Ok(Self(seeds))
     }
 }
 #[allow(clippy::from_over_into)]
@@ -158,7 +158,7 @@ impl Into<Vec<MultiaddrWithPeerId>> for Seeds {
 }
 impl From<Vec<MultiaddrWithPeerId>> for Seeds {
     fn from(seeds: Vec<MultiaddrWithPeerId>) -> Self {
-        Seeds(seeds)
+        Self(seeds)
     }
 }
 #[derive(Default, Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]

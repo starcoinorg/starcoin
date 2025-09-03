@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CollectorState {
     /// Collector is enough, do not feed more item, finish task.
     Enough,
@@ -126,11 +126,11 @@ pub(crate) enum SinkError {
 }
 
 impl SinkError {
-    pub fn map_result(result: Result<(), SinkError>) -> Result<(), TaskError> {
+    pub fn map_result(result: Result<(), Self>) -> Result<(), TaskError> {
         match result {
             Err(err) => match err {
-                SinkError::StreamTaskError(err) => Err(err),
-                SinkError::CollectorEnough => Ok(()),
+                Self::StreamTaskError(err) => Err(err),
+                Self::CollectorEnough => Ok(()),
             },
             Ok(()) => Ok(()),
         }

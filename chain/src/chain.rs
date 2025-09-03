@@ -1424,7 +1424,9 @@ pub fn create_block_template(
         let pre_total_difficulty = parent_status
             .map(|status| status.total_difficulty())
             .unwrap_or_default();
-        let total_difficulty = pre_total_difficulty + header.difficulty();
+        let total_difficulty = pre_total_difficulty
+            .checked_add(header.difficulty())
+            .ok_or(format_err!("failed to calculate total difficulty"))?;
         block_accumulator.append(&[block_id])?;
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
@@ -1467,6 +1469,15 @@ pub fn create_block_template(
 
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
+    }
+    
+    pub fn get_dag_state(&self) -> Result<DagState> {
+        let current_pruning_point = self.status().head().pruning_point();
+        if current_pruning_point == HashValue::zero() {
+            self.dag.get_dag_state(self.genesis_hash)
+        } else {
+            self.dag.get_dag_state(current_pruning_point)
+        }
     }
 
     pub fn get_vm_state_accumulator(&self) -> &MerkleAccumulator {
@@ -1995,7 +2006,7 @@ impl ChainReader for BlockChain {
         self.genesis_hash
     }
 
-    fn dag(&self) -> BlockDAG {
+    fn get_dag(&self) -> BlockDAG {
         self.dag()
     }
 
@@ -2171,10 +2182,91 @@ impl BlockChain {
         Ok(event_with_infos)
     }
 
-    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>> {
-        self.dag()
-            .get_dag_state(pruning_point)
-            .map(|state| state.tips)
+    fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+        let dag = self.dag.clone();
+        let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
+        let parent_header = self
+            .storage
+            .get_block_header_by_hash(new_tip_block.header().parent_hash())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Dag block should exist, block id: {:?}",
+                    new_tip_block.header().parent_hash()
+                )
+            })?;
+        let mut tips = if parent_header.pruning_point() == HashValue::zero() {
+            self.current_tips_hash(self.genesis_hash)?
+        } else {
+            match self.current_tips_hash(parent_header.pruning_point()) {
+                anyhow::Result::Ok(tips) => tips,
+                Err(e) => match e.downcast::<StoreError>()? {
+                    StoreError::KeyNotFound(_) => {
+                        self.dag().save_dag_state(
+                            parent_header.pruning_point(),
+                            DagState {
+                                tips: vec![parent_header.id()],
+                            },
+                        )?;
+                        vec![parent_header.id()]
+                    }
+                    e => {
+                        return Err(e.into());
+                    }
+                },
+            }
+        };
+
+        let mut new_tips = vec![];
+        for hash in tips {
+            if !dag.check_ancestor_of(hash, new_tip_block.id())? {
+                new_tips.push(hash);
+            }
+        }
+        tips = new_tips;
+        tips.push(new_tip_block.id());
+
+        // Caculate the ghostdata of the virutal node created by all tips.
+        // And the ghostdata.selected of the tips will be the latest head.
+        let block_hash = dag
+            .ghost_dag_manager()
+            .find_selected_parent(tips.iter().copied())?;
+        let (block, block_info) = {
+            let block = self
+                .storage
+                .get_block(block_hash)?
+                .ok_or_else(|| format_err!("Dag block should exist, block id: {:?}", block_hash))?;
+            let block_info = self.storage.get_block_info(block_hash)?.ok_or_else(|| {
+                format_err!("Dag block info should exist, block id: {:?}", block_hash)
+            })?;
+            (block, block_info)
+        };
+
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let block_accumulator_info = block_info.get_block_accumulator_info();
+        let state_root = block.header().state_root();
+
+        self.txn_accumulator = info_2_accumulator(
+            txn_accumulator_info.clone(),
+            AccumulatorStoreType::Transaction,
+            self.storage.as_ref(),
+        );
+        self.block_accumulator = info_2_accumulator(
+            block_accumulator_info.clone(),
+            AccumulatorStoreType::Block,
+            self.storage.as_ref(),
+        );
+
+        self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+
+        self.status = ChainStatusWithBlock {
+            status: ChainStatus::new(block.header().clone(), block_info.clone()),
+            head: block.clone(),
+        };
+        self.epoch = get_epoch_from_statedb(&self.statedb)?;
+
+        self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
+
+        Ok(executed_block)
     }
 
     fn renew_tips(
@@ -2197,38 +2289,15 @@ impl BlockChain {
                 parent_header.pruning_point(),
                 tip_header.pruning_point(),
             )?;
-            info!("Pruning point changed, previous tips: {:?}, new tips: {:?}, previous pruning point: {:?}, current pruning point: {:?}",
-                tips, new_tips, parent_header.pruning_point(), tip_header.pruning_point());
+            info!("pruning point changed, previous tips are: {:?}, save dag state with prune. tips are {:?}, previous  pruning point is  {:?}, current pruning point is {:?}", 
+            tips, new_tips, parent_header.pruning_point(), tip_header.pruning_point());
+
             self.dag()
                 .save_dag_state(tip_header.pruning_point(), DagState { tips: new_tips })?;
         }
         Ok(())
     }
-
-    pub fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
-        let (storage, _) = &self.storage;
-        let header = match storage.get_block_header_by_hash(header_id)? {
-            Some(header) => header,
-            None => return Ok(false),
-        };
-
-        if storage.get_block_info(header.id())?.is_none() {
-            return Ok(false);
-        }
-
-        self.dag().has_block_connected(&header)
-    }
-
-    pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
-        header.parents_hash().iter().all(|parent| {
-            self.has_dag_block(*parent).unwrap_or_else(|e| {
-                warn!("check_parents_ready error: {:?}", e);
-                false
-            })
-        })
-    }
-
-    // legacy: pruning height should always start from genesis.
+    // legacy: pruning height should alawys start from genesis.
     pub fn get_pruning_height(&self) -> BlockNumber {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_test() || chain_id.is_dev() {
@@ -2236,35 +2305,6 @@ impl BlockChain {
         } else {
             0
         }
-    }
-
-    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
-        let new_pruning_point = if header.pruning_point() == HashValue::zero() {
-            self.genesis_hash
-        } else {
-            header.pruning_point()
-        };
-        let current_pruning_point = if self.status().head().pruning_point() == HashValue::zero() {
-            self.genesis_hash
-        } else {
-            self.status().head().pruning_point()
-        };
-
-        let chain = if current_pruning_point == new_pruning_point
-            || current_pruning_point == HashValue::zero()
-        {
-            let state = self.dag().get_dag_state(new_pruning_point)?;
-            let block_id = self
-                .dag()
-                .ghost_dag_manager()
-                .find_selected_parent(state.tips.into_iter())?;
-            self.fork(block_id)?
-        } else {
-            // Handle pruning point change if needed
-            bail!("Pruning point change not yet fully implemented")
-        };
-
-        Ok(chain)
     }
 }
 
@@ -2279,140 +2319,7 @@ impl ChainWriter for BlockChain {
             executed_block.block().id(),
             executed_block.block().header().number(),
         );
-
-        let (storage, storage2) = &self.storage;
-        let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-
-        // DAG logic: manage tips and select best parent
-        let dag = self.dag().clone();
-        let parent_header = storage
-            .get_block_header_by_hash(new_tip_block.header().parent_hash())?
-            .ok_or_else(|| {
-                format_err!(
-                    "DAG block parent should exist, block id: {:?}",
-                    new_tip_block.header().parent_hash()
-                )
-            })?;
-
-        // Get current tips based on pruning point
-        let mut tips = if parent_header.pruning_point() == HashValue::zero() {
-            self.current_tips_hash(self.genesis_hash)?
-        } else {
-            match self.current_tips_hash(parent_header.pruning_point()) {
-                Ok(tips) => tips,
-                Err(e) => match e.downcast::<StoreError>()? {
-                    StoreError::KeyNotFound(_) => {
-                        // Initialize tips for new pruning point
-                        dag.save_dag_state(
-                            parent_header.pruning_point(),
-                            DagState {
-                                tips: vec![parent_header.id()],
-                            },
-                        )?;
-                        vec![parent_header.id()]
-                    }
-                    e => return Err(e.into()),
-                },
-            }
-        };
-
-        // Update tips: remove ancestors of new block
-        let mut new_tips = vec![];
-        for hash in tips {
-            if !dag.check_ancestor_of(hash, new_tip_block.id())? {
-                new_tips.push(hash);
-            }
-        }
-        tips = new_tips;
-        tips.push(new_tip_block.id());
-
-        // Calculate ghostdata and select the best parent from tips
-        let selected_block_hash = dag
-            .ghost_dag_manager()
-            .find_selected_parent(tips.iter().copied())?;
-
-        // Get the selected block (might not be the executed_block)
-        let (block, block_info) = if selected_block_hash == new_tip_block.id() {
-            (new_tip_block.clone(), executed_block.block_info().clone())
-        } else {
-            let block = storage.get_block(selected_block_hash)?.ok_or_else(|| {
-                format_err!(
-                    "DAG block should exist, block id: {:?}",
-                    selected_block_hash
-                )
-            })?;
-            let block_info = storage
-                .get_block_info(selected_block_hash)?
-                .ok_or_else(|| {
-                    format_err!(
-                        "DAG block info should exist, block id: {:?}",
-                        selected_block_hash
-                    )
-                })?;
-            (block, block_info)
-        };
-
-        // Update accumulators (keep vm_state_accumulator for multi-VM)
-        let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let block_accumulator_info = block_info.get_block_accumulator_info();
-        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
-
-        self.txn_accumulator = info_2_accumulator(
-            txn_accumulator_info.clone(),
-            AccumulatorStoreType::Transaction,
-            storage.as_ref(),
-        );
-        self.block_accumulator = info_2_accumulator(
-            block_accumulator_info.clone(),
-            AccumulatorStoreType::Block,
-            storage.as_ref(),
-        );
-        self.vm_state_accumulator = info_2_accumulator(
-            vm_state_accumulator_info.clone(),
-            AccumulatorStoreType::VMState,
-            storage.as_ref(),
-        );
-
-        // Get multi-state for dual VM support
-        let multi_state = if selected_block_hash == new_tip_block.id() {
-            // Use the executed block's multi_state
-            executed_block.multi_state().clone()
-        } else {
-            // Get multi_state from storage for selected block
-            storage.get_vm_multi_state(selected_block_hash)?
-        };
-
-        let (state_root1, state_root2) = (multi_state.state_root1(), multi_state.state_root2());
-
-        // Update dual statedbs
-        self.statedb = (
-            ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1)),
-            ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2)),
-        );
-
-        // Update status with selected block
-        self.status = ChainStatusWithBlock {
-            status: ChainStatus::new(block.header().clone(), block_info.clone()),
-            head: block.clone(),
-            multi_state,
-        };
-        // Update epoch from statedb after each block connection in DAG mode
-        // This ensures epoch is always up-to-date during sync
-        self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
-
-        if self.epoch.end_block_number() == block.header().number() {
-            self.update_uncle_cache()?;
-        } else if let Some(block_uncles) = block.uncles() {
-            block_uncles.iter().for_each(|uncle_header| {
-                self.uncles
-                    .insert(uncle_header.id(), block.header().number());
-            });
-        }
-
-        // Save updated tips to DAG state
-        self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
-
-        Ok(executed_block)
+        self.connect_dag(executed_block)
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
@@ -2805,4 +2712,11 @@ pub(crate) fn info_2_accumulator(
         accumulator_info,
         node_store.get_accumulator_store(store_type),
     )
+}
+
+fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
+    let account_reader = AccountStateReader::new(statedb);
+    account_reader
+        .get_resource::<Epoch>(genesis_address())?
+        .ok_or_else(|| format_err!("Epoch is none."))
 }

@@ -114,7 +114,7 @@ struct CachedPending {
 impl CachedPending {
     /// Creates new `CachedPending` without cached set.
     pub fn none() -> Self {
-        CachedPending {
+        Self {
             block_number: 0,
             current_timestamp: 0,
             has_local_pending: false,
@@ -177,7 +177,7 @@ struct RecentlyRejected {
 
 impl RecentlyRejected {
     fn new(limit: usize) -> Self {
-        RecentlyRejected {
+        Self {
             limit,
             inner: RwLock::new(HashMap::with_capacity(MIN_REJECTED_CACHE_SIZE)),
         }
@@ -538,11 +538,44 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        let pool = self.pool.try_read()?;
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
 
         pool.pending_from_sender(state_readiness, address)
             .last()
             .map(|tx| tx.signed().sequence_number().saturating_add(1))
+    }
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    pub fn next_sequence_number_in_batch<C: client::AccountSeqNumberClient>(
+        &self,
+        client: C,
+        addresses: Vec<Address>,
+    ) -> Option<Vec<(Address, Option<u64>)>> {
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
+
+        Some(
+            addresses
+                .iter()
+                .map(|address| {
+                    // Also we ignore stale transactions in the queue.
+                    let stale_id = None;
+                    let state_readiness = ready::State::new(client.clone(), stale_id);
+                    (
+                        *address,
+                        pool.pending_from_sender(state_readiness, address)
+                            .last()
+                            .map(|tx| tx.signed().sequence_number().saturating_add(1)),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        )
     }
 
     /// Retrieve a transaction from the pool.

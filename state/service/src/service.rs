@@ -4,6 +4,7 @@
 use anyhow::{format_err, Result};
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -15,9 +16,10 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage::{BlockStore, Storage};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::state_set::AccountStateSet;
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
     state_set::ChainStateSet,
@@ -28,6 +30,8 @@ use std::sync::Arc;
 
 pub struct ChainStateService {
     service: Inner,
+    dag: BlockDAG,
+    header: BlockHeader,
 }
 
 impl ChainStateService {
@@ -35,28 +39,50 @@ impl ChainStateService {
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
         time_service: Arc<dyn TimeService>,
+        dag: BlockDAG,
+        header: BlockHeader,
     ) -> Self {
         Self {
             service: Inner::new(store, root_hash, time_service),
+            dag,
+            header,
         }
+    }
+
+    fn update_chain_state(&mut self, block: BlockHeader) -> Result<()> {
+        let selected_header = self
+            .dag
+            .ghost_dag_manager()
+            .find_selected_parent([self.header.id(), block.id()])?;
+        if selected_header == block.id() {
+            self.header = block;
+            let state_root = self.header.state_root();
+            debug!("ChainStateActor change StateRoot to : {:?}", state_root);
+            self.service.change_root(state_root);
+        }
+
+        Ok(())
     }
 }
 
 impl ServiceFactory<Self> for ChainStateService {
-    fn create(ctx: &mut ServiceContext<ChainStateService>) -> Result<ChainStateService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let _head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
+        let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
             format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
+	let dag = ctx.get_shared::<BlockDAG>()?;
         let state_root = storage.get_vm_multi_state(startup_info.main)?.state_root1();
         Ok(Self::new(
             storage,
             Some(state_root),
             config.net().time_service(),
+            dag,
+            head_block.header().clone(),
         ))
     }
 }
@@ -64,12 +90,16 @@ impl ServiceFactory<Self> for ChainStateService {
 impl ActorService for ChainStateService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<NewDagBlockFromPeer>();
         self.service.adjust_time();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<NewDagBlockFromPeer>();
         Ok(())
     }
 }
@@ -78,7 +108,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
     fn handle(
         &mut self,
         msg: StateRequest,
-        _ctx: &mut ServiceContext<ChainStateService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<StateResponse> {
         let response = match msg {
             StateRequest::Get(access_path) => StateResponse::State(
@@ -131,14 +161,29 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ChainStateService {
-    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
-        let NewHeadBlock {
-            executed_block: block,
-        } = msg;
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+        match self.update_chain_state(msg.executed_block.header().clone()) {
+            Ok(()) => (),
+            Err(e) => error!("update chain state serviceerror: {:?}", e),
+        }
+    }
+}
 
-        let state_root = block.multi_state().state_root1();
-        debug!("ChainStateActor change StateRoot to : {:?}", state_root);
-        self.service.change_root(state_root);
+impl EventHandler<Self, NewDagBlock> for ChainStateService {
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        match self.update_chain_state(msg.executed_block.header().clone()) {
+            Ok(()) => (),
+            Err(e) => error!("update chain state serviceerror: {:?}", e),
+        }
+    }
+}
+
+impl EventHandler<Self, NewDagBlockFromPeer> for ChainStateService {
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+        match self.update_chain_state(msg.executed_block.as_ref().clone()) {
+            Ok(()) => (),
+            Err(e) => error!("update chain state serviceerror: {:?}", e),
+        }
     }
 }
 
@@ -282,6 +327,7 @@ mod tests {
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
+        registry.put_shared(dag).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
         let account_state = service_ref.get_account_state(genesis_address()).await?;
         assert!(account_state.is_some());

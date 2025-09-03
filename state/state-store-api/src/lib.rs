@@ -18,7 +18,7 @@ where
     type Error = anyhow::Error;
 
     fn try_from(n: Node<K>) -> Result<Self> {
-        Ok(StateNode(n.encode()?))
+        Ok(Self(n.encode()?))
     }
 }
 

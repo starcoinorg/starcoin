@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-#![allow(clippy::arithmetic_side_effects)]
+#![deny(clippy::arithmetic_side_effects)]
 mod chain;
 mod fixed_blocks;
 pub mod verifier;
@@ -51,17 +51,18 @@ pub fn get_merge_bound_hash(
         return Ok(storage.get_genesis()?.expect("genesis cannot be none"));
     }
     let merge_depth_index = (header.number().checked_div(merge_depth))
-        .ok_or_else(|| format_err!("checked_div error"))?
+        .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?
         .checked_mul(merge_depth)
-        .ok_or_else(|| format_err!("checked_mul error"))?;
+        .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?;
+
     let block_accumulator = block_merkle_tree_from_header(&header, storage.clone())?;
-    let leaf_hash = block_accumulator
+
+    block_accumulator
         .get_leaf(merge_depth_index)?
         .ok_or_else(|| {
             format_err!(
-                "cannot find hash at merge_depth_index {:?} from block_accumulator",
+                "Cannot find block header by number {} when get merge bound hash",
                 merge_depth_index
             )
-        })?;
-    Ok(leaf_hash)
+        })
 }

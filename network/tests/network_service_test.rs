@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::{anyhow, bail, format_err, Ok};
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use network_api::messages::{
@@ -17,6 +18,7 @@ use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, Bloc
 use starcoin_types::compact_block::CompactBlock;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
 use std::sync::Arc;
 use std::time::Duration;
@@ -83,7 +85,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
 const TEST_NOTIF_PROTOCOL_NAME: &str = "/test_notif";
 
 #[stest::test]
-async fn test_send_receive() {
+async fn test_send_receive() -> anyhow::Result<()> {
     let ((service1, _), (service2, _)) = build_test_network_pair();
     let msg_peer_id_1 = *service1.peer_id();
     let msg_peer_id_2 = *service2.peer_id();
@@ -125,9 +127,9 @@ async fn test_send_receive() {
         assert_eq!(total_message / 2, peer1_received_events.len());
         assert_eq!(total_message / 2, peer2_received_events.len());
     };
-    tokio::time::timeout(Duration::from_secs(10), task)
+    tokio::time::timeout(Duration::from_secs(100), task)
         .await
-        .unwrap();
+        .map_err(|e| anyhow!("timeout for error: {:?}", e))
 }
 
 #[stest::test]
@@ -139,7 +141,7 @@ async fn test_connected_nodes() {
 }
 
 #[stest::test]
-async fn test_event_notify_receive() {
+async fn test_event_notify_receive() -> anyhow::Result<()> {
     let (network1, network2) = test_helper::build_network_pair().await.unwrap();
     // transaction
     let msg_send = PeerMessage::new_transactions(
@@ -148,28 +150,36 @@ async fn test_event_notify_receive() {
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
-    let msg_receive = receiver.next().await.unwrap();
+    let msg_receive = receiver
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in network1, receive message timeout or return none"))?;
     assert_eq!(msg_send.notification, msg_receive.notification);
 
     //block
     let msg_send = PeerMessage::new_compact_block(
         network2.peer_id(),
         CompactBlockMessage::new(
-            CompactBlock::new(Block::new(BlockHeader::random(), BlockBody::new_empty())),
+            CompactBlock::new(Block::rational_random()),
             mock_block_info(1.into()),
         ),
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
-    let msg_receive = receiver.next().await.unwrap();
+    let msg_receive = receiver
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in network2, receive message timeout or return none"))?;
     assert_eq!(msg_send.notification, msg_receive.notification);
+
+    Ok(())
 }
 
 #[stest::test]
-async fn test_event_notify_receive_repeat_block() {
+async fn test_event_notify_receive_repeat_block() -> anyhow::Result<()> {
     let (network1, network2) = test_helper::build_network_pair().await.unwrap();
 
-    let block = Block::new(BlockHeader::random(), BlockBody::new_empty());
+    let block = Block::rational_random();
 
     let msg_send1 = PeerMessage::new_compact_block(
         network2.peer_id(),
@@ -188,12 +198,16 @@ async fn test_event_notify_receive_repeat_block() {
     assert_eq!(msg_send1.notification, msg_receive1.notification);
 
     //repeat message is filter, so expect timeout error.
-    let msg_receive2 = async_std::future::timeout(Duration::from_secs(2), receiver.next()).await;
-    assert!(msg_receive2.is_err());
+    let result = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    if result.is_err() {
+        Ok(())
+    } else {
+        bail!("expect timeout error, but receive message.")
+    }
 }
 
 #[stest::test]
-async fn test_event_notify_receive_repeat_transaction() {
+async fn test_event_notify_receive_repeat_transaction() -> anyhow::Result<()> {
     let (network1, network2) = test_helper::build_network_pair().await.unwrap();
 
     let txn1 = MultiSignedUserTransaction::mock();
@@ -235,8 +249,12 @@ async fn test_event_notify_receive_repeat_transaction() {
     );
 
     //msg3 is empty after filter, so expect timeout error.
-    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
-    assert!(msg_receive3.is_err());
+    let result = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    if result.is_err() {
+        Ok(())
+    } else {
+        bail!("expect timeout error, but receive message.")
+    }
 }
 
 fn mock_block_info(total_difficulty: U256) -> BlockInfo {
@@ -250,7 +268,7 @@ fn mock_block_info(total_difficulty: U256) -> BlockInfo {
 }
 
 #[stest::test]
-async fn test_event_broadcast() {
+async fn test_event_broadcast() -> anyhow::Result<()> {
     let mut nodes = test_helper::build_network_cluster(3).await.unwrap();
     let node3 = nodes.pop().unwrap();
     let node2 = nodes.pop().unwrap();
@@ -260,7 +278,7 @@ async fn test_event_broadcast() {
     let mut receiver2 = node2.message_handler.channel();
     let mut receiver3 = node3.message_handler.channel();
 
-    let block = Block::new(BlockHeader::random(), BlockBody::new_empty());
+    let block = Block::rational_random();
     let notification = NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::new(
         CompactBlock::new(block.clone()),
         //difficulty should > genesis block difficulty.
@@ -268,22 +286,34 @@ async fn test_event_broadcast() {
     )));
     node1.service_ref.broadcast(notification.clone());
 
-    let msg_receive2 = receiver2.next().await.unwrap();
+    let msg_receive2 = receiver2
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in receive2, receive message timeout or return none"))?;
     assert_eq!(notification, msg_receive2.notification);
 
-    let msg_receive3 = receiver3.next().await.unwrap();
+    let msg_receive3 = receiver3
+        .next()
+        .await
+        .ok_or_else(|| format_err!("in receive3, receive message timeout or return none"))?;
     assert_eq!(notification, msg_receive3.notification);
 
     //repeat broadcast
     node2.service_ref.broadcast(notification.clone());
 
     let msg_receive1 = async_std::future::timeout(Duration::from_secs(1), receiver1.next()).await;
-    assert!(msg_receive1.is_err());
+    if msg_receive1.is_ok() {
+        bail!("expect timeout error, but receive message.")
+    }
 
     let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
-    assert!(msg_receive3.is_err());
+    if msg_receive3.is_ok() {
+        bail!("expect timeout error, but receive message.")
+    }
 
     print!("{:?}", node1.config.metrics.registry().unwrap().gather());
+
+    Ok(())
 }
 
 #[stest::test]

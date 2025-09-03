@@ -4,11 +4,13 @@
 use futures_timer::Delay;
 use starcoin_account_service::{AccountService, AccountStorage};
 use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
-use starcoin_miner::{BlockBuilderService, MinerService};
+use starcoin_miner::{BlockBuilderService, MinerService, NewHeaderChannel, NewHeaderService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_vm2_account_service::{
     AccountService as AccountService2, AccountStorage as AccountStorage2,
@@ -26,6 +28,7 @@ pub async fn start_txpool_with_size(
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     start_txpool_with_miner(pool_size, false).await
 }
@@ -40,6 +43,7 @@ pub async fn start_txpool_with_miner(
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     let mut config = NodeConfig::random_for_test();
     config.tx_pool.set_max_count(pool_size);
@@ -84,9 +88,19 @@ pub async fn start_txpool_with_miner(
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
     if enable_miner {
+    	registry
+            .register::<BlockConnectorService<TxPoolService>>()
+            .await
+            .unwrap();
+        registry.put_shared(NewHeaderChannel::new()).await.unwrap();
+        registry.register::<NewHeaderService>().await.unwrap();
         registry.register::<BlockBuilderService>().await.unwrap();
         registry.register::<MinerService>().await.unwrap();
     }
+    //registry.register::<MinerService>().await.unwrap();
+    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
+    Delay::new(Duration::from_secs(1)).await;
+    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
     (
         txpool_service,
@@ -95,6 +109,7 @@ pub async fn start_txpool_with_miner(
         node_config,
         pool_actor,
         registry,
+        dag,
     )
 }
 
@@ -105,6 +120,7 @@ pub async fn start_txpool() -> (
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
+    BlockDAG,
 ) {
     start_txpool_with_size(1000).await
 }

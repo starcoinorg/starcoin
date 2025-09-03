@@ -31,8 +31,8 @@ pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
 pub struct ProtocolId(smallvec::SmallVec<[u8; 6]>);
 
 impl<'a> From<&'a str> for ProtocolId {
-    fn from(bytes: &'a str) -> ProtocolId {
-        ProtocolId(bytes.as_bytes().into())
+    fn from(bytes: &'a str) -> Self {
+        Self(bytes.as_bytes().into())
     }
 }
 
@@ -134,7 +134,7 @@ pub enum TransportConfig {
 
 impl Default for NetworkConfiguration {
     fn default() -> Self {
-        NetworkConfiguration {
+        Self {
             listen_addresses: Vec::new(),
             public_addresses: Vec::new(),
             boot_nodes: Vec::new(),
@@ -164,7 +164,7 @@ impl NetworkConfiguration {
         client_version: SV,
         node_key: NodeKeyConfig,
     ) -> Self {
-        NetworkConfiguration {
+        Self {
             listen_addresses: Vec::new(),
             public_addresses: Vec::new(),
             boot_nodes: Vec::new(),
@@ -188,8 +188,8 @@ impl NetworkConfiguration {
 
     /// Create new default configuration for localhost-only connection with random port (useful for
     /// testing)
-    pub fn new_local() -> NetworkConfiguration {
-        NetworkConfiguration {
+    pub fn new_local() -> Self {
+        Self {
             listen_addresses: vec![iter::once(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1)))
                 .chain(iter::once(Protocol::Tcp(0)))
                 .collect()],
@@ -211,8 +211,8 @@ impl NonReservedPeerMode {
     /// Attempt to parse the peer mode from a string.
     pub fn parse(s: &str) -> Option<Self> {
         match s {
-            "accept" => Some(NonReservedPeerMode::Accept),
-            "deny" => Some(NonReservedPeerMode::Deny),
+            "accept" => Some(Self::Accept),
+            "deny" => Some(Self::Deny),
             _ => None,
         }
     }
@@ -228,8 +228,8 @@ pub enum NodeKeyConfig {
 }
 
 impl Default for NodeKeyConfig {
-    fn default() -> NodeKeyConfig {
-        NodeKeyConfig::Ed25519(Secret::New)
+    fn default() -> Self {
+        Self::Ed25519(Secret::New)
     }
 }
 
@@ -251,9 +251,9 @@ pub enum Secret<K> {
 impl<K> fmt::Debug for Secret<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Secret::Input(_) => f.debug_tuple("Secret::Input").finish(),
-            Secret::File(path) => f.debug_tuple("Secret::File").field(path).finish(),
-            Secret::New => f.debug_tuple("Secret::New").finish(),
+            Self::Input(_) => f.debug_tuple("Secret::Input").finish(),
+            Self::File(path) => f.debug_tuple("Secret::File").field(path).finish(),
+            Self::New => f.debug_tuple("Secret::New").finish(),
         }
     }
 }

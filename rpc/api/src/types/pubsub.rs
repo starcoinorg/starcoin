@@ -54,11 +54,10 @@ impl Serialize for Result {
         S: Serializer,
     {
         match *self {
-            Result::Block(ref header) => header.serialize(serializer),
-            Result::Event(ref evt) => evt.serialize(serializer),
-            Result::EventV2(ref evt) => evt.serialize(serializer),
-            Result::TransactionHash(ref hash) => hash.serialize(serializer),
-            Result::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
+            Self::Block(ref header) => header.serialize(serializer),
+            Self::Event(ref evt) => evt.serialize(serializer),
+            Self::TransactionHash(ref hash) => hash.serialize(serializer),
+            Self::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
     }
 }

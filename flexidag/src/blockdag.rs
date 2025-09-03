@@ -28,17 +28,26 @@ use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
+use starcoin_config::miner_config::{G_MAX_PARENTS_COUNT, G_MERGE_DEPTH};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, error, info, warn};
+use starcoin_state_api::AccountStateReader;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{IntoSuper, Storage};
+use starcoin_types::account_config::genesis_address;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
+
+pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,

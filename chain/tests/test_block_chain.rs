@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};

@@ -12,8 +12,8 @@ pub struct MockAccumulatorStore {
 }
 
 impl MockAccumulatorStore {
-    pub fn new() -> MockAccumulatorStore {
-        MockAccumulatorStore {
+    pub fn new() -> Self {
+        Self {
             node_store: Mutex::new(HashMap::new()),
         }
     }

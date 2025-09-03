@@ -22,6 +22,9 @@ pub trait TxPoolApi {
 
     #[rpc(name = "txpool.submit_transaction2")]
     fn submit_transaction2(&self, tx: SignedUserTransaction2) -> FutureResult<HashValue>;
+    
+    #[rpc(name = "txpool.submit_transactions")]
+    fn submit_transactions(&self, txs: Vec<SignedUserTransaction>) -> FutureResult<Vec<HashValue>>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;
@@ -63,6 +66,14 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.next_sequence_number")]
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>>;
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender in txpool.
+    #[rpc(name = "txpool.next_sequence_number_in_batch")]
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> FutureResult<Option<Vec<(AccountAddress, Option<u64>)>>>;
 
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.state")]

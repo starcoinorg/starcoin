@@ -51,8 +51,8 @@ pub struct PeersState {
     /// List of nodes that we know about.
     ///
     /// > **Note**: This list should really be ordered by decreasing reputation, so that we can
-    /// > easily select the best node to connect to. As a first draft, however, we don't
-    /// > sort, to make the logic easier.
+    ///           easily select the best node to connect to. As a first draft, however, we don't
+    ///           sort, to make the logic easier.
     nodes: HashMap<PeerId, Node>,
 
     /// Configuration of each set. The size of this `Vec` is never modified.
@@ -106,8 +106,8 @@ struct Node {
 }
 
 impl Node {
-    fn new(num_sets: usize) -> Node {
-        Node {
+    fn new(num_sets: usize) -> Self {
+        Self {
             sets: (0..num_sets).map(|_| MembershipState::NotMember).collect(),
             reputation: 0,
         }
@@ -135,10 +135,10 @@ impl MembershipState {
     /// Returns `true` for `In` and `Out`.
     fn is_connected(self) -> bool {
         match self {
-            MembershipState::NotMember => false,
-            MembershipState::In => true,
-            MembershipState::Out => true,
-            MembershipState::NotConnected { .. } => false,
+            Self::NotMember => false,
+            Self::In => true,
+            Self::Out => true,
+            Self::NotConnected { .. } => false,
         }
     }
 }
@@ -146,7 +146,7 @@ impl MembershipState {
 impl PeersState {
     /// Builds a new empty `PeersState`.
     pub fn new(sets: impl IntoIterator<Item = SetConfig>) -> Self {
-        PeersState {
+        Self {
             nodes: HashMap::new(),
             sets: sets
                 .into_iter()
@@ -505,7 +505,7 @@ impl<'a> NotConnectedPeer<'a> {
     /// the slots are full, the node stays "not connected" and we return `Err`.
     ///
     /// Non-slot-occupying nodes don't count towards the number of slots.
-    pub fn try_outgoing(self) -> Result<ConnectedPeer<'a>, NotConnectedPeer<'a>> {
+    pub fn try_outgoing(self) -> Result<ConnectedPeer<'a>, Self> {
         let is_no_slot_occupy = self.state.sets[self.set]
             .no_slot_nodes
             .contains(&*self.peer_id);
@@ -543,7 +543,7 @@ impl<'a> NotConnectedPeer<'a> {
     /// the slots are full, the node stays "not connected" and we return `Err`.
     ///
     /// Non-slot-occupying nodes don't count towards the number of slots.
-    pub fn try_accept_incoming(self) -> Result<ConnectedPeer<'a>, NotConnectedPeer<'a>> {
+    pub fn try_accept_incoming(self) -> Result<ConnectedPeer<'a>, Self> {
         let is_no_slot_occupy = self.state.sets[self.set]
             .no_slot_nodes
             .contains(&*self.peer_id);
@@ -668,7 +668,7 @@ pub struct Reputation<'a> {
     node: Option<OccupiedEntry<'a, PeerId, Node>>,
 }
 
-impl Reputation<'_> {
+impl<'a> Reputation<'a> {
     /// Returns the reputation value of the node.
     pub fn reputation(&self) -> i32 {
         self.node.as_ref().unwrap().get().reputation
@@ -688,7 +688,7 @@ impl Reputation<'_> {
     }
 }
 
-impl Drop for Reputation<'_> {
+impl<'a> Drop for Reputation<'a> {
     fn drop(&mut self) {
         if let Some(node) = self.node.take() {
             if node.get().reputation == 0

@@ -56,6 +56,8 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
+    #[rpc(name = "chain.get_block_info_by_hash")]
+    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
 
     #[rpc(name = "chain.get_block_info_by_number2")]
     fn get_block_info_by_number2(
@@ -182,6 +184,21 @@ pub trait ChainApi {
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<StrView<Vec<u8>>>>;
 
+    /// Get the state of a dag.
+    #[rpc(name = "chain.get_dag_state")]
+    fn get_dag_state(&self) -> FutureResult<DagStateView>;
+
+    /// Get block ghostdag data
+    #[rpc(name = "chain.get_ghostdagdata")]
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>>;
+
+    /// Check the ancestor and descendants' relationship
+    #[rpc(name = "chain.is_ancestor_of")]
+    fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> FutureResult<starcoin_dag::consensusdb::consensus_state::ReachabilityView>;
     /// Get TransactionInfoWithProof2, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
     /// if `event_index` is some, also return the EventWithProof in current transaction event_root
     /// if `access_path` is some, also return the StateWithProof in current transaction state_root

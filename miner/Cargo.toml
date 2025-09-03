@@ -29,6 +29,7 @@ starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-sync = { workspace = true }
 starcoin-genesis = { workspace = true }
 crossbeam = { workspace = true }
 rand = { workspace = true }

@@ -33,8 +33,8 @@ impl FromStr for HashOrNumber {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match u64::from_str(s) {
-            Ok(number) => Ok(HashOrNumber::Number(number)),
-            Err(_) => Ok(HashOrNumber::Hash(HashValue::from_str(s)?)),
+            Ok(number) => Ok(Self::Number(number)),
+            Err(_) => Ok(Self::Hash(HashValue::from_str(s)?)),
         }
     }
 }

@@ -16,7 +16,7 @@ pub struct MockTxnGenerator {
 
 impl MockTxnGenerator {
     pub fn new(chain_id: ChainId, account: AccountInfo, receiver_address: AccountAddress) -> Self {
-        MockTxnGenerator {
+        Self {
             chain_id,
             receiver_address,
             account,
@@ -58,7 +58,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount,
             gas_price,
-            40000000,
+            4000000,
             expiration_timestamp,
             self.chain_id,
         );

@@ -4,8 +4,9 @@
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::ChainWriter;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig};
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::block_execute;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -90,6 +91,9 @@ fn gen_header(
         parent_header.chain_id(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![],
+        0,
+        HashValue::zero(),
     )
 }
 

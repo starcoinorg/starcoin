@@ -32,7 +32,7 @@ pub fn verify_header_via_export_file(path: PathBuf, batch_size: usize) -> anyhow
     batch_cmd.progress::<VerifyHeaderCmdType, Block, VerifyHeaderError>()
 }
 
-impl BatchCmdExec<VerifyHeaderCmdType, Block, VerifyHeaderError> for Block {
+impl BatchCmdExec<VerifyHeaderCmdType, Self, VerifyHeaderError> for Block {
     fn execute(&self) -> (usize, Vec<VerifyHeaderError>) {
         let ret = G_CRYPTONIGHT.verify_header_difficulty(self.header.difficulty(), &self.header);
         match ret {

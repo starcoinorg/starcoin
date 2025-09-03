@@ -120,7 +120,7 @@ pub struct Registry {
 
 impl Registry {
     pub(crate) fn new(service_ref: ServiceRef<RegistryService>) -> Self {
-        let mut registry = Registry {
+        let mut registry = Self {
             service_ref,
             shared: HashMap::new(),
             services: vec![],
@@ -302,8 +302,8 @@ pub struct RegistryService {
     registry: Registry,
 }
 
-impl ServiceFactory<RegistryService> for RegistryService {
-    fn create(ctx: &mut ServiceContext<RegistryService>) -> Result<RegistryService> {
+impl ServiceFactory<Self> for RegistryService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             registry: Registry::new(ctx.registry_ref().clone()),
         })
@@ -314,8 +314,8 @@ impl RegistryService {
     pub fn launch() -> ServiceRef<Self> {
         let arbiter = Arbiter::new();
         let addr = ServiceActor::start_in_arbiter(&arbiter.handle(), |ctx| {
-            let service_ref: ServiceRef<RegistryService> = ctx.address().into();
-            ServiceActor::new::<RegistryService>(service_ref)
+            let service_ref: ServiceRef<Self> = ctx.address().into();
+            ServiceActor::new::<Self>(service_ref)
         });
         addr.into()
     }
@@ -376,7 +376,7 @@ where
     fn handle(
         &mut self,
         _msg: RegisterRequest<S, F>,
-        _ctx: &mut ServiceContext<RegistryService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ServiceRef<S>> {
         self.registry.register::<S, F>()
     }
@@ -421,7 +421,7 @@ where
     fn handle(
         &mut self,
         msg: RegisterMockerRequest<S>,
-        _ctx: &mut ServiceContext<RegistryService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ServiceRef<S>> {
         self.registry.register_mocker::<S>(msg.mocker)
     }
@@ -435,11 +435,7 @@ impl ServiceRequest for ListRequest {
 }
 
 impl ServiceHandler<Self, ListRequest> for RegistryService {
-    fn handle(
-        &mut self,
-        _msg: ListRequest,
-        _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Vec<ServiceInfo> {
+    fn handle(&mut self, _msg: ListRequest, _ctx: &mut ServiceContext<Self>) -> Vec<ServiceInfo> {
         self.registry.list()
     }
 }
@@ -486,7 +482,7 @@ where
     fn handle(
         &mut self,
         _msg: ServiceRefRequest<S>,
-        _ctx: &mut ServiceContext<RegistryService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Option<ServiceRef<S>> {
         self.registry.service_ref::<S>()
     }
@@ -528,7 +524,7 @@ impl<T> ServiceHandler<Self, PutSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
-    fn handle(&mut self, msg: PutSharedRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
+    fn handle(&mut self, msg: PutSharedRequest<T>, _ctx: &mut ServiceContext<Self>) {
         self.registry.put_shared(msg.value);
     }
 }
@@ -572,11 +568,7 @@ impl<T> ServiceHandler<Self, GetSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
-    fn handle(
-        &mut self,
-        _msg: GetSharedRequest<T>,
-        _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Option<T> {
+    fn handle(&mut self, _msg: GetSharedRequest<T>, _ctx: &mut ServiceContext<Self>) -> Option<T> {
         self.registry.get_shared_opt::<T>()
     }
 }
@@ -620,7 +612,7 @@ impl<T> ServiceHandler<Self, RemoveSharedRequest<T>> for RegistryService
 where
     T: Send + Sync + Clone + 'static,
 {
-    fn handle(&mut self, _msg: RemoveSharedRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
+    fn handle(&mut self, _msg: RemoveSharedRequest<T>, _ctx: &mut ServiceContext<Self>) {
         self.registry.remove_shared::<T>();
     }
 }
@@ -644,7 +636,7 @@ impl ServiceHandler<Self, CheckServiceStatusRequest> for RegistryService {
     fn handle(
         &mut self,
         msg: CheckServiceStatusRequest,
-        _ctx: &mut ServiceContext<RegistryService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> Result<ServiceStatus> {
         self.registry
             .get_service_status(msg.service_name.as_str())
@@ -672,11 +664,7 @@ impl ServiceRequest for ServiceCmdRequest {
 }
 
 impl ServiceHandler<Self, ServiceCmdRequest> for RegistryService {
-    fn handle(
-        &mut self,
-        msg: ServiceCmdRequest,
-        _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Result<()> {
+    fn handle(&mut self, msg: ServiceCmdRequest, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.registry
             .exec_service_cmd(msg.service_name.as_str(), msg.service_cmd)
     }
@@ -699,11 +687,7 @@ impl ServiceRequest for SystemCmdRequest {
 }
 
 impl ServiceHandler<Self, SystemCmdRequest> for RegistryService {
-    fn handle(
-        &mut self,
-        msg: SystemCmdRequest,
-        ctx: &mut ServiceContext<RegistryService>,
-    ) -> Result<()> {
+    fn handle(&mut self, msg: SystemCmdRequest, ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.registry.exec_system_cmd(msg.cmd)?;
         ctx.stop_actor();
         Ok(())
@@ -726,11 +710,7 @@ impl ServiceStatusChangeEvent {
 }
 
 impl EventHandler<Self, ServiceStatusChangeEvent> for RegistryService {
-    fn handle_event(
-        &mut self,
-        msg: ServiceStatusChangeEvent,
-        _ctx: &mut ServiceContext<RegistryService>,
-    ) {
+    fn handle_event(&mut self, msg: ServiceStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
         self.registry
             .update_service_status(msg.service_name.as_str(), msg.status);
     }

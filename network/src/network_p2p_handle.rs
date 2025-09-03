@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
 /// Current protocol version.
-pub(crate) const CURRENT_VERSION: u32 = 5;
+pub(crate) const CURRENT_VERSION: u32 = 6;
 /// Lowest version we support
 pub(crate) const MIN_VERSION: u32 = 3;
 
@@ -45,7 +45,7 @@ impl Networkp2pHandle {
             rpc_protocols: [].to_vec(),
             info: chain_info,
         };
-        Networkp2pHandle { status }
+        Self { status }
     }
 }
 
@@ -55,7 +55,7 @@ impl Networkp2pHandle {
         who: PeerId,
         status: Status,
     ) -> Result<HandshakeResult, ReputationChange> {
-        debug!(target: "network-p2p", "New peer {} {:?}", who, status);
+        debug!(target: "network-p2p", "New peer {} status: {:?}", who, status);
         if status.info.genesis_hash() != self.status.info.genesis_hash() {
             error!(
                 target: "network-p2p",
@@ -95,12 +95,22 @@ impl BusinessLayerHandle for Networkp2pHandle {
         received_handshake: Vec<u8>,
     ) -> Result<HandshakeResult, ReputationChange> {
         match Status::decode(&received_handshake[..]) {
-            std::result::Result::Ok(status) => self.inner_handshake(peer_id, status),
+            Result::Ok(status) => self.inner_handshake(peer_id, status),
             Err(err) => {
-                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake), err);
+                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}, err: {}", peer_id, err);
                 Err(rep::BAD_MESSAGE)
             }
         }
+    }
+
+    fn build_handshake_msg(
+        &mut self,
+        notif_protocols: Vec<std::borrow::Cow<'static, str>>,
+        rpc_protocols: Vec<std::borrow::Cow<'static, str>>,
+    ) -> Result<Vec<u8>, anyhow::Error> {
+        self.status.notif_protocols = notif_protocols;
+        self.status.rpc_protocols = rpc_protocols;
+        self.status.encode()
     }
 
     fn get_generic_data(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -131,15 +141,5 @@ impl BusinessLayerHandle for Networkp2pHandle {
                 error
             )),
         }
-    }
-
-    fn build_handshake_msg(
-        &mut self,
-        notif_protocols: Vec<std::borrow::Cow<'static, str>>,
-        rpc_protocols: Vec<std::borrow::Cow<'static, str>>,
-    ) -> Result<Vec<u8>, anyhow::Error> {
-        self.status.notif_protocols = notif_protocols;
-        self.status.rpc_protocols = rpc_protocols;
-        self.status.encode()
     }
 }

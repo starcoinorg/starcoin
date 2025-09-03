@@ -44,7 +44,7 @@ impl AccountData {
         let mut key_gen = KeyGen::from_os_rng();
         let (_private_key, public_key) = key_gen.generate_keypair();
         let address = account_address::from_public_key(&public_key);
-        AccountData {
+        Self {
             public_key,
             address,
         }

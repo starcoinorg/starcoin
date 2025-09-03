@@ -21,11 +21,11 @@ impl PeerId {
     }
 
     /// Builds a `PeerId` from a public key.
-    pub fn from_public_key(key: PublicKey) -> PeerId {
+    pub fn from_public_key(key: PublicKey) -> Self {
         Self::new(Libp2pPeerId::from_public_key(&key))
     }
 
-    pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {
+    pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> Self {
         let pub_key = libp2p::core::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
             .expect("Decode pubkey must success.");
         Self::from_public_key(PublicKey::Ed25519(pub_key))
@@ -33,13 +33,13 @@ impl PeerId {
 
     /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
     /// back the data as an error.
-    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Error> {
+    pub fn from_bytes(data: Vec<u8>) -> Result<Self, Error> {
         Ok(Self::new(Libp2pPeerId::from_bytes(&data)?))
     }
 
     /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
     /// returns back the data as an error.
-    pub fn from_multihash(data: Multihash) -> Result<PeerId, Multihash> {
+    pub fn from_multihash(data: Multihash) -> Result<Self, Multihash> {
         Ok(Self::new(Libp2pPeerId::from_multihash(data)?))
     }
 
@@ -86,7 +86,7 @@ impl TryFrom<Multihash> for PeerId {
     type Error = Multihash;
 
     fn try_from(value: Multihash) -> Result<Self, Self::Error> {
-        PeerId::from_multihash(value)
+        Self::from_multihash(value)
     }
 }
 
@@ -113,12 +113,12 @@ impl<'de> Deserialize<'de> for PeerId {
             //note: if use &str at here, json rpc raise a error: invalid type: string "xx", expected a borrowed string
             let s = <String>::deserialize(deserializer)?;
             let peer_id = Libp2pPeerId::from_str(s.as_str()).map_err(D::Error::custom)?;
-            Ok(PeerId(peer_id))
+            Ok(Self(peer_id))
         } else {
             let b = <Vec<u8>>::deserialize(deserializer)?;
             let peer_id = Libp2pPeerId::from_bytes(&b)
                 .map_err(|e| D::Error::custom(format_args!("parse PeerId fail:{:?}", e)))?;
-            Ok(PeerId(peer_id))
+            Ok(Self(peer_id))
         }
     }
 }

@@ -3,6 +3,7 @@
 
 pub(crate) mod call_api_cmd;
 mod call_contract_cmd;
+mod compile_cmd;
 mod concurrency_level_cmd;
 mod deploy_cmd;
 pub mod dev_helper;
@@ -12,6 +13,7 @@ mod get_coin_cmd;
 pub(crate) mod log_cmd;
 mod logger_balance_amount_cmd;
 pub(crate) mod move_explain;
+mod package_cmd;
 pub(crate) mod panic_cmd;
 pub(crate) mod resolve_cmd;
 pub(crate) mod sign_txn_helper;

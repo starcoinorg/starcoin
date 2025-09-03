@@ -102,7 +102,7 @@ pub struct ResponseError {
 impl TryFrom<String> for Response {
     type Error = anyhow::Error;
     fn try_from(resp: String) -> std::result::Result<Self, Self::Error> {
-        jsonrpc_core::serde_from_str::<Response>(&resp)
+        jsonrpc_core::serde_from_str::<Self>(&resp)
             .map_err(|e| anyhow!(format!("parse response failed: {}", e)))
     }
 }
@@ -159,7 +159,7 @@ struct Inner {
 }
 
 impl Inner {
-    pub fn new(tcp_stream: TcpStream) -> (Inner, mpsc::UnboundedSender<Request>) {
+    pub fn new(tcp_stream: TcpStream) -> (Self, mpsc::UnboundedSender<Request>) {
         let (s, channel) = mpsc::unbounded::<Request>();
         let (sink, stream) = StreamCodec::stream_incoming().framed(tcp_stream).split();
         let sink = Box::pin(sink.sink_map_err(|e| anyhow!(format!("{}", e))));
@@ -274,13 +274,13 @@ impl ActorService for StratumClientService {
     }
 }
 
-impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService {
+impl ServiceHandler<Self, LoginRequest> for StratumClientService {
     fn handle(
         &mut self,
         msg: LoginRequest,
-        _ctx: &mut ServiceContext<StratumClientService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <LoginRequest as ServiceRequest>::Response {
-        if let Some(sender) = self.sender.clone() {
+        if let Some(sender) = self.sender.clone().take() {
             let (s, r) = futures::channel::oneshot::channel();
             if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg, s)) {
                 error!("stratum handle login_request failed: {}", err);
@@ -292,14 +292,14 @@ impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService
     }
 }
 
-impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientService {
+impl ServiceHandler<Self, SubmitSealRequest> for StratumClientService {
     fn handle(
         &mut self,
         msg: SubmitSealRequest,
-        _ctx: &mut ServiceContext<StratumClientService>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <SubmitSealRequest as ServiceRequest>::Response {
         //FIXME: Failed to receive this msg since upgrade actix to 0.13.
-        if let Some(sender) = self.sender.clone() {
+        if let Some(sender) = self.sender.clone().take() {
             if let Err(e) = sender.unbounded_send(Request::SubmitSealRequest(msg)) {
                 error!("stratum handle submit seal request failed:{}", e);
             }

@@ -84,12 +84,12 @@ impl FromStr for MultiaddrWithPeerId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (peer_id, multiaddr) = parse_str_addr(s)?;
-        Ok(MultiaddrWithPeerId { peer_id, multiaddr })
+        Ok(Self { peer_id, multiaddr })
     }
 }
 
 impl From<MultiaddrWithPeerId> for String {
-    fn from(ma: MultiaddrWithPeerId) -> String {
+    fn from(ma: MultiaddrWithPeerId) -> Self {
         format!("{}", ma)
     }
 }

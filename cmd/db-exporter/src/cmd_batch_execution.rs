@@ -20,13 +20,13 @@ struct ExecutionResult {
 }
 
 impl ExecutionResult {
-    pub fn new(succeed: usize, failed: usize) -> ExecutionResult {
-        ExecutionResult { succeed, failed }
+    pub fn new(succeed: usize, failed: usize) -> Self {
+        Self { succeed, failed }
     }
 }
 
 impl CmdBatchExecution {
-    pub fn new(name: String, file_path: PathBuf, batch_size: usize) -> CmdBatchExecution {
+    pub fn new(name: String, file_path: PathBuf, batch_size: usize) -> Self {
         Self {
             file_path,
             name,

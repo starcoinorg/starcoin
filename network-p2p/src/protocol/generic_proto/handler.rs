@@ -428,7 +428,7 @@ pub struct Ready<'a> {
     lock: FuturesMutexGuard<'a, mpsc::Sender<NotificationsSinkMessage>>,
 }
 
-impl Ready<'_> {
+impl<'a> Ready<'a> {
     /// Consumes this slots reservation and actually queues the notification.
     ///
     /// Returns an error if the substream has been closed.
@@ -469,7 +469,7 @@ impl NotifsHandlerProto {
             })
             .collect();
 
-        NotifsHandlerProto { protocols }
+        Self { protocols }
     }
 }
 

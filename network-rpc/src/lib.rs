@@ -36,7 +36,7 @@ impl From<ApiQuotaConfig> for QuotaWrapper {
             QuotaDuration::Minute => Quota::per_minute(c.max_burst),
             QuotaDuration::Hour => Quota::per_hour(c.max_burst),
         };
-        QuotaWrapper(q)
+        Self(q)
     }
 }
 
@@ -77,7 +77,7 @@ impl NetworkRpcService {
 }
 
 impl ServiceFactory<Self> for NetworkRpcService {
-    fn create(ctx: &mut ServiceContext<NetworkRpcService>) -> Result<NetworkRpcService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
         let txpool_service = ctx.get_shared::<TxPoolService>()?;

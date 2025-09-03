@@ -145,7 +145,7 @@ pub struct ListResourceOption {
 
 impl Default for ListResourceOption {
     fn default() -> Self {
-        ListResourceOption {
+        Self {
             decode: false,
             state_root: None,
             start_index: 0,

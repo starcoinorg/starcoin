@@ -105,11 +105,11 @@ pub type Result<T, E = NetRpcError> = core::result::Result<T, E>;
 
 impl From<anyhow::Error> for NetRpcError {
     fn from(any_err: anyhow::Error) -> Self {
-        match any_err.downcast::<NetRpcError>() {
+        match any_err.downcast::<Self>() {
             Ok(rpc_err) => rpc_err,
             Err(any_err) => {
                 //TODO do more convert.
-                NetRpcError::new(RpcErrorCode::InternalError, any_err.to_string())
+                Self::new(RpcErrorCode::InternalError, any_err.to_string())
             }
         }
     }

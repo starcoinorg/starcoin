@@ -18,6 +18,7 @@ use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
@@ -86,7 +87,7 @@ impl TxPoolService {
         self.inner.storage.clone()
     }
 
-    pub(crate) fn from_inner(inner: Inner) -> TxPoolService {
+    pub(crate) fn from_inner(inner: Inner) -> Self {
         Self { inner }
     }
     pub(crate) fn get_inner(&self) -> Inner {
@@ -157,12 +158,12 @@ impl TxPoolSyncService for TxPoolService {
         r.into_iter().map(|t| t.signed().clone()).collect()
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         current_timestamp_secs: Option<u64>,
-        header: &BlockHeader,
-    ) -> Vec<MultiSignedUserTransaction> {
+        state_root: HashValue,
+    ) -> Vec<SignedUserTransaction> {
         let _timer: Option<starcoin_metrics::HistogramTimer> =
             self.inner.metrics.as_ref().map(|metrics| {
                 metrics
@@ -173,7 +174,7 @@ impl TxPoolSyncService for TxPoolService {
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let pool_client = PoolClient::new(
-            header.clone(),
+            state_root,
             self.inner.storage.clone(),
             self.inner.storage2.clone(),
             NonceCache::new(0),
@@ -197,10 +198,23 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.next_sequence_number(address)
     }
 
-    fn next_sequence_number_with_header(
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_time
+                .with_label_values(&["next_sequence_number"])
+                .start_timer()
+        });
+        self.inner.next_sequence_number_in_batch(addresses)
+    }
+
+    fn next_sequence_number_with_state(
         &self,
         address: AccountAddress,
-        header: &BlockHeader,
+        state_root: HashValue,
     ) -> Option<u64> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
@@ -208,7 +222,8 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number_with_header"])
                 .start_timer()
         });
-        self.inner.next_sequence_number_with_header(address, header)
+        self.inner
+            .next_sequence_number_with_header(address, state_root)
     }
 
     /// subscribe
@@ -338,6 +353,10 @@ impl Inner {
         ))
     }
 
+    pub(crate) fn get_chain_header(&self) -> BlockHeader {
+        self.chain_header.read().clone()
+    }
+
     pub(crate) fn cull(&self) {
         // NOTICE: as the new head block event is repeated with chain_new_block event,
         // we need to remove invalid txn here.
@@ -374,15 +393,16 @@ impl Inner {
         max_len: u64,
         current_timestamp_secs: u64,
     ) -> Vec<Arc<VerifiedTransaction>> {
-        let pending_settings = PendingSettings {
-            block_number: u64::MAX,
-            current_timestamp: current_timestamp_secs,
-            max_len: max_len as usize,
-            ordering: PendingOrdering::Priority,
-        };
-        self.queue
-            .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
-        self.queue.pending(self.get_pool_client(), pending_settings)
+        // let pending_settings = PendingSettings {
+        //     block_number: u64::MAX,
+        //     current_timestamp: current_timestamp_secs,
+        //     max_len: max_len as usize,
+        //     ordering: PendingOrdering::Priority,
+        // };
+        // self.queue
+        //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
+        // self.queue.pending(self.get_pool_client(), pending_settings)
+        self.get_pending_with_pool_client(max_len, current_timestamp_secs, self.get_pool_client())
     }
 
     pub fn get_pending_with_pool_client(
@@ -410,6 +430,14 @@ impl Inner {
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
             .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM1(address))
+    }
+
+    pub(crate) fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        self.queue
+            .next_sequence_number_in_batch(self.get_pool_client(), addresses)
     }
 
     pub(crate) fn next_sequence_number_with_header(

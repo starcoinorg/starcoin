@@ -18,7 +18,7 @@ impl ServiceRequest for PingRequest {
 }
 
 impl ServiceHandler<Self, PingRequest> for PanicService {
-    fn handle(&mut self, _msg: PingRequest, _ctx: &mut ServiceContext<PanicService>) -> u64 {
+    fn handle(&mut self, _msg: PingRequest, _ctx: &mut ServiceContext<Self>) -> u64 {
         self.counter += 1;
         self.counter
     }
@@ -32,7 +32,7 @@ impl ServiceRequest for PanicRequest {
 }
 
 impl ServiceHandler<Self, PanicRequest> for PanicService {
-    fn handle(&mut self, _msg: PanicRequest, _ctx: &mut ServiceContext<PanicService>) {
+    fn handle(&mut self, _msg: PanicRequest, _ctx: &mut ServiceContext<Self>) {
         panic!("Panic by request.");
     }
 }

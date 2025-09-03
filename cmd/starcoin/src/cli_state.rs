@@ -41,6 +41,8 @@ use starcoin_vm_types::transaction::{
     DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 
+use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
+
 static G_HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {

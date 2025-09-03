@@ -50,7 +50,7 @@ stdlib = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 move-ir-compiler = { workspace = true }
-
+starcoin-dag = { workspace = true }
 # dependencies for move 2.0
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }

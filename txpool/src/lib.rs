@@ -93,7 +93,7 @@ impl TxPoolActorService {
 }
 
 impl ServiceFactory<Self> for TxPoolActorService {
-    fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;

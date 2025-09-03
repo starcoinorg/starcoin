@@ -1,23 +1,123 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use async_std::future::timeout;
+use async_std::stream::StreamExt;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
+use starcoin_logger::prelude::info;
 use starcoin_miner::{
-    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, NewHeaderChannel,
-    NewHeaderService, SubmitSealRequest,
+    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, BlockTemplateResponse,
+    MinerService, NewHeaderChannel, NewHeaderService, SubmitSealRequest,
 };
-use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+use starcoin_service_registry::{
+    ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceFactory,
+};
 use starcoin_storage::BlockStore;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::{system_events::GenerateBlockEvent, U256};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::time::sleep;
+
+struct TestMinerService {
+    pub wait_result_sender: Option<futures::channel::mpsc::UnboundedSender<()>>,
+}
+
+impl TestMinerService {
+    pub fn new() -> Self {
+        Self {
+            wait_result_sender: None,
+        }
+    }
+}
+
+impl ServiceFactory<Self> for TestMinerService {
+    fn create(_ctx: &mut starcoin_service_registry::ServiceContext<Self>) -> anyhow::Result<Self> {
+        Ok(Self::new())
+    }
+}
+
+impl ActorService for TestMinerService {
+    fn service_name() -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    fn started(
+        &mut self,
+        ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) -> anyhow::Result<()> {
+        ctx.subscribe::<BlockTemplateResponse>();
+        let (sender, mut receiver) = futures::channel::mpsc::unbounded::<()>();
+        self.wait_result_sender = Some(sender);
+
+        ctx.run_later(
+            Duration::from_secs(20),
+            move |_ctx: &mut starcoin_service_registry::ServiceContext<'_, Self>| {
+                async_std::task::block_on(async {
+                    match timeout(Duration::from_secs(1), receiver.next()).await {
+                        Ok(_) => info!("receive the block template response"),
+                        Err(_) => panic!("not receive the block template response"),
+                    }
+                });
+            },
+        );
+        Ok(())
+    }
+
+    fn stopped(
+        &mut self,
+        ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) -> anyhow::Result<()> {
+        ctx.unsubscribe::<BlockTemplateResponse>();
+
+        info!("stoped receive the block template response and stop the testing service");
+        Ok(())
+    }
+}
+
+impl EventHandler<Self, BlockTemplateResponse> for TestMinerService {
+    fn handle_event(
+        &mut self,
+        msg: BlockTemplateResponse,
+        ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) {
+        let response = msg.template;
+        assert_eq!(response.number, 1);
+
+        let miner = ctx.service_ref::<MinerService>().unwrap().clone();
+        miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
+
+        std::thread::sleep(Duration::from_millis(200));
+        miner.notify(GenerateBlockEvent::new_break(true)).unwrap();
+        std::thread::sleep(Duration::from_millis(200));
+        // Generate a event
+        let diff = U256::from(1024);
+        let minting_blob = vec![0u8; 76];
+
+        let config = ctx.get_shared::<Arc<NodeConfig>>().unwrap();
+        let nonce = config
+            .net()
+            .genesis_config()
+            .consensus()
+            .solve_consensus_nonce(&minting_blob, diff, config.net().time_service().as_ref());
+        miner
+            .try_send(SubmitSealRequest::new(
+                minting_blob,
+                nonce,
+                BlockHeaderExtra::new([0u8; 4]),
+            ))
+            .unwrap();
+
+        if let Some(sender) = self.wait_result_sender.as_mut() {
+            sender.start_send(()).unwrap();
+        }
+        info!("notify testing service to stop");
+    }
+}
 
 #[stest::test]
 async fn test_miner_service() {
@@ -74,41 +174,21 @@ async fn test_miner_service() {
 
     registry.put_shared(NewHeaderChannel::new()).await.unwrap();
     registry.register::<NewHeaderService>().await.unwrap();
-    let template = registry.register::<BlockBuilderService>().await.unwrap();
-    let response = template
-        .send(BlockTemplateRequest)
-        .await
-        .unwrap()
-        .unwrap()
-        .template;
-    assert_eq!(response.number, 1);
 
     let miner = registry.register::<MinerService>().await;
     assert!(miner.is_ok());
 
-    let miner = miner.unwrap();
-    miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
+    let template = registry.register::<BlockBuilderService>().await.unwrap();
+    registry.register::<TestMinerService>().await.unwrap();
 
-    sleep(Duration::from_millis(200)).await;
-    miner.notify(GenerateBlockEvent::new_break(true)).unwrap();
-    sleep(Duration::from_millis(200)).await;
-    // Generate a event
-    let diff = U256::from(1024);
-    let minting_blob = vec![0u8; 76];
+    template
+        .notify(BlockTemplateRequest)
+        .expect("failed to send template request");
 
-    // Use genesis_config2 directly since vm1 consensus is not maintained
-    let nonce = config
-        .net()
-        .genesis_config2()
-        .consensus()
-        .solve_consensus_nonce(&minting_blob, diff, config.net().time_service().as_ref());
-    miner
-        .try_send(SubmitSealRequest::new(
-            minting_blob,
-            nonce,
-            BlockHeaderExtra::new([0u8; 4]),
-        ))
-        .unwrap();
+    std::thread::sleep(Duration::from_secs(30));
 
-    registry.shutdown_system().await.unwrap();
+    registry
+        .shutdown_system()
+        .await
+        .expect("failed to stop registry service");
 }

@@ -32,7 +32,7 @@ impl AccumulatorInfo {
         num_leaves: u64,
         num_nodes: u64,
     ) -> Self {
-        AccumulatorInfo {
+        Self {
             accumulator_root,
             frozen_subtree_roots,
             num_leaves,
@@ -59,7 +59,7 @@ impl AccumulatorInfo {
 
 impl Default for AccumulatorInfo {
     fn default() -> Self {
-        AccumulatorInfo {
+        Self {
             accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
             frozen_subtree_roots: Vec::new(),
             num_leaves: 0,

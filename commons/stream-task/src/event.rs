@@ -110,9 +110,9 @@ pub struct TaskProgressReport {
     pub percent: Option<f64>,
 }
 
-impl TryFrom<Vec<TaskProgressReport>> for TaskProgressReport {
+impl TryFrom<Vec<Self>> for TaskProgressReport {
     type Error = anyhow::Error;
-    fn try_from(reports: Vec<TaskProgressReport>) -> Result<Self, Self::Error> {
+    fn try_from(reports: Vec<Self>) -> Result<Self, Self::Error> {
         let task_name = reports
             .as_slice()
             .first()
@@ -137,7 +137,7 @@ impl TryFrom<Vec<TaskProgressReport>> for TaskProgressReport {
             processed_items += report.processed_items;
             use_seconds += report.use_seconds;
         }
-        Ok(TaskProgressReport {
+        Ok(Self {
             task_name,
             sub_task,
             error,

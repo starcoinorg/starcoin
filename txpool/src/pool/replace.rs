@@ -30,7 +30,7 @@ pub struct ReplaceByScoreAndReadiness<S, C> {
 impl<S, C> ReplaceByScoreAndReadiness<S, C> {
     /// Create a new `ReplaceByScoreAndReadiness`
     pub fn new(scoring: S, client: C) -> Self {
-        ReplaceByScoreAndReadiness { scoring, client }
+        Self { scoring, client }
     }
 }
 

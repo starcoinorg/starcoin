@@ -17,13 +17,11 @@ pub struct MetricsServerActorService {
 }
 
 impl ServiceFactory<Self> for MetricsServerActorService {
-    fn create(
-        ctx: &mut ServiceContext<MetricsServerActorService>,
-    ) -> Result<MetricsServerActorService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let registry = config.metrics.registry().cloned();
         if let Some(listen_addr) = config.metrics.metrics_address() {
-            Ok(MetricsServerActorService {
+            Ok(Self {
                 listen_addr,
                 registry: registry.unwrap_or_else(|| default_registry().clone()),
             })
@@ -74,9 +72,7 @@ impl MetricsPushActorService {
     }
 }
 impl ServiceFactory<Self> for MetricsPushActorService {
-    fn create(
-        ctx: &mut ServiceContext<MetricsPushActorService>,
-    ) -> Result<MetricsPushActorService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         Ok(Self::new(
             config.metrics.push_config.push_server_url(),

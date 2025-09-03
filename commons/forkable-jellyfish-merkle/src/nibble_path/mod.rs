@@ -45,7 +45,7 @@ impl fmt::Debug for NibblePath {
 /// Convert a vector of bytes into `NibblePath` using the lower 4 bits of each byte as nibble.
 impl FromIterator<Nibble> for NibblePath {
     fn from_iter<I: IntoIterator<Item = Nibble>>(iter: I) -> Self {
-        let mut nibble_path = NibblePath::new(vec![]);
+        let mut nibble_path = Self::new(vec![]);
         for nibble in iter {
             nibble_path.push(nibble);
         }
@@ -95,7 +95,7 @@ impl NibblePath {
     pub fn new(bytes: Vec<u8>) -> Self {
         checked_precondition!(bytes.len() <= ROOT_NIBBLE_HEIGHT / 2);
         let num_nibbles = bytes.len() * 2;
-        NibblePath { bytes, num_nibbles }
+        Self { bytes, num_nibbles }
     }
 
     /// Similar to `new()` but assumes that the bytes have one less nibble.
@@ -107,7 +107,7 @@ impl NibblePath {
             "Last nibble must be 0."
         );
         let num_nibbles = bytes.len() * 2 - 1;
-        NibblePath { bytes, num_nibbles }
+        Self { bytes, num_nibbles }
     }
 
     /// Adds a nibble to the end of the nibble path.
@@ -279,14 +279,14 @@ impl<'a> NibbleIterator<'a> {
     }
 
     /// Returns a nibble iterator that iterates all visited nibbles.
-    pub fn visited_nibbles(&self) -> NibbleIterator<'a> {
+    pub fn visited_nibbles(&self) -> Self {
         assume!(self.start <= self.pos.start); // invariant
         assume!(self.pos.start <= ROOT_NIBBLE_HEIGHT); // invariant
         Self::new(self.nibble_path, self.start, self.pos.start)
     }
 
     /// Returns a nibble iterator that iterates all remaining nibbles.
-    pub fn remaining_nibbles(&self) -> NibbleIterator<'a> {
+    pub fn remaining_nibbles(&self) -> Self {
         assume!(self.pos.start <= self.pos.end); // invariant
         assume!(self.pos.end <= ROOT_NIBBLE_HEIGHT); // invariant
         Self::new(self.nibble_path, self.pos.start, self.pos.end)

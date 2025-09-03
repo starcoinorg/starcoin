@@ -78,7 +78,7 @@ pub enum Priority {
 
 impl Priority {
     fn is_local(self) -> bool {
-        matches!(self, Priority::Local)
+        matches!(self, Self::Local)
     }
 }
 /// Transaction to verify.
@@ -104,43 +104,43 @@ impl PoolTransaction {
     /// Return transaction hash
     pub fn hash(&self) -> HashValue {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.hash(),
-            PoolTransaction::Retracted(ref tx) => tx.hash(),
-            PoolTransaction::Local(ref tx) => tx.id(),
+            Self::Unverified(ref tx) => tx.hash(),
+            Self::Retracted(ref tx) => tx.hash(),
+            Self::Local(ref tx) => tx.id(),
         }
     }
 
     pub fn signed(&self) -> &MultiSignedUserTransaction {
         match self {
-            PoolTransaction::Unverified(t) => t.txn(),
-            PoolTransaction::Retracted(t) => t.txn(),
-            PoolTransaction::Local(t) => &t.transaction,
+            Self::Unverified(t) => t.txn(),
+            Self::Retracted(t) => t.txn(),
+            Self::Local(t) => &t.transaction,
         }
     }
 
     /// Return transaction gas price
     pub fn gas_price(&self) -> GasPrice {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.gas_unit_price(),
-            PoolTransaction::Retracted(ref tx) => tx.gas_unit_price(),
-            PoolTransaction::Local(ref tx) => tx.gas_unit_price(),
+            Self::Unverified(ref tx) => tx.gas_unit_price(),
+            Self::Retracted(ref tx) => tx.gas_unit_price(),
+            Self::Local(ref tx) => tx.gas_unit_price(),
         }
     }
 
     fn gas(&self) -> Gas {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.max_gas_amount(),
-            PoolTransaction::Retracted(ref tx) => tx.max_gas_amount(),
-            PoolTransaction::Local(ref tx) => tx.max_gas_amount(),
+            Self::Unverified(ref tx) => tx.max_gas_amount(),
+            Self::Retracted(ref tx) => tx.max_gas_amount(),
+            Self::Local(ref tx) => tx.max_gas_amount(),
         }
     }
 
     fn is_local(&self) -> bool {
-        matches!(self, PoolTransaction::Local(..))
+        matches!(self, Self::Local(..))
     }
 
     fn is_retracted(&self) -> bool {
-        matches!(self, PoolTransaction::Retracted(..))
+        matches!(self, Self::Retracted(..))
     }
 }
 
@@ -164,7 +164,7 @@ impl VerifiedTransaction {
     pub fn from_pending_block_transaction(tx: MultiSignedUserTransaction) -> Self {
         let hash = tx.id();
         let sender = tx.sender();
-        VerifiedTransaction {
+        Self {
             transaction: tx.into(),
             hash,
             sender,
@@ -268,7 +268,7 @@ pub struct PendingSettings {
 impl PendingSettings {
     /// Get all transactions (no cap or len limit) prioritized.
     pub fn all_prioritized(block_number: u64, current_timestamp: u64) -> Self {
-        PendingSettings {
+        Self {
             block_number,
             current_timestamp,
             max_len: usize::MAX,

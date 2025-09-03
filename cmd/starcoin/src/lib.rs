@@ -4,6 +4,7 @@
 pub mod account;
 pub mod chain;
 pub mod cli_state;
+pub mod contract;
 mod cli_state_vm2;
 pub mod dev;
 pub mod helper;
@@ -29,6 +30,7 @@ pub fn add_command(
                 .subcommand(account::CreateCommand)
                 .subcommand(account::ShowCommand)
                 .subcommand(account::TransferCommand)
+                .subcommand(account::AcceptTokenCommand)
                 .subcommand(account::ListCommand)
                 .subcommand(account::ImportMultisigCommand)
                 .subcommand(account::ChangePasswordCmd)
@@ -105,6 +107,9 @@ pub fn add_command(
                 .subcommand(chain::GetTransactionInfoListCommand)
                 .subcommand(chain::GetTransactionProofCommand)
                 .subcommand(chain::GetBlockInfoCommand),
+                .subcommand(chain::GetDagStateCommand)
+                .subcommand(chain::IsAncestorOfCommand)
+                .subcommand(chain::GetGhostDagDataCommand),
         )
         .command(
             CustomCommand::with_name("txpool")
@@ -147,4 +152,5 @@ pub fn add_command(
                 .subcommand(dev::UpgradeModuleQueueCommand)
                 .subcommand(dev::UpgradeVMConfigProposalCommand),
         )
+        .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }

@@ -54,6 +54,7 @@ starcoin-vm2-account-service = { workspace = true }
 starcoin-vm2-rpc-server = { workspace = true }
 starcoin-vm2-dev = { workspace = true }
 starcoin-dag = { workspace = true }
+starcoin-chain = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

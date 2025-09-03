@@ -58,7 +58,7 @@ impl<C: JobClient> ActorService for MinerClientService<C> {
 }
 
 impl<C: JobClient> ServiceFactory<Self> for MinerClientService<C> {
-    fn create(ctx: &mut ServiceContext<MinerClientService<C>>) -> Result<MinerClientService<C>> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<MinerClientConfig>()?;
         let job_client = ctx.get_shared::<C>()?;
         let solver = create_solver(config.clone(), Some(job_client.time_service()))?;
@@ -68,11 +68,7 @@ impl<C: JobClient> ServiceFactory<Self> for MinerClientService<C> {
 }
 
 impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> {
-    fn handle_event(
-        &mut self,
-        event: MintBlockEvent,
-        ctx: &mut ServiceContext<MinerClientService<C>>,
-    ) {
+    fn handle_event(&mut self, event: MintBlockEvent, ctx: &mut ServiceContext<Self>) {
         let (stop_tx, stop_rx) = unbounded();
         if let Some(mut task) = self.inner.current_task.take() {
             ctx.wait(async move {
@@ -93,7 +89,7 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
 }
 
 impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
-    fn handle_event(&mut self, event: SealEvent, ctx: &mut ServiceContext<MinerClientService<C>>) {
+    fn handle_event(&mut self, event: SealEvent, ctx: &mut ServiceContext<Self>) {
         {
             *self.inner.num_seals_found.lock() += 1;
             let msg = format!(

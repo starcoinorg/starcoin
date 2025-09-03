@@ -14,6 +14,7 @@ use rand::prelude::SliceRandom;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::info;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use std::borrow::Cow;
@@ -85,10 +86,10 @@ impl From<(PeerInfo, u64)> for PeerDetail {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema, Default)]
 pub enum PeerStrategy {
-    #[default]
     Random,
+    #[default]
     WeightedRandom,
     Best,
     Avg,
@@ -295,8 +296,10 @@ impl PeerSelector {
             .map(|peer| peer.peer_info().clone())
             .collect();
         if betters.is_empty() {
+            info!("no betters found for syn");
             None
         } else {
+            info!("betters found: {:?}", betters);
             Some(betters)
         }
     }

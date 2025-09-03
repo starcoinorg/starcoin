@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod errors;
+
 use anyhow::{bail, ensure, format_err, Result};
+pub use errors::GenesisError;
 use include_dir::include_dir;
 use include_dir::Dir;
 use serde::{Deserialize, Serialize};
@@ -15,6 +18,10 @@ use starcoin_config::{
 };
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfo;
+use starcoin_dag::consensusdb::consensus_pruning_info::PruningPointInfoWriter;
+use starcoin_dag::consensusdb::consensus_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagStateStore;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -371,10 +378,10 @@ impl Genesis {
         Ok(())
     }
 
-    fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        let genesis = match Genesis::load_from_dir(data_dir) {
+    fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Self> {
+        let genesis = match Self::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
-                let expect_genesis = Genesis::load_or_build(net)?;
+                let expect_genesis = Self::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
                         expect: expect_genesis.block.header.id(),
@@ -387,7 +394,7 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
-                    let genesis = Genesis::load_or_build(net)?;
+                    let genesis = Self::load_or_build(net)?;
                     genesis.save(data_dir)?;
                     info!(
                         "Genesis::load_and_check_genesis | Build and save new genesis: {}",
@@ -409,7 +416,7 @@ impl Genesis {
         storage2: Arc<Storage2>,
         dag: BlockDAG,
         data_dir: &Path,
-    ) -> Result<(ChainInfo, Genesis)> {
+    ) -> Result<(ChainInfo, Self)> {
         let (chain_info, genesis) = match storage.get_chain_info() {
             Ok(Some(chain_info)) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, false)?;

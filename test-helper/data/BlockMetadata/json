@@ -8,5 +8,7 @@
   "chain_id": {
     "id": 255
   },
-  "parent_gas_used": 0
+  "parent_gas_used": 0,
+  "parents_hash": ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+  "red_blocks": 0
 }

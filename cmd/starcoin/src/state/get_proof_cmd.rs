@@ -17,7 +17,7 @@ use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 /// Get state and proof with access_path, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
 #[derive(Debug, Parser)]
 #[clap(name = "get-proof", alias = "get_proof")]
-pub struct GetOpt {
+pub struct GetProofOpt {
     #[clap(name = "access_path")]
     /// access_path of code or resource, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
     access_path: AccessPath,
@@ -42,8 +42,8 @@ impl Serialize for ViewOrRaw {
         S: serde::Serializer,
     {
         match self {
-            ViewOrRaw::View(v) => v.serialize(serializer),
-            ViewOrRaw::Raw(v) => v.serialize(serializer),
+            Self::View(v) => v.serialize(serializer),
+            Self::Raw(v) => v.serialize(serializer),
         }
     }
 }
@@ -53,7 +53,7 @@ pub struct GetProofCommand;
 impl CommandAction for GetProofCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
+    type Opt = GetProofOpt;
     type ReturnItem = ViewOrRaw;
 
     fn run(

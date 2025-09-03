@@ -15,7 +15,7 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub struct MockChainStateService {}
 
 impl MockChainStateService {
-    pub fn new() -> MockChainStateService {
+    pub fn new() -> Self {
         Self::default()
     }
 }

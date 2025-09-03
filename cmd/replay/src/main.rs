@@ -78,10 +78,19 @@ fn main() -> anyhow::Result<()> {
         ))
         .unwrap(),
     );
-    let (chain_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
-        .expect("init storage by genesis fail.");
-    let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-        .expect("create block chain should success.");
+    //TODO:FIXME
+    let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())
+            .expect("init storage by genesis fail.");
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage,
+        None,
+        dag.clone(),
+    )
+    .expect("create block chain should success.");
 
     let storage2 = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -90,14 +99,16 @@ fn main() -> anyhow::Result<()> {
         ))
         .unwrap(),
     );
-    let (chain_info2, _) = Genesis::init_and_check_storage(&net, storage2.clone(), to_dir.as_ref())
-        .expect("init storage by genesis fail.");
+    let (chain_info2, _) =
+        Genesis::init_and_check_storage(&net, storage2.clone(), dag.clone(), to_dir.as_ref())
+            .expect("init storage by genesis fail.");
 
     let mut chain2 = BlockChain::new(
         net.time_service(),
         chain_info2.status().head().id(),
         storage2.clone(),
         None,
+        dag,
     )
     .expect("create block chain should success.");
 

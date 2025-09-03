@@ -68,7 +68,7 @@ pub struct NodeService {
 }
 
 impl ServiceFactory<Self> for NodeService {
-    fn create(ctx: &mut ServiceContext<NodeService>) -> Result<NodeService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             registry: ctx.registry_ref().clone(),
         })
@@ -253,7 +253,7 @@ impl NodeService {
     async fn init_system(
         config: Arc<NodeConfig>,
         logger_handle: Arc<LoggerHandle>,
-    ) -> Result<(ServiceRef<RegistryService>, ServiceRef<NodeService>)> {
+    ) -> Result<(ServiceRef<RegistryService>, ServiceRef<Self>)> {
         let registry = RegistryService::launch();
 
         registry.put_shared(config.clone()).await?;

@@ -1,6 +1,7 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -31,7 +32,7 @@ pub struct NonceCache {
 impl NonceCache {
     /// Create new cache with a limit of `limit` entries.
     pub fn new(limit: usize) -> Self {
-        NonceCache {
+        Self {
             nonces: Arc::new(RwLock::new(HashMap::with_capacity(limit / 2))),
             limit,
         }

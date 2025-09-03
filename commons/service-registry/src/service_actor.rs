@@ -127,7 +127,7 @@ where
     R: ServiceRequest,
 {
     fn from(request: R) -> Self {
-        ServiceMessage { request }
+        Self { request }
     }
 }
 

@@ -222,13 +222,13 @@ impl RawKey for HashValueKey {
     }
 
     fn decode_key(bytes: &[u8]) -> Result<Self> {
-        Ok(HashValueKey(HashValue::from_slice(bytes)?))
+        Ok(Self(HashValue::from_slice(bytes)?))
     }
 }
 
 impl From<HashValue> for HashValueKey {
     fn from(hash: HashValue) -> Self {
-        HashValueKey(hash)
+        Self(hash)
     }
 }
 
