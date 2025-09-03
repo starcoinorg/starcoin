@@ -12,10 +12,10 @@ use anyhow::{bail, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
+use starcoin_types::stdlib::StdlibVersion;
 use starcoin_vm2_transaction_builder::build_module_upgrade_proposal;
 use starcoin_vm2_vm_types::{
-    genesis_config::StdlibVersion, on_chain_config::Version, state_view::StateReaderExt,
-    token::token_code::TokenCode,
+    on_chain_config::Version, state_view::StateReaderExt, token::token_code::TokenCode,
 };
 use std::path::PathBuf;
 

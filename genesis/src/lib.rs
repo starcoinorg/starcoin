@@ -657,7 +657,7 @@ mod tests {
         let account_state_reader2 = AccountStateReader2::new(&state_db2);
 
         // VM2 API returns ChainId directly, not Option<ChainId>
-        use starcoin_vm2_vm_types::genesis_config::ChainId as ChainId2;
+        use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
         let chain_id2 = account_state_reader2.get_chain_id()?;
         assert_eq!(
             ChainId2::new(net.chain_id().id()),

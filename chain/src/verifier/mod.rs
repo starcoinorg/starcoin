@@ -350,8 +350,7 @@ impl BlockVerifier for ConsensusVerifier {
     where
         R: ChainReader,
     {
-        let epoch = current_chain.epoch();
-        let consensus = epoch.strategy();
+        let consensus = current_chain.consensus_strategy();
         if let Err(e) = consensus.verify(current_chain, new_block_header) {
             return match e.downcast::<ConsensusVerifyError>() {
                 Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(

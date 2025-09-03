@@ -11658,9 +11658,13 @@ dependencies = [
  "serde 1.0.205",
  "serde_json",
  "starcoin-account-api",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-gas",
+ "starcoin-gas-algebra",
  "starcoin-gas-algebra-ext",
+ "starcoin-gas-meter",
+ "starcoin-gas-schedule",
  "starcoin-logger 2.1.1",
  "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-system",
@@ -13614,6 +13618,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
+ "starcoin-vm1-types",
  "tracing",
 ]
 
@@ -13963,6 +13968,7 @@ name = "starcoin-vm2-genesis"
 version = "2.1.1"
 dependencies = [
  "anyhow",
+ "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-storage",
  "starcoin-types",
@@ -14133,6 +14139,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "starcoin-cached-packages",
+ "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-types",
  "starcoin-vm-types",
@@ -14160,16 +14167,14 @@ dependencies = [
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-prover 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "once_cell",
- "serde 1.0.205",
  "sha2 0.10.6",
  "simplelog",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-framework 12.0.0",
  "starcoin-move-compiler",
+ "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
- "tempfile",
  "test-helper",
- "walkdir",
 ]
 
 [[package]]

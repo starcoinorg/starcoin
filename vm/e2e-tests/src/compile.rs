@@ -4,8 +4,8 @@
 //! Support for compiling scripts and modules in tests.
 
 use move_ir_compiler::Compiler;
+use starcoin_types::stdlib::StdlibVersion::Latest;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
 use starcoin_vm_types::transaction::{Module, Script};
 use stdlib::{stdlib_compiled_modules, StdLibOptions};
 

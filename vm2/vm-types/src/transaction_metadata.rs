@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::genesis_config::ChainId;
+use crate::on_chain_resource::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::transaction::authenticator::AuthenticationKeyPreimage;
 use crate::transaction::RawUserTransaction;

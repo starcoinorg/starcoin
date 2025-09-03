@@ -18,10 +18,9 @@ use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     account_config::TABLE_HANDLE_ADDRESS_LIST,
-    genesis_config::ChainId,
     move_resource::MoveResource,
     on_chain_config::OnChainConfig,
-    on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain},
+    on_chain_resource::{ChainId, Epoch, EpochInfo, GlobalTimeOnChain},
     state_store::{table::TableHandle, StateView},
 };
 use std::convert::TryFrom;

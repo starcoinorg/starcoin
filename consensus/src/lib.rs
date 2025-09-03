@@ -14,7 +14,6 @@ use starcoin_crypto::HashValue;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 
 pub mod argon;
 pub mod cn;
@@ -27,6 +26,7 @@ pub mod keccak;
 
 pub use consensus::{Consensus, ConsensusVerifyError};
 pub use starcoin_time_service::duration_since_epoch;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 pub fn target_to_difficulty(target: U256) -> Result<U256> {
     U256::MAX

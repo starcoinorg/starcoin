@@ -16,8 +16,8 @@ use starcoin_move_compiler::diagnostics::{
     report_diagnostics_to_color_buffer, unwrap_or_report_diagnostics,
 };
 pub use starcoin_move_compiler::{starcoin_framework_named_addresses, Compiler};
+pub use starcoin_types::stdlib::StdlibVersion;
 use starcoin_vm_types::file_format::CompiledModule;
-pub use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
 use std::str::FromStr;
 use std::{

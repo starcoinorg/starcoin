@@ -84,7 +84,7 @@ pub mod write_set {
 }
 
 pub mod genesis_config {
-    pub use starcoin_vm2_vm_types::genesis_config::*;
+    pub use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 }
 
 pub mod stress_test;

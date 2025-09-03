@@ -15,8 +15,8 @@ use starcoin_vm2_types::{
     vm_error::KeptVMStatus,
 };
 
+use starcoin_config::genesis_config::vm2::GenesisConfig;
 use starcoin_vm2_vm_types::{
-    genesis_config::GenesisConfig,
     transaction::TransactionInfo,
     transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload},
     transaction::{Transaction, TransactionStatus},

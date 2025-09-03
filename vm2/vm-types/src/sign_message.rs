@@ -3,7 +3,7 @@
 
 use crate::account_address::AccountAddress;
 use crate::account_config::AccountResource;
-use crate::genesis_config::ChainId;
+use crate::on_chain_resource::ChainId;
 use crate::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use anyhow::{ensure, Result};
 use schemars::{self, JsonSchema};

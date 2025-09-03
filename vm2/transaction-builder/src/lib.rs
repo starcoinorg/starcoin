@@ -16,9 +16,10 @@ use starcoin_cached_packages::starcoin_stdlib::{
     dao_queue_proposal_action, dao_upgrade_module_proposal_propose_module_upgrade_v2,
     dao_upgrade_module_proposal_submit_module_upgrade_plan,
 };
+use starcoin_config::genesis_config::vm2::GenesisConfig;
 use starcoin_crypto::_once_cell::sync::Lazy;
 use starcoin_types::account::Account;
-use starcoin_vm_types::genesis_config::{ChainId, GenesisConfig};
+use starcoin_vm_types::on_chain_resource::ChainId;
 use starcoin_vm_types::{
     access::ModuleAccess,
     account_address::AccountAddress,

@@ -36,6 +36,10 @@ strum = { workspace = true, features = ["derive"] }
 
 # dependencies for move 2.0
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-gas-schedule = { path = "../vm2/framework/gas-schedule" }
+starcoin-gas-algebra = { path = "../vm2/framework/gas-algebra" }
+starcoin-gas-meter = { path = "../vm2/framework/gas-meter" }
 
 [package]
 authors = { workspace = true }

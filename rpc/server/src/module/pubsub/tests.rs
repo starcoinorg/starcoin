@@ -27,7 +27,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{account_address, U256};
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;

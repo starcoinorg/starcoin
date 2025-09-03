@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod vm2;
+
 use anyhow::{bail, ensure, format_err, Result};
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -17,18 +19,16 @@ use starcoin_crypto::{
 use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
+use starcoin_types::stdlib::StdlibVersion;
 use starcoin_uint::U256;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::event::{EventHandle, EventKey};
-use starcoin_vm2_vm_types::genesis_config::{
-    self as genesis_config2, GenesisConfig as GenesisConfig2,
-};
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::gas_schedule::{
     latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3,
     G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
 };
-use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
+use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::{
     instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2, v4_native_table,
     ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption, VMConfig, Version,
@@ -45,6 +45,7 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use strum::{EnumIter, IntoEnumIterator};
+use vm2::{self as genesis_config2, GenesisConfig as GenesisConfig2};
 
 #[derive(
     Clone,

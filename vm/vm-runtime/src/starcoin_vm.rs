@@ -31,6 +31,7 @@ use starcoin_types::account_config::{
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadataLegacy as BlockMetadata,
+    stdlib::StdlibVersion,
     transaction::{
         SignatureCheckedTransaction, SignedUserTransaction, Transaction, TransactionOutput,
         TransactionPayload, TransactionStatus,
@@ -46,7 +47,6 @@ use starcoin_vm_types::account_config::{
 use starcoin_vm_types::errors::VMResult;
 use starcoin_vm_types::file_format::{CompiledModule, CompiledScript};
 use starcoin_vm_types::gas_schedule::G_LATEST_GAS_COST_TABLE;
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
@@ -182,7 +182,7 @@ impl StarcoinVM {
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
-            let stdlib_version = v.clone().into_stdlib_version();
+            let stdlib_version: StdlibVersion = v.clone().into();
             let _message;
             (self.gas_schedule, _message) = if stdlib_version
                 < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
@@ -784,7 +784,7 @@ impl StarcoinVM {
                 AccountAddress::ZERO,
             ),
         };
-        let stdlib_version = self.get_version()?.into_stdlib_version();
+        let stdlib_version: StdlibVersion = self.get_version()?.into();
         // Run epilogue by genesis account, second arg is txn sender.
         // From stdlib v5, the epilogue function add `txn_authentication_key_preimage` argument, change to epilogue_v2
         let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {

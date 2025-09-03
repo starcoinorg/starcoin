@@ -6,7 +6,7 @@
 
 use crate::account_config::{genesis_address, STC_TOKEN_CODE_STR};
 use crate::block_metadata::BlockMetadata;
-use crate::genesis_config::ChainId;
+use crate::on_chain_resource::ChainId;
 use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
 use crate::{
     account_address::AccountAddress,
@@ -991,11 +991,11 @@ pub struct LegacyBlockMetadata {
     id: Option<HashValue>,
     parent_hash: HashValue,
     timestamp: u64,
-    author: crate::account_address::AccountAddress,
-    author_auth_key: Option<crate::transaction::authenticator::AuthenticationKey>,
+    author: AccountAddress,
+    author_auth_key: Option<authenticator::AuthenticationKey>,
     uncles: u64,
     number: u64,
-    chain_id: crate::genesis_config::ChainId,
+    chain_id: ChainId,
     parent_gas_used: u64,
 }
 

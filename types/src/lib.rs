@@ -202,6 +202,7 @@ pub mod genesis_config {
     pub use starcoin_vm_types::genesis_config::*;
 }
 
+pub mod stdlib;
 pub mod stress_test;
 pub mod sync_status;
 pub mod table;

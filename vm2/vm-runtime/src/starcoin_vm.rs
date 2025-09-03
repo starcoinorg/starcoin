@@ -63,6 +63,7 @@ use std::{borrow::Borrow, cmp::min, sync::Arc};
 use crate::{verifier, VMExecutor};
 #[cfg(feature = "metrics")]
 use starcoin_metrics::metrics::VMMetrics;
+use starcoin_vm1_types::stdlib::StdlibVersion;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
@@ -194,7 +195,7 @@ impl StarcoinVM {
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
-            let stdlib_version = v.clone().into_stdlib_version();
+            let stdlib_version: StdlibVersion = v.clone().into();
             self.gas_schedule = {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain resource",

@@ -5,6 +5,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-vm-types = { path = "../vm-types" }
 starcoin-types = { path = "../types" }
 starcoin-cached-packages = { path = "../framework/cached-packages" }
+starcoin-config = { workspace = true }
 
 [dev-dependencies]
 #stest = { workspace = true }
