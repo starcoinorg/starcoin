@@ -11669,7 +11669,7 @@ dependencies = [
  "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-types",
- "strum 0.27.2",
+ "strum",
  "tempfile",
  "thiserror",
  "toml 0.5.11",
@@ -13680,7 +13680,7 @@ dependencies = [
  "starcoin-infallible",
  "starcoin-time-service",
  "starcoin-uint",
- "strum 0.24.1",
+ "strum",
  "strum_macros 0.24.3",
  "thiserror",
 ]
@@ -14307,12 +14307,6 @@ dependencies = [
  "quote 1.0.36",
  "syn 1.0.107",
 ]
-
-[[package]]
-name = "strum"
-version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 
 [[package]]
 name = "strum"
