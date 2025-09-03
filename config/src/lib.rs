@@ -327,10 +327,9 @@ impl BaseConfig {
         let config_path2 = data_dir.join(G_GENESIS_CONFIG_FILE_NAME_2);
         // todo: handle the case with only one genesis_config missed
         let configs_in_file = if config_path.exists() && config_path2.exists() {
-            Some((
-                GenesisConfig::load(config_path.as_path())?,
-                GenesisConfig2::load(config_path2.as_path())?,
-            ))
+            let genesis_config1 = GenesisConfig::load(config_path.as_path())?;
+            let genesis_config2 = GenesisConfig2::load(config_path2.as_path())?;
+            Some((genesis_config1, genesis_config2))
         } else {
             ensure!(
                 !config_path.exists() && !config_path2.exists(),
