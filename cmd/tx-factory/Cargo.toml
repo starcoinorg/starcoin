@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "starcoin-vm2-txfactory"
-path = "src/vm2_txn.rs"
+path = "src/vm2_txn_main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
