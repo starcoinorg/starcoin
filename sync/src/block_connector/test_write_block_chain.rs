@@ -8,7 +8,8 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
-use starcoin_txpool_mock_service::MockTxPoolService;
+
+use starcoin_txpool::MockTxPoolService;
 use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
@@ -24,7 +25,7 @@ pub async fn create_writeable_dag_block_chain() -> (
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
-    let txpool_service = MockTxPoolService::new();
+    let txpool_service = MockTxPoolService::new(storage.clone());
     (
         WriteBlockChainService::new_with_dag_fork_number(
             node_config.clone(),
@@ -53,7 +54,7 @@ pub async fn create_writeable_block_chain() -> (
         .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
-    let txpool_service = MockTxPoolService::new();
+    let txpool_service = MockTxPoolService::new(storage.clone());
     (
         WriteBlockChainService::new(
             node_config.clone(),

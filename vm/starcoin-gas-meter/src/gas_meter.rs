@@ -19,6 +19,7 @@ use move_vm_types::views::{TypeView, ValueView};
 use starcoin_gas_algebra_ext::{
     FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule,
 };
+use starcoin_logger::prelude::info;
 #[cfg(feature = "testing")]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
