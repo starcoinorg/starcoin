@@ -12155,9 +12155,10 @@ dependencies = [
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
- "starcoin-vm2-genesis",
+ "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
+ "starcoin-vm2-transaction-builder",
  "stdlib",
  "stest",
  "test-helper",
@@ -13316,12 +13317,11 @@ dependencies = [
  "bcs-ext",
  "starcoin-config",
  "starcoin-framework 0.1.0",
+ "starcoin-genesis",
  "starcoin-logger 2.1.1",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm2-executor",
- "starcoin-vm2-genesis",
  "starcoin-vm2-move-compiler",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
@@ -13961,22 +13961,6 @@ dependencies = [
  "starcoin-vm2-statedb",
  "starcoin-vm2-transaction-builder",
  "stest",
-]
-
-[[package]]
-name = "starcoin-vm2-genesis"
-version = "2.1.1"
-dependencies = [
- "anyhow",
- "starcoin-config",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
- "starcoin-storage",
- "starcoin-types",
- "starcoin-vm-types",
- "starcoin-vm2-executor",
- "starcoin-vm2-state-api",
- "starcoin-vm2-statedb",
- "starcoin-vm2-transaction-builder",
 ]
 
 [[package]]
