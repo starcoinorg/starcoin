@@ -132,8 +132,7 @@ impl Genesis {
                     .as_slice(),
             );
 
-            let (txn2, txn2_info) =
-                vm2::build_and_execute_genesis_transaction(net.chain_id().id(), genesis_config2);
+            let (txn2, txn2_info) = vm2::build_and_execute_genesis_transaction(net);
 
             let txn = Self::build_genesis_transaction(net)?;
 

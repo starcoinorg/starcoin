@@ -15,7 +15,7 @@ use starcoin_vm2_types::{
     vm_error::KeptVMStatus,
 };
 
-use starcoin_config::genesis_config::vm2::GenesisConfig;
+use starcoin_config::ChainNetwork;
 use starcoin_vm2_vm_types::{
     transaction::TransactionInfo,
     transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload},
@@ -23,6 +23,7 @@ use starcoin_vm2_vm_types::{
     StateView,
 };
 use std::sync::Arc;
+use stdlib::StdLibOptions;
 
 fn build_genesis_transaction_with_package(
     chain_id: u8,
@@ -42,19 +43,20 @@ fn build_genesis_transaction_with_package(
     Ok(sign_txn.into_inner())
 }
 
-fn build_genesis_transaction(
-    chain_id: u8,
-    genesis_config: &GenesisConfig,
-) -> anyhow::Result<SignedUserTransaction> {
-    let package = build_stdlib_package(chain_id.into(), genesis_config, None)?;
-    build_genesis_transaction_with_package(chain_id, package)
+fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
+    let stdlib_option = if net.is_test() {
+        StdLibOptions::Fresh
+    } else {
+        StdLibOptions::Compiled(net.stdlib_version())
+    };
+    let package = build_stdlib_package(net, stdlib_option)?;
+    build_genesis_transaction_with_package(net.chain_id().id(), package)
 }
 
 pub fn build_and_execute_genesis_transaction(
-    chain_id: u8,
-    genesis_config: &GenesisConfig,
+    net: &ChainNetwork,
 ) -> (SignedUserTransaction, TransactionInfo) {
-    let user_txn = build_genesis_transaction(chain_id, genesis_config).unwrap();
+    let user_txn = build_genesis_transaction(net).expect("failed to build genesis transaction");
 
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
     let chain_state = ChainStateDB::new(storage.clone(), None);

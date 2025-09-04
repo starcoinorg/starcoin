@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_config::genesis_config::vm2::GenesisConfig;
+use starcoin_config::ChainNetwork;
 use starcoin_vm2_cached_packages::head_release_bundle;
 use starcoin_vm2_cached_packages::starcoin_framework_sdk_builder::{
     empty_scripts_empty_script, on_chain_config_scripts_propose_update_vm_config,
@@ -38,6 +39,7 @@ use starcoin_vm2_vm_types::{
     },
 };
 use std::convert::TryInto;
+use stdlib::{StdLibOptions, G_COMPILED_STDLIB};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
@@ -331,14 +333,22 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-// fixme: enable stdlib_option
-pub fn build_stdlib_package(
-    chain_id: ChainId,
-    genesis_config: &GenesisConfig,
-    _stdlib_option: Option<u64>,
-) -> Result<Package> {
-    let init_script = build_init_script(chain_id.id(), genesis_config);
-    let modules = head_release_bundle().legacy_copy_code();
+pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
+    let init_script = build_init_script(net.chain_id().id(), net.genesis_config2());
+    let modules = match &stdlib_option {
+        StdLibOptions::Compiled(version) => {
+            let stdlib_packages = G_COMPILED_STDLIB
+                .get(version)
+                .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version));
+            let bundle_name = net.to_string();
+            stdlib_packages
+                .iter()
+                .find(|(name, _)| *name == bundle_name)
+                .map(|(_, code)| code.to_vec())
+                .unwrap_or(head_release_bundle().legacy_copy_code())
+        }
+        StdLibOptions::Fresh => head_release_bundle().legacy_copy_code(),
+    };
     Package::new(
         modules.into_iter().map(Module::new).collect(),
         Some(init_script),
