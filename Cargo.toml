@@ -431,7 +431,7 @@ flate2 = "1.0"
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
 ripemd = "0.1.1"
 sha2_0_10_6 = { package = "sha2", version = "0.10.6" }
-siphasher = "0.3.10"
+siphasher = "0.3.11"
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
