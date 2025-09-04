@@ -12,8 +12,8 @@ use anyhow::{bail, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
+use starcoin_transaction_builder::vm2::build_module_upgrade_proposal;
 use starcoin_types::stdlib::StdlibVersion;
-use starcoin_vm2_transaction_builder::build_module_upgrade_proposal;
 use starcoin_vm2_vm_types::{
     on_chain_config::Version, state_view::StateReaderExt, token::token_code::TokenCode,
 };

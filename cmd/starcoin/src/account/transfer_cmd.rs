@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm2_transaction_builder::encode_transfer_script_by_token_code;
+use starcoin_transaction_builder::vm2::encode_transfer_script_by_token_code;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::token::{stc::G_STC_TOKEN_CODE, token_code::TokenCode};
 

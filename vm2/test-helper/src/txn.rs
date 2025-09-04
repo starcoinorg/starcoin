@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_config::ChainNetwork;
-use starcoin_vm2_transaction_builder::{
+use starcoin_transaction_builder::vm2::{
     create_signed_txn_with_association_account, encode_transfer_script_by_token_code,
     DEFAULT_MAX_GAS_AMOUNT,
 };
@@ -113,7 +113,7 @@ pub fn build_transfer_from_association(
     expire_time: u64,
     net: &ChainNetwork,
 ) -> Transaction {
-    starcoin_vm2_transaction_builder::build_transfer_from_association(
+    starcoin_transaction_builder::vm2::build_transfer_from_association(
         receiver,
         seq_number,
         amount,
@@ -155,7 +155,7 @@ pub fn build_transfer_txn(
     expire_timestamp_in_secs: u64,
     chain_id: u8,
 ) -> RawUserTransaction {
-    starcoin_vm2_transaction_builder::build_transfer_txn(
+    starcoin_transaction_builder::vm2::build_transfer_txn(
         receiver,
         sender,
         seq_number,

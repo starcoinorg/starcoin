@@ -25,6 +25,6 @@ stest = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
-starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
 move-vm2-transactional-test-runner = { workspace = true }
 move-vm2-core-types = { workspace = true }

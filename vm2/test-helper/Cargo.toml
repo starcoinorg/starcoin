@@ -22,7 +22,7 @@ starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
-starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
 
 [dev-dependencies]
 starcoin-logger = { workspace = true }

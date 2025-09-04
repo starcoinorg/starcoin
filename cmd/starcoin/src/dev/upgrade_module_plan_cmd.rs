@@ -7,7 +7,7 @@ use crate::{
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm2_transaction_builder::build_module_upgrade_plan;
+use starcoin_transaction_builder::vm2::build_module_upgrade_plan;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::account_config::token_code::TokenCode;
 

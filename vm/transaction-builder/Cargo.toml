@@ -3,10 +3,15 @@ anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-logger = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
 stdlib = { workspace = true }
+
+# dependencies for move2
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

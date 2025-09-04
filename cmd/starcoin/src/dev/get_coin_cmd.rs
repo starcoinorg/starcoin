@@ -13,8 +13,8 @@ use starcoin_vm2_vm_types::{
     token::token_value::TokenValue,
 };
 
+use starcoin_transaction_builder::vm2::encode_transfer_script_by_token_code;
 use starcoin_types::account_address::AccountAddress as AccountAddressV1;
-use starcoin_vm2_transaction_builder::encode_transfer_script_by_token_code;
 use std::time::Duration;
 
 /// Get stc to default account.

@@ -104,7 +104,6 @@ members = [
     "vm2/framework/move-stdlib",
     "vm2/framework/native-interface",
     "vm2/framework/table-natives",
-    "vm2/transaction-builder",
     "vm2/executor",
     "vm2/test-helper",
     "vm2/service/state",
@@ -223,7 +222,6 @@ default-members = [
     "vm/starcoin-transactional-test-harness",
     "vm2/chain",
     "vm2/executor",
-    "vm2/transaction-builder",
     "vm2/test-helper",
     "vm2/rpc/api",
     "vm2/rpc/server",
@@ -604,7 +602,6 @@ starcoin-vm2-dev = { path = "vm2/dev" }
 starcoin-vm2-statedb = { path = "state/statedb-v2" }
 starcoin-vm2-state-api = { path = "state/api-v2" }
 
-starcoin-vm2-transaction-builder = { path = "vm2/transaction-builder" }
 starcoin-vm2-move-compiler = { path = "vm2/compiler" }
 starcoin-vm2-abi-decoder = { path = "vm2/abi/decoder" }
 starcoin-vm2-abi-resolver = { path = "vm2/abi/resolver" }
