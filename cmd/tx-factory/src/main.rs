@@ -5,7 +5,6 @@ use anyhow::bail;
 use anyhow::{format_err, Result};
 use clap::Parser;
 use starcoin_account_api::AccountInfo;
-use starcoin_config::G_HALLEY_CONFIG;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
@@ -13,7 +12,6 @@ use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::sync_status::SyncStatus;
@@ -37,6 +35,13 @@ pub struct TxFactoryOpt {
         help = "interval(in ms) of txn gen"
     )]
     pub interval: u64,
+    #[clap(
+        long,
+        short = 'f',
+        default_value = "800",
+        help = "The number of accounts participating in each round of transactions: the first half are sender accounts, and the second half are receiver accounts, with a default total of 800."
+    )]
+    pub transfer_account_size: usize,
     #[clap(
         long,
         short = 'a',
@@ -85,8 +90,6 @@ pub struct TxFactoryOpt {
     pub batch_size: u32,
 }
 
-const INITIAL_BALANCE: u128 = 1_000_000_000;
-
 fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
@@ -125,6 +128,7 @@ fn main() {
 
     let account_address = opts.account_address;
     let interval = Duration::from_millis(opts.interval);
+    let transfer_account_size = opts.transfer_account_size;
     let account_password = opts.account_password.clone();
 
     let is_stress = opts.stress;
@@ -181,7 +185,12 @@ fn main() {
             if tx_mocker.get_factory_status() {
                 if is_stress {
                     info!("stress account: {}", accounts.len());
-                    let success = tx_mocker.stress_test(accounts.clone(), round_num, interval);
+                    let success = tx_mocker.stress_test(
+                        accounts.clone(),
+                        round_num,
+                        interval,
+                        transfer_account_size,
+                    );
                     if let Err(e) = success {
                         error!("fail to run stress test, err: {:?}", &e);
                         // if txn is rejected, recheck sequence number, and start over
@@ -265,12 +274,12 @@ impl TxnMocker {
         now.duration_since(UNIX_EPOCH)
             .expect("time error")
             .as_secs()
-            + 600 // 10 minutes
-                  // let node_info = self
-                  //     .client
-                  //     .node_info()
-                  //     .expect("node_info() should not failed");
-                  // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+            + 1200 // 3 minutes
+                   // let node_info = self
+                   //     .client
+                   //     .node_info()
+                   //     .expect("node_info() should not failed");
+                   // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
     }
     fn get_factory_status(&self) -> bool {
         self.client
@@ -302,6 +311,18 @@ impl TxnMocker {
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<HashValue> {
         let expiration_timestamp = self.fetch_expiration_time();
+
+        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+
+        let account_resource = state_reader.get_account_resource(association_address())?;
+        if account_resource.is_none() {
+            bail!(
+                "account {} not exists, please faucet it",
+                association_address()
+            );
+        }
+        self.next_sequence_number = account_resource.unwrap().sequence_number();
+
         let raw_txn = self
             .generator
             .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
@@ -327,9 +348,9 @@ impl TxnMocker {
         let result = self.client.submit_transaction(user_txn);
 
         // increase sequence number if added in pool.
-        if result.is_ok() {
-            self.next_sequence_number += 1;
-        }
+        // if result.is_ok() {
+        //     self.next_sequence_number += 1;
+        // }
         if blocking {
             self.client.watch_txn(
                 txn_hash,
@@ -499,34 +520,10 @@ impl TxnMocker {
         if (available_list.len() as u32) < account_num {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            // account has enough STC
-            // let start_balance = INITIAL_BALANCE * lack_len as u128;
-            // let mut balance = state_reader.get_balance(self.account_address)?;
-            // while balance.unwrap() < start_balance {
-            //     std::thread::sleep(Duration::from_millis(1000));
-            //     balance = state_reader.get_balance(self.account_address)?;
-            //     info!(
-            //         "account balance is {:?}, min is: {}",
-            //         balance, start_balance
-            //     );
-            // }
             let lack = self.create_accounts(lack_len, batch_size)?;
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;
             for account in lack {
-                // loop {
-                //     if let Some(_account_resource) = state_reader
-                //         .get_account_resource(*account.address())
-                //         .unwrap_or(None)
-                //     {
-                //         available_list.push(account.clone());
-                //         break;
-                //     } else {
-                //         info!("waiting for the account to be created");
-                //         std::thread::sleep(Duration::from_millis(1000));
-                //         continue;
-                //     }
-                // }
                 let account_resource = state_reader
                     .get_account_resource(*account.address())
                     .unwrap_or(None);
@@ -567,7 +564,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     association_address(),
                     addr_vec.clone(),
-                    1000000000,
+                    10000000000,
                     1,
                     expiration_timestamp,
                 )?;
@@ -591,7 +588,7 @@ impl TxnMocker {
                 self.next_sequence_number,
                 association_address(),
                 addr_vec.clone(),
-                1000000000,
+                10000000000,
                 1,
                 expiration_timestamp,
             )?;
@@ -697,6 +694,7 @@ impl TxnMocker {
         accounts: Vec<AccountInfo>,
         round_num: u32,
         interval: Duration,
+        transfer_account_size: usize,
     ) -> Result<()> {
         //check node status
         let sync_status: SyncStatus = self.client.sync_status()?.into();
@@ -709,7 +707,7 @@ impl TxnMocker {
         let sequences =
             self.next_sequence_number_in_batch(accounts.iter().map(|a| a.address).collect())?;
 
-        for addresses in sequences.chunks(800) {
+        for addresses in sequences.chunks(transfer_account_size) {
             let mid = addresses.len() / 2;
             let senders = &addresses[..mid];
             let receivers = &addresses[mid..];
@@ -727,7 +725,7 @@ impl TxnMocker {
             std::thread::sleep(interval);
         }
 
-        for addresses in sequences.rchunks(800) {
+        for addresses in sequences.rchunks(transfer_account_size) {
             let mid = addresses.len() / 2;
             let senders = &addresses[..mid];
             let receivers = &addresses[mid..];
@@ -744,48 +742,6 @@ impl TxnMocker {
 
             std::thread::sleep(interval);
         }
-
-        // let mut sequences = vec![];
-        // for account in &accounts {
-        //     sequences.push(self.sequence_number(account.address)?.ok_or_else(|| format_err!(
-        //         "account {} sequence number not found",
-        //         account.address
-        //     ))?);
-        // }
-        //get  of all account
-        // let expiration_timestamp = self.fetch_expiration_time();
-        // let count = accounts.len();
-        // for _ in 0..round_num {
-        //     for (index, _) in accounts.iter().enumerate() {
-        //         let mut j = index + 1;
-        //         if j >= count {
-        //             j = 0;
-        //         }
-        //         let result = self.gen_and_submit_transfer_txn(
-        //             accounts[index].address,
-        //             accounts[j].address,
-        //             1,
-        //             1,
-        //             sequences[index],
-        //             false,
-        //             expiration_timestamp,
-        //         );
-        //         //handle result
-        //         match result {
-        //             Ok(_) => {
-        //                 // sequence add
-        //                 sequences[index] += 1;
-        //             }
-        //             Err(err) => {
-        //                 info!("error: {:?}, refresh the sequence number", err);
-        //                 for (index, account) in accounts.iter().enumerate() {
-        //                     sequences[index] =
-        //                         self.sequence_number(account.address).unwrap().unwrap();
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
         Ok(())
     }
 }

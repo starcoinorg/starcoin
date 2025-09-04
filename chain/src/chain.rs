@@ -533,8 +533,9 @@ impl BlockChain {
         assert_eq!(self.statedb.state_root(), selected_head.header.state_root());
         let epoch = get_epoch_from_statedb(&self.statedb)?;
         info!(
-            "execute transaction before entering vm, block id: {:?}",
+            "execute transaction before entering vm, block id: {:?}, state db root: {:?}",
             block_id,
+            self.statedb.state_root(),
         );
         let executed_data = starcoin_executor::block_execute(
             &self.statedb,
@@ -543,8 +544,8 @@ impl BlockChain {
             self.vm_metrics.clone(),
         )?;
         info!(
-            "execute transaction after entering vm, block id: {:?}",
-            block_id,
+            "execute transaction after entering vm, executed transaction len: {}, block id: {:?}, state db root: {:?}",
+            transactions.len(), block_id, self.statedb.state_root(),
         );
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;

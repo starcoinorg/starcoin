@@ -35,6 +35,8 @@ crossbeam = { workspace = true }
 rand = { workspace = true }
 starcoin-statedb = { workspace = true }
 async-std = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }

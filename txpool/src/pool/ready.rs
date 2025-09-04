@@ -65,7 +65,6 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
         // }
         // return tx_pool::Readiness::Stale;
         // Check max seq number
-        info!("jacktest: *************** 1");
         match self.max_seq_number {
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
                 return tx_pool::Readiness::Future;
@@ -83,7 +82,6 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .nonces
             .get_mut(sender)
             .expect("sender nonce should exists");
-        info!("jacktest: ************* 2");
         match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => {

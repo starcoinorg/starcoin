@@ -434,7 +434,7 @@ impl TransactionQueue {
             trace_time!("pool::cull::chunk");
             let state_readiness = ready::State::new(client.clone(), stale_id);
             // also remove expired txns.
-            let readiness = (ready::Expiration::new(now + 600), state_readiness);
+            let readiness = (ready::Expiration::new(now + 180), state_readiness);
             removed += self.pool.write().cull(Some(chunk), readiness);
         }
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());

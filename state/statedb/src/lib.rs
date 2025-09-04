@@ -663,6 +663,7 @@ impl ChainStateWriter for ChainStateDB {
     /// Commit
     fn commit(&self) -> Result<HashValue> {
         // cache commit
+        info!("[vm commit] start, self ptr = {:p}", self as *const _);
         for handle in self.updates_table_handle.read().iter() {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
@@ -672,6 +673,7 @@ impl ChainStateWriter for ChainStateDB {
             self.get_state_tree_table_handles(idx)?
                 .put(*handle, table_handle_state_object.root_hash().to_vec());
         }
+        info!("[vm commit] start2, self ptr = {:p}", self as *const _);
         for idx in self.update_table_handle_idx_list.lock().iter() {
             let state_tree_table_handle = self
                 .state_tree_table_handles_list
@@ -696,13 +698,17 @@ impl ChainStateWriter for ChainStateDB {
                 state_tree_table_handle.root_hash().to_vec(),
             );
         }
+        info!("[vm commit] start3, self ptr = {:p}", self as *const _);
 
         for address in self.updates.read().iter() {
             let account_state_object = self.get_account_state_object(address, false)?;
             let state = account_state_object.commit()?;
             self.state_tree.put(*address, state.try_into()?);
         }
-        self.state_tree.commit()
+        info!("[vm commit] start4, self ptr = {:p}", self as *const _);
+        let result = self.state_tree.commit();
+        info!("[vm commit] start5, self ptr = {:p}", self as *const _);
+        result
     }
 
     /// flush data to db.

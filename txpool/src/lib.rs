@@ -283,9 +283,9 @@ impl TxPoolSyncService for MockTxPoolService {
         if txns.is_empty() {
             return vec![Ok(())];
         }
-        let id = txns[0].id();
         let len = txns.len();
         let mut results = vec![];
+        info!("jacktest: add txns: {}", len);
         let mut pool = match self.pool.lock() {
             Ok(pool) => pool,
             Err(e) => {
@@ -295,6 +295,7 @@ impl TxPoolSyncService for MockTxPoolService {
         };
         pool.append(&mut txns.into());
         results.resize_with(len, || Ok(()));
+        info!("jacktest: finish to add txns: {}", len);
         results
     }
 
@@ -359,6 +360,8 @@ impl TxPoolSyncService for MockTxPoolService {
         let state_root = enacted.first().unwrap().header().state_root();
         let storage = self.storage.clone();
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root));
+        let len = retracted.len();
+        info!("jacktest: retracted len: {}", retracted.len());
         for block in retracted {
             for transaction in block.transactions().iter().rev() {
                 let sender = transaction.sender();
@@ -379,6 +382,7 @@ impl TxPoolSyncService for MockTxPoolService {
                 }
             }
         }
+        info!("jacktest: finish to retracted len: {}", len);
         Ok(())
     }
 
@@ -422,6 +426,7 @@ impl TxPoolSyncService for MockTxPoolService {
             .duration_since(std::time::SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_secs();
+        info!("jacktest: get_pending_with_state max: {}", max);
         for i in 0..max {
             let txn = match pool.get(i as usize).cloned() {
                 Some(txn) => txn,
@@ -431,7 +436,7 @@ impl TxPoolSyncService for MockTxPoolService {
             let sequence_number = match statedb.get_account_resource(sender) {
                 Ok(op_resource) => {
                     op_resource.map(|resource| resource.sequence_number()).unwrap_or_default()
-                }
+                 }
                 Err(e) => panic!("in get_pending_with_state, Get account {} resource from statedb error: {:?}, return 0 as sequence_number", sender, e),
             };
             if txn.expiration_timestamp_secs() >= now && txn.sequence_number() >= sequence_number {
@@ -441,6 +446,11 @@ impl TxPoolSyncService for MockTxPoolService {
             }
         }
 
+        info!(
+            "jacktest: finish to get_pending_with_state max: {}, len: {}",
+            max,
+            result.len()
+        );
         result
     }
 

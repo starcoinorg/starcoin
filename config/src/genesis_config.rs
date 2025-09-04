@@ -755,7 +755,7 @@ static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
 pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 500_040_000; //must big than maximum_number_of_gas_units
-pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 400;
+pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 1000;
 
 pub static G_PRUNING_DEPTH: u64 = 17280;
 pub static G_PRUNING_FINALITY: u64 = 8640;
