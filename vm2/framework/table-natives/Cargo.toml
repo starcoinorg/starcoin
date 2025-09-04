@@ -17,7 +17,7 @@ starcoin-native-interface = { path = "../native-interface" }
 starcoin-gas-schedule = { path = "../gas-schedule" }
 better_any = { workspace = true }
 bytes = { workspace = true }
-sha3 = "0.9.1"
+sha3 = "0.10.1"
 smallvec = { workspace = true }
 
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
