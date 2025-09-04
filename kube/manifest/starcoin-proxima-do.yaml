@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-9b6f582
+        image: ghcr.io/starcoinorg/starcoin:sha-7ad9340
         imagePullPolicy: Always
         command:
           - bash
@@ -48,7 +48,6 @@ spec:
             fi;
         ports:
           - containerPort: 9840
-            hostPort: 9840
         volumeMounts:
         - name: starcoin-volume
           mountPath: /sc-data
@@ -65,10 +64,10 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
+          initialDelaySeconds: 600
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
           successThreshold: 1
         readinessProbe:
           exec:
@@ -77,10 +76,10 @@ spec:
               - -c
               - >-
                  /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
+          initialDelaySeconds: 600
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
           successThreshold: 1
   volumeClaimTemplates:
   - metadata:
@@ -90,4 +89,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 50Gi
+          storage: 100Gi
