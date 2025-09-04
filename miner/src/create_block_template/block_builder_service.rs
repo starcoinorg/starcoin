@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -23,7 +23,6 @@ use starcoin_storage::{Storage, Store};
 use starcoin_storage::{Storage2, Store2};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
@@ -32,7 +31,6 @@ use starcoin_types::{
 };
 use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_vm2_account_service::AccountService;
-use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
@@ -407,7 +405,7 @@ where
                 ghostdata,
                 max_transaction_per_block,
             },
-            _main, //TODO: remove it. not need
+            main,
         ) = self.resolve_block_parents()?;
 
         let block_gas_limit = self
@@ -445,24 +443,6 @@ where
             })
             .collect::<Result<Vec<Block>>>()?;
 
-        let red_blocks = ghostdata
-            .mergeset_reds
-            .iter()
-            .map(|hash| self.storage.get_block_by_hash(*hash))
-            .collect::<Result<Vec<Option<Block>>>>()?
-            .into_iter()
-            .map(|op_block_header| {
-                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
-            })
-            .collect::<Result<Vec<Block>>>()?;
-
-        let _ = self.tx_provider.add_txns(
-            red_blocks
-                .into_iter()
-                .flat_map(|block| block.body.transactions)
-                .collect(),
-        );
-
         let uncles = blue_blocks
             .iter()
             .map(|block| block.header().clone())
@@ -475,6 +455,13 @@ where
             max_txns,
             uncles.len(),
             now_millis,
+        );
+
+        let (txns, txns2) = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        info!(
+            "[BlockProcess] VM1 txns len: {}, VM2 txns len: {}",
+            txns.len(),
+            txns2.len()
         );
 
         let header_version = 1;
@@ -494,14 +481,8 @@ where
             header_version,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            main.into_state_dbs(),
         )?;
-
-        let (txns, txns2) = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
-        info!(
-            "[BlockProcess] VM1 txns len: {}, VM2 txns len: {}",
-            txns.len(),
-            txns2.len()
-        );
 
         // Process VM1 transactions
         let excluded_txns = opened_block.push_txns(txns)?;
@@ -532,13 +513,11 @@ where
 
     fn fetch_transactions(
         &self,
-        selected_header: &BlockHeader,
+        header: &BlockHeader,
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
-        let pending_multi_transactions = self
-            .tx_provider
-            .get_txns_with_header(max_txns, selected_header);
+        let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, header);
 
         // Separate VM1 and VM2 transactions
         let mut pending_transactions = vec![];
@@ -554,145 +533,27 @@ where
             return Ok((pending_transactions, pending_transactions2));
         }
 
-        // Process VM1 transactions
-        let mut pending_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        pending_transactions.into_iter().for_each(|transaction| {
-            pending_transaction_map
-                .entry(transaction.sender())
-                .or_default()
-                .push(transaction);
-        });
-
-        // Process VM2 transactions
-        let mut pending_transaction2_map =
-            HashMap::<AccountAddress2, Vec<SignedUserTransaction2>>::new();
-        pending_transactions2.into_iter().for_each(|transaction| {
-            pending_transaction2_map
-                .entry(transaction.sender())
-                .or_default()
-                .push(transaction);
-        });
-
-        let mut uncle_transaction_map =
-            HashMap::<AccountAddress, Vec<SignedUserTransaction>>::new();
-        let mut uncle_transaction2_map =
-            HashMap::<AccountAddress2, Vec<SignedUserTransaction2>>::new();
         blue_blocks.iter().for_each(|block| {
-            // Process VM1 transactions from blue blocks
             block.transactions().iter().for_each(|transaction| {
-                uncle_transaction_map
-                    .entry(transaction.sender())
-                    .or_default()
-                    .push(transaction.clone());
+                pending_transactions.push(transaction.clone());
             });
-            // Process VM2 transactions from blue blocks
+
             block.transactions2().iter().for_each(|transaction| {
-                uncle_transaction2_map
-                    .entry(transaction.sender())
-                    .or_default()
-                    .push(transaction.clone());
-            });
+                pending_transactions2.push(transaction.clone());
+            })
         });
 
-        // Process uncle VM1 transactions
-        for transactions in uncle_transaction_map.values_mut() {
-            if transactions.len() <= 1 {
-                continue;
-            }
+        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
 
-            let mut index = 1;
-            while index < transactions.len() {
-                if transactions[index].sequence_number()
-                    != transactions[index - 1].sequence_number() + 1
-                {
-                    break;
-                }
-                index += 1;
-            }
-            transactions.truncate(index);
-        }
+        pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
 
-        // Process uncle VM2 transactions
-        for transactions in uncle_transaction2_map.values_mut() {
-            if transactions.len() <= 1 {
-                continue;
-            }
-
-            let mut index = 1;
-            while index < transactions.len() {
-                if transactions[index].sequence_number()
-                    != transactions[index - 1].sequence_number() + 1
-                {
-                    break;
-                }
-                index += 1;
-            }
-            transactions.truncate(index);
-        }
-
-        // Merge VM1 transactions
-        for (sender, uncle_transactions) in uncle_transaction_map.iter() {
-            if let Some(pending_transactions) = pending_transaction_map.get_mut(sender) {
-                let pending_last_seq = pending_transactions
-                    .last()
-                    .expect("transaction not found in pending transactions")
-                    .sequence_number();
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
-                {
-                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
-                }
-            } else if let Some(next_seq) = self
-                .tx_provider
-                .next_sequence_number_with_header(*sender, selected_header)
-            {
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == next_seq)
-                {
-                    pending_transaction_map.insert(*sender, uncle_transactions[index..].to_vec());
-                }
-            }
-        }
-
-        // Merge VM2 transactions
-        for (sender, uncle_transactions) in uncle_transaction2_map.iter() {
-            if let Some(pending_transactions) = pending_transaction2_map.get_mut(sender) {
-                let pending_last_seq = pending_transactions
-                    .last()
-                    .expect("transaction not found in pending transactions")
-                    .sequence_number();
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == pending_last_seq)
-                {
-                    pending_transactions.extend_from_slice(&uncle_transactions[(index + 1)..]);
-                }
-            } else if let Some(next_seq) = self
-                .tx_provider
-                .next_sequence_number2_with_header(*sender, selected_header)
-            {
-                if let Some(index) = uncle_transactions
-                    .iter()
-                    .position(|transaction| transaction.sequence_number() == next_seq)
-                {
-                    pending_transaction2_map.insert(*sender, uncle_transactions[index..].to_vec());
-                }
-            }
-        }
-
-        Ok((
-            pending_transaction_map
-                .iter()
-                .flat_map(|(_sender, transactions)| transactions.clone())
-                .collect(),
-            pending_transaction2_map
-                .iter()
-                .flat_map(|(_sender, transactions)| transactions.clone())
-                .collect(),
-        ))
+        Ok((pending_transactions, pending_transactions2))
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

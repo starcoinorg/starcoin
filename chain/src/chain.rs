@@ -453,6 +453,15 @@ impl BlockChain {
         author_array.copy_from_slice(&author_bytes[..16]);
         let author_v2 = starcoin_vm2_types::account_address::AccountAddress::new(author_array);
 
+        let chain_state = ChainStateDB::new(
+            self.storage.0.clone().into_super_arc(),
+            Some(self.statedb.0.state_root()),
+        );
+        let chain_state2 = ChainStateDB2::new(
+            self.storage.1.clone().into_super_arc(),
+            Some(self.statedb.1.state_root()),
+        );
+
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
             self.storage.1.clone(),
@@ -468,6 +477,7 @@ impl BlockChain {
             0,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            (Arc::new(chain_state), Arc::new(chain_state2)),
         )?;
 
         // split user_txns to two parts for dual VM support
@@ -1115,6 +1125,10 @@ impl BlockChain {
 
     pub fn get_vm_state_accumulator(&self) -> &MerkleAccumulator {
         &self.vm_state_accumulator
+    }
+
+    pub fn into_state_dbs(self) -> (Arc<ChainStateDB>, Arc<ChainStateDB2>) {
+        (Arc::new(self.statedb.0), Arc::new(self.statedb.1))
     }
 }
 

@@ -3,7 +3,7 @@
 
 mod vm2;
 
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_config::upgrade_config::vm1_offline_height;
@@ -39,7 +39,7 @@ pub struct OpenedBlock {
     block_meta: BlockMetadata,
     gas_limit: u64,
 
-    state: (ChainStateDB, ChainStateDB2),
+    state: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
     txn_accumulator: MerkleAccumulator,
     vm_state_accumulator: MerkleAccumulator,
 
@@ -63,7 +63,7 @@ impl OpenedBlock {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         storage: Arc<dyn Store>,
-        storage2: Arc<dyn Store2>,
+        _storage2: Arc<dyn Store2>,
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
@@ -76,6 +76,7 @@ impl OpenedBlock {
         version: Version,
         pruning_point: HashValue,
         red_blocks: u64,
+        chain_state_dbs: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -91,24 +92,6 @@ impl OpenedBlock {
             vm_state_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::VMState),
         );
-        let (state_root1, state_root2) = {
-            let num_leaves = vm_state_accumulator.num_leaves();
-            ensure!(
-                num_leaves > 1,
-                "vm_state_accumulator num_leaves should have 2 leaves at least",
-            );
-            (
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 2)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 1)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
-            )
-        };
-
-        let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
-        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
@@ -128,7 +111,7 @@ impl OpenedBlock {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-            state: (chain_state, chain_state2),
+            state: chain_state_dbs,
             txn_accumulator,
             vm_state_accumulator,
             gas_used: 0,
@@ -186,12 +169,12 @@ impl OpenedBlock {
         self.block_meta.number()
     }
 
-    pub fn state_reader(&self) -> &impl ChainStateReader {
-        &self.state.0
+    pub fn state_reader(&self) -> Arc<impl ChainStateReader> {
+        self.state.0.clone()
     }
 
-    pub fn state_reader2(&self) -> &impl ChainStateReader2 {
-        &self.state.1
+    pub fn state_reader2(&self) -> Arc<impl ChainStateReader2> {
+        self.state.1.clone()
     }
 
     pub fn chain_id(&self) -> ChainId {

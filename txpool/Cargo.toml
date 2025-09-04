@@ -50,6 +50,7 @@ tempfile = { workspace = true }
 test-helper = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-dag = { workspace = true }
+starcoin-accumulator = { workspace = true }
 
 [features]
 default = []

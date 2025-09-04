@@ -3,7 +3,7 @@
 
 use crate::pool::AccountSeqNumberClient;
 use crate::TxStatus;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
@@ -15,8 +15,14 @@ use starcoin_genesis::Genesis;
 //     create_signed_txn_with_association_account, encode_transfer_script_function,
 //     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 // };
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_open_block::OpenedBlock;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
+use starcoin_storage::IntoSuper;
+use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
@@ -25,6 +31,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, TransactionPayload},
     U256,
 };
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress as VM2AccountAddress;
 use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
@@ -223,6 +230,30 @@ async fn test_rollback() -> Result<()> {
         let main = storage.get_startup_info()?.unwrap().main;
         let block_header = storage.get_block_header_by_hash(main)?.unwrap();
 
+        let block_info = storage
+            .get_block_info(block_header.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {}", block_header.id()))?;
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
+        let vm_state_accumulator = MerkleAccumulator::new_with_info(
+            vm_state_accumulator_info.clone(),
+            storage.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
+
+        let (state_root1, state_root2) = {
+            let num_leaves = vm_state_accumulator.num_leaves();
+            (
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 2)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 1)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
+            )
+        };
+
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
+        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
+
         let mut open_block = OpenedBlock::new(
             storage,
             storage2,
@@ -238,6 +269,7 @@ async fn test_rollback() -> Result<()> {
             block_header.version(),       // version
             block_header.pruning_point(), // pruning_point
             0,                            // red_blocks
+            (Arc::new(chain_state), Arc::new(chain_state2)),
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);

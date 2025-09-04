@@ -3,10 +3,12 @@ use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
+use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::U256;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
 use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
@@ -17,6 +19,15 @@ pub fn test_open_block() -> Result<()> {
     let chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = chain.current_header();
     let block_gas_limit = 10000000;
+
+    let chain_state = ChainStateDB::new(
+        chain.get_storage().clone().into_super_arc(),
+        Some(chain.chain_state_reader().state_root()),
+    );
+    let chain_state2 = ChainStateDB2::new(
+        chain.get_storage2().clone().into_super_arc(),
+        Some(chain.chain_state_reader2().state_root()),
+    );
 
     let mut opened_block = {
         // Generate a vm2 AccountAddress for the miner
@@ -37,6 +48,7 @@ pub fn test_open_block() -> Result<()> {
             header.version(),       // version from header
             header.pruning_point(), // pruning_point from header
             0,                      // red_blocks - 0 for test
+            (Arc::new(chain_state), Arc::new(chain_state2)),
         )?
     };
 
@@ -60,7 +72,7 @@ pub fn test_open_block() -> Result<()> {
     // check state changed
     {
         let state_reader = opened_block.state_reader2();
-        let account_reader = AccountStateReader::new(state_reader);
+        let account_reader = AccountStateReader::new(state_reader.as_ref());
         let account_balance = account_reader.get_balance(&receiver)?;
         assert_eq!(account_balance, 50_000_000);
 
