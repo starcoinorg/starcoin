@@ -2,6 +2,10 @@
 name = "starcoin_txfactory"
 path = "src/main.rs"
 
+[[bin]]
+name = "starcoin-vm2-txfactory"
+path = "src/vm2_txn_main.rs"
+
 [dependencies]
 anyhow = { workspace = true }
 clap = { features = ["derive"], workspace = true }
@@ -18,6 +22,15 @@ starcoin-state-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+csv = { workspace = true }
+serde = { workspace = true }
+rand = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+once_cell = { workspace = true }
 
 [package]
 authors = { workspace = true }
