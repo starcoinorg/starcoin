@@ -32,7 +32,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_vm2_account_service::AccountService;
-use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
+use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
 
@@ -403,7 +403,7 @@ where
 
     pub fn create_block_template(
         &mut self,
-        _version: Version,
+        version: Version,
         miner_service: ServiceRef<MinerService>,
         event: GenerateBlockEvent,
     ) -> Result<()> {
@@ -478,10 +478,29 @@ where
             txns2.len()
         );
 
-        let storage = self.storage.clone();
-        let storage2 = self.storage2.clone();
-        let vm_metrics = self.vm_metrics.clone();
-        let tx_provider = self.tx_provider.clone();
+        let mut opened_block = OpenedBlock::new(
+            self.storage.clone(),
+            self.storage2.clone(),
+            previous_header.clone(),
+            block_gas_limit,
+            author,
+            now_millis,
+            uncles,
+            difficulty,
+            strategy,
+            self.vm_metrics.clone(),
+            selected_parents,
+            version,
+            pruning_point,
+            ghostdata.mergeset_reds.len() as u64,
+            main.into_state_dbs(),
+        )?;
+
+        // Process VM1 transactions
+        let excluded_txns = opened_block.push_txns(txns)?;
+        for invalid_txn in &excluded_txns.discarded_txns {
+            self.tx_provider.remove_invalid_txn(invalid_txn.id());
+        }
 
         RAYON_EXEC_POOL.spawn(move || {
             let header_version = 1;
