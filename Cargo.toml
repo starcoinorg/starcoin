@@ -629,7 +629,7 @@ syn = { version = "1.0.107", features = [
     "fold",
 ] }
 sysinfo = "0.29.0"
-tempfile = "3.2.0"
+tempfile = "3.21.0"
 test-case = "3.3.1"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
