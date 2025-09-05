@@ -478,33 +478,12 @@ where
             txns2.len()
         );
 
-        let mut opened_block = OpenedBlock::new(
-            self.storage.clone(),
-            self.storage2.clone(),
-            previous_header.clone(),
-            block_gas_limit,
-            author,
-            now_millis,
-            uncles,
-            difficulty,
-            strategy,
-            self.vm_metrics.clone(),
-            selected_parents,
-            version,
-            pruning_point,
-            ghostdata.mergeset_reds.len() as u64,
-            main.into_state_dbs(),
-        )?;
-
-        // Process VM1 transactions
-        let excluded_txns = opened_block.push_txns(txns)?;
-        for invalid_txn in &excluded_txns.discarded_txns {
-            self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        }
+        let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
+        let vm_metrics = self.vm_metrics.clone();
+        let tx_provider = self.tx_provider.clone();
 
         RAYON_EXEC_POOL.spawn(move || {
-            let header_version = 1;
-
             let mut opened_block = match OpenedBlock::new(
                 storage.clone(),
                 storage2.clone(),
@@ -517,7 +496,7 @@ where
                 strategy,
                 vm_metrics.clone(),
                 selected_parents,
-                header_version,
+                version,
                 pruning_point,
                 ghostdata.mergeset_reds.len() as u64,
                 main.into_state_dbs(),

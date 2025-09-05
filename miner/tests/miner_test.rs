@@ -48,7 +48,7 @@ impl ActorService for TestMinerService {
         &mut self,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        ctx.subscribe::<MintBlockEvent>();
+        ctx.subscribe::<BlockTemplateResponse>();
         let (sender, mut receiver) = futures::channel::mpsc::unbounded::<()>();
         self.wait_result_sender = Some(sender);
 
@@ -68,21 +68,21 @@ impl ActorService for TestMinerService {
         &mut self,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        ctx.unsubscribe::<MintBlockEvent>();
+        ctx.unsubscribe::<BlockTemplateResponse>();
 
         info!("stoped receive the block template response and stop the testing service");
         Ok(())
     }
 }
 
-impl EventHandler<Self, MintBlockEvent> for TestMinerService {
+impl EventHandler<Self, BlockTemplateResponse> for TestMinerService {
     fn handle_event(
         &mut self,
-        msg: MintBlockEvent,
+        msg: BlockTemplateResponse,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) {
-        let response = msg.block_number;
-        assert_eq!(response, 1);
+        let response = msg.template;
+        assert_eq!(response.number, 1);
 
         let miner = ctx.service_ref::<MinerService>().unwrap().clone();
         miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
