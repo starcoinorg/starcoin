@@ -169,6 +169,9 @@ impl MockChain {
     }
 
     pub fn apply(&mut self, block: Block) -> Result<()> {
+        if self.head.current_header().id() != block.header().parent_hash() {
+            self.head = self.head.fork(block.id())?;
+        }
         self.head.apply(block)?;
         Ok(())
     }
@@ -249,6 +252,9 @@ impl MockChain {
         parent_header: BlockHeader,
         tips: Vec<HashValue>,
     ) -> Result<Block> {
+        if self.head().current_header().id() != parent_header.id() {
+            self.head = self.head.fork(parent_header.id())?;
+        }
         let (block_template, _) = self.head.create_block_template(
             *self.miner.address(),
             Some(parent_header), // parent_header
