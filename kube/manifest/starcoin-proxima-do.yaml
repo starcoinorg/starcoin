@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-7ad9340
+        image: ghcr.io/starcoinorg/starcoin:sha-31434e8
         imagePullPolicy: Always
         command:
           - bash
@@ -56,11 +56,11 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-#          - name: NODE_KEYS
-#            valueFrom:
-#              secretKeyRef:
-#                name: node-keys
-#                key: node-keys
+          - name: NODE_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: node-keys
+                key: node-keys
         livenessProbe:
           tcpSocket:
             port: 9840
