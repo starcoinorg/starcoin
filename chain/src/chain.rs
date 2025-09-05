@@ -1328,22 +1328,10 @@ impl ChainReader for BlockChain {
         let head = storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        // if fork block_id is at same epoch, try to reuse uncles cache.
-        let uncles = if head.header().number() >= self.epoch.start_block_number() {
-            Some(
-                self.uncles
-                    .iter()
-                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-            )
-        } else {
-            None
-        };
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
-            uncles,
+            None, // force to fetch uncles from ghostdata not from the blue blocks otherwise it will consume much time to iterate and cache uncle data
             storage.clone(),
             storage2.clone(),
             self.vm_metrics.clone(),
