@@ -16,7 +16,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
@@ -25,6 +25,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -38,8 +39,17 @@ use std::sync::RwLock;
 use crate::NewHeaderChannel;
 
 use super::metrics::BlockBuilderMetrics;
+use once_cell::sync::Lazy;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
+
+static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_cpus::get())
+        .thread_name(|index| format!("parallel_executor_{}", index))
+        .build()
+        .expect("failed to build rayon thread pool for building block service")
+});
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
@@ -59,23 +69,23 @@ enum MergesetIncreaseResult {
     Rejected { new_candidate: HashValue },
 }
 
-#[derive(Debug)]
-pub enum BlockTemplateError {
-    NoReceivedHeader,
-    Other(anyhow::Error),
-}
-
-#[derive(Debug)]
-pub struct BlockTemplateRequest;
-
-impl ServiceRequest for BlockTemplateRequest {
-    type Response = std::result::Result<BlockTemplateResponse, BlockTemplateError>;
+#[derive(Debug, Clone)]
+pub struct BlockTemplateRequest {
+    pub event: GenerateBlockEvent,
 }
 
 #[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
     pub parent: BlockHeader,
     pub template: BlockTemplate,
+    pub event: GenerateBlockEvent,
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockTemplateResponseForMiner {
+    pub parent: BlockHeader,
+    pub template: BlockTemplate,
+    pub event: GenerateBlockEvent,
 }
 
 pub struct BlockBuilderService {
@@ -194,18 +204,27 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
-impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
-    fn handle(
-        &mut self,
-        _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<Self>,
-    ) -> <BlockTemplateRequest as ServiceRequest>::Response {
+impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
+    fn handle_event(&mut self, msg: BlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
         let header_version = 1u32; // Default block header version for now
         let _ = self.receive_header();
-        self.inner
-            .create_block_template(header_version)
-            .map_err(BlockTemplateError::Other)
+        if let Err(e) = self
+            .inner
+            .create_block_template(header_version, ctx.self_ref(), msg.event)
+        {
+            error!("Failed to create block template: {}", e);
+        }
+    }
+}
+
+impl EventHandler<Self, BlockTemplateResponse> for BlockBuilderService {
+    fn handle_event(&mut self, msg: BlockTemplateResponse, ctx: &mut ServiceContext<Self>) {
+        ctx.broadcast(BlockTemplateResponseForMiner {
+            parent: msg.parent,
+            template: msg.template,
+            event: msg.event,
+        });
     }
 }
 
@@ -262,7 +281,7 @@ pub struct Inner<P> {
 
 impl<P> Inner<P>
 where
-    P: TemplateTxProvider + TxPoolSyncService,
+    P: TemplateTxProvider + TxPoolSyncService + 'static,
 {
     pub fn new(
         header: BlockHeader,
@@ -392,7 +411,12 @@ where
         ))
     }
 
-    pub fn create_block_template(&mut self, _version: Version) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(
+        &mut self,
+        _version: Version,
+        self_ref: ServiceRef<BlockBuilderService>,
+        event: GenerateBlockEvent,
+    ) -> Result<()> {
         let (
             MinerResponse {
                 previous_header,
@@ -464,51 +488,86 @@ where
             txns2.len()
         );
 
-        let header_version = 1;
+        let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
+        let vm_metrics = self.vm_metrics.clone();
+        let tx_provider = self.tx_provider.clone();
 
-        let mut opened_block = OpenedBlock::new(
-            self.storage.clone(),
-            self.storage2.clone(),
-            previous_header.clone(),
-            block_gas_limit,
-            author,
-            now_millis,
-            uncles,
-            difficulty,
-            strategy,
-            self.vm_metrics.clone(),
-            selected_parents,
-            header_version,
-            pruning_point,
-            ghostdata.mergeset_reds.len() as u64,
-            main.into_state_dbs(),
-        )?;
+        RAYON_EXEC_POOL.spawn(move || {
+            let header_version = 1;
 
-        // Process VM1 transactions
-        let excluded_txns = opened_block.push_txns(txns)?;
-        for invalid_txn in &excluded_txns.discarded_txns {
-            self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        }
+            let mut opened_block = match OpenedBlock::new(
+                storage.clone(),
+                storage2.clone(),
+                previous_header.clone(),
+                block_gas_limit,
+                author,
+                now_millis,
+                uncles,
+                difficulty,
+                strategy,
+                vm_metrics.clone(),
+                selected_parents,
+                header_version,
+                pruning_point,
+                ghostdata.mergeset_reds.len() as u64,
+                main.into_state_dbs(),
+            ) {
+                Ok(opened_block) => opened_block,
+                Err(e) => {
+                    error!("[BlockProcess] open block error: {}", e);
+                    return;
+                }
+            };
 
-        // Process VM2 transactions
-        let excluded_txns2 = opened_block.push_txns2(txns2)?;
-        for invalid_txn in &excluded_txns2.discarded_txns {
-            self.tx_provider.remove_invalid_txn(invalid_txn.id());
-        }
+            // Process VM1 transactions
+            let excluded_txns = match opened_block.push_txns(txns) {
+                Ok(excluded_txns) => excluded_txns,
+                Err(e) => {
+                    error!("[BlockProcess] push txns error: {}", e);
+                    return;
+                }
+            };
+            for invalid_txn in &excluded_txns.discarded_txns {
+                tx_provider.remove_invalid_txn(invalid_txn.id());
+            }
 
-        info!(
-            "[BlockProcess] VM1 discarded: {}, VM2 discarded: {}, VM1 untouched: {}, VM2 untouched: {}",
-            excluded_txns.discarded_txns.len(),
-            excluded_txns2.discarded_txns.len(),
-            excluded_txns.untouched_txns.len(),
-            excluded_txns2.untouched_txns.len()
-        );
+            // Process VM2 transactions
+            let excluded_txns2 = match opened_block.push_txns2(txns2) {
+                Ok(excluded_txns) => excluded_txns,
+                Err(e) => {
+                    error!("[BlockProcess] push txns2 error: {}", e);
+                    return;
+                }
+            };
+            for invalid_txn in &excluded_txns2.discarded_txns {
+                tx_provider.remove_invalid_txn(invalid_txn.id());
+            }
 
-        let template = opened_block.finalize()?;
-        Ok(BlockTemplateResponse {
-            parent: previous_header,
-            template,
-        })
+            info!(
+                "[BlockProcess] VM1 discarded: {}, VM2 discarded: {}, VM1 untouched: {}, VM2 untouched: {}",
+                excluded_txns.discarded_txns.len(),
+                excluded_txns2.discarded_txns.len(),
+                excluded_txns.untouched_txns.len(),
+                excluded_txns2.untouched_txns.len()
+            );
+
+            let template = match opened_block.finalize() {
+                Ok(template) => template,
+                Err(e) => {
+                    error!("[BlockProcess] finalize block error: {}", e);
+                    return;
+                }
+            };
+            if let Err(e) = self_ref.notify(BlockTemplateResponse {
+                parent: previous_header,
+                template,
+                event,
+            }) {
+                error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
+            }
+        });
+        Ok(())
     }
 
     fn fetch_transactions(

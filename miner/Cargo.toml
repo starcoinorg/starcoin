@@ -33,6 +33,8 @@ starcoin-genesis = { workspace = true }
 crossbeam = { workspace = true }
 rand = { workspace = true }
 starcoin-statedb = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
 
 # dependencies for move 2.0
 starcoin-vm2-account-service = { workspace = true }
