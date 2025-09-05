@@ -21,7 +21,7 @@ pub struct NewDagBlock {
 
 #[derive(Clone, Debug)]
 pub struct NewDagBlockFromPeer {
-    pub executed_block: Arc<ExecutedBlock>,
+    pub executed_block: Arc<BlockHeader>,
 }
 
 #[derive(Clone, Debug)]
