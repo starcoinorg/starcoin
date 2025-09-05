@@ -3,7 +3,7 @@ name = "defi"
 version = "0.0.1"
 
 [addresses]
-defi = "0xed9ea1f3533c14e1b52d9ff6475776ba"
+defi = "0xbeaa10bd3a6c9c54cb68708eb4e16ebc"
 
 [dependencies]
 StarcoinFramework = { local = "../../framework/starcoin-framework" }
