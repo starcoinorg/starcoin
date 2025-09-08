@@ -1,10 +1,9 @@
 name: Code Coverage Report
 on:
   workflow_dispatch:
-  pull_request:
   push:
     branches:
-      - master
+      - dual-verse-dag
 jobs:
   code_coverage_report:
     name: Generate code coverage report
