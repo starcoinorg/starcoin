@@ -183,11 +183,15 @@ impl ServiceFactory<Self> for BlockBuilderService {
 impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
+        ctx.subscribe::<BlockTemplateRequest>();
+        ctx.subscribe::<BlockTemplateResponse>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
+        ctx.unsubscribe::<BlockTemplateRequest>();
+        ctx.unsubscribe::<BlockTemplateResponse>();
         Ok(())
     }
 }

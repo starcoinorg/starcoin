@@ -127,11 +127,13 @@ impl ServiceFactory<Self> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
+        ctx.subscribe::<BlockTemplateResponseForMiner>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
+        ctx.unsubscribe::<BlockTemplateResponseForMiner>();
         info!("stoped miner_serive ");
         Ok(())
     }
