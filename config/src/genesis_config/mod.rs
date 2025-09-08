@@ -923,7 +923,10 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 });
 
 pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec!["/dns4/proxima-do1.seed.starcoin.org/tcp/9840/p2p/12D3KooWExj12zhczTnswmBvgwvzT9nTaurfogmt5Nq1bz7MVXtm".parse().expect("parse multi addr should be ok"),
+    vec![
+        "/dns4/proxima-do1.seed.starcoin.org/tcp/9840/p2p/12D3KooWExj12zhczTnswmBvgwvzT9nTaurfogmt5Nq1bz7MVXtm".parse().expect("parse multi addr should be ok"),
+        "/dns4/proxima-do2.seed.starcoin.org/tcp/9840/p2p/12D3KooWS6QFSSPT9KMC5tkG3aWNyNEzM5TpJkAfPedzLGQfecvM".parse().expect("parse multi addr should be ok"),
+        "/dns4/proxima-do3.seed.starcoin.org/tcp/9840/p2p/12D3KooWAkg1htBrpZ5tyoeMt4UMJgsS89uPeJnR2XkTsfzjh3ph".parse().expect("parse multi addr should be ok"),
     ]
 });
 
