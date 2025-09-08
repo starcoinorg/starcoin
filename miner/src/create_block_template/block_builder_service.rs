@@ -36,7 +36,7 @@ use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
 
-use crate::NewHeaderChannel;
+use crate::{MinerService, NewHeaderChannel};
 
 use super::metrics::BlockBuilderMetrics;
 use once_cell::sync::Lazy;
@@ -77,13 +77,6 @@ pub struct BlockTemplateRequest {
 
 #[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
-    pub parent: BlockHeader,
-    pub template: BlockTemplate,
-    pub event: GenerateBlockEvent,
-}
-
-#[derive(Debug, Clone)]
-pub struct BlockTemplateResponseForMiner {
     pub parent: BlockHeader,
     pub template: BlockTemplate,
     pub event: GenerateBlockEvent,
@@ -184,14 +177,12 @@ impl ActorService for BlockBuilderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<DefaultAccountChangeEvent>();
         ctx.subscribe::<BlockTemplateRequest>();
-        ctx.subscribe::<BlockTemplateResponse>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<DefaultAccountChangeEvent>();
         ctx.unsubscribe::<BlockTemplateRequest>();
-        ctx.unsubscribe::<BlockTemplateResponse>();
         Ok(())
     }
 }
@@ -213,23 +204,17 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle_event(&mut self, msg: BlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
         let header_version = 1u32; // Default block header version for now
+        let miner_serivce = ctx
+            .service_ref::<MinerService>()
+            .expect("MinerService should exist")
+            .clone();
         let _ = self.receive_header();
         if let Err(e) = self
             .inner
-            .create_block_template(header_version, ctx.self_ref(), msg.event)
+            .create_block_template(header_version, miner_serivce, msg.event)
         {
             error!("Failed to create block template: {}", e);
         }
-    }
-}
-
-impl EventHandler<Self, BlockTemplateResponse> for BlockBuilderService {
-    fn handle_event(&mut self, msg: BlockTemplateResponse, ctx: &mut ServiceContext<Self>) {
-        ctx.broadcast(BlockTemplateResponseForMiner {
-            parent: msg.parent,
-            template: msg.template,
-            event: msg.event,
-        });
     }
 }
 
@@ -419,7 +404,7 @@ where
     pub fn create_block_template(
         &mut self,
         _version: Version,
-        self_ref: ServiceRef<BlockBuilderService>,
+        miner_service: ServiceRef<MinerService>,
         event: GenerateBlockEvent,
     ) -> Result<()> {
         let (
@@ -564,7 +549,7 @@ where
                     return;
                 }
             };
-            if let Err(e) = self_ref.notify(BlockTemplateResponse {
+            if let Err(e) = miner_service.notify(BlockTemplateResponse {
                 parent: previous_header,
                 template,
                 event,

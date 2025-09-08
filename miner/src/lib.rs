@@ -20,8 +20,7 @@ pub mod task;
 
 pub use create_block_template::{
     block_builder_service::BlockBuilderService, block_builder_service::BlockTemplateRequest,
-    block_builder_service::BlockTemplateResponse,
-    block_builder_service::BlockTemplateResponseForMiner, new_header_service::NewHeaderChannel,
+    block_builder_service::BlockTemplateResponse, new_header_service::NewHeaderChannel,
     new_header_service::NewHeaderService,
 };
 use starcoin_crypto::HashValue;
@@ -127,13 +126,13 @@ impl ServiceFactory<Self> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
-        ctx.subscribe::<BlockTemplateResponseForMiner>();
+        ctx.subscribe::<BlockTemplateResponse>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
-        ctx.unsubscribe::<BlockTemplateResponseForMiner>();
+        ctx.unsubscribe::<BlockTemplateResponse>();
         info!("stoped miner_serive ");
         Ok(())
     }
@@ -301,10 +300,10 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     }
 }
 
-impl EventHandler<Self, BlockTemplateResponseForMiner> for MinerService {
+impl EventHandler<Self, BlockTemplateResponse> for MinerService {
     fn handle_event(
         &mut self,
-        block_template_response: BlockTemplateResponseForMiner,
+        block_template_response: BlockTemplateResponse,
         ctx: &mut ServiceContext<Self>,
     ) {
         let config = self.config.clone();
