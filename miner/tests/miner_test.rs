@@ -8,8 +8,8 @@ use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::info;
 use starcoin_miner::{
-    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, BlockTemplateResponse,
-    MinerService, NewHeaderChannel, NewHeaderService, SubmitSealRequest,
+    BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, MintBlockEvent,
+    NewHeaderChannel, NewHeaderService, SubmitSealRequest,
 };
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceFactory,
@@ -48,7 +48,7 @@ impl ActorService for TestMinerService {
         &mut self,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        ctx.subscribe::<BlockTemplateResponse>();
+        ctx.subscribe::<MintBlockEvent>();
         let (sender, mut receiver) = futures::channel::mpsc::unbounded::<()>();
         self.wait_result_sender = Some(sender);
 
@@ -68,21 +68,21 @@ impl ActorService for TestMinerService {
         &mut self,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) -> anyhow::Result<()> {
-        ctx.unsubscribe::<BlockTemplateResponse>();
+        ctx.unsubscribe::<MintBlockEvent>();
 
         info!("stoped receive the block template response and stop the testing service");
         Ok(())
     }
 }
 
-impl EventHandler<Self, BlockTemplateResponse> for TestMinerService {
+impl EventHandler<Self, MintBlockEvent> for TestMinerService {
     fn handle_event(
         &mut self,
-        msg: BlockTemplateResponse,
+        msg: MintBlockEvent,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) {
-        let response = msg.template;
-        assert_eq!(response.number, 1);
+        let response = msg.block_number;
+        assert_eq!(response, 1);
 
         let miner = ctx.service_ref::<MinerService>().unwrap().clone();
         miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
