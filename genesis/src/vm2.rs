@@ -47,7 +47,7 @@ fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTra
     let stdlib_option = if net.is_test() {
         StdLibOptions::Fresh
     } else {
-        StdLibOptions::Compiled(net.stdlib_version())
+        StdLibOptions::Compiled(net.genesis_config2().stdlib_version)
     };
     let package = build_stdlib_package(net, stdlib_option)?;
     build_genesis_transaction_with_package(net.chain_id().id(), package)

@@ -97,11 +97,10 @@ pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<(String, Vec<Vec<u
         let mut map = HashMap::new();
         for version in &*G_STDLIB_VERSIONS {
             let modules = read_compiled_modules(*version);
+            verify_compiled_modules(*version, modules.as_slice());
+
             let mut stdlib_packages = read_released_bundles(*version);
             stdlib_packages.push(("ThisIsAWierdNetworkName".to_string(), modules));
-            for (_, modules) in &stdlib_packages {
-                verify_compiled_modules(*version, modules.as_slice());
-            }
             map.insert(*version, stdlib_packages);
         }
         map
@@ -264,7 +263,7 @@ pub fn load_latest_compiled_modules() -> Vec<CompiledModule> {
 
 /// read release bundles from dir.
 pub fn read_released_bundles(stdlib_version: StdlibVersion) -> Vec<(String, Vec<Vec<u8>>)> {
-    let sub_dir = format!("{}/{}", stdlib_version.as_string(), STDLIB_DIR_NAME);
+    let sub_dir = format!("{}", stdlib_version.as_string());
     COMPILED_MOVE_CODE_DIR
         .get_dir(Path::new(sub_dir.as_str()))
         .expect("read release bundles dir should be ok")
