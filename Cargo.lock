@@ -12075,7 +12075,7 @@ name = "starcoin-generator"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.47",
  "futures 0.3.31",
  "futures-timer",
  "hex",
