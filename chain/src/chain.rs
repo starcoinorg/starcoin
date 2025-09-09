@@ -1289,7 +1289,7 @@ impl ChainReader for BlockChain {
         );
         let head = storage
             .get_block_by_hash(block_id)?
-            .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+            .ok_or_else(|| format_err!("Cannot find block by hash {:?}", block_id))?;
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
