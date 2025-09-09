@@ -263,7 +263,7 @@ pub fn load_latest_compiled_modules() -> Vec<CompiledModule> {
 
 /// read release bundles from dir.
 pub fn read_released_bundles(stdlib_version: StdlibVersion) -> Vec<(String, Vec<Vec<u8>>)> {
-    let sub_dir = format!("{}", stdlib_version.as_string());
+    let sub_dir = stdlib_version.to_string();
     COMPILED_MOVE_CODE_DIR
         .get_dir(Path::new(sub_dir.as_str()))
         .expect("read release bundles dir should be ok")
