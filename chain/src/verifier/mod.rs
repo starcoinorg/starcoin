@@ -186,32 +186,33 @@ impl BlockVerifier for BasicVerifier {
         R: ChainReader,
     {
         let new_block_parent = new_block_header.parent_hash();
+        let chain_status = current_chain.status();
+        let current = chain_status.head();
+        let current_id = current.id();
+        let expect_number = current.number().saturating_add(1);
 
-        // In DAG mode, parent doesn't need to be current head
-        // Just verify parent exists and number is correct
-        let parent_header = current_chain
-            .get_header_by_hash(new_block_parent)?
-            .ok_or_else(|| format_err!("Parent block {:?} not found in chain", new_block_parent))?;
-
-        // Check block number = parent.number + 1
-        let expect_number = parent_header.number().saturating_add(1);
         verify_block!(
             VerifyBlockField::Header,
             expect_number == new_block_header.number(),
-            "Invalid block: Unexpect block number, expect:{} (parent.number + 1), got: {}.",
+            "Invalid block: Unexpect block number, expect:{}, got: {}.",
             expect_number,
             new_block_header.number()
         );
 
-        // No longer check parent == current.id in DAG mode
-        // The parent just needs to exist in the chain/DAG
-
-        // Check timestamp > parent's timestamp (not current's)
         verify_block!(
             VerifyBlockField::Header,
-            new_block_header.timestamp() > parent_header.timestamp(),
+            current_id == new_block_parent,
+            "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+            current_id,
+            new_block_parent,
+            new_block_header.number()
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            new_block_header.timestamp() > current.timestamp(),
             "Invalid block: block timestamp too old, parent time:{}, block time: {}, number:{}.",
-            parent_header.timestamp(),
+            current.timestamp(),
             new_block_header.timestamp(),
             new_block_header.number()
         );
@@ -245,20 +246,17 @@ impl BlockVerifier for BasicVerifier {
             "invalid block: gas_used should not greater than block_gas_limit"
         );
 
-        // Get parent's block info for accumulator verification
-        let parent_block_info = current_chain
-            .get_block_info(Some(new_block_parent))?
-            .ok_or_else(|| {
-                format_err!("Can not find block info by parent id: {}", new_block_parent)
-            })?;
+        let current_block_info = current_chain
+            .get_block_info(Some(current_id))?
+            .ok_or_else(|| format_err!("Can not find block info by head id: {}", current_id))?;
         verify_block!(
             VerifyBlockField::Header,
-            parent_block_info
+            current_block_info
                 .get_block_accumulator_info()
                 .get_accumulator_root()
                 == &new_block_header.block_accumulator_root(),
             "Block accumulator root miss match {:?} : {:?}",
-            parent_block_info
+            current_block_info
                 .get_block_accumulator_info()
                 .get_accumulator_root(),
             new_block_header.block_accumulator_root(),

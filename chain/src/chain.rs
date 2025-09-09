@@ -14,8 +14,8 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, EventWithProof2,
-    ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof,
-    TransactionInfoWithProof2, VerifiedBlock, VerifyBlockField,
+    ExcludedTxns, ExecutedBlock, TransactionInfoWithProof, TransactionInfoWithProof2,
+    VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
@@ -61,7 +61,7 @@ use starcoin_vm2_vm_types::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -84,7 +84,6 @@ pub struct BlockChain {
     statedb: (ChainStateDB, ChainStateDB2),
     storage: (Arc<dyn Store>, Arc<dyn Store2>),
     time_service: Arc<dyn TimeService>,
-    uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
@@ -102,13 +101,12 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics, dag)
+        Self::new_with_uncles(time_service, head, storage, storage2, vm_metrics, dag)
     }
 
     fn new_with_uncles(
         time_service: Arc<dyn TimeService>,
         head_block: Block,
-        uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
@@ -177,7 +175,7 @@ impl BlockChain {
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
         watch(CHAIN_WATCH_NAME, "n1253");
-        let mut chain = Self {
+        let chain = Self {
             genesis_hash: genesis,
             time_service,
             txn_accumulator,
@@ -190,16 +188,10 @@ impl BlockChain {
             },
             statedb: (chain_state, chain_state2),
             storage: (storage, storage2),
-            uncles: HashMap::new(),
             epoch,
             vm_metrics,
             dag: dag.clone(),
         };
-        watch(CHAIN_WATCH_NAME, "n1251");
-        match uncles {
-            Some(data) => chain.uncles = data,
-            None => chain.update_uncle_cache()?,
-        }
         watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
@@ -264,10 +256,6 @@ impl BlockChain {
         Ok(dag)
     }
 
-    pub fn current_epoch_uncles_size(&self) -> u64 {
-        self.uncles.len() as u64
-    }
-
     pub fn dag(&self) -> BlockDAG {
         self.dag.clone()
     }
@@ -289,52 +277,9 @@ impl BlockChain {
         ConsensusStrategy::try_from(self.epoch.strategy())
             .expect("Invalid consensus strategy in epoch")
     }
+
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
-    }
-
-    //TODO lazy init uncles cache.
-    fn update_uncle_cache(&mut self) -> Result<()> {
-        self.uncles = self.epoch_uncles()?;
-        Ok(())
-    }
-
-    fn epoch_uncles(&self) -> Result<HashMap<HashValue, MintedUncleNumber>> {
-        let epoch = &self.epoch;
-        let mut uncles: HashMap<HashValue, MintedUncleNumber> = HashMap::new();
-        let executed_block = self.head_block();
-        let head_block = executed_block.block();
-        let head_number = head_block.header().number();
-        if head_number < epoch.start_block_number() || head_number >= epoch.end_block_number() {
-            return Err(format_err!(
-                "head block {} not in current epoch: {:?}.",
-                head_number,
-                epoch
-            ));
-        }
-        for block_number in epoch.start_block_number()..epoch.end_block_number() {
-            let block_uncles = if block_number == head_number {
-                head_block.uncle_ids()
-            } else {
-                self.get_block_by_number(block_number)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by number {}, head block number: {}",
-                            block_number,
-                            head_number
-                        )
-                    })?
-                    .uncle_ids()
-            };
-            block_uncles.into_iter().for_each(|uncle_id| {
-                uncles.insert(uncle_id, block_number);
-            });
-            if block_number == head_number {
-                break;
-            }
-        }
-
-        Ok(uncles)
     }
 
     pub fn create_block_template_simple(
@@ -532,7 +477,19 @@ impl BlockChain {
     where
         V: BlockVerifier,
     {
-        V::verify_block(self, block)
+        if self.head_block().header().id() != block.parent_hash() {
+            let selected_chain = Self::new(
+                self.time_service.clone(),
+                block.parent_hash(),
+                self.storage.0.clone(),
+                self.storage.1.clone(),
+                self.vm_metrics.clone(),
+                self.dag.clone(),
+            )?;
+            V::verify_block(&selected_chain, block)
+        } else {
+            V::verify_block(self, block)
+        }
     }
 
     pub fn apply_with_verifier<V>(&mut self, block: Block) -> Result<ExecutedBlock>
@@ -1319,31 +1276,14 @@ impl ChainReader for BlockChain {
         let head = storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
-        // if fork block_id is at same epoch, try to reuse uncles cache.
-        let uncles = if head.header().number() >= self.epoch.start_block_number() {
-            Some(
-                self.uncles
-                    .iter()
-                    .filter(|(_uncle_id, uncle_number)| **uncle_number <= head.header().number())
-                    .map(|(uncle_id, uncle_number)| (*uncle_id, *uncle_number))
-                    .collect::<HashMap<HashValue, MintedUncleNumber>>(),
-            )
-        } else {
-            None
-        };
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
-            uncles,
             storage.clone(),
             storage2.clone(),
             self.vm_metrics.clone(),
             self.dag.clone(),
         )
-    }
-
-    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber> {
-        &self.uncles
     }
 
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>> {
@@ -1645,7 +1585,7 @@ impl ChainReader for BlockChain {
     }
 
     fn dag(&self) -> BlockDAG {
-        self.dag()
+        self.dag.clone()
     }
 
     fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
@@ -2048,15 +1988,6 @@ impl ChainWriter for BlockChain {
         // Update epoch from statedb after each block connection in DAG mode
         // This ensures epoch is always up-to-date during sync
         self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
-
-        if self.epoch.end_block_number() == block.header().number() {
-            self.update_uncle_cache()?;
-        } else if let Some(block_uncles) = block.uncles() {
-            block_uncles.iter().for_each(|uncle_header| {
-                self.uncles
-                    .insert(uncle_header.id(), block.header().number());
-            });
-        }
 
         // Save updated tips to DAG state
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
