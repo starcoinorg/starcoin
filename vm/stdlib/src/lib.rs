@@ -28,11 +28,11 @@ use std::{
 };
 
 mod compat;
+mod vm2;
 
 pub use compat::*;
 pub use starcoin_framework::SourceFiles;
 pub use starcoin_move_compiler::utils::iterate_directory;
-use starcoin_vm2_framework::ReleaseBundle;
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 
@@ -99,7 +99,7 @@ pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<(String, Vec<Vec<u
             let modules = read_compiled_modules(*version);
             verify_compiled_modules(*version, modules.as_slice());
 
-            let mut stdlib_packages = read_released_bundles(*version);
+            let mut stdlib_packages = vm2::read_released_bundles(*version);
             stdlib_packages.push(("ThisIsAWierdNetworkName".to_string(), modules));
             map.insert(*version, stdlib_packages);
         }
@@ -259,30 +259,6 @@ pub fn load_latest_stable_compiled_modules() -> Option<(StdlibVersion, Vec<Compi
 
 pub fn load_latest_compiled_modules() -> Vec<CompiledModule> {
     load_compiled_modules(StdlibVersion::Latest)
-}
-
-/// read release bundles from dir.
-pub fn read_released_bundles(stdlib_version: StdlibVersion) -> Vec<(String, Vec<Vec<u8>>)> {
-    let sub_dir = stdlib_version.to_string();
-    COMPILED_MOVE_CODE_DIR
-        .get_dir(Path::new(sub_dir.as_str()))
-        .expect("read release bundles dir should be ok")
-        .files()
-        .iter()
-        .filter(|file| file.path().extension().is_some_and(|ext| ext == "mrb"))
-        .map(|file| {
-            let name = file
-                .path()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
-            let content = file.contents();
-            let bundle = bcs_ext::from_bytes::<ReleaseBundle>(content).expect("bcs succeeds");
-            (name, bundle.legacy_copy_code())
-        })
-        .collect()
 }
 
 /// read module blobs from dir.
