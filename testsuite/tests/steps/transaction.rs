@@ -16,7 +16,7 @@ use starcoin_vm2_types::{
     account_address::AccountAddress, account_config, transaction::SignedUserTransaction,
 };
 use starcoin_vm2_vm_types::{
-    account_config::G_STC_TOKEN_CODE, genesis_config::ChainId, transaction::RawUserTransaction,
+    account_config::G_STC_TOKEN_CODE, on_chain_resource::ChainId, transaction::RawUserTransaction,
 };
 use std::time::Duration;
 
