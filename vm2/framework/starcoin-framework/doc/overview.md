@@ -67,6 +67,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::stc_transaction_validation`](stc_transaction_validation.md#0x1_stc_transaction_validation)
 -  [`0x1::stc_util`](stc_util.md#0x1_stc_util)
 -  [`0x1::stc_version`](stc_version.md#0x1_stc_version)
+-  [`0x1::stdlib_upgrade_scripts`](stdlib_upgrade_scripts.md#0x1_stdlib_upgrade_scripts)
 -  [`0x1::system_addresses`](system_addresses.md#0x1_system_addresses)
 -  [`0x1::timestamp`](timestamp.md#0x1_timestamp)
 -  [`0x1::transaction_context`](transaction_context.md#0x1_transaction_context)
