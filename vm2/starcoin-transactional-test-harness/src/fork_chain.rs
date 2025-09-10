@@ -7,7 +7,8 @@ use dashmap::DashMap;
 use futures::executor::block_on;
 use jsonrpc_core::futures_util::{FutureExt, TryFutureExt};
 use log::debug;
-use starcoin_abi_decoder::decode_txn_payload;
+use starcoin_vm2_abi_decoder::decode_txn_payload;
+
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
@@ -16,12 +17,10 @@ use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
     BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, MultiStateView,
-    TransactionInfoView, TransactionView,
+    StrView, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
-use starcoin_state_api::StateView;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{
@@ -32,6 +31,7 @@ use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::{
     transaction::{Transaction, TransactionInfo, TransactionOutput},
     view::{
@@ -40,8 +40,8 @@ use starcoin_vm2_types::{
         TransactionInfoWithProofView as TransactionInfoWithProofView2,
     },
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView};
+use starcoin_vm_types::access_path::AccessPath as AccessPath1;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
@@ -616,7 +616,7 @@ impl ChainApi for MockChainApi {
         _block_hash: HashValue,
         _transaction_global_index: u64,
         _event_index: Option<u64>,
-        _access_path: Option<starcoin_rpc_api::types::StrView<AccessPath>>,
+        _access_path: Option<StrView<AccessPath1>>,
     ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::TransactionInfoWithProofView>>
     {
         let fut = async move {
@@ -630,7 +630,7 @@ impl ChainApi for MockChainApi {
         _block_hash: HashValue,
         _transaction_global_index: u64,
         _event_index: Option<u64>,
-        _access_path: Option<starcoin_rpc_api::types::StrView<AccessPath>>,
+        _access_path: Option<StrView<AccessPath1>>,
     ) -> starcoin_rpc_api::FutureResult<Option<starcoin_rpc_api::types::StrView<Vec<u8>>>> {
         let fut = async move {
             bail!("not implemented.");
@@ -674,10 +674,13 @@ fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow
 
 fn try_decode_txn_payload(
     state: &dyn StateView,
-    txn: &mut MultiSignedUserTransactionView,
-) -> anyhow::Result<()> {
-    match txn {
-        MultiSignedUserTransactionView::VM1(txn) => {
+    multi_txn: &mut MultiSignedUserTransactionView,
+) -> Result<()> {
+    match multi_txn {
+        MultiSignedUserTransactionView::VM1(_txn) => {
+            panic!("Here not supprt vm1 transaction, please using mpm 1.0");
+        }
+        MultiSignedUserTransactionView::VM2(txn) => {
             let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
             match decode_txn_payload(state, &txn_payload) {
                 Err(e) => {
@@ -688,20 +691,6 @@ fn try_decode_txn_payload(
                 }
                 Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
             }
-        }
-        MultiSignedUserTransactionView::VM2(_txn) => {
-            panic!("XXX FIXME YSG StateView need the same")
-            /*
-            let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
-            match decode_txn_payload_v2(state, &txn_payload) {
-                Err(e) => {
-                    debug!(
-                        "decode payload of txn {} failure, {:?}",
-                        txn.transaction_hash, e
-                    );
-                }
-                Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
-            } */
         }
     }
     Ok(())
