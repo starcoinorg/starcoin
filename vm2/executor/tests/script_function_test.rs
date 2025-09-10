@@ -10,6 +10,7 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
 
+use starcoin_transaction_builder::vm2::create_signed_txn_with_association_account;
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_test_helper::executor::{
@@ -19,7 +20,6 @@ use starcoin_vm2_test_helper::{
     executor::{compile_modules_with_address, execute_and_apply, prepare_genesis},
     txn::create_account_txn_sent_as_association,
 };
-use starcoin_vm2_transaction_builder::create_signed_txn_with_association_account;
 use starcoin_vm2_types::{
     account_config::{association_address, genesis_address, stc_type_tag},
     language_storage::{ModuleId, StructTag},

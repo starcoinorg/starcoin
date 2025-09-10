@@ -24,6 +24,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use std::collections::HashMap;
 
 use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 pub struct VerifiedBlock {
     pub block: Block,
@@ -71,6 +72,7 @@ pub trait ChainReader {
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> Result<bool>;
     fn epoch(&self) -> &Epoch;
+    fn consensus_strategy(&self) -> ConsensusStrategy;
     /// Get block id vec by BlockNumber, `start_number`'s block id is include.
     fn get_block_ids(
         &self,

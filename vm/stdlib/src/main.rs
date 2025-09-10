@@ -12,7 +12,6 @@ use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::transaction::{
     parse_transaction_argument, ScriptFunction, TransactionArgument,
@@ -27,8 +26,8 @@ use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
     build_stdlib, build_stdlib_error_code_map, load_compiled_modules,
-    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
+    load_latest_stable_compiled_modules, save_binary, StdlibVersion, COMPILED_EXTENSION,
+    COMPILED_OUTPUT_PATH, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
 };
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
@@ -196,12 +195,12 @@ fn main() {
                 .help("don't check compatibility between the old and new standard library"),
         )
         .arg(
-        Arg::new("init-script-module")
-            .short('m')
-            .long("init-script-module")
-            .takes_value(true)
-            .value_name("MODULE")
-            .help("module name of init script function"),
+            Arg::new("init-script-module")
+                .short('m')
+                .long("init-script-module")
+                .takes_value(true)
+                .value_name("MODULE")
+                .help("module name of init script function"),
         ).arg(
         Arg::new("init-script-function")
             .short('f')
@@ -209,7 +208,7 @@ fn main() {
             .takes_value(true)
             .value_name("FUNC")
             .help("function name of init script function"),
-        ).arg(
+    ).arg(
         Arg::new("init-script-type-args")
             .short('t')
             .long("init-script-type-args")
@@ -217,7 +216,7 @@ fn main() {
             .takes_value(true)
             .value_name("TYPE_ARGS")
             .help("type args of init script function"),
-        ).arg(
+    ).arg(
         Arg::new("init-script-args")
             .short('a')
             .long("init-script-args")
@@ -225,7 +224,7 @@ fn main() {
             .takes_value(true)
             .value_name("ARGS")
             .help("args of init script function"),
-        );
+    );
 
     let matches = cli.get_matches();
     let log_level = if matches.is_present("debug") {

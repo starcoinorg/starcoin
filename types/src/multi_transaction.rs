@@ -7,35 +7,20 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2,
-    genesis_config::ChainId as ChainId2,
     transaction::{
         SignatureCheckedTransaction as SignatureCheckedTransaction2,
         SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-        TransactionError as TransactionError2, TransactionPayload as TransactionPayload2,
+        TransactionError as TransactionError2,
     },
 };
-use starcoin_vm_types::transaction::{
-    SignatureCheckedTransaction, Transaction, TransactionError, TransactionPayload,
-};
-use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
+use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::{SignatureCheckedTransaction, Transaction, TransactionError};
 use std::fmt::Display;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub enum MultiChainId {
-    VM1(ChainId),
-    VM2(ChainId2),
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiSignedUserTransaction {
     VM1(SignedUserTransaction),
     VM2(SignedUserTransaction2),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub enum MultiTransactionPayload {
-    VM1(TransactionPayload),
-    VM2(TransactionPayload2),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -158,20 +143,6 @@ impl MultiSignedUserTransaction {
         match self {
             Self::VM1(sign) => sign.gas_token_code().to_string(),
             Self::VM2(sign) => sign.gas_token_code().to_string(),
-        }
-    }
-
-    pub fn chain_id(&self) -> MultiChainId {
-        match self {
-            Self::VM1(sign) => MultiChainId::VM1(sign.chain_id()),
-            Self::VM2(sign) => MultiChainId::VM2(sign.chain_id()),
-        }
-    }
-
-    pub fn payload(&self) -> MultiTransactionPayload {
-        match self {
-            Self::VM1(sign) => MultiTransactionPayload::VM1(sign.payload().clone()),
-            Self::VM2(sign) => MultiTransactionPayload::VM2(sign.payload().clone()),
         }
     }
 

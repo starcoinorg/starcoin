@@ -53,13 +53,13 @@ use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::{
     access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
     on_chain_resource::Epoch,
 };
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::collections::{BTreeMap, HashMap};
 use std::iter::Extend;
@@ -286,7 +286,8 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.epoch.strategy()
+        ConsensusStrategy::try_from(self.epoch.strategy())
+            .expect("Invalid consensus strategy in epoch")
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -398,7 +399,7 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
-        let strategy = epoch.strategy();
+        let strategy = self.consensus();
         let difficulty = strategy.calculate_next_difficulty(self)?;
 
         // Get tips: use provided tips or fetch current DAG tips
@@ -1280,6 +1281,10 @@ impl ChainReader for BlockChain {
 
     fn epoch(&self) -> &Epoch {
         &self.epoch
+    }
+
+    fn consensus_strategy(&self) -> ConsensusStrategy {
+        self.consensus()
     }
 
     fn get_block_ids(

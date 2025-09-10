@@ -32,8 +32,9 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
+
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,

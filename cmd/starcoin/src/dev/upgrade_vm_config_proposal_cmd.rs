@@ -11,7 +11,7 @@ use move_command_line_common::testing::format_diff;
 use scmd::{CommandAction, ExecContext};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_rpc_client::StateRootOption;
-use starcoin_vm2_transaction_builder::build_vm_config_upgrade_proposal;
+use starcoin_transaction_builder::vm2::build_vm_config_upgrade_proposal;
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm2_vm_types::on_chain_config::VMConfig;
 

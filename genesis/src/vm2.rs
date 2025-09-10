@@ -2,27 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_storage::{storage::StorageInstance, Storage};
+use starcoin_transaction_builder::vm2::build_stdlib_package;
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
 use starcoin_vm2_executor::{
     block_executor::BlockExecutedData, executor::do_execute_block_transactions,
 };
 use starcoin_vm2_state_api::ChainStateWriter;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_transaction_builder::build_stdlib_package;
 use starcoin_vm2_types::{
     account_config::CORE_CODE_ADDRESS,
     error::{BlockExecutorError, ExecutorResult},
     vm_error::KeptVMStatus,
 };
 
+use starcoin_config::ChainNetwork;
 use starcoin_vm2_vm_types::{
-    genesis_config::GenesisConfig,
     transaction::TransactionInfo,
     transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload},
     transaction::{Transaction, TransactionStatus},
     StateView,
 };
 use std::sync::Arc;
+use stdlib::StdLibOptions;
 
 fn build_genesis_transaction_with_package(
     chain_id: u8,
@@ -42,19 +43,20 @@ fn build_genesis_transaction_with_package(
     Ok(sign_txn.into_inner())
 }
 
-fn build_genesis_transaction(
-    chain_id: u8,
-    genesis_config: &GenesisConfig,
-) -> anyhow::Result<SignedUserTransaction> {
-    let package = build_stdlib_package(chain_id.into(), genesis_config, None)?;
-    build_genesis_transaction_with_package(chain_id, package)
+fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
+    let stdlib_option = if net.is_test() {
+        StdLibOptions::Fresh
+    } else {
+        StdLibOptions::Compiled(net.genesis_config2().stdlib_version)
+    };
+    let package = build_stdlib_package(net, stdlib_option)?;
+    build_genesis_transaction_with_package(net.chain_id().id(), package)
 }
 
 pub fn build_and_execute_genesis_transaction(
-    chain_id: u8,
-    genesis_config: &GenesisConfig,
+    net: &ChainNetwork,
 ) -> (SignedUserTransaction, TransactionInfo) {
-    let user_txn = build_genesis_transaction(chain_id, genesis_config).unwrap();
+    let user_txn = build_genesis_transaction(net).expect("failed to build genesis transaction");
 
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
     let chain_state = ChainStateDB::new(storage.clone(), None);

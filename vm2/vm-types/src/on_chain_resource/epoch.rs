@@ -1,8 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+
 use crate::access_path::{AccessPath, DataPath};
 use crate::event::EventHandle;
-use crate::genesis_config::ConsensusStrategy;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
@@ -110,8 +110,8 @@ impl Epoch {
         self.block_gas_limit
     }
 
-    pub fn strategy(&self) -> ConsensusStrategy {
-        ConsensusStrategy::try_from(self.strategy).expect("epoch consensus strategy must exist.")
+    pub fn strategy(&self) -> u8 {
+        self.strategy
     }
 
     pub fn max_transaction_per_block(&self) -> u64 {

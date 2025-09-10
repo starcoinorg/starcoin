@@ -33,7 +33,6 @@ use starcoin_types::{
 use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_vm2_account_service::AccountService;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
 
@@ -42,6 +41,7 @@ use crate::NewHeaderChannel;
 use super::metrics::BlockBuilderMetrics;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
@@ -368,7 +368,7 @@ where
         )?;
 
         let epoch = main.epoch().clone();
-        let strategy = epoch.strategy();
+        let strategy = main.consensus_strategy();
         let max_transaction_per_block = epoch.max_transaction_per_block();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
         let previous_header = self

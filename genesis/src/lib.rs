@@ -40,6 +40,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+pub mod vm2;
 
 pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -131,10 +132,7 @@ impl Genesis {
                     .as_slice(),
             );
 
-            let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
-                net.chain_id().id(),
-                genesis_config2,
-            );
+            let (txn2, txn2_info) = vm2::build_and_execute_genesis_transaction(net);
 
             let txn = Self::build_genesis_transaction(net)?;
 
@@ -657,7 +655,7 @@ mod tests {
         let account_state_reader2 = AccountStateReader2::new(&state_db2);
 
         // VM2 API returns ChainId directly, not Option<ChainId>
-        use starcoin_vm2_vm_types::genesis_config::ChainId as ChainId2;
+        use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
         let chain_id2 = account_state_reader2.get_chain_id()?;
         assert_eq!(
             ChainId2::new(net.chain_id().id()),

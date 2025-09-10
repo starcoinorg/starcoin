@@ -1,7 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::genesis_config::StdlibVersion;
 use crate::move_resource::MoveResource;
 use crate::on_chain_config::OnChainConfig;
 use move_core_types::identifier::Identifier;
@@ -17,16 +16,6 @@ pub static G_VERSION_CONFIG_IDENTIFIER: Lazy<Identifier> =
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Version {
     pub major: u64,
-}
-
-impl Version {
-    pub fn into_stdlib_version(self) -> StdlibVersion {
-        if self.major == 0 {
-            StdlibVersion::Latest
-        } else {
-            StdlibVersion::Version(self.major)
-        }
-    }
 }
 
 impl OnChainConfig for Version {

@@ -13,7 +13,7 @@ use starcoin_vm2_account_api::{
 };
 use starcoin_vm2_crypto::ValidCryptoMaterial;
 use starcoin_vm2_types::account_config::{association_address, G_STC_TOKEN_CODE};
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use std::any::Any;
 use std::sync::Arc;
 

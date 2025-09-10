@@ -22,9 +22,9 @@ use starcoin_types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadataLegacy as BlockMetadata,
+    stdlib::StdlibVersion,
     transaction::{Transaction, TransactionPayload},
 };
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::ScriptFunction;

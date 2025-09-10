@@ -23,6 +23,7 @@ rand_core = { default-features = false, workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-framework = { path = "../framework" }
 starcoin-types = { path = "../types" }
+starcoin-vm1-types = { path = "../../types" }
 starcoin-vm-types = { path = "../vm-types" }
 starcoin-move-stdlib = { path = "../framework/move-stdlib" }
 starcoin-table-natives = { path = "../framework/table-natives" }

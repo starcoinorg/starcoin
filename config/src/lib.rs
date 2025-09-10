@@ -47,6 +47,7 @@ pub mod upgrade_config;
 use thiserror::Error;
 
 use crate::account_provider_config::AccountProviderConfig;
+use crate::genesis_config::vm2::GenesisConfig as GenesisConfig2;
 use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
@@ -71,7 +72,6 @@ pub use rpc_config::{
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
-use starcoin_vm2_vm_types::genesis_config::GenesisConfig as GenesisConfig2;
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 

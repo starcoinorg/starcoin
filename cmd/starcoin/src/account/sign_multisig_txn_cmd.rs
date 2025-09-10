@@ -23,7 +23,7 @@ use starcoin_vm2_types::view::{
 use crate::{
     cli_state::CliState, mutlisig_transaction_vm2::read_multisig_existing_signatures, StarcoinOpt,
 };
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
     language_storage::TypeTag,
@@ -54,15 +54,16 @@ pub struct GenerateMultisigTxnOpt {
     script_function: Option<FunctionIdView>,
 
     #[clap(
-    short = 't',
-    long = "type_tag",
-    name = "type-tag",
-    help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+        short = 't',
+        long = "type_tag",
+        name = "type-tag",
+        help = "can specify multi type_tag",
+        parse(try_from_str = parse_type_tag)
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance))]
+    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance
+    ))]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 

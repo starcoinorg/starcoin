@@ -7,16 +7,16 @@ use cucumber::{Steps, StepsBuilder};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
-use starcoin_vm2_account_api::AccountInfo;
-use starcoin_vm2_state_api::StateReaderExt;
-use starcoin_vm2_transaction_builder::{
+use starcoin_transaction_builder::vm2::{
     build_transfer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_state_api::StateReaderExt;
 use starcoin_vm2_types::{
     account_address::AccountAddress, account_config, transaction::SignedUserTransaction,
 };
 use starcoin_vm2_vm_types::{
-    account_config::G_STC_TOKEN_CODE, genesis_config::ChainId, transaction::RawUserTransaction,
+    account_config::G_STC_TOKEN_CODE, on_chain_resource::ChainId, transaction::RawUserTransaction,
 };
 use std::time::Duration;
 

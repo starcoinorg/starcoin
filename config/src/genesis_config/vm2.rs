@@ -1,12 +1,27 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::BuiltinNetworkID;
+use anyhow::{bail, ensure, Result};
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use starcoin_gas_algebra::CostTable;
+use starcoin_gas_meter::StarcoinGasParameters;
+use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
+use starcoin_time_service::TimeServiceType;
+use starcoin_types::stdlib::StdlibVersion;
+use starcoin_uint::U256;
+use starcoin_vm2_crypto::{
+    ed25519::*,
+    multi_ed25519::multi_shard::MultiEd25519KeyShard,
+    multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
+    HashValue, ValidCryptoMaterialStringExt,
+};
 //use network_p2p_types::MultiaddrWithPeerId;
-use crate::{
+use starcoin_vm2_vm_types::{
     gas_schedule::{
         G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_CONSTANTS, G_TEST_GAS_CONSTANTS,
     },
-    genesis_config::{ChainId, StdlibVersion},
     on_chain_config::{
         instruction_table_v1, native_table_v1, native_table_v2, ConsensusConfig, DaoConfig,
         GasSchedule, TransactionPublishOption, VMConfig, Version, G_LATEST_INSTRUCTION_TABLE,
@@ -16,247 +31,12 @@ use crate::{
     token::token_value::TokenValue,
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
-use anyhow::{bail, ensure, format_err, Result};
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use once_cell::sync::Lazy;
-use schemars::{self, JsonSchema};
-use serde::{Deserialize, Serialize};
-use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
-use starcoin_crypto::{
-    ed25519::*,
-    multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
-    HashValue, ValidCryptoMaterialStringExt,
-};
-use starcoin_gas_algebra::CostTable;
-use starcoin_gas_meter::StarcoinGasParameters;
-use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
-use starcoin_time_service::TimeServiceType;
-use starcoin_uint::U256;
 use std::convert::TryFrom;
 use std::fmt::Debug;
-use std::fmt::{self, Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::str::FromStr;
 use std::sync::Arc;
-
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    Hash,
-    PartialEq,
-    PartialOrd,
-    Ord,
-    IntoPrimitive,
-    TryFromPrimitive,
-    Deserialize,
-    Serialize,
-    JsonSchema,
-)]
-#[repr(u8)]
-#[allow(clippy::upper_case_acronyms)]
-#[derive(Default)]
-pub enum BuiltinNetworkID {
-    /// A ephemeral network just for unit test.
-    Test = 255,
-    /// A ephemeral network just for developer test.
-    Dev = 254,
-    /// Starcoin test network,
-    /// The data on the chain will be cleaned up periodically。
-    /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
-    Halley = 253,
-    /// Starcoin long-running test network,
-    /// Proxima Centauri is a small, low-mass star located 4.244 light-years (1.301 pc) away from the Sun in the southern constellation of Centaurus.
-    /// Its Latin name means the "nearest [star] of Centaurus".
-    Proxima = 252,
-    /// Starcoin permanent test network,
-    /// Barnard's Star is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
-    Barnard = 251,
-    /// A ephemeral dag-related network just for developer test.
-    DagTest = 250,
-    /// Starcoin main net.
-    Main = 1,
-    #[default]
-    /// Starcoin dag net
-    Vega = 2,
-}
-
-impl Display for BuiltinNetworkID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Test => write!(f, "test"),
-            Self::Dev => write!(f, "dev"),
-            Self::Halley => write!(f, "halley"),
-            Self::Proxima => write!(f, "proxima"),
-            Self::Barnard => write!(f, "barnard"),
-            Self::Main => write!(f, "main"),
-            Self::DagTest => write!(f, "dagtest"),
-            Self::Vega => write!(f, "vega"),
-        }
-    }
-}
-
-impl FromStr for BuiltinNetworkID {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "test" => Ok(Self::Test),
-            "dev" => Ok(Self::Dev),
-            "halley" => Ok(Self::Halley),
-            "proxima" => Ok(Self::Proxima),
-            "barnard" => Ok(Self::Barnard),
-            "main" => Ok(Self::Main),
-            "dagtest" => Ok(Self::DagTest),
-            "vega" => Ok(Self::Vega),
-            s => Err(format_err!("Unknown network: {}", s)),
-        }
-    }
-}
-impl TryFrom<ChainId> for BuiltinNetworkID {
-    type Error = anyhow::Error;
-    fn try_from(id: ChainId) -> Result<Self, Self::Error> {
-        Ok(match id.id() {
-            255 => Self::Test,
-            254 => Self::Dev,
-            253 => Self::Halley,
-            252 => Self::Proxima,
-            251 => Self::Barnard,
-            250 => Self::DagTest,
-            2 => Self::Vega,
-            1 => Self::Main,
-            id => bail!("{} is not a builtin chain id", id),
-        })
-    }
-}
-
-impl BuiltinNetworkID {
-    pub fn chain_name(self) -> String {
-        self.to_string()
-    }
-
-    pub fn chain_id(self) -> ChainId {
-        ChainId::new(self.into())
-    }
-
-    pub fn assert_test_or_dev(self) -> Result<()> {
-        if !self.is_test_or_dev() {
-            bail!("Only support test or dev network.")
-        }
-        Ok(())
-    }
-
-    pub fn is_test_or_dev(self) -> bool {
-        matches!(self, Self::Test | Self::Dev)
-    }
-
-    pub fn is_test(self) -> bool {
-        matches!(self, Self::Test)
-    }
-
-    pub fn is_dev(self) -> bool {
-        matches!(self, Self::Dev)
-    }
-
-    pub fn is_main(self) -> bool {
-        matches!(self, Self::Main)
-    }
-
-    pub fn is_halley(self) -> bool {
-        matches!(self, Self::Halley)
-    }
-
-    pub fn is_dag_test(self) -> bool {
-        matches!(self, Self::DagTest)
-    }
-    pub fn is_vega(self) -> bool {
-        matches!(self, Self::Vega)
-    }
-    pub fn networks() -> Vec<Self> {
-        vec![
-            Self::Test,
-            Self::Dev,
-            Self::Halley,
-            Self::Proxima,
-            Self::Barnard,
-            Self::Main,
-            Self::DagTest,
-            Self::Vega,
-        ]
-    }
-
-    pub fn genesis_config(self) -> &'static GenesisConfig {
-        match self {
-            Self::Test => &G_TEST_CONFIG,
-            Self::Dev => &G_DEV_CONFIG,
-            Self::Halley => &G_HALLEY_CONFIG,
-            Self::Proxima => &G_PROXIMA_CONFIG,
-            Self::Barnard => &G_BARNARD_CONFIG,
-            Self::Main => &G_MAIN_CONFIG,
-            Self::DagTest => &G_DAG_TEST_CONFIG,
-            Self::Vega => &G_VEGA_CONFIG,
-        }
-    }
-
-    //pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
-    //    match self {
-    //        Self::Test => G_EMPTY_BOOT_NODES.as_slice(),
-    //        Self::Dev => G_EMPTY_BOOT_NODES.as_slice(),
-    //        Self::Halley => G_HALLEY_BOOT_NODES.as_slice(),
-    //        Self::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
-    //        Self::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
-    //        Self::Main => G_MAIN_BOOT_NODES.as_slice(),
-    //        Self::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
-    //        Self::Vega => G_VEGA_BOOT_NODES.as_slice(),
-    //    }
-    //}
-
-    pub fn boot_nodes_domain(self) -> String {
-        match self {
-            Self::Test | Self::Dev | Self::DagTest => "localhost".to_string(),
-            _ => format!("{}.seed.starcoin.org", self),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
-#[allow(clippy::upper_case_acronyms)]
-pub struct CustomNetworkID {
-    chain_name: String,
-    chain_id: ChainId,
-}
-
-impl Display for CustomNetworkID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.chain_name, self.chain_id)
-    }
-}
-
-impl CustomNetworkID {
-    fn new(chain_name: String, chain_id: ChainId) -> Self {
-        Self {
-            chain_name,
-            chain_id,
-        }
-    }
-}
-
-impl FromStr for CustomNetworkID {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() != 2 {
-            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id", s);
-        }
-        let chain_name = parts[0].to_string();
-        let chain_id = ChainId::from_str(parts[1])?;
-        Ok(Self::new(chain_name, chain_id))
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GenesisBlockParameter {
@@ -723,7 +503,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // This is a test config,
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::from_hex_literal("0x3a06de3042a4b8fe156c4ae88d93e7a2e23d621965eddf46351d13d3e8ba3bb6").unwrap(),
             timestamp: 1616846974851,
             difficulty: 0x03bd.into(),
@@ -757,7 +537,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             pruning_depth: G_PRUNING_DEPTH,
             pruning_finality: G_PRUNING_FINALITY,
         },
-        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
+        association_key_pair: (None, MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
             .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
@@ -797,7 +577,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::from_hex_literal("0xb82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529a").unwrap(),
             timestamp: 1621311100863,
             difficulty: 0xb1ec37.into(),
@@ -831,7 +611,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             pruning_depth: G_PRUNING_DEPTH,
             pruning_finality: G_PRUNING_FINALITY,
         },
-        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
+        association_key_pair: (None, MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
             .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
@@ -850,7 +630,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();
     GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter{
+        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: HashValue::from_hex_literal("0x9c1d2feee27125518498fa6bfae233a44c6838bd67c6c50bff02ab4f91837e3a").unwrap(),
             timestamp: 1718943459997,
             difficulty: 0x5f.into(),
@@ -884,7 +664,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             pruning_depth: G_PRUNING_DEPTH,
             pruning_finality: G_PRUNING_FINALITY,
         },
-        association_key_pair: (None,  MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
+        association_key_pair: (None, MultiEd25519PublicKey::from_encoded_string("810a82a896a4f8fd065bcab8b06588fe1afdbb3d3830693c65a73d31ee1e482d85a40286b624b8481b05d9ed748e7c051b63ed36ce952cbc48bb0de4bfc6ec5888feded087075af9585a83c777ba52da1ab3aef139764a0de5fbc2d8aa8d380b02")
             .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
@@ -901,22 +681,21 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
-    use crate::gas_schedule::G_LATEST_GAS_CONSTANTS;
-    use crate::on_chain_config::{G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE};
-    use crate::{
+    use starcoin_gas_algebra::CostTable;
+    use starcoin_gas_meter::StarcoinGasParameters;
+    use starcoin_gas_schedule::FromOnChainGasSchedule;
+    use starcoin_vm2_vm_types::{
         gas_schedule::{
-            latest_cost_table, G_GAS_CONSTANTS_V1, G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
+            latest_cost_table, G_GAS_CONSTANTS_V1, G_LATEST_GAS_CONSTANTS, G_LATEST_GAS_COST_TABLE,
+            G_TEST_GAS_CONSTANTS,
         },
         on_chain_config::{
             instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
             native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4,
             native_table_v1, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
-            txn_gas_schedule_v3, GasSchedule,
+            txn_gas_schedule_v3, GasSchedule, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
         },
     };
-    use starcoin_gas_algebra::CostTable;
-    use starcoin_gas_meter::StarcoinGasParameters;
-    use starcoin_gas_schedule::FromOnChainGasSchedule;
 
     fn config_entries(
         instrs: Vec<(String, u64)>,

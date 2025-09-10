@@ -1,12 +1,13 @@
 use anyhow::Result;
 
+use starcoin_transaction_builder::vm2::build_stdlib_package;
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
 use starcoin_vm2_executor::executor::do_execute_block_transactions;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_transaction_builder::build_stdlib_package;
 use starcoin_vm2_types::account_config::CORE_CODE_ADDRESS;
 
 use starcoin_config::ChainNetwork;
+use starcoin_transaction_builder::StdLibOptions;
 use starcoin_vm2_types::transaction::{
     Package, RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
 };
@@ -35,7 +36,7 @@ pub fn test_build_framework_2_genesis() -> Result<()> {
     let net = ChainNetwork::new_test();
 
     // let entry_func = build_init_script(&net);
-    let package = build_stdlib_package(net.chain_id().id().into(), net.genesis_config2(), None)?;
+    let package = build_stdlib_package(&net, StdLibOptions::Fresh)?;
     let genesis_txn = test_build_genesis_transaction_with_package(&net, package)?;
 
     // Execute with vm 2
