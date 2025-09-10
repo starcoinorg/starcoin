@@ -31,7 +31,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-uint = { workspace = true }
 vm = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-binary-format" }
 bytes = { workspace = true }
-strum = "0.24.1"
+strum = "0.27.2"
 strum_macros = "0.24.3"
 bcs = { workspace = true }
 thiserror = { workspace = true }
