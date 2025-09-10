@@ -5,27 +5,31 @@ use anyhow::{anyhow, Result};
 use futures::executor::block_on;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
-use starcoin_genesis::Genesis;
-use starcoin_rpc_server::module::StateRpcImpl;
-use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
-use starcoin_statedb::ChainStateDB;
-use starcoin_types::write_set::WriteSet;
+use starcoin_vm2_genesis::{
+    build_genesis_transaction, build_genesis_transaction_with_package, execute_genesis_transaction,
+};
+use starcoin_vm2_rpc_server::state_rpc::StateRpcImpl;
+use starcoin_vm2_types::write_set::WriteSet;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tokio::runtime::Runtime;
 
+use crate::{
+    fork_chain::{ForkBlockChain, MockChainApi},
+    fork_state::{MockChainStateAsyncService, MockStateNodeStore},
+    remote_state::RemoteRpcAsyncClient,
+};
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_core_client::transports::local;
 use starcoin_rpc_api::chain::ChainApi;
-use starcoin_rpc_api::state::StateApi;
-use starcoin_state_tree;
+use starcoin_vm2_rpc_api::state_api::StateApi;
+use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 
-use crate::fork_chain::{ForkBlockChain, MockChainApi};
-use crate::fork_state::{MockChainStateAsyncService, MockStateNodeStore};
-use crate::remote_state::RemoteRpcAsyncClient;
-
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_statedb::ChainStateDB;
+use starcoin_vm2_transaction_builder::build_stdlib_package_with_modules;
+use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::transaction::Transaction;
 
 pub struct MockServer {
     _server_handle: JoinHandle<()>,
@@ -74,12 +78,20 @@ impl ForkContext {
         );
         let net = ChainNetwork::new_builtin(network);
         let genesis_txn = match stdlib_modules {
-            Some(module) => Genesis::build_genesis_transaction_with_stdlib(&net, module).unwrap(),
-            None => Genesis::build_genesis_transaction(&net).unwrap(),
+            Some(module) => {
+                let package = build_stdlib_package_with_modules(
+                    ChainId::new(net.chain_id().id()),
+                    net.genesis_config2(),
+                    module,
+                )?;
+                build_genesis_transaction_with_package(net.chain_id().id(), package)?
+            }
+            None => build_genesis_transaction(net.chain_id().id(), net.genesis_config2())?,
         };
+
         let data_store = Arc::new(starcoin_state_tree::mock::MockStateNodeStore::new());
         let state_db = ChainStateDB::new(data_store.clone(), None);
-        Genesis::execute_genesis_txn(&state_db, genesis_txn).unwrap();
+        execute_genesis_transaction(&state_db, Transaction::UserTransaction(genesis_txn))?;
 
         let state_root = state_db.state_root();
         let state_root = Arc::new(Mutex::new(state_root));

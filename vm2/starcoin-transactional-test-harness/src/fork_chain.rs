@@ -28,14 +28,17 @@ use starcoin_storage::{
     BlockStore, BlockTransactionInfoStore, ContractEventStore, Storage, Store, TransactionStore,
 };
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
+use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
-use starcoin_vm2_types::view::{
-    StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
-    TransactionInfoView as TransactionInfoView2,
-    TransactionInfoWithProofView as TransactionInfoWithProofView2,
+use starcoin_vm2_types::{
+    transaction::{Transaction, TransactionInfo, TransactionOutput},
+    view::{
+        StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
+        TransactionInfoView as TransactionInfoView2,
+        TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    },
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
@@ -157,7 +160,7 @@ impl ForkBlockChain {
     pub fn add_new_txn(&mut self, txn: Transaction, output: TransactionOutput) -> Result<()> {
         let txn_hash = txn.id();
         let state_root = *self.state_root.lock().unwrap();
-        let (_, _, events, gas_used, status) = output.into_inner();
+        let (_, events, gas_used, status, _) = output.into_inner();
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
@@ -165,7 +168,11 @@ impl ForkBlockChain {
             TransactionInfo::new(txn_hash, state_root, events.as_slice(), gas_used, status);
         self.txn_accumulator.append(&[txn_info.id()])?;
 
-        self.storage.save_contract_events(txn_hash, events)?;
+        let stc_events = events
+            .iter()
+            .map(|e| StcContractEvent::V2(e.clone()))
+            .collect();
+        self.storage.save_contract_events_v2(txn_hash, stc_events)?;
         self.storage.save_transaction(txn.into())?;
         Ok(())
     }

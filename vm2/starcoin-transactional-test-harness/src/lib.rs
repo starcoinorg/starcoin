@@ -5,87 +5,99 @@ use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
 use clap::{Args, CommandFactory, Parser};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
-use move_command_line_common::address::ParsedAddress;
-use move_command_line_common::files::verify_and_create_named_address_mapping;
-use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
-use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
-use move_core_types::language_storage::StructTag;
-use move_core_types::value::MoveValue;
+use move_command_line_common::{
+    address::ParsedAddress, files::verify_and_create_named_address_mapping,
+};
+use move_compiler::{
+    compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum},
+    construct_pre_compiled_lib,
+    shared::{NumberFormat, NumericalAddress, PackagePaths},
+    FullyCompiledProgram,
+};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::{IdentStr, Identifier},
-    language_storage::{ModuleId, TypeTag},
-};
-use move_transactional_test_runner::framework;
-use move_transactional_test_runner::tasks::{
-    PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
+    language_storage::{ModuleId, StructTag, TypeTag},
+    value::MoveValue,
 };
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
-    tasks::{InitCommand, SyntaxChoice, TaskInput},
-    vm_test_harness::view_resource_in_move_storage,
+    tasks::{
+        InitCommand, PrintBytecodeCommand, PublishCommand, RunCommand, SyntaxChoice, TaskCommand,
+        TaskInput, ViewCommand,
+    },
 };
 use once_cell::sync::Lazy;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use starcoin_abi_decoder::decode_txn_payload;
-use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::HashValue;
-use starcoin_dev::playground::call_contract;
-use starcoin_rpc_api::types::{
-    ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
-    TransactionOutputView, TransactionStatusView, TypeTagView,
-};
-use starcoin_rpc_api::Params;
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
-use starcoin_types::account::{Account, AccountData};
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
-use starcoin_types::transaction::{Package, Transaction2};
+
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::U256;
-use starcoin_types::{
-    access_path::AccessPath,
-    account_config::{genesis_address, AccountResource},
-    transaction::RawUserTransaction,
+
+use starcoin_vm2_vm_types::{
+    account_config::{association_address, core_code_address, STC_TOKEN_CODE_STR},
+    state_store::state_key::StateKey,
 };
-use starcoin_vm_runtime::session::SerializedReturnValues;
-use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
-use starcoin_vm_types::account_config::{
-    association_address, core_code_address, STC_TOKEN_CODE_STR,
-};
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateView;
+
+use starcoin_vm2_vm_runtime::session::SerializedReturnValues;
 
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
-use starcoin_vm_types::{
-    account_config::BalanceResource,
-    block_metadata::BlockMetadata,
-    genesis_config::ChainId,
-    move_resource::MoveResource,
-    on_chain_config::VMConfig,
-    on_chain_resource,
-    token::{stc::stc_type_tag, token_code::TokenCode},
-    transaction::{Module, Script, ScriptFunction, Transaction, TransactionStatus},
-    vm_status::KeptVMStatus,
+
+use move_core_types::vm_status::KeptVMStatus;
+use move_transactional_test_runner::vm_test_harness::TestRunConfig;
+// use starcoin_gas_meter::StarcoinGasParameters;
+use std::collections::BTreeSet;
+use std::{
+    collections::{BTreeMap, HashMap},
+    convert::TryInto,
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+    path::PathBuf,
+    str::FromStr,
+    sync::Mutex,
 };
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::PathBuf;
-use std::sync::Mutex;
-use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
 use starcoin_config::BuiltinNetworkID;
+use starcoin_rpc_api::types::pubsub::Params;
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
+use starcoin_vm2_abi_decoder::decode_txn_payload;
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
-use starcoin_statedb::ChainStateDB;
-use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
-use starcoin_vm2_types::transaction::{
-    RawUserTransaction as RawUserTransaction2, SignedUserTransaction as SignedUserTransaction2,
+use starcoin_vm2_dev::playground::call_contract;
+use starcoin_vm2_state_api::ChainStateReader;
+use starcoin_vm2_types::{
+    account::{Account, AccountData},
+    account_address::AccountAddress as AccountAddress2,
+    transaction::{
+        RawUserTransaction as RawUserTransaction2, SignedUserTransaction as SignedUserTransaction2,
+    },
+    view::{
+        ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
+        TransactionOutputView, TransactionStatusView, TypeTagView,
+    },
 };
-use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
+use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
+use starcoin_vm2_vm_types::transaction::Package;
+use starcoin_vm2_vm_types::{
+    access_path::AccessPath,
+    account_config::stc_type_tag,
+    account_config::{genesis_address, AccountResource},
+    block_metadata::BlockMetadata,
+    genesis_config::ChainId,
+    on_chain_config::VMConfig,
+    on_chain_resource,
+    state_store::TStateView,
+    state_view::StateReaderExt,
+    transaction::{
+        authenticator::AccountPrivateKey, EntryFunction, Transaction, TransactionStatus,
+    },
+};
+
+use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
+use starcoin_resource_viewer::MoveValueAnnotator;
 
 pub mod context;
 pub mod fork_chain;
@@ -132,7 +144,7 @@ pub struct StarcoinRunArgs {}
 #[derive(Debug, Parser)]
 #[clap(name = "faucet")]
 struct FaucetSub {
-    #[clap(long="addr", parse(try_from_str=ParsedAddress::parse))]
+    #[clap(long = "addr", parse(try_from_str=ParsedAddress::parse))]
     /// faucet target address
     address: ParsedAddress,
     #[clap(long = "amount", default_value = "100000000000")]
@@ -183,11 +195,11 @@ pub struct CallAPISub {
 #[clap(name = "package")]
 pub struct PackageSub {
     #[clap(
-    long = "signers",
-    parse(try_from_str = ParsedAddress::parse),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+        long = "signers",
+        parse(try_from_str = ParsedAddress::parse),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
     )]
     signers: Vec<ParsedAddress>,
     #[clap(long = "init-function")]
@@ -205,11 +217,11 @@ pub struct PackageSub {
 #[clap(name = "deploy")]
 pub struct DeploySub {
     #[clap(
-    long = "signers",
-    parse(try_from_str = ParsedAddress::parse),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+        long = "signers",
+        parse(try_from_str = ParsedAddress::parse),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
     )]
     signers: Vec<ParsedAddress>,
     /// max gas for transaction.
@@ -223,11 +235,11 @@ pub struct DeploySub {
 #[derive(Debug, Parser)]
 #[clap(name = "var")]
 pub struct VarSub {
-    #[clap(name="var",
-    parse(try_from_str = parse_var),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+    #[clap(name = "var",
+        parse(try_from_str = parse_var),
+        takes_value(true),
+        multiple_values(true),
+        multiple_occurrences(true)
     )]
     /// variables with format <key1>=<value1>, <key2>=<value2>,...
     var: Vec<(String, String)>,
@@ -245,7 +257,7 @@ pub struct ReadJsonSub {
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
     Faucet {
-        #[clap(long="addr", parse(try_from_str=ParsedAddress::parse))]
+        #[clap(long = "addr", parse(try_from_str=ParsedAddress::parse))]
         address: ParsedAddress,
         #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
@@ -294,11 +306,11 @@ pub enum StarcoinSubcommands {
     #[clap(name = "deploy")]
     Deploy {
         #[clap(
-        long = "signers",
-        parse(try_from_str = ParsedAddress::parse),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+            long = "signers",
+            parse(try_from_str = ParsedAddress::parse),
+            takes_value(true),
+            multiple_values(true),
+            multiple_occurrences(true)
         )]
         signers: Vec<ParsedAddress>,
         #[clap(long = "gas-budget")]
@@ -309,11 +321,11 @@ pub enum StarcoinSubcommands {
     },
     #[clap(name = "var")]
     Var {
-        #[clap(name="var",
-        parse(try_from_str = parse_var),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        #[clap(name = "var",
+            parse(try_from_str = parse_var),
+            takes_value(true),
+            multiple_values(true),
+            multiple_occurrences(true)
         )]
         var: Vec<(String, String)>,
     },
@@ -491,20 +503,10 @@ impl StarcoinTestAdapter<'_> {
 
     /// Obtain a Rust representation of the account resource from storage, which is used to derive
     /// a few default transaction parameters.
-    fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
-        let account_access_path =
-            AccessPath::resource_access_path(*signer_addr, AccountResource::struct_tag());
-        let account_blob = self
-            .context
+    fn fetch_account_resource(&self, signer_addr: &AccountAddress2) -> Result<AccountResource> {
+        self.context
             .storage
-            .get_state_value(&StateKey::AccessPath(account_access_path))?
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                "Failed to fetch account resource under address {}. Has the account been created?",
-                signer_addr
-            )
-            })?;
-        Ok(bcs::from_bytes(&account_blob).unwrap())
+            .get_account_resource(signer_addr.clone())
     }
 
     /// Obtain a Rust representation of the balance resource from storage, which is used to derive
@@ -513,24 +515,11 @@ impl StarcoinTestAdapter<'_> {
         &self,
         signer_addr: &AccountAddress,
         balance_currency_code: String,
-    ) -> Result<BalanceResource> {
-        let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
-        let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
-        let balance_access_path =
-            AccessPath::resource_access_path(*signer_addr, balance_resource_tag);
-
-        let balance_blob = self
-            .context
-            .storage
-            .get_state_value(&StateKey::AccessPath(balance_access_path))?
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Failed to fetch balance resource under address {}.",
-                    signer_addr
-                )
-            })?;
-
-        Ok(bcs::from_bytes(&balance_blob).unwrap())
+    ) -> Result<u128> {
+        self.context.storage.get_balance_by_type(
+            *signer_addr,
+            StructTag::from_str(balance_currency_code.as_str())?,
+        )
     }
 
     fn hack_genesis_account(&self) -> Result<()> {
@@ -540,39 +529,19 @@ impl StarcoinTestAdapter<'_> {
             self.fetch_balance_resource(&genesis_address(), STC_TOKEN_CODE_STR.to_string())?;
         let genesis_account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(genesis_address()),
-            balance.token(),
-            STC_TOKEN_CODE_STR,
+            balance,
             genesis_account.sequence_number(),
-            genesis_account.withdraw_events().count(),
-            genesis_account.deposit_events().count(),
-            genesis_account.accept_token_events().count(),
-            genesis_account.has_delegated_key_rotation_capability(),
-            genesis_account.has_delegated_withdrawal_capability(),
+            0,
+            0,
         );
         self.context
             .apply_write_set(genesis_account_data.to_writeset())?;
 
-        {
-            let mut writes = WriteSetMut::default();
-            writes.push((
-                StateKey::AccessPath(AccessPath::resource_access_path(
-                    genesis_address(),
-                    StructTag {
-                        address: genesis_address(),
-                        module: Identifier::new("Account")?,
-                        name: Identifier::new("SignerDelegated")?,
-                        type_params: vec![],
-                    },
-                )),
-                WriteOp::Deletion,
-            ));
-            self.context.apply_write_set(writes.freeze().unwrap())?;
-        }
         Ok(())
     }
 
     /// Hack the account, and set account's auth key to genesis keypair
-    fn hack_account(&self, address: AccountAddress) -> Result<()> {
+    fn hack_account(&self, address: AccountAddress2) -> Result<()> {
         if self.debug {
             eprintln!("Hack account {}", address);
         }
@@ -581,14 +550,10 @@ impl StarcoinTestAdapter<'_> {
         let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
         let account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(address),
-            balance.token(),
-            STC_TOKEN_CODE_STR,
+            balance,
             account.sequence_number(),
-            account.withdraw_events().count(),
-            account.deposit_events().count(),
-            account.accept_token_events().count(),
-            account.has_delegated_key_rotation_capability(),
-            account.has_delegated_withdrawal_capability(),
+            0,
+            0,
         );
         self.context.apply_write_set(account_data.to_writeset())?;
         Ok(())
@@ -602,18 +567,21 @@ impl StarcoinTestAdapter<'_> {
         signer_addr: &AccountAddress,
     ) -> Result<TransactionParameters> {
         let account_resource = self.fetch_account_resource(signer_addr)?;
-
         let sequence_number = account_resource.sequence_number();
-        // let gas_currency_code = stc_type_tag().to_string();
-        let vmconfig = self
+
+        let gas_schdule = self
             .context
             .storage
-            .get_on_chain_config::<VMConfig>()?
-            .ok_or_else(|| anyhow::anyhow!("Failed to fetch onchain vm config."))?;
-        let max_number_of_gas_units = vmconfig
-            .gas_schedule
-            .gas_constants
-            .maximum_number_of_gas_units;
+            .get_on_chain_config::<VMConfig>()
+            .ok_or_else(|| anyhow::anyhow!("Failed to fetch onchain vm config."))?
+            .gas_schedule;
+        let gas_parameters = StarcoinGasParameters::from_on_chain_gas_schedule(
+            &gas_schdule.clone().to_btree_map(),
+            gas_schdule.feature_version,
+        )
+        .unwrap();
+
+        let max_number_of_gas_units = gas_parameters.vm.txn.maximum_number_of_gas_units;
         let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
             max_number_of_gas_units
@@ -622,14 +590,14 @@ impl StarcoinTestAdapter<'_> {
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
                 max_number_of_gas_units,
-                (account_balance.token() / gas_unit_price as u128) as u64,
+                ((account_balance / gas_unit_price as u128) as u64).into(),
             )
         };
         let chain_id = self.context.storage.get_chain_id()?;
         Ok(TransactionParameters {
             sequence_number,
             gas_unit_price,
-            max_gas_amount,
+            max_gas_amount: max_gas_amount.into(),
             expiration_timestamp_secs: self.context.storage.get_timestamp()?.seconds() + 60 * 60,
             chainid: chain_id,
         })
@@ -640,7 +608,7 @@ impl StarcoinTestAdapter<'_> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM2::new(None, &self.context.storage);
         let mut outputs = vm.execute_block_transactions(
             &self.context.storage,
             vec![Transaction::BlockMetadata(meta.clone())],
@@ -653,7 +621,7 @@ impl StarcoinTestAdapter<'_> {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
                     self.context
-                        .apply_write_set(output.clone().into_inner().1)?;
+                        .apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -691,7 +659,7 @@ impl StarcoinTestAdapter<'_> {
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
-                    .apply_write_set(output.clone().into_inner().1)?;
+                    .apply_write_set(output.clone().into_inner().0)?;
                 let mut chain = self.context.chain.lock().unwrap();
                 chain.add_new_txn(
                     Transaction::UserTransaction(signed_txn.clone()),
@@ -725,8 +693,8 @@ impl StarcoinTestAdapter<'_> {
             None,
         )?;
 
-        let move_resolver = RemoteStorage::new(&self.context.storage);
-        let annotator = move_resource_viewer::MoveValueAnnotator::new(&move_resolver);
+        let move_resolver = self.context.storage.as_move_resolver();
+        let annotator = MoveValueAnnotator::new(&move_resolver);
         let rets = rets
             .into_iter()
             .map(|(ty, v)| annotator.view_value(&ty, &v))
@@ -779,15 +747,12 @@ impl StarcoinTestAdapter<'_> {
         }
 
         let addr = self.compiled_state.resolve_address(&addr);
-        let txn = RawUserTransaction::new_script_function(
+        let txn = RawUserTransaction2::new_script_function(
             sender,
             params.sequence_number,
-            ScriptFunction::new(
-                ModuleId::new(
-                    core_code_address(),
-                    Identifier::new("TransferScripts").unwrap(),
-                ),
-                Identifier::new("peer_to_peer_v2").unwrap(),
+            EntryFunction::new(
+                ModuleId::new(core_code_address(), Identifier::new("transfer_scripts")?),
+                Identifier::new("peer_to_peer_v2")?,
                 vec![stc_type_tag()],
                 vec![
                     bcs_ext::to_bytes(&addr).unwrap(),
@@ -826,7 +791,7 @@ impl StarcoinTestAdapter<'_> {
         let last_blockmeta = self
             .context
             .storage
-            .get_resource::<on_chain_resource::BlockMetadata>(genesis_address())?;
+            .get_resource_type_bytes::<on_chain_resource::BlockMetadata>(genesis_address())?;
 
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
@@ -853,6 +818,7 @@ impl StarcoinTestAdapter<'_> {
             uncles,
             height,
             self.context.storage.get_chain_id()?,
+            0,
             0,
         );
         self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
@@ -951,7 +917,7 @@ impl StarcoinTestAdapter<'_> {
                     .iter()
                     .map(|arg| MoveValue::from(arg.clone()))
                     .collect::<Vec<_>>();
-                ScriptFunction::new(
+                EntryFunction::new(
                     fid.0.module,
                     fid.0.function,
                     type_args
@@ -1011,7 +977,7 @@ impl StarcoinTestAdapter<'_> {
         };
         let params = self.fetch_default_transaction_parameters(&signer)?;
 
-        let txn = RawUserTransaction::new_package(
+        let txn = RawUserTransaction2::new_package(
             signer,
             params.sequence_number,
             package,
@@ -1059,6 +1025,14 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn default_syntax(&self) -> SyntaxChoice {
         self.default_syntax
+    }
+
+    fn known_attributes(&self) -> &BTreeSet<String> {
+        todo!()
+    }
+
+    fn run_config(&self) -> TestRunConfig {
+        todo!()
     }
 
     fn init(
@@ -1203,7 +1177,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let params = self.fetch_default_transaction_parameters(&signer)?;
 
         let package = Self::build_package(vec![module.clone()], None)?;
-        let txn = RawUserTransaction::new_package(
+        let txn = RawUserTransaction2::new_package(
             signer,
             params.sequence_number,
             package,
@@ -1416,6 +1390,86 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             }
         }
         Ok((result_str, cmd_var_ctx))
+    }
+
+    fn compile_module(
+        &mut self,
+        syntax: SyntaxChoice,
+        data: Option<NamedTempFile>,
+        start_line: usize,
+        command_lines_stop: usize,
+    ) -> Result<(
+        NamedTempFile,
+        Option<move_symbol_pool::symbol::Symbol>,
+        CompiledModule,
+        Option<String>,
+    )> {
+        todo!()
+    }
+
+    fn compile_module_default(
+        &mut self,
+        syntax: SyntaxChoice,
+        data: Option<NamedTempFile>,
+        start_line: usize,
+        command_lines_stop: usize,
+        need_model: bool,
+    ) -> Result<(
+        NamedTempFile,
+        Option<move_symbol_pool::symbol::Symbol>,
+        CompiledModule,
+        Option<move_model::model::GlobalEnv>,
+        Option<String>,
+    )> {
+        todo!()
+    }
+
+    fn compile_script(
+        &mut self,
+        syntax: SyntaxChoice,
+        data: Option<NamedTempFile>,
+        start_line: usize,
+        command_lines_stop: usize,
+    ) -> Result<(CompiledScript, Option<String>)> {
+        todo!()
+    }
+
+    fn compile_script_default(
+        &mut self,
+        syntax: SyntaxChoice,
+        data: Option<NamedTempFile>,
+        start_line: usize,
+        command_lines_stop: usize,
+        need_model: bool,
+    ) -> Result<(
+        CompiledScript,
+        Option<move_model::model::GlobalEnv>,
+        Option<String>,
+    )> {
+        todo!()
+    }
+
+    fn handle_command(
+        &mut self,
+        task: TaskInput<
+            TaskCommand<
+                Self::ExtraInitArgs,
+                Self::ExtraPublishArgs,
+                Self::ExtraValueArgs,
+                Self::ExtraRunArgs,
+                Self::Subcommand,
+            >,
+        >,
+    ) -> Result<Option<String>> {
+        todo!()
+    }
+
+    fn register_temp_filename(&mut self, data: &NamedTempFile) {
+        todo!()
+    }
+
+    fn rewrite_temp_filenames(&mut self, output: String) -> String {
+        todo!()
     }
 }
 

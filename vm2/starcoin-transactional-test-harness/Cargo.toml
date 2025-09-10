@@ -23,12 +23,19 @@ jsonrpc-core-client = { features = [
     "arbitrary_precision",
 ], workspace = true }
 log = { workspace = true }
-move-binary-format = { workspace = true }
-move-command-line-common = { workspace = true }
-move-compiler = { workspace = true }
-move-core-types = { workspace = true }
-move-transactional-test-runner = { workspace = true }
-move-table-extension = { workspace = true }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+# move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", optional = true }
+
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -40,13 +47,12 @@ futures = { workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-derive = { workspace = true }
 jsonrpc-http-server = { workspace = true }
-move-resource-viewer = { workspace = true }
 starcoin-abi-decoder = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-dev = { workspace = true }
+
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-rpc-api = { workspace = true }
@@ -61,13 +67,21 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 
-starcoin-vm2-storage = { workspace = true }
+# starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-vm-runtime = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-rpc-server = { workspace = true }
+starcoin-vm2-genesis = { workspace = true }
+starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-gas-meter = { path = "../../vm2/framework/gas-meter" }
+starcoin-gas-schedule = { path = "../../vm2/framework/gas-schedule" }
+starcoin-vm2-abi-decoder = { workspace = true }
+starcoin-vm2-dev = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
