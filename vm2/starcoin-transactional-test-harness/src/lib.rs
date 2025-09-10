@@ -3,7 +3,7 @@
 
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
-use clap::{Args, CommandFactory, Parser};
+use clap::{Args, CommandFactory, Parser, ArgAction};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
@@ -32,7 +32,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
-use starcoin_types::U256;
 
 use starcoin_vm2_vm_types::{
     account_config::{association_address, core_code_address, STC_TOKEN_CODE_STR},
@@ -44,8 +43,8 @@ use starcoin_vm2_vm_runtime::session::SerializedReturnValues;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 
 use move_core_types::vm_status::KeptVMStatus;
-use move_transactional_test_runner::vm_test_harness::TestRunConfig;
-// use starcoin_gas_meter::StarcoinGasParameters;
+use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
+
 use std::collections::BTreeSet;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -57,6 +56,7 @@ use std::{
     str::FromStr,
     sync::Mutex,
 };
+use move_command_line_common::values::ParsableValue;
 use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
@@ -121,9 +121,8 @@ pub struct ExtraInitArgs {
 
     #[clap(
         long = "public-keys",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        num_args(1..),
+        action(ArgAction::Append)
     )]
     /// the `public-keys` option is deprecated, please remove it.
     public_keys: Option<Vec<String>>,
@@ -144,7 +143,7 @@ pub struct StarcoinRunArgs {}
 #[derive(Debug, Parser)]
 #[clap(name = "faucet")]
 struct FaucetSub {
-    #[clap(long = "addr", parse(try_from_str=ParsedAddress::parse))]
+    #[clap(long = "addr", value_parser = ParsedAddress::parse)]
     /// faucet target address
     address: ParsedAddress,
     #[clap(long = "amount", default_value = "100000000000")]
@@ -155,7 +154,7 @@ struct FaucetSub {
 #[derive(Debug, Parser)]
 #[clap(name = "block")]
 struct BlockSub {
-    #[clap(long, parse(try_from_str=ParsedAddress::parse))]
+    #[clap(long, value_parser = ParsedAddress::parse)]
     author: Option<ParsedAddress>,
     #[clap(long)]
     timestamp: Option<u64>,
@@ -186,7 +185,7 @@ pub struct CallAPISub {
     #[clap(name = "method")]
     /// api method to call, example: node.info
     method: String,
-    #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+    #[clap(name = "params", default_value = "", value_parser = parse_params)]
     /// api params, should be a json array string
     params: Params,
 }
@@ -196,10 +195,9 @@ pub struct CallAPISub {
 pub struct PackageSub {
     #[clap(
         long = "signers",
-        parse(try_from_str = ParsedAddress::parse),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        value_parser = ParsedAddress::parse,
+        num_args(1..),
+        action(ArgAction::Append)
     )]
     signers: Vec<ParsedAddress>,
     #[clap(long = "init-function")]
@@ -218,10 +216,9 @@ pub struct PackageSub {
 pub struct DeploySub {
     #[clap(
         long = "signers",
-        parse(try_from_str = ParsedAddress::parse),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        value_parser = ParsedAddress::parse,
+        num_args(1..),
+        action(ArgAction::Append)
     )]
     signers: Vec<ParsedAddress>,
     /// max gas for transaction.
@@ -236,10 +233,9 @@ pub struct DeploySub {
 #[clap(name = "var")]
 pub struct VarSub {
     #[clap(name = "var",
-        parse(try_from_str = parse_var),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        value_parser = parse_var,
+        num_args(1..),
+        action(ArgAction::Append)
     )]
     /// variables with format <key1>=<value1>, <key2>=<value2>,...
     var: Vec<(String, String)>,
@@ -257,7 +253,7 @@ pub struct ReadJsonSub {
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
     Faucet {
-        #[clap(long = "addr", parse(try_from_str=ParsedAddress::parse))]
+        #[clap(long = "addr", value_parser = ParsedAddress::parse)]
         address: ParsedAddress,
         #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
@@ -265,7 +261,7 @@ pub enum StarcoinSubcommands {
 
     #[clap(name = "block")]
     NewBlock {
-        #[clap(long, parse(try_from_str=ParsedAddress::parse))]
+        #[clap(long, value_parser = ParsedAddress::parse)]
         author: Option<ParsedAddress>,
         #[clap(long)]
         timestamp: Option<u64>,
@@ -288,7 +284,7 @@ pub enum StarcoinSubcommands {
         #[clap(name = "method")]
         /// api name to call, example: node.info
         method: String,
-        #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+        #[clap(name = "params", default_value = "", value_parser = parse_params)]
         /// api params, should be a json array string
         params: Params,
     },
@@ -307,10 +303,9 @@ pub enum StarcoinSubcommands {
     Deploy {
         #[clap(
             long = "signers",
-            parse(try_from_str = ParsedAddress::parse),
-            takes_value(true),
-            multiple_values(true),
-            multiple_occurrences(true)
+            value_parser = ParsedAddress::parse,
+            num_args(1..),
+            action(ArgAction::Append)
         )]
         signers: Vec<ParsedAddress>,
         #[clap(long = "gas-budget")]
@@ -322,10 +317,9 @@ pub enum StarcoinSubcommands {
     #[clap(name = "var")]
     Var {
         #[clap(name = "var",
-            parse(try_from_str = parse_var),
-            takes_value(true),
-            multiple_values(true),
-            multiple_occurrences(true)
+            value_parser = parse_var,
+            num_args(1..),
+            action(ArgAction::Append)
         )]
         var: Vec<(String, String)>,
     },
@@ -679,39 +673,40 @@ impl StarcoinTestAdapter<'_> {
     }
 
     fn handle_contract_call(&self, call: ContractCall) -> Result<(Option<String>, Option<Value>)> {
-        let ContractCall {
-            function_id,
-            type_args,
-            args,
-        } = call;
-        let rets = call_contract(
-            &self.context.storage,
-            function_id.0.module,
-            function_id.0.function.as_str(),
-            type_args.into_iter().map(|t| t.0).collect(),
-            args.into_iter().map(|t| t.0).collect(),
-            None,
-        )?;
-
-        let move_resolver = self.context.storage.as_move_resolver();
-        let annotator = MoveValueAnnotator::new(&move_resolver);
-        let rets = rets
-            .into_iter()
-            .map(|(ty, v)| annotator.view_value(&ty, &v))
-            .collect::<Result<Vec<_>>>()?;
-        if rets.is_empty() {
-            Ok((None, None))
-        } else if rets.len() == 1 {
-            Ok((
-                Some(serde_json::to_string_pretty(&rets[0])?),
-                Some(serde_json::to_value(&rets[0])?),
-            ))
-        } else {
-            Ok((
-                Some(serde_json::to_string_pretty(&rets)?),
-                Some(serde_json::to_value(&rets)?),
-            ))
-        }
+        unimplemented!()
+        // let ContractCall {
+        //     function_id,
+        //     type_args,
+        //     args,
+        // } = call;
+        // let rets = call_contract(
+        //     &self.context.storage,
+        //     function_id.0.module,
+        //     function_id.0.function.as_str(),
+        //     type_args.into_iter().map(|t| t.0).collect(),
+        //     args.into_iter().map(|t| t.0).collect(),
+        //     None,
+        // )?;
+        //
+        // let move_resolver = self.context.storage.as_move_resolver();
+        // let annotator = MoveValueAnnotator::new(&move_resolver);
+        // let rets = rets
+        //     .into_iter()
+        //     .map(|(ty, v)| annotator.view_value(&ty, &v))
+        //     .collect::<Result<Vec<_>>>()?;
+        // if rets.is_empty() {
+        //     Ok((None, None))
+        // } else if rets.len() == 1 {
+        //     Ok((
+        //         Some(serde_json::to_string_pretty(&rets[0])?),
+        //         Some(serde_json::to_value(&rets[0])?),
+        //     ))
+        // } else {
+        //     Ok((
+        //         Some(serde_json::to_string_pretty(&rets)?),
+        //         Some(serde_json::to_value(&rets)?),
+        //     ))
+        // }
     }
 
     fn handle_faucet(
@@ -788,67 +783,68 @@ impl StarcoinTestAdapter<'_> {
         number: Option<u64>,
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let last_blockmeta = self
-            .context
-            .storage
-            .get_resource_type_bytes::<on_chain_resource::BlockMetadata>(genesis_address())?;
-
-        let height = number
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
-            .unwrap_or(0);
-
-        let author = author
-            .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.author))
-            .unwrap_or_else(AccountAddress::random);
-
-        let uncles = uncles
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
-            .unwrap_or(0);
-        let timestamp =
-            timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
-        //TODO find a better way to get parent hash, we should keep to local storage.
-        let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
-
-        let new_block_meta = BlockMetadata::new(
-            parent_hash,
-            timestamp,
-            author,
-            None,
-            uncles,
-            height,
-            self.context.storage.get_chain_id()?,
-            0,
-            0,
-        );
-        self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
-            println!("Run blockmeta error: {}", e);
-            e
-        })?;
-
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
-            new_block_meta.clone().into_inner();
-        let block_body = BlockBody::new(vec![], None);
-        let block_header = BlockHeader::new(
-            parent_hash,
-            timestamp,
-            number,
-            author,
-            self.context.chain.lock().unwrap().txn_accumulator_root(),
-            HashValue::random(),
-            self.context.storage.state_root(),
-            0u64,
-            U256::zero(),
-            block_body.hash(),
-            self.context.storage.get_chain_id()?,
-            0,
-            BlockHeaderExtra::new([0u8; 4]),
-        );
-        let new_block = Block::new(block_header, block_body);
-        let mut chain = self.context.chain.lock().unwrap();
-        chain.add_new_block(new_block)?;
-
-        Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
+        unimplemented!()
+        // let last_blockmeta = self
+        //     .context
+        //     .storage
+        //     .get_resource_type_bytes::<on_chain_resource::BlockMetadata>(genesis_address())?;
+        //
+        // let height = number
+        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
+        //     .unwrap_or(0);
+        //
+        // let author = author
+        //     .map(|v| self.compiled_state.resolve_address(&v))
+        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.author))
+        //     .unwrap_or_else(AccountAddress::random);
+        //
+        // let uncles = uncles
+        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
+        //     .unwrap_or(0);
+        // let timestamp =
+        //     timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
+        // //TODO find a better way to get parent hash, we should keep to local storage.
+        // let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
+        //
+        // let new_block_meta = BlockMetadata::new(
+        //     parent_hash,
+        //     timestamp,
+        //     author,
+        //     None,
+        //     uncles,
+        //     height,
+        //     self.context.storage.get_chain_id()?,
+        //     0,
+        //     0,
+        // );
+        // self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
+        //     println!("Run blockmeta error: {}", e);
+        //     e
+        // })?;
+        //
+        // let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
+        //     new_block_meta.clone().into_inner();
+        // let block_body = BlockBody::new(vec![], None);
+        // let block_header = BlockHeader::new(
+        //     parent_hash,
+        //     timestamp,
+        //     number,
+        //     author,
+        //     self.context.chain.lock().unwrap().txn_accumulator_root(),
+        //     HashValue::random(),
+        //     self.context.storage.state_root(),
+        //     0u64,
+        //     U256::zero(),
+        //     block_body.hash(),
+        //     self.context.storage.get_chain_id()?,
+        //     0,
+        //     BlockHeaderExtra::new([0u8; 4]),
+        // );
+        // let new_block = Block::new(block_header, block_body);
+        // let mut chain = self.context.chain.lock().unwrap();
+        // chain.add_new_block(new_block)?;
+        //
+        // Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }
 
     fn handle_call_api(
@@ -856,21 +852,23 @@ impl StarcoinTestAdapter<'_> {
         method: String,
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let output = self.context.call_api(method.as_str(), params)?;
-        Ok((None, Some(serde_json::to_value(output)?)))
+        unimplemented!()
+        // let output = self.context.call_api(method.as_str(), params)?;
+        // Ok((None, Some(serde_json::to_value(output)?)))
     }
 
     fn build_package(
         modules: Vec<CompiledModule>,
-        init_function: Option<ScriptFunction>,
+        init_function: Option<EntryFunction>,
     ) -> Result<Package> {
-        let mut ms = vec![];
-        for m in modules {
-            let mut code = vec![];
-            m.serialize(&mut code)?;
-            ms.push(Module::new(code));
-        }
-        Package::new(ms, init_function)
+        unimplemented!()
+        // let mut ms = vec![];
+        // for m in modules {
+        //     let mut code = vec![];
+        //     m.serialize(&mut code)?;
+        //     ms.push(Module::new(code));
+        // }
+        // Package::new(ms, init_function)
     }
 
     fn handle_package(
@@ -880,79 +878,80 @@ impl StarcoinTestAdapter<'_> {
         type_args: Option<Vec<TypeTagView>>,
         args: Option<Vec<TransactionArgumentView>>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        let data = match data {
-            Some(f) => f,
-            None => panic!("Expected a module text block following 'package'",),
-        };
-        let data_path = data.path().to_str().unwrap();
-        let (named_addr_opt, module, warnings_opt) = {
-            let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
-            match unit {
-                AnnotatedCompiledUnit::Module(annot_module) => {
-                    let (named_addr_opt, _id) = annot_module.module_id();
-                    (
-                        named_addr_opt.map(|n| n.value),
-                        annot_module.named_module.module,
-                        warnings_opt,
-                    )
-                }
-                AnnotatedCompiledUnit::Script(_) => {
-                    panic!("Expected a module text block, not a script, following 'package'")
-                }
-            }
-        };
-
-        self.compiled_state
-            .add_precompiled(named_addr_opt, module.clone());
-
-        let package = Self::build_package(
-            vec![module.clone()],
-            init_function.map(|fid| {
-                let move_args = &args
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|v| v.0)
-                    .collect::<Vec<_>>();
-                let move_args = move_args
-                    .iter()
-                    .map(|arg| MoveValue::from(arg.clone()))
-                    .collect::<Vec<_>>();
-                EntryFunction::new(
-                    fid.0.module,
-                    fid.0.function,
-                    type_args
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(|v| v.0)
-                        .collect(),
-                    convert_txn_args(&move_args),
-                )
-            }),
-        )?;
-
-        let package_hash = package.crypto_hash();
-        let output_file = {
-            let mut output_file = self.tempdir.path().join(package_hash.to_string());
-            output_file.set_extension("blob");
-            output_file
-        };
-        let mut file = File::create(output_file.as_path())?;
-        let blob = bcs_ext::to_bytes(&package)?;
-        let hex = format!("0x{}", hex::encode(blob.as_slice()));
-        file.write_all(&blob)
-            .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
-
-        let package_result = PackageResult {
-            file: output_file.to_str().unwrap().to_string(),
-            package_hash,
-            hex,
-        };
-        self.compiled_state().add_with_source_file(
-            named_addr_opt,
-            module,
-            (data_path.to_owned(), data),
-        );
-        Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
+        unimplemented!()
+        // let data = match data {
+        //     Some(f) => f,
+        //     None => panic!("Expected a module text block following 'package'",),
+        // };
+        // let data_path = data.path().to_str().unwrap();
+        // let (named_addr_opt, module, warnings_opt) = {
+        //     let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
+        //     match unit {
+        //         AnnotatedCompiledUnit::Module(annot_module) => {
+        //             let (named_addr_opt, _id) = annot_module.module_id();
+        //             (
+        //                 named_addr_opt.map(|n| n.value),
+        //                 annot_module.named_module.module,
+        //                 warnings_opt,
+        //             )
+        //         }
+        //         AnnotatedCompiledUnit::Script(_) => {
+        //             panic!("Expected a module text block, not a script, following 'package'")
+        //         }
+        //     }
+        // };
+        //
+        // self.compiled_state
+        //     .add_precompiled(named_addr_opt, module.clone());
+        //
+        // let package = Self::build_package(
+        //     vec![module.clone()],
+        //     init_function.map(|fid| {
+        //         let move_args = &args
+        //             .unwrap_or_default()
+        //             .into_iter()
+        //             .map(|v| v.0)
+        //             .collect::<Vec<_>>();
+        //         let move_args = move_args
+        //             .iter()
+        //             .map(|arg| MoveValue::from(arg.clone()))
+        //             .collect::<Vec<_>>();
+        //         EntryFunction::new(
+        //             fid.0.module,
+        //             fid.0.function,
+        //             type_args
+        //                 .unwrap_or_default()
+        //                 .into_iter()
+        //                 .map(|v| v.0)
+        //                 .collect(),
+        //             convert_txn_args(&move_args),
+        //         )
+        //     }),
+        // )?;
+        //
+        // let package_hash = package.crypto_hash();
+        // let output_file = {
+        //     let mut output_file = self.tempdir.path().join(package_hash.to_string());
+        //     output_file.set_extension("blob");
+        //     output_file
+        // };
+        // let mut file = File::create(output_file.as_path())?;
+        // let blob = bcs_ext::to_bytes(&package)?;
+        // let hex = format!("0x{}", hex::encode(blob.as_slice()));
+        // file.write_all(&blob)
+        //     .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
+        //
+        // let package_result = PackageResult {
+        //     file: output_file.to_str().unwrap().to_string(),
+        //     package_hash,
+        //     hex,
+        // };
+        // self.compiled_state().add_with_source_file(
+        //     named_addr_opt,
+        //     module,
+        //     (data_path.to_owned(), data),
+        // );
+        // Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
     }
 
     fn handle_deploy(
@@ -1037,129 +1036,133 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn init(
         default_syntax: SyntaxChoice,
-        pre_compiled_deps: Option<&'a FullyCompiledProgram>,
-        task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
+        comparison_mode: bool,
+        run_config: TestRunConfig,
+        pre_compiled_deps_v1: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
+        pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
+        init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
-        let (additional_mapping, extra_arg) = match task_opt.map(|t| t.command) {
-            Some((InitCommand { named_addresses }, extra_arg)) => (
-                verify_and_create_named_address_mapping(named_addresses).unwrap(),
-                Some(extra_arg),
-            ),
-            None => (BTreeMap::new(), None),
-        };
-
-        // TODO: replace it with package's named address mapping.
-
-        let mut named_address_mapping = starcoin_framework_named_addresses();
-        for (name, addr) in additional_mapping {
-            if named_address_mapping.contains_key(&name) {
-                panic!(
-                    "Invalid init. The named address '{}' is reserved by either the move-stdlib or Starcoin-framework",
-                    name
-                )
-            }
-            named_address_mapping.insert(name, addr);
-        }
-        named_address_mapping.insert(
-            "Std".to_string(),
-            NumericalAddress::parse_str("0x1").unwrap(),
-        );
-
-        let init_args = extra_arg.unwrap_or_default();
-
-        if init_args.public_keys.is_some() {
-            eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
-        }
-
-        let (context, fork_flag) = if let Some(rpc) = init_args.rpc {
-            (
-                ForkContext::new_fork(&rpc, init_args.block_number).unwrap(),
-                true,
-            )
-        } else {
-            let stdlib_modules = if *G_FLAG_RELOAD_STDLIB.lock().unwrap() {
-                assert!(
-                    pre_compiled_deps.is_some(),
-                    "Current project must be framework."
-                );
-                let mut modules: Vec<Vec<u8>> = vec![];
-                for c in &pre_compiled_deps.unwrap().compiled {
-                    if let CompiledUnitEnum::Module(m) = c {
-                        let mut buffer: Vec<u8> = vec![];
-                        m.named_module.module.serialize(&mut buffer).unwrap();
-                        modules.push(buffer);
-                    }
-                }
-                Some(modules)
-            } else {
-                None
-            };
-
-            (
-                ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
-                false,
-            )
-        };
-
-        // add pre compiled modules
-        if let Some(pre_compiled_lib) = pre_compiled_deps {
-            let mut writes = WriteSetMut::default();
-            for c in &pre_compiled_lib.compiled {
-                if let CompiledUnitEnum::Module(m) = c {
-                    // update named_address_mapping
-                    if let Some(named_address) = &m.address_name {
-                        let name = named_address.value.to_string();
-                        let already_assigned_with_different_value = named_address_mapping
-                            .get(&name)
-                            .filter(|existed| {
-                                existed.into_inner() != m.named_module.address.into_inner()
-                            })
-                            .is_some();
-                        if already_assigned_with_different_value {
-                            panic!(
-                                "Invalid init. The named address '{}' is already assigned with {}",
-                                name,
-                                named_address_mapping.get(&name).unwrap(),
-                            )
-                        }
-                        named_address_mapping.insert(name, m.named_module.address);
-                    }
-
-                    writes.push((
-                        StateKey::AccessPath(AccessPath::code_access_path(
-                            m.named_module.address.into_inner(),
-                            Identifier::new(m.named_module.name.as_str()).unwrap(),
-                        )),
-                        WriteOp::Value({
-                            let mut bytes = vec![];
-                            m.named_module.module.serialize(&mut bytes).unwrap();
-                            bytes
-                        }),
-                    ));
-                }
-            }
-            context.apply_write_set(writes.freeze().unwrap()).unwrap();
-        }
-
-        let mut me = Self {
-            compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
-            default_syntax,
-            context,
-            tempdir: TempDir::new().unwrap(),
-            debug: init_args.debug,
-        };
-        me.hack_genesis_account()
-            .expect("hack genesis account failure");
-
-        me.hack_account(association_address()).unwrap();
-
-        if fork_flag {
-        } else {
-            // auto start from a new block based on existed state.
-            me.handle_new_block(None, None, None, None)
-                .expect("init test adapter failed");
-        };
-        (me, None)
+        unimplemented!()
+        // let (additional_mapping, extra_arg) = match task_opt.map(|t| t.command) {
+        //     Some((InitCommand { named_addresses }, extra_arg)) => (
+        //         verify_and_create_named_address_mapping(named_addresses).unwrap(),
+        //         Some(extra_arg),
+        //     ),
+        //     None => (BTreeMap::new(), None),
+        // };
+        //
+        // // TODO: replace it with package's named address mapping.
+        //
+        // let mut named_address_mapping = starcoin_framework_named_addresses();
+        // for (name, addr) in additional_mapping {
+        //     if named_address_mapping.contains_key(&name) {
+        //         panic!(
+        //             "Invalid init. The named address '{}' is reserved by either the move-stdlib or Starcoin-framework",
+        //             name
+        //         )
+        //     }
+        //     named_address_mapping.insert(name, addr);
+        // }
+        // named_address_mapping.insert(
+        //     "Std".to_string(),
+        //     NumericalAddress::parse_str("0x1").unwrap(),
+        // );
+        //
+        // let init_args = extra_arg.unwrap_or_default();
+        //
+        // if init_args.public_keys.is_some() {
+        //     eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
+        // }
+        //
+        // let (context, fork_flag) = if let Some(rpc) = init_args.rpc {
+        //     (
+        //         ForkContext::new_fork(&rpc, init_args.block_number).unwrap(),
+        //         true,
+        //     )
+        // } else {
+        //     let stdlib_modules = if *G_FLAG_RELOAD_STDLIB.lock().unwrap() {
+        //         assert!(
+        //             pre_compiled_deps.is_some(),
+        //             "Current project must be framework."
+        //         );
+        //         let mut modules: Vec<Vec<u8>> = vec![];
+        //         for c in &pre_compiled_deps.unwrap().compiled {
+        //             if let CompiledUnitEnum::Module(m) = c {
+        //                 let mut buffer: Vec<u8> = vec![];
+        //                 m.named_module.module.serialize(&mut buffer).unwrap();
+        //                 modules.push(buffer);
+        //             }
+        //         }
+        //         Some(modules)
+        //     } else {
+        //         None
+        //     };
+        //
+        //     (
+        //         ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
+        //         false,
+        //     )
+        // };
+        //
+        // // add pre compiled modules
+        // if let Some(pre_compiled_lib) = pre_compiled_deps {
+        //     let mut writes = WriteSetMut::default();
+        //     for c in &pre_compiled_lib.compiled {
+        //         if let CompiledUnitEnum::Module(m) = c {
+        //             // update named_address_mapping
+        //             if let Some(named_address) = &m.address_name {
+        //                 let name = named_address.value.to_string();
+        //                 let already_assigned_with_different_value = named_address_mapping
+        //                     .get(&name)
+        //                     .filter(|existed| {
+        //                         existed.into_inner() != m.named_module.address.into_inner()
+        //                     })
+        //                     .is_some();
+        //                 if already_assigned_with_different_value {
+        //                     panic!(
+        //                         "Invalid init. The named address '{}' is already assigned with {}",
+        //                         name,
+        //                         named_address_mapping.get(&name).unwrap(),
+        //                     )
+        //                 }
+        //                 named_address_mapping.insert(name, m.named_module.address);
+        //             }
+        //
+        //             writes.push((
+        //                 StateKey::AccessPath(AccessPath::code_access_path(
+        //                     m.named_module.address.into_inner(),
+        //                     Identifier::new(m.named_module.name.as_str()).unwrap(),
+        //                 )),
+        //                 WriteOp::Value({
+        //                     let mut bytes = vec![];
+        //                     m.named_module.module.serialize(&mut bytes).unwrap();
+        //                     bytes
+        //                 }),
+        //             ));
+        //         }
+        //     }
+        //     context.apply_write_set(writes.freeze().unwrap()).unwrap();
+        // }
+        //
+        // let mut me = Self {
+        //     compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
+        //     default_syntax,
+        //     context,
+        //     tempdir: TempDir::new().unwrap(),
+        //     debug: init_args.debug,
+        // };
+        // me.hack_genesis_account()
+        //     .expect("hack genesis account failure");
+        //
+        // me.hack_account(association_address()).unwrap();
+        //
+        // if fork_flag {
+        // } else {
+        //     // auto start from a new block based on existed state.
+        //     me.handle_new_block(None, None, None, None)
+        //         .expect("init test adapter failed");
+        // };
+        // (me, None)
     }
 
     fn publish_module(
@@ -1167,36 +1170,37 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: CompiledModule,
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
-        _extra: Self::ExtraPublishArgs,
-    ) -> anyhow::Result<(Option<String>, CompiledModule, Option<Value>)> {
-        let module_id = module.self_id();
-        let signer = match named_addr_opt {
-            Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
-            None => *module_id.address(),
-        };
-        let params = self.fetch_default_transaction_parameters(&signer)?;
-
-        let package = Self::build_package(vec![module.clone()], None)?;
-        let txn = RawUserTransaction2::new_package(
-            signer,
-            params.sequence_number,
-            package,
-            gas_budget.unwrap_or(params.max_gas_amount),
-            params.gas_unit_price,
-            params.expiration_timestamp_secs,
-            params.chainid,
-        );
-
-        let output = self.run_transaction(txn)?;
-
-        match output.output.status {
-            TransactionStatusView::Executed => Ok((None, module, None)),
-            _ => Ok((
-                Some(format!("Publish failure: {:?}", output.output.status)),
-                module,
-                Some(serde_json::to_value(&output)?),
-            )),
-        }
+        extra: Self::ExtraPublishArgs,
+    ) -> Result<(Option<String>, CompiledModule)> {
+        unimplemented!()
+        // let module_id = module.self_id();
+        // let signer = match named_addr_opt {
+        //     Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
+        //     None => *module_id.address(),
+        // };
+        // let params = self.fetch_default_transaction_parameters(&signer)?;
+        //
+        // let package = Self::build_package(vec![module.clone()], None)?;
+        // let txn = RawUserTransaction2::new_package(
+        //     signer,
+        //     params.sequence_number,
+        //     package,
+        //     gas_budget.unwrap_or(params.max_gas_amount),
+        //     params.gas_unit_price,
+        //     params.expiration_timestamp_secs,
+        //     params.chainid,
+        // );
+        //
+        // let output = self.run_transaction(txn)?;
+        //
+        // match output.output.status {
+        //     TransactionStatusView::Executed => Ok((None, module, None)),
+        //     _ => Ok((
+        //         Some(format!("Publish failure: {:?}", output.output.status)),
+        //         module,
+        //         Some(serde_json::to_value(&output)?),
+        //     )),
+        // }
     }
 
     fn execute_script(
@@ -1204,84 +1208,85 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         script: CompiledScript,
         type_args: Vec<TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<MoveValue>,
+        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
         gas_budget: Option<u64>,
-        _extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<(Option<String>, SerializedReturnValues, Option<Value>)> {
-        assert!(!signers.is_empty());
-        if signers.len() != 1 {
-            panic!("Expected 1 signer, got {}.", signers.len());
-        }
-        let sender = self.compiled_state().resolve_address(&signers[0]);
-
-        let mut script_blob = vec![];
-        script.serialize(&mut script_blob)?;
-
-        let params = self.fetch_default_transaction_parameters(&sender)?;
-
-        // orignal 0xc867 become 0x0c383637, this convert 0x0c383637 => 0xc867
-        let mut args_vec = vec![];
-        for arg in args.into_iter() {
-            match arg {
-                MoveValue::Vector(vals) => {
-                    let mut is_vec_u8 = true;
-                    for val in vals.iter() {
-                        match val {
-                            MoveValue::U8(_) => {}
-                            _ => is_vec_u8 = false,
-                        }
-                    }
-                    if vals.len() % 2 == 1 || vals.is_empty() {
-                        is_vec_u8 = false;
-                    }
-                    match is_vec_u8 {
-                        true => {
-                            assert_eq!(vals.first(), Some(&MoveValue::U8(48)));
-                            assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
-                            let mut vals_compress = vec![];
-                            for i in (2..vals.len()).step_by(2) {
-                                let x = vals.get(i).cloned();
-                                let y = vals.get(i + 1).cloned();
-                                match (x, y) {
-                                    (Some(MoveValue::U8(a)), Some(MoveValue::U8(b))) => {
-                                        let val = (convert_u8(a) << 4) | convert_u8(b);
-                                        vals_compress.push(MoveValue::U8(val));
-                                    }
-                                    _ => panic!("is not possible"),
-                                }
-                            }
-                            args_vec.push(MoveValue::Vector(vals_compress));
-                        }
-                        false => args_vec.push(MoveValue::Vector(vals)),
-                    }
-                }
-                _ => args_vec.push(arg),
-            }
-        }
-        let txn = RawUserTransaction::new_script(
-            sender,
-            params.sequence_number,
-            Script::new(script_blob, type_args, convert_txn_args(&args_vec)),
-            gas_budget.unwrap_or(params.max_gas_amount),
-            params.gas_unit_price,
-            params.expiration_timestamp_secs,
-            params.chainid,
-        );
-
-        let output = self.run_transaction(txn)?;
-        let result = SimpleTransactionResult {
-            gas_used: output.output.gas_used.0,
-            status: output.output.status.clone(),
-        };
-        let value = SerializedReturnValues {
-            mutable_reference_outputs: vec![],
-            return_values: vec![],
-        };
-        Ok((
-            Some(serde_json::to_string_pretty(&result)?),
-            value,
-            Some(serde_json::to_value(&output)?),
-        ))
+        extra: Self::ExtraRunArgs,
+    ) -> Result<Option<String>> {
+        unimplemented!()
+        // assert!(!signers.is_empty());
+        // if signers.len() != 1 {
+        //     panic!("Expected 1 signer, got {}.", signers.len());
+        // }
+        // let sender = self.compiled_state().resolve_address(&signers[0]);
+        //
+        // let mut script_blob = vec![];
+        // script.serialize(&mut script_blob)?;
+        //
+        // let params = self.fetch_default_transaction_parameters(&sender)?;
+        //
+        // // orignal 0xc867 become 0x0c383637, this convert 0x0c383637 => 0xc867
+        // let mut args_vec = vec![];
+        // for arg in args.into_iter() {
+        //     match arg {
+        //         MoveValue::Vector(vals) => {
+        //             let mut is_vec_u8 = true;
+        //             for val in vals.iter() {
+        //                 match val {
+        //                     MoveValue::U8(_) => {}
+        //                     _ => is_vec_u8 = false,
+        //                 }
+        //             }
+        //             if vals.len() % 2 == 1 || vals.is_empty() {
+        //                 is_vec_u8 = false;
+        //             }
+        //             match is_vec_u8 {
+        //                 true => {
+        //                     assert_eq!(vals.first(), Some(&MoveValue::U8(48)));
+        //                     assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
+        //                     let mut vals_compress = vec![];
+        //                     for i in (2..vals.len()).step_by(2) {
+        //                         let x = vals.get(i).cloned();
+        //                         let y = vals.get(i + 1).cloned();
+        //                         match (x, y) {
+        //                             (Some(MoveValue::U8(a)), Some(MoveValue::U8(b))) => {
+        //                                 let val = (convert_u8(a) << 4) | convert_u8(b);
+        //                                 vals_compress.push(MoveValue::U8(val));
+        //                             }
+        //                             _ => panic!("is not possible"),
+        //                         }
+        //                     }
+        //                     args_vec.push(MoveValue::Vector(vals_compress));
+        //                 }
+        //                 false => args_vec.push(MoveValue::Vector(vals)),
+        //             }
+        //         }
+        //         _ => args_vec.push(arg),
+        //     }
+        // }
+        // let txn = RawUserTransaction2::new_script(
+        //     sender,
+        //     params.sequence_number,
+        //     starcoin_vm2_vm_types::transaction::Script::new(script_blob, type_args, convert_txn_args(&args_vec)),
+        //     gas_budget.unwrap_or(params.max_gas_amount),
+        //     params.gas_unit_price,
+        //     params.expiration_timestamp_secs,
+        //     params.chainid,
+        // );
+        //
+        // let output = self.run_transaction(txn)?;
+        // let result = SimpleTransactionResult {
+        //     gas_used: output.output.gas_used.0,
+        //     status: output.output.status.clone(),
+        // };
+        // let value = SerializedReturnValues {
+        //     mutable_reference_outputs: vec![],
+        //     return_values: vec![],
+        // };
+        // Ok((
+        //     Some(serde_json::to_string_pretty(&result)?),
+        //     value,
+        //     Some(serde_json::to_value(&output)?),
+        // ))
     }
 
     fn call_function(
@@ -1290,49 +1295,50 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         function: &IdentStr,
         type_args: Vec<TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<MoveValue>,
+        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
         gas_budget: Option<u64>,
-        _extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<(Option<String>, SerializedReturnValues, Option<Value>)> {
-        {
-            assert!(!signers.is_empty());
-            if signers.len() != 1 {
-                panic!("Expected 1 signer, got {}.", signers.len());
-            }
-        }
-        let sender = self.compiled_state().resolve_address(&signers[0]);
-
-        let params = self.fetch_default_transaction_parameters(&sender)?;
-
-        let txn = RawUserTransaction::new_script_function(
-            sender,
-            params.sequence_number,
-            ScriptFunction::new(
-                module.clone(),
-                function.to_owned(),
-                type_args,
-                convert_txn_args(&args),
-            ),
-            gas_budget.unwrap_or(params.max_gas_amount),
-            params.gas_unit_price,
-            params.expiration_timestamp_secs,
-            params.chainid,
-        );
-
-        let output = self.run_transaction(txn)?;
-        let result = SimpleTransactionResult {
-            gas_used: output.output.gas_used.0,
-            status: output.output.status.clone(),
-        };
-        let value = SerializedReturnValues {
-            mutable_reference_outputs: vec![],
-            return_values: vec![],
-        };
-        Ok((
-            Some(serde_json::to_string_pretty(&result)?),
-            value,
-            Some(serde_json::to_value(&output)?),
-        ))
+        extra: Self::ExtraRunArgs,
+    ) -> Result<(Option<String>, SerializedReturnValues)> {
+        unimplemented!()
+        // {
+        //     assert!(!signers.is_empty());
+        //     if signers.len() != 1 {
+        //         panic!("Expected 1 signer, got {}.", signers.len());
+        //     }
+        // }
+        // let sender = self.compiled_state().resolve_address(&signers[0]);
+        //
+        // let params = self.fetch_default_transaction_parameters(&sender)?;
+        //
+        // let txn = RawUserTransaction2::new_script_function(
+        //     sender,
+        //     params.sequence_number,
+        //     starcoin_vm2_vm_types::transaction::ScriptFunction::new(
+        //         module.clone(),
+        //         function.to_owned(),
+        //         type_args,
+        //         convert_txn_args(&args),
+        //     ),
+        //     gas_budget.unwrap_or(params.max_gas_amount),
+        //     params.gas_unit_price,
+        //     params.expiration_timestamp_secs,
+        //     params.chainid,
+        // );
+        //
+        // let output = self.run_transaction(txn)?;
+        // let result = SimpleTransactionResult {
+        //     gas_used: output.output.gas_used.0,
+        //     status: output.output.status.clone(),
+        // };
+        // let value = SerializedReturnValues {
+        //     mutable_reference_outputs: vec![],
+        //     return_values: vec![],
+        // };
+        // Ok((
+        //     Some(serde_json::to_string_pretty(&result)?),
+        //     value,
+        //     Some(serde_json::to_value(&output)?),
+        // ))
     }
 
     fn view_data(
@@ -1341,55 +1347,57 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: &ModuleId,
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
-    ) -> anyhow::Result<(String, Value)> {
-        let s = RemoteStorage::new(&self.context.storage);
-        view_resource_in_move_storage(&s, address, module, resource, type_args)
+    ) -> Result<String> {
+        unimplemented!()
+        // let s = starcoin_vm2_vm_runtime::data_cache::RemoteStorage::new(&self.context.storage);
+        // view_resource_in_move_storage(&s, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
         &mut self,
         subcommand: TaskInput<Self::Subcommand>,
-    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
-        let (result_str, cmd_var_ctx) = match subcommand.command {
-            StarcoinSubcommands::Faucet {
-                address,
-                initial_balance,
-            } => self.handle_faucet(address, initial_balance),
-            StarcoinSubcommands::NewBlock {
-                author,
-                timestamp,
-                number,
-                uncles,
-            } => self.handle_new_block(author, timestamp, number, uncles),
-            StarcoinSubcommands::ContractCall {
-                name,
-                args,
-                type_args,
-            } => self.handle_contract_call(ContractCall {
-                function_id: name,
-                args,
-                type_args,
-            }),
-            StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
-            StarcoinSubcommands::Package {
-                init_function,
-                type_args,
-                args,
-            } => self.handle_package(subcommand.data, init_function, type_args, args),
-            StarcoinSubcommands::Deploy {
-                signers,
-                gas_budget,
-                mv_or_package_file,
-            } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
-            StarcoinSubcommands::Var { var } => self.handle_var(var),
-            StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
-        }?;
-        if self.debug {
-            if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
-                eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
-            }
-        }
-        Ok((result_str, cmd_var_ctx))
+    ) -> Result<Option<String>> {
+        unimplemented!()
+        // let (result_str, cmd_var_ctx) = match subcommand.command {
+        //     StarcoinSubcommands::Faucet {
+        //         address,
+        //         initial_balance,
+        //     } => self.handle_faucet(address, initial_balance),
+        //     StarcoinSubcommands::NewBlock {
+        //         author,
+        //         timestamp,
+        //         number,
+        //         uncles,
+        //     } => self.handle_new_block(author, timestamp, number, uncles),
+        //     StarcoinSubcommands::ContractCall {
+        //         name,
+        //         args,
+        //         type_args,
+        //     } => self.handle_contract_call(ContractCall {
+        //         function_id: name,
+        //         args,
+        //         type_args,
+        //     }),
+        //     StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+        //     StarcoinSubcommands::Package {
+        //         init_function,
+        //         type_args,
+        //         args,
+        //     } => self.handle_package(subcommand.data, init_function, type_args, args),
+        //     StarcoinSubcommands::Deploy {
+        //         signers,
+        //         gas_budget,
+        //         mv_or_package_file,
+        //     } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
+        //     StarcoinSubcommands::Var { var } => self.handle_var(var),
+        //     StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
+        // }?;
+        // if self.debug {
+        //     if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
+        //         eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
+        //     }
+        // }
+        // Ok((result_str, cmd_var_ctx))
     }
 
     fn compile_module(
@@ -1484,78 +1492,80 @@ fn convert_txn_args(args: &[MoveValue]) -> Vec<Vec<u8>> {
 
 /// Run the Starcoin transactional test flow, using the given file as input.
 pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
+    unimplemented!()
+    // run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
 pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
+    unimplemented!()
+    // move_transactional_test_runner::framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }
 
-pub fn print_help(task_name: Option<String>) -> Result<()> {
-    let mut tasks = HashMap::new();
-    tasks.insert(
-        "init",
-        ExtraInitArgs::augment_args(InitCommand::command().name("init")),
-    );
-    tasks.insert(
-        "print-bytecode",
-        PrintBytecodeCommand::command().name("print-bytecode"),
-    );
-    tasks.insert("publish", PublishCommand::command().name("publish"));
-    tasks.insert("run", RunCommand::<()>::command().name("run"));
-    tasks.insert("view", ViewCommand::command().name("view"));
-    tasks.insert("faucet", FaucetSub::command().name("faucet"));
-    tasks.insert("block", BlockSub::command().name("block"));
-    tasks.insert("call", CallSub::command().name("call"));
-    tasks.insert("call-api", CallAPISub::command().name("call-api"));
-    tasks.insert("package", PackageSub::command().name("package"));
-    tasks.insert("deploy", DeploySub::command().name("deploy"));
-    tasks.insert("var", VarSub::command().name("var"));
-    tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
-
-    match task_name {
-        Some(name) => match tasks.get_mut(&name[..]) {
-            Some(cmd) => cmd
-                .print_help()
-                .map_err(|e| format_err!("print help error: {:?}", e)),
-            None => bail!("Task {:?} not found.", name),
-        },
-        None => {
-            {
-                for cmd in tasks.values_mut() {
-                    println!("------------------------------------------------");
-                    cmd.print_help()?;
-                    println!();
-                }
-            };
-            Ok(())
-        }
-    }
-}
-
-pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
-    let sources = stdlib_files();
-    let program_res = construct_pre_compiled_lib(
-        vec![PackagePaths {
-            name: None,
-            paths: sources,
-            named_address_map: starcoin_framework_named_addresses(),
-        }],
-        None,
-        move_compiler::Flags::empty(),
-    )
-    .unwrap();
-    match program_res {
-        Ok(df) => df,
-        Err((files, errors)) => {
-            eprintln!("!!!Starcoin Framework failed to compile!!!");
-            move_compiler::diagnostics::report_diagnostics(&files, errors)
-        }
-    }
-});
+// pub fn print_help(task_name: Option<String>) -> Result<()> {
+//     let mut tasks = HashMap::new();
+//     tasks.insert(
+//         "init",
+//         ExtraInitArgs::augment_args(InitCommand::command().name("init")),
+//     );
+//     tasks.insert(
+//         "print-bytecode",
+//         PrintBytecodeCommand::command().name("print-bytecode"),
+//     );
+//     tasks.insert("publish", PublishCommand::command().name("publish"));
+//     tasks.insert("run", RunCommand::<()>::command().name("run"));
+//     tasks.insert("view", ViewCommand::command().name("view"));
+//     tasks.insert("faucet", FaucetSub::command().name("faucet"));
+//     tasks.insert("block", BlockSub::command().name("block"));
+//     tasks.insert("call", CallSub::command().name("call"));
+//     tasks.insert("call-api", CallAPISub::command().name("call-api"));
+//     tasks.insert("package", PackageSub::command().name("package"));
+//     tasks.insert("deploy", DeploySub::command().name("deploy"));
+//     tasks.insert("var", VarSub::command().name("var"));
+//     tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
+//
+//     match task_name {
+//         Some(name) => match tasks.get_mut(&name[..]) {
+//             Some(cmd) => cmd
+//                 .print_help()
+//                 .map_err(|e| format_err!("print help error: {:?}", e)),
+//             None => bail!("Task {:?} not found.", name),
+//         },
+//         None => {
+//             {
+//                 for cmd in tasks.values_mut() {
+//                     println!("------------------------------------------------");
+//                     cmd.print_help()?;
+//                     println!();
+//                 }
+//             };
+//             Ok(())
+//         }
+//     }
+// }
+//
+// pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
+//     let sources = stdlib_files();
+//     let program_res = construct_pre_compiled_lib(
+//         vec![PackagePaths {
+//             name: None,
+//             paths: sources,
+//             named_address_map: starcoin_framework_named_addresses(),
+//         }],
+//         None,
+//         move_compiler::Flags::empty(),
+//     )
+//     .unwrap();
+//     match program_res {
+//         Ok(df) => df,
+//         Err((files, errors)) => {
+//             eprintln!("!!!Starcoin Framework failed to compile!!!");
+//             move_compiler::diagnostics::report_diagnostics(&files, errors)
+//         }
+//     }
+// });
 
 fn convert_u8(val: u8) -> u8 {
     // val >= 'a' && val <= 'z'

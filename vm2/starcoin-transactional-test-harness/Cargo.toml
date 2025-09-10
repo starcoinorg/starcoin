@@ -5,7 +5,7 @@ name = "tests"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = ["derive"], workspace = true }
+clap = { version = "4.5.43", features = ["derive"] }
 dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }
@@ -28,6 +28,8 @@ move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = 
 move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-symbol-pool = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-model = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 # move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 # move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
