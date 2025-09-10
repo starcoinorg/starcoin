@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::HashValue;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, format_err, Result};
 use jsonrpc_http_server::hyper::body::Bytes;
 use starcoin_state_tree::StateNode;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{
     state_node::StateStorage,
     storage::{CodecKVStore, CodecWriteBatch, StorageInstance},
@@ -14,13 +13,15 @@ use starcoin_storage::{
 use starcoin_state_api::ChainStateReader as ChainStateReader1;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
-use starcoin_vm2_rpc_api::state_api::StateApiClient as StateApiClient2;
+use starcoin_vm2_rpc_api::state_api::StateApiClient;
 use starcoin_vm2_state_api::{
-    ChainStateAsyncService, StateNodeStore, StateWithProof, StateWithTableItemProof,
+    ChainStateAsyncService, ChainStateReader, StateNodeStore, StateWithProof,
+    StateWithTableItemProof,
 };
-use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use starcoin_vm2_types::account_state::AccountState;
-use starcoin_vm2_vm_types::state_store::{state_key::StateKey, table::TableHandle};
+use starcoin_vm2_statedb::ChainStateDB;
+use starcoin_vm2_types::state_set::AccountStateSet;
+use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
+use starcoin_vm2_vm_types::state_store::{state_key::StateKey, table::TableHandle, TStateView};
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
@@ -29,12 +30,12 @@ use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
-    remote: Arc<StateApiClient2>,
+    remote: Arc<StateApiClient>,
     rt: Arc<Runtime>,
 }
 
 impl MockStateNodeStore {
-    pub fn new(remote: Arc<StateApiClient2>, rt: Arc<Runtime>) -> Self {
+    pub fn new(remote: Arc<StateApiClient>, rt: Arc<Runtime>) -> Self {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = StateStorage::new(storage_instance);
 
@@ -111,24 +112,40 @@ impl MockChainStateAsyncService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
-    async fn get(self, _state_key: StateKey) -> Result<Option<Bytes>> {
-        unimplemented!()
+    async fn get(self, state_key: StateKey) -> Result<Option<Bytes>> {
+        self.state_db()
+            .get_state_value_bytes(&state_key)
+            .map_err(|e| format_err!("get state value by key: {:?} error: {:?}", state_key, e))
     }
 
-    async fn get_with_proof(self, _state_key: StateKey) -> Result<StateWithProof> {
-        unimplemented!()
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
+        self.state_db().get_with_proof(&state_key)
     }
 
-    async fn get_account_state(self, _address: AccountAddress2) -> Result<AccountState> {
-        unimplemented!()
+    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
+        self.state_db().get_account_state(&address)
     }
 
     async fn get_account_state_set(
         self,
-        _address: AccountAddress2,
-        _state_root: Option<HashValue>,
-    ) -> Result<starcoin_vm2_types::state_set::AccountStateSet> {
-        unimplemented!()
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<AccountStateSet> {
+        let res = match state_root {
+            Some(root) => {
+                let reader = self.state_db().fork_at(root);
+                reader.get_account_state_set(&address)
+            }
+            None => self.state_db().get_account_state_set(&address),
+        };
+        match res {
+            Ok(Some(set)) => Ok(set),
+            Ok(None) => Err(format_err!(
+                "Can not find account state set by address: {}",
+                address
+            )),
+            Err(e) => Err(e),
+        }
     }
     async fn state_root(self) -> Result<HashValue> {
         Ok(self.state_db().state_root())
@@ -136,18 +153,20 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
 
     async fn get_with_proof_by_root(
         self,
-        _state_key: StateKey,
-        _state_root: HashValue,
+        state_key: StateKey,
+        state_root: HashValue,
     ) -> Result<StateWithProof> {
-        unimplemented!()
+        let reader = self.state_db().fork_at(state_root);
+        reader.get_with_proof(&state_key)
     }
 
     async fn get_account_state_by_root(
         self,
-        _account_address: AccountAddress2,
-        _state_root: HashValue,
+        account_address: AccountAddress,
+        state_root: HashValue,
     ) -> Result<AccountState> {
-        unimplemented!()
+        let reader = self.state_db().fork_at(state_root);
+        reader.get_account_state(&account_address)
     }
 
     async fn get_with_table_item_proof(
@@ -155,15 +174,17 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         handle: TableHandle,
         key: Vec<u8>,
     ) -> Result<StateWithTableItemProof> {
-        unimplemented!()
+        let reader = self.state_db();
+        reader.get_with_table_item_proof(&handle, &key)
     }
 
     async fn get_with_table_item_proof_by_root(
         self,
-        _handle: TableHandle,
-        _key: Vec<u8>,
-        _state_root: HashValue,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        unimplemented!()
+        let reader = self.state_db().fork_at(state_root);
+        reader.get_with_table_item_proof(&handle, &key)
     }
 }
