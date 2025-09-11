@@ -3,7 +3,7 @@
 
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, Args, CommandFactory, Parser};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
@@ -40,6 +40,9 @@ use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, T
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use move_transactional_test_runner::tasks::{
+    PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
+};
 use once_cell::sync::Lazy;
 use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
 use std::{
@@ -1437,48 +1440,48 @@ pub fn run_test_impl<'a>(
     // move_transactional_test_runner::framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
 }
 
-// pub fn print_help(task_name: Option<String>) -> Result<()> {
-//     let mut tasks = HashMap::new();
-//     tasks.insert(
-//         "init",
-//         ExtraInitArgs::augment_args(InitCommand::command().name("init")),
-//     );
-//     tasks.insert(
-//         "print-bytecode",
-//         PrintBytecodeCommand::command().name("print-bytecode"),
-//     );
-//     tasks.insert("publish", PublishCommand::command().name("publish"));
-//     tasks.insert("run", RunCommand::<()>::command().name("run"));
-//     tasks.insert("view", ViewCommand::command().name("view"));
-//     tasks.insert("faucet", FaucetSub::command().name("faucet"));
-//     tasks.insert("block", BlockSub::command().name("block"));
-//     tasks.insert("call", CallSub::command().name("call"));
-//     tasks.insert("call-api", CallAPISub::command().name("call-api"));
-//     tasks.insert("package", PackageSub::command().name("package"));
-//     tasks.insert("deploy", DeploySub::command().name("deploy"));
-//     tasks.insert("var", VarSub::command().name("var"));
-//     tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
-//
-//     match task_name {
-//         Some(name) => match tasks.get_mut(&name[..]) {
-//             Some(cmd) => cmd
-//                 .print_help()
-//                 .map_err(|e| format_err!("print help error: {:?}", e)),
-//             None => bail!("Task {:?} not found.", name),
-//         },
-//         None => {
-//             {
-//                 for cmd in tasks.values_mut() {
-//                     println!("------------------------------------------------");
-//                     cmd.print_help()?;
-//                     println!();
-//                 }
-//             };
-//             Ok(())
-//         }
-//     }
-// }
-//
+pub fn print_help(task_name: Option<String>) -> Result<()> {
+    let mut tasks = HashMap::new();
+    tasks.insert(
+        "init",
+        ExtraInitArgs::augment_args(InitCommand::command().name("init")),
+    );
+    tasks.insert(
+        "print-bytecode",
+        PrintBytecodeCommand::command().name("print-bytecode"),
+    );
+    tasks.insert("publish", PublishCommand::command().name("publish"));
+    tasks.insert("run", RunCommand::<()>::command().name("run"));
+    tasks.insert("view", ViewCommand::command().name("view"));
+    tasks.insert("faucet", FaucetSub::command().name("faucet"));
+    tasks.insert("block", BlockSub::command().name("block"));
+    tasks.insert("call", CallSub::command().name("call"));
+    tasks.insert("call-api", CallAPISub::command().name("call-api"));
+    tasks.insert("package", PackageSub::command().name("package"));
+    tasks.insert("deploy", DeploySub::command().name("deploy"));
+    tasks.insert("var", VarSub::command().name("var"));
+    tasks.insert("read-json", ReadJsonSub::command().name("read-json"));
+
+    match task_name {
+        Some(name) => match tasks.get_mut(&name[..]) {
+            Some(cmd) => cmd
+                .print_help()
+                .map_err(|e| format_err!("print help error: {:?}", e)),
+            None => bail!("Task {:?} not found.", name),
+        },
+        None => {
+            {
+                for cmd in tasks.values_mut() {
+                    println!("------------------------------------------------");
+                    cmd.print_help()?;
+                    println!();
+                }
+            };
+            Ok(())
+        }
+    }
+}
+
 pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
     Lazy::new(|| {
         let sources = starcoin_vm2_cached_packages::head_release_bundle()
