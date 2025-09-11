@@ -9,6 +9,7 @@ use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
 };
 use move_compiler::{
+    construct_pre_compiled_lib,
     shared::{NumberFormat, NumericalAddress, PackagePaths},
     FullyCompiledProgram,
 };
@@ -34,13 +35,12 @@ use starcoin_vm2_vm_types::{
     state_store::state_key::StateKey,
 };
 
-use starcoin_vm2_vm_runtime::session::SerializedReturnValues;
-
 use move_core_types::vm_status::KeptVMStatus;
 use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use once_cell::sync::Lazy;
 use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
 use std::collections::BTreeSet;
 use std::{
@@ -73,28 +73,29 @@ use starcoin_vm2_types::{
     },
     U256,
 };
-use starcoin_vm2_vm_runtime::data_cache::{AsMoveResolver, StorageAdapter};
-use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
-use starcoin_vm2_vm_types::transaction::{Module, Package, Script};
+use starcoin_vm2_vm_runtime::{
+    data_cache::{AsMoveResolver, StorageAdapter},
+    session::SerializedReturnValues,
+    starcoin_vm::StarcoinVM as StarcoinVM2,
+};
 use starcoin_vm2_vm_types::{
-    access_path::AccessPath,
     account_config::stc_type_tag,
     account_config::{genesis_address, AccountResource},
     block_metadata::BlockMetadata,
     on_chain_config::VMConfig,
     on_chain_resource,
-    state_store::TStateView,
+    on_chain_resource::ChainId as ChainId2,
     state_view::StateReaderExt,
     transaction::{
-        authenticator::AccountPrivateKey, EntryFunction, Transaction, TransactionStatus,
+        authenticator::AccountPrivateKey, EntryFunction, Module, Package, Script, Transaction,
+        TransactionStatus,
     },
+    write_set::{WriteOp, WriteSetMut},
 };
 
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
 use starcoin_vm2_resource_viewer::MoveValueAnnotator;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
-use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::genesis_config::ChainId as ChainId1;
 
 pub mod context;
@@ -1481,26 +1482,31 @@ pub fn run_test_impl<'a>(
 //     }
 // }
 //
-// pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
-//     let sources = stdlib_files();
-//     let program_res = construct_pre_compiled_lib(
-//         vec![PackagePaths {
-//             name: None,
-//             paths: sources,
-//             named_address_map: starcoin_framework_named_addresses(),
-//         }],
-//         None,
-//         move_compiler::Flags::empty(),
-//     )
-//     .unwrap();
-//     match program_res {
-//         Ok(df) => df,
-//         Err((files, errors)) => {
-//             eprintln!("!!!Starcoin Framework failed to compile!!!");
-//             move_compiler::diagnostics::report_diagnostics(&files, errors)
-//         }
-//     }
-// });
+pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
+    Lazy::new(|| {
+        let sources = starcoin_vm2_cached_packages::head_release_bundle()
+            .files()
+            .unwrap();
+        let package_paths = vec![PackagePaths {
+            name: None,
+            paths: sources,
+            named_address_map: starcoin_framework_named_addresses(),
+        }];
+        let program_res = construct_pre_compiled_lib(
+            package_paths,
+            None,
+            move_compiler::Flags::empty().set_sources_shadow_deps(false),
+            starcoin_vm2_framework::extended_checks::get_all_attribute_names(),
+        )
+        .unwrap();
+        (
+            program_res.unwrap_or_else(|(files, errors)| {
+                eprintln!("!!!Starcoin Framework failed to compile!!!");
+                move_compiler::diagnostics::report_diagnostics(&files, errors)
+            }),
+            vec![],
+        )
+    });
 
 fn convert_u8(val: u8) -> u8 {
     // val >= 'a' && val <= 'z'

@@ -86,6 +86,7 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-dev = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
