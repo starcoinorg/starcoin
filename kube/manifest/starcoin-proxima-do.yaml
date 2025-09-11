@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-9b6f582
+        image: ghcr.io/starcoinorg/starcoin:sha-84f04d9
         imagePullPolicy: Always
         command:
           - bash
@@ -35,7 +35,7 @@ spec:
             if [ ! -z $node_key ]; then
             node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag;
+            /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512;
             ret=$?;
             echo "Now ret is - $ret";
             if [ $ret -eq 120 ] || [ $ret -eq 139 ]; then
@@ -48,7 +48,6 @@ spec:
             fi;
         ports:
           - containerPort: 9840
-            hostPort: 9840
         volumeMounts:
         - name: starcoin-volume
           mountPath: /sc-data
@@ -66,9 +65,9 @@ spec:
           tcpSocket:
             port: 9840
           initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
           successThreshold: 1
         readinessProbe:
           exec:
@@ -78,9 +77,9 @@ spec:
               - >-
                  /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
           initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
           successThreshold: 1
   volumeClaimTemplates:
   - metadata:
@@ -90,4 +89,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 50Gi
+          storage: 100Gi

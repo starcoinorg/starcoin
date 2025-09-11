@@ -459,7 +459,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
+            uncle_rate_target: 13,
             base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
             base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
             epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
