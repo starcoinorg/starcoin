@@ -28,7 +28,7 @@ use std::{
 };
 
 mod compat;
-mod vm2;
+pub mod vm2;
 
 pub use compat::*;
 pub use starcoin_framework::SourceFiles;
