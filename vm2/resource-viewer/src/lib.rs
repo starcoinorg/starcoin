@@ -10,6 +10,7 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use move_core_types::u256;
+use serde::{Deserialize, Serialize};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
@@ -38,7 +39,7 @@ pub mod resolver;
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStruct {
     pub abilities: AbilitySet,
     pub type_: StructTag,
@@ -49,7 +50,7 @@ pub struct AnnotatedMoveStruct {
 /// for debugging/client purpose right now and just for a better visualization of on chain data. In
 /// the long run, we would like to transform this struct to a Json value so that we can have a cross
 /// platform interpretation of the on chain data.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum AnnotatedMoveValue {
     U8(u8),
     U64(u64),

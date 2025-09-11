@@ -79,6 +79,7 @@ starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-vm-runtime = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-rpc-server = { workspace = true }
+starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-gas-meter = { path = "../../vm2/framework/gas-meter" }
 starcoin-gas-schedule = { path = "../../vm2/framework/gas-schedule" }
 starcoin-vm2-abi-decoder = { workspace = true }

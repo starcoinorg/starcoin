@@ -14175,6 +14175,7 @@ dependencies = [
  "starcoin-vm1-vm-types",
  "starcoin-vm2-abi-decoder",
  "starcoin-vm2-dev",
+ "starcoin-vm2-resource-viewer",
  "starcoin-vm2-rpc-api",
  "starcoin-vm2-rpc-server",
  "starcoin-vm2-state-api",

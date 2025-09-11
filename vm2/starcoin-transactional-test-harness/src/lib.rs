@@ -9,17 +9,16 @@ use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
 };
 use move_compiler::{
-    compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum},
-    construct_pre_compiled_lib,
     shared::{NumberFormat, NumericalAddress, PackagePaths},
     FullyCompiledProgram,
 };
 use move_core_types::{
-    account_address::AccountAddress,
+    account_address::AccountAddress as AccountAddress2,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag, TypeTag},
     value::MoveValue,
 };
+
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{
@@ -27,9 +26,9 @@ use move_transactional_test_runner::{
         TaskInput, ViewCommand,
     },
 };
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use starcoin_types::account_address::AccountAddress as AccountAddress1;
 
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
@@ -69,7 +68,6 @@ use starcoin_vm2_dev::playground::call_contract;
 use starcoin_vm2_state_api::ChainStateReader;
 use starcoin_vm2_types::{
     account::{Account, AccountData},
-    account_address::AccountAddress as AccountAddress2,
     transaction::{
         RawUserTransaction as RawUserTransaction2, SignedUserTransaction as SignedUserTransaction2,
     },
@@ -77,6 +75,7 @@ use starcoin_vm2_types::{
         ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
         TransactionOutputView, TransactionStatusView, TypeTagView,
     },
+    U256,
 };
 use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
@@ -96,8 +95,9 @@ use starcoin_vm2_vm_types::{
 };
 
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
-use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_vm2_vm_types::on_chain_resource::ChainId;
+use starcoin_vm2_resource_viewer::MoveValueAnnotator;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
+use starcoin_vm_types::genesis_config::ChainId as ChainId1;
 
 pub mod context;
 pub mod fork_chain;
@@ -484,7 +484,7 @@ struct TransactionParameters {
     pub max_gas_amount: u64,
     pub gas_unit_price: u64,
     pub expiration_timestamp_secs: u64,
-    pub chainid: ChainId,
+    pub chainid: ChainId2,
 }
 
 impl StarcoinTestAdapter<'_> {
@@ -507,7 +507,7 @@ impl StarcoinTestAdapter<'_> {
     /// a few default transaction parameters.
     fn fetch_balance_resource(
         &self,
-        signer_addr: &AccountAddress,
+        signer_addr: &AccountAddress2,
         balance_currency_code: String,
     ) -> Result<u128> {
         self.context.storage.get_balance_by_type(
@@ -558,7 +558,7 @@ impl StarcoinTestAdapter<'_> {
     /// command arguments.
     fn fetch_default_transaction_parameters(
         &self,
-        signer_addr: &AccountAddress,
+        signer_addr: &AccountAddress2,
     ) -> Result<TransactionParameters> {
         let account_resource = self.fetch_account_resource(signer_addr)?;
         let sequence_number = account_resource.sequence_number();
@@ -673,40 +673,39 @@ impl StarcoinTestAdapter<'_> {
     }
 
     fn handle_contract_call(&self, call: ContractCall) -> Result<(Option<String>, Option<Value>)> {
-        unimplemented!()
-        // let ContractCall {
-        //     function_id,
-        //     type_args,
-        //     args,
-        // } = call;
-        // let rets = call_contract(
-        //     &self.context.storage,
-        //     function_id.0.module,
-        //     function_id.0.function.as_str(),
-        //     type_args.into_iter().map(|t| t.0).collect(),
-        //     args.into_iter().map(|t| t.0).collect(),
-        //     None,
-        // )?;
-        //
-        // let move_resolver = self.context.storage.as_move_resolver();
-        // let annotator = MoveValueAnnotator::new(&move_resolver);
-        // let rets = rets
-        //     .into_iter()
-        //     .map(|(ty, v)| annotator.view_value(&ty, &v))
-        //     .collect::<Result<Vec<_>>>()?;
-        // if rets.is_empty() {
-        //     Ok((None, None))
-        // } else if rets.len() == 1 {
-        //     Ok((
-        //         Some(serde_json::to_string_pretty(&rets[0])?),
-        //         Some(serde_json::to_value(&rets[0])?),
-        //     ))
-        // } else {
-        //     Ok((
-        //         Some(serde_json::to_string_pretty(&rets)?),
-        //         Some(serde_json::to_value(&rets)?),
-        //     ))
-        // }
+        let ContractCall {
+            function_id,
+            type_args,
+            args,
+        } = call;
+        let rets = call_contract(
+            &self.context.storage,
+            function_id.0.module,
+            function_id.0.function.as_str(),
+            type_args.into_iter().map(|t| t.0).collect(),
+            args.into_iter().map(|t| t.0).collect(),
+            None,
+        )?;
+
+        let move_resolver = self.context.storage.as_move_resolver();
+        let annotator = MoveValueAnnotator::new(&move_resolver);
+        let rets = rets
+            .into_iter()
+            .map(|(ty, v)| annotator.view_value(&ty, &v))
+            .collect::<Result<Vec<_>>>()?;
+        if rets.is_empty() {
+            Ok((None, None))
+        } else if rets.len() == 1 {
+            Ok((
+                Some(serde_json::to_string_pretty(&rets[0])?),
+                Some(serde_json::to_value(&rets[0])?),
+            ))
+        } else {
+            Ok((
+                Some(serde_json::to_string_pretty(&rets)?),
+                Some(serde_json::to_value(&rets)?),
+            ))
+        }
     }
 
     fn handle_faucet(
@@ -727,9 +726,9 @@ impl StarcoinTestAdapter<'_> {
                 {
                     // make it deterministic.
 
-                    let addr = AccountAddress::from_bytes(
+                    let addr = AccountAddress2::from_bytes(
                         &HashValue::sha3_256_of(name.as_bytes()).as_slice()
-                            [0..AccountAddress::LENGTH],
+                            [0..AccountAddress2::LENGTH],
                     )?;
 
                     self.compiled_state.named_address_mapping.insert(
@@ -783,68 +782,76 @@ impl StarcoinTestAdapter<'_> {
         number: Option<u64>,
         uncles: Option<u64>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        unimplemented!()
-        // let last_blockmeta = self
-        //     .context
-        //     .storage
-        //     .get_resource_type_bytes::<on_chain_resource::BlockMetadata>(genesis_address())?;
-        //
-        // let height = number
-        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
-        //     .unwrap_or(0);
-        //
-        // let author = author
-        //     .map(|v| self.compiled_state.resolve_address(&v))
-        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.author))
-        //     .unwrap_or_else(AccountAddress::random);
-        //
-        // let uncles = uncles
-        //     .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
-        //     .unwrap_or(0);
-        // let timestamp =
-        //     timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
-        // //TODO find a better way to get parent hash, we should keep to local storage.
-        // let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
-        //
-        // let new_block_meta = BlockMetadata::new(
-        //     parent_hash,
-        //     timestamp,
-        //     author,
-        //     None,
-        //     uncles,
-        //     height,
-        //     self.context.storage.get_chain_id()?,
-        //     0,
-        //     0,
-        // );
-        // self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
-        //     println!("Run blockmeta error: {}", e);
-        //     e
-        // })?;
-        //
-        // let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _) =
-        //     new_block_meta.clone().into_inner();
-        // let block_body = BlockBody::new(vec![], None);
-        // let block_header = BlockHeader::new(
-        //     parent_hash,
-        //     timestamp,
-        //     number,
-        //     author,
-        //     self.context.chain.lock().unwrap().txn_accumulator_root(),
-        //     HashValue::random(),
-        //     self.context.storage.state_root(),
-        //     0u64,
-        //     U256::zero(),
-        //     block_body.hash(),
-        //     self.context.storage.get_chain_id()?,
-        //     0,
-        //     BlockHeaderExtra::new([0u8; 4]),
-        // );
-        // let new_block = Block::new(block_header, block_body);
-        // let mut chain = self.context.chain.lock().unwrap();
-        // chain.add_new_block(new_block)?;
-        //
-        // Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
+        let last_blockmeta = self
+            .context
+            .storage
+            .get_resource_type::<on_chain_resource::BlockMetadata>(genesis_address())?;
+
+        let height = number
+            .or_else(|| Some(last_blockmeta.number + 1))
+            .unwrap_or(0);
+
+        let author = author
+            .map(|v| self.compiled_state.resolve_address(&v))
+            .or_else(|| Some(last_blockmeta.author))
+            .unwrap_or_else(AccountAddress2::random);
+
+        let uncles = uncles.or_else(|| Some(last_blockmeta.uncles)).unwrap_or(0);
+
+        let timestamp =
+            timestamp.unwrap_or(self.context.storage.get_timestamp()?.microseconds + 10);
+        //TODO find a better way to get parent hash, we should keep to local storage.
+        let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
+
+        let new_block_meta = BlockMetadata::new(
+            parent_hash,
+            timestamp,
+            author,
+            uncles,
+            height,
+            self.context.storage.get_chain_id()?,
+            0,
+            vec![parent_hash],
+            0,
+        );
+        self.run_blockmeta(new_block_meta.clone()).map_err(|e| {
+            println!("Run blockmeta error: {}", e);
+            e
+        })?;
+
+        let (
+            parent_hash,
+            timestamp,
+            author,
+            _uncles,
+            number,
+            _chain_id,
+            _parent_gas_used,
+            _parents_hash,
+            _red_blocks,
+        ) = new_block_meta.clone().into_inner();
+
+        let block_body = BlockBody::new(vec![], None);
+        let block_header = BlockHeader::new(
+            parent_hash,
+            timestamp,
+            number,
+            AccountAddress1::from_bytes(author.into_bytes())?,
+            self.context.chain.lock().unwrap().txn_accumulator_root(),
+            HashValue::random(),
+            self.context.storage.state_root(),
+            0u64,
+            U256::zero(),
+            block_body.hash(),
+            ChainId1::new(self.context.storage.get_chain_id()?.id()),
+            0,
+            BlockHeaderExtra::new([0u8; 4]),
+        );
+        let new_block = Block::new(block_header, block_body);
+        let mut chain = self.context.chain.lock().unwrap();
+        chain.add_new_block(new_block)?;
+
+        Ok((None, Some(serde_json::to_value(&new_block_meta)?)))
     }
 
     fn handle_call_api(
@@ -1343,7 +1350,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn view_data(
         &mut self,
-        address: AccountAddress,
+        address: AccountAddress2,
         module: &ModuleId,
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
