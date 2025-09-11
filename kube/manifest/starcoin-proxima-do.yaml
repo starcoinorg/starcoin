@@ -12,6 +12,7 @@ spec:
       app: starcoin
   serviceName: starcoin-svc
   replicas: 3
+  podManagementPolicy: Parallel
   template:
     metadata:
       name: starcoin
@@ -23,7 +24,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-84f04d9
+        image: ghcr.io/starcoinorg/starcoin:sha-0e1220b
         imagePullPolicy: Always
         command:
           - bash
@@ -64,19 +65,7 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 30
-          timeoutSeconds: 10
-          failureThreshold: 5
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - >-
-                 /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
+          initialDelaySeconds: 600
           periodSeconds: 30
           timeoutSeconds: 10
           failureThreshold: 5

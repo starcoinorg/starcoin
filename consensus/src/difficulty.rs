@@ -68,37 +68,46 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
 
     let time_used = last_timestamp.saturating_sub(first_timestamp);
 
-    // Collect all blue blocks for target calculation
-    let mut blue_blocks = Vec::new();
+    // Collect all blocks (both blue and red) for target calculation
+    let mut all_blocks = Vec::new();
     for id in selected_blocks.iter() {
         let ghostdata = chain.dag().storage.ghost_dag_store.get_data(*id)?;
 
-        if ghostdata.mergeset_blues.is_empty() {
-            // Genesis block has no blues, use the block itself
+        if ghostdata.mergeset_blues.is_empty() && ghostdata.mergeset_reds.is_empty() {
+            // Genesis block has no blues or reds, use the block itself
             let header = chain.get_header_by_hash(*id)?.ok_or_else(|| {
                 format_err!("failed to get the block header when getting next work required")
             })?;
-            blue_blocks.push(BlockDiffInfo::try_from(&header)?);
+            all_blocks.push(BlockDiffInfo::try_from(&header)?);
         } else {
+            // Add blue blocks
             for blue_id in ghostdata.mergeset_blues.iter() {
                 let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
                     format_err!("failed to get the block header when getting next work required, blue_id: {:?}", blue_id)
                 })?;
-                blue_blocks.push(BlockDiffInfo::try_from(&header)?);
+                all_blocks.push(BlockDiffInfo::try_from(&header)?);
+            }
+
+            // Add red blocks
+            for red_id in ghostdata.mergeset_reds.iter() {
+                let header = chain.get_header_by_hash(*red_id)?.ok_or_else(|| {
+                    format_err!("failed to get the block header when getting next work required, red_id: {:?}", red_id)
+                })?;
+                all_blocks.push(BlockDiffInfo::try_from(&header)?);
             }
         }
     }
 
     let next_block_time_target = epoch.block_time_target();
     info!(
-        "next_block_time_target: {:?}, blue block count: {:?}, time_used: {:?}, selected parent id: {:?}",
+        "next_block_time_target: {:?}, total block count (blue+red): {:?}, time_used: {:?}, selected parent id: {:?}",
         next_block_time_target,
-        blue_blocks.len(),
+        all_blocks.len(),
         time_used,
         current_header.id()
     );
 
-    let target = get_next_target_helper(blue_blocks, time_used, next_block_time_target)?;
+    let target = get_next_target_helper(all_blocks, time_used, next_block_time_target)?;
 
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
