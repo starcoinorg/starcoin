@@ -40,6 +40,7 @@ use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, T
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use move_core_types::resolver::ResourceResolver;
 use move_transactional_test_runner::tasks::{
     PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
@@ -497,9 +498,7 @@ impl StarcoinTestAdapter<'_> {
     /// Obtain a Rust representation of the account resource from storage, which is used to derive
     /// a few default transaction parameters.
     fn fetch_account_resource(&self, signer_addr: &AccountAddress2) -> Result<AccountResource> {
-        self.context
-            .storage
-            .get_account_resource(signer_addr.clone())
+        self.context.storage.get_account_resource(*signer_addr)
     }
 
     /// Obtain a Rust representation of the balance resource from storage, which is used to derive
@@ -792,10 +791,10 @@ impl StarcoinTestAdapter<'_> {
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| Some(last_blockmeta.author))
+            .or(Some(last_blockmeta.author))
             .unwrap_or_else(AccountAddress2::random);
 
-        let uncles = uncles.or_else(|| Some(last_blockmeta.uncles)).unwrap_or(0);
+        let uncles = uncles.or(Some(last_blockmeta.uncles)).unwrap_or(0);
 
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.microseconds + 10);
@@ -1024,24 +1023,23 @@ fn view_resource_in_move_storage(
     resource: &IdentStr,
     type_args: Vec<TypeTag>,
 ) -> Result<String> {
-    unimplemented!()
-    // let tag = StructTag {
-    //     address: *module.address(),
-    //     module: module.name().to_owned(),
-    //     name: resource.to_owned(),
-    //     type_args,
-    // };
-    // match storage
-    //     .get_resource_bytes_with_metadata_and_layout(&address, &tag, &[], None)?
-    //     .0
-    // {
-    //     None => Ok("[No Resource Exists]".to_owned()),
-    //     Some(data) => {
-    //         let annotated = MoveValueAnnotator::new(storage)
-    //             .view_resource(&tag, &data)?;
-    //         Ok(format!("{}", &annotated))
-    //     }
-    // }
+    let tag = StructTag {
+        address: *module.address(),
+        module: module.name().to_owned(),
+        name: resource.to_owned(),
+        type_args,
+    };
+    match storage
+        .get_resource_bytes_with_metadata_and_layout(&address, &tag, &[], None)?
+        .0
+    {
+        None => Ok("[No Resource Exists]".to_owned()),
+        Some(data) => {
+            let annotated = move_resource_viewer::MoveValueAnnotator::new(storage)
+                .view_resource(&tag, &data)?;
+            Ok(format!("{}", &annotated))
+        }
+    }
 }
 
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
@@ -1063,16 +1061,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         starcoin_vm2_framework::extended_checks::get_all_attribute_names()
     }
 
-    fn run_config(&self) -> TestRunConfig {
-        todo!()
-    }
-
     fn init(
         default_syntax: SyntaxChoice,
         comparison_mode: bool,
         run_config: TestRunConfig,
         pre_compiled_deps_v1: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
-        pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
+        _pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
         init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
         let (additional_mapping, extra_arg) = match init_data.map(|t| t.command) {
@@ -1428,16 +1422,20 @@ fn convert_txn_args(args: &[MoveValue]) -> Vec<Vec<u8>> {
 
 /// Run the Starcoin transactional test flow, using the given file as input.
 pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    unimplemented!()
-    // run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
+    run_test_impl(path, Some(&*G_PRECOMPILED_STARCOIN_FRAMEWORK))
 }
 
 pub fn run_test_impl<'a>(
     path: &Path,
-    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+    pre_compiled_deps_v1: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    unimplemented!()
-    // move_transactional_test_runner::framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
+    move_transactional_test_runner::framework::run_test_impl::<StarcoinTestAdapter>(
+        TestRunConfig::CompilerV1,
+        path,
+        pre_compiled_deps_v1,
+        None,
+        &None,
+    )
 }
 
 pub fn print_help(task_name: Option<String>) -> Result<()> {
