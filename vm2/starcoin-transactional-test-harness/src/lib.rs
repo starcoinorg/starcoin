@@ -39,12 +39,11 @@ use starcoin_vm2_vm_types::{
 
 use starcoin_vm2_vm_runtime::session::SerializedReturnValues;
 
-use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
-
 use move_core_types::vm_status::KeptVMStatus;
 use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 
 use move_command_line_common::values::ParsableValue;
+use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use std::collections::BTreeSet;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -56,7 +55,8 @@ use std::{
     str::FromStr,
     sync::Mutex,
 };
-use stdlib::{starcoin_framework_named_addresses, stdlib_files};
+
+use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 use starcoin_config::BuiltinNetworkID;
@@ -79,7 +79,7 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
-use starcoin_vm2_vm_types::transaction::Package;
+use starcoin_vm2_vm_types::transaction::{Module, Package};
 use starcoin_vm2_vm_types::{
     access_path::AccessPath,
     account_config::stc_type_tag,
@@ -94,9 +94,11 @@ use starcoin_vm2_vm_types::{
     },
 };
 
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework;
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
 use starcoin_vm2_resource_viewer::MoveValueAnnotator;
 use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
+use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::genesis_config::ChainId as ChainId1;
 
 pub mod context;
@@ -196,7 +198,7 @@ pub struct PackageSub {
     #[clap(
         long = "signers",
         value_parser = ParsedAddress::parse,
-        num_args(1..),
+        num_args(1..100),
         action(ArgAction::Append)
     )]
     signers: Vec<ParsedAddress>,
@@ -217,7 +219,7 @@ pub struct DeploySub {
     #[clap(
         long = "signers",
         value_parser = ParsedAddress::parse,
-        num_args(1..),
+        num_args(1..100),
         action(ArgAction::Append)
     )]
     signers: Vec<ParsedAddress>,
@@ -304,7 +306,7 @@ pub enum StarcoinSubcommands {
         #[clap(
             long = "signers",
             value_parser = ParsedAddress::parse,
-            num_args(1..),
+            num_args(1..100),
             action(ArgAction::Append)
         )]
         signers: Vec<ParsedAddress>,
@@ -318,7 +320,7 @@ pub enum StarcoinSubcommands {
     Var {
         #[clap(name = "var",
             value_parser = parse_var,
-            num_args(1..),
+            num_args(1..100),
             action(ArgAction::Append)
         )]
         var: Vec<(String, String)>,
@@ -867,14 +869,13 @@ impl StarcoinTestAdapter<'_> {
         modules: Vec<CompiledModule>,
         init_function: Option<EntryFunction>,
     ) -> Result<Package> {
-        unimplemented!()
-        // let mut ms = vec![];
-        // for m in modules {
-        //     let mut code = vec![];
-        //     m.serialize(&mut code)?;
-        //     ms.push(Module::new(code));
-        // }
-        // Package::new(ms, init_function)
+        let mut ms = vec![];
+        for m in modules {
+            let mut code = vec![];
+            m.serialize(&mut code)?;
+            ms.push(Module::new(code));
+        }
+        Package::new(ms, init_function)
     }
 
     fn handle_package(
@@ -884,80 +885,82 @@ impl StarcoinTestAdapter<'_> {
         type_args: Option<Vec<TypeTagView>>,
         args: Option<Vec<TransactionArgumentView>>,
     ) -> Result<(Option<String>, Option<Value>)> {
-        unimplemented!()
-        // let data = match data {
-        //     Some(f) => f,
-        //     None => panic!("Expected a module text block following 'package'",),
-        // };
-        // let data_path = data.path().to_str().unwrap();
-        // let (named_addr_opt, module, warnings_opt) = {
-        //     let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
-        //     match unit {
-        //         AnnotatedCompiledUnit::Module(annot_module) => {
-        //             let (named_addr_opt, _id) = annot_module.module_id();
-        //             (
-        //                 named_addr_opt.map(|n| n.value),
-        //                 annot_module.named_module.module,
-        //                 warnings_opt,
-        //             )
-        //         }
-        //         AnnotatedCompiledUnit::Script(_) => {
-        //             panic!("Expected a module text block, not a script, following 'package'")
-        //         }
-        //     }
-        // };
-        //
-        // self.compiled_state
-        //     .add_precompiled(named_addr_opt, module.clone());
-        //
-        // let package = Self::build_package(
-        //     vec![module.clone()],
-        //     init_function.map(|fid| {
-        //         let move_args = &args
-        //             .unwrap_or_default()
-        //             .into_iter()
-        //             .map(|v| v.0)
-        //             .collect::<Vec<_>>();
-        //         let move_args = move_args
-        //             .iter()
-        //             .map(|arg| MoveValue::from(arg.clone()))
-        //             .collect::<Vec<_>>();
-        //         EntryFunction::new(
-        //             fid.0.module,
-        //             fid.0.function,
-        //             type_args
-        //                 .unwrap_or_default()
-        //                 .into_iter()
-        //                 .map(|v| v.0)
-        //                 .collect(),
-        //             convert_txn_args(&move_args),
-        //         )
-        //     }),
-        // )?;
-        //
-        // let package_hash = package.crypto_hash();
-        // let output_file = {
-        //     let mut output_file = self.tempdir.path().join(package_hash.to_string());
-        //     output_file.set_extension("blob");
-        //     output_file
-        // };
-        // let mut file = File::create(output_file.as_path())?;
-        // let blob = bcs_ext::to_bytes(&package)?;
-        // let hex = format!("0x{}", hex::encode(blob.as_slice()));
-        // file.write_all(&blob)
-        //     .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
-        //
-        // let package_result = PackageResult {
-        //     file: output_file.to_str().unwrap().to_string(),
-        //     package_hash,
-        //     hex,
-        // };
-        // self.compiled_state().add_with_source_file(
-        //     named_addr_opt,
-        //     module,
-        //     (data_path.to_owned(), data),
-        // );
-        // Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
+        let data = match data {
+            Some(f) => f,
+            None => panic!("Expected a module text block following 'package'",),
+        };
+        let data_path = data.path().to_str().unwrap();
+        let known_attributes = self.known_attributes().clone();
+        let (named_addr_opt, module, warnings_opt) = {
+            let (unit, _opt_global, warnings_opt) =
+                self.compiled_state
+                    .complie(data_path, &known_attributes, false)?;
+            match unit {
+                AnnotatedCompiledUnit::Module(annot_module) => {
+                    let (named_addr_opt, _id) = annot_module.module_id();
+                    (
+                        named_addr_opt.map(|n| n.value),
+                        annot_module.named_module.module,
+                        warnings_opt,
+                    )
+                }
+                AnnotatedCompiledUnit::Script(_) => {
+                    panic!("Expected a module text block, not a script, following 'package'")
+                }
+            }
+        };
+
+        self.compiled_state
+            .add_precompiled(named_addr_opt, module.clone());
+
+        let package = Self::build_package(
+            vec![module.clone()],
+            init_function.map(|fid| {
+                let move_args = &args
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|v| v.0)
+                    .collect::<Vec<_>>();
+                let move_args = move_args
+                    .iter()
+                    .map(|arg| MoveValue::from(arg.clone()))
+                    .collect::<Vec<_>>();
+                EntryFunction::new(
+                    fid.0.module,
+                    fid.0.function,
+                    type_args
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|v| v.0)
+                        .collect(),
+                    convert_txn_args(&move_args),
+                )
+            }),
+        )?;
+
+        let package_hash = package.crypto_hash();
+        let output_file = {
+            let mut output_file = self.tempdir.path().join(package_hash.to_string());
+            output_file.set_extension("blob");
+            output_file
+        };
+        let mut file = File::create(output_file.as_path())?;
+        let blob = bcs_ext::to_bytes(&package)?;
+        let hex = format!("0x{}", hex::encode(blob.as_slice()));
+        file.write_all(&blob)
+            .map_err(|e| format_err!("write package file {:?} error:{:?}", output_file, e))?;
+
+        let package_result = PackageResult {
+            file: output_file.to_str().unwrap().to_string(),
+            package_hash,
+            hex,
+        };
+        self.compiled_state().add_with_source_file(
+            named_addr_opt,
+            module,
+            (data_path.to_owned(), data),
+        );
+        Ok((warnings_opt, Some(serde_json::to_value(&package_result)?)))
     }
 
     fn handle_deploy(
@@ -1033,7 +1036,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn known_attributes(&self) -> &BTreeSet<String> {
-        todo!()
+        starcoin_vm2_framework::extended_checks::get_all_attribute_names()
     }
 
     fn run_config(&self) -> TestRunConfig {
@@ -1048,127 +1051,128 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
         init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
-        unimplemented!()
-        // let (additional_mapping, extra_arg) = match task_opt.map(|t| t.command) {
-        //     Some((InitCommand { named_addresses }, extra_arg)) => (
-        //         verify_and_create_named_address_mapping(named_addresses).unwrap(),
-        //         Some(extra_arg),
-        //     ),
-        //     None => (BTreeMap::new(), None),
-        // };
-        //
-        // // TODO: replace it with package's named address mapping.
-        //
-        // let mut named_address_mapping = starcoin_framework_named_addresses();
-        // for (name, addr) in additional_mapping {
-        //     if named_address_mapping.contains_key(&name) {
-        //         panic!(
-        //             "Invalid init. The named address '{}' is reserved by either the move-stdlib or Starcoin-framework",
-        //             name
-        //         )
-        //     }
-        //     named_address_mapping.insert(name, addr);
-        // }
-        // named_address_mapping.insert(
-        //     "Std".to_string(),
-        //     NumericalAddress::parse_str("0x1").unwrap(),
-        // );
-        //
-        // let init_args = extra_arg.unwrap_or_default();
-        //
-        // if init_args.public_keys.is_some() {
-        //     eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
-        // }
-        //
-        // let (context, fork_flag) = if let Some(rpc) = init_args.rpc {
-        //     (
-        //         ForkContext::new_fork(&rpc, init_args.block_number).unwrap(),
-        //         true,
-        //     )
-        // } else {
-        //     let stdlib_modules = if *G_FLAG_RELOAD_STDLIB.lock().unwrap() {
-        //         assert!(
-        //             pre_compiled_deps.is_some(),
-        //             "Current project must be framework."
-        //         );
-        //         let mut modules: Vec<Vec<u8>> = vec![];
-        //         for c in &pre_compiled_deps.unwrap().compiled {
-        //             if let CompiledUnitEnum::Module(m) = c {
-        //                 let mut buffer: Vec<u8> = vec![];
-        //                 m.named_module.module.serialize(&mut buffer).unwrap();
-        //                 modules.push(buffer);
-        //             }
-        //         }
-        //         Some(modules)
-        //     } else {
-        //         None
-        //     };
-        //
-        //     (
-        //         ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
-        //         false,
-        //     )
-        // };
-        //
-        // // add pre compiled modules
-        // if let Some(pre_compiled_lib) = pre_compiled_deps {
-        //     let mut writes = WriteSetMut::default();
-        //     for c in &pre_compiled_lib.compiled {
-        //         if let CompiledUnitEnum::Module(m) = c {
-        //             // update named_address_mapping
-        //             if let Some(named_address) = &m.address_name {
-        //                 let name = named_address.value.to_string();
-        //                 let already_assigned_with_different_value = named_address_mapping
-        //                     .get(&name)
-        //                     .filter(|existed| {
-        //                         existed.into_inner() != m.named_module.address.into_inner()
-        //                     })
-        //                     .is_some();
-        //                 if already_assigned_with_different_value {
-        //                     panic!(
-        //                         "Invalid init. The named address '{}' is already assigned with {}",
-        //                         name,
-        //                         named_address_mapping.get(&name).unwrap(),
-        //                     )
-        //                 }
-        //                 named_address_mapping.insert(name, m.named_module.address);
-        //             }
-        //
-        //             writes.push((
-        //                 StateKey::AccessPath(AccessPath::code_access_path(
-        //                     m.named_module.address.into_inner(),
-        //                     Identifier::new(m.named_module.name.as_str()).unwrap(),
-        //                 )),
-        //                 WriteOp::Value({
-        //                     let mut bytes = vec![];
-        //                     m.named_module.module.serialize(&mut bytes).unwrap();
-        //                     bytes
-        //                 }),
-        //             ));
-        //         }
-        //     }
-        //     context.apply_write_set(writes.freeze().unwrap()).unwrap();
-        // }
-        //
-        // let mut me = Self {
-        //     compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
-        //     default_syntax,
-        //     context,
-        //     tempdir: TempDir::new().unwrap(),
-        //     debug: init_args.debug,
-        // };
-        // me.hack_genesis_account()
-        //     .expect("hack genesis account failure");
-        //
-        // me.hack_account(association_address()).unwrap();
-        //
-        // if fork_flag {
-        // } else {
-        //     // auto start from a new block based on existed state.
-        //     me.handle_new_block(None, None, None, None)
-        //         .expect("init test adapter failed");
-        // };
-        // (me, None)
+        let (additional_mapping, extra_arg) = match init_data.map(|t| t.command) {
+            Some((InitCommand { named_addresses }, extra_arg)) => (
+                verify_and_create_named_address_mapping(named_addresses).unwrap(),
+                Some(extra_arg),
+            ),
+            None => (BTreeMap::new(), None),
+        };
+
+        // TODO: replace it with package's named address mapping.
+
+        let mut named_address_mapping = starcoin_framework_named_addresses();
+        for (name, addr) in additional_mapping {
+            if named_address_mapping.contains_key(&name) {
+                panic!(
+                    "Invalid init. The named address '{}' is reserved by either the move-stdlib or Starcoin-framework",
+                    name
+                )
+            }
+            named_address_mapping.insert(name, addr);
+        }
+        named_address_mapping.insert(
+            "Std".to_string(),
+            NumericalAddress::parse_str("0x1").unwrap(),
+        );
+
+        let init_args = extra_arg.unwrap_or_default();
+
+        if init_args.public_keys.is_some() {
+            eprintln!("[WARN] the `public_keys` option is deprecated, and is no longer working, please remove it.");
+        }
+
+        let (context, fork_flag) = if let Some(rpc) = init_args.rpc {
+            (
+                ForkContext::new_fork(&rpc, init_args.block_number).unwrap(),
+                true,
+            )
+        } else {
+            let stdlib_modules = if *G_FLAG_RELOAD_STDLIB.lock().unwrap() {
+                assert!(
+                    pre_compiled_deps_v1.is_some(),
+                    "Current project must be framework."
+                );
+                let mut modules: Vec<Vec<u8>> = vec![];
+                for c in &pre_compiled_deps_v1.unwrap().0.compiled {
+                    if let CompiledUnitEnum::Module(m) = c {
+                        let mut buffer: Vec<u8> = vec![];
+                        m.named_module.module.serialize(&mut buffer).unwrap();
+                        modules.push(buffer);
+                    }
+                }
+                Some(modules)
+            } else {
+                None
+            };
+
+            (
+                ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
+                false,
+            )
+        };
+
+        // add pre compiled modules
+        if let Some(pre_compiled_lib) = pre_compiled_deps_v1 {
+            let mut writes = WriteSetMut::default();
+            for c in &pre_compiled_lib.0.compiled {
+                if let CompiledUnitEnum::Module(m) = c {
+                    // update named_address_mapping
+                    if let Some(named_address) = &m.address_name {
+                        let name = named_address.value.to_string();
+                        let already_assigned_with_different_value = named_address_mapping
+                            .get(&name)
+                            .filter(|existed| {
+                                existed.into_inner() != m.named_module.address.into_inner()
+                            })
+                            .is_some();
+                        if already_assigned_with_different_value {
+                            panic!(
+                                "Invalid init. The named address '{}' is already assigned with {}",
+                                name,
+                                named_address_mapping.get(&name).unwrap(),
+                            )
+                        }
+                        named_address_mapping.insert(name, m.named_module.address);
+                    }
+
+                    let state_key = StateKey::module_id(&m.named_module.module.self_id());
+                    writes.insert((
+                        state_key,
+                        WriteOp::legacy_modification({
+                            let mut bytes = vec![];
+                            m.named_module.module.serialize(&mut bytes).unwrap();
+                            bytes.into()
+                        }),
+                    ));
+                }
+            }
+            context.apply_write_set(writes.freeze().unwrap()).unwrap();
+        }
+
+        let mut me = Self {
+            compiled_state: CompiledState::new(
+                named_address_mapping,
+                pre_compiled_deps_v1,
+                None,
+                None,
+            ),
+            default_syntax,
+            context,
+            tempdir: TempDir::new().unwrap(),
+            debug: init_args.debug,
+        };
+        me.hack_genesis_account()
+            .expect("hack genesis account failure");
+
+        me.hack_account(association_address()).unwrap();
+
+        if !fork_flag {
+            // auto start from a new block based on existed state.
+            me.handle_new_block(None, None, None, None)
+                .expect("init test adapter failed");
+        };
+        (me, None)
     }
 
     fn publish_module(

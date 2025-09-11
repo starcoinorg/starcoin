@@ -84,7 +84,8 @@ starcoin-gas-meter = { path = "../../vm2/framework/gas-meter" }
 starcoin-gas-schedule = { path = "../../vm2/framework/gas-schedule" }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-dev = { workspace = true }
-
+starcoin-vm2-framework = { workspace = true }
+starcoin-vm2-move-compiler = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
