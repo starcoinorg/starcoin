@@ -22,6 +22,8 @@ pub enum ExecutionStatus<T, E> {
 pub trait Transaction: Sync + Send + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
+
+    fn is_block_meta_data(&self) -> bool;
 }
 
 /// Inference result of a transaction.
