@@ -6,6 +6,7 @@ use crate::on_chain_config::OnChainConfig;
 use crate::on_chain_resource::dao::ProposalAction;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::TypeTag;
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::HashValue;
@@ -91,6 +92,15 @@ where
 {
     const MODULE_NAME: &'static IdentStr = ident_str!("on_chain_config_dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
+}
+
+impl<C> OnChainConfigUpdate<C>
+where
+    C: OnChainConfig,
+{
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(OnChainConfigUpdate::<C>::struct_tag()))
+    }
 }
 
 //TODO fixme

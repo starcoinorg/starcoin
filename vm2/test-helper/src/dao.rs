@@ -18,10 +18,11 @@ use starcoin_vm2_types::{
     account_config::{association_address, genesis_address, stc_type_tag},
     block_metadata::BlockMetadata,
     identifier::Identifier,
-    language_storage::{ModuleId, StructTag, TypeTag},
+    language_storage::{ModuleId, TypeTag},
     transaction::{EntryFunction, TransactionPayload},
 };
 use starcoin_vm2_vm_types::{
+    on_chain_config::OnChainConfig,
     on_chain_resource::ChainId,
     value::{serialize_values, MoveValue},
     StateView,
@@ -104,45 +105,9 @@ pub fn proposal_exist<S: StateView>(
         ]),
         None,
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
-}
-
-pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("OnChainConfigDao").unwrap(),
-        name: Identifier::new("OnChainConfigUpdate").unwrap(),
-        type_args: vec![params_type_tag],
-    }))
-}
-
-pub fn reward_config_type_tag() -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("RewardConfig").unwrap(),
-        name: Identifier::new("RewardConfig").unwrap(),
-        type_args: vec![],
-    }))
-}
-
-pub fn transaction_timeout_type_tag() -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("TransactionTimeoutConfig").unwrap(),
-        name: Identifier::new("TransactionTimeoutConfig").unwrap(),
-        type_args: vec![],
-    }))
-}
-
-pub fn txn_publish_config_type_tag() -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("TransactionPublishOption").unwrap(),
-        name: Identifier::new("TransactionPublishOption").unwrap(),
-        type_args: vec![],
-    }))
 }
 
 pub fn execute_create_account(
@@ -191,13 +156,13 @@ pub fn execute_create_account(
 pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("quorum_votes").unwrap(),
         vec![token],
         vec![],
         None,
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
@@ -205,13 +170,13 @@ pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
 pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("voting_delay").unwrap(),
         vec![token],
         vec![],
         None,
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
@@ -219,13 +184,13 @@ pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
 pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("voting_period").unwrap(),
         vec![token],
         vec![],
         None,
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
@@ -233,13 +198,13 @@ pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
 pub fn min_action_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("min_action_delay").unwrap(),
         vec![token],
         vec![],
         None,
     )
-        .unwrap();
+    .unwrap();
     assert_eq!(ret.len(), 1);
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
@@ -300,9 +265,11 @@ fn execute_cast_vote(
         proposal_id,
     );
     assert_eq!(
-        state, ProposalState::Active,
+        state,
+        ProposalState::Active,
         "expect proposer_id {}'s state ACTIVE, but got: {:?}",
-        proposer_id, state
+        proposer_id,
+        state
     );
     Ok(())
 }
