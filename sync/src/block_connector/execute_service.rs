@@ -94,11 +94,6 @@ impl ExecuteService {
         storage2: Arc<Storage2>,
         dag: BlockDAG,
     ) -> Result<ExecuteResult> {
-        info!(
-            "[BlockProcess] now start to execute the block and try to check the parents: {:?}",
-            new_block.id()
-        );
-
         for parent_id in new_block.header().parents_hash() {
             if !Self::check_parent_ready(*parent_id, storage.clone(), dag.clone())? {
                 return Ok(ExecuteResult::TryLater);
