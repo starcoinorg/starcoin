@@ -25,7 +25,6 @@ use starcoin_vm2_types::{
     transaction::{EntryFunction, TransactionPayload},
 };
 use starcoin_vm2_vm_types::{
-    on_chain_config::OnChainConfig,
     on_chain_resource::ChainId,
     value::{serialize_values, MoveValue},
     StateView,
@@ -240,7 +239,7 @@ fn execute_cast_vote(
     let voting_power = get_balance(*alice.address(), chain_state);
     let cast_vote_payload = dao_vote_scripts_cast_vote(
         stc_type_tag(),
-        *dao_action_type_tag,
+        dao_action_type_tag.clone(),
         proposer_address,
         proposal_id,
         true,
@@ -275,7 +274,7 @@ pub fn dao_vote_test(
     alice: &Account,
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
-    vote_script: EntryFunction,
+    vote_payload: TransactionPayload,
     action_type_tag: TypeTag,
     execute_txn_payload: TransactionPayload,
     proposal_id: u64,
@@ -311,11 +310,7 @@ pub fn dao_vote_test(
                 0,
             ),
         )?;
-        account_execute_should_success(
-            alice,
-            chain_state,
-            TransactionPayload::EntryFunction(vote_script),
-        )?;
+        account_execute_should_success(alice, chain_state, vote_payload)?;
         let state = proposal_state(
             chain_state,
             stc_type_tag(),

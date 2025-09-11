@@ -13,22 +13,6 @@ use starcoin_crypto::HashValue;
 
 /// A Rust representation of a UpgradeModule resource.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UpgradeModule {
-    pub module_address: AccountAddress,
-    pub package_hash: HashValue,
-    pub version: u64,
-}
-
-impl MoveStructType for UpgradeModule {
-    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModule");
-}
-
-impl MoveResource for UpgradeModule {}
-
-impl ProposalAction for UpgradeModule {}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct UpgradeModuleV2 {
     pub module_address: AccountAddress,
     pub package_hash: HashValue,
@@ -37,13 +21,19 @@ pub struct UpgradeModuleV2 {
 }
 
 impl MoveStructType for UpgradeModuleV2 {
-    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao_upgrade_module_proposal");
     const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModuleV2");
 }
 
 impl MoveResource for UpgradeModuleV2 {}
 
 impl ProposalAction for UpgradeModuleV2 {}
+
+impl UpgradeModuleV2 {
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(UpgradeModuleV2::struct_tag()))
+    }
+}
 
 /// A Rust representation of a DaoConfigUpdate action.
 #[derive(Debug, Serialize, Deserialize)]
