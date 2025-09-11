@@ -13,8 +13,6 @@ use starcoin_vm2_test_helper::executor::*;
 use starcoin_vm2_types::{
     account::Account,
     account_config::{genesis_address, stc_type_tag},
-    identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
     transaction::TransactionPayload,
 };
 use starcoin_vm2_vm_types::account_config::config_change::ConfigChangeEvent;
@@ -62,7 +60,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         genesis_address(),
         package_hash.to_vec(),
         2,     // version 2
-        60000, // exec_delay
+        0, // exec_delay
         false, // enforced
     );
 
