@@ -8,8 +8,7 @@ use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_rpc_api::chain::ChainApiClient;
-use starcoin_rpc_api::types::BlockView;
+use starcoin_rpc_api::{chain::ChainApiClient, types::BlockView};
 use starcoin_vm2_state_api::ChainStateWriter;
 
 use jsonrpc_http_server::hyper::body::Bytes;
@@ -18,9 +17,7 @@ use move_core_types::{
     value::MoveTypeLayout, vm_status::StatusCode,
 };
 
-use std::collections::BTreeMap;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 use tokio::runtime::Runtime;
 
 use starcoin_vm2_rpc_api::state_api::StateApiClient as StateApiClient2;

@@ -29,11 +29,12 @@ use starcoin_storage::{
     block_info::BlockInfoStore, storage::StorageInstance, BlockStore, BlockTransactionInfoStore,
     ContractEventStore, Storage, Store, TransactionStore,
 };
-use starcoin_types::block::{Block, BlockInfo, BlockNumber};
-use starcoin_types::contract_event::StcContractEvent;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
-use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
+use starcoin_types::{
+    block::{Block, BlockInfo, BlockNumber},
+    contract_event::StcContractEvent,
+    startup_info::{ChainInfo, ChainStatus},
+};
+use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::{
     transaction::{Transaction, TransactionInfo, TransactionOutput},
@@ -45,9 +46,11 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView};
 use starcoin_vm_types::access_path::AccessPath as AccessPath1;
-use std::hash::Hash;
-use std::option::Option::{None, Some};
-use std::sync::{Arc, Mutex};
+use std::{
+    hash::Hash,
+    option::Option::{None, Some},
+    sync::{Arc, Mutex},
+};
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {

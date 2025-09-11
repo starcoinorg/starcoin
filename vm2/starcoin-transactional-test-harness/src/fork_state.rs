@@ -19,8 +19,9 @@ use starcoin_vm2_state_api::{
     StateWithTableItemProof,
 };
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_types::state_set::AccountStateSet;
-use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
+use starcoin_vm2_types::{
+    account_address::AccountAddress, account_state::AccountState, state_set::AccountStateSet,
+};
 use starcoin_vm2_vm_types::state_store::{state_key::StateKey, table::TableHandle, TStateView};
 use std::{
     collections::BTreeMap,

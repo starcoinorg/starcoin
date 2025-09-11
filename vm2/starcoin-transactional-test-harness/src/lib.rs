@@ -42,14 +42,12 @@ use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use once_cell::sync::Lazy;
 use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
-use std::collections::BTreeSet;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     convert::TryInto,
     fs::File,
     io::{Read, Write},
-    path::Path,
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
     sync::Mutex,
 };
@@ -79,8 +77,7 @@ use starcoin_vm2_vm_runtime::{
     starcoin_vm::StarcoinVM as StarcoinVM2,
 };
 use starcoin_vm2_vm_types::{
-    account_config::stc_type_tag,
-    account_config::{genesis_address, AccountResource},
+    account_config::{genesis_address, stc_type_tag, AccountResource},
     block_metadata::BlockMetadata,
     on_chain_config::VMConfig,
     on_chain_resource,

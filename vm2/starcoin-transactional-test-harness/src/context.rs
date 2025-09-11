@@ -7,8 +7,10 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_vm2_rpc_server::state_rpc::StateRpcImpl;
 use starcoin_vm2_types::write_set::WriteSet;
-use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
+use std::{
+    sync::{Arc, Mutex},
+    thread::{self, JoinHandle},
+};
 use tokio::runtime::Runtime;
 
 use crate::{
@@ -28,8 +30,7 @@ use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore}
 
 use starcoin_transaction_builder::vm2::build_stdlib_package_with_modules;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_vm_types::on_chain_resource::ChainId;
-use starcoin_vm2_vm_types::transaction::Transaction;
+use starcoin_vm2_vm_types::{on_chain_resource::ChainId, transaction::Transaction};
 
 pub struct MockServer {
     _server_handle: JoinHandle<()>,
