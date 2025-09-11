@@ -23,7 +23,7 @@ impl<V> MoveStructType for ConfigChangeEvent<V>
 where
     V: OnChainConfig + DeserializeOwned,
 {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Config");
+    const MODULE_NAME: &'static IdentStr = ident_str!("on_chain_config");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ConfigChangeEvent");
     fn type_args() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(V::config_id().struct_tag()))]

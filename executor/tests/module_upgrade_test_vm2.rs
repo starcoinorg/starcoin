@@ -60,7 +60,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         genesis_address(),
         package_hash.to_vec(),
         2,     // version 2
-        0, // exec_delay
+        0,     // exec_delay
         false, // enforced
     );
 
