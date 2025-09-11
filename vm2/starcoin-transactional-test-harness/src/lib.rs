@@ -60,7 +60,7 @@ use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
 use starcoin_config::BuiltinNetworkID;
-use starcoin_rpc_api::types::pubsub::Params;
+use starcoin_rpc_api::Params;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_vm2_abi_decoder::decode_txn_payload;
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
@@ -859,9 +859,8 @@ impl StarcoinTestAdapter<'_> {
         method: String,
         params: Params,
     ) -> Result<(Option<String>, Option<Value>)> {
-        unimplemented!()
-        // let output = self.context.call_api(method.as_str(), params)?;
-        // Ok((None, Some(serde_json::to_value(output)?)))
+        let output = self.context.call_api(method.as_str(), params)?;
+        Ok((None, Some(serde_json::to_value(output)?)))
     }
 
     fn build_package(
