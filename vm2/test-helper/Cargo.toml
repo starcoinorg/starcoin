@@ -23,6 +23,7 @@ starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
+starcoin-crypto = { workspace = true }
 
 [dev-dependencies]
 starcoin-logger = { workspace = true }
