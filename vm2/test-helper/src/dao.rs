@@ -11,7 +11,7 @@ use starcoin_cached_packages::starcoin_stdlib::{
 };
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
-use starcoin_transaction_builder::vm2::encode_create_account_script_function;
+use starcoin_transaction_builder::vm2::encode_transfer_script_function;
 use starcoin_vm2_executor::executor::execute_readonly_function;
 use starcoin_vm2_state_api::ChainStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
@@ -137,18 +137,8 @@ pub fn execute_create_account(
         )?;
         if !chain_state.exist_account(alice.address())? {
             let init_balance = pre_mint_amount / 4;
-            let script_function = encode_create_account_script_function(
-                net.stdlib_version().version(),
-                stc_type_tag(),
-                alice.address(),
-                alice.auth_key(),
-                init_balance,
-            );
-            association_execute_should_success(
-                net,
-                chain_state,
-                TransactionPayload::EntryFunction(script_function),
-            )?;
+            let script_function = encode_transfer_script_function(*alice.address(), init_balance);
+            association_execute_should_success(net, chain_state, script_function)?;
         }
 
         Ok(())
@@ -279,7 +269,7 @@ pub fn dao_vote_test(
     execute_txn_payload: TransactionPayload,
     proposal_id: u64,
 ) -> Result<()> {
-    let pre_mint_amount = net.genesis_config().pre_mine_amount;
+    let pre_mint_amount = net.genesis_config2().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
     let block_number = current_block_number(chain_state) + 1;

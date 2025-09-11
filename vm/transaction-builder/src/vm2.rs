@@ -219,25 +219,6 @@ pub fn raw_accept_token_txn(
     )
 }
 
-pub fn encode_create_account_script_function(
-    _version: u64,
-    token_type: TypeTag,
-    account_address: &AccountAddress,
-    auth_key: AuthenticationKey,
-    initial_balance: u128,
-) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
-        Identifier::new("create_account_with_initial_amount").unwrap(),
-        vec![token_type],
-        vec![
-            bcs_ext::to_bytes(account_address).unwrap(),
-            bcs_ext::to_bytes(&auth_key.to_vec()).unwrap(),
-            bcs_ext::to_bytes(&initial_balance).unwrap(),
-        ],
-    )
-}
-
 pub fn encode_transfer_script_function(
     recipient: AccountAddress,
     amount: u128,
