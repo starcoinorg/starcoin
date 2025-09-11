@@ -46,7 +46,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         );
     }
 
-    // Calculate time range from first and last selected parent's blues
+    // Calculate time range from first and last selected parent
     let first_id = selected_blocks
         .first()
         .ok_or_else(|| format_err!("selected_blocks is empty"))?;
@@ -54,57 +54,19 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         .last()
         .ok_or_else(|| format_err!("selected_blocks is empty"))?;
 
-    // Get min timestamp from first selected parent's blues
-    let first_ghostdata = chain.dag().storage.ghost_dag_store.get_data(*first_id)?;
-    let min_timestamp = if first_ghostdata.mergeset_blues.is_empty() {
-        // Genesis block has no blues, use the block itself
-        let first_header = chain
-            .get_header_by_hash(*first_id)?
-            .ok_or_else(|| format_err!("failed to get the first block header"))?;
-        first_header.timestamp()
-    } else {
-        let first_header = chain
-            .get_header_by_hash(first_ghostdata.mergeset_blues[0])?
-            .ok_or_else(|| format_err!("failed to get the first block header"))?;
-        let mut min_ts = first_header.timestamp();
+    // Get timestamp from first selected parent
+    let first_header = chain
+        .get_header_by_hash(*first_id)?
+        .ok_or_else(|| format_err!("failed to get the first selected parent header"))?;
+    let first_timestamp = first_header.timestamp();
 
-        for blue_id in first_ghostdata.mergeset_blues.iter().skip(1) {
-            let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
-                format_err!("failed to get the block header when getting next work required for min_ts, blue_id: {:?}", blue_id)
-            })?;
-            min_ts = min_ts.min(header.timestamp());
-        }
-        min_ts
-    };
+    // Get timestamp from last selected parent
+    let last_header = chain
+        .get_header_by_hash(*last_id)?
+        .ok_or_else(|| format_err!("failed to get the last selected parent header"))?;
+    let last_timestamp = last_header.timestamp();
 
-    // Get max timestamp from last selected parent's blues (reuse if same block)
-    let last_ghostdata = if first_id == last_id {
-        first_ghostdata
-    } else {
-        chain.dag().storage.ghost_dag_store.get_data(*last_id)?
-    };
-    let max_timestamp = if last_ghostdata.mergeset_blues.is_empty() {
-        // Genesis block has no blues, use the block itself
-        let last_header = chain
-            .get_header_by_hash(*last_id)?
-            .ok_or_else(|| format_err!("failed to get the last block header"))?;
-        last_header.timestamp()
-    } else {
-        let last_header = chain
-            .get_header_by_hash(last_ghostdata.mergeset_blues[0])?
-            .ok_or_else(|| format_err!("failed to get the last block header"))?;
-        let mut max_ts = last_header.timestamp();
-
-        for blue_id in last_ghostdata.mergeset_blues.iter().skip(1) {
-            let header = chain.get_header_by_hash(*blue_id)?.ok_or_else(|| {
-                format_err!("failed to get the block header when getting next work required for max_ts, blue_id: {:?}", blue_id)
-            })?;
-            max_ts = max_ts.max(header.timestamp());
-        }
-        max_ts
-    };
-
-    let time_used = max_timestamp.saturating_sub(min_timestamp);
+    let time_used = last_timestamp.saturating_sub(first_timestamp);
 
     // Collect all blue blocks for target calculation
     let mut blue_blocks = Vec::new();
@@ -199,13 +161,13 @@ pub fn get_next_target_helper(
         .checked_div(time_plan.into())
         .and_then(|r| r.checked_mul(avg_time.into()))
     {
-        // the divisor is `2` and never be `0`
-        if new_target.checked_div(2.into()).unwrap() > avg_target {
-            debug!("target increase too fast, limit to 2 times");
-            avg_target.saturating_mul(2.into())
-        } else if new_target < avg_target.checked_div(2.into()).unwrap() {
-            debug!("target reduce too fast, limit to 2 times");
-            avg_target.checked_div(2.into()).unwrap()
+        // the divisor is `4` and never be `0`
+        if new_target.checked_div(4.into()).unwrap() > avg_target {
+            debug!("target increase too fast, limit to 4 times");
+            avg_target.saturating_mul(4.into())
+        } else if new_target < avg_target.checked_div(4.into()).unwrap() {
+            debug!("target reduce too fast, limit to 4 times");
+            avg_target.checked_div(4.into()).unwrap()
         } else {
             new_target
         }

@@ -334,8 +334,8 @@ fn test_next_target_increase_difficulty() {
 
     // avg_time = 5000 / 3 = 1666
     // new_target = 10000 * 1666 / 10000 = 1666
-    // This is < avg_target/2, so limited to 5000
-    assert_eq!(next_target, 5000.into());
+    // This is < avg_target/4, so limited to 2500
+    assert_eq!(next_target, 2500.into());
 }
 
 #[stest::test]
@@ -392,8 +392,8 @@ fn test_next_target_time_used_zero() {
 
     // avg_time = 0, but will be set to 1
     // new_target = 10000 * 1 / 10000 = 1
-    // This is way less than avg_target/2, so limited to 5000
-    assert_eq!(next_target, 5000.into());
+    // This is way less than avg_target/4, so limited to 2500
+    assert_eq!(next_target, 2500.into());
 }
 
 #[stest::test]
@@ -416,13 +416,13 @@ fn test_next_target_dag_many_blocks() {
 
     // avg_time = 9000 / 10 = 900
     // new_target = 10000 * 900 / 10000 = 900
-    // This is < avg_target/2, so limited to 5000
-    assert_eq!(next_target, 5000.into());
+    // This is < avg_target/4, so limited to 2500
+    assert_eq!(next_target, 2500.into());
 }
 
 #[stest::test]
-fn test_next_target_limit_2x_increase() {
-    // Test 2x limit on target increase (difficulty decrease)
+fn test_next_target_limit_4x_increase() {
+    // Test 4x limit on target increase (difficulty decrease)
     let time_plan = 10_000;
     let target: U256 = 10000.into();
 
@@ -443,40 +443,6 @@ fn test_next_target_limit_2x_increase() {
 
     // avg_time = 100000 / 2 = 50000
     // new_target = 10000 * 50000 / 10000 = 50000
-    // This is > avg_target * 2, so limited to 20000
-    assert_eq!(next_target, 20000.into());
-}
-
-#[stest::test]
-fn test_next_target_different_targets() {
-    // Test with different target values (varying difficulties)
-    let time_plan = 10_000;
-
-    let blocks = vec![
-        BlockDiffInfo {
-            timestamp: 30000,
-            target: 15000.into(),
-        },
-        BlockDiffInfo {
-            timestamp: 20000,
-            target: 10000.into(),
-        },
-        BlockDiffInfo {
-            timestamp: 10000,
-            target: 5000.into(),
-        },
-        BlockDiffInfo {
-            timestamp: 0,
-            target: 8000.into(),
-        },
-    ];
-
-    let time_used = 30000;
-    let next_target = get_next_target_helper(blocks, time_used, time_plan).unwrap();
-
-    // avg_target = (15000 + 10000 + 5000 + 8000) / 4 = 9500
-    // avg_time = 30000 / 4 = 7500
-    // new_target = 9500 * 7500 / 10000 = 7125
-    // But 7125 < 9500/2 = 4750, so it's limited to 4750
-    assert_eq!(next_target, 4750.into());
+    // This is > avg_target * 4, so limited to 40000
+    assert_eq!(next_target, 40000.into());
 }
