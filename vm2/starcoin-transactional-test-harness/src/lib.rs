@@ -1063,8 +1063,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn init(
         default_syntax: SyntaxChoice,
-        comparison_mode: bool,
-        run_config: TestRunConfig,
+        _comparison_mode: bool,
+        _run_config: TestRunConfig,
         pre_compiled_deps_v1: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
         _pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
         init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,

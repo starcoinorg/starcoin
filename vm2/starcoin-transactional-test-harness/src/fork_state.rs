@@ -8,10 +8,9 @@ use starcoin_state_tree::StateNode;
 use starcoin_storage::{
     state_node::StateStorage,
     storage::{CodecKVStore, CodecWriteBatch, StorageInstance},
+    table_info::TableInfoStore,
 };
 
-use starcoin_state_api::ChainStateReader as ChainStateReader1;
-use starcoin_storage::table_info::TableInfoStore;
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
 use starcoin_vm2_rpc_api::state_api::StateApiClient;
 use starcoin_vm2_state_api::{

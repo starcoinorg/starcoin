@@ -47,27 +47,18 @@ async-trait = { workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-derive = { workspace = true }
 jsonrpc-http-server = { workspace = true }
-starcoin-abi-decoder = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
-
 starcoin-genesis = { workspace = true }
-starcoin-resource-viewer = { workspace = true }
 starcoin-rpc-api = { workspace = true }
-starcoin-rpc-client = { workspace = true }
 starcoin-rpc-server = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
-starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
-stdlib = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 
 # starcoin-vm2-storage = { workspace = true }
@@ -80,7 +71,6 @@ starcoin-vm2-vm-runtime = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-rpc-server = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }
-starcoin-gas-meter = { path = "../../vm2/framework/gas-meter" }
 starcoin-gas-schedule = { path = "../../vm2/framework/gas-schedule" }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-dev = { workspace = true }
