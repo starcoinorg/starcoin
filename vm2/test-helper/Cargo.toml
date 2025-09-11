@@ -24,6 +24,7 @@ starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-cached-packages = { path = "../framework/cached-packages" }
 
 [dev-dependencies]
 starcoin-logger = { workspace = true }

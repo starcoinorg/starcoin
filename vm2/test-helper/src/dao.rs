@@ -6,6 +6,9 @@ use crate::executor::{
     current_block_number, get_balance,
 };
 use anyhow::Result;
+use starcoin_cached_packages::starcoin_stdlib::{
+    dao_vote_scripts_cast_vote, on_chain_config_scripts_execute_on_chain_config_proposal,
+};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_transaction_builder::vm2::encode_create_account_script_function;
@@ -235,26 +238,16 @@ fn execute_cast_vote(
     let proposer_address = *alice.address();
     let proposer_id = proposal_id;
     let voting_power = get_balance(*alice.address(), chain_state);
-    let script_function = EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("DaoVoteScripts").unwrap(),
-        ),
-        Identifier::new("cast_vote").unwrap(),
-        vec![stc_type_tag(), dao_action_type_tag.clone()],
-        vec![
-            bcs_ext::to_bytes(&proposer_address).unwrap(),
-            bcs_ext::to_bytes(&proposer_id).unwrap(),
-            bcs_ext::to_bytes(&true).unwrap(),
-            bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
-        ],
+    let cast_vote_payload = dao_vote_scripts_cast_vote(
+        stc_type_tag(),
+        *dao_action_type_tag,
+        proposer_address,
+        proposal_id,
+        true,
+        voting_power / 2,
     );
     // vote first.
-    account_execute_should_success(
-        alice,
-        chain_state,
-        TransactionPayload::EntryFunction(script_function),
-    )?;
+    account_execute_should_success(alice, chain_state, cast_vote_payload)?;
     let _quorum = quorum_vote(chain_state, stc_type_tag());
 
     let state = proposal_state(
@@ -274,110 +267,8 @@ fn execute_cast_vote(
     Ok(())
 }
 
-pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_consensus_config").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&80u64).unwrap(),
-            bcs_ext::to_bytes(&10000u64).unwrap(),
-            bcs_ext::to_bytes(&64000000000u128).unwrap(),
-            bcs_ext::to_bytes(&10u64).unwrap(),
-            bcs_ext::to_bytes(&48u64).unwrap(),
-            bcs_ext::to_bytes(&24u64).unwrap(),
-            bcs_ext::to_bytes(&1000u64).unwrap(),
-            bcs_ext::to_bytes(&60000u64).unwrap(),
-            bcs_ext::to_bytes(&2u64).unwrap(),
-            bcs_ext::to_bytes(&1000000u64).unwrap(),
-            bcs_ext::to_bytes(&strategy).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
-pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_reward_config").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&reward_delay).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
-pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_txn_timeout_config").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&duration_seconds).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
-pub fn vote_txn_publish_option_script(
-    _net: &ChainNetwork,
-    script_allowed: bool,
-    module_publishing_allowed: bool,
-) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_txn_publish_option").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&script_allowed).unwrap(),
-            bcs_ext::to_bytes(&module_publishing_allowed).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
-pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_move_language_version").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&lang_version).unwrap(),
-            bcs_ext::to_bytes(&0u64).unwrap(),
-        ],
-    )
-}
-
-pub fn execute_script_on_chain_config(
-    _net: &ChainNetwork,
-    type_tag: TypeTag,
-    proposal_id: u64,
-) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            genesis_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("execute_on_chain_config_proposal").unwrap(),
-        vec![type_tag],
-        vec![bcs_ext::to_bytes(&proposal_id).unwrap()],
-    )
+pub fn execute_script_on_chain_config(type_tag: TypeTag, proposal_id: u64) -> TransactionPayload {
+    on_chain_config_scripts_execute_on_chain_config_proposal(type_tag, proposal_id)
 }
 
 pub fn dao_vote_test(
@@ -386,7 +277,7 @@ pub fn dao_vote_test(
     net: &ChainNetwork,
     vote_script: EntryFunction,
     action_type_tag: TypeTag,
-    execute_script: EntryFunction,
+    execute_txn_payload: TransactionPayload,
     proposal_id: u64,
 ) -> Result<()> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
@@ -553,11 +444,7 @@ pub fn dao_vote_test(
             proposal_id,
         );
         assert_eq!(state, ProposalState::Executable);
-        account_execute_should_success(
-            alice,
-            chain_state,
-            TransactionPayload::EntryFunction(execute_script),
-        )?;
+        account_execute_should_success(alice, chain_state, execute_txn_payload)?;
     }
 
     // block 7
