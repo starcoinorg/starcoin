@@ -3,7 +3,7 @@
 
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
-use clap::{ArgAction, Args, CommandFactory, Parser};
+use clap::{ArgAction, Parser};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
@@ -21,10 +21,7 @@ use move_core_types::{
 
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
-    tasks::{
-        InitCommand, PrintBytecodeCommand, PublishCommand, RunCommand, SyntaxChoice, TaskCommand,
-        TaskInput, ViewCommand,
-    },
+    tasks::{InitCommand, SyntaxChoice, TaskInput},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -44,6 +41,7 @@ use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, T
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
 use std::collections::BTreeSet;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -55,8 +53,6 @@ use std::{
     str::FromStr,
     sync::Mutex,
 };
-
-use starcoin_vm2_move_compiler::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 use starcoin_config::BuiltinNetworkID;
@@ -77,9 +73,9 @@ use starcoin_vm2_types::{
     },
     U256,
 };
-use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm2_vm_runtime::data_cache::{AsMoveResolver, StorageAdapter};
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
-use starcoin_vm2_vm_types::transaction::{Module, Package};
+use starcoin_vm2_vm_types::transaction::{Module, Package, Script};
 use starcoin_vm2_vm_types::{
     access_path::AccessPath,
     account_config::stc_type_tag,
@@ -94,9 +90,9 @@ use starcoin_vm2_vm_types::{
     },
 };
 
-use starcoin_gas_schedule::gas_params::natives::starcoin_framework;
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
 use starcoin_vm2_resource_viewer::MoveValueAnnotator;
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
 use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::genesis_config::ChainId as ChainId1;
@@ -1020,6 +1016,33 @@ impl StarcoinTestAdapter<'_> {
     }
 }
 
+fn view_resource_in_move_storage(
+    storage: StorageAdapter<ChainStateDB>,
+    address: AccountAddress2,
+    module: &ModuleId,
+    resource: &IdentStr,
+    type_args: Vec<TypeTag>,
+) -> Result<String> {
+    unimplemented!()
+    // let tag = StructTag {
+    //     address: *module.address(),
+    //     module: module.name().to_owned(),
+    //     name: resource.to_owned(),
+    //     type_args,
+    // };
+    // match storage
+    //     .get_resource_bytes_with_metadata_and_layout(&address, &tag, &[], None)?
+    //     .0
+    // {
+    //     None => Ok("[No Resource Exists]".to_owned()),
+    //     Some(data) => {
+    //         let annotated = MoveValueAnnotator::new(storage)
+    //             .view_resource(&tag, &data)?;
+    //         Ok(format!("{}", &annotated))
+    //     }
+    // }
+}
+
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     type ExtraPublishArgs = StarcoinPublishArgs;
     type ExtraValueArgs = ();
@@ -1180,37 +1203,35 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         module: CompiledModule,
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
-        extra: Self::ExtraPublishArgs,
+        _extra: Self::ExtraPublishArgs,
     ) -> Result<(Option<String>, CompiledModule)> {
-        unimplemented!()
-        // let module_id = module.self_id();
-        // let signer = match named_addr_opt {
-        //     Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
-        //     None => *module_id.address(),
-        // };
-        // let params = self.fetch_default_transaction_parameters(&signer)?;
-        //
-        // let package = Self::build_package(vec![module.clone()], None)?;
-        // let txn = RawUserTransaction2::new_package(
-        //     signer,
-        //     params.sequence_number,
-        //     package,
-        //     gas_budget.unwrap_or(params.max_gas_amount),
-        //     params.gas_unit_price,
-        //     params.expiration_timestamp_secs,
-        //     params.chainid,
-        // );
-        //
-        // let output = self.run_transaction(txn)?;
-        //
-        // match output.output.status {
-        //     TransactionStatusView::Executed => Ok((None, module, None)),
-        //     _ => Ok((
-        //         Some(format!("Publish failure: {:?}", output.output.status)),
-        //         module,
-        //         Some(serde_json::to_value(&output)?),
-        //     )),
-        // }
+        let module_id = module.self_id();
+        let signer = match named_addr_opt {
+            Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
+            None => *module_id.address(),
+        };
+        let params = self.fetch_default_transaction_parameters(&signer)?;
+
+        let package = Self::build_package(vec![module.clone()], None)?;
+        let txn = RawUserTransaction2::new_package(
+            signer,
+            params.sequence_number,
+            package,
+            gas_budget.unwrap_or(params.max_gas_amount),
+            params.gas_unit_price,
+            params.expiration_timestamp_secs,
+            params.chainid,
+        );
+
+        let output = self.run_transaction(txn)?;
+
+        match output.output.status {
+            TransactionStatusView::Executed => Ok((None, module)),
+            _ => Ok((
+                Some(format!("Publish failure: {:?}", output.output.status)),
+                module,
+            )),
+        }
     }
 
     fn execute_script(
@@ -1220,83 +1241,74 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         signers: Vec<ParsedAddress>,
         args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
         gas_budget: Option<u64>,
-        extra: Self::ExtraRunArgs,
+        _extra: Self::ExtraRunArgs,
     ) -> Result<Option<String>> {
-        unimplemented!()
-        // assert!(!signers.is_empty());
-        // if signers.len() != 1 {
-        //     panic!("Expected 1 signer, got {}.", signers.len());
-        // }
-        // let sender = self.compiled_state().resolve_address(&signers[0]);
-        //
-        // let mut script_blob = vec![];
-        // script.serialize(&mut script_blob)?;
-        //
-        // let params = self.fetch_default_transaction_parameters(&sender)?;
-        //
-        // // orignal 0xc867 become 0x0c383637, this convert 0x0c383637 => 0xc867
-        // let mut args_vec = vec![];
-        // for arg in args.into_iter() {
-        //     match arg {
-        //         MoveValue::Vector(vals) => {
-        //             let mut is_vec_u8 = true;
-        //             for val in vals.iter() {
-        //                 match val {
-        //                     MoveValue::U8(_) => {}
-        //                     _ => is_vec_u8 = false,
-        //                 }
-        //             }
-        //             if vals.len() % 2 == 1 || vals.is_empty() {
-        //                 is_vec_u8 = false;
-        //             }
-        //             match is_vec_u8 {
-        //                 true => {
-        //                     assert_eq!(vals.first(), Some(&MoveValue::U8(48)));
-        //                     assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
-        //                     let mut vals_compress = vec![];
-        //                     for i in (2..vals.len()).step_by(2) {
-        //                         let x = vals.get(i).cloned();
-        //                         let y = vals.get(i + 1).cloned();
-        //                         match (x, y) {
-        //                             (Some(MoveValue::U8(a)), Some(MoveValue::U8(b))) => {
-        //                                 let val = (convert_u8(a) << 4) | convert_u8(b);
-        //                                 vals_compress.push(MoveValue::U8(val));
-        //                             }
-        //                             _ => panic!("is not possible"),
-        //                         }
-        //                     }
-        //                     args_vec.push(MoveValue::Vector(vals_compress));
-        //                 }
-        //                 false => args_vec.push(MoveValue::Vector(vals)),
-        //             }
-        //         }
-        //         _ => args_vec.push(arg),
-        //     }
-        // }
-        // let txn = RawUserTransaction2::new_script(
-        //     sender,
-        //     params.sequence_number,
-        //     starcoin_vm2_vm_types::transaction::Script::new(script_blob, type_args, convert_txn_args(&args_vec)),
-        //     gas_budget.unwrap_or(params.max_gas_amount),
-        //     params.gas_unit_price,
-        //     params.expiration_timestamp_secs,
-        //     params.chainid,
-        // );
-        //
-        // let output = self.run_transaction(txn)?;
-        // let result = SimpleTransactionResult {
-        //     gas_used: output.output.gas_used.0,
-        //     status: output.output.status.clone(),
-        // };
-        // let value = SerializedReturnValues {
-        //     mutable_reference_outputs: vec![],
-        //     return_values: vec![],
-        // };
-        // Ok((
-        //     Some(serde_json::to_string_pretty(&result)?),
-        //     value,
-        //     Some(serde_json::to_value(&output)?),
-        // ))
+        assert!(!signers.is_empty());
+        if signers.len() != 1 {
+            panic!("Expected 1 signer, got {}.", signers.len());
+        }
+        let sender = self.compiled_state().resolve_address(&signers[0]);
+
+        let mut script_blob = vec![];
+        script.serialize(&mut script_blob)?;
+
+        let params = self.fetch_default_transaction_parameters(&sender)?;
+
+        // orignal 0xc867 become 0x0c383637, this convert 0x0c383637 => 0xc867
+        let mut args_vec = vec![];
+        for arg in args.into_iter() {
+            match arg {
+                MoveValue::Vector(vals) => {
+                    let mut is_vec_u8 = true;
+                    for val in vals.iter() {
+                        match val {
+                            MoveValue::U8(_) => {}
+                            _ => is_vec_u8 = false,
+                        }
+                    }
+                    if vals.len() % 2 == 1 || vals.is_empty() {
+                        is_vec_u8 = false;
+                    }
+                    match is_vec_u8 {
+                        true => {
+                            assert_eq!(vals.first(), Some(&MoveValue::U8(48)));
+                            assert_eq!(vals.get(1), Some(&MoveValue::U8(120)));
+                            let mut vals_compress = vec![];
+                            for i in (2..vals.len()).step_by(2) {
+                                let x = vals.get(i).cloned();
+                                let y = vals.get(i + 1).cloned();
+                                match (x, y) {
+                                    (Some(MoveValue::U8(a)), Some(MoveValue::U8(b))) => {
+                                        let val = (convert_u8(a) << 4) | convert_u8(b);
+                                        vals_compress.push(MoveValue::U8(val));
+                                    }
+                                    _ => panic!("is not possible"),
+                                }
+                            }
+                            args_vec.push(MoveValue::Vector(vals_compress));
+                        }
+                        false => args_vec.push(MoveValue::Vector(vals)),
+                    }
+                }
+                _ => args_vec.push(arg),
+            }
+        }
+        let txn = RawUserTransaction2::new_script(
+            sender,
+            params.sequence_number,
+            Script::new(script_blob, type_args, convert_txn_args(&args_vec)),
+            gas_budget.unwrap_or(params.max_gas_amount),
+            params.gas_unit_price,
+            params.expiration_timestamp_secs,
+            params.chainid,
+        );
+
+        let output = self.run_transaction(txn)?;
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
+        };
+        Ok(Some(serde_json::to_string_pretty(&result)?))
     }
 
     fn call_function(
@@ -1307,48 +1319,43 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         signers: Vec<ParsedAddress>,
         args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
         gas_budget: Option<u64>,
-        extra: Self::ExtraRunArgs,
+        _extra: Self::ExtraRunArgs,
     ) -> Result<(Option<String>, SerializedReturnValues)> {
-        unimplemented!()
-        // {
-        //     assert!(!signers.is_empty());
-        //     if signers.len() != 1 {
-        //         panic!("Expected 1 signer, got {}.", signers.len());
-        //     }
-        // }
-        // let sender = self.compiled_state().resolve_address(&signers[0]);
-        //
-        // let params = self.fetch_default_transaction_parameters(&sender)?;
-        //
-        // let txn = RawUserTransaction2::new_script_function(
-        //     sender,
-        //     params.sequence_number,
-        //     starcoin_vm2_vm_types::transaction::ScriptFunction::new(
-        //         module.clone(),
-        //         function.to_owned(),
-        //         type_args,
-        //         convert_txn_args(&args),
-        //     ),
-        //     gas_budget.unwrap_or(params.max_gas_amount),
-        //     params.gas_unit_price,
-        //     params.expiration_timestamp_secs,
-        //     params.chainid,
-        // );
-        //
-        // let output = self.run_transaction(txn)?;
-        // let result = SimpleTransactionResult {
-        //     gas_used: output.output.gas_used.0,
-        //     status: output.output.status.clone(),
-        // };
-        // let value = SerializedReturnValues {
-        //     mutable_reference_outputs: vec![],
-        //     return_values: vec![],
-        // };
-        // Ok((
-        //     Some(serde_json::to_string_pretty(&result)?),
-        //     value,
-        //     Some(serde_json::to_value(&output)?),
-        // ))
+        {
+            assert!(!signers.is_empty());
+            if signers.len() != 1 {
+                panic!("Expected 1 signer, got {}.", signers.len());
+            }
+        }
+        let sender = self.compiled_state().resolve_address(&signers[0]);
+
+        let params = self.fetch_default_transaction_parameters(&sender)?;
+
+        let txn = RawUserTransaction2::new_script_function(
+            sender,
+            params.sequence_number,
+            EntryFunction::new(
+                module.clone(),
+                function.to_owned(),
+                type_args,
+                convert_txn_args(&args),
+            ),
+            gas_budget.unwrap_or(params.max_gas_amount),
+            params.gas_unit_price,
+            params.expiration_timestamp_secs,
+            params.chainid,
+        );
+
+        let output = self.run_transaction(txn)?;
+        let result = SimpleTransactionResult {
+            gas_used: output.output.gas_used.0,
+            status: output.output.status.clone(),
+        };
+        let value = SerializedReturnValues {
+            mutable_reference_outputs: vec![],
+            return_values: vec![],
+        };
+        Ok((Some(serde_json::to_string_pretty(&result)?), value))
     }
 
     fn view_data(
@@ -1358,136 +1365,54 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
     ) -> Result<String> {
-        unimplemented!()
-        // let s = starcoin_vm2_vm_runtime::data_cache::RemoteStorage::new(&self.context.storage);
-        // view_resource_in_move_storage(&s, address, module, resource, type_args)
+        let s = self.context.storage.as_move_resolver();
+        view_resource_in_move_storage(s, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
         &mut self,
         subcommand: TaskInput<Self::Subcommand>,
     ) -> Result<Option<String>> {
-        unimplemented!()
-        // let (result_str, cmd_var_ctx) = match subcommand.command {
-        //     StarcoinSubcommands::Faucet {
-        //         address,
-        //         initial_balance,
-        //     } => self.handle_faucet(address, initial_balance),
-        //     StarcoinSubcommands::NewBlock {
-        //         author,
-        //         timestamp,
-        //         number,
-        //         uncles,
-        //     } => self.handle_new_block(author, timestamp, number, uncles),
-        //     StarcoinSubcommands::ContractCall {
-        //         name,
-        //         args,
-        //         type_args,
-        //     } => self.handle_contract_call(ContractCall {
-        //         function_id: name,
-        //         args,
-        //         type_args,
-        //     }),
-        //     StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
-        //     StarcoinSubcommands::Package {
-        //         init_function,
-        //         type_args,
-        //         args,
-        //     } => self.handle_package(subcommand.data, init_function, type_args, args),
-        //     StarcoinSubcommands::Deploy {
-        //         signers,
-        //         gas_budget,
-        //         mv_or_package_file,
-        //     } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
-        //     StarcoinSubcommands::Var { var } => self.handle_var(var),
-        //     StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
-        // }?;
-        // if self.debug {
-        //     if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
-        //         eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
-        //     }
-        // }
-        // Ok((result_str, cmd_var_ctx))
-    }
-
-    fn compile_module(
-        &mut self,
-        syntax: SyntaxChoice,
-        data: Option<NamedTempFile>,
-        start_line: usize,
-        command_lines_stop: usize,
-    ) -> Result<(
-        NamedTempFile,
-        Option<move_symbol_pool::symbol::Symbol>,
-        CompiledModule,
-        Option<String>,
-    )> {
-        todo!()
-    }
-
-    fn compile_module_default(
-        &mut self,
-        syntax: SyntaxChoice,
-        data: Option<NamedTempFile>,
-        start_line: usize,
-        command_lines_stop: usize,
-        need_model: bool,
-    ) -> Result<(
-        NamedTempFile,
-        Option<move_symbol_pool::symbol::Symbol>,
-        CompiledModule,
-        Option<move_model::model::GlobalEnv>,
-        Option<String>,
-    )> {
-        todo!()
-    }
-
-    fn compile_script(
-        &mut self,
-        syntax: SyntaxChoice,
-        data: Option<NamedTempFile>,
-        start_line: usize,
-        command_lines_stop: usize,
-    ) -> Result<(CompiledScript, Option<String>)> {
-        todo!()
-    }
-
-    fn compile_script_default(
-        &mut self,
-        syntax: SyntaxChoice,
-        data: Option<NamedTempFile>,
-        start_line: usize,
-        command_lines_stop: usize,
-        need_model: bool,
-    ) -> Result<(
-        CompiledScript,
-        Option<move_model::model::GlobalEnv>,
-        Option<String>,
-    )> {
-        todo!()
-    }
-
-    fn handle_command(
-        &mut self,
-        task: TaskInput<
-            TaskCommand<
-                Self::ExtraInitArgs,
-                Self::ExtraPublishArgs,
-                Self::ExtraValueArgs,
-                Self::ExtraRunArgs,
-                Self::Subcommand,
-            >,
-        >,
-    ) -> Result<Option<String>> {
-        todo!()
-    }
-
-    fn register_temp_filename(&mut self, data: &NamedTempFile) {
-        todo!()
-    }
-
-    fn rewrite_temp_filenames(&mut self, output: String) -> String {
-        todo!()
+        let (result_str, cmd_var_ctx) = match subcommand.command {
+            StarcoinSubcommands::Faucet {
+                address,
+                initial_balance,
+            } => self.handle_faucet(address, initial_balance),
+            StarcoinSubcommands::NewBlock {
+                author,
+                timestamp,
+                number,
+                uncles,
+            } => self.handle_new_block(author, timestamp, number, uncles),
+            StarcoinSubcommands::ContractCall {
+                name,
+                args,
+                type_args,
+            } => self.handle_contract_call(ContractCall {
+                function_id: name,
+                args,
+                type_args,
+            }),
+            StarcoinSubcommands::CallAPI { method, params } => self.handle_call_api(method, params),
+            StarcoinSubcommands::Package {
+                init_function,
+                type_args,
+                args,
+            } => self.handle_package(subcommand.data, init_function, type_args, args),
+            StarcoinSubcommands::Deploy {
+                signers,
+                gas_budget,
+                mv_or_package_file,
+            } => self.handle_deploy(signers, gas_budget, mv_or_package_file.as_path()),
+            StarcoinSubcommands::Var { var } => self.handle_var(var),
+            StarcoinSubcommands::ReadJson { file } => self.handle_read_json(file.as_path()),
+        }?;
+        if self.debug {
+            if let Some(cmd_var_ctx) = cmd_var_ctx.as_ref() {
+                eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
+            }
+        }
+        Ok(result_str)
     }
 }
 
