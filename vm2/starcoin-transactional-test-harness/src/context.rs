@@ -5,9 +5,6 @@ use anyhow::{anyhow, Result};
 use futures::executor::block_on;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
-use starcoin_vm2_genesis::{
-    build_genesis_transaction, build_genesis_transaction_with_package, execute_genesis_transaction,
-};
 use starcoin_vm2_rpc_server::state_rpc::StateRpcImpl;
 use starcoin_vm2_types::write_set::WriteSet;
 use std::sync::{Arc, Mutex};
@@ -22,13 +19,16 @@ use crate::{
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_core_client::transports::local;
+use starcoin_genesis::vm2::{
+    build_genesis_transaction, build_genesis_transaction_with_package, execute_genesis_transaction,
+};
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_vm2_rpc_api::state_api::StateApi;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 
+use starcoin_transaction_builder::vm2::build_stdlib_package_with_modules;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_transaction_builder::build_stdlib_package_with_modules;
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use starcoin_vm2_vm_types::transaction::Transaction;
 
 pub struct MockServer {
@@ -86,7 +86,7 @@ impl ForkContext {
                 )?;
                 build_genesis_transaction_with_package(net.chain_id().id(), package)?
             }
-            None => build_genesis_transaction(net.chain_id().id(), net.genesis_config2())?,
+            None => build_genesis_transaction(&net)?,
         };
 
         let data_store = Arc::new(starcoin_state_tree::mock::MockStateNodeStore::new());

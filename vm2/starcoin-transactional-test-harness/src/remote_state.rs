@@ -25,9 +25,8 @@ use tokio::runtime::Runtime;
 
 use starcoin_vm2_rpc_api::state_api::StateApiClient as StateApiClient2;
 use starcoin_vm2_types::state_set::ChainStateSet;
-use starcoin_vm2_vm_types::access_path::{AccessPath, DataPath};
-use starcoin_vm2_vm_types::write_set::WriteSet;
 use starcoin_vm2_vm_types::{
+    access_path::{AccessPath, DataPath},
     errors::{Location, PartialVMError, PartialVMResult, VMResult},
     identifier::IdentStr,
     language_storage::{ModuleId, StructTag},
@@ -40,6 +39,7 @@ use starcoin_vm2_vm_types::{
         TStateView,
     },
     state_view::StateReaderExt,
+    write_set::WriteSet,
 };
 
 pub enum SelectableStateView<A, B> {

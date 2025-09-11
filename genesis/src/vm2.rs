@@ -25,7 +25,7 @@ use starcoin_vm2_vm_types::{
 use std::sync::Arc;
 use stdlib::StdLibOptions;
 
-fn build_genesis_transaction_with_package(
+pub fn build_genesis_transaction_with_package(
     chain_id: u8,
     package: Package,
 ) -> anyhow::Result<SignedUserTransaction> {
@@ -43,7 +43,7 @@ fn build_genesis_transaction_with_package(
     Ok(sign_txn.into_inner())
 }
 
-fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
+pub fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
     let stdlib_option = if net.is_test() {
         StdLibOptions::Fresh
     } else {

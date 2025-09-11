@@ -3,7 +3,7 @@
 
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
-use clap::{Args, CommandFactory, Parser, ArgAction};
+use clap::{ArgAction, Args, CommandFactory, Parser};
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::{
     address::ParsedAddress, files::verify_and_create_named_address_mapping,
@@ -45,6 +45,7 @@ use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use move_core_types::vm_status::KeptVMStatus;
 use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 
+use move_command_line_common::values::ParsableValue;
 use std::collections::BTreeSet;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -56,7 +57,6 @@ use std::{
     str::FromStr,
     sync::Mutex,
 };
-use move_command_line_common::values::ParsableValue;
 use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
 
@@ -86,7 +86,6 @@ use starcoin_vm2_vm_types::{
     account_config::stc_type_tag,
     account_config::{genesis_address, AccountResource},
     block_metadata::BlockMetadata,
-    genesis_config::ChainId,
     on_chain_config::VMConfig,
     on_chain_resource,
     state_store::TStateView,
@@ -98,6 +97,7 @@ use starcoin_vm2_vm_types::{
 
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
 use starcoin_resource_viewer::MoveValueAnnotator;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 
 pub mod context;
 pub mod fork_chain;
@@ -426,7 +426,7 @@ impl From<VarSub> for StarcoinSubcommands {
 }
 
 impl clap::Args for StarcoinSubcommands {
-    fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
+    fn augment_args(cmd: clap::Command) -> clap::Command {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
         let block = BlockSub::augment_args(clap::Command::new("block"));
         let call = CallSub::augment_args(clap::Command::new("call"));
@@ -445,7 +445,7 @@ impl clap::Args for StarcoinSubcommands {
             .subcommand(read_json)
     }
 
-    fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
+    fn augment_args_for_update(_cmd: clap::Command) -> clap::Command {
         todo!()
     }
 }
