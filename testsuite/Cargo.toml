@@ -5,7 +5,6 @@ test = false
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = ["derive"], workspace = true }
 cucumber = { workspace = true }
 jpst = { workspace = true }
 jsonpath = { workspace = true }

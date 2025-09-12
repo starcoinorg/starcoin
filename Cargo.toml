@@ -86,9 +86,9 @@ members = [
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
-    "vm/move-package-manager",
+    # "vm/move-package-manager",
     "vm/vm-status-translator",
-    "vm/starcoin-transactional-test-harness",
+    # "vm/starcoin-transactional-test-harness",
     "commons/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
@@ -218,9 +218,9 @@ default-members = [
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
-    "vm/move-package-manager",
+    # "vm/move-package-manager",
     "vm/vm-status-translator",
-    "vm/starcoin-transactional-test-harness",
+    # "vm/starcoin-transactional-test-harness",
     "vm2/chain",
     "vm2/executor",
     "vm2/test-helper",
@@ -298,7 +298,7 @@ byteorder = "1.3.4"
 bytes = "1"
 chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 claims = "0.7"
-clap = { version = "3", features = ["derive"] }
+clap = { version = "4.5.47", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
 codespan = { version = "0.8.0", features = ["serialization"] }
@@ -564,7 +564,7 @@ starcoin-sync-api = { path = "sync/api" }
 starcoin-system = { path = "commons/system", package = "starcoin-system" }
 starcoin-time-service = { path = "commons/time-service" }
 starcoin-transaction-builder = { path = "vm/transaction-builder" }
-starcoin-transactional-test-harness = { path = "vm/starcoin-transactional-test-harness" }
+# starcoin-transactional-test-harness = { path = "vm/starcoin-transactional-test-harness" }
 starcoin-txpool = { path = "txpool" }
 starcoin-txpool-api = { path = "txpool/api" }
 starcoin-txpool-mock-service = { path = "txpool/mock-service" }

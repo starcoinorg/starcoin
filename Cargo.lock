@@ -280,7 +280,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "csv",
  "elasticsearch",
  "futures-retry",
@@ -1777,19 +1777,19 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.43"
+version = "4.5.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50fd97c9dc2399518aa331917ac6f274280ec5eb34e555dd291899745c48ec6f"
+checksum = "7eac00902d9d136acd712710d71823fb8ac8004ca445a89e73a41d45aa712931"
 dependencies = [
  "clap_builder",
- "clap_derive 4.5.41",
+ "clap_derive 4.5.47",
 ]
 
 [[package]]
 name = "clap_builder"
-version = "4.5.43"
+version = "4.5.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c35b5830294e1fa0462034af85cc95225a4cb07092c088c55bda3147cfcd8f65"
+checksum = "2ad9bbf750e73b5884fb8a211a9424a1906c1e156724260fdae972f31d70e1d6"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1812,9 +1812,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.41"
+version = "4.5.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef4f52386a59ca4c860f7393bcf8abd8dfd91ecccc0f774635ff68e92eeef491"
+checksum = "bbfd7eae0b0f1a6e63d4b13c9c478de77c2eb546fba158ad50b4203dc24b9f9c"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2 1.0.101",
@@ -2800,17 +2800,6 @@ checksum = "a5bbed42daaa95e780b60a50546aa345b8413a1e46f9a40a12907d3598f038db"
 dependencies = [
  "data-encoding",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "datatest-stable"
-version = "0.1.1"
-source = "git+https://github.com/starcoinorg/diem-devtools?branch=feature%2Fpub-test-opts#9931fdfc97c80d9c58d6349cf7bae89343f24b06"
-dependencies = [
- "clap 3.2.23",
- "regex",
- "termcolor",
- "walkdir",
 ]
 
 [[package]]
@@ -3913,7 +3902,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword",
@@ -5890,7 +5879,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "csv",
  "hex",
  "merkletree",
@@ -6232,7 +6221,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "crossterm 0.26.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6264,7 +6253,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6375,7 +6364,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6431,7 +6420,7 @@ dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "ethnum",
  "flexi_logger",
@@ -6512,7 +6501,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan 0.11.1",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6550,7 +6539,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.47",
  "codespan 0.8.0",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6567,7 +6556,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6602,7 +6591,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan 0.11.1",
  "codespan-reporting",
  "itertools 0.12.1",
@@ -6666,7 +6655,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.43",
+ "clap 4.5.47",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6842,7 +6831,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "colored",
  "itertools 0.12.1",
  "move-abigen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6907,61 +6896,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "move-package-manager"
-version = "2.1.1"
-dependencies = [
- "anyhow",
- "bcs 0.1.5",
- "bcs-ext",
- "clap 3.2.23",
- "datatest-stable 0.1.1",
- "difference",
- "futures 0.3.31",
- "include_dir",
- "itertools 0.10.5",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-cli 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-coverage 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-disassembler 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-errmapgen 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-package 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-unit-test 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-vm-test-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "once_cell",
- "starcoin-account-provider",
- "starcoin-cmd",
- "starcoin-config",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-logger 2.1.1",
- "starcoin-move-compiler",
- "starcoin-rpc-api",
- "starcoin-rpc-client",
- "starcoin-transactional-test-harness",
- "starcoin-vm1-types",
- "starcoin-vm1-vm-runtime",
- "starcoin-vm1-vm-types",
- "stdlib",
- "tempfile",
- "tokio",
- "vm-status-translator",
- "walkdir",
-]
-
-[[package]]
 name = "move-prover"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
  "atty",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "itertools 0.12.1",
  "log 0.4.27",
@@ -7308,7 +7249,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "clap 4.5.43",
+ "clap 4.5.47",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7373,7 +7314,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "better_any",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "colored",
  "itertools 0.12.1",
@@ -9945,7 +9886,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "flate2",
  "starcoin-chain",
  "starcoin-config",
@@ -9971,7 +9912,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "csv",
  "hex",
  "pprof",
@@ -10447,7 +10388,7 @@ name = "scmd"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.47",
  "cli-table",
  "ctrlc",
  "jpst",
@@ -11405,7 +11346,6 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
  "flate2",
  "log 0.4.27",
  "once_cell",
@@ -11563,7 +11503,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "bytes 1.6.1",
- "clap 3.2.23",
+ "clap 4.5.47",
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
  "futures 0.3.31",
@@ -11638,7 +11578,7 @@ name = "starcoin-config"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.47",
  "dirs-next",
  "git-version",
  "hex",
@@ -11920,7 +11860,7 @@ name = "starcoin-executor-benchmark"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.47",
  "itertools 0.10.5",
  "rand 0.8.5",
  "rayon",
@@ -11945,7 +11885,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "ascii",
- "clap 3.2.23",
+ "clap 4.5.47",
  "futures 0.3.31",
  "futures-timer",
  "hex",
@@ -11984,7 +11924,7 @@ dependencies = [
  "bulletproofs 4.0.0 (git+https://github.com/zkcrypto/bulletproofs?tag=4.0.0)",
  "byteorder",
  "claims",
- "clap 4.5.43",
+ "clap 4.5.47",
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -12055,7 +11995,6 @@ dependencies = [
 name = "starcoin-gas"
 version = "2.1.1"
 dependencies = [
- "clap 3.2.23",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-stdlib 0.1.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -12099,7 +12038,7 @@ dependencies = [
 name = "starcoin-gas-meter"
 version = "2.0.1"
 dependencies = [
- "clap 3.2.23",
+ "clap 4.5.47",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-stdlib 0.1.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -12132,7 +12071,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "include_dir",
  "once_cell",
  "serde 1.0.205",
@@ -12334,7 +12273,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "byteorder",
- "clap 3.2.23",
+ "clap 4.5.47",
  "dyn-clone",
  "futures 0.3.31",
  "futures-channel",
@@ -12403,7 +12342,7 @@ name = "starcoin-move-explain"
 version = "2.1.1"
 dependencies = [
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "stdlib",
 ]
@@ -12414,9 +12353,9 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "atty",
- "clap 3.2.23",
+ "clap 4.5.47",
  "codespan-reporting",
- "datatest-stable 0.1.3",
+ "datatest-stable",
  "hex",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -12782,7 +12721,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.47",
  "futures 0.3.31",
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -12985,7 +12924,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.47",
  "heck 0.5.0",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
@@ -13371,68 +13310,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-transactional-test-harness"
-version = "2.1.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs 0.1.5",
- "bcs-ext",
- "clap 3.2.23",
- "dashmap",
- "datatest-stable 0.1.3",
- "either",
- "futures 0.3.31",
- "hex",
- "itertools 0.10.5",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-http-server",
- "log 0.4.27",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-resource-viewer 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "move-transactional-test-runner 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
- "once_cell",
- "serde 1.0.205",
- "serde_json",
- "starcoin-abi-decoder",
- "starcoin-accumulator",
- "starcoin-chain-api",
- "starcoin-config",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-dev",
- "starcoin-genesis",
- "starcoin-resource-viewer",
- "starcoin-rpc-api",
- "starcoin-rpc-client",
- "starcoin-rpc-server",
- "starcoin-state-api",
- "starcoin-state-tree",
- "starcoin-statedb",
- "starcoin-storage",
- "starcoin-types",
- "starcoin-vm-types",
- "starcoin-vm1-types",
- "starcoin-vm1-vm-runtime",
- "starcoin-vm1-vm-types",
- "starcoin-vm2-rpc-api",
- "stdlib",
- "tempfile",
- "tokio",
-]
-
-[[package]]
 name = "starcoin-tx-factory"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.47",
  "ctrlc",
  "futures 0.3.31",
  "starcoin-account-api",
@@ -14002,7 +13884,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bytes 1.6.1",
- "clap 3.2.23",
+ "clap 4.5.47",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -14028,7 +13910,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "bytes 1.6.1",
- "clap 3.2.23",
+ "clap 4.5.47",
  "futures 0.3.31",
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -14125,9 +14007,9 @@ dependencies = [
  "async-trait",
  "bcs 0.1.5",
  "bcs-ext",
- "clap 4.5.43",
+ "clap 4.5.47",
  "dashmap",
- "datatest-stable 0.1.3",
+ "datatest-stable",
  "either",
  "futures 0.3.31",
  "hex",
@@ -14192,8 +14074,8 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
- "datatest-stable 0.1.3",
+ "clap 4.5.47",
+ "datatest-stable",
  "fs_extra",
  "include_dir",
  "itertools 0.10.5",
@@ -14763,7 +14645,6 @@ name = "testsuite"
 version = "2.1.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
  "cucumber_rust",
  "jpst",
  "jsonpath",
@@ -15321,7 +15202,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.47",
  "heck 0.5.0",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "regex",
