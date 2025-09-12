@@ -237,7 +237,7 @@ Feature: cmd integration test
     Then assert: "{{$.dev[-1].ok[0]}} == 7"
      # 11. clean up proposal
     Then cmd: "account execute-function --function 0x1::dao::destroy_terminated_proposal -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::block_reward_config::RewardConfig> --arg {{$.account[0].ok.address}} --arg 0u64"
-     # 12. check the latest flexidagconfig
+     # 12. check the latest config
     Then cmd: "state get resource 0x1 0x1::on_chain_config::Config<0x01::block_reward_config::RewardConfig>"
     Then assert: "{{$.state[0].ok.json.payload.reward_delay}} == 10"
 
