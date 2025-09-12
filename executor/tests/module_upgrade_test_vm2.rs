@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, ensure, Result};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, ChainNetworkID};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
@@ -59,7 +59,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         stc_type_tag(),
         genesis_address(),
         package_hash.to_vec(),
-        2,     // version 2
+        new_version.version(),
         0,     // exec_delay
         false, // enforced
     );
@@ -82,9 +82,6 @@ fn test_stdlib_upgrade() -> Result<()> {
         proposal_id,
     )?;
 
-    // Verify version was updated
-    verify_version_state(&chain_state)?;
-
     let output = association_execute_should_success(
         &net,
         &chain_state,
@@ -95,14 +92,14 @@ fn test_stdlib_upgrade() -> Result<()> {
 
     let _version_config_event = expect_event::<ConfigChangeEvent<Version>>(&output);
 
-    //ext_execute_after_upgrade(new_version, &net, &chain_state)?;
+    verify_version_state(&chain_state, new_version)?;
 
     info!("Module upgrade test completed successfully");
 
     Ok(())
 }
 
-fn verify_version_state<R>(chain_state: &R) -> Result<()>
+fn verify_version_state<R>(chain_state: &R, new_version: StdlibVersion) -> Result<()>
 where
     R: ChainStateReader,
 {
@@ -111,13 +108,15 @@ where
     // Check that the version config is updated
     let version_config = chain_state.get_on_chain_config::<Version>();
     match version_config {
-        Some(config) => {
-            info!("On-chain version config: {:?}", config);
+        Some(version) => {
+            ensure!(
+                version.major == new_version.version(),
+                "Version config mismatch after upgrade: expected {:?}, found {:?}",
+                new_version,
+                version
+            );
+            Ok(())
         }
-        None => {
-            info!("No version config found");
-        }
+        None => Err(anyhow!("No version config found")),
     }
-
-    Ok(())
 }
