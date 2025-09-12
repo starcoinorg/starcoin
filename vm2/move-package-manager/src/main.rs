@@ -13,7 +13,6 @@ use move_package_manager2::{
     run_integration_test, IntegrationTestCommand,
 };
 use move_vm_test_utils::gas_schedule::CostTable;
-// use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_vm2_gas_schedule::{G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION};
 use starcoin_vm2_vm_runtime::natives::starcoin_natives;
 use starcoin_vm2_vm_types::on_chain_config::{TimedFeaturesBuilder, G_LATEST_INSTRUCTION_TABLE};
