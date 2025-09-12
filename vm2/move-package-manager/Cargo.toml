@@ -30,9 +30,12 @@ starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
 
+# extra dependences
+codespan-reporting = "0.11.1"
 
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
 starcoin-vm2-transactional-test-harness = { workspace = true }
 

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::{value_parser, Parser};
+use codespan_reporting::diagnostic::Severity;
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::{file_format_common::VERSION_4, CompiledModule};
 use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
@@ -9,13 +11,16 @@ use move_core_types::{
     language_storage::TypeTag,
     transaction_argument::{convert_txn_args, TransactionArgument},
 };
+
+use move_package::ModelConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
 use starcoin_types::transaction::parse_transaction_argument;
-use starcoin_vm_types::{
+use starcoin_vm2_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
+use starcoin_vm2_types::transaction::EntryFunction;
+use starcoin_vm2_vm_types::{
     language_storage::FunctionId,
     parser::parse_type_tag,
-    transaction::{Module, Package, ScriptFunction},
+    transaction::{Module, Package},
 };
 use std::path::PathBuf;
 
@@ -60,68 +65,92 @@ pub fn handle_release(
         args,
     }: Release,
 ) -> anyhow::Result<()> {
-    unimplemented!()
-    // let mut ms = vec![];
-    // let package_path = match move_args.package_path {
-    //     Some(_) => move_args.package_path.clone(),
-    //     None => Some(std::env::current_dir()?),
-    // };
-    // let pkg_ctx = PackageContext::new(&package_path, &move_args.build_config)?;
-    // let pkg = pkg_ctx.package();
-    // let pkg_version = move_args
-    //     .build_config
-    //     .clone()
-    //     .resolution_graph_for_package(package_path.as_ref().unwrap(), &mut std::io::stdout())
-    //     .unwrap()
-    //     .root_package
-    //     .package
-    //     .version;
-    // let pkg_name = pkg.compiled_package_info.package_name.as_str();
-    // println!("Packaging Modules:");
-    // for m in pkg.root_compiled_units.as_slice() {
-    //     let m = module(&m.unit)?;
-    //     println!("\t {}", m.self_id());
-    //     let code = if language_version as u32 == VERSION_4 {
-    //         ModuleBytecodeDowngrader::to_v4(m)?
-    //     } else {
-    //         let mut data = vec![];
-    //         m.serialize(&mut data)?;
-    //         data
-    //     };
-    //     ms.push(Module::new(code));
-    // }
-    // let init_script = match &init_script {
-    //     Some(script) => {
-    //         let type_tags = type_tags.unwrap_or_default();
-    //         let args = args.unwrap_or_default();
-    //         let script_function = script.clone();
-    //         Some(ScriptFunction::new(
-    //             script_function.module,
-    //             script_function.function,
-    //             type_tags,
-    //             convert_txn_args(&args),
-    //         ))
-    //     }
-    //     None => None,
-    // };
-    //
-    // let p = Package::new(ms, init_script)?;
-    // let blob = bcs_ext::to_bytes(&p)?;
-    // let release_path = {
-    //     std::fs::create_dir_all(&release_dir)?;
-    //     release_dir.push(format!(
-    //         "{}.v{}.{}.{}.blob",
-    //         pkg_name, pkg_version.0, pkg_version.1, pkg_version.2
-    //     ));
-    //     release_dir
-    // };
-    // std::fs::write(&release_path, blob)?;
-    // println!(
-    //     "Release done: {}, package hash: {}",
-    //     release_path.display(),
-    //     p.crypto_hash()
-    // );
-    // Ok(())
+    let mut ms = vec![];
+    let package_path = match move_args.package_path {
+        Some(_) => move_args.package_path.clone(),
+        None => Some(std::env::current_dir()?),
+    };
+    let mut build_config = move_args.build_config.clone();
+    build_config
+        .compiler_config
+        .known_attributes
+        .clone_from(starcoin_vm2_framework::extended_checks::get_all_attribute_names());
+    let pkg = build_config
+        .clone()
+        .compile_package(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
+    let resolved_graph = build_config
+        .clone()
+        .resolution_graph_for_package(package_path.as_ref().unwrap(), &mut std::io::stdout())
+        .unwrap();
+
+    let model = build_config
+        .clone()
+        .move_model_for_package(
+            package_path.as_ref().unwrap(),
+            ModelConfig {
+                all_files_as_targets: false,
+                target_filter: None,
+                compiler_version: Default::default(),
+                language_version: Default::default(),
+            },
+        )
+        .unwrap();
+    starcoin_vm2_framework::extended_checks::run_extended_checks(&model);
+    if model.diag_count(Severity::Warning) > 0 {
+        let mut error_writer = StandardStream::stderr(ColorChoice::Auto);
+        model.report_diag(&mut error_writer, Severity::Warning);
+        if model.has_errors() {
+            panic!("extended checks failed");
+        }
+    }
+
+    let pkg_version = resolved_graph.root_package.package.version;
+    let pkg_name = pkg.compiled_package_info.package_name.as_str();
+    println!("Packaging Modules:");
+    for m in pkg.root_compiled_units.as_slice() {
+        let m = module(&m.unit)?;
+        println!("\t {}", m.self_id());
+        let code = if language_version as u32 == VERSION_4 {
+            ModuleBytecodeDowngrader::to_v4(m)?
+        } else {
+            let mut data = vec![];
+            m.serialize(&mut data)?;
+            data
+        };
+        ms.push(Module::new(code));
+    }
+    let init_script = match &init_script {
+        Some(script) => {
+            let type_tags = type_tags.unwrap_or_default();
+            let args = args.unwrap_or_default();
+            let script_function = script.clone();
+            Some(EntryFunction::new(
+                script_function.module,
+                script_function.function,
+                type_tags,
+                convert_txn_args(&args),
+            ))
+        }
+        None => None,
+    };
+
+    let p = Package::new(ms, init_script)?;
+    let blob = bcs_ext::to_bytes(&p)?;
+    let release_path = {
+        std::fs::create_dir_all(&release_dir)?;
+        release_dir.push(format!(
+            "{}.v{}.{}.{}.blob",
+            pkg_name, pkg_version.0, pkg_version.1, pkg_version.2
+        ));
+        release_dir
+    };
+    std::fs::write(&release_path, blob)?;
+    println!(
+        "Release done: {}, package hash: {}",
+        release_path.display(),
+        p.crypto_hash()
+    );
+    Ok(())
 }
 
 pub fn module(unit: &CompiledUnit) -> anyhow::Result<&CompiledModule> {
