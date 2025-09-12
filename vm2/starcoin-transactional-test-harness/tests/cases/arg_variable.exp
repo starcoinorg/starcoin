@@ -1,0 +1,50 @@
+processed 6 tasks
+
+task 3 'run'. lines 7-7:
+{
+  "gas_used": 8439,
+  "status": "Executed"
+}
+
+task 4 'view'. lines 9-9:
+store key 0x00000000000000000000000000000001::account::Account {
+    authentication_key: f90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16
+    sequence_number: 1
+    guid_creation_num: 0
+    coin_register_events: store 0x00000000000000000000000000000001::event::EventHandle<0x00000000000000000000000000000001::account::CoinRegisterEvent> {
+        counter: 0
+        guid: drop store 0x00000000000000000000000000000001::guid::GUID {
+            id: copy drop store 0x00000000000000000000000000000001::guid::ID {
+                creation_num: 0
+                addr: 662ba5a1a1da0f1c70a9762c7eeb7aaf
+            }
+        }
+    }
+    key_rotation_events: store 0x00000000000000000000000000000001::event::EventHandle<0x00000000000000000000000000000001::account::KeyRotationEvent> {
+        counter: 0
+        guid: drop store 0x00000000000000000000000000000001::guid::GUID {
+            id: copy drop store 0x00000000000000000000000000000001::guid::ID {
+                creation_num: 1
+                addr: 662ba5a1a1da0f1c70a9762c7eeb7aaf
+            }
+        }
+    }
+    rotation_capability_offer: store 0x00000000000000000000000000000001::account::CapabilityOffer<0x00000000000000000000000000000001::account::RotationCapability> {
+        for: copy drop store 0x00000000000000000000000000000001::option::Option<address> {
+            vec: [
+            ]
+        }
+    }
+    signer_capability_offer: store 0x00000000000000000000000000000001::account::CapabilityOffer<0x00000000000000000000000000000001::account::SignerCapability> {
+        for: copy drop store 0x00000000000000000000000000000001::option::Option<address> {
+            vec: [
+            ]
+        }
+    }
+}
+
+task 5 'run'. lines 11-17:
+{
+  "gas_used": 8643,
+  "status": "Executed"
+}

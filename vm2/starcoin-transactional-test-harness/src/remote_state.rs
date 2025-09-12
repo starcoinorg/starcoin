@@ -8,24 +8,36 @@ use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_rpc_api::chain::ChainApiClient;
-use starcoin_rpc_api::state::StateApiClient;
-use starcoin_rpc_api::types::{BlockView, StateWithProofView, StateWithTableItemProofView};
-use starcoin_state_api::ChainStateWriter;
-use starcoin_types::access_path::{AccessPath, DataPath};
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::{ModuleId, StructTag};
-use starcoin_types::state_set::ChainStateSet;
-use starcoin_types::vm_error::StatusCode;
-use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
-use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::write_set::WriteSet;
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use starcoin_rpc_api::{chain::ChainApiClient, types::BlockView};
+use starcoin_vm2_state_api::ChainStateWriter;
+
+use jsonrpc_http_server::hyper::body::Bytes;
+use move_core_types::{
+    account_address::AccountAddress, identifier::Identifier, metadata::Metadata,
+    value::MoveTypeLayout, vm_status::StatusCode,
+};
+
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 use tokio::runtime::Runtime;
+
+use starcoin_vm2_rpc_api::state_api::StateApiClient as StateApiClient2;
+use starcoin_vm2_types::state_set::ChainStateSet;
+use starcoin_vm2_vm_types::{
+    access_path::{AccessPath, DataPath},
+    errors::{Location, PartialVMError, PartialVMResult, VMResult},
+    identifier::IdentStr,
+    language_storage::{ModuleId, StructTag},
+    state_store::{
+        errors::StateviewError,
+        state_key::{inner::StateKeyInner, StateKey},
+        state_storage_usage::StateStorageUsage,
+        state_value::StateValue,
+        table::TableHandle as TableHandle2,
+        TStateView,
+    },
+    state_view::StateReaderExt,
+    write_set::WriteSet,
+};
 
 pub enum SelectableStateView<A, B> {
     A(A),
@@ -39,7 +51,13 @@ where
 {
     type Error = A::Error;
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        match self {
+            Self::A(a) => a.get_module_metadata(module_id),
+            Self::B(b) => b.get_module_metadata(module_id),
+        }
+    }
+    fn get_module(&self, module_id: &ModuleId) -> std::result::Result<Option<Bytes>, Self::Error> {
         match self {
             Self::A(a) => a.get_module(module_id),
             Self::B(b) => b.get_module(module_id),
@@ -52,34 +70,45 @@ where
     B: ResourceResolver<Error = A::Error>,
 {
     type Error = A::Error;
-    fn get_resource(
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
-        tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> std::result::Result<(Option<Bytes>, usize), Self::Error> {
         match self {
-            Self::A(v) => v.get_resource(address, tag),
-            Self::B(v) => v.get_resource(address, tag),
+            Self::A(v) => {
+                v.get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
+            }
+            Self::B(v) => {
+                v.get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
+            }
         }
     }
 }
-impl<A, B> StateView for SelectableStateView<A, B>
+impl<A, B> TStateView for SelectableStateView<A, B>
 where
-    A: StateView,
-    B: StateView,
+    A: TStateView<Key = StateKey>,
+    B: TStateView<Key = StateKey>,
 {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+    type Key = StateKey;
+
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match self {
-            SelectableStateView::A(a) => a.get_state_value(state_key),
-            SelectableStateView::B(b) => b.get_state_value(state_key),
+            Self::A(a) => a.get_state_value(state_key),
+            Self::B(b) => b.get_state_value(state_key),
         }
+    }
+
+    fn get_usage(&self) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!("not implemented")
     }
 
     fn is_genesis(&self) -> bool {
         false
     }
 }
-
 impl<A, B> ChainStateWriter for SelectableStateView<A, B>
 where
     A: ChainStateWriter,
@@ -87,50 +116,43 @@ where
 {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.set(access_path, value),
-            SelectableStateView::B(b) => b.set(access_path, value),
+            Self::A(a) => a.set(access_path, value),
+            Self::B(b) => b.set(access_path, value),
         }
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.remove(access_path),
-            SelectableStateView::B(b) => b.remove(access_path),
+            Self::A(a) => a.remove(access_path),
+            Self::B(b) => b.remove(access_path),
         }
     }
 
     fn apply(&self, state_set: ChainStateSet) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.apply(state_set),
-            SelectableStateView::B(b) => b.apply(state_set),
+            Self::A(a) => a.apply(state_set),
+            Self::B(b) => b.apply(state_set),
         }
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.apply_write_set(write_set),
-            SelectableStateView::B(b) => b.apply_write_set(write_set),
-        }
-    }
-
-    fn apply_and_clean_cache(&self, chain_state_set: ChainStateSet) -> Result<()> {
-        match self {
-            SelectableStateView::A(a) => a.apply_and_clean_cache(chain_state_set),
-            SelectableStateView::B(b) => b.apply_and_clean_cache(chain_state_set),
+            Self::A(a) => a.apply_write_set(write_set),
+            Self::B(b) => b.apply_write_set(write_set),
         }
     }
 
     fn commit(&self) -> Result<HashValue> {
         match self {
-            SelectableStateView::A(a) => a.commit(),
-            SelectableStateView::B(b) => b.commit(),
+            Self::A(a) => a.commit(),
+            Self::B(b) => b.commit(),
         }
     }
 
     fn flush(&self) -> Result<()> {
         match self {
-            SelectableStateView::A(a) => a.flush(),
-            SelectableStateView::B(b) => b.flush(),
+            Self::A(a) => a.flush(),
+            Self::B(b) => b.flush(),
         }
     }
 }
@@ -152,15 +174,21 @@ where
     B: ResourceResolver<Error = A::Error>,
 {
     type Error = A::Error;
-    fn get_resource(
+
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
-        tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
-        match self.a.get_resource(address, tag)? {
-            Some(d) => Ok(Some(d)),
-            None => self.b.get_resource(address, tag),
-        }
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> std::result::Result<(Option<Bytes>, usize), Self::Error> {
+        self.a
+            .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
+            .or_else(|_| {
+                self.b.get_resource_bytes_with_metadata_and_layout(
+                    address, struct_tag, metadata, layout,
+                )
+            })
     }
 }
 impl<A, B> ModuleResolver for UnionedRemoteCache<A, B>
@@ -170,23 +198,35 @@ where
 {
     type Error = A::Error;
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        match self.a.get_module_metadata(module_id) {
+            d if !d.is_empty() => d,
+            _ => self.b.get_module_metadata(module_id),
+        }
+    }
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
         match self.a.get_module(module_id)? {
             Some(d) => Ok(Some(d)),
             None => self.b.get_module(module_id),
         }
     }
 }
-impl<A, B> StateView for UnionedRemoteCache<A, B>
+impl<A, B> TStateView for UnionedRemoteCache<A, B>
 where
-    A: StateView,
-    B: StateView,
+    A: TStateView<Key = StateKey>,
+    B: TStateView<Key = StateKey>,
 {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+    type Key = StateKey;
+
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match self.a.get_state_value(state_key)? {
             None => self.b.get_state_value(state_key),
             Some(d) => Ok(Some(d)),
         }
+    }
+
+    fn get_usage(&self) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!("get_usage not implemented")
     }
 
     fn is_genesis(&self) -> bool {
@@ -197,7 +237,7 @@ where
 //TODO migrate this to rpc client crate.
 #[derive(Clone)]
 pub struct RemoteRpcAsyncClient {
-    state_client: StateApiClient,
+    state_client: StateApiClient2,
     chain_client: ChainApiClient,
     state_root: HashValue,
     fork_number: u64,
@@ -209,7 +249,7 @@ impl RemoteRpcAsyncClient {
         let rpc_channel: RpcChannel = jsonrpc_client_transports::transports::http::connect(rpc_url)
             .await
             .map_err(|e| anyhow!(format!("{}", e)))?;
-        let chain_client: starcoin_rpc_api::chain::ChainApiClient = rpc_channel.clone().into();
+        let chain_client: ChainApiClient = rpc_channel.clone().into();
         let (state_root, fork_number, fork_block_hash) = match block_number {
             None => {
                 let chain_info = chain_client
@@ -231,7 +271,7 @@ impl RemoteRpcAsyncClient {
                 (b.header.state_root, n, b.header.block_hash)
             }
         };
-        let state_client: starcoin_rpc_api::state::StateApiClient = rpc_channel.clone().into();
+        let state_client: StateApiClient2 = rpc_channel.clone().into();
         Ok(Self {
             state_client,
             chain_client,
@@ -247,7 +287,10 @@ impl RemoteRpcAsyncClient {
     ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
         let state = self
             .state_client
-            .get_account_state_set(addr, Some(self.state_root))
+            .get_account_state_set(
+                AccountAddress::from_bytes(addr.into_bytes()).unwrap(),
+                Some(self.state_root),
+            )
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -258,20 +301,20 @@ impl RemoteRpcAsyncClient {
                 account_state_set
                     .codes
                     .into_iter()
-                    .map(|(k, c)| (k, c.0.to_vec()))
+                    .map(|(k, c)| (Identifier::new(k.as_str()).unwrap(), c.0.to_vec()))
                     .collect(),
             ),
         })
     }
 
     pub async fn get_module_async(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
-        let ap = AccessPath::new(
-            *module_id.address(),
-            DataPath::Code(module_id.name().to_owned()),
+        let state_key = StateKey::module(
+            &AccountAddress::from_bytes(module_id.address().into_bytes()).unwrap(),
+            IdentStr::new(module_id.name().as_str()).unwrap(),
         );
-        let state_with_proof: StateWithProofView = self
+        let state_with_proof = self
             .state_client
-            .get_with_proof_by_root(ap, self.state_root)
+            .get_with_proof_by_root(state_key, self.state_root)
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -284,10 +327,14 @@ impl RemoteRpcAsyncClient {
         address: &AccountAddress,
         tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
-        let ap = AccessPath::new(*address, DataPath::Resource(tag.clone()));
+        let state_key = StateKey::resource(
+            &AccountAddress::from_bytes(address.into_bytes()).unwrap(),
+            &StructTag::from_str(tag.to_canonical_string().as_str()).unwrap(),
+        )
+        .unwrap();
         let state_with_proof = self
             .state_client
-            .get_with_proof_by_root(ap, self.state_root)
+            .get_with_proof_by_root(state_key, self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
@@ -297,10 +344,10 @@ impl RemoteRpcAsyncClient {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>> {
-        let handle1: StarcoinTableHandle = StarcoinTableHandle(handle.0);
-        let state_table_item_proof: StateWithTableItemProofView = self
+        let handle = TableHandle2(AccountAddress::from_bytes(handle.0.into_bytes())?);
+        let state_table_item_proof = self
             .state_client
-            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
+            .get_with_table_item_proof_by_root(handle, key.to_vec(), self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
@@ -309,7 +356,7 @@ impl RemoteRpcAsyncClient {
         &self.chain_client
     }
 
-    pub fn get_state_client(&self) -> &StateApiClient {
+    pub fn get_state_client(&self) -> &StateApiClient2 {
         &self.state_client
     }
 
@@ -367,47 +414,81 @@ impl RemoteViewer {
 impl ModuleResolver for RemoteViewer {
     type Error = VMError;
 
-    fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
+    fn get_module(&self, module_id: &ModuleId) -> std::result::Result<Option<Bytes>, Self::Error> {
         let handle = self.rt.handle().clone();
-        handle.block_on(self.svc.get_module_async(module_id))
+        let bytes = handle
+            .block_on(self.svc.get_module_async(module_id))
+            .unwrap();
+        Ok(bytes.map(Into::into))
     }
 }
 
 impl ResourceResolver for RemoteViewer {
     type Error = PartialVMError;
-    fn get_resource(
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
-        tag: &StructTag,
-    ) -> PartialVMResult<Option<Vec<u8>>> {
+        struct_tag: &StructTag,
+        _metadata: &[Metadata],
+        _layout: Option<&MoveTypeLayout>,
+    ) -> PartialVMResult<(Option<Bytes>, usize)> {
         let handle = self.rt.handle().clone();
-        handle.block_on(self.svc.get_resource_async(address, tag))
+        let bytes = handle.block_on(self.svc.get_resource_async(address, struct_tag))?;
+        Ok(bytes.map_or((None, 0), |r| {
+            let b = Bytes::from(r);
+            let len = b.len();
+            (Some(b), len)
+        }))
     }
 }
 
 impl TableResolver for RemoteViewer {
-    fn resolve_table_entry(&self, handle: &TableHandle, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn resolve_table_entry_bytes_with_layout(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+        _maybe_layout: Option<&MoveTypeLayout>,
+    ) -> std::result::Result<Option<Bytes>, move_binary_format::errors::PartialVMError> {
         let h = self.rt.handle().clone();
-        h.block_on(self.svc.resolve_table_entry_async(handle, key))
+        let bytes = h
+            .block_on(self.svc.resolve_table_entry_async(handle, key))
+            .unwrap();
+        Ok(bytes.map(Into::into))
     }
 }
 
-impl StateView for RemoteViewer {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        match state_key {
-            StateKey::AccessPath(access_path) => match &access_path.path {
+impl TStateView for RemoteViewer {
+    type Key = StateKey;
+
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+        match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => match &access_path.path {
                 DataPath::Code(m) => Ok(self
                     .get_module(&ModuleId::new(access_path.address, m.clone()))
-                    .map_err(|err| err.into_vm_status())?),
-                DataPath::Resource(s) => Ok(self
-                    .get_resource(&access_path.address, s)
-                    .map_err(|err| err.finish(Location::Undefined).into_vm_status())?),
+                    .map_err(|_| StateviewError::Other("get_module error".to_string()))?
+                    .map(StateValue::from)),
+                DataPath::Resource(s) => {
+                    let ret = self
+                        .get_resource(access_path.address, s)
+                        .map_err(|_| StateviewError::Other("get_resource error".to_string()))?;
+                    Ok(Some(StateValue::from(ret)))
+                }
+                _ => unimplemented!("todo"),
             },
-            StateKey::TableItem(table_item) => Ok(self.resolve_table_entry(
-                &move_table_extension::TableHandle(table_item.handle.0),
-                table_item.key.as_slice(),
-            )?),
+            StateKeyInner::TableItem { handle, key } => Ok(self
+                .resolve_table_entry_bytes_with_layout(&TableHandle(handle.0), key, None)
+                .map_err(|_| StateviewError::Other("table_item".to_string()))?
+                .map(StateValue::from)),
+            _ => todo!(),
         }
+    }
+
+    fn get_usage(&self) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
+        todo!()
     }
 
     fn is_genesis(&self) -> bool {

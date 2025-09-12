@@ -111,6 +111,7 @@ members = [
     "vm2/chain",
     "vm2/rpc/api",
     "vm2/rpc/server",
+    "vm2/starcoin-transactional-test-harness",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -227,6 +228,7 @@ default-members = [
     "vm2/rpc/server",
     "vm2/service/state",
     "vm2/service/account",
+    "vm2/starcoin-transactional-test-harness",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -592,6 +594,7 @@ starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runt
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
 starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework" }
+starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness"}
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
 starcoin-vm2-gas-schedule = { path = "vm2/framework/gas-schedule", package = "starcoin-gas-schedule" }
