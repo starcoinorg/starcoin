@@ -35,9 +35,9 @@ use tokio::{
 use starcoin_logger::prelude::{info, warn};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_client::{AsyncRemoteStateReader, AsyncRpcClient, StateRootOption};
+use starcoin_transaction_builder::vm2::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm2_account_api::AccountPrivateKey;
 use starcoin_vm2_crypto::{keygen::KeyGen, HashValue, ValidCryptoMaterialStringExt};
-use starcoin_vm2_transaction_builder::{build_transfer_txn, DEFAULT_EXPIRATION_TIME};
 use starcoin_vm2_types::{
     account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},

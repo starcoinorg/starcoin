@@ -79,7 +79,6 @@ use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::runtime::Runtime;
-use tokio::task;
 
 mod async_client;
 pub mod chain_watcher;
