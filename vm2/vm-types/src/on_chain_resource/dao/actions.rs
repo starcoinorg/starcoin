@@ -49,7 +49,7 @@ pub struct DaoConfigUpdate {
 }
 
 impl MoveStructType for DaoConfigUpdate {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ModifyDaoConfigProposal");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao_modify_config_proposal");
     const STRUCT_NAME: &'static IdentStr = ident_str!("DaoConfigUpdate");
 }
 

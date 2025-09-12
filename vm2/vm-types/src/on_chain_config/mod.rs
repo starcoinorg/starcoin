@@ -199,6 +199,16 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
     fn struct_tag() -> StructTag {
         Self::config_id().struct_tag()
     }
+
+    fn thin_struct_tag() -> StructTag {
+        StructTag {
+            address: AccountAddress::from_hex_literal(Self::ADDRESS)
+                .expect("failed to get address"),
+            module: Identifier::new(Self::MODULE_IDENTIFIER).expect("failed to get Identifier"),
+            name: Identifier::new(Self::TYPE_IDENTIFIER).expect("failed to get Identifier"),
+            type_args: Self::type_params(),
+        }
+    }
 }
 
 impl<S: StateView> ConfigStorage for S {
