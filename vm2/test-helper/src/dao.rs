@@ -146,20 +146,6 @@ pub fn execute_create_account(
     }
 }
 
-pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
-    let mut ret = execute_readonly_function(
-        state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
-        &Identifier::new("quorum_votes").unwrap(),
-        vec![token],
-        vec![],
-        None,
-    )
-    .unwrap();
-    assert_eq!(ret.len(), 1);
-    bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
-}
-
 pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
@@ -238,7 +224,6 @@ fn execute_cast_vote(
     );
     // vote first.
     account_execute_should_success(alice, chain_state, cast_vote_payload)?;
-    let _quorum = quorum_vote(chain_state, stc_type_tag());
 
     let state = proposal_state(
         chain_state,
