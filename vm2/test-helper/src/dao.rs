@@ -368,7 +368,7 @@ pub fn dao_vote_test(
         let script_function = dao_queue_proposal_action(
             stc_type_tag(),
             action_type_tag.clone(),
-            alice.address().clone(),
+            *alice.address(),
             proposal_id,
         );
         account_execute_should_success(alice, chain_state, script_function)?;
@@ -443,7 +443,7 @@ pub fn dao_vote_test(
         let script_function = dao_vote_scripts_unstake_vote(
             stc_type_tag(),
             action_type_tag.clone(),
-            alice.address().clone(),
+            *alice.address(),
             proposal_id,
         );
         account_execute_should_success(alice, chain_state, script_function)?;
@@ -453,7 +453,7 @@ pub fn dao_vote_test(
         let script_function = dao_destroy_terminated_proposal(
             stc_type_tag(),
             action_type_tag.clone(),
-            alice.address().clone(),
+            *alice.address(),
             proposal_id,
         );
         account_execute_should_success(alice, chain_state, script_function)?;
