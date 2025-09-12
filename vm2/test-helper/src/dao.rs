@@ -7,7 +7,8 @@ use crate::executor::{
 };
 use anyhow::Result;
 use starcoin_cached_packages::starcoin_stdlib::{
-    dao_vote_scripts_cast_vote, on_chain_config_scripts_execute_on_chain_config_proposal,
+    dao_destroy_terminated_proposal, dao_queue_proposal_action, dao_vote_scripts_cast_vote,
+    dao_vote_scripts_unstake_vote, on_chain_config_scripts_execute_on_chain_config_proposal,
 };
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
@@ -22,7 +23,7 @@ use starcoin_vm2_types::{
     block_metadata::BlockMetadata,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
-    transaction::{EntryFunction, TransactionPayload},
+    transaction::TransactionPayload,
 };
 use starcoin_vm2_vm_types::{
     on_chain_resource::ChainId,
@@ -379,20 +380,13 @@ pub fn dao_vote_test(
         );
         assert_eq!(state, ProposalState::Agreed);
 
-        let script_function = EntryFunction::new(
-            ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
-            Identifier::new("queue_proposal_action").unwrap(),
-            vec![stc_type_tag(), action_type_tag.clone()],
-            vec![
-                bcs_ext::to_bytes(alice.address()).unwrap(),
-                bcs_ext::to_bytes(&proposal_id).unwrap(),
-            ],
+        let script_function = dao_queue_proposal_action(
+            stc_type_tag(),
+            action_type_tag.clone(),
+            alice.address().clone(),
+            proposal_id,
         );
-        account_execute_should_success(
-            alice,
-            chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        account_execute_should_success(alice, chain_state, script_function)?;
         let state = proposal_state(
             chain_state,
             stc_type_tag(),
@@ -461,40 +455,23 @@ pub fn dao_vote_test(
     }
     {
         // Unstake
-        let script_function = EntryFunction::new(
-            ModuleId::new(
-                genesis_address(),
-                Identifier::new("DaoVoteScripts").unwrap(),
-            ),
-            Identifier::new("unstake_vote").unwrap(),
-            vec![stc_type_tag(), action_type_tag.clone()],
-            vec![
-                bcs_ext::to_bytes(alice.address()).unwrap(),
-                bcs_ext::to_bytes(&proposal_id).unwrap(),
-            ],
+        let script_function = dao_vote_scripts_unstake_vote(
+            stc_type_tag(),
+            action_type_tag.clone(),
+            alice.address().clone(),
+            proposal_id,
         );
-        account_execute_should_success(
-            alice,
-            chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        account_execute_should_success(alice, chain_state, script_function)?;
     }
     {
         // Destroy terminated proposal
-        let script_function = EntryFunction::new(
-            ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
-            Identifier::new("destroy_terminated_proposal").unwrap(),
-            vec![stc_type_tag(), action_type_tag],
-            vec![
-                bcs_ext::to_bytes(alice.address()).unwrap(),
-                bcs_ext::to_bytes(&proposal_id).unwrap(),
-            ],
+        let script_function = dao_destroy_terminated_proposal(
+            stc_type_tag(),
+            action_type_tag.clone(),
+            alice.address().clone(),
+            proposal_id,
         );
-        account_execute_should_success(
-            alice,
-            chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        account_execute_should_success(alice, chain_state, script_function)?;
     }
     Ok(())
 }
