@@ -334,7 +334,10 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
-    fn get_block_info_by_number(&self, _number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
+    fn get_block_info_by_number(
+        &self,
+        _number: BlockNumber,
+    ) -> FutureResult<Option<BlockInfoView>> {
         unimplemented!("unsupported to vm1");
     }
 
