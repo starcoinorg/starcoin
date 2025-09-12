@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { version = "4.5.43", features = ["derive"] }
+clap = { workspace = true, features = ["derive"] }
 itertools = { workspace = true }
 once_cell = { workspace = true }
 bcs-ext = { workspace = true }
@@ -24,7 +24,6 @@ starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 starcoin-rpc-client = { workspace = true }
-starcoin-transactional-test-harness = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
@@ -35,6 +34,7 @@ vm-status-translator = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
+starcoin-vm2-transactional-test-harness = { workspace = true }
 
 [dev-dependencies]
 

@@ -2804,6 +2804,17 @@ dependencies = [
 
 [[package]]
 name = "datatest-stable"
+version = "0.1.1"
+source = "git+https://github.com/starcoinorg/diem-devtools?branch=feature%2Fpub-test-opts#9931fdfc97c80d9c58d6349cf7bae89343f24b06"
+dependencies = [
+ "clap 3.2.23",
+ "regex",
+ "termcolor",
+ "walkdir",
+]
+
+[[package]]
+name = "datatest-stable"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4eaf86e44e9f0a21f6e42d8e7f83c9ee049f081745eeed1c6f47a613c76e5977"
@@ -6893,6 +6904,41 @@ dependencies = [
  "toml 0.5.11",
  "walkdir",
  "whoami",
+]
+
+[[package]]
+name = "move-package-manager2"
+version = "2.1.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "clap 4.5.47",
+ "datatest-stable 0.1.1",
+ "itertools 0.10.5",
+ "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-cli 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-package 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "once_cell",
+ "starcoin-account-provider",
+ "starcoin-cmd",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-framework 0.1.0",
+ "starcoin-move-compiler",
+ "starcoin-rpc-client",
+ "starcoin-types",
+ "starcoin-vm1-types",
+ "starcoin-vm1-vm-runtime",
+ "starcoin-vm1-vm-types",
+ "starcoin-vm2-move-compiler",
+ "starcoin-vm2-transactional-test-harness",
+ "stdlib",
+ "vm-status-translator",
 ]
 
 [[package]]
@@ -12388,7 +12434,7 @@ dependencies = [
  "atty",
  "clap 4.5.47",
  "codespan-reporting",
- "datatest-stable",
+ "datatest-stable 0.1.3",
  "hex",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -14048,7 +14094,7 @@ dependencies = [
  "bcs-ext",
  "clap 4.5.47",
  "dashmap",
- "datatest-stable",
+ "datatest-stable 0.1.3",
  "either",
  "futures 0.3.31",
  "hex",
@@ -14114,7 +14160,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "clap 4.5.47",
- "datatest-stable",
+ "datatest-stable 0.1.3",
  "fs_extra",
  "include_dir",
  "itertools 0.10.5",

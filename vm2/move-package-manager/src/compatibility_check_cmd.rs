@@ -11,7 +11,7 @@ use move_core_types::resolver::ModuleResolver;
 use move_package::compilation::compiled_package::CompiledUnitWithSource;
 use starcoin_cmd::dev::dev_helper::{self};
 use starcoin_config::BuiltinNetworkID;
-use starcoin_transactional_test_harness::remote_state::RemoteViewer;
+use starcoin_vm2_transactional_test_harness::remote_state::RemoteViewer;
 use starcoin_types::transaction::Package;
 use starcoin_vm2_move_compiler::check_compiled_module_compat;
 use std::{collections::BTreeMap, path::PathBuf};
