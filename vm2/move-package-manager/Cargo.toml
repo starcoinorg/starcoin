@@ -1,0 +1,51 @@
+[[bin]]
+name = "mpm2"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { version = "4.5.43", features = ["derive"] }
+itertools = { workspace = true }
+once_cell = { workspace = true }
+bcs-ext = { workspace = true }
+datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-cli = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+
+starcoin-account-provider = { workspace = true }
+starcoin-cmd = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-move-compiler = { workspace = true }
+starcoin-rpc-client = { workspace = true }
+starcoin-transactional-test-harness = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-runtime = { features = ["testing"], workspace = true }
+starcoin-vm-types = { workspace = true }
+stdlib = { workspace = true }
+vm-status-translator = { workspace = true }
+
+
+starcoin-vm2-framework = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-move-compiler = { workspace = true }
+
+[dev-dependencies]
+
+[package]
+authors = { workspace = true }
+description = "CLI frontend for the Move compiler and VM"
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+name = "move-package-manager2"
+publish = { workspace = true }
+repository = { workspace = true }
+version = { workspace = true }
+rust-version = { workspace = true }

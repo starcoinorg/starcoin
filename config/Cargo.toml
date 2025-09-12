@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-clap = { features = ["derive", "cargo"], workspace = true }
+clap = { version = "4.5.43", features = ["derive"] }
 dirs-next = { workspace = true }
 git-version = { workspace = true }
 hex = { workspace = true }
