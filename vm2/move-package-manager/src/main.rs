@@ -13,10 +13,10 @@ use move_package_manager2::{
     run_integration_test, IntegrationTestCommand,
 };
 use move_vm_test_utils::gas_schedule::CostTable;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
-use starcoin_vm_runtime::natives::starcoin_natives;
-use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
-use std::path::PathBuf;
+// use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
+use starcoin_vm2_gas_schedule::{G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION};
+use starcoin_vm2_vm_runtime::natives::starcoin_natives;
+use starcoin_vm2_vm_types::on_chain_config::{TimedFeaturesBuilder, G_LATEST_INSTRUCTION_TABLE};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -54,30 +54,29 @@ pub enum Commands {
 }
 
 fn main() -> Result<()> {
-    unimplemented!()
-    // let error_descriptions: ErrorMapping =
-    //     bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
-    // let args: CliOptions = CliOptions::parse();
-    //
-    // let move_args = &args.move_args;
-    // let gas_params = G_LATEST_GAS_PARAMS.clone();
-    // let natives = starcoin_natives(gas_params.natives);
-    // let cost_table = CostTable {
-    //     instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
-    // };
-    // match args.cmd {
-    //     Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
-    //     Commands::Package { cmd } => handle_package_commands(natives, args.move_args, cmd),
-    //     Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
-    //         natives,
-    //         &cost_table,
-    //         &error_descriptions,
-    //         move_args,
-    //         &storage_dir,
-    //     ),
-    //     Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
-    //     Commands::Release(release) => handle_release(move_args, release),
-    //     Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
-    //     Commands::Deploy(cmd) => handle_deployment(move_args, cmd),
-    // }
+    // Error map check
+    let _error_descriptions: ErrorMapping =
+        bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
+
+    let args: CliOptions = CliOptions::parse();
+
+    let move_args = &args.move_args;
+    let gas_params = G_LATEST_GAS_PARAMS.clone();
+    let natives = starcoin_natives(
+        LATEST_GAS_FEATURE_VERSION,
+        gas_params.natives,
+        gas_params.vm.misc,
+        TimedFeaturesBuilder::enable_all().build(),
+        Default::default(),
+    );
+    let _cost_table = CostTable {
+        instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
+    };
+    match args.cmd {
+        Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
+        Commands::Package { cmd } => handle_package_commands(natives, args.move_args, cmd),
+        Commands::Release(release) => handle_release(move_args, release),
+        Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
+        Commands::Deploy(cmd) => handle_deployment(move_args, cmd),
+    }
 }

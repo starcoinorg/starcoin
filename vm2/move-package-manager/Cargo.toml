@@ -4,6 +4,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+clap_3 = { package = "clap", version = "3", features = ["derive"] }
 clap = { workspace = true, features = ["derive"] }
 itertools = { workspace = true }
 once_cell = { workspace = true }
@@ -25,7 +26,6 @@ starcoin-crypto = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 starcoin-types = { workspace = true }
-starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
@@ -37,7 +37,9 @@ starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
+starcoin-vm2-gas-schedule = { workspace = true }
 starcoin-vm2-transactional-test-harness = { workspace = true }
+starcoin-vm2-vm-runtime = { features = ["testing"],  workspace = true }
 
 [dev-dependencies]
 

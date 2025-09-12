@@ -95,7 +95,14 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
         private_key_provider
     };
 
-    let state = CliState::new(node_info.net, client, None, node_handle, Some(provider), None);
+    let state = CliState::new(
+        node_info.net,
+        client,
+        None,
+        node_handle,
+        Some(provider),
+        None,
+    );
 
     let item =
         state.build_and_execute_transaction(cmd.txn_opts, TransactionPayload::Package(package));

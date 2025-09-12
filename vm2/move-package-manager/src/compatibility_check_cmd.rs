@@ -11,9 +11,9 @@ use move_core_types::resolver::ModuleResolver;
 use move_package::compilation::compiled_package::CompiledUnitWithSource;
 use starcoin_cmd::dev::dev_helper::{self};
 use starcoin_config::BuiltinNetworkID;
-use starcoin_vm2_transactional_test_harness::remote_state::RemoteViewer;
 use starcoin_types::transaction::Package;
 use starcoin_vm2_move_compiler::check_compiled_module_compat;
+use starcoin_vm2_transactional_test_harness::remote_state::RemoteViewer;
 use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Parser)]
@@ -38,62 +38,67 @@ pub fn handle_compatibility_check(
     move_args: &Move,
     cmd: CompatibilityCheckCommand,
 ) -> anyhow::Result<()> {
-    unimplemented!()
-    // let pkg_ctx = PackageContext::new(&move_args.package_path, &move_args.build_config)?;
-    // let pkg = pkg_ctx.package();
-    //
-    // let rpc = cmd.rpc.unwrap_or_else(|| {
-    //     format!(
-    //         "http://{}:{}",
-    //         cmd.network
-    //             .unwrap_or(BuiltinNetworkID::Main)
-    //             .boot_nodes_domain(),
-    //         9850
-    //     )
-    // });
-    //
-    // let remote_view = RemoteViewer::from_url(&rpc, cmd.block_number)?;
-    //
-    // let mut incompatible_module_ids = vec![];
-    // for m in pkg.root_compiled_units.as_slice() {
-    //     let m = module(&m.unit)?;
-    //     let old_module = remote_view
-    //         .get_module(&m.self_id())
-    //         .map_err(|e| e.into_vm_status())?;
-    //     if let Some(old) = old_module {
-    //         let old_module = CompiledModule::deserialize(&old)?;
-    //         let compatibility = check_compiled_module_compat(&old_module, m);
-    //         if compatibility.is_err() {
-    //             incompatible_module_ids.push((m.self_id(), compatibility));
-    //         }
-    //     }
-    // }
-    //
-    // if !incompatible_module_ids.is_empty() {
-    //     eprintln!(
-    //         "Modules {} is incompatible with remote chain: {}!",
-    //         incompatible_module_ids
-    //             .into_iter()
-    //             .map(|(module_id, compat)| format!("{} {}", module_id, compat.is_err()))
-    //             .join(","),
-    //         &rpc
-    //     );
-    // } else {
-    //     eprintln!(
-    //         "All modules in {} is full compatible with remote chain: {}!",
-    //         pkg.compiled_package_info.package_name, &rpc
-    //     );
-    // }
-    //
-    // if cmd.pre_modules.is_none() || !cmd.pre_modules.clone().unwrap().as_path().exists() {
-    //     return Ok(());
-    // }
-    //
-    // handle_pre_version_compatibility_check(
-    //     cmd.pre_modules.unwrap(),
-    //     pkg.all_modules().collect_vec(),
-    // )?;
-    // Ok(())
+    let package_path = match move_args.package_path {
+        Some(_) => move_args.package_path.clone(),
+        None => Some(std::env::current_dir()?),
+    };
+    let pkg = move_args
+        .build_config
+        .clone()
+        .compile_package(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
+
+    let rpc = cmd.rpc.unwrap_or_else(|| {
+        format!(
+            "http://{}:{}",
+            cmd.network
+                .unwrap_or(BuiltinNetworkID::Main)
+                .boot_nodes_domain(),
+            9850
+        )
+    });
+
+    let remote_view = RemoteViewer::from_url(&rpc, cmd.block_number)?;
+
+    let mut incompatible_module_ids = vec![];
+    for m in pkg.root_compiled_units.as_slice() {
+        let m = module(&m.unit)?;
+        let old_module = remote_view
+            .get_module(&m.self_id())
+            .map_err(|e| e.into_vm_status())?;
+        if let Some(old) = old_module {
+            let old_module = CompiledModule::deserialize(&old)?;
+            let compatibility = check_compiled_module_compat(&old_module, m);
+            if compatibility.is_err() {
+                incompatible_module_ids.push((m.self_id(), compatibility));
+            }
+        }
+    }
+
+    if !incompatible_module_ids.is_empty() {
+        eprintln!(
+            "Modules {} is incompatible with remote chain: {}!",
+            incompatible_module_ids
+                .into_iter()
+                .map(|(module_id, compat)| format!("{} {}", module_id, compat.is_err()))
+                .join(","),
+            &rpc
+        );
+    } else {
+        eprintln!(
+            "All modules in {} is full compatible with remote chain: {}!",
+            pkg.compiled_package_info.package_name, &rpc
+        );
+    }
+
+    if cmd.pre_modules.is_none() || !cmd.pre_modules.clone().unwrap().as_path().exists() {
+        return Ok(());
+    }
+
+    handle_pre_version_compatibility_check(
+        cmd.pre_modules.unwrap(),
+        pkg.all_modules().collect_vec(),
+    )?;
+    Ok(())
 }
 
 fn handle_pre_version_compatibility_check(

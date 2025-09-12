@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::{value_parser, Parser};
-use codespan_reporting::diagnostic::Severity;
-use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+use codespan_reporting::{
+    diagnostic::Severity,
+    term::termcolor::{ColorChoice, StandardStream},
+};
 use move_binary_format::{file_format_common::VERSION_4, CompiledModule};
 use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};

@@ -8,7 +8,8 @@ use move_cli::{
 };
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_vm2_framework::extended_checks;
-use starcoin_vm_runtime::natives;
+use starcoin_vm2_vm_runtime::natives;
+use starcoin_vm2_vm_types::on_chain_config::starcoin_test_feature_flags_genesis;
 
 pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
@@ -50,26 +51,43 @@ pub fn handle_package_commands(
     move_args: Move,
     cmd: PackageCommand,
 ) -> anyhow::Result<()> {
-    unimplemented!()
-    // match cmd {
-    //     PackageCommand::New(c) => c.execute(
-    //         move_args.package_path,
-    //         "0.0.0",
-    //         [(STARCOIN_STDLIB_PACKAGE_NAME, STARCOIN_STDLIB_PACKAGE_PATH)],
-    //         [(STARCOIN_STDLIB_ADDR_NAME, STARCOIN_STDLIB_ADDR_VALUE)],
-    //         "",
-    //     ),
-    //     PackageCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
-    //     PackageCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
-    //     PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
-    //     PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
-    //     PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
-    //     PackageCommand::Test(c) => c.execute(
-    //         move_args.package_path,
-    //         move_args.build_config,
-    //         natives,
-    //         None,
-    //     ),
-    //     PackageCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
-    // }
+    match cmd {
+        PackageCommand::New(c) => c.execute(
+            move_args.package_path,
+            "0.0.0",
+            [(STARCOIN_STDLIB_PACKAGE_NAME, STARCOIN_STDLIB_PACKAGE_PATH)],
+            [(STARCOIN_STDLIB_ADDR_NAME, STARCOIN_STDLIB_ADDR_VALUE)],
+            "",
+        ),
+        PackageCommand::Build(c) => {
+            let mut build_config = move_args.build_config.clone();
+            build_config
+                .compiler_config
+                .known_attributes
+                .clone_from(extended_checks::get_all_attribute_names());
+            c.execute(move_args.package_path, build_config)
+        }
+        PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
+        PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
+        PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
+        // XXX FIXME YSG
+        PackageCommand::Test(c) => {
+            natives::configure_for_unit_test();
+            extended_checks::configure_extended_checks_for_unit_test();
+
+            let mut build_config = move_args.build_config.clone();
+            build_config
+                .compiler_config
+                .known_attributes
+                .clone_from(extended_checks::get_all_attribute_names());
+            c.execute(
+                move_args.package_path,
+                build_config,
+                natives,
+                starcoin_test_feature_flags_genesis(),
+                None,
+            )
+        }
+        PackageCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
+    }
 }
