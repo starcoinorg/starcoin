@@ -334,33 +334,8 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
-    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
-        let chain = self.chain.lock().unwrap();
-        let client = chain.remote_chain_client();
-        let fork_number = chain.fork_number;
-        let current_number = chain.current_number;
-        let number_hash_map = chain.number_hash_map.clone();
-        let storage = chain.storage.clone();
-        let fut = async move {
-            if number <= fork_number {
-                debug_assert!(client.is_some());
-                client
-                    .unwrap()
-                    .get_block_info_by_number(number)
-                    .await
-                    .map_err(|e| anyhow!("{}", e))
-            } else if number <= current_number {
-                let hash = number_hash_map.get(&number).map(|h| *h);
-                let block_view = match hash {
-                    Some(hash) => storage.get_block_info(hash)?.map(BlockInfoView::from),
-                    None => None,
-                };
-                Ok(block_view)
-            } else {
-                Ok(None)
-            }
-        };
-        Box::pin(fut.boxed().map_err(map_err))
+    fn get_block_info_by_number(&self, _number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
+        unimplemented!("unsupported to vm1");
     }
 
     fn get_block_info_by_number2(
@@ -397,46 +372,10 @@ impl ChainApi for MockChainApi {
 
     fn get_transaction(
         &self,
-        transaction_hash: HashValue,
-        option: Option<starcoin_rpc_api::chain::GetTransactionOption>,
+        _transaction_hash: HashValue,
+        _option: Option<starcoin_rpc_api::chain::GetTransactionOption>,
     ) -> starcoin_rpc_api::FutureResult<Option<TransactionView>> {
-        let chain = self.chain.lock().unwrap();
-        let storage = chain.storage.clone();
-        let client = chain.remote_chain_client();
-        let status = chain.status.clone();
-        let decode_payload = option.unwrap_or_default().decode;
-        let fut = async move {
-            match storage
-                .get_transaction(transaction_hash)?
-                .and_then(|t| t.to_v1())
-            {
-                Some(txn) => {
-                    // WATNING: the txn here is not in any blocks, use head block instead.
-                    // TODO: How to handle the txns not in any blocks.
-                    let block = status.clone().unwrap().head;
-
-                    let mut txn = TransactionView::new(txn, &block)?;
-                    if decode_payload {
-                        let state = ChainStateDB::new(
-                            storage,
-                            Some(status.unwrap().status.head().state_root()),
-                        );
-                        if let Some(txn) = txn.user_transaction.as_mut() {
-                            try_decode_txn_payload(&state, txn)?;
-                        }
-                    }
-                    Ok(Some(txn))
-                }
-                None => match client {
-                    Some(client) => client
-                        .get_transaction(transaction_hash, option)
-                        .await
-                        .map_err(|e| anyhow!("{}", e)),
-                    None => Ok(None),
-                },
-            }
-        };
-        Box::pin(fut.boxed().map_err(map_err))
+        unimplemented!("unsupported to vm1");
     }
 
     fn get_transaction2(
@@ -485,8 +424,15 @@ impl ChainApi for MockChainApi {
 
     fn get_transaction_info(
         &self,
-        transaction_hash: HashValue,
+        _transaction_hash: HashValue,
     ) -> starcoin_rpc_api::FutureResult<Option<TransactionInfoView>> {
+        unimplemented!("unsupported to vm1");
+    }
+
+    fn get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
         let chain = self.chain.lock().unwrap();
         let storage = chain.storage.clone();
         let client = chain.remote_chain_client();
@@ -498,7 +444,7 @@ impl ChainApi for MockChainApi {
                 }
                 None => match client {
                     Some(client) => client
-                        .get_transaction_info(transaction_hash)
+                        .get_transaction_info2(transaction_hash)
                         .await
                         .map_err(|e| anyhow!("{}", e)),
                     None => Ok(None),
@@ -506,13 +452,6 @@ impl ChainApi for MockChainApi {
             }
         };
         Box::pin(fut.boxed().map_err(map_err))
-    }
-
-    fn get_transaction_info2(
-        &self,
-        _transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfoView2>> {
-        todo!()
     }
 
     fn get_block_txn_infos(
@@ -529,7 +468,10 @@ impl ChainApi for MockChainApi {
         &self,
         _block_hash: HashValue,
     ) -> FutureResult<Vec<TransactionInfoView2>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_txn_info_by_block_and_index(
@@ -548,7 +490,10 @@ impl ChainApi for MockChainApi {
         _block_hash: HashValue,
         _idx: u64,
     ) -> FutureResult<Option<TransactionInfoView2>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_events_by_txn_hash(
@@ -614,7 +559,10 @@ impl ChainApi for MockChainApi {
         _reverse: bool,
         _max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView2>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_transaction_proof(
@@ -651,7 +599,10 @@ impl ChainApi for MockChainApi {
         _event_index: Option<u64>,
         _access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_transaction_proof2_raw(
@@ -661,11 +612,17 @@ impl ChainApi for MockChainApi {
         _event_index: Option<u64>,
         _access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 
     fn get_vm_multi_state(&self, _block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
-        todo!()
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
     }
 }
 
