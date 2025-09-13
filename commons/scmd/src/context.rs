@@ -94,6 +94,7 @@ where
                     .short('o')
                     .help("set output-format, support [json|table]")
                     .num_args(1..)
+                    .value_parser(["json", "table"])
                     .default_value("json"),
             );
         Self {
