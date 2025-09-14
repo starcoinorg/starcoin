@@ -57,6 +57,7 @@ use starcoin_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
@@ -1400,6 +1401,7 @@ impl StarcoinVM {
     /// Sets execution concurrency level when invoked the first time.
     pub fn set_concurrency_level(mut concurrency_level: usize) {
         concurrency_level = min(concurrency_level, num_cpus::get());
+        concurrency_level = max(concurrency_level, 1);
         EXECUTION_CONCURRENCY_LEVEL.store(concurrency_level, std::sync::atomic::Ordering::SeqCst);
         info!("TurboSTM executor concurrency_level {}", concurrency_level);
     }
