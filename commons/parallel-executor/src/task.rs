@@ -23,7 +23,11 @@ pub trait Transaction: Sync + Send + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
 
-    fn is_block_meta_data(&self) -> bool;
+    /// Returns true if this transaction is block metadata.
+    /// Default false to preserve backward compatibility for existing implementors.
+    fn is_block_meta_data(&self) -> bool {
+        false
+    }
 }
 
 /// Inference result of a transaction.

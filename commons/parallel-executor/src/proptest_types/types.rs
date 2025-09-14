@@ -136,10 +136,6 @@ where
 {
     type Key = K;
     type Value = V;
-
-    fn is_block_meta_data(&self) -> bool {
-        unreachable!()
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////
