@@ -198,11 +198,65 @@ impl<'test, S: ChainStateReader + ChainStateWriter> TransactionExecutor<'test, S
 }
 
 pub struct BenchmarkManager {
-    chain_state: ChainStateDB,
+    bench_vm2: bool,
+}
+
+struct BenchmarkManagerVM2 {
+    chain_state: ChainStateDBVM2,
     net: ChainNetwork,
 }
 
-impl BenchmarkManager {
+impl BenchmarkManagerVM2 {
+    pub fn new() -> Self {
+        let chain_state = ChainStateDBVM2::mock();
+        let net = ChainNetwork::new_test();
+        let (genesis_txn, _) =
+            build_and_execute_genesis_transaction(net.chain_id().id(), net.genesis_config2());
+        execute_genesis_transaction(&chain_state, TransactionVM2::UserTransaction(genesis_txn))
+            .unwrap();
+        Self { chain_state, net }
+    }
+
+    pub fn run(
+        &mut self,
+        serialize_bench_txns: &[usize],
+        parallel_bench_txns: &[usize],
+    ) -> Vec<BenchmarkReport> {
+        let mut reports = Vec::new();
+
+        // generate account
+        let max_txns_once = serialize_bench_txns
+            .iter()
+            .chain(parallel_bench_txns.iter())
+            .max()
+            .copied()
+            .unwrap_or(0);
+        let mut generator = TransactionGeneratorVM2::new(max_txns_once * 2, self.net.clone());
+        let txns = generator.gen_create_account_transactions();
+        let mut executor = TransactionExecutorVM2::new(&self.chain_state);
+        let _ = executor.run(txns);
+
+        // run serialize txns
+        for txns_num in serialize_bench_txns.iter() {
+            let txns = generator.gen_transfer_transactions(*txns_num);
+            reports.push(executor.run(txns));
+        }
+
+        // this variable could only be set once, default is serialize, so we run serialize first.
+        StarcoinVM2::set_concurrency_level_once(num_cpus::get());
+        assert_eq!(StarcoinVM2::get_concurrency_level(), num_cpus::get());
+
+        // run parallel txns
+        for txns_num in parallel_bench_txns.iter() {
+            let txns = generator.gen_transfer_transactions(*txns_num);
+            reports.push(executor.run(txns));
+        }
+
+        reports
+    }
+}
+
+impl BenchmarkManagerVM1 {
     pub fn new() -> Self {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
         let chain_state = ChainStateDB::new(storage, None);
@@ -267,7 +321,22 @@ impl BenchmarkManager {
 }
 
 impl Default for BenchmarkManager {
-    fn default() -> Self {
-        Self::new()
+    fn default(bench_vm2: bool) -> Self {
+        BenchmarkManager { bench_vm2 }
+    }
+}
+impl BenchmarkManager {
+    pub fn run(
+        &mut self,
+        serialize_bench_txns: &[usize],
+        parallel_bench_txns: &[usize],
+    ) -> Vec<BenchmarkReport> {
+        if self.bench_vm2 {
+            let mut manager = BenchmarkManagerVM2::new();
+            manager.run(serialize_bench_txns, parallel_bench_txns)
+        } else {
+            let mut manager = BenchmarkManagerVM1::new();
+            manager.run(serialize_bench_txns, parallel_bench_txns)
+        }
     }
 }
