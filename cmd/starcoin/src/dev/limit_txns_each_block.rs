@@ -52,7 +52,10 @@ impl CommandAction for MinimalTxnsEachBlockCommand {
 
         if let Some(min) = opt.min {
             client.set_min_pending_txn_threshold(min)?;
-            eprintln!("Requested server to set MIN_PENDING_TXN_THRESHOLD to {}", min.max(1));
+            eprintln!(
+                "Requested server to set MIN_PENDING_TXN_THRESHOLD to {}",
+                min.max(1)
+            );
             let current = client.get_min_pending_txn_threshold()?;
             eprintln!("Current MIN_PENDING_TXN_THRESHOLD = {}", current);
             return Ok(Some(()));

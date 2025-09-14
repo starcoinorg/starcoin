@@ -12,11 +12,11 @@ use starcoin_rpc_api::debug::DebugApi;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
+use starcoin_txpool::{get_min_pending_txn_threshold, set_min_pending_txn_threshold};
 use starcoin_types::system_events::GenerateBlockEvent;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use std::str::FromStr;
 use std::sync::Arc;
-use starcoin_txpool::{set_min_pending_txn_threshold, get_min_pending_txn_threshold};
 
 pub struct DebugRpcImpl {
     config: Arc<NodeConfig>,
