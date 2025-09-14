@@ -108,7 +108,7 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
 
 impl<T, E> ParallelTransactionExecutor<T, E>
 where
-    T: Transaction,
+    T: Transaction<Key: std::fmt::Debug>,
     E: ExecutorTask<T = T>,
 {
     /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
@@ -213,6 +213,10 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
+            if format!("{:?}", r.path()).contains("stc_transaction_fee::AutoIncrementCounter") {
+                return true;
+            }
+
             match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
