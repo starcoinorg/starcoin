@@ -297,7 +297,7 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &Scheduler,
     ) {
-        if block.len() <= 0 || !block[0].is_block_meta_data() {
+        if block.is_empty() || !block[0].is_block_meta_data() {
             return;
         }
 

@@ -13,13 +13,12 @@ use starcoin_rpc_api::types::FactoryAction;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::system_events::GenerateBlockEvent;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub struct DebugRpcImpl {
-    config: Arc<NodeConfig>,
+    config: Arc<NodeConfig>,commons/parallel-executor/src/executor.rs
     log_handle: Arc<LoggerHandle>,
     bus: ServiceRef<BusService>,
 }
