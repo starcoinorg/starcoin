@@ -6,6 +6,9 @@
 
 
 -  [Constants](#@Constants_0)
+-  [Function `reserved_account_from`](#0x1_system_addresses_reserved_account_from)
+-  [Function `reserved_account_to`](#0x1_system_addresses_reserved_account_to)
+-  [Function `is_reserved_account`](#0x1_system_addresses_is_reserved_account)
 -  [Function `assert_core_resource`](#0x1_system_addresses_assert_core_resource)
 -  [Function `assert_core_resource_address`](#0x1_system_addresses_assert_core_resource_address)
 -  [Function `is_core_resource_address`](#0x1_system_addresses_is_core_resource_address)
@@ -33,6 +36,7 @@
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 </code></pre>
 
@@ -82,6 +86,98 @@ The operation can only be performed by the VM
 </code></pre>
 
 
+
+<a id="0x1_system_addresses_RESERVED_ACCOUNT_FROM"></a>
+
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_FROM">RESERVED_ACCOUNT_FROM</a>: u128 = 1;
+</code></pre>
+
+
+
+<a id="0x1_system_addresses_RESERVED_ACCOUNT_TO"></a>
+
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 10;
+</code></pre>
+
+
+
+<a id="0x1_system_addresses_reserved_account_from"></a>
+
+## Function `reserved_account_from`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(): u128 { <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_FROM">RESERVED_ACCOUNT_FROM</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_reserved_account_to"></a>
+
+## Function `reserved_account_to`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>(): u128 { <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_is_reserved_account"></a>
+
+## Function `is_reserved_account`
+
+
+
+<pre><code><b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr: <b>address</b>): bool {
+    for (reserved in <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>()..<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>()) {
+        <b>let</b> reserved_addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(reserved);
+        <b>if</b> (reserved_addr == addr) {
+            <b>return</b> <b>true</b>
+        }
+    };
+    <b>false</b>
+}
+</code></pre>
+
+
+
+</details>
 
 <a id="0x1_system_addresses_assert_core_resource"></a>
 
@@ -250,16 +346,7 @@ Return true if <code>addr</code> is 0x0 or under the on chain governance's contr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr: <b>address</b>): bool {
-    <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) ||
-        addr == @0x2 ||
-        addr == @0x3 ||
-        addr == @0x4 ||
-        addr == @0x5 ||
-        addr == @0x6 ||
-        addr == @0x7 ||
-        addr == @0x8 ||
-        addr == @0x9 ||
-        addr == @0xa
+    <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) || <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr)
 }
 </code></pre>
 
@@ -547,6 +634,20 @@ Return true if <code>addr</code> is either the VM address or an Starcoin Framewo
 </code></pre>
 
 
+Specifies that a function aborts if the account does not have the root address.
+
+
+<a id="0x1_system_addresses_AbortsIfNotCoreResource"></a>
+
+
+<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotCoreResource">AbortsIfNotCoreResource</a> {
+    addr: <b>address</b>;
+    // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
+    <b>aborts_if</b> addr != @core_resources <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
+}
+</code></pre>
+
+
 
 <a id="@Specification_1_assert_starcoin_framework"></a>
 
@@ -624,20 +725,6 @@ Specifies that a function aborts if the account does not have the starcoin frame
 
 <pre><code><b>pragma</b> opaque;
 <b>include</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotVM">AbortsIfNotVM</a>;
-</code></pre>
-
-
-Specifies that a function aborts if the account does not have the VM reserved address.
-
-
-<a id="0x1_system_addresses_AbortsIfNotVM"></a>
-
-
-<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotVM">AbortsIfNotVM</a> {
-    <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
-    <b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != @vm_reserved <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
-}
 </code></pre>
 
 
