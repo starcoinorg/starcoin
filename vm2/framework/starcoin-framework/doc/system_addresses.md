@@ -47,6 +47,16 @@
 ## Constants
 
 
+<a id="0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE"></a>
+
+The reserved account range is invalid
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE">EINVALID_RESERVED_ACCOUNT_RANGE</a>: u64 = 5;
+</code></pre>
+
+
+
 <a id="0x1_system_addresses_ENOT_CORE_RESOURCE_ADDRESS"></a>
 
 The address/account did not correspond to the core resource address
@@ -100,7 +110,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 10;
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 11;
 </code></pre>
 
 
@@ -165,6 +175,7 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr: <b>address</b>): bool {
+    <b>assert</b>!(<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>() &gt; <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="system_addresses.md#0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE">EINVALID_RESERVED_ACCOUNT_RANGE</a>));
     for (reserved in <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>()..<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>()) {
         <b>let</b> reserved_addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(reserved);
         <b>if</b> (reserved_addr == addr) {
@@ -634,20 +645,6 @@ Return true if <code>addr</code> is either the VM address or an Starcoin Framewo
 </code></pre>
 
 
-Specifies that a function aborts if the account does not have the root address.
-
-
-<a id="0x1_system_addresses_AbortsIfNotCoreResource"></a>
-
-
-<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotCoreResource">AbortsIfNotCoreResource</a> {
-    addr: <b>address</b>;
-    // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
-    <b>aborts_if</b> addr != @core_resources <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
-}
-</code></pre>
-
-
 
 <a id="@Specification_1_assert_starcoin_framework"></a>
 
@@ -725,6 +722,20 @@ Specifies that a function aborts if the account does not have the starcoin frame
 
 <pre><code><b>pragma</b> opaque;
 <b>include</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotVM">AbortsIfNotVM</a>;
+</code></pre>
+
+
+Specifies that a function aborts if the account does not have the VM reserved address.
+
+
+<a id="0x1_system_addresses_AbortsIfNotVM"></a>
+
+
+<pre><code><b>schema</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotVM">AbortsIfNotVM</a> {
+    <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
+    <b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != @vm_reserved <b>with</b> <a href="../../move-stdlib/doc/error.md#0x1_error_PERMISSION_DENIED">error::PERMISSION_DENIED</a>;
+}
 </code></pre>
 
 

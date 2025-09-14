@@ -12,16 +12,19 @@ module starcoin_framework::system_addresses {
     const ENOT_STARCOIN_FRAMEWORK_ADDRESS: u64 = 3;
     /// The address is not framework reserved address
     const ENOT_FRAMEWORK_RESERVED_ADDRESS: u64 = 4;
+    /// The reserved account range is invalid
+    const EINVALID_RESERVED_ACCOUNT_RANGE: u64 = 5;
 
     
     const RESERVED_ACCOUNT_FROM: u128 = 0x1;
-    const RESERVED_ACCOUNT_TO: u128 = 0xa;
+    const RESERVED_ACCOUNT_TO: u128 = 0xb;
 
     public fun reserved_account_from(): u128 { RESERVED_ACCOUNT_FROM }
     public fun reserved_account_to(): u128 { RESERVED_ACCOUNT_TO }
 
     
     fun is_reserved_account(addr: address): bool {
+        assert!(reserved_account_to() > reserved_account_from(), error::invalid_state(EINVALID_RESERVED_ACCOUNT_RANGE));
         for (reserved in reserved_account_from()..reserved_account_to()) {
             let reserved_addr = from_bcs::u128_to_address(reserved);
             if (reserved_addr == addr) {

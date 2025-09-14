@@ -139,8 +139,8 @@ Helper function to create a storage account address from predefined addresses
 
 <pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
     // only one reserved <a href="account.md#0x1_account">account</a> which might be starcoin_framework <b>address</b>
-    <b>if</b> (<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() == <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>()) {
-        <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>())
+    <b>if</b> (<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() == <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() + 1) {
+        <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(<a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>())
     } <b>else</b> {
         <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
             <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
@@ -150,7 +150,7 @@ Helper function to create a storage account address from predefined addresses
         <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
         <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
 
-        <b>let</b> range = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() - <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>();
+        <b>let</b> range = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() - <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() - 1;
         <b>let</b> addr_u128 = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() + (counter % range);
 
         <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
@@ -185,10 +185,6 @@ Deposit <code>token</code> into one of the storage accounts
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;) <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
-    <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
-        <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
-    );
-
     // Get the target genesis <a href="account.md#0x1_account">account</a> <b>address</b>
     <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
 

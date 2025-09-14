@@ -57,8 +57,8 @@ module starcoin_framework::stc_transaction_fee {
     /// Helper function to create a storage account address from predefined addresses
     fun next_storage_address<TokenType>(): address acquires AutoIncrementCounter {
         // only one reserved account which might be starcoin_framework address
-        if (system_addresses::reserved_account_to() == system_addresses::reserved_account_from()) {
-            from_bcs::u128_to_address(system_addresses::reserved_account_to())
+        if (system_addresses::reserved_account_to() == system_addresses::reserved_account_from() + 1) {
+            from_bcs::u128_to_address(system_addresses::reserved_account_from())
         } else {
             let counter_resource = borrow_global_mut<AutoIncrementCounter<TokenType>>(
                 system_addresses::get_starcoin_framework()
@@ -68,7 +68,7 @@ module starcoin_framework::stc_transaction_fee {
             aggregator_v2::add(&mut counter_resource.counter, 1);
             let counter = (aggregator_v2::read(&counter_resource.counter) as u128);
 
-            let range = system_addresses::reserved_account_to() - system_addresses::reserved_account_from();
+            let range = system_addresses::reserved_account_to() - system_addresses::reserved_account_from() - 1;
             let addr_u128 = system_addresses::reserved_account_from() + (counter % range);
 
             let addr = from_bcs::u128_to_address(addr_u128);
@@ -83,10 +83,6 @@ module starcoin_framework::stc_transaction_fee {
 
     /// Deposit `token` into one of the storage accounts
     public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) acquires AutoIncrementCounter {
-        let counter_resource = borrow_global_mut<AutoIncrementCounter<TokenType>>(
-            system_addresses::get_starcoin_framework()
-        );
-        
         // Get the target genesis account address
         let deposit_address = next_storage_address<TokenType>();
         
