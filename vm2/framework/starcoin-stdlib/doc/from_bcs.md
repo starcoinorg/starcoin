@@ -34,8 +34,7 @@ assert!(from_bcs::to_address(bcs::to_bytes(&@0xabcdef)) == @0xabcdef, 0);
     -  [Function `from_bytes`](#@Specification_1_from_bytes)
 
 
-<pre><code><b>use</b> <a href="debug.md#0x1_debug">0x1::debug</a>;
-<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
+<pre><code><b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -330,7 +329,6 @@ UTF8 check failed in conversion from bytes to string
         i = i + 1;
     };
 
-    <a href="debug.md#0x1_debug_print">debug::print</a>(&bytes);
     <a href="from_bcs.md#0x1_from_bcs_to_address">to_address</a>(bytes)
 }
 </code></pre>

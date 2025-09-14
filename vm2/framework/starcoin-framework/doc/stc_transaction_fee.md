@@ -233,12 +233,11 @@ This function iterates through all genesis accounts and withdraws available fees
     <b>while</b> (<b>true</b>) {
         <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
 
-        // Check <b>if</b> the genesis <a href="account.md#0x1_account">account</a> <b>has</b> <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> balance
-        <b>if</b> (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address) &gt; 0) {
-            <b>let</b> account_balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address);
+        <b>let</b> balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address);
+        <b>if</b> (balance &gt; 0) {
             // Create <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> for the genesis <a href="account.md#0x1_account">account</a> and withdraw all funds
             <b>let</b> genesis_signer = <a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(withdraw_address);
-            <b>let</b> withdrawn_coin = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenType&gt;(&genesis_signer, account_balance);
+            <b>let</b> withdrawn_coin = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenType&gt;(&genesis_signer, balance);
             <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_fees, withdrawn_coin);
         };
 

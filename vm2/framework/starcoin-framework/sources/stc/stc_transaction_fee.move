@@ -117,12 +117,11 @@ module starcoin_framework::stc_transaction_fee {
         while (true) {
             let withdraw_address = next_storage_address<TokenType>();
 
-            // Check if the genesis account has any balance
-            if (coin::balance<TokenType>(withdraw_address) > 0) {
-                let account_balance = coin::balance<TokenType>(withdraw_address);
+            let balance = coin::balance<TokenType>(withdraw_address);
+            if (balance > 0) {
                 // Create signer for the genesis account and withdraw all funds
                 let genesis_signer = create_signer::create_signer(withdraw_address);
-                let withdrawn_coin = coin::withdraw<TokenType>(&genesis_signer, account_balance);
+                let withdrawn_coin = coin::withdraw<TokenType>(&genesis_signer, balance);
                 coin::merge(&mut total_fees, withdrawn_coin);
             };
 
