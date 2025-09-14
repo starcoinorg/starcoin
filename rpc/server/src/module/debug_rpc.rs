@@ -18,7 +18,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 pub struct DebugRpcImpl {
-    config: Arc<NodeConfig>,commons/parallel-executor/src/executor.rs
+    config: Arc<NodeConfig>,
     log_handle: Arc<LoggerHandle>,
     bus: ServiceRef<BusService>,
 }
