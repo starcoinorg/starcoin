@@ -53,9 +53,10 @@ pub enum Commands {
 }
 
 fn main() -> Result<()> {
+    // todo Fix ME, I'm going to block this place for now and wait to fix the rest of the problem.
     // Error map check
-    let _error_descriptions: ErrorMapping =
-        bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
+    // let _error_descriptions: ErrorMapping =
+    //     bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
 
     let args: CliOptions = CliOptions::parse();
 
