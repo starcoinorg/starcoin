@@ -327,7 +327,7 @@ impl CliStateVM2 {
                     sender.address, sequence_number
                 );
                 self.client.submit_hex_transaction2(signed_txn_hex)?;
-                return Ok(());
+                Ok(())
             }
 
             AccountPublicKey::Multi(multisig_public_key) => {
@@ -342,8 +342,7 @@ impl CliStateVM2 {
 
                 // merge my signatures with existing signatures of other participants.
                 let merged_signatures = {
-                    let mut signatures = vec![];
-                    signatures.push(my_signatures);
+                    let signatures = vec![my_signatures];
                     MultiEd25519SignatureShard::merge(signatures)?
                 };
 
@@ -375,9 +374,9 @@ impl CliStateVM2 {
                     sequence_number
                 );
                 self.client.submit_hex_transaction2(signed_txn_hex)?;
-                return Ok(());
+                Ok(())
             }
-        };
+        }
     }
 
     pub fn execute_transaction(
