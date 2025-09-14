@@ -11,6 +11,7 @@ use crate::{
 use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
+use starcoin_logger::prelude::error;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 
@@ -314,7 +315,7 @@ where
                     versioned_data_cache,
                     scheduler,
                     &executor,
-                )
+                );
             }
             _ => {
                 unreachable!()
@@ -331,10 +332,10 @@ where
                     last_input_output,
                     versioned_data_cache,
                     scheduler,
-                )
+                );
             }
             _ => {
-                unreachable!()
+                error!("second task from scheduler should be validation of block metadata txn, maybe execute block meta txn failed?");
             }
         };
     }
