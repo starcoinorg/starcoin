@@ -34,6 +34,11 @@ stest = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 move-transactional-test-runner = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
+starcoin-vm2-test-helper = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [features]
 default = []

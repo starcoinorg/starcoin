@@ -18,6 +18,8 @@ starcoin-move-compiler = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-cached-packages = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

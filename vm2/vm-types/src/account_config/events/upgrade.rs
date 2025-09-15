@@ -21,7 +21,7 @@ impl UpgradeEvent {
 }
 
 impl MoveStructType for UpgradeEvent {
-    const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
+    const MODULE_NAME: &'static IdentStr = ident_str!("stc_transaction_package_validation");
     const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeEvent");
 }
 
