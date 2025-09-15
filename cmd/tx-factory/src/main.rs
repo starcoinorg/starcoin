@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone, Parser, Default)]
 #[clap(name = "txfactory", about = "tx generator for starcoin")]
 pub struct TxFactoryOpt {
-    #[clap(long, parse(from_os_str))]
+    #[clap(long)]
     pub ipc_path: PathBuf,
     #[clap(
         long,

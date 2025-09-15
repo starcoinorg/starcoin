@@ -187,7 +187,7 @@ pub struct StarcoinOpt {
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
+    #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 

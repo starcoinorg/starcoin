@@ -58,12 +58,11 @@ pub struct GenerateMultisigTxnOpt {
         long = "type_tag",
         name = "type-tag",
         help = "can specify multi type_tag",
-        parse(try_from_str = parse_type_tag)
+        value_parser = parse_type_tag,
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance
-    ))]
+    #[clap(long = "arg", name = "transaction-arg", value_parser = parse_transaction_argument_advance)]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 

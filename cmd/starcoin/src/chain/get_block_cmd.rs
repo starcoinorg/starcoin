@@ -24,8 +24,8 @@ pub struct GetBlockOpt {
     #[clap(name = "hash-or-number")]
     hash_or_number: HashOrNumber,
 
-    #[clap(name = "contains-raw-block")]
-    raw: bool,
+    #[arg(name = "contains-raw-block", default_value_t = false)]
+    raw: std::primitive::bool,
 }
 
 impl FromStr for HashOrNumber {
@@ -33,8 +33,8 @@ impl FromStr for HashOrNumber {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match u64::from_str(s) {
-            Ok(number) => Ok(HashOrNumber::Number(number)),
-            Err(_) => Ok(HashOrNumber::Hash(HashValue::from_str(s)?)),
+            Ok(number) => Ok(Self::Number(number)),
+            Err(_) => Ok(Self::Hash(HashValue::from_str(s)?)),
         }
     }
 }
