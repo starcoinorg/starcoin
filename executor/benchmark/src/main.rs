@@ -24,8 +24,14 @@ struct Opt {
     #[clap(long, default_value = "warn")]
     log_level: String,
 
-    #[clap(long, default_value = "false")]
+    #[clap(long, default_value = "true")]
     bench_vm2: bool,
+
+    #[clap(long, default_value = "1,10")]
+    serialize_txns: String,
+
+    #[clap(long, default_value = "1,10")]
+    parallel_txns: String,
 }
 
 fn main() {
@@ -35,7 +41,17 @@ fn main() {
 
     if opt.bench_vm_exec {
         let mut manager = vm_exec_benchmark::BenchmarkManager::new(opt.bench_vm2);
-        let reports = manager.run(&[10], &[10]);
+        let serialize_txns: Vec<usize> = opt
+            .serialize_txns
+            .split(',')
+            .map(|s| s.trim().parse().expect("Invalid transaction count"))
+            .collect();
+        let parallel_txns: Vec<usize> = opt
+            .parallel_txns
+            .split(',')
+            .map(|s| s.trim().parse().expect("Invalid transaction count"))
+            .collect();
+        let reports = manager.run(&serialize_txns, &parallel_txns);
         manager.pretty_print_reports(&reports);
     } else {
         rayon::ThreadPoolBuilder::new()
