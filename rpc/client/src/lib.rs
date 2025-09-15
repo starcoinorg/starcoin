@@ -210,7 +210,7 @@ impl RpcClient {
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
             match timeout {
-                Some(t) => async_std::future::timeout(t, r).await??,
+                Some(t) => tokio::time::timeout(t, r).await??,
                 None => r.await?,
             }
         };

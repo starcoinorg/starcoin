@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-std = { workspace = true }
 futures = { workspace = true }
 futures-retry = { workspace = true }
 futures-timer = { workspace = true }

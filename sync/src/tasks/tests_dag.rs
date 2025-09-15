@@ -30,9 +30,8 @@ async fn sync_block_process(
         let local_net = local_node.chain_mocker.net();
         let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
 
-        let block_chain_service = async_std::task::block_on(
-            registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
-        )?;
+        let block_chain_service = tokio::runtime::Handle::current()
+            .block_on(registry.service_ref::<BlockConnectorService<MockTxPoolService>>())?;
 
         let storage2 = local_node.get_storage2();
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(

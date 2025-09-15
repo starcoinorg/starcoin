@@ -1,7 +1,6 @@
 use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSealRequest};
 use crate::{ConsensusStrategy, JobClient, SealEvent};
 use anyhow::Result;
-use async_std::sync::Arc;
 use async_trait::async_trait;
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::future;
@@ -12,6 +11,7 @@ use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;
 use starcoin_time_service::TimeService;
 use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct StratumJobClient {

@@ -237,9 +237,9 @@ impl SysBus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use async_std::task;
     use futures_timer::Delay;
     use std::time::Duration;
+    use tokio::task;
 
     #[derive(Debug, Clone)]
     struct Message {}

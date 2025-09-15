@@ -189,7 +189,7 @@ async fn check_synced(
             break;
         } else {
             debug!("waiting for sync, now sleep 60 second");
-            async_std::task::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
     Ok(true)

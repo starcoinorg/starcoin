@@ -283,7 +283,6 @@ arc-swap = "1.5.1"
 arr_macro = "0.2.1"
 arrayref = "0.3"
 ascii = "1.0.0"
-async-std = { version = "1.12", features = ["attributes", "tokio1"] }
 async-trait = "0.1.53"
 asynchronous-codec = "0.5"
 atomic-counter = "1.0.1"
@@ -596,7 +595,7 @@ starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runt
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
 starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework" }
-starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness"}
+starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness" }
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
 starcoin-vm2-gas-schedule = { path = "vm2/framework/gas-schedule", package = "starcoin-gas-schedule" }
@@ -637,6 +636,7 @@ timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
 tokio = { version = "^1", features = ["full"] }
+tokio-util = "0.7.16"
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 toml = "0.5.9"
 trace-time = "0.1"

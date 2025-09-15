@@ -3,7 +3,6 @@
 
 use crate::{TaskError, TaskEventHandle};
 use anyhow::{Error, Result};
-use async_std::task::JoinHandle;
 use futures::channel::mpsc::{channel, Sender};
 use futures::task::{Context, Poll};
 use futures::{Sink, StreamExt};
@@ -14,6 +13,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::task::JoinHandle;
 
 #[derive(Clone, Copy, Debug)]
 pub enum CollectorState {
@@ -157,7 +157,7 @@ impl<Item, Output> FutureTaskSink<Item, Output> {
         C: TaskResultCollector<Item, Output = Output> + 'static,
     {
         let (sender, receiver) = channel(buffer_size);
-        let task_handle = async_std::task::spawn(async move {
+        let task_handle = tokio::spawn(async move {
             let mut receiver = receiver.fuse();
             while let Some(item) = receiver.next().await {
                 event_handle.on_item();
@@ -178,7 +178,9 @@ impl<Item, Output> FutureTaskSink<Item, Output> {
     }
 
     pub async fn wait_output(self) -> Result<Output, TaskError> {
-        self.task_handle.await
+        self.task_handle
+            .await
+            .map_err(|e| TaskError::BreakError(anyhow::anyhow!("Task join error: {}", e)))?
     }
 }
 
