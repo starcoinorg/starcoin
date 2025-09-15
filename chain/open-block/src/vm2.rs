@@ -18,11 +18,7 @@ use starcoin_vm2_types::transaction::{
 };
 
 impl OpenedBlock {
-    pub fn initialize_v2(
-        &mut self,
-        _parents_hash: Vec<HashValue>,
-        _red_blocks: u64,
-    ) -> anyhow::Result<()> {
+    pub fn initialize(&mut self) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         // Directly use VM2 BlockMetadata
         let block_metadata_txn = Transaction2::BlockMetadata(self.block_meta.clone());
@@ -54,18 +50,12 @@ impl OpenedBlock {
                 );
             }
         };
-        debug_assert!(!self.vm2_initialized);
-        self.vm2_initialized = true;
         Ok(())
     }
     pub fn push_txns2(
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
     ) -> anyhow::Result<ExcludedTxns> {
-        // if the vm2 block meta has not been executed, do it first.
-        if !self.vm2_initialized {
-            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
-        }
         let state = &self.state.1;
         let mut txns = user_txns
             .into_iter()

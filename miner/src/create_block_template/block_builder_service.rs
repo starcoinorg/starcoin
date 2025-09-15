@@ -6,6 +6,7 @@ use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_chain::{get_merge_bound_hash, BlockChain, ChainReader};
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -482,6 +483,9 @@ where
         let vm_metrics = self.vm_metrics.clone();
         let tx_provider = self.tx_provider.clone();
 
+        let vm1_offline = previous_header.number().saturating_add(1)
+            >= vm1_offline_height(previous_header.chain_id().id().into());
+
         RAYON_EXEC_POOL.spawn(move || {
             let mut opened_block = match OpenedBlock::new(
                 storage.clone(),
@@ -508,15 +512,22 @@ where
             };
 
             // Process VM1 transactions
-            let excluded_txns = match opened_block.push_txns(txns) {
-                Ok(excluded_txns) => excluded_txns,
-                Err(e) => {
-                    error!("[BlockProcess] push txns error: {}", e);
-                    return;
+            if !vm1_offline {
+                let excluded_txns = match opened_block.process_vm1_transactions(txns) {
+                    Ok(excluded_txns) => excluded_txns,
+                    Err(e) => {
+                        error!("[BlockProcess] process vm1 transactions error: {}", e);
+                        return;
+                    }
+                };
+                for invalid_txn in &excluded_txns.discarded_txns {
+                    tx_provider.remove_invalid_txn(invalid_txn.id());
                 }
-            };
-            for invalid_txn in &excluded_txns.discarded_txns {
-                tx_provider.remove_invalid_txn(invalid_txn.id());
+                info!(
+                    "[BlockProcess] VM1 discarded: {}, VM1 untouched: {}",
+                    excluded_txns.discarded_txns.len(),
+                    excluded_txns.untouched_txns.len(),
+                );
             }
 
             // Process VM2 transactions
@@ -532,10 +543,8 @@ where
             }
 
             info!(
-                "[BlockProcess] VM1 discarded: {}, VM2 discarded: {}, VM1 untouched: {}, VM2 untouched: {}",
-                excluded_txns.discarded_txns.len(),
+                "[BlockProcess] VM2 discarded: {}, VM2 untouched: {}",
                 excluded_txns2.discarded_txns.len(),
-                excluded_txns.untouched_txns.len(),
                 excluded_txns2.untouched_txns.len()
             );
 

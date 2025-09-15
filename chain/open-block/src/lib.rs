@@ -6,7 +6,6 @@ mod vm2;
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
@@ -52,12 +51,10 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    vm2_initialized: bool,
     // DAG fields
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
-    red_blocks: u64,
 }
 
 impl OpenedBlock {
@@ -107,7 +104,7 @@ impl OpenedBlock {
             red_blocks,
         );
 
-        let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
+        // let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
@@ -123,20 +120,13 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
-            vm2_initialized: false,
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
-            red_blocks,
         };
 
-        // Donot execute vm2 blockmeta txn util we need to execute vm2 user txns,
-        // For executor, we will execute vm1 txns first, and then vm2 txns.
-        if !vm1_offline {
-            opened_block.initialize()?;
-        } else {
-            opened_block.initialize_v2(tips_hash, red_blocks)?;
-        }
+        opened_block.initialize()?;
+
         Ok(opened_block)
     }
 
@@ -163,7 +153,7 @@ impl OpenedBlock {
     }
 
     /// Convert VM2 BlockMetadata to VM1 format with uncles set to 0
-    fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
+    pub fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
         block_metadata::from(self.block_meta.clone())
     }
     pub fn block_number(&self) -> u64 {
@@ -188,22 +178,6 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
-        // All vm1 txns should be executed before vm2 block_meta txn
-        // shortcut for quick return
-        if self.vm2_initialized {
-            if !user_txns.is_empty() {
-                warn!("vm2 is initialized, all following vm1 user txns are discarded!");
-            }
-            let discarded_txns = user_txns
-                .into_iter()
-                .map(|txn| txn.into())
-                .collect::<Vec<_>>();
-            return Ok(ExcludedTxns {
-                discarded_txns,
-                untouched_txns: vec![],
-            });
-        }
-
         let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns
@@ -270,7 +244,7 @@ impl OpenedBlock {
     }
 
     /// Run blockmeta first
-    fn initialize(&mut self) -> Result<()> {
+    fn execute_block_meta_vm1(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
         let vm1_metadata = self.convert_block_meta_to_legacy();
         debug!("VM1 BlockMetadata: {:?}", vm1_metadata);
@@ -301,6 +275,17 @@ impl OpenedBlock {
             }
         };
         Ok(())
+    }
+
+    pub fn process_vm1_transactions(
+        &mut self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<ExcludedTxns> {
+        self.execute_block_meta_vm1()?;
+        match self.push_txns(txns) {
+            Ok(excluded_txns) => Ok(excluded_txns),
+            Err(e) => bail!("[BlockProcess] push txns error: {}", e),
+        }
     }
 
     fn push_txn_and_state(
@@ -336,12 +321,7 @@ impl OpenedBlock {
     }
 
     /// Construct a block template for mining.
-    pub fn finalize(mut self) -> Result<BlockTemplate> {
-        // if vm2 is not initialized, we need to execute vm2 block_meta txn first
-        if !self.vm2_initialized {
-            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
-        }
-        debug_assert!(self.vm2_initialized);
+    pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
         let (state_root, state_root1, state_root2) = {
