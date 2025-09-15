@@ -55,28 +55,26 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     /// Helper function to create a storage account address from predefined addresses
-    fun next_storage_address<TokenType>(): address acquires AutoIncrementCounter {
-        // only one reserved account which might be starcoin_framework address
-        if (system_addresses::reserved_account_to() == system_addresses::reserved_account_from() + 1) {
-            from_bcs::u128_to_address(system_addresses::reserved_account_from())
+    public(friend) fun next_storage_address<TokenType>(range_from: u128, range_to: u128): address acquires AutoIncrementCounter {
+        assert!(range_to > range_from, 0);
+        if (range_to == range_from + 1) {
+            from_bcs::u128_to_address(range_from)
         } else {
             let counter_resource = borrow_global_mut<AutoIncrementCounter<TokenType>>(
                 system_addresses::get_starcoin_framework()
             );
+            loop {
+                aggregator_v2::add(&mut counter_resource.counter, 1);
+                let counter = (aggregator_v2::read(&counter_resource.counter) as u128);
 
-            // add/read is not atomic, but txn execution cost much more time, we can ignore contention here
-            aggregator_v2::add(&mut counter_resource.counter, 1);
-            let counter = (aggregator_v2::read(&counter_resource.counter) as u128);
+                let range = range_to - range_from - 1;
+                let addr_u128 = range_from + (counter % range);
 
-            let range = system_addresses::reserved_account_to() - system_addresses::reserved_account_from() - 1;
-            let addr_u128 = system_addresses::reserved_account_from() + (counter % range);
-
-            let addr = from_bcs::u128_to_address(addr_u128);
-            // avoiding transfer gas to framework account, which is prone to raise conflict in parallel execution
-            if (addr == system_addresses::get_starcoin_framework()) {
-                next_storage_address<TokenType>()
-            } else {
-                addr
+                let addr = from_bcs::u128_to_address(addr_u128);
+                // avoid using the framework account address, which is prone to create conflict
+                if (addr != system_addresses::get_starcoin_framework()) {
+                    return addr;
+                }
             }
         }
     }
@@ -84,7 +82,9 @@ module starcoin_framework::stc_transaction_fee {
     /// Deposit `token` into one of the storage accounts
     public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) acquires AutoIncrementCounter {
         // Get the target genesis account address
-        let deposit_address = next_storage_address<TokenType>();
+        let range_from = system_addresses::reserved_account_from();
+        let range_to = system_addresses::reserved_account_to();
+        let deposit_address = next_storage_address<TokenType>(range_from, range_to);
         
         // Deposit the fee directly to the selected genesis account
         coin::deposit(deposit_address, token);
@@ -108,10 +108,12 @@ module starcoin_framework::stc_transaction_fee {
         // Create accumulator for all collected fees
         let total_fees = coin::zero<TokenType>();
         
-        let first_withdraw_address = next_storage_address<TokenType>();
+        let range_from = system_addresses::reserved_account_from();
+        let range_to = system_addresses::reserved_account_to();
+        let first_withdraw_address = next_storage_address<TokenType>(range_from, range_to);
 
         while (true) {
-            let withdraw_address = next_storage_address<TokenType>();
+            let withdraw_address = next_storage_address<TokenType>(range_from, range_to);
 
             let balance = coin::balance<TokenType>(withdraw_address);
             if (balance > 0) {

@@ -128,7 +128,7 @@ publishing a wrapper of the <code><a href="stc_transaction_fee.md#0x1_stc_transa
 Helper function to create a storage account address from predefined addresses
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(): <b>address</b>
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b>
 </code></pre>
 
 
@@ -137,26 +137,27 @@ Helper function to create a storage account address from predefined addresses
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
+    <b>assert</b>!(range_to &gt; range_from, 0);
     // only one reserved <a href="account.md#0x1_account">account</a> which might be starcoin_framework <b>address</b>
-    <b>if</b> (<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() == <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() + 1) {
-        <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(<a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>())
+    <b>if</b> (range_to == range_from + 1) {
+        <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(range_from)
     } <b>else</b> {
         <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
             <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
         );
 
-        // add/read is not atomic, but txn execution cost much more time, we can ignore contention here
+        // add+read is not atomic, but txn execution cost much more time, we can ignore contention here
         <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
         <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
 
-        <b>let</b> range = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>() - <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() - 1;
-        <b>let</b> addr_u128 = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>() + (counter % range);
+        <b>let</b> range = range_to - range_from - 1;
+        <b>let</b> addr_u128 = range_from + (counter % range);
 
         <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
         // avoiding transfer gas <b>to</b> framework <a href="account.md#0x1_account">account</a>, which is prone <b>to</b> raise conflict in parallel execution
         <b>if</b> (addr == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()) {
-            <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;()
+            <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to)
         } <b>else</b> {
             addr
         }
@@ -186,7 +187,9 @@ Deposit <code>token</code> into one of the storage accounts
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;) <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
     // Get the target genesis <a href="account.md#0x1_account">account</a> <b>address</b>
-    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
+    <b>let</b> range_from = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>();
+    <b>let</b> range_to = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>();
+    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
 
     // Deposit the fee directly <b>to</b> the selected genesis <a href="account.md#0x1_account">account</a>
     <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(deposit_address, token);
@@ -224,10 +227,12 @@ This function iterates through all genesis accounts and withdraws available fees
     // Create accumulator for all collected fees
     <b>let</b> total_fees = <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;();
 
-    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
+    <b>let</b> range_from = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>();
+    <b>let</b> range_to = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>();
+    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
 
     <b>while</b> (<b>true</b>) {
-        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;();
+        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
 
         <b>let</b> balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address);
         <b>if</b> (balance &gt; 0) {
