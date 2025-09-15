@@ -108,7 +108,7 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
 
 impl<T, E> ParallelTransactionExecutor<T, E>
 where
-    T: Transaction<Key: std::fmt::Debug>,
+    T: Transaction,
     E: ExecutorTask<T = T>,
 {
     /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
@@ -213,7 +213,9 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
-            if format!("{:?}", r.path()).contains("stc_transaction_fee::AutoIncrementCounter") {
+            // vm2 uses aggregator to round robin select the target reserved address to receive gas fee
+            // aggregator uses native function to guarenteen the atomic, it's ok to skip check it here
+            if T::is_stc_transaction_fee_aggregator(r.path()) {
                 return true;
             }
 

@@ -22,6 +22,10 @@ pub enum ExecutionStatus<T, E> {
 pub trait Transaction: Sync + Send + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
+
+    fn is_stc_transaction_fee_aggregator(_key: &Self::Key) -> bool {
+        false
+    }
 }
 
 /// Inference result of a transaction.
