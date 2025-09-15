@@ -41,8 +41,6 @@ use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
 use starcoin_vm2_vm_types::token::stc::stc_type_tag as stc_type_tag_vm2;
 use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey as AccountPrivateKey2;
-use starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey as AccountPublicKey2;
-use starcoin_vm2_vm_types::transaction::authenticator::AuthenticationKey as AuthenticationKey2;
 use starcoin_vm2_vm_types::transaction::{
     RawUserTransaction as RawUserTransaction2, SignedUserTransaction as SignedUserTransaction2,
     Transaction as Transaction2, TransactionPayload as TransactionPayload2,
@@ -60,7 +58,6 @@ struct AccountDataVM1 {
 }
 
 struct AccountDataVM2 {
-    public_key: AccountPublicKey2,
     private_key: AccountPrivateKey2,
     address: AccountAddress2,
     sequence_number: u64,
@@ -236,9 +233,7 @@ impl TransactionGeneratorVM2 {
         for _i in 0..num_accounts {
             let (private_key, public_key) = key_gen.generate_keypair();
             let address = account_address2::from_public_key(&public_key);
-            let account_public_key = AccountPublicKey2::Single(public_key);
             let account = AccountDataVM2 {
-                public_key: account_public_key,
                 private_key: AccountPrivateKey2::Single(private_key),
                 address,
                 sequence_number: 0,
@@ -547,12 +542,10 @@ impl BenchmarkManager {
             } else {
                 panic!("BenchmarkManagerVM2 is not initialized.");
             }
+        } else if let Some(ref mut vm1) = self.vm1 {
+            vm1.run(serialize_bench_txns, parallel_bench_txns)
         } else {
-            if let Some(ref mut vm1) = self.vm1 {
-                vm1.run(serialize_bench_txns, parallel_bench_txns)
-            } else {
-                panic!("BenchmarkManagerVM1 is not initialized.");
-            }
+            panic!("BenchmarkManagerVM1 is not initialized.");
         }
     }
 }
