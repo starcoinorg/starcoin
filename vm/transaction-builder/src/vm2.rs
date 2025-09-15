@@ -224,15 +224,16 @@ pub fn encode_create_account_script_function(
     token_type: TypeTag,
     account_address: &AccountAddress,
     auth_key: AuthenticationKey,
-    _initial_balance: u128,
+    initial_balance: u128,
 ) -> EntryFunction {
     EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
-        Identifier::new("create_account").unwrap(),
+        Identifier::new("create_account_with_initial_amount").unwrap(),
         vec![token_type],
         vec![
             bcs_ext::to_bytes(account_address).unwrap(),
             bcs_ext::to_bytes(&auth_key.to_vec()).unwrap(),
+            bcs_ext::to_bytes(&initial_balance).unwrap(),
         ],
     )
 }
