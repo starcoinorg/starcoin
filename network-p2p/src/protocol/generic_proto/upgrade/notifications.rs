@@ -461,8 +461,8 @@ mod tests {
     use tokio::net::{TcpListener, TcpStream};
     use tokio_util::compat::TokioAsyncReadCompatExt;
 
-    #[test]
-    fn basic_works() {
+    #[tokio::test]
+    async fn basic_works() {
         const PROTO_NAME: Cow<'static, str> = Cow::Borrowed("/test/proto/1");
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
@@ -482,32 +482,30 @@ mod tests {
             substream.send(b"test message".to_vec()).await.unwrap();
         });
 
-        tokio::runtime::Handle::current().block_on(async move {
-            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-            listener_addr_tx
-                .send(listener.local_addr().unwrap())
-                .unwrap();
-
-            let (socket, _) = listener.accept().await.unwrap();
-            let (initial_message, mut substream) = upgrade::apply_inbound(
-                socket.compat(),
-                NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-            )
-            .await
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        listener_addr_tx
+            .send(listener.local_addr().unwrap())
             .unwrap();
 
-            assert_eq!(initial_message, b"initial message");
-            substream.send_handshake(&b"hello world"[..]);
+        let (socket, _) = listener.accept().await.unwrap();
+        let (initial_message, mut substream) = upgrade::apply_inbound(
+            socket.compat(),
+            NotificationsIn::new(PROTO_NAME, 1024 * 1024),
+        )
+        .await
+        .unwrap();
 
-            let msg = substream.next().await.unwrap().unwrap();
-            assert_eq!(msg.as_ref(), b"test message");
-        });
+        assert_eq!(initial_message, b"initial message");
+        substream.send_handshake(&b"hello world"[..]);
 
-        let _ = tokio::runtime::Handle::current().block_on(client);
+        let msg = substream.next().await.unwrap().unwrap();
+        assert_eq!(msg.as_ref(), b"test message");
+
+        let _ = client.await;
     }
 
-    #[test]
-    fn empty_handshake() {
+    #[tokio::test]
+    async fn empty_handshake() {
         // Check that everything still works when the handshake messages are empty.
 
         const PROTO_NAME: Cow<'static, str> = Cow::Borrowed("/test/proto/1");
@@ -529,7 +527,7 @@ mod tests {
             substream.send(Default::default()).await.unwrap();
         });
 
-        tokio::runtime::Handle::current().block_on(async move {
+        {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             listener_addr_tx
                 .send(listener.local_addr().unwrap())
@@ -548,13 +546,13 @@ mod tests {
 
             let msg = substream.next().await.unwrap().unwrap();
             assert!(msg.as_ref().is_empty());
-        });
+        }
 
-        let _ = tokio::runtime::Handle::current().block_on(client);
+        let _ = client.await;
     }
 
-    #[test]
-    fn refused() {
+    #[tokio::test]
+    async fn refused() {
         const PROTO_NAME: Cow<'static, str> = Cow::Borrowed("/test/proto/1");
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
@@ -575,7 +573,7 @@ mod tests {
             assert!(outcome.is_err());
         });
 
-        tokio::runtime::Handle::current().block_on(async move {
+        {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             listener_addr_tx
                 .send(listener.local_addr().unwrap())
@@ -593,13 +591,13 @@ mod tests {
 
             // We successfully upgrade to the protocol, but then close the substream.
             drop(substream);
-        });
+        }
 
-        let _ = tokio::runtime::Handle::current().block_on(client);
+        let _ = client.await;
     }
 
-    #[test]
-    fn large_initial_message_refused() {
+    #[tokio::test]
+    async fn large_initial_message_refused() {
         const PROTO_NAME: Cow<'static, str> = Cow::Borrowed("/test/proto/1");
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
@@ -621,7 +619,7 @@ mod tests {
             assert!(ret.is_err());
         });
 
-        tokio::runtime::Handle::current().block_on(async move {
+        {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             listener_addr_tx
                 .send(listener.local_addr().unwrap())
@@ -634,13 +632,13 @@ mod tests {
             )
             .await;
             assert!(ret.is_err());
-        });
+        }
 
-        let _ = tokio::runtime::Handle::current().block_on(client);
+        let _ = client.await;
     }
 
-    #[test]
-    fn large_handshake_refused() {
+    #[tokio::test]
+    async fn large_handshake_refused() {
         const PROTO_NAME: Cow<'static, str> = Cow::Borrowed("/test/proto/1");
         let (listener_addr_tx, listener_addr_rx) = oneshot::channel();
 
@@ -657,7 +655,7 @@ mod tests {
             assert!(ret.is_err());
         });
 
-        tokio::runtime::Handle::current().block_on(async move {
+        {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             listener_addr_tx
                 .send(listener.local_addr().unwrap())
@@ -675,8 +673,8 @@ mod tests {
             // We check that a handshake that is too large gets refused.
             substream.send_handshake((0..32768).map(|_| 0).collect::<Vec<_>>());
             let _ = substream.next().await;
-        });
+        }
 
-        let _ = tokio::runtime::Handle::current().block_on(client);
+        let _ = client.await;
     }
 }
