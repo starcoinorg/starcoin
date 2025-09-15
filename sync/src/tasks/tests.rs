@@ -138,7 +138,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
-    let mut node2 = join_handle.await;
+    let mut node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
@@ -176,7 +176,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
@@ -230,7 +230,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
@@ -286,7 +286,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
 
     // the dag in node 2 has two chains: one's current header is 7, the other's current header is 5.
     // As the dag ghost consent rule, the chain with 7 will be the main chain.
@@ -329,7 +329,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
 
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
@@ -393,7 +393,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     assert!(sync_result.is_err());
     assert!(sync_result.err().unwrap().is_canceled());
 
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     ensure!(
         target.target_id.id() != current_block_header.id(),
@@ -1051,7 +1051,7 @@ fn sync_block_in_async_connection(
         local_node.sync_dag_store.clone(),
         false,
     )?;
-    let branch = async_std::task::block_on(sync_task)?;
+    let branch = tokio::runtime::Handle::current().block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());
     let target_dag_state = target_node.chain().get_dag_state()?;
     let local_dag_state = target_node.chain().get_dag_state()?;

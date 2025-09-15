@@ -1,6 +1,5 @@
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::Result;
-use async_std::sync::Arc;
 use network_api::messages::PeerAnnouncementMessage;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_crypto::HashValue;
@@ -14,6 +13,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::multi_transaction::MultiTransactionError;
 use starcoin_types::transaction::TransactionError;
 use starcoin_vm2_vm_types::transaction::TransactionError as TransactionError2;
+use std::sync::Arc;
 
 /// Service which handle Announcement message
 pub struct AnnouncementService {

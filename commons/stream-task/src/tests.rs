@@ -235,7 +235,7 @@ async fn test_task_cancel() {
     )
     .generate();
     let (fut, task_handle) = fut.with_handle();
-    let join_handle = async_std::task::spawn(fut);
+    let join_handle = tokio::spawn(fut);
     Delay::new(Duration::from_millis(delay_time * 5)).await;
     assert!(!task_handle.is_done());
     task_handle.cancel();
@@ -245,7 +245,7 @@ async fn test_task_cancel() {
     assert!(task_handle.is_done());
 
     let task_err = result.err().unwrap();
-    assert!(task_err.is_canceled());
+    assert!(task_err.is_cancelled());
     let processed_messages = counter.load(Ordering::SeqCst);
     debug!("processed_messages before cancel: {}", processed_messages);
     assert!(processed_messages > 0 && processed_messages < max);

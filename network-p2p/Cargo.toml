@@ -6,7 +6,6 @@ bitflags = { workspace = true }
 bytes = { workspace = true }
 once_cell = { workspace = true }
 bcs-ext = { workspace = true }
-async-std = { workspace = true }
 bs58 = { workspace = true }
 derive_more = { workspace = true }
 either = { workspace = true }
@@ -41,7 +40,8 @@ void = { workspace = true }
 wasm-timer = { workspace = true }
 zeroize = { workspace = true }
 libp2p = { workspace = true, features = ["identify", "kad", "macros"] }
-tokio={ workspace = true}
+tokio = { workspace = true }
+tokio-util = { workspace = true, features = ["compat"] }
 
 [dev-dependencies]
 stest = { workspace = true }

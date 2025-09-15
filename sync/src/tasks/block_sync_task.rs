@@ -342,9 +342,7 @@ where
                         e,
                         block_info.block_id()
                     );
-                    async_std::task::block_on(async_std::task::sleep(Duration::from_millis(
-                        time_to_wait,
-                    )));
+                    std::thread::sleep(Duration::from_millis(time_to_wait));
                     time_to_wait = time_to_wait.saturating_mul(2);
                 }
             }
@@ -498,7 +496,7 @@ where
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
-        async_std::task::block_on(fut)
+        tokio::runtime::Handle::current().block_on(fut)
     }
 
     pub fn read_local_absent_block(
