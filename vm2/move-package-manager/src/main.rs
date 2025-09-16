@@ -4,7 +4,6 @@
 use anyhow::Result;
 use clap::Parser;
 use move_cli::Move;
-use move_core_types::errmap::ErrorMapping;
 use move_package_manager2::{
     compatibility_check_cmd::{handle_compatibility_check, CompatibilityCheckCommand},
     deployment::{handle_deployment, DeploymentCommand},
