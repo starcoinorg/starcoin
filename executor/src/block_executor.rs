@@ -119,9 +119,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     txns.len(),
                     chain_state.state_root()
                 );
-                let txn_state_root = chain_state
-                    .commit()
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                // let txn_state_root = chain_state
+                //     .commit()
+                //     .map_err(BlockExecutorError::BlockChainStateErr)?;
+                let txn_state_root = HashValue::zero();
                 executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
@@ -135,10 +136,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     chain_state.state_root()
                 );
                 executed_data.txn_events.push(events);
-                info!("[vm block execute] append transactions table infos, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
+                // info!("[vm block execute] append transactions table infos, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
                 // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
                 executed_data.txn_table_infos.append(&mut table_infos);
-                info!("[vm block execute] push transactions write set, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
+                // info!("[vm block execute] push transactions write set, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
                 executed_data.write_sets.push(write_set);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
@@ -152,6 +153,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             .expect("extra txn must be executed successfully");
         executed_data.with_extra_txn = true;
     }
+
+    chain_state
+        .commit()
+        .map_err(BlockExecutorError::BlockChainStateErr)?;
 
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
