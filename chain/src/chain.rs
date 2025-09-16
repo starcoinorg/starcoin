@@ -435,7 +435,14 @@ impl BlockChain {
                 MultiSignedUserTransaction::VM2(txn) => vm2_txns.push(txn),
             }
         }
-        let excluded_txns = opened_block.push_txns(vm1_txns)?;
+        let excluded_txns = if vm1_txns.is_empty() {
+            ExcludedTxns {
+                discarded_txns: vec![],
+                untouched_txns: vec![],
+            }
+        } else {
+            opened_block.process_vm1_transactions(vm1_txns)?
+        };
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
 
@@ -2237,24 +2244,37 @@ impl BlockChain {
                 .iter()
                 .map(|info| info.id())
                 .collect();
-            let included_txn_info_hashes2: Vec<_> = executed_data2
+            let included_txn_info_hashes2 = executed_data2
                 .txn_infos
                 .iter()
                 .map(|info| info.id())
-                .collect();
+                .collect::<Vec<_>>();
 
-            if !included_txn_info_hashes.is_empty() {
-                txn_accumulator.append(&included_txn_info_hashes)?;
-            }
-            if !included_txn_info_hashes2.is_empty() {
+            if vm1_offline {
                 txn_accumulator.append(&included_txn_info_hashes2)?;
+            } else {
+                // append the block meta txns of vm2 firstly
+                txn_accumulator.append(
+                    included_txn_info_hashes2
+                        .get(0..1)
+                        .ok_or_else(|| format_err!("block meta txns of vm2 is None"))?,
+                )?;
+
+                if !included_txn_info_hashes.is_empty() {
+                    txn_accumulator.append(&included_txn_info_hashes)?;
+                }
+
+                if !included_txn_info_hashes2.is_empty() {
+                    txn_accumulator
+                        .append(included_txn_info_hashes2.get(1..).unwrap_or_default())?;
+                }
             }
 
             txn_accumulator.root_hash()
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
