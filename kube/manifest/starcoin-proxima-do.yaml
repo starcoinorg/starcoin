@@ -20,11 +20,21 @@ spec:
         app: starcoin
         network: proxima
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: starcoin
+                  network: proxima
+              topologyKey: kubernetes.io/hostname
       nodeSelector:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-0e1220b
+        image: ghcr.io/starcoinorg/starcoin:sha-dbf754d
         imagePullPolicy: Always
         command:
           - bash
@@ -47,6 +57,13 @@ spec:
             rm /sc-data/proxima/config.toml;
             rm /sc-data/proxima/genesis_config.json;
             fi;
+        resources:
+          requests:
+            cpu: "800m"
+            memory: "800Mi"
+          limits:
+            cpu: "2500m"
+            memory: "2Gi"
         ports:
           - containerPort: 9840
         volumeMounts:
