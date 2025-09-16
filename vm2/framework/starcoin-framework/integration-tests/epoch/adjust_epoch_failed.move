@@ -13,7 +13,7 @@ script {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
-        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0, 0);
     }
 }
 
@@ -29,7 +29,7 @@ script {
         let block_number = 1;
         let block_time_milliseonds = 1000;
         let uncles = 1;
-        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0, 0);
     }
 }
 
@@ -48,10 +48,10 @@ script {
         let config = consensus_config::get_config();
         let max_uncles_per_block = consensus_config::base_max_uncles_per_block(&config);
         let uncles = max_uncles_per_block + 1;
-        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
+        let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0, 0);
     }
 }
-// check: "Keep(ABORTED { code: 25863"
+// check: "Keep(ABORTED { code: 65637"
 
 
 //# run --signers Genesis
@@ -69,6 +69,7 @@ script {
             &genesis_account, block_number,
             block_time_milliseonds,
             uncles,
+            0,
             0
         );
     }
@@ -84,18 +85,20 @@ script {
     //EINVALID_UNCLES_COUNT. If block_number == epoch_ref.end_block_number, uncles should be 0
     fun adjust_epoch(genesis_account: signer) {
         let block_time_milliseonds = 1000;
-        let uncles = 1;
+        let uncles = 100;
         let config = consensus_config::get_config();
         let block_number = consensus_config::epoch_block_count(&config);
         let _reward = epoch::adjust_epoch(
-            &genesis_account, block_number,
+            &genesis_account,
+            block_number,
             block_time_milliseonds,
             uncles,
+            0,
             0
         );
     }
 }
-// check: "Keep(ABORTED { code: 25863"
+// check: "Keep(ABORTED { code: 65637"
 
 
 //# run --signers Genesis
@@ -114,6 +117,7 @@ script {
             block_number,
             block_time_milliseonds,
             uncles,
+            0,
             0
         );
     }
