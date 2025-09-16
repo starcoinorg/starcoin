@@ -12,7 +12,7 @@ use scmd::{CommandAction, ExecContext};
 #[clap(name = "minimal-txns-each-block", alias = "minimal_txns_each_block")]
 pub struct MinimalTxnsEachBlockOpt {
     /// The minimum pending txn threshold to set. Ignored when --read is used.
-    #[clap(short = 'w', long = "write")]
+    #[clap(short = 'm', long = "min")]
     min: Option<usize>,
 
     /// Read current threshold instead of setting.

@@ -84,9 +84,10 @@ impl CommandAction for GetCoinCommand {
                     state.build_and_detach_execute_transaction(txn_opt.clone(), payload.clone())?;
                 }
             } else {
-                state
+                let txn_info = state
                     .build_and_execute_transaction(txn_opt, payload)?
                     .get_transaction_info();
+                return Ok(txn_info);
             }
         } else {
             bail!(
