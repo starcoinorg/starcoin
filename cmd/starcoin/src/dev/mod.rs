@@ -9,6 +9,7 @@ pub mod dev_helper;
 pub mod dev_helper_vm2;
 pub(crate) mod gen_block_cmd;
 mod get_coin_cmd;
+mod limit_txns_each_block;
 pub(crate) mod log_cmd;
 mod logger_balance_amount_cmd;
 pub(crate) mod move_explain;
@@ -25,8 +26,9 @@ pub mod upgrade_vm_config_proposal_cmd;
 
 pub use {
     call_api_cmd::*, call_contract_cmd::*, concurrency_level_cmd::*, deploy_cmd::*,
-    gen_block_cmd::*, get_coin_cmd::*, log_cmd::*, logger_balance_amount_cmd::*, move_explain::*,
-    panic_cmd::*, resolve_cmd::*, sign_txn_helper::*, sleep_cmd::*, subscribe_cmd::*,
-    upgrade_module_exe_cmd::*, upgrade_module_plan_cmd::*, upgrade_module_proposal_cmd::*,
-    upgrade_module_queue_cmd::*, upgrade_vm_config_proposal_cmd::*,
+    gen_block_cmd::*, get_coin_cmd::*, limit_txns_each_block::*, log_cmd::*,
+    logger_balance_amount_cmd::*, move_explain::*, panic_cmd::*, resolve_cmd::*,
+    sign_txn_helper::*, sleep_cmd::*, subscribe_cmd::*, upgrade_module_exe_cmd::*,
+    upgrade_module_plan_cmd::*, upgrade_module_proposal_cmd::*, upgrade_module_queue_cmd::*,
+    upgrade_vm_config_proposal_cmd::*,
 };

@@ -200,6 +200,43 @@
       }
     },
     {
+      "name": "debug.set_min_pending_txn_threshold",
+      "params": [
+        {
+          "name": "threshold",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint",
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "debug.get_min_pending_txn_threshold",
+      "params": [],
+      "result": {
+        "name": "usize",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "uint",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    {
       "name": "debug.get_logger_balance_amount",
       "params": [],
       "result": {
