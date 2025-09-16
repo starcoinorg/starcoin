@@ -104,7 +104,6 @@ impl OpenedBlock {
             red_blocks,
         );
 
-        // let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,

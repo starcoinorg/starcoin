@@ -170,7 +170,7 @@ impl MockChain {
 
     pub fn apply(&mut self, block: Block) -> Result<()> {
         if self.head.current_header().id() != block.header().parent_hash() {
-            self.head = self.head.fork(block.id())?;
+            self.head = self.head.fork(block.parent_hash())?;
         }
         self.head.apply(block)?;
         Ok(())

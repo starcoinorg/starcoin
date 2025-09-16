@@ -435,7 +435,7 @@ impl BlockChain {
                 MultiSignedUserTransaction::VM2(txn) => vm2_txns.push(txn),
             }
         }
-        let excluded_txns = if vm1_txns.is_empty() {
+        let excluded_txns = if parent_header.number().saturating_add(1) >= vm1_offline_height(parent_header.chain_id().id().into()) {
             ExcludedTxns {
                 discarded_txns: vec![],
                 untouched_txns: vec![],
@@ -672,7 +672,7 @@ impl BlockChain {
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
@@ -877,7 +877,7 @@ impl BlockChain {
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
@@ -1035,7 +1035,7 @@ impl BlockChain {
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
