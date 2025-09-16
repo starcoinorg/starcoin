@@ -13213,6 +13213,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-txpool-mock-service",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm1-types",
  "starcoin-vm1-vm-runtime",
