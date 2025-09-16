@@ -12484,6 +12484,7 @@ dependencies = [
  "starcoin-vm1-vm-types",
  "stest",
  "test-helper",
+ "tokio",
 ]
 
 [[package]]
