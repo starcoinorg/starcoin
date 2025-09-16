@@ -1,6 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod vm_exec_benchmark;
+
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
@@ -285,7 +287,7 @@ pub fn run_benchmark(
     exe_thread.join().unwrap();
 }
 
-fn create_transaction(
+pub fn create_transaction(
     sequence_number: u64,
     program: ScriptFunction,
     expiration_timestamp_secs: u64,
