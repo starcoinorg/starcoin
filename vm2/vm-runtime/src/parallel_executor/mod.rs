@@ -37,7 +37,7 @@ impl PTransaction for PreprocessedTransaction {
             }) => {
                 let address_str = address.to_hex_literal();
                 let path_str = format!("{}", path);
-                return address_str == "0x1" && path_str == "1/0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>";
+                address_str == "0x1" && path_str == "1/0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>"
             }
             _ => false,
         }

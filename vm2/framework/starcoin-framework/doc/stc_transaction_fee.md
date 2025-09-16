@@ -128,7 +128,7 @@ publishing a wrapper of the <code><a href="stc_transaction_fee.md#0x1_stc_transa
 Helper function to create a storage account address from predefined addresses
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b>
 </code></pre>
 
 
@@ -137,29 +137,26 @@ Helper function to create a storage account address from predefined addresses
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
     <b>assert</b>!(range_to &gt; range_from, 0);
-    // only one reserved <a href="account.md#0x1_account">account</a> which might be starcoin_framework <b>address</b>
     <b>if</b> (range_to == range_from + 1) {
         <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(range_from)
     } <b>else</b> {
         <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
             <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
         );
+        <b>loop</b> {
+            <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
+            <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
 
-        // add+read is not atomic, but txn execution cost much more time, we can ignore contention here
-        <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-        <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
+            <b>let</b> range = range_to - range_from - 1;
+            <b>let</b> addr_u128 = range_from + (counter % range);
 
-        <b>let</b> range = range_to - range_from - 1;
-        <b>let</b> addr_u128 = range_from + (counter % range);
-
-        <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
-        // avoiding transfer gas <b>to</b> framework <a href="account.md#0x1_account">account</a>, which is prone <b>to</b> raise conflict in parallel execution
-        <b>if</b> (addr == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()) {
-            <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to)
-        } <b>else</b> {
-            addr
+            <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
+            // avoid using the framework <a href="account.md#0x1_account">account</a> <b>address</b>, which is prone <b>to</b> create conflict
+            <b>if</b> (addr != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()) {
+                <b>return</b> addr;
+            }
         }
     }
 }
