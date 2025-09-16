@@ -435,7 +435,9 @@ impl BlockChain {
                 MultiSignedUserTransaction::VM2(txn) => vm2_txns.push(txn),
             }
         }
-        let excluded_txns = if parent_header.number().saturating_add(1) >= vm1_offline_height(parent_header.chain_id().id().into()) {
+        let excluded_txns = if parent_header.number().saturating_add(1)
+            >= vm1_offline_height(parent_header.chain_id().id().into())
+        {
             ExcludedTxns {
                 discarded_txns: vec![],
                 untouched_txns: vec![],
