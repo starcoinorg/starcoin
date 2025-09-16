@@ -14,7 +14,7 @@ use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_txpool::{get_min_pending_txn_threshold, set_min_pending_txn_threshold};
 use starcoin_types::system_events::GenerateBlockEvent;
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM as StarcoinVM2;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -86,12 +86,12 @@ impl DebugApi for DebugRpcImpl {
     }
 
     fn set_concurrency_level(&self, level: usize) -> Result<()> {
-        StarcoinVM::set_concurrency_level_once(level);
+        StarcoinVM2::set_concurrency_level(level);
         Ok(())
     }
 
     fn get_concurrency_level(&self) -> Result<usize> {
-        Ok(StarcoinVM::get_concurrency_level())
+        Ok(StarcoinVM2::get_concurrency_level())
     }
 
     fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()> {

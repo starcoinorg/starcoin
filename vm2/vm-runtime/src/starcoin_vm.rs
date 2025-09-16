@@ -18,7 +18,6 @@ use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
-use once_cell::sync::OnceCell;
 use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::Gas;
 use starcoin_gas_meter::StarcoinGasMeter;
@@ -58,6 +57,8 @@ use starcoin_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+use std::cmp::max;
+use std::sync::atomic::AtomicUsize;
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
 use crate::{verifier, VMExecutor};
@@ -65,7 +66,7 @@ use crate::{verifier, VMExecutor};
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm1_types::stdlib::StdlibVersion;
 
-static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
+static EXECUTION_CONCURRENCY_LEVEL: AtomicUsize = AtomicUsize::new(1);
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1399,20 +1400,17 @@ impl StarcoinVM {
     }
 
     /// Sets execution concurrency level when invoked the first time.
-    pub fn set_concurrency_level_once(mut concurrency_level: usize) {
+    pub fn set_concurrency_level(mut concurrency_level: usize) {
         concurrency_level = min(concurrency_level, num_cpus::get());
-        // Only the first call succeeds, due to OnceCell semantics.
-        EXECUTION_CONCURRENCY_LEVEL.set(concurrency_level).ok();
+        concurrency_level = max(concurrency_level, 1);
+        EXECUTION_CONCURRENCY_LEVEL.store(concurrency_level, std::sync::atomic::Ordering::SeqCst);
         info!("TurboSTM executor concurrency_level {}", concurrency_level);
     }
 
     /// Get the concurrency level if already set, otherwise return default 1
     /// (sequential execution).
     pub fn get_concurrency_level() -> usize {
-        match EXECUTION_CONCURRENCY_LEVEL.get() {
-            Some(concurrency_level) => *concurrency_level,
-            None => 1,
-        }
+        EXECUTION_CONCURRENCY_LEVEL.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Alternate form of 'execute_block' that keeps the vm_status before it goes into the
@@ -1630,7 +1628,8 @@ impl StarcoinVM {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
-                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
+                let (vm_status, output) =
+                    self.execute_user_transaction(&data_cache.as_move_resolver(), *txn.clone());
                 // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
