@@ -214,6 +214,12 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
+            // vm2 uses aggregator to round robin select the target reserved address to receive gas fee
+            // aggregator uses native function to guarenteen the atomic, it's ok to skip check it here
+            if T::is_stc_transaction_fee_aggregator(r.path()) {
+                return true;
+            }
+
             match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.

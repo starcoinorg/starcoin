@@ -2,6 +2,8 @@ module starcoin_framework::system_addresses {
     use std::error;
     use std::signer;
 
+    use starcoin_std::from_bcs;
+
     /// The address/account did not correspond to the core resource address
     const ENOT_CORE_RESOURCE_ADDRESS: u64 = 1;
     /// The operation can only be performed by the VM
@@ -10,6 +12,27 @@ module starcoin_framework::system_addresses {
     const ENOT_STARCOIN_FRAMEWORK_ADDRESS: u64 = 3;
     /// The address is not framework reserved address
     const ENOT_FRAMEWORK_RESERVED_ADDRESS: u64 = 4;
+    /// The reserved account range is invalid
+    const EINVALID_RESERVED_ACCOUNT_RANGE: u64 = 5;
+
+    
+    const RESERVED_ACCOUNT_FROM: u128 = 0x1;
+    const RESERVED_ACCOUNT_TO: u128 = 0xb;
+
+    public fun reserved_account_from(): u128 { RESERVED_ACCOUNT_FROM }
+    public fun reserved_account_to(): u128 { RESERVED_ACCOUNT_TO }
+
+    
+    fun is_reserved_account(addr: address): bool {
+        assert!(reserved_account_to() > reserved_account_from(), error::invalid_state(EINVALID_RESERVED_ACCOUNT_RANGE));
+        for (reserved in reserved_account_from()..reserved_account_to()) {
+            let reserved_addr = from_bcs::u128_to_address(reserved);
+            if (reserved_addr == addr) {
+                return true
+            }
+        };
+        false
+    }
 
     public fun assert_core_resource(account: &signer) {
         assert_core_resource_address(signer::address_of(account))
@@ -43,16 +66,7 @@ module starcoin_framework::system_addresses {
 
     /// Return true if `addr` is 0x0 or under the on chain governance's control.
     public fun is_framework_reserved_address(addr: address): bool {
-        is_starcoin_framework_address(addr) ||
-            addr == @0x2 ||
-            addr == @0x3 ||
-            addr == @0x4 ||
-            addr == @0x5 ||
-            addr == @0x6 ||
-            addr == @0x7 ||
-            addr == @0x8 ||
-            addr == @0x9 ||
-            addr == @0xa
+        is_starcoin_framework_address(addr) || is_reserved_account(addr)
     }
 
     /// Return true if `addr` is 0x1.

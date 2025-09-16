@@ -4,6 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::features;
     use std::option;
     use std::vector;
+    use starcoin_std::from_bcs;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -169,6 +170,17 @@ module starcoin_framework::stc_genesis {
         );
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
+
+        for (reserved_account in system_addresses::reserved_account_from()..system_addresses::reserved_account_to()) {
+            let addr = from_bcs::u128_to_address(reserved_account);
+            // starcoin_framework account already inited
+            if (system_addresses::is_starcoin_framework_address(addr)) {
+                continue;
+            };
+            let (account, _cap) = account::create_framework_reserved_account(addr);
+
+            coin::register<STC>(&account);
+        };
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);

@@ -601,23 +601,9 @@ spec starcoin_framework::account {
     /// The Account does not exist under the new address before creating the account.
     /// The system reserved addresses is @0x1 / @0x2 / @0x3 / @0x4 / @0x5  / @0x6 / @0x7 / @0x8 / @0x9 / @0xa.
     spec create_framework_reserved_account(addr: address): (signer, SignerCapability) {
-        aborts_if spec_is_framework_address(addr);
         include CreateAccountAbortsIf {addr, authentication_key: vector::empty<u8>()};
         ensures signer::address_of(result_1) == addr;
         ensures result_2 == SignerCapability { account: addr };
-    }
-
-    spec fun spec_is_framework_address(addr: address): bool{
-        addr != @0x1 &&
-        addr != @0x2 &&
-        addr != @0x3 &&
-        addr != @0x4 &&
-        addr != @0x5 &&
-        addr != @0x6 &&
-        addr != @0x7 &&
-        addr != @0x8 &&
-        addr != @0x9 &&
-        addr != @0xa
     }
 
     /// The Account existed under the signer.

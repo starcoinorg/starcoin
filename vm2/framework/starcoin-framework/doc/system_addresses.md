@@ -6,6 +6,9 @@
 
 
 -  [Constants](#@Constants_0)
+-  [Function `reserved_account_from`](#0x1_system_addresses_reserved_account_from)
+-  [Function `reserved_account_to`](#0x1_system_addresses_reserved_account_to)
+-  [Function `is_reserved_account`](#0x1_system_addresses_is_reserved_account)
 -  [Function `assert_core_resource`](#0x1_system_addresses_assert_core_resource)
 -  [Function `assert_core_resource_address`](#0x1_system_addresses_assert_core_resource_address)
 -  [Function `is_core_resource_address`](#0x1_system_addresses_is_core_resource_address)
@@ -33,6 +36,7 @@
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 </code></pre>
 
@@ -41,6 +45,16 @@
 <a id="@Constants_0"></a>
 
 ## Constants
+
+
+<a id="0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE"></a>
+
+The reserved account range is invalid
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE">EINVALID_RESERVED_ACCOUNT_RANGE</a>: u64 = 5;
+</code></pre>
+
 
 
 <a id="0x1_system_addresses_ENOT_CORE_RESOURCE_ADDRESS"></a>
@@ -82,6 +96,99 @@ The operation can only be performed by the VM
 </code></pre>
 
 
+
+<a id="0x1_system_addresses_RESERVED_ACCOUNT_FROM"></a>
+
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_FROM">RESERVED_ACCOUNT_FROM</a>: u128 = 1;
+</code></pre>
+
+
+
+<a id="0x1_system_addresses_RESERVED_ACCOUNT_TO"></a>
+
+
+
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 11;
+</code></pre>
+
+
+
+<a id="0x1_system_addresses_reserved_account_from"></a>
+
+## Function `reserved_account_from`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(): u128 { <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_FROM">RESERVED_ACCOUNT_FROM</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_reserved_account_to"></a>
+
+## Function `reserved_account_to`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>(): u128 { <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_is_reserved_account"></a>
+
+## Function `is_reserved_account`
+
+
+
+<pre><code><b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr: <b>address</b>): bool {
+    <b>assert</b>!(<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>() &gt; <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="system_addresses.md#0x1_system_addresses_EINVALID_RESERVED_ACCOUNT_RANGE">EINVALID_RESERVED_ACCOUNT_RANGE</a>));
+    for (reserved in <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">reserved_account_from</a>()..<a href="system_addresses.md#0x1_system_addresses_reserved_account_to">reserved_account_to</a>()) {
+        <b>let</b> reserved_addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(reserved);
+        <b>if</b> (reserved_addr == addr) {
+            <b>return</b> <b>true</b>
+        }
+    };
+    <b>false</b>
+}
+</code></pre>
+
+
+
+</details>
 
 <a id="0x1_system_addresses_assert_core_resource"></a>
 
@@ -250,16 +357,7 @@ Return true if <code>addr</code> is 0x0 or under the on chain governance's contr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr: <b>address</b>): bool {
-    <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) ||
-        addr == @0x2 ||
-        addr == @0x3 ||
-        addr == @0x4 ||
-        addr == @0x5 ||
-        addr == @0x6 ||
-        addr == @0x7 ||
-        addr == @0x8 ||
-        addr == @0x9 ||
-        addr == @0xa
+    <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) || <a href="system_addresses.md#0x1_system_addresses_is_reserved_account">is_reserved_account</a>(addr)
 }
 </code></pre>
 

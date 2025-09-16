@@ -28,6 +28,9 @@ pub trait Transaction: Sync + Send + 'static {
     fn is_block_meta_data(&self) -> bool {
         false
     }
+    fn is_stc_transaction_fee_aggregator(_key: &Self::Key) -> bool {
+        false
+    }
 }
 
 /// Inference result of a transaction.
