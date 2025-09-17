@@ -18,7 +18,6 @@ use starcoin_parallel_executor::{
 };
 use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
-    state_store::state_key::inner::StateKeyInner,
     state_store::state_key::StateKey,
     state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
@@ -28,20 +27,6 @@ use starcoin_vm_types::{
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
-
-    fn is_stc_transaction_fee_aggregator(key: &Self::Key) -> bool {
-        match key.inner() {
-            StateKeyInner::AccessPath(starcoin_vm_types::access_path::AccessPath {
-                address,
-                path,
-            }) => {
-                let address_str = address.to_hex_literal();
-                let path_str = format!("{}", path);
-                address_str == "0x1" && path_str == "1/0x00000000000000000000000000000001::stc_transaction_fee::AutoIncrementCounter<0x00000000000000000000000000000001::starcoin_coin::STC>"
-            }
-            _ => false,
-        }
-    }
 }
 
 // Wrapper to avoid orphan rule

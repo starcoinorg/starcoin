@@ -16,6 +16,7 @@ pub mod object;
 pub mod object_code_deployment;
 pub mod randomness;
 pub mod state_storage;
+pub mod stc_transaction_fee;
 pub mod string_utils;
 pub mod transaction_context;
 pub mod type_info;
