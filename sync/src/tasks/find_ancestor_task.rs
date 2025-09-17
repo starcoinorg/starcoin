@@ -90,7 +90,7 @@ impl AncestorCollector {
 impl TaskResultCollector<BlockIdAndNumber> for AncestorCollector {
     type Output = BlockIdAndNumber;
 
-    fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
+    async fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
         let block_id = self
             .accumulator
             .get_leaf(item.number)?

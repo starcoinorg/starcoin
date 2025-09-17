@@ -451,7 +451,7 @@ where
         }
     }
 
-    fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
+    async fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
         let block_header = &block.header().clone();
         if self.chain.has_dag_block(block_header.id())? {
             info!(
@@ -496,7 +496,8 @@ where
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
-        tokio::runtime::Handle::current().block_on(fut)
+        fut.await
+        //tokio::runtime::Handle::current().block_on(fut)
     }
 
     pub fn read_local_absent_block(
@@ -691,22 +692,22 @@ where
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
 where
     N: PeerProvider + 'static,
-    H: BlockConnectedEventHandle + 'static,
+    H: BlockConnectedEventHandle + 'static + Sync,
 {
     type Output = BlockChain;
 
-    fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
+    async fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         let (block, block_info, peer_id) = item.into();
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        match self.ensure_dag_parent_blocks_exist(block.clone())? {
+        match self.ensure_dag_parent_blocks_exist(block.clone()).await? {
             ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
             ParallelSign::Continue => (),
         }
         let state = self.check_enough();
-        if let anyhow::Result::Ok(CollectorState::Enough) = &state {
+        if let Ok(CollectorState::Enough) = &state {
             if self.chain.has_dag_block(block.header().id())? {
                 let current_header = self.chain.current_header();
                 let current_block = self

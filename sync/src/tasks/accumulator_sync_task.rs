@@ -113,7 +113,7 @@ impl AccumulatorCollector {
 impl TaskResultCollector<HashValue> for AccumulatorCollector {
     type Output = (BlockIdAndNumber, MerkleAccumulator);
 
-    fn collect(&mut self, item: HashValue) -> Result<CollectorState> {
+    async fn collect(&mut self, item: HashValue) -> Result<CollectorState> {
         self.accumulator.append(&[item])?;
         self.accumulator.flush()?;
         if self.accumulator.num_leaves() == self.target.num_leaves {
