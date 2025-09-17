@@ -10,11 +10,11 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "merkle-generator", about = "merkle proof generator")]
 pub struct ExporterOptions {
-    #[clap(long, short, parse(from_os_str))]
+    #[clap(long, short)]
     /// input csv without header, like rewards.csv
     pub input: PathBuf,
 
-    #[clap(parse(from_os_str))]
+    #[clap(long, short)]
     /// merkle output json file, like merkle.json
     pub output: PathBuf,
 }

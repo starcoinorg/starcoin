@@ -22,6 +22,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage2;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
@@ -33,7 +34,6 @@ use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,

@@ -28,8 +28,8 @@ serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 schemars = { workspace = true }
 
-starcoin-accumulator = { workspace = true}
-starcoin-types = { workspace = true }
+starcoin-accumulator = { workspace = true }
+starcoin-vm1-types = { path = "../../../types" }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }

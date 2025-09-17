@@ -20,7 +20,7 @@ use starcoin_metrics::metrics::VMMetrics;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage::{BlockStore, Storage, Storage2, Store, Store2};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -31,7 +31,6 @@ use starcoin_types::{
     contract_event::ContractEvent,
     startup_info::StartupInfo,
 };
-use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;

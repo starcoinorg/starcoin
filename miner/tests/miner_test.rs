@@ -30,11 +30,6 @@ async fn test_miner_service() {
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
     registry.put_shared(storage2.clone()).await.unwrap();
-    // Also share storage2 as Arc<dyn Store> for PruningPointService
-    registry
-        .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
-        .await
-        .unwrap();
     registry.put_shared(dag).await.unwrap();
 
     let genesis_hash = genesis.block().id();

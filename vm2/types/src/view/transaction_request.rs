@@ -3,7 +3,7 @@ use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{CryptoMaterialError, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::transaction::{
+use starcoin_vm2_vm_types::transaction::{
     authenticator::AccountPublicKey, RawUserTransaction, TransactionPayload,
 };
 use std::str::FromStr;

@@ -1,4 +1,4 @@
-use crate::SealEvent;
+use crate::{ConsensusStrategy, SealEvent};
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
 use futures_channel::mpsc;
@@ -11,7 +11,6 @@ use starcoin_miner_client_api::Solver;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::ops::Range;
 use std::sync::Arc;
 use std::thread;
@@ -120,7 +119,6 @@ impl Solver for CpuSolver {
                                                 };
                                                 break;
                                             }
-
                                         } else {
                                             error!("[miner-client-solver] Failed to calculate target: {diff}");
                                             break;

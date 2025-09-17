@@ -12,7 +12,7 @@ use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
-use anyhow::{format_err, Result};
+use anyhow::{ensure, format_err, Result};
 use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
@@ -386,7 +386,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
 
-    Delay::new(Duration::from_millis(100)).await;
+    Delay::new(Duration::from_millis(10)).await;
 
     task_handle.cancel();
     let sync_result = sync_join_handle.await?;
@@ -395,7 +395,10 @@ pub async fn test_full_sync_cancel() -> Result<()> {
 
     let node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
-    assert_ne!(target.target_id.id(), current_block_header.id());
+    ensure!(
+        target.target_id.id() != current_block_header.id(),
+        "Sync task cancel test fail."
+    );
     let reports = task_event_counter.get_reports();
     reports
         .iter()

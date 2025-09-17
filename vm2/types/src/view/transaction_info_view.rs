@@ -6,7 +6,7 @@ use anyhow::bail;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::transaction::{RichTransactionInfo, TransactionInfo, TransactionStatus};
+use starcoin_vm2_vm_types::transaction::{RichTransactionInfo, TransactionInfo, TransactionStatus};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {

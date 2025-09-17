@@ -235,7 +235,6 @@ pub mod account_config;
 pub mod block_metadata;
 pub mod event;
 pub mod fee_statement;
-pub mod genesis_config;
 pub mod on_chain_config;
 pub mod on_chain_resource;
 pub mod serde_helper;

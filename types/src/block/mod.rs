@@ -7,14 +7,12 @@ mod tests;
 
 pub mod raw_block_header;
 
-use crate::account_address::AccountAddress;
-use crate::block_metadata::BlockMetadata;
-use crate::genesis_config::ChainId;
-use crate::language_storage::CORE_CODE_ADDRESS;
-use crate::multi_state::MultiState;
-use crate::multi_transaction::MultiSignedUserTransaction;
-use crate::transaction::SignedUserTransaction;
-use crate::U256;
+use crate::{
+    account_address::AccountAddress, block_metadata::BlockMetadata, genesis_config::ChainId,
+    genesis_config::ConsensusStrategy, language_storage::CORE_CODE_ADDRESS,
+    multi_state::MultiState, multi_transaction::MultiSignedUserTransaction,
+    transaction::SignedUserTransaction, U256,
+};
 use bcs_ext::Sample;
 pub use legacy::{Block as LegacyBlock, BlockBody as LegacyBlockBody};
 pub use raw_block_header::RawBlockHeader;
@@ -27,7 +25,6 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddressV2,
     transaction::SignedUserTransaction as SignedUserTransactionV2,

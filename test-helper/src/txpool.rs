@@ -9,11 +9,11 @@ use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_storage::Storage2;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_vm2_account_service::{
     AccountService as AccountService2, AccountStorage as AccountStorage2,
 };
-use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -44,6 +44,7 @@ pub async fn start_txpool_with_miner(
     let mut config = NodeConfig::random_for_test();
     config.tx_pool.set_max_count(pool_size);
     config.miner.disable_miner_client = Some(!enable_miner);
+    let rocksdb_config = config.storage.rocksdb_config();
 
     let node_config = Arc::new(config);
 
@@ -66,13 +67,8 @@ pub async fn start_txpool_with_miner(
         .unwrap();
     registry.register::<AccountService>().await.unwrap();
 
-    let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig::new(
-        node_config.storage.rocksdb_config().max_open_files,
-        node_config.storage.rocksdb_config().max_total_wal_size,
-        node_config.storage.rocksdb_config().bytes_per_sync,
-        node_config.storage.rocksdb_config().wal_bytes_per_sync,
-    );
-    let account_storage2 = AccountStorage2::create_from_path(vault_config.dir2(), config2).unwrap();
+    let account_storage2 =
+        AccountStorage2::create_from_path(vault_config.dir2(), rocksdb_config).unwrap();
     registry
         .put_shared::<AccountStorage2>(account_storage2.clone())
         .await

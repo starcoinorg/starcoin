@@ -10,7 +10,7 @@ use starcoin_config::{Connect, G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use std::sync::Arc;
 use std::time::Duration;
 

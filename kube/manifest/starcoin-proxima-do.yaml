@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: starcoin
+  namespace: starcoin-proxima
+  labels:
+    app: starcoin
+    network: proxima
+spec:
+  selector:
+    matchLabels:
+      app: starcoin
+  serviceName: starcoin-svc
+  replicas: 3
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      name: starcoin
+      labels:
+        app: starcoin
+        network: proxima
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: starcoin
+                  network: proxima
+              topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        starcoin/node-pool: seed-pool
+      containers:
+      - name: starcoin
+        image: ghcr.io/starcoinorg/starcoin:sha-2ed810c
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            node_key=${node_keys[$id]};
+            if [ ! -z $node_key ]; then
+            node_key_flag="--node-key ${node_key}";
+            fi;
+            /starcoin/starcoin -n proxima -d /sc-data --discover-local=true $node_key_flag --p2prpc-default-global-api-quota 9000/s --p2prpc-custom-user-api-quota get_header_by_hash=9000/s --p2prpc-custom-user-api-quota get_headers_by_hash=9000/s --p2prpc-custom-user-api-quota info=9000/s --p2prpc-custom-user-api-quota get_block_by_hash=9000/s --p2prpc-custom-user-api-quota get_block_ids=9000/s --p2prpc-custom-user-api-quota get_blocks=9000/s --jsonrpc-default-global-api-quota 9000/s --jsonrpc-custom-user-api-quota chain.get_headers_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_header_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.info=9000/s --jsonrpc-custom-user-api-quota chain.get_block_by_hash=9000/s --jsonrpc-custom-user-api-quota chain.get_block_ids=9000/s --jsonrpc-custom-user-api-quota chain.get_blocks=9000/s --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512;
+            ret=$?;
+            echo "Now ret is - $ret";
+            if [ $ret -eq 120 ] || [ $ret -eq 139 ]; then
+            echo "Start failed with gensis mismatch code 120, clean data...";
+            rm -rf /sc-data/proxima/ &>/dev/null;
+            elif [ $ret -ne 0 ]; then
+            echo "Node start fail, try to remove config.";
+            rm /sc-data/proxima/config.toml;
+            rm /sc-data/proxima/genesis_config.json;
+            fi;
+        resources:
+          requests:
+            cpu: "800m"
+            memory: "800Mi"
+          limits:
+            cpu: "2500m"
+            memory: "2Gi"
+        ports:
+          - containerPort: 9840
+        volumeMounts:
+        - name: starcoin-volume
+          mountPath: /sc-data
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODE_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: node-keys
+                key: node-keys
+        livenessProbe:
+          tcpSocket:
+            port: 9840
+          initialDelaySeconds: 600
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+          successThreshold: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: starcoin-volume
+      namespace: starcoin-proxima
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi

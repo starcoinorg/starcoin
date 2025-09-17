@@ -4,7 +4,7 @@
 mod export;
 mod import;
 
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use starcoin_types::account_address::AccountAddress;
 use std::fs;
 use std::path::PathBuf;
@@ -23,11 +23,11 @@ struct Cli {
 enum Commands {
     /// Export state data to CSV file
     Export {
-        #[clap(long, short = 'o', parse(from_os_str))]
+        #[clap(long, short = 'o')]
         /// Output file path, e.g. accounts.csv
         output: PathBuf,
 
-        #[clap(long, short = 'i', parse(from_os_str))]
+        #[clap(long, short = 'i')]
         /// Starcoin node db path, e.g. ~/.starcoin/barnard/starcoindb/db/starcoindb
         db_path: PathBuf,
 
@@ -39,17 +39,17 @@ enum Commands {
         /// Whitelist file path containing account addresses (one per line)
         whitelist_file: Option<PathBuf>,
 
-        #[clap(long, multiple_values = true)]
+        #[clap(long, action = ArgAction::Append)]
         /// Account addresses to export (can be specified multiple times)
         addresses: Vec<String>,
     },
     /// Import state data from BCS file
     Import {
-        #[clap(long, short = 'i', parse(from_os_str))]
+        #[clap(long, short = 'i')]
         /// Input BCS file path
         bcs_input: PathBuf,
 
-        #[clap(long, short = 'd', parse(from_os_str))]
+        #[clap(long, short = 'd')]
         /// Output database path
         db_path: PathBuf,
 

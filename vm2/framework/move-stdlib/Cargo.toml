@@ -20,9 +20,9 @@ once_cell = { workspace = true }
 sha2 = "0.9.3"
 sha3 = "0.9.1"
 smallvec = { workspace = true }
-starcoin-gas-schedule = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-gas-schedule" }
+starcoin-gas-schedule = { path = "../gas-schedule" }
 starcoin-logger = { workspace = true }
-starcoin-native-interface = { git = "https://github.com/starcoinorg/starcoin", rev = "a1e2ecd2ce9509fdf913d5dda8a0c43cfd43a5ea", package = "starcoin-native-interface" }
+starcoin-native-interface = { path = "../native-interface" }
 tempfile = { workspace = true }
 
 [dev-dependencies]

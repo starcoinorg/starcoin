@@ -30,8 +30,8 @@ use starcoin_vm2_types::view::{
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
     account_config::{association_address, AccountResource, STC_TOKEN_CODE_STR},
-    genesis_config::ChainId,
     move_resource::MoveResource,
+    on_chain_resource::ChainId,
     state_view::StateReaderExt,
     transaction::{
         authenticator::{AccountPublicKey, TransactionAuthenticator},

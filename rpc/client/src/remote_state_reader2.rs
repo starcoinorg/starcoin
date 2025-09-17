@@ -4,20 +4,17 @@
 use crate::{RpcClient, StateRootOption};
 use anyhow::{format_err, Result};
 use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
-use starcoin_vm2_state_tree::AccountStateSetIterator;
+use starcoin_vm2_state_api::{
+    AccountStateSetIterator, ChainStateReader, StateWithProof, StateWithTableItemProof,
+};
 use starcoin_vm2_types::{
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
 use starcoin_vm2_vm_types::state_store::{
-    errors::StateviewError,
-    state_key::inner::StateKeyInner,
-    state_key::StateKey,
-    state_storage_usage::StateStorageUsage,
-    state_value::StateValue,
-    table::{TableHandle, TableInfo},
+    errors::StateviewError, state_key::inner::StateKeyInner, state_key::StateKey,
+    state_storage_usage::StateStorageUsage, state_value::StateValue, table::TableHandle,
     TStateView,
 };
 
@@ -96,11 +93,6 @@ impl ChainStateReader for RemoteStateReader<'_> {
         self.client
             .state_get_with_table_item_proof_by_root2(*handle, key.to_vec(), self.state_root)
             .map(Into::into)
-    }
-    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
-        self.client
-            .state_get_table_info2(address)
-            .map(TableInfo::from)
     }
 }
 

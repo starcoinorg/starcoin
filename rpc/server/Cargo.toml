@@ -72,7 +72,6 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }

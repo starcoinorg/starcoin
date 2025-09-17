@@ -1,0 +1,8 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: migration-seed-do-snapshot
+  namespace: starcoin-main
+spec:
+  source:
+    persistentVolumeClaimName: starcoin-volume-starcoin-0

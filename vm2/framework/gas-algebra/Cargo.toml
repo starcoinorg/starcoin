@@ -1,0 +1,27 @@
+[dependencies]
+either = { workspace = true }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+serde = { workspace = true }
+paste = "1.0"
+
+
+[package]
+authors = { workspace = true }
+description = "starcoin vm2 gas algebra"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-gas-algebra"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[features]
+default = []
+testing = ["move-stdlib/testing"]

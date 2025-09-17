@@ -17,6 +17,7 @@ use once_cell::sync::Lazy;
 use serde::de::DeserializeOwned;
 use std::{collections::HashMap, fmt, fmt::Debug, sync::Arc};
 
+mod block_reward_config;
 mod consensus_config;
 mod dao_config;
 mod starcoin_features;
@@ -31,6 +32,7 @@ mod vm_config;
 mod timed_features;
 
 pub use self::{
+    block_reward_config::RewardConfig,
     consensus_config::{consensus_config_type_tag, ConsensusConfig},
     dao_config::DaoConfig,
     gas_schedule::{
@@ -109,6 +111,7 @@ pub static G_ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
         Version::config_id(),
         ConsensusConfig::config_id(),
         DaoConfig::config_id(),
+        RewardConfig::config_id(),
     ]
 });
 
@@ -195,6 +198,16 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
 
     fn struct_tag() -> StructTag {
         Self::config_id().struct_tag()
+    }
+
+    fn thin_struct_tag() -> StructTag {
+        StructTag {
+            address: AccountAddress::from_hex_literal(Self::ADDRESS)
+                .expect("failed to get address"),
+            module: Identifier::new(Self::MODULE_IDENTIFIER).expect("failed to get Identifier"),
+            name: Identifier::new(Self::TYPE_IDENTIFIER).expect("failed to get Identifier"),
+            type_args: Self::type_params(),
+        }
     }
 }
 

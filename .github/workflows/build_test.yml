@@ -32,7 +32,7 @@ jobs:
           RUSTFLAGS: -D warnings
         with:
           command: clippy
-          args: --all-targets -- -Aclippy::doc_lazy_continuation
+          args: --all-targets
 
       - name: build
         uses: actions-rs/cargo@v1

@@ -4,9 +4,9 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::{EventHandle, EventKey};
-use crate::genesis_config::ChainId;
 use crate::identifier::Identifier;
 use crate::language_storage::ModuleId;
+use crate::on_chain_resource::ChainId;
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     EntryFunction, Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,

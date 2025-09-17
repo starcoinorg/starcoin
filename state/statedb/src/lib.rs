@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod multi_chain_state_db;
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, format_err, Result};
 use bcs_ext::BCSCodec;
@@ -12,10 +11,10 @@ use parking_lot::{Mutex, RwLock};
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::AccountStateSetIterator;
 pub use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateProof, StateWithProof};
 use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
 use starcoin_state_tree::mock::MockStateNodeStore;
-use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
@@ -29,7 +28,6 @@ use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::state_store::table::TableInfo;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use starcoin_vm_types::state_view::StateView;
 use std::collections::HashSet;
@@ -564,10 +562,6 @@ impl ChainStateReader for ChainStateDB {
                 table_handle_state_object.root_hash(),
             ),
         ))
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        self.store.get_table_info(address)
     }
 }
 

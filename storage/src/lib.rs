@@ -9,7 +9,7 @@ use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStore, StcBlockInfoStorage};
 use crate::chain_info::ChainInfoStorage;
 use crate::contract_event::StcContractEventStorage;
-use crate::state_node::StateStorage;
+use crate::state_node::{StateStorage, StateStorageV2};
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::table_info::{StcTableInfoStorage, TableInfoStore};
 use crate::transaction::StcTransactionStorage;
@@ -20,8 +20,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
@@ -32,13 +30,13 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 pub use upgrade::BARNARD_HARD_FORK_HASH;
 pub use upgrade::BARNARD_HARD_FORK_HEIGHT;
 pub use version::StorageVersion;
+pub use vm2::{Storage2, Store2};
 
 pub mod accumulator;
 pub mod batch;
@@ -62,6 +60,7 @@ mod upgrade;
 #[macro_use]
 pub mod storage_macros;
 mod version;
+mod vm2;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
@@ -76,8 +75,9 @@ pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_INFO_PREFIX_NAME_V2: ColumnFamilyName = "block_info_v2";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
 pub const BLOCK_TRANSACTION_INFOS_PREFIX_NAME: ColumnFamilyName = "block_txn_infos";
-pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const STATE_NODE_PREFIX_NAME_PREV: ColumnFamilyName = "state_node_prev";
+pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
+pub const STATE_NODE_PREFIX_NAME_V2: ColumnFamilyName = "state_node_v2";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_PREFIX_NAME_V2: ColumnFamilyName = "transaction_v2";
@@ -221,6 +221,7 @@ pub struct Storage {
     transaction_storage: StcTransactionStorage,
     block_storage: BlockStorage,
     state_node_storage: StateStorage,
+    pub(crate) state_node_storage2: StateStorageV2,
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
     vm_state_accumulator_storage: AccumulatorStorage<VMStateAccumulatorStorage>,
@@ -239,6 +240,7 @@ impl Storage {
             transaction_storage: StcTransactionStorage::new(instance.clone()),
             block_storage: BlockStorage::new(instance.clone()),
             state_node_storage: StateStorage::new(instance.clone()),
+            state_node_storage2: StateStorageV2::new(instance.clone()),
             block_accumulator_storage: AccumulatorStorage::new_block_accumulator_storage(
                 instance.clone(),
             ),
@@ -279,11 +281,6 @@ impl StateNodeStore for Storage {
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
         self.state_node_storage.write_batch(batch)
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        let handle = TableHandle(address).into();
-        Ok(self.table_info_storage.get(handle)?.and_then(|i| i.to_v1()))
     }
 }
 

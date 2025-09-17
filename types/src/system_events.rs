@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
+use crate::genesis_config::ConsensusStrategy;
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock {

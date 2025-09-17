@@ -5,7 +5,7 @@ use crate::view::raw_user_transaction_view::RawUserTransactionView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::transaction::{
+use starcoin_vm2_vm_types::transaction::{
     authenticator::TransactionAuthenticator, SignedUserTransaction,
 };
 

@@ -40,14 +40,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+pub mod vm2;
 
 pub use errors::GenesisError;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_vm2_storage::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
+use starcoin_storage::{Storage2, Store2};
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -80,7 +79,7 @@ impl Display for Genesis {
 impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
-    /// Load Load pre generated genesis, only support builtin network.
+    /// Load pre generated genesis, only support builtin network.
     pub fn load(net: &ChainNetwork) -> Result<Option<Self>> {
         match net.id() {
             ChainNetworkID::Builtin(id) => Self::load_generated(*id),
@@ -133,10 +132,7 @@ impl Genesis {
                     .as_slice(),
             );
 
-            let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
-                net.chain_id().id(),
-                genesis_config2,
-            );
+            let (txn2, txn2_info) = vm2::build_and_execute_genesis_transaction(net);
 
             let txn = Self::build_genesis_transaction(net)?;
 
@@ -406,7 +402,6 @@ impl Genesis {
     pub fn init_and_check_storage(
         net: &ChainNetwork,
         storage: Arc<Storage>,
-        storage2: Arc<Storage2>,
         dag: BlockDAG,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
@@ -435,8 +430,8 @@ impl Genesis {
             Ok(None) => {
                 debug!("init_and_check_storage | Cannot found from db, reconstruct chain info");
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let chain_info =
-                    genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag)?;
+                let storage2 = Arc::new(Storage2(storage.clone()));
+                let chain_info = genesis.execute_genesis_block(net, storage, storage2, dag)?;
                 (chain_info, genesis)
             }
             Err(e) => {
@@ -451,7 +446,7 @@ impl Genesis {
         net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis, BlockDAG)> {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
         let chain_info =
@@ -465,7 +460,7 @@ impl Genesis {
         k: KType,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis, BlockDAG)> {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing_with_parameters(k)?;
         let chain_info =
@@ -482,7 +477,7 @@ impl Genesis {
                 capacity.unwrap_or(DEFAULT_CACHE_SIZE),
             ),
         )?);
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
         let chain_info =
@@ -559,20 +554,14 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let dag1 = BlockDAG::create_for_testing()?;
         let (chain_info1, genesis1) =
-            Genesis::init_and_check_storage(net, storage1.clone(), storage2, dag1, data_dir)?;
+            Genesis::init_and_check_storage(net, storage1.clone(), dag1, data_dir)?;
         let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let storage2_2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let storage2_2 = Arc::new(Storage2(storage1_2.clone()));
         let dag2 = BlockDAG::create_for_testing()?;
-        let (chain_info2, genesis2) = Genesis::init_and_check_storage(
-            net,
-            storage1_2.clone(),
-            storage2_2.clone(),
-            dag2,
-            data_dir,
-        )?;
+        let (chain_info2, genesis2) =
+            Genesis::init_and_check_storage(net, storage1_2.clone(), dag2, data_dir)?;
 
         assert_eq!(genesis1, genesis2, "genesis execute chain info different.");
 
@@ -666,7 +655,7 @@ mod tests {
         let account_state_reader2 = AccountStateReader2::new(&state_db2);
 
         // VM2 API returns ChainId directly, not Option<ChainId>
-        use starcoin_vm2_vm_types::genesis_config::ChainId as ChainId2;
+        use starcoin_vm2_vm_types::on_chain_resource::ChainId as ChainId2;
         let chain_id2 = account_state_reader2.get_chain_id()?;
         assert_eq!(
             ChainId2::new(net.chain_id().id()),
@@ -762,10 +751,9 @@ mod tests {
 
         let genesis_txn = genesis_block.body.transactions.first().cloned().unwrap();
         assert_eq!(
-            txn_accumulator.get_leaf(0).unwrap().unwrap(),
+            txn_accumulator.get_leaf(0)?.unwrap(),
             storage1
-                .get_transaction_info_by_txn_hash(genesis_txn.id())
-                .unwrap()
+                .get_transaction_info_by_txn_hash(genesis_txn.id())?
                 .pop()
                 .unwrap()
                 .id(),

@@ -15,7 +15,7 @@ use starcoin_vm_types::transaction::{
     ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 
-use heck::{CamelCase, ShoutySnakeCase};
+use heck::{ToShoutySnakeCase, ToUpperCamelCase};
 use std::{
     collections::BTreeMap,
     io::{Result, Write},
@@ -132,7 +132,7 @@ fn write_script_call_files(
                 }
                 .to_string(),
             );
-            paths.push(abi.name().to_camel_case());
+            paths.push(abi.name().to_upper_camel_case());
             (paths, prepare_doc_string(abi.doc()))
         })
         .collect();
@@ -410,7 +410,7 @@ return TransactionPayloadScriptFunctionItem(ScriptFunction(module,function,ty_ar
         writeln!(
             self.out,
             "ScriptCall.{0}.Builder builder = new ScriptCall.{0}.Builder();",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
@@ -462,7 +462,7 @@ return TransactionPayloadScriptFunctionItem(ScriptFunction(module,function,ty_ar
         // writeln!(
         //     self.out,
         //     "ScriptFunctionCall.{0}.Builder builder = new ScriptFunctionCall.{0}.Builder();",
-        //     abi.name().to_camel_case(),
+        //     abi.name().to_upper_camel_case(),
         // )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
@@ -484,7 +484,7 @@ return TransactionPayloadScriptFunctionItem(ScriptFunction(module,function,ty_ar
         writeln!(
             self.out,
             "return ScriptFunctionCall{0}Item(",
-            abi.name().to_camel_case()
+            abi.name().to_upper_camel_case()
         )?;
         self.out.indent();
 
@@ -531,7 +531,7 @@ static Map<String, ScriptEncodingHelper> initTransactionScriptEncoderMap() {{"#
     ScriptCall{0}Item obj = (ScriptCall{0}Item)call;
     return Helpers.encode_{1}_script({2});
 }};",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;
@@ -568,7 +568,7 @@ static Map<String, ScriptFunctionEncodingHelper> initScriptFunctionEncoderMap() 
     ScriptFunctionCall{0}Item obj = call as ScriptFunctionCall{0}Item;
     return Helpers.encode_{1}_script_function({2});
 }};",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;
