@@ -140,24 +140,24 @@ module starcoin_framework::epoch {
         
         let total_blue_count = blue_blocks + selected_count;
         let total_block_count = total_blue_count + red_blocks;
-        let expected_blue_count = (selected_count * THOUSAND * k / ratio - selected_count * THOUSAND) / THOUSAND;
-        
-        let average_time = duration * THOUSAND / total_block_count;
-        
+	
+        let expected_blue_count = (selected_count * (k - ratio)) / ratio;
+        let average_time = duration / total_block_count;
+
         // Calculate target based on actual performance and blue/red ratio
         let new_epoch_block_time_target = if (blue_blocks < expected_blue_count) {
-            average_time / 2 / THOUSAND
+            average_time * 2 / 3
         } else if (blue_blocks > expected_blue_count) {
-            average_time * 2 / THOUSAND
+            average_time * 3 / 2
         } else {
-            average_time / THOUSAND
+            average_time
         };
         
-        // Apply stability constraints (limit change to 50%-200% of last epoch)
-        let new_epoch_block_time_target = if (new_epoch_block_time_target > last_epoch_time_target * 2) {
-            last_epoch_time_target * 2
-        } else if (new_epoch_block_time_target < last_epoch_time_target / 2) {
-            last_epoch_time_target / 2
+        // Apply stability constraints (limit change to ~66% to 150% of last epoch)
+        let new_epoch_block_time_target = if (new_epoch_block_time_target > last_epoch_time_target * 3 / 2) {
+            last_epoch_time_target * 3 / 2
+        } else if (new_epoch_block_time_target < last_epoch_time_target * 2 / 3) {
+            last_epoch_time_target * 2 / 3
         } else {
             new_epoch_block_time_target
         };
