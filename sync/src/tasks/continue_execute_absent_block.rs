@@ -10,7 +10,7 @@ use stream_task::CollectorState;
 
 use crate::store::sync_dag_store::SyncDagStore;
 
-pub trait ContinueChainOperator: Send {
+pub trait ContinueChainOperator {
     fn has_dag_block(&self, block_id: HashValue) -> anyhow::Result<bool>;
     fn apply(&mut self, block: Block) -> anyhow::Result<ExecutedBlock>;
     fn notify(&mut self, executed_block: ExecutedBlock) -> anyhow::Result<CollectorState>;

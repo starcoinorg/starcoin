@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{TaskError, TaskEventHandle};
-use anyhow::Result;
+use anyhow::{Error, Result};
 use futures::channel::mpsc::{channel, Sender};
 use futures::task::{Context, Poll};
 use futures::{Sink, StreamExt};
 use log::debug;
 use pin_project::pin_project;
 use pin_utils::core_reexport::option::Option::Some;
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -24,26 +23,23 @@ pub enum CollectorState {
     Need,
 }
 
-pub trait TaskResultCollector<Item>: Send + Unpin {
-    type Output: Send;
+pub trait TaskResultCollector<Item>: std::marker::Send + Unpin {
+    type Output: std::marker::Send;
 
-    fn collect(&mut self, item: Item) -> impl Future<Output = Result<CollectorState>> + Send;
+    fn collect(&mut self, item: Item) -> Result<CollectorState>;
     fn finish(self) -> Result<Self::Output>;
 }
 
 impl<Item, F> TaskResultCollector<Item> for F
 where
     F: FnMut(Item) -> Result<()>,
-    F: Send + Unpin,
+    F: std::marker::Send + Unpin,
 {
     type Output = ();
 
-    fn collect(&mut self, item: Item) -> impl Future<Output = Result<CollectorState>> + Send {
-        let result = (self)(item);
-        async move {
-            result?;
-            Ok(CollectorState::Need)
-        }
+    fn collect(&mut self, item: Item) -> Result<CollectorState> {
+        (self)(item)?;
+        Ok(CollectorState::Need)
     }
 
     fn finish(self) -> Result<Self::Output> {
@@ -53,13 +49,13 @@ where
 
 impl<Item> TaskResultCollector<Item> for Vec<Item>
 where
-    Item: Send + Unpin,
+    Item: std::marker::Send + Unpin,
 {
     type Output = Self;
 
-    fn collect(&mut self, item: Item) -> impl Future<Output = Result<CollectorState>> + Send {
+    fn collect(&mut self, item: Item) -> Result<CollectorState> {
         self.push(item);
-        async move { Ok(CollectorState::Need) }
+        Ok(CollectorState::Need)
     }
 
     fn finish(self) -> Result<Self::Output> {
@@ -101,22 +97,18 @@ impl CounterCollector {
 
 impl<Item> TaskResultCollector<Item> for CounterCollector
 where
-    Item: Send + Unpin,
+    Item: std::marker::Send + Unpin,
 {
     type Output = u64;
 
-    fn collect(&mut self, _item: Item) -> impl Future<Output = Result<CollectorState>> + Send {
-        let counter = self.counter.clone();
-        let max = self.max;
-        async move {
-            counter.fetch_add(1, Ordering::SeqCst);
-            let count = counter.load(Ordering::SeqCst);
-            debug!("collect item, count: {}", count);
-            if count >= max {
-                Ok(CollectorState::Enough)
-            } else {
-                Ok(CollectorState::Need)
-            }
+    fn collect(&mut self, _item: Item) -> Result<CollectorState, Error> {
+        self.counter.fetch_add(1, Ordering::SeqCst);
+        let count = self.counter.load(Ordering::SeqCst);
+        debug!("collect item, count: {}", count);
+        if count >= self.max {
+            Ok(CollectorState::Enough)
+        } else {
+            Ok(CollectorState::Need)
         }
     }
 
@@ -169,7 +161,7 @@ impl<Item, Output> FutureTaskSink<Item, Output> {
             let mut receiver = receiver.fuse();
             while let Some(item) = receiver.next().await {
                 event_handle.on_item();
-                let collector_state = collector.collect(item).await.map_err(TaskError::map)?;
+                let collector_state = collector.collect(item).map_err(TaskError::map)?;
                 match collector_state {
                     CollectorState::Enough => break,
                     CollectorState::Need => {

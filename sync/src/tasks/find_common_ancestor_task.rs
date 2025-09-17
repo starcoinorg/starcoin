@@ -152,7 +152,7 @@ impl TaskState for FindRangeLocateTask {
                 number: header.number(),
             }])
         }
-            .boxed()
+        .boxed()
     }
 
     fn next(&self) -> Option<Self> {
@@ -179,7 +179,7 @@ impl DagAncestorCollector {
 impl TaskResultCollector<BlockIdAndNumber> for DagAncestorCollector {
     type Output = BlockIdAndNumber;
 
-    async fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
+    fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
         let block_info = self.storage.get_block_info(item.id())?.ok_or_else(|| {
             format_err!(
                 "failed to get the block info by found common ancestor id: {:?}",
