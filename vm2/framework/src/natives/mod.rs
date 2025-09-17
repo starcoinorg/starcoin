@@ -89,7 +89,10 @@ pub fn all_natives(
         "dispatchable_fungible_asset",
         dispatchable_fungible_asset::make_all(builder)
     );
-    add_natives_from_module!("stc_transaction_fee", stc_transaction_fee::make_all(builder));
+    add_natives_from_module!(
+        "stc_transaction_fee",
+        stc_transaction_fee::make_all(builder)
+    );
 
     make_table_from_iter(framework_addr, natives)
 }
