@@ -1,25 +1,32 @@
 // Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
+use move_core_types::account_address::AccountAddress;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::smallvec;
 use smallvec::SmallVec;
-use starcoin_native_interface::{SafeNativeBuilder, SafeNativeContext, SafeNativeResult};
+use starcoin_native_interface::{safely_assert_eq, safely_pop_arg};
+use starcoin_native_interface::{
+    RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
+};
 use std::collections::VecDeque;
-
 /***************************************************************************************************
- * native fun read<IntElement>(aggregator: &Aggregator<IntElement>): IntElement;
+ * native fun address_to_u128(addr: address): u128;
  **************************************************************************************************/
-use std::sync::atomic::AtomicU64;
-static ATOMIC_COUNTER: AtomicU64 = AtomicU64::new(1);
-fn native_atomic_counter_fetch_add(
+fn native_address_to_u128(
     _context: &mut SafeNativeContext,
-    _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
 ) -> SafeNativeResult<SmallVec<[Value; 1]>> {
-    let value =
-        Value::u128(ATOMIC_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u128);
-    Ok(smallvec![value])
+    safely_assert_eq!(_ty_args.len(), 0);
+    safely_assert_eq!(args.len(), 1);
+    let addr = safely_pop_arg!(args, AccountAddress);
+    let raw = addr.into_bytes();
+    let mut acc: u128 = 0;
+    for b in raw.iter() {
+        acc = (acc << 8) | (*b as u128);
+    }
+    Ok(smallvec![Value::u128(acc)])
 }
 
 /***************************************************************************************************
@@ -29,7 +36,7 @@ fn native_atomic_counter_fetch_add(
 pub fn make_all(
     builder: &SafeNativeBuilder,
 ) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
-    let natives = [("atomic_counter_fetch_add", native_atomic_counter_fetch_add)];
+    let natives = [("address_to_u128", native_address_to_u128 as RawSafeNative)];
 
     builder.make_named_natives(natives)
 }

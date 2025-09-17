@@ -265,7 +265,7 @@ module starcoin_framework::stc_transaction_validation {
                 &create_signer::create_signer(txn_sender),
                 (transaction_fee_amount as u64)
             );
-            stc_transaction_fee::pay_fee(transaction_fee);
+            stc_transaction_fee::pay_fee(txn_sender, transaction_fee);
         };
     }
 }

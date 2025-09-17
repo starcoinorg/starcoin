@@ -17,7 +17,7 @@ module starcoin_framework::system_addresses {
 
     
     const RESERVED_ACCOUNT_FROM: u128 = 0x1;
-    const RESERVED_ACCOUNT_TO: u128 = 0xb;
+    const RESERVED_ACCOUNT_TO: u128 = 0xff;
 
     public fun reserved_account_from(): u128 { RESERVED_ACCOUNT_FROM }
     public fun reserved_account_to(): u128 { RESERVED_ACCOUNT_TO }

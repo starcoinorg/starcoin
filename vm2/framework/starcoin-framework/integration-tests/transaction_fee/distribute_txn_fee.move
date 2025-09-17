@@ -15,7 +15,7 @@ script {
     fun pay_fees(account: signer) {
         let coin = coin::withdraw<STC>(&account, 200);
         assert!(coin::value<STC>(&coin) == 200, 8001);
-        stc_transaction_fee::pay_fee<STC>(coin);
+        stc_transaction_fee::pay_fee<STC>(@0x1, coin);
     }
 }
 
