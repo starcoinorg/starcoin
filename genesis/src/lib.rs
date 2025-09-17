@@ -163,7 +163,7 @@ impl Genesis {
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
                     vm_state_accumulator.root_hash(),
-                    vec![txn_info.id(), txn2_info.id()],
+                    vec![txn2_info.id(), txn_info.id()],
                 )
             };
 

@@ -3,10 +3,10 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block_metadata;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -38,12 +38,15 @@ fn test_transaction_info_and_proof() -> Result<()> {
     let mut all_address = HashMap::<HashValue, AccountAddress>::new();
 
     let genesis_block = block_chain.get_block_by_number(0).unwrap().unwrap();
+    let vm1_offline_number =
+        vm1_offline_height(block_chain.current_header().chain_id().id().into());
+
     //put the genesis txn, the genesis block metadata txn do not generate txn info
 
     all_txns.extend_from_slice(&[
-        Transaction::UserTransaction(genesis_block.body.transactions.first().cloned().unwrap())
-            .into(),
         Transaction2::UserTransaction(genesis_block.body.transactions2.first().cloned().unwrap())
+            .into(),
+        Transaction::UserTransaction(genesis_block.body.transactions.first().cloned().unwrap())
             .into(),
     ]);
 
@@ -75,20 +78,20 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .create_block(template, net.time_service().as_ref())
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
-        all_txns.extend_from_slice(&[Transaction::BlockMetadata(block_metadata::from(
-            block.to_metadata(current_header.gas_used(), 0),
-        ))
-        .into()]);
-        all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
             block.to_metadata(current_header.gas_used(), 0),
         )
         .into()]);
+
+        if vm1_offline_number > block.header().number() {
+            all_txns.extend_from_slice(&[Transaction::BlockMetadata(block_metadata::from(
+                block.to_metadata(current_header.gas_used(), 0),
+            ))
+            .into()]);
+            all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
+        }
         current_header = block.header().clone();
     });
-
-    let txn_index = rng.gen_range(0..all_txns.len());
-    debug!("all txns len: {}, txn index:{}", all_txns.len(), txn_index);
 
     for txn_global_index in 0..all_txns.len() {
         let txn = all_txns.get(txn_global_index).cloned().unwrap();
@@ -103,7 +106,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
         let txn_info_leaf = block_chain
             .get_txn_accumulator()
-            .get_leaf(txn_global_index as u64)?
+            .get_leaf(txn_global_index as u64)? // add 2 to skip genesis block's transaction
             .unwrap();
         assert_eq!(
             txn_info.transaction_info.id(),

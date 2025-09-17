@@ -33,7 +33,6 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
-use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -48,6 +47,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
@@ -671,8 +671,8 @@ impl BlockChain {
             let included_txn_info_hashes2: Vec<_> =
                 vm2_txn_infos.iter().map(|info| info.id()).collect();
             // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
-            txn_accumulator.append(&included_txn_info_hashes)?;
             txn_accumulator.append(&included_txn_info_hashes2)?;
+            txn_accumulator.append(&included_txn_info_hashes)?;
             txn_accumulator.root_hash()
         };
 
@@ -770,16 +770,43 @@ impl BlockChain {
             }
         }
 
-        storage.save_transaction_infos(
-            txn_infos
-                .into_iter()
-                .map(Into::into)
-                .chain(executed_data2.txn_infos.into_iter().map(Into::into))
+        if txn_infos.is_empty() {
+            storage.save_transaction_infos(
+                executed_data2
+                    .txn_infos
+                    .into_iter()
+                    .map(Into::into)
+                    .enumerate()
+                    .map(|(transaction_index, info)| {
+                        StcRichTransactionInfo::new(
+                            block_id,
+                            header.number(),
+                            info,
+                            transaction_index as u32,
+                            transaction_global_index
+                                .checked_add(transaction_index as u64)
+                                .expect("transaction_global_index overflow."),
+                        )
+                    })
+                    .collect(),
+            )?;
+        } else {
+            storage.save_transaction_infos(
+                std::iter::once::<StcTransactionInfo>(
+                    executed_data2
+                        .txn_infos
+                        .first()
+                        .expect("vm2 block meta transaction is none")
+                        .clone()
+                        .into(),
+                )
+                .chain(txn_infos.into_iter().map(Into::into))
+                .chain(executed_data2.txn_infos.into_iter().skip(1).map(Into::into))
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     StcRichTransactionInfo::new(
                         block_id,
-                        block.header().number(),
+                        header.number(),
                         info,
                         transaction_index as u32,
                         transaction_global_index
@@ -788,7 +815,8 @@ impl BlockChain {
                     )
                 })
                 .collect(),
-        )?;
+            )?;
+        }
 
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
@@ -2369,11 +2397,36 @@ impl BlockChain {
         }
 
         // Save transaction infos
-        storage.save_transaction_infos(
-            txn_infos
-                .into_iter()
-                .map(Into::into)
-                .chain(vm2_txn_infos.into_iter().map(Into::into))
+        if txn_infos.is_empty() {
+            storage.save_transaction_infos(
+                vm2_txn_infos
+                    .into_iter()
+                    .map(Into::into)
+                    .enumerate()
+                    .map(|(transaction_index, info)| {
+                        StcRichTransactionInfo::new(
+                            block_id,
+                            header.number(),
+                            info,
+                            transaction_index as u32,
+                            transaction_global_index
+                                .checked_add(transaction_index as u64)
+                                .expect("transaction_global_index overflow."),
+                        )
+                    })
+                    .collect(),
+            )?;
+        } else {
+            storage.save_transaction_infos(
+                std::iter::once::<StcTransactionInfo>(
+                    vm2_txn_infos
+                        .first()
+                        .expect("vm2 block meta transaction is none")
+                        .clone()
+                        .into(),
+                )
+                .chain(txn_infos.into_iter().map(Into::into))
+                .chain(vm2_txn_infos.into_iter().skip(1).map(Into::into))
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     StcRichTransactionInfo::new(
@@ -2387,8 +2440,8 @@ impl BlockChain {
                     )
                 })
                 .collect(),
-        )?;
-
+            )?;
+        }
         // Save transactions
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
