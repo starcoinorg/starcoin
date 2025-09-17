@@ -4,7 +4,6 @@
 use crate::genesis_parameter_resolve::RpcFutureBlockParameterResolver;
 use crate::node::NodeService;
 use anyhow::{bail, format_err, Result};
-use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_config::{BaseConfig, NodeConfig, StarcoinOpt};
@@ -134,7 +133,8 @@ impl NodeHandle {
     }
 
     pub fn bus(&self) -> Result<ServiceRef<BusService>> {
-        block_on(async { self.registry.service_ref::<BusService>().await })
+        self.runtime
+            .block_on(async { self.registry.service_ref::<BusService>().await })
     }
 
     pub fn network(&self) -> NetworkServiceRef {
@@ -144,30 +144,36 @@ impl NodeHandle {
     }
 
     pub fn sync_service(&self) -> Result<ServiceRef<SyncService>> {
-        block_on(async { self.registry.service_ref::<SyncService>().await })
+        self.runtime
+            .block_on(async { self.registry.service_ref::<SyncService>().await })
     }
 
     pub fn rpc_service(&self) -> Result<ServiceRef<RpcService>> {
-        block_on(async { self.registry.service_ref::<RpcService>().await })
+        self.runtime
+            .block_on(async { self.registry.service_ref::<RpcService>().await })
     }
 
     pub fn chain_service(&self) -> Result<ServiceRef<ChainReaderService>> {
-        block_on(async { self.registry.service_ref::<ChainReaderService>().await })
+        self.runtime
+            .block_on(async { self.registry.service_ref::<ChainReaderService>().await })
     }
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
         let node_addr = self.node_service();
-        block_on(async { node_addr.list_service().await })
+        self.runtime
+            .block_on(async { node_addr.list_service().await })
     }
 
     pub fn stop_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        block_on(async { node_addr.stop_service(service_name).await })
+        self.runtime
+            .block_on(async { node_addr.stop_service(service_name).await })
     }
 
     pub fn start_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        block_on(async { node_addr.start_service(service_name).await })
+        self.runtime
+            .block_on(async { node_addr.start_service(service_name).await })
     }
 
     pub fn txpool(&self) -> TxPoolService {
@@ -194,7 +200,7 @@ impl NodeHandle {
     /// Just for test
     pub fn generate_block(&self) -> Result<Block> {
         let registry = &self.registry;
-        block_on(async move {
+        self.runtime.block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
             let chain_service = registry.service_ref::<ChainReaderService>().await?;
             let head = chain_service.main_head_block().await?;
