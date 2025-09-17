@@ -96,6 +96,7 @@ fn test_client_reconnect() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 fn test_client_reconnect_subscribe() -> Result<()> {
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
     let url = config.rpc.get_ws_address().unwrap();
@@ -108,7 +109,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     let ws_client =
         RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let stream1 = ws_client.subscribe_new_mint_blocks()?;
-    let handle1 = tokio::spawn(async move {
+    let handle1 = rt.spawn(async move {
         stream1
             .into_stream()
             .collect::<Vec<Result<MintBlockEvent>>>()
@@ -125,7 +126,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     assert!(result.is_err());
 
     let stream2 = ws_client.subscribe_new_mint_blocks()?;
-    let handle2 = tokio::spawn(async move {
+    let handle2 = rt.spawn(async move {
         stream2
             .into_stream()
             .collect::<Vec<Result<MintBlockEvent>>>()
