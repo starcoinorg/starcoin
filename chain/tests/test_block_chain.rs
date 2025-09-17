@@ -53,7 +53,7 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         // block 1 has two vms, then two blockmeta events
-        assert_eq!(evt.transaction_index, 1);
+        assert_eq!(evt.transaction_index, 0);
         assert_eq!(evt.event.type_tag(), StcTypeTag::V2(event_type_tag.clone()));
     }
 

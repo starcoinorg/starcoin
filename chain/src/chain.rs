@@ -671,8 +671,17 @@ impl BlockChain {
             let included_txn_info_hashes2: Vec<_> =
                 vm2_txn_infos.iter().map(|info| info.id()).collect();
             // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
-            txn_accumulator.append(&included_txn_info_hashes2)?;
-            txn_accumulator.append(&included_txn_info_hashes)?;
+            if included_txn_info_hashes.is_empty() {
+                txn_accumulator.append(&included_txn_info_hashes2)?;
+            } else {
+                txn_accumulator.append(
+                    included_txn_info_hashes2
+                        .get(0..1)
+                        .expect("vm2 block meta transaction is none"),
+                )?;
+                txn_accumulator.append(&included_txn_info_hashes)?;
+                txn_accumulator.append(included_txn_info_hashes2.get(1..).unwrap_or_default())?;
+            }
             txn_accumulator.root_hash()
         };
 
