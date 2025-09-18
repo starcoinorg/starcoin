@@ -41,8 +41,6 @@ jobs:
           args: --all
       - name: test
         run: ./scripts/nextest.sh
-#       - name: check changed files
-#         run: bash ./scripts/changed_files.sh
       - name: Doc Tests
         uses: actions-rs/cargo@v1
         with:
