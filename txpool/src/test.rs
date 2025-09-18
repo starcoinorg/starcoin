@@ -8,6 +8,7 @@ use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_genesis::Genesis;
@@ -271,10 +272,13 @@ async fn test_rollback() -> Result<()> {
             0,                            // red_blocks
             (Arc::new(chain_state), Arc::new(chain_state2)),
         )?;
-        let excluded_txns = open_block.push_txns(vec![txn])?;
-        assert_eq!(excluded_txns.discarded_txns.len(), 0);
-        assert_eq!(excluded_txns.untouched_txns.len(), 0);
-
+        if open_block.block_meta().number()
+            < vm1_offline_height(block_header.chain_id().id().into())
+        {
+            let excluded_txns = open_block.process_vm1_transactions(vec![txn])?;
+            assert_eq!(excluded_txns.discarded_txns.len(), 0);
+            assert_eq!(excluded_txns.untouched_txns.len(), 0);
+        }
         let block_template = open_block.finalize()?;
         let (_, root1, _) = block_template.state_roots();
         let block =
