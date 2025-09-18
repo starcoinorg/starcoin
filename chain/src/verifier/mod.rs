@@ -276,10 +276,10 @@ impl BasicVerifier {
 
         parents_hash.iter().try_for_each(|parent_hash| {
             verify_block!(
-                VerifyBlockField::Header,
+                VerifyBlockField::Parents,
                 current_chain.has_dag_block(*parent_hash).map_err(|e| {
                     ConnectBlockError::VerifyBlockFailed(
-                        VerifyBlockField::Header,
+                        VerifyBlockField::Parents,
                         anyhow::anyhow!(
                             "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
                             new_block_header.id(),
@@ -301,10 +301,10 @@ impl BasicVerifier {
             // check the parents are the descendants of the pruning point
             parents_hash.iter().try_for_each(|parent_hash| {
                 verify_block!(
-                    VerifyBlockField::Header,
+                    VerifyBlockField::PruningPoint,
                     current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), *parent_hash).map_err(|e| {
                         ConnectBlockError::VerifyBlockFailed(
-                            VerifyBlockField::Header,
+                            VerifyBlockField::PruningPoint,
                             anyhow::anyhow!(
                                 "the block {:?} 's parent: {:?} is not the descendant of pruning point {:?}, error: {:?}",
                                 new_block_header.id(),

@@ -67,6 +67,11 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
+    info!(
+        "[vm block execute] start to execute transactions txns len: {}, state root: {:?}",
+        txns.len(),
+        chain_state.state_root()
+    );
     let txn_outputs = execute_block_transactions(
         chain_state,
         txns.clone(),
@@ -74,29 +79,57 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         vm_metrics.clone(),
     )
     .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    info!(
+        "[vm block execute] end to execute transactions txns len: {}, state root: {:?}",
+        txns.len(),
+        chain_state.state_root()
+    );
 
+    let total_count = txn_outputs.len();
     let mut executed_data = BlockExecutedData::default();
-    for (txn, output) in txns
+    for (index, (txn, output)) in txns
         .iter()
         .take(txn_outputs.len())
-        .zip(txn_outputs.into_iter())
+        .zip(txn_outputs.into_iter()).enumerate()
     {
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
+                info!(
+                    "[vm block execute] discard transactions, txns len: {}, state root: {:?}",
+                    txns.len(),
+                    chain_state.state_root()
+                );
                 return Err(BlockExecutorError::BlockTransactionDiscard(
                     status, txn_hash,
                 ));
             }
             TransactionStatus::Keep(status) => {
+                info!(
+                    "[vm block execute] keep transactions, txns len: {}, state root: {:?}",
+                    txns.len(),
+                    chain_state.state_root()
+                );
                 chain_state
                     .apply_write_set(write_set.clone())
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
-                let txn_state_root = chain_state
+                info!(
+                    "[vm block execute] commit transactions, txns len: {}, state root: {:?}",
+                    txns.len(),
+                    chain_state.state_root()
+                );
+                let txn_state_root = if index == total_count - 1 || index == 0 {
+                  chain_state
                     .commit()
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                    .map_err(BlockExecutorError::BlockChainStateErr)?
+                } else {
+                    HashValue::zero()
+                }; 
+                // let txn_state_root = chain_state
+                //     .commit()
+                //     .map_err(BlockExecutorError::BlockChainStateErr)?;
                 executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
@@ -104,9 +137,16 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     gas_used,
                     status,
                 ));
+                info!(
+                    "[vm block execute] push transactions event, txns len: {}, state root: {:?}",
+                    txns.len(),
+                    chain_state.state_root()
+                );
                 executed_data.txn_events.push(events);
+                // info!("[vm block execute] append transactions table infos, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
                 // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
                 executed_data.txn_table_infos.append(&mut table_infos);
+                // info!("[vm block execute] push transactions write set, txns len: {}, state root: {:?}", txns.len(), chain_state.state_root());
                 executed_data.write_sets.push(write_set);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
@@ -120,6 +160,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             .expect("extra txn must be executed successfully");
         executed_data.with_extra_txn = true;
     }
+
+    // chain_state
+    //     .commit()
+    //     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)

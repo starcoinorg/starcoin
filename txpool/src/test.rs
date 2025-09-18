@@ -102,6 +102,35 @@ async fn test_subscribe_txns() {
 }
 
 #[stest::test(timeout = 200)]
+async fn test_pool_get_pending() -> Result<()> {
+    let pool_size = 5;
+    let expect_reject = 3;
+    let (txpool_service, _storage, node_config, _, _, _) =
+        test_helper::start_txpool_with_size(pool_size).await;
+
+    let txn_vec = (0..pool_size + expect_reject)
+        .map(|index| generate_txn(node_config.clone(), index))
+        .collect::<Vec<_>>();
+
+    let _ = txpool_service.add_txns(txn_vec.clone());
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    info!("jacktest: ******************** now: {}", now);
+
+    let transactions = txpool_service.get_pending_txns(Some(400), None);
+
+    info!(
+        "jacktest: ******************** transactions: {:?}",
+        transactions.len()
+    );
+
+    Ok(())
+}
+
+#[stest::test(timeout = 200)]
 async fn test_pool_pending() -> Result<()> {
     let pool_size = 5;
     let expect_reject = 3;
@@ -315,7 +344,7 @@ fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
         seq,
         starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT,
         1,
-        2,
+        2000,
         config.net(),
     );
     txn

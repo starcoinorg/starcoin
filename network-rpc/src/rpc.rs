@@ -21,7 +21,7 @@ use starcoin_state_api::{ChainStateAsyncService, StateWithProof, StateWithTableI
 use starcoin_state_service::ChainStateService;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     account_state::AccountState,
@@ -34,7 +34,7 @@ use std::sync::Arc;
 pub struct NetworkRpcImpl {
     storage: Arc<dyn Store>,
     chain_service: ServiceRef<ChainReaderService>,
-    txpool_service: TxPoolService,
+    txpool_service: MockTxPoolService,
     state_service: ServiceRef<ChainStateService>,
 }
 
@@ -42,7 +42,7 @@ impl NetworkRpcImpl {
     pub fn new(
         storage: Arc<dyn Store>,
         chain_service: ServiceRef<ChainReaderService>,
-        txpool: TxPoolService,
+        txpool: MockTxPoolService,
         state_service: ServiceRef<ChainStateService>,
     ) -> Self {
         Self {
@@ -66,7 +66,8 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         } else {
             MAX_TXN_REQUEST_SIZE
         };
-        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        // let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        let fut = async move { Ok(vec![]) };
         Box::pin(fut)
     }
 
@@ -78,9 +79,9 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let txpool = self.txpool_service.clone();
         let fut = async move {
             let mut data = vec![];
-            for id in req.ids {
-                data.push(txpool.find_txn(&id));
-            }
+            // for id in req.ids {
+            //     data.push(txpool.find_txn(&id));
+            // }
             Ok(data)
         };
         Box::pin(fut)

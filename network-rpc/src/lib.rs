@@ -23,6 +23,7 @@ use starcoin_service_registry::{
 };
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::{Storage, Store};
+use starcoin_txpool::MockTxPoolService;
 use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
 
@@ -52,7 +53,7 @@ impl NetworkRpcService {
     pub fn new(
         storage: Arc<dyn Store>,
         chain_service: ServiceRef<ChainReaderService>,
-        txpool_service: TxPoolService,
+        txpool_service: MockTxPoolService,
         state_service: ServiceRef<ChainStateService>,
         quotas: NetworkRpcQuotaConfiguration,
     ) -> Self {
@@ -83,7 +84,7 @@ impl ServiceFactory<Self> for NetworkRpcService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
-        let txpool_service = ctx.get_shared::<TxPoolService>()?;
+        let txpool_service = ctx.get_shared::<MockTxPoolService>()?;
         let state_service = ctx.service_ref::<ChainStateService>()?.clone();
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let quotas = node_config.network.network_rpc_quotas.clone();

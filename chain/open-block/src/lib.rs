@@ -35,7 +35,7 @@ pub struct OpenedBlock {
     block_meta: BlockMetadata,
     gas_limit: u64,
 
-    state: ChainStateDB,
+    state: Arc<ChainStateDB>,
     txn_accumulator: MerkleAccumulator,
 
     gas_used: u64,
@@ -94,7 +94,7 @@ impl OpenedBlock {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-            state: chain_state,
+            state: Arc::new(chain_state),
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
@@ -142,8 +142,8 @@ impl OpenedBlock {
         self.block_meta.number()
     }
 
-    pub fn state_reader(&self) -> &impl ChainStateReader {
-        &self.state
+    pub fn state_reader(&self) -> Arc<impl ChainStateReader> {
+        self.state.clone()
     }
 
     pub fn chain_id(&self) -> ChainId {

@@ -302,10 +302,11 @@ impl TransactionQueue {
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
         let mut results = Vec::new();
+        let mut pool = self.pool.write();
         for transaction in transactions.into_iter() {
             let hash = transaction.hash();
 
-            if self.pool.read().find(&hash).is_some() {
+            if pool.find(&hash).is_some() {
                 results.push(Err(transaction::TransactionError::AlreadyImported));
             }
 
@@ -316,12 +317,7 @@ impl TransactionQueue {
 
             let imported = verifier
                 .verify_transaction(transaction)
-                .and_then(|verified| {
-                    self.pool
-                        .write()
-                        .import(verified, &replace)
-                        .map_err(convert_error)
-                });
+                .and_then(|verified| pool.import(verified, &replace).map_err(convert_error));
 
             results.push(match imported {
                 Ok(_) => Ok(()),
@@ -333,8 +329,9 @@ impl TransactionQueue {
         }
 
         // Notify about imported transactions.
-        (self.pool.write().listener_mut().1).0.notify();
+        (pool.listener_mut().1).0.notify();
 
+        drop(pool);
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }
@@ -437,7 +434,7 @@ impl TransactionQueue {
             trace_time!("pool::cull::chunk");
             let state_readiness = ready::State::new(client.clone(), stale_id);
             // also remove expired txns.
-            let readiness = (ready::Expiration::new(now), state_readiness);
+            let readiness = (ready::Expiration::new(now + 180), state_readiness);
             removed += self.pool.write().cull(Some(chunk), readiness);
         }
         debug!(target: "txqueue", "Removed {} stalled transactions. {}", removed, self.status());
@@ -455,14 +452,38 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        let pool = match self.pool.try_read() {
-            Some(pool) => pool,
-            None => return None,
-        };
+        let pool = self.pool.read();
 
         pool.pending_from_sender(state_readiness, address)
             .last()
             .map(|tx| tx.signed().sequence_number().saturating_add(1))
+    }
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    pub fn next_sequence_number_in_batch<C: client::AccountSeqNumberClient>(
+        &self,
+        client: C,
+        addresses: Vec<Address>,
+    ) -> Option<Vec<(Address, Option<u64>)>> {
+        let pool = self.pool.read();
+
+        Some(
+            addresses
+                .iter()
+                .map(|address| {
+                    // Also we ignore stale transactions in the queue.
+                    let stale_id = None;
+                    let state_readiness = ready::State::new(client.clone(), stale_id);
+                    (
+                        *address,
+                        pool.pending_from_sender(state_readiness, address)
+                            .last()
+                            .map(|tx| tx.signed().sequence_number().saturating_add(1)),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        )
     }
 
     /// Retrieve a transaction from the pool.

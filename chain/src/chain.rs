@@ -473,7 +473,8 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        info!("execute dag block:{:?}", verified_block.block.header().id());
+        let block_id = verified_block.block.header().id();
+        info!("execute dag block:{:?}", block_id);
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
@@ -525,27 +526,37 @@ impl BlockChain {
                 .map(Transaction::UserTransaction),
         );
         watch(CHAIN_WATCH_NAME, "n21");
-        let statedb = self.statedb.fork_at(selected_head.header.state_root());
-        let epoch = get_epoch_from_statedb(&statedb)?;
+        if self.statedb.state_root() != selected_head.header.state_root() {
+            warn!("state root not equal to selected head state root, please ensure the state db is consistent before execution, avoid fork");
+            self.statedb = self.statedb.fork_at(selected_head.header.state_root());
+        }
+        assert_eq!(self.statedb.state_root(), selected_head.header.state_root());
+        let epoch = get_epoch_from_statedb(&self.statedb)?;
         info!(
-            "execute dag before, block id: {:?}, block time target in epoch: {:?}",
-            selected_head.header().id(),
-            epoch.block_time_target()
+            "execute transaction before entering vm, block id: {:?}, state db root: {:?}",
+            block_id,
+            self.statedb.state_root(),
         );
         let executed_data = starcoin_executor::block_execute(
-            &statedb,
+            &self.statedb,
             transactions.clone(),
             epoch.block_gas_limit(), //TODO: Fix me
             self.vm_metrics.clone(),
         )?;
+        info!(
+            "execute transaction after entering vm, executed transaction len: {}, block id: {:?}, state db root: {:?}",
+            transactions.len(), block_id, self.statedb.state_root(),
+        );
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
-            "verify block:{:?} state_root fail",
+            "verify block:{:?} state_root fail, expected: {:?}, actual: {:?}",
             block_id,
+            state_root,
+            header.state_root(),
         );
         let block_gas_used = vec_transaction_info
             .iter()
@@ -562,6 +573,10 @@ impl BlockChain {
         } else {
             vec_transaction_info.len() == transactions.len()
         };
+        info!(
+            "execute transaction after entering vm, block id: {:?}, valid txn num: {:?}",
+            block_id, valid_txn_num
+        );
         verify_block!(
             VerifyBlockField::State,
             valid_txn_num,
@@ -578,6 +593,10 @@ impl BlockChain {
             self.storage.as_ref(),
         );
         let transaction_global_index = txn_accumulator.num_leaves();
+        info!(
+            "execute transaction after entering vm, block id: {:?}, transaction_global_index: {:?}",
+            block_id, transaction_global_index
+        );
 
         // txn accumulator verify.
         let executed_accumulator_root = {
@@ -586,6 +605,8 @@ impl BlockChain {
             txn_accumulator.append(&included_txn_info_hashes)?
         };
 
+        info!("execute transaction before verifying state root, block id: {:?}, executed_accumulator_root: {:?}, ", block_id, executed_accumulator_root);
+
         verify_block!(
             VerifyBlockField::State,
             executed_accumulator_root == header.txn_accumulator_root(),
@@ -593,18 +614,30 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
-        statedb
+        self.statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+        info!(
+            "execute transaction after state db flush, block id: {:?}",
+            block_id
+        );
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
         watch(CHAIN_WATCH_NAME, "n24");
         txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
+        info!(
+            "execute transaction after txn accumulator db flush, block id: {:?}",
+            block_id
+        );
 
         block_accumulator.append(&[block_id])?;
         block_accumulator.flush()?;
+        info!(
+            "execute transaction after block accumulator db flush, block id: {:?}",
+            block_id
+        );
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();

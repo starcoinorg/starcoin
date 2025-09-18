@@ -18,7 +18,7 @@ use starcoin_sync::block_connector::ExecuteService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_time_service::TimeService;
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{MockTxPoolService, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
@@ -34,7 +34,7 @@ use std::convert::TryInto;
 use std::sync::Arc;
 
 pub struct BlockRelayer {
-    txpool: TxPoolService,
+    txpool: MockTxPoolService,
     sync_status: Option<SyncStatus>,
     time_service: Arc<dyn TimeService>,
     metrics: Option<BlockRelayerMetrics>,
@@ -42,7 +42,7 @@ pub struct BlockRelayer {
 
 impl ServiceFactory<Self> for BlockRelayer {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
-        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let txpool = ctx.get_shared::<MockTxPoolService>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let time_service = node_config.net().time_service();
         let metrics = node_config
@@ -55,7 +55,7 @@ impl ServiceFactory<Self> for BlockRelayer {
 
 impl BlockRelayer {
     pub fn new(
-        txpool: TxPoolService,
+        txpool: MockTxPoolService,
         time_service: Arc<dyn TimeService>,
         metrics: Option<BlockRelayerMetrics>,
     ) -> Self {
@@ -79,10 +79,10 @@ impl BlockRelayer {
         network: NetworkServiceRef,
         executed_block: Arc<ExecutedBlock>,
     ) {
-        if !self.is_nearly_synced() {
-            debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
-            return;
-        }
+        // if !self.is_nearly_synced() {
+        //     debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
+        //     return;
+        // }
         let compact_block = executed_block.block().clone().into();
         let compact_block_msg =
             CompactBlockMessage::new(compact_block, executed_block.block_info.clone());
@@ -92,7 +92,7 @@ impl BlockRelayer {
     }
 
     async fn fill_compact_block(
-        txpool: TxPoolService,
+        txpool: MockTxPoolService,
         rpc_client: VerifiedRpcClient,
         compact_block: CompactBlock,
         peer_id: PeerId,

@@ -52,7 +52,7 @@ use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, Rese
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync_api::SyncSpecificTargretRequest;
-use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_txpool::{MockTxPoolService, TxPoolActorService, TxPoolService};
 use starcoin_types::blockhash::KType;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm_runtime::metrics::VMMetrics;
@@ -132,7 +132,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
             ),
             NodeRequest::ResetNode(block_hash) => {
                 let connect_service = ctx
-                    .service_ref::<BlockConnectorService<TxPoolService>>()?
+                    .service_ref::<BlockConnectorService<MockTxPoolService>>()?
                     .clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
@@ -343,7 +343,7 @@ impl NodeService {
 
         registry.register::<ExecuteService>().await?;
         registry
-            .register::<BlockConnectorService<TxPoolService>>()
+            .register::<BlockConnectorService<MockTxPoolService>>()
             .await?;
         registry.register::<SyncService>().await?;
 

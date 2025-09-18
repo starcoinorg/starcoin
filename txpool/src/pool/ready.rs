@@ -25,7 +25,7 @@
 //! First `Readiness::Future` response also causes all subsequent transactions from the same sender
 //! to be marked as `Future`.
 
-use std::{cmp, collections::HashMap};
+use std::{cmp, collections::HashMap, time::UNIX_EPOCH};
 
 use starcoin_types::{account_address::AccountAddress as Address, transaction};
 use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
@@ -56,6 +56,14 @@ impl<C> State<C> {
 
 impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C> {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
+        // let now = std::time::SystemTime::now()
+        //     .duration_since(UNIX_EPOCH)
+        //     .unwrap()
+        //     .as_secs();
+        // if now < tx.transaction.expiration_timestamp_secs() {
+        //     return tx_pool::Readiness::Ready;
+        // }
+        // return tx_pool::Readiness::Stale;
         // Check max seq number
         match self.max_seq_number {
             Some(nonce) if tx.transaction.sequence_number() > nonce => {
@@ -76,12 +84,24 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .expect("sender nonce should exists");
         match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
-            cmp::Ordering::Greater => match self.stale_id {
-                Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
-                _ => tx_pool::Readiness::Future,
-            },
-            cmp::Ordering::Less => tx_pool::Readiness::Stale,
+            cmp::Ordering::Greater => {
+                match self.stale_id {
+                    Some(id) if tx.insertion_id() < id => {
+                        info!("jacktest: *********** Transaction is stale for tx insertion id {} < id {}", tx.insertion_id(), id);
+                        tx_pool::Readiness::Stale
+                    }
+                    _ => {
+                        info!("jacktest: *********** Transaction is future, for self.stale_id: {:?}, tx.insertion_id: {}", self.stale_id, tx.insertion_id());
+                        tx_pool::Readiness::Future
+                    }
+                }
+            }
+            cmp::Ordering::Less => {
+                info!("jacktest: *********** Transaction is stale, tx.transaction.sequence_number {} < nonce {}, tx id {}", tx.transaction.sequence_number(), nonce, tx.transaction.id());
+                tx_pool::Readiness::Stale
+            }
             cmp::Ordering::Equal => {
+                info!("jacktest: *********** Transaction is ready, tx.transaction.sequence_number {} == nonce {}, tx id {}", tx.transaction.sequence_number(), nonce, tx.transaction.id());
                 *nonce = nonce.saturating_add(1);
                 tx_pool::Readiness::Ready
             }
@@ -128,12 +148,20 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
             Some(transaction::Condition::Number(block)) if block > self.block_number => {
+                info!(
+                    "jacktest: ************* is future block number {}, now {}",
+                    block, self.block_number
+                );
                 tx_pool::Readiness::Future
             }
-            Some(transaction::Condition::Timestamp(time)) if time > self.now => {
-                tx_pool::Readiness::Future
+            // Some(transaction::Condition::Timestamp(time)) if time > self.now => {
+            //     info!("jacktest: is future block time {}, now {}", time, self.now);
+            //     tx_pool::Readiness::Future
+            // }
+            _ => {
+                info!("jacktest: *************Transaction is ready");
+                tx_pool::Readiness::Ready
             }
-            _ => tx_pool::Readiness::Ready,
         }
     }
 }
