@@ -749,7 +749,28 @@ mod tests {
             storage1_2.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
 
-        let genesis_txn = genesis_block.body.transactions.first().cloned().unwrap();
+        let genesis_txn = genesis_block
+            .body
+            .transactions
+            .first()
+            .ok_or_else(|| format_err!("genesis block should have block metadata for vm1"))?
+            .clone();
+        assert_eq!(
+            txn_accumulator.get_leaf(1)?.unwrap(),
+            storage1
+                .get_transaction_info_by_txn_hash(genesis_txn.id())?
+                .pop()
+                .unwrap()
+                .id(),
+            "block metadata txn hash"
+        );
+
+        let genesis_txn = genesis_block
+            .body
+            .transactions2
+            .first()
+            .ok_or_else(|| format_err!("genesis block should have block metadata of vm2"))?
+            .clone();
         assert_eq!(
             txn_accumulator.get_leaf(0)?.unwrap(),
             storage1
