@@ -530,8 +530,7 @@ starcoin-executor = { path = "executor" }
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "6486837ca8b0578ed569a256a7605b1ad5735973" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
-#starcoin-metrics = { path = "commons/metrics" }
-starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-metrics = { path = "commons/metrics" }
 starcoin-miner = { path = "miner" }
 starcoin-miner-client = { path = "cmd/miner_client" }
 starcoin-miner-client-api = { path = "cmd/miner_client/api" }
@@ -551,8 +550,7 @@ starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
-#starcoin-service-registry = { path = "commons/service-registry" }
-starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-service-registry = { path = "commons/service-registry" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
