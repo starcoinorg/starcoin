@@ -86,7 +86,7 @@ script {
     use starcoin_framework::consensus_config;
 
     fun compute_reward_per_block() {
-        let block_time_target = 10000; // equal to default block_time_target
+        let block_time_target = 1000; // equal to default block_time_target
         let default_reward_per_block = 10000000000; // should be consistent with genesis config
         let reward_per_block = consensus_config::compute_reward_per_block(block_time_target);
         debug::print(&b"consensus_config::compute_reward_per_block");
