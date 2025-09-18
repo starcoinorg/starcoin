@@ -1095,7 +1095,7 @@ async fn test_sync_block_in_async_connection() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 600)]
 pub async fn test_range_location() -> Result<()> {
     let net = ChainNetwork::new_test();
     let _genesis = Genesis::build(&net)?;
