@@ -2,6 +2,13 @@
 # Copyright (c) The Diem Core Contributors
 # SPDX-License-Identifier: Apache-2.0
 # This script sets up the environment for the Diem build by installing necessary dependencies.
+
+# Skip on NixOS - all dependencies handled by nix-shell
+if [ -f /etc/nixos/configuration.nix ] || [ -n "$IN_NIX_SHELL" ]; then
+    echo "NixOS detected, skipping setup (dependencies provided by nix-shell)"
+    exit 0
+fi
+
 #
 # Usage ./dev_setup.sh <options>
 #   v - verbose, print all statements
