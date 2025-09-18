@@ -8,7 +8,7 @@
 script {
     use starcoin_framework::epoch;
 
-    // ENOT_GENESIS_ACCOUNT
+    // ENOT_STARCOIN_FRAMEWORK_ADDRESS
     fun adjust_epoch(genesis_account: signer) {
         let block_number = 1;
         let block_time_milliseonds = 1000;
@@ -17,7 +17,7 @@ script {
     }
 }
 
-// check: "Keep(ABORTED { code: 2818"
+// check: "Keep(ABORTED { code: 327683"
 
 
 //# run --signers Genesis
@@ -33,7 +33,7 @@ script {
     }
 }
 
-// check: EXECUTED
+// check: "Executed"
 
 
 //# run --signers Genesis
