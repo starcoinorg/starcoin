@@ -120,7 +120,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
                     txns.len(),
                     chain_state.state_root()
                 );
-                let txn_state_root = if index == total_count - 1 {
+                let txn_state_root = if index == total_count - 1 || index == 0 {
                   chain_state
                     .commit()
                     .map_err(BlockExecutorError::BlockChainStateErr)?

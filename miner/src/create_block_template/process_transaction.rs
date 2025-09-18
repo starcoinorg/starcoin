@@ -114,6 +114,7 @@ where
                     &mut self.txn_accumulator,
                     block_meta_txn_hash,
                     output,
+                    true,
                 )?;
                 Ok((state_root, txn_accumulator_root))
             }
@@ -167,7 +168,8 @@ where
         let mut included_user_txns: Vec<SignedUserTransaction> = Vec::new();
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
 
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let total_count = txn_outputs.len();
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus::Discard(status) => {
@@ -184,6 +186,7 @@ where
                         &mut self.txn_accumulator,
                         txn_hash,
                         output,
+                        index == total_count - 1,
                     )?;
                     self.gas_used += gas_used;
                     included_user_txns.push(txn.try_into().expect("user txn"));
@@ -217,6 +220,7 @@ where
         txn_accumulator: &mut MerkleAccumulator,
         txn_hash: HashValue,
         output: TransactionOutput,
+        commit: bool,
     ) -> anyhow::Result<(HashValue, HashValue)> {
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
@@ -230,10 +234,13 @@ where
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
-        let txn_state_root = state_db
-            .commit()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
-
+        let txn_state_root = if commit {
+            state_db
+                .commit()
+                .map_err(BlockExecutorError::BlockChainStateErr)?
+        } else {
+            HashValue::zero()
+        };
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
