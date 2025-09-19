@@ -39,6 +39,7 @@ pub enum VerifyBlockField {
     Consensus,
     // block field verified base on block executed result.
     State,
+    Transaction,
 }
 
 impl Display for VerifyBlockField {
@@ -49,6 +50,7 @@ impl Display for VerifyBlockField {
             VerifyBlockField::Uncle => write!(f, "uncle"),
             VerifyBlockField::Consensus => write!(f, "consensus"),
             VerifyBlockField::State => write!(f, "state"),
+            VerifyBlockField::Transaction => write!(f, "transaction"),
         }
     }
 }

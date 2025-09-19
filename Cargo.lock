@@ -12071,6 +12071,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-generator"
+version = "2.1.1"
+dependencies = [
+ "anyhow",
+ "clap 4.5.47",
+ "futures 0.3.31",
+ "futures-timer",
+ "hex",
+ "scmd",
+ "serde 1.0.205",
+ "serde_json",
+ "starcoin-account",
+ "starcoin-account-api",
+ "starcoin-chain",
+ "starcoin-chain-mock",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-dag",
+ "starcoin-genesis",
+ "starcoin-logger 2.1.1",
+ "starcoin-storage",
+ "starcoin-vm1-types",
+]
+
+[[package]]
 name = "starcoin-genesis"
 version = "2.1.1"
 dependencies = [
@@ -12225,9 +12250,11 @@ dependencies = [
  "futures 0.3.31",
  "futures-timer",
  "hex",
+ "num_cpus",
  "once_cell",
  "parking_lot 0.12.1",
  "rand 0.8.5",
+ "rayon",
  "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-account-service",
@@ -13158,10 +13185,13 @@ dependencies = [
  "itertools 0.10.5",
  "network-api",
  "network-p2p-core",
+ "num_cpus",
+ "once_cell",
  "parking_lot 0.12.1",
  "pin-project 0.4.30",
  "pin-utils",
  "rand 0.8.5",
+ "rayon",
  "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-accumulator",
@@ -13357,6 +13387,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde 1.0.205",
  "serde_derive",
+ "starcoin-accumulator",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
