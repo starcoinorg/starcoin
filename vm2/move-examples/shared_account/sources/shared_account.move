@@ -72,7 +72,7 @@ module shared_account::SharedAccount {
         derive_address
     }
 
-    public entry fun initliaze_with_resource_account(source: &signer, seed: vector<u8>) {
+    public entry fun initialize_with_resource_account(source: &signer, seed: vector<u8>) {
         let total = 0;
         let share_record = vector::empty<Share>();
 
