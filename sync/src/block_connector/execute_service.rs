@@ -100,20 +100,23 @@ impl ExecuteService {
             }
         }
 
-        let mut chain = BlockChain::new(
+        let mut chain = match BlockChain::new(
             time_service.clone(),
             new_block.header().parent_hash(),
             storage.clone(),
             storage2.clone(),
             None,
             dag.clone(),
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "new block chain error when processing the mined block: {:?}",
-                e
-            )
-        });
+        ) {
+            std::result::Result::Ok(chain) => chain,
+            Err(e) => {
+                error!(
+                    "new block chain error when processing the mined block: {:?}",
+                    e
+                );
+                return Err(e);
+            }
+        };
 
         let id = new_block.id();
         let verified_block = match chain.verify_with_verifier::<FullVerifier>(new_block) {
