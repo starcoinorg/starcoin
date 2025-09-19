@@ -91,8 +91,8 @@ module shared_account::SharedAccount {
     }
 
     public entry fun add_address(source: &signer, seed: vector<u8>, share_holder: address, num_shares: u64) acquires SharedAccount {
-        let resoruce_addr = get_derive_account(signer::address_of(source), seed);
-        let shared_account = borrow_global_mut<SharedAccount>(resoruce_addr);
+        let resource_addr = get_derive_account(signer::address_of(source), seed);
+        let shared_account = borrow_global_mut<SharedAccount>(resource_addr);
         vector::push_back(&mut shared_account.share_record, Share {
             share_holder,
             num_shares,
