@@ -90,7 +90,7 @@ module shared_account::SharedAccount {
         });
     }
 
-    public entry fun add_address(source: &signer, seed: vector<u8>, share_holder: address, num_shares: u64) {
+    public entry fun add_address(source: &signer, seed: vector<u8>, share_holder: address, num_shares: u64) acquires SharedAccount {
         let resoruce_addr = get_derive_account(signer::address_of(source), seed);
         let shared_account = borrow_global_mut<SharedAccount>(resoruce_addr);
         vector::push_back(&mut shared_account.share_record, Share {
@@ -180,5 +180,15 @@ module shared_account::SharedAccount {
         let resource_signer = account::create_signer_with_capability(&shared_account.signer_capability);
         coin::register<STC>(&resource_signer);
         disperse<STC>(resource_addr);
+    }
+
+    #[test]
+    public fun test_view_derive_address() {
+        use starcoin_std::debug;
+        let derive_address1 = Self::get_derive_account(@shared_account, b"1234");
+        let derive_address2 = Self::get_derive_account(@shared_account, b"3456");
+        assert!(derive_address1 != derive_address2, 100);
+        debug::print(&derive_address1);
+        debug::print(&derive_address2);
     }
 }
