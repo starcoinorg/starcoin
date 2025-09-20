@@ -81,7 +81,10 @@ impl NodeHandle {
         registry: ServiceRef<RegistryService>,
     ) -> Self {
         Self {
-            runtime: Runtime::new().unwrap(),
+            runtime: tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap(),
             join_handle,
             node_service,
             registry,
@@ -89,9 +92,8 @@ impl NodeHandle {
     }
 
     pub fn join(self) -> Result<()> {
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async {
+            self.runtime.block_on(async {
                 //TODO also wait actor system stop signal, support stop system by command.
                 platform::wait_signal().await;
             })
@@ -137,9 +139,9 @@ impl NodeHandle {
     }
 
     pub fn bus(&self) -> Result<ServiceRef<BusService>> {
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { self.registry.service_ref::<BusService>().await })
+            self.runtime
+                .block_on(async { self.registry.service_ref::<BusService>().await })
         })
     }
 
@@ -150,45 +152,47 @@ impl NodeHandle {
     }
 
     pub fn sync_service(&self) -> Result<ServiceRef<SyncService>> {
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { self.registry.service_ref::<SyncService>().await })
+            self.runtime
+                .block_on(async { self.registry.service_ref::<SyncService>().await })
         })
     }
 
     pub fn rpc_service(&self) -> Result<ServiceRef<RpcService>> {
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { self.registry.service_ref::<RpcService>().await })
+            self.runtime
+                .block_on(async { self.registry.service_ref::<RpcService>().await })
         })
     }
 
     pub fn chain_service(&self) -> Result<ServiceRef<ChainReaderService>> {
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { self.registry.service_ref::<ChainReaderService>().await })
+            self.runtime
+                .block_on(async { self.registry.service_ref::<ChainReaderService>().await })
         })
     }
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
         let node_addr = self.node_service();
-        let handle = self.runtime.handle();
-        task::block_in_place(|| handle.block_on(async { node_addr.list_service().await }))
+        task::block_in_place(|| {
+            self.runtime
+                .block_on(async { node_addr.list_service().await })
+        })
     }
 
     pub fn stop_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { node_addr.stop_service(service_name).await })
+            self.runtime
+                .block_on(async { node_addr.stop_service(service_name).await })
         })
     }
 
     pub fn start_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        let handle = self.runtime.handle();
         task::block_in_place(|| {
-            handle.block_on(async { node_addr.start_service(service_name).await })
+            self.runtime
+                .block_on(async { node_addr.start_service(service_name).await })
         })
     }
 
@@ -260,8 +264,7 @@ impl NodeHandle {
 
             Ok(block)
         };
-        let handle = self.runtime.handle();
-        task::block_in_place(|| handle.block_on(fut))
+        task::block_in_place(|| self.runtime.block_on(fut))
     }
 }
 
