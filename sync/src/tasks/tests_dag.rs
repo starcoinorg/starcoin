@@ -109,8 +109,9 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .get_storage()
         .get_block_header_by_hash(target_dag_genesis_header_id)?
         .ok_or_else(|| format_err!("dag genesis header should exist."))?;
-    assert!(
-        dag_genesis_header.number() == 0,
+    assert_eq!(
+        dag_genesis_header.number(),
+        0,
         "dag genesis header number should be 0, but {:?}",
         dag_genesis_header.number()
     );

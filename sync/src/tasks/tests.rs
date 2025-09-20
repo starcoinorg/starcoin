@@ -46,7 +46,7 @@ use super::test_tools::{full_sync_new_node, SyncTestSystem};
 use super::BlockConnectedEvent;
 
 #[stest::test(timeout = 120)]
-pub async fn test_full_sync_new_node() -> Result<()> {
+async fn test_full_sync_new_node() -> Result<()> {
     full_sync_new_node().await
 }
 
@@ -1051,7 +1051,7 @@ fn sync_block_in_async_connection(
         local_node.sync_dag_store.clone(),
         false,
     )?;
-    let branch = tokio::runtime::Handle::current().block_on(sync_task)?;
+    let branch = futures::executor::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());
     let target_dag_state = target_node.chain().get_dag_state()?;
     let local_dag_state = target_node.chain().get_dag_state()?;
