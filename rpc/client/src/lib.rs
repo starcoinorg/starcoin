@@ -76,6 +76,7 @@ use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use tokio::task;
 
 pub mod chain_watcher;
 mod pubsub_client;
@@ -127,7 +128,8 @@ impl ConnectionProvider {
         F: futures::Future + std::marker::Send,
         F::Output: std::marker::Send,
     {
-        self.runtime.lock().block_on(future)
+        let handle = self.runtime.lock();
+        task::block_in_place(|| handle.block_on(future))
     }
 
     fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {

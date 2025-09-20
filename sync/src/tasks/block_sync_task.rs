@@ -25,12 +25,26 @@ use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use tokio::runtime::Runtime;
+use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
+
+static COLLECTOR_RUNTIME: OnceLock<Runtime> = OnceLock::new();
+fn block_collector_rt() -> &'static Runtime {
+    COLLECTOR_RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(3)
+            .thread_name("block-collector")
+            .enable_all()
+            .build()
+            .expect("Failed to create tokio runtime for BlockCollector")
+    })
+}
 
 const ASYNC_BLOCK_COUNT: u64 = 1000;
 
@@ -496,7 +510,10 @@ where
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
-        tokio::runtime::Handle::current().block_on(fut)
+
+        let handle =
+            tokio::runtime::Handle::try_current().unwrap_or(block_collector_rt().handle().clone());
+        task::block_in_place(|| handle.block_on(fut))
     }
 
     pub fn read_local_absent_block(

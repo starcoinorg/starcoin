@@ -25,6 +25,7 @@ use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use tokio::task;
 
 pub mod crash_handler;
 mod genesis_parameter_resolve;
@@ -88,9 +89,12 @@ impl NodeHandle {
     }
 
     pub fn join(self) -> Result<()> {
-        self.runtime.block_on(async {
-            //TODO also wait actor system stop signal, support stop system by command.
-            platform::wait_signal().await;
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async {
+                //TODO also wait actor system stop signal, support stop system by command.
+                platform::wait_signal().await;
+            })
         });
         self.stop()
     }
@@ -133,8 +137,10 @@ impl NodeHandle {
     }
 
     pub fn bus(&self) -> Result<ServiceRef<BusService>> {
-        self.runtime
-            .block_on(async { self.registry.service_ref::<BusService>().await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { self.registry.service_ref::<BusService>().await })
+        })
     }
 
     pub fn network(&self) -> NetworkServiceRef {
@@ -144,36 +150,46 @@ impl NodeHandle {
     }
 
     pub fn sync_service(&self) -> Result<ServiceRef<SyncService>> {
-        self.runtime
-            .block_on(async { self.registry.service_ref::<SyncService>().await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { self.registry.service_ref::<SyncService>().await })
+        })
     }
 
     pub fn rpc_service(&self) -> Result<ServiceRef<RpcService>> {
-        self.runtime
-            .block_on(async { self.registry.service_ref::<RpcService>().await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { self.registry.service_ref::<RpcService>().await })
+        })
     }
 
     pub fn chain_service(&self) -> Result<ServiceRef<ChainReaderService>> {
-        self.runtime
-            .block_on(async { self.registry.service_ref::<ChainReaderService>().await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { self.registry.service_ref::<ChainReaderService>().await })
+        })
     }
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
         let node_addr = self.node_service();
-        self.runtime
-            .block_on(async { node_addr.list_service().await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| handle.block_on(async { node_addr.list_service().await }))
     }
 
     pub fn stop_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        self.runtime
-            .block_on(async { node_addr.stop_service(service_name).await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { node_addr.stop_service(service_name).await })
+        })
     }
 
     pub fn start_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_service();
-        self.runtime
-            .block_on(async { node_addr.start_service(service_name).await })
+        let handle = self.runtime.handle();
+        task::block_in_place(|| {
+            handle.block_on(async { node_addr.start_service(service_name).await })
+        })
     }
 
     pub fn txpool(&self) -> TxPoolService {
@@ -200,7 +216,7 @@ impl NodeHandle {
     /// Just for test
     pub fn generate_block(&self) -> Result<Block> {
         let registry = &self.registry;
-        self.runtime.block_on(async move {
+        let fut = async move {
             let bus = registry.service_ref::<BusService>().await?;
             let chain_service = registry.service_ref::<ChainReaderService>().await?;
             let head = chain_service.main_head_block().await?;
@@ -243,7 +259,9 @@ impl NodeHandle {
             };
 
             Ok(block)
-        })
+        };
+        let handle = self.runtime.handle();
+        task::block_in_place(|| handle.block_on(fut))
     }
 }
 
