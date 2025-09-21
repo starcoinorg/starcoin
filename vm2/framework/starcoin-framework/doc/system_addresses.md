@@ -110,7 +110,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 11;
+<pre><code><b>const</b> <a href="system_addresses.md#0x1_system_addresses_RESERVED_ACCOUNT_TO">RESERVED_ACCOUNT_TO</a>: u128 = 255;
 </code></pre>
 
 

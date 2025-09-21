@@ -4,72 +4,32 @@
 # Module `0x1::stc_transaction_fee`
 
 <code>TransactionFee</code> collect gas fees used by transactions in blocks temporarily.
-Uses aggregator_v2 for parallel execution and distributes fees across 100 genesis accounts.
 
 
--  [Resource `AutoIncrementCounter`](#0x1_stc_transaction_fee_AutoIncrementCounter)
--  [Function `initialize`](#0x1_stc_transaction_fee_initialize)
--  [Function `add_txn_fee_token`](#0x1_stc_transaction_fee_add_txn_fee_token)
--  [Function `next_storage_address`](#0x1_stc_transaction_fee_next_storage_address)
+-  [Function `address_to_u128`](#0x1_stc_transaction_fee_address_to_u128)
 -  [Function `pay_fee`](#0x1_stc_transaction_fee_pay_fee)
 -  [Function `distribute_transaction_fees`](#0x1_stc_transaction_fee_distribute_transaction_fees)
 -  [Specification](#@Specification_0)
-    -  [Function `initialize`](#@Specification_0_initialize)
-    -  [Function `add_txn_fee_token`](#@Specification_0_add_txn_fee_token)
-    -  [Function `pay_fee`](#@Specification_0_pay_fee)
     -  [Function `distribute_transaction_fees`](#@Specification_0_distribute_transaction_fees)
 
 
-<pre><code><b>use</b> <a href="aggregator_v2.md#0x1_aggregator_v2">0x1::aggregator_v2</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
-<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
 
 
-<a id="0x1_stc_transaction_fee_AutoIncrementCounter"></a>
+<a id="0x1_stc_transaction_fee_address_to_u128"></a>
 
-## Resource `AutoIncrementCounter`
-
-The <code><a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a></code> resource holds an aggregator counter for parallel execution
-and tracks which genesis account to send fees to next.
-
-
-<pre><code><b>struct</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt; <b>has</b> key
-</code></pre>
+## Function `address_to_u128`
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>counter: <a href="aggregator_v2.md#0x1_aggregator_v2_Aggregator">aggregator_v2::Aggregator</a>&lt;u64&gt;</code>
-</dt>
-<dd>
- Counter that keeps incrementing to determine which genesis account to use
-</dd>
-</dl>
-
-
-</details>
-
-<a id="0x1_stc_transaction_fee_initialize"></a>
-
-## Function `initialize`
-
-Called in genesis. Sets up the needed resources to collect transaction fees using
-the parallel aggregator approach.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_address_to_u128">address_to_u128</a>(addr: <b>address</b>): u128
 </code></pre>
 
 
@@ -78,88 +38,7 @@ the parallel aggregator approach.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    // Timestamp::assert_genesis();
-    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
-
-    // accept fees in all the currencies
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_stc_transaction_fee_add_txn_fee_token"></a>
-
-## Function `add_txn_fee_token`
-
-publishing a wrapper of the <code><a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a></code> resource under <code>fee_account</code>
-
-
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    <b>move_to</b>(
-        <a href="account.md#0x1_account">account</a>,
-        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt; {
-            counter: <a href="aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
-        }
-    )
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_stc_transaction_fee_next_storage_address"></a>
-
-## Function `next_storage_address`
-
-Helper function to create a storage account address from predefined addresses
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from: u128, range_to: u128): <b>address</b> <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
-    <b>assert</b>!(range_to &gt; range_from, 0);
-    <b>if</b> (range_to == range_from + 1) {
-        <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(range_from)
-    } <b>else</b> {
-        <b>let</b> counter_resource = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(
-            <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
-        );
-        <b>loop</b> {
-            <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> counter_resource.counter, 1);
-            <b>let</b> counter = (<a href="aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&counter_resource.counter) <b>as</b> u128);
-
-            <b>let</b> range = range_to - range_from - 1;
-            <b>let</b> addr_u128 = range_from + (counter % range);
-
-            <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
-            // avoid using the framework <a href="account.md#0x1_account">account</a> <b>address</b>, which is prone <b>to</b> create conflict
-            <b>if</b> (addr != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()) {
-                <b>return</b> addr;
-            }
-        }
-    }
-}
+<pre><code><b>native</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_address_to_u128">address_to_u128</a>(addr: <b>address</b>): u128;
 </code></pre>
 
 
@@ -171,9 +50,10 @@ Helper function to create a storage account address from predefined addresses
 ## Function `pay_fee`
 
 Deposit <code>token</code> into one of the storage accounts
+txn sender is used as hasher to uniquely locate a reserved account to receive the gas
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(txn_sender: <b>address</b>, token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -182,14 +62,16 @@ Deposit <code>token</code> into one of the storage accounts
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;) <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
-    // Get the target genesis <a href="account.md#0x1_account">account</a> <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(txn_sender: <b>address</b>, token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;) {
+    // Get the target reserved <a href="account.md#0x1_account">account</a> <b>address</b>
     <b>let</b> range_from = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>();
     <b>let</b> range_to = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>();
-    <b>let</b> deposit_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
+    <b>let</b> span = range_to - range_from;
+    <b>let</b> addr_u128 = range_from + (<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_address_to_u128">address_to_u128</a>(txn_sender) % span);
+    <b>let</b> addr = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
 
     // Deposit the fee directly <b>to</b> the selected genesis <a href="account.md#0x1_account">account</a>
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(deposit_address, token);
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(addr, token);
 }
 </code></pre>
 
@@ -201,7 +83,6 @@ Deposit <code>token</code> into one of the storage accounts
 
 ## Function `distribute_transaction_fees`
 
-Collect transaction fees from all 100 genesis accounts and return total as coin.
 This function iterates through all genesis accounts and withdraws available fees.
 
 
@@ -216,7 +97,7 @@ This function iterates through all genesis accounts and withdraws available fees
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a> {
+): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
@@ -226,11 +107,8 @@ This function iterates through all genesis accounts and withdraws available fees
 
     <b>let</b> range_from = <a href="system_addresses.md#0x1_system_addresses_reserved_account_from">system_addresses::reserved_account_from</a>();
     <b>let</b> range_to = <a href="system_addresses.md#0x1_system_addresses_reserved_account_to">system_addresses::reserved_account_to</a>();
-    <b>let</b> first_withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
-
-    <b>while</b> (<b>true</b>) {
-        <b>let</b> withdraw_address = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_next_storage_address">next_storage_address</a>&lt;TokenType&gt;(range_from, range_to);
-
+    for (addr_u128 in range_from..range_to) {
+        <b>let</b> withdraw_address = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_u128_to_address">from_bcs::u128_to_address</a>(addr_u128);
         <b>let</b> balance = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(withdraw_address);
         <b>if</b> (balance &gt; 0) {
             // Create <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> for the genesis <a href="account.md#0x1_account">account</a> and withdraw all funds
@@ -238,8 +116,6 @@ This function iterates through all genesis accounts and withdraws available fees
             <b>let</b> withdrawn_coin = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenType&gt;(&genesis_signer, balance);
             <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_fees, withdrawn_coin);
         };
-
-        <b>if</b> (withdraw_address == first_withdraw_address) <b>break</b>;
     };
 
     total_fees
@@ -258,55 +134,6 @@ This function iterates through all genesis accounts and withdraws available fees
 
 <pre><code><b>pragma</b> verify;
 <b>pragma</b> aborts_if_is_strict;
-</code></pre>
-
-
-
-<a id="@Specification_0_initialize"></a>
-
-### Function `initialize`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
-<b>aborts_if</b> <b>exists</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;STC&gt;&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
-</code></pre>
-
-
-
-<a id="@Specification_0_add_txn_fee_token"></a>
-
-### Function `add_txn_fee_token`
-
-
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>exists</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
-</code></pre>
-
-
-
-<a id="@Specification_0_pay_fee"></a>
-
-### Function `pay_fee`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_AutoIncrementCounter">AutoIncrementCounter</a>&lt;TokenType&gt;&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 </code></pre>
 
 

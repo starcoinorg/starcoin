@@ -434,24 +434,24 @@ compute next block time_target using DAG-based algorithm
 
     <b>let</b> total_blue_count = blue_blocks + selected_count;
     <b>let</b> total_block_count = total_blue_count + red_blocks;
-    <b>let</b> expected_blue_count = (selected_count * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> * k / ratio - selected_count * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>) / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>;
-
-    <b>let</b> average_time = duration * <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a> / total_block_count;
+	
+    <b>let</b> expected_blue_count = (selected_count * (k - ratio)) / ratio;
+    <b>let</b> average_time = duration / total_block_count;
 
     // Calculate target based on actual performance and blue/red ratio
     <b>let</b> new_epoch_block_time_target = <b>if</b> (blue_blocks &lt; expected_blue_count) {
-        average_time / 2 / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
+        average_time * 2 / 3
     } <b>else</b> <b>if</b> (blue_blocks &gt; expected_blue_count) {
-        average_time * 2 / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
+        average_time * 3 / 2
     } <b>else</b> {
-        average_time / <a href="epoch.md#0x1_epoch_THOUSAND">THOUSAND</a>
+        average_time
     };
 
-    // Apply stability constraints (limit change <b>to</b> 50%-200% of last <a href="epoch.md#0x1_epoch">epoch</a>)
-    <b>let</b> new_epoch_block_time_target = <b>if</b> (new_epoch_block_time_target &gt; last_epoch_time_target * 2) {
-        last_epoch_time_target * 2
-    } <b>else</b> <b>if</b> (new_epoch_block_time_target &lt; last_epoch_time_target / 2) {
-        last_epoch_time_target / 2
+    // Apply stability constraints (limit change <b>to</b> ~66% <b>to</b> 150% of last <a href="epoch.md#0x1_epoch">epoch</a>)
+    <b>let</b> new_epoch_block_time_target = <b>if</b> (new_epoch_block_time_target &gt; last_epoch_time_target * 3 / 2) {
+        last_epoch_time_target * 3 / 2
+    } <b>else</b> <b>if</b> (new_epoch_block_time_target &lt; last_epoch_time_target * 2 / 3) {
+        last_epoch_time_target * 2 / 3
     } <b>else</b> {
         new_epoch_block_time_target
     };

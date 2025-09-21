@@ -26,7 +26,6 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_block;
     use starcoin_framework::stc_language_version;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout_config;
     use starcoin_framework::stc_util;
@@ -193,10 +192,6 @@ module starcoin_framework::stc_genesis {
             time_mint_stc_amount,
             time_mint_stc_period,
         );
-
-        stc_transaction_fee::initialize(&starcoin_framework_account);
-
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | stc_transaction_fee initialized "));
 
         // Only test/dev network set genesis auth key.
         if (!vector::is_empty(&genesis_auth_key) && (stc_util::is_net_dev() || stc_util::is_net_test())) {

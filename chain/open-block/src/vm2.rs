@@ -30,7 +30,7 @@ impl OpenedBlock {
         let mut results = do_execute_block_transactions(
             state,
             vec![block_metadata_txn],
-            None,
+            Some(self.gas_limit()),
             self.vm_metrics.clone(),
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
