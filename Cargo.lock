@@ -7708,7 +7708,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "asynchronous-codec 0.5.0",
+ "asynchronous-codec 0.6.1",
  "bcs-ext",
  "bitflags 1.3.2",
  "bs58 0.3.1",
