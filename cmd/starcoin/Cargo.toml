@@ -6,7 +6,7 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 bytes = { workspace = true }
-clap = { version = "4.5.43", features = ["derive"] }
+clap = { workspace = true, features = ["derive"] }
 crossbeam-channel = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
