@@ -7,7 +7,7 @@ use std::{sync::Arc, time::Duration};
 use test_helper::run_node_by_config;
 
 pub fn test_sync() {
-    let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
