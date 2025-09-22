@@ -48,6 +48,7 @@ starcoin-types = { features = [
 ], workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
+futures = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }

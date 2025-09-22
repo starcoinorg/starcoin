@@ -11347,6 +11347,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "flate2",
+ "futures 0.3.31",
  "log 0.4.27",
  "once_cell",
  "proptest",

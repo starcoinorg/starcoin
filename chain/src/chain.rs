@@ -1912,8 +1912,25 @@ impl BlockChain {
                 .find_selected_parent(state.tips.into_iter())?;
             self.fork(block_id)?
         } else {
-            // Handle pruning point change if needed
-            bail!("Pruning point change not yet fully implemented")
+            // Handle pruning point change: select best header from both states
+            let new_state = self.dag().get_dag_state(new_pruning_point)?;
+            let current_state = self.dag().get_dag_state(current_pruning_point)?;
+
+            let new_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent(new_state.tips.into_iter())?;
+            let current_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent(current_state.tips.into_iter())?;
+
+            let selected_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent([new_header, current_header].into_iter())?;
+
+            self.fork(selected_header)?
         };
 
         Ok(chain)
