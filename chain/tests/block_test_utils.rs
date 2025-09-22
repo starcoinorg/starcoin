@@ -89,6 +89,9 @@ fn gen_header(
         parent_header.chain_id(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![parent_header.id()],
+        0,
+        HashValue::zero(),
     )
 }
 

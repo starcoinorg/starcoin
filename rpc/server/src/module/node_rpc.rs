@@ -38,7 +38,7 @@ impl NodeApi for NodeRpcImpl {
         let fut = async move {
             let peer_info = service.get_self_peer().await?;
             //TODO read consensus_strategy from Epoch.
-            let consensus_strategy = net.genesis_config().consensus();
+            let consensus_strategy = net.genesis_config2().consensus();
             let node_info = NodeInfo::new(
                 peer_info.into(),
                 self_address,

@@ -41,6 +41,9 @@ fn test_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![HashValue::random()], // Test parents
+        0,                         // Test version
+        HashValue::zero(),         // Test pruning point
     );
     storage
         .block_storage
@@ -96,6 +99,9 @@ fn test_block_number() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![HashValue::random()], // Test parents
+        0,                         // Test version
+        HashValue::zero(),         // Test pruning point
     );
     storage
         .block_storage
@@ -146,6 +152,9 @@ fn test_save_failed_block() {
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![HashValue::random()], // Test parents
+        0,                         // Test version
+        HashValue::zero(),         // Test pruning point
     );
 
     let block_body = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);

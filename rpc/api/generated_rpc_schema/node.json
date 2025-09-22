@@ -285,9 +285,12 @@
                         "nonce",
                         "number",
                         "parent_hash",
+                        "parents_hash",
+                        "pruning_point",
                         "state_root",
                         "timestamp",
-                        "txn_accumulator_root"
+                        "txn_accumulator_root",
+                        "version"
                       ],
                       "properties": {
                         "author": {
@@ -349,6 +352,19 @@
                           "type": "string",
                           "format": "HashValue"
                         },
+                        "parents_hash": {
+                          "description": "DAG parents hash",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        },
+                        "pruning_point": {
+                          "description": "DAG pruning point",
+                          "type": "string",
+                          "format": "HashValue"
+                        },
                         "state_root": {
                           "description": "The last transaction state_root of this block after execute.",
                           "type": "string",
@@ -362,6 +378,12 @@
                           "description": "The transaction accumulator root hash after executing this block.",
                           "type": "string",
                           "format": "HashValue"
+                        },
+                        "version": {
+                          "description": "DAG block version",
+                          "type": "integer",
+                          "format": "uint8",
+                          "minimum": 0.0
                         }
                       }
                     }
@@ -527,9 +549,12 @@
                       "nonce",
                       "number",
                       "parent_hash",
+                      "parents_hash",
+                      "pruning_point",
                       "state_root",
                       "timestamp",
-                      "txn_accumulator_root"
+                      "txn_accumulator_root",
+                      "version"
                     ],
                     "properties": {
                       "author": {
@@ -591,6 +616,19 @@
                         "type": "string",
                         "format": "HashValue"
                       },
+                      "parents_hash": {
+                        "description": "DAG parents hash",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "HashValue"
+                        }
+                      },
+                      "pruning_point": {
+                        "description": "DAG pruning point",
+                        "type": "string",
+                        "format": "HashValue"
+                      },
                       "state_root": {
                         "description": "The last transaction state_root of this block after execute.",
                         "type": "string",
@@ -604,6 +642,12 @@
                         "description": "The transaction accumulator root hash after executing this block.",
                         "type": "string",
                         "format": "HashValue"
+                      },
+                      "version": {
+                        "description": "DAG block version",
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
                       }
                     }
                   }

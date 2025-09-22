@@ -7,16 +7,12 @@ updates:
     time: "02:00"
     # Use UTC +08:00
     timezone: "Asia/Shanghai"
-  open-pull-requests-limit: 3
+  open-pull-requests-limit: 10
   groups:
-    rust-dependencies:
+    minor-and-patch:
       patterns:
         - "*"
       update-types:
         - "minor"
         - "patch"
-    rust-major-updates:
-      patterns:
-        - "*"
-      update-types:
-        - "major"
+  # Major updates will be created as separate PRs for careful review
