@@ -27,10 +27,10 @@ struct Opt {
     #[clap(long, default_value = "true")]
     bench_vm2: bool,
 
-    #[clap(long, default_value = "1,10")]
+    #[clap(long, default_value = "500")]
     serialize_txns: String,
 
-    #[clap(long, default_value = "1,10")]
+    #[clap(long, default_value = "500")]
     parallel_txns: String,
 }
 
@@ -44,11 +44,13 @@ fn main() {
         let serialize_txns: Vec<usize> = opt
             .serialize_txns
             .split(',')
+            .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().parse().expect("Invalid transaction count"))
             .collect();
         let parallel_txns: Vec<usize> = opt
             .parallel_txns
             .split(',')
+            .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().parse().expect("Invalid transaction count"))
             .collect();
         let reports = manager.run(&serialize_txns, &parallel_txns);

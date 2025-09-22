@@ -65,6 +65,7 @@ use crate::{verifier, VMExecutor};
 #[cfg(feature = "metrics")]
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm1_types::stdlib::StdlibVersion;
+use rand::Rng;
 
 static EXECUTION_CONCURRENCY_LEVEL: AtomicUsize = AtomicUsize::new(1);
 
@@ -954,6 +955,7 @@ impl StarcoinVM {
         storage: &S,
         txn: SignedUserTransaction,
     ) -> (VMStatus, TransactionOutput) {
+        let now = std::time::Instant::now();
         let txn_data = match TransactionMetadata::new(&txn) {
             Ok(txn_data) => txn_data,
             Err(e) => {
@@ -981,7 +983,7 @@ impl StarcoinVM {
             Err(_) => Err(VMStatus::error(StatusCode::INVALID_SIGNATURE, None)),
         };
 
-        match signature_checked_txn {
+        let result = match signature_checked_txn {
             Ok(txn) => {
                 let result = match txn.payload() {
                     payload @ TransactionPayload::Script(_)
@@ -1018,7 +1020,11 @@ impl StarcoinVM {
                 }
             }
             Err(e) => discard_error_vm_status(e),
+        };
+        if rand::thread_rng().gen_bool(0.01) {
+            println!("[VM] execute_user_transaction cost: {:?}", now.elapsed());
         }
+        result
     }
 
     pub fn dry_run_transaction<S: StarcoinMoveResolver + StateView>(
@@ -1580,6 +1586,8 @@ impl VMExecutor for StarcoinVM {
                 .start_timer()
         });
 
+        let now = std::time::Instant::now();
+
         let concurrency_level = Self::get_concurrency_level();
         if concurrency_level > 1 {
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
@@ -1589,6 +1597,7 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
+            println!("parallel execute cost: {:?}", now.elapsed());
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {

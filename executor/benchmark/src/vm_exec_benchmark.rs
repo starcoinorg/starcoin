@@ -23,6 +23,7 @@ use starcoin_types::{
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::ScriptFunction;
+use std::cmp::min;
 use std::sync::Arc;
 
 use starcoin_metrics::metrics::VMMetrics;
@@ -246,59 +247,63 @@ impl TransactionGeneratorVM2 {
 
     fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction2> {
         self.net.time_service().sleep(1000);
+        let mut sequence_number = 0;
+        let mut result = vec![];
+        for i in 0..self.accounts.len() {
+            let payload = transfer_scripts_batch_peer_to_peer_v2(
+                stc_type_tag_vm2(),
+                vec![self.accounts[i].address],
+                vec![INIT_ACCOUNT_BALANCE as u128],
+            );
 
-        let receivers: Vec<_> = self.accounts.iter().map(|d| d.address).collect();
-        let amounts: Vec<_> = self
-            .accounts
-            .iter()
-            .map(|_| INIT_ACCOUNT_BALANCE as u128)
-            .collect();
+            let txn = transaction_builder2::create_signed_txn_with_association_account(
+                payload,
+                sequence_number, // The first transaction from the association account should have sequence number 0
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                self.net.time_service().now_secs() + 1,
+                self.net.chain_id().id().into(),
+                self.net.genesis_config2(),
+            );
+            sequence_number += 1;
 
-        let payload =
-            transfer_scripts_batch_peer_to_peer_v2(stc_type_tag_vm2(), receivers, amounts);
-
-        let txn = transaction_builder2::create_signed_txn_with_association_account(
-            payload,
-            0, // The first transaction from the association account should have sequence number 0
-            DEFAULT_MAX_GAS_AMOUNT,
-            1,
-            self.net.time_service().now_secs() + 1,
-            self.net.chain_id().id().into(),
-            self.net.genesis_config2(),
-        );
-
+            result.push(txn);
+        }
         // Return a Vec containing just this single, powerful batch transaction
-        vec![txn]
+        result
     }
 
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction2> {
         self.net.time_service().sleep(1000);
         let mut txns = Vec::with_capacity(txns_num);
-        for index in 0..self.accounts.len() / 2 {
-            let sender_idx = 2 * index;
-            let receiver_idx = 2 * index + 1;
-            if receiver_idx >= self.accounts.len() {
-                break;
-            }
-            let sender = &self.accounts[sender_idx];
-            let receiver = &self.accounts[receiver_idx];
-            let payload =
-                transaction_builder2::encode_transfer_script_function(receiver.address, 1);
-            let txn = self.create_transaction_with_sender(
-                sender,
-                self.accounts[sender_idx].sequence_number,
-                payload,
-                self.net.time_service().now_secs() + self.accounts[sender_idx].sequence_number + 1,
-                &self.net,
-            );
-            self.accounts[sender_idx].sequence_number += 1;
-            txns.push(txn);
-            if txns.len() >= txns_num {
-                break;
+        self.accounts.iter_mut().for_each(|a| a.sequence_number = 0);
+
+        loop {
+            for index in 0..self.accounts.len() / 2 {
+                let sender_idx = 2 * index;
+                let receiver_idx = 2 * index + 1;
+                assert!(receiver_idx < self.accounts.len());
+
+                let sender = &self.accounts[sender_idx];
+                let receiver = &self.accounts[receiver_idx];
+                let payload =
+                    transaction_builder2::encode_transfer_script_function(receiver.address, 1);
+                let txn = self.create_transaction_with_sender(
+                    sender,
+                    self.accounts[sender_idx].sequence_number,
+                    payload,
+                    self.net.time_service().now_secs()
+                        + self.accounts[sender_idx].sequence_number
+                        + 1,
+                    &self.net,
+                );
+                self.accounts[sender_idx].sequence_number += 1;
+                txns.push(txn);
+                if txns.len() >= txns_num {
+                    return txns;
+                }
             }
         }
-
-        txns
     }
 
     fn create_transaction_with_sender(
@@ -333,7 +338,7 @@ impl<
         Self { chain_state }
     }
 
-    fn run(&mut self, txns: Vec<SignedUserTransaction2>) -> BenchmarkReport {
+    fn run(&mut self, txns: Vec<SignedUserTransaction2>, persist_result: bool) -> BenchmarkReport {
         let num_txns = txns.len();
 
         let registry = Registry::new();
@@ -344,13 +349,24 @@ impl<
             .map(Transaction2::UserTransaction)
             .collect();
 
-        let _ = block_executor::block_execute(
-            self.chain_state,
-            user_txns,
-            u64::MAX,
-            vm_metrics.clone(),
-        )
-        .expect("Execute txns fail.");
+        // do not persist the execution result to storage
+        if persist_result {
+            let _ = block_executor::block_execute(
+                self.chain_state,
+                user_txns,
+                u64::MAX,
+                vm_metrics.clone(),
+            )
+            .expect("Execute txns fail.");
+        } else {
+            let _ = starcoin_vm2_executor::do_execute_block_transactions(
+                self.chain_state,
+                user_txns,
+                Some(u64::MAX),
+                vm_metrics.clone(),
+            )
+            .expect("Execute txns fail.");
+        }
 
         self.chain_state.flush().expect("flush state should be ok");
 
@@ -474,15 +490,21 @@ impl BenchmarkManagerVM2 {
             .max()
             .copied()
             .unwrap_or(0);
-        let mut generator = TransactionGeneratorVM2::new(max_txns_once * 2, self.net.clone());
+        // 200 account is enough to avoid conflict in parallel execution.
+        let account_num = min(max_txns_once * 2, 200);
+        let mut generator = TransactionGeneratorVM2::new(account_num, self.net.clone());
         let txns = generator.gen_create_account_transactions();
         let mut executor = TransactionExecutorVM2::new(&self.chain_state);
-        let _ = executor.run(txns);
+        let _ = executor.run(txns, true);
 
         // run serialize txns
         for txns_num in serialize_bench_txns.iter() {
+            println!(
+                "------------------------------------------- Run serialize txns: {}",
+                txns_num
+            );
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns));
+            reports.push(executor.run(txns, false));
         }
 
         StarcoinVM2::set_concurrency_level(num_cpus::get());
@@ -490,8 +512,12 @@ impl BenchmarkManagerVM2 {
 
         // run parallel txns
         for txns_num in parallel_bench_txns.iter() {
+            println!(
+                "------------------------------------------- Run parallel txns: {}",
+                txns_num
+            );
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns));
+            reports.push(executor.run(txns, false));
         }
 
         reports
