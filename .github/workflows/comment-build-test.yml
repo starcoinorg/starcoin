@@ -1,0 +1,64 @@
+name: Comment Build and Test
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  parse-and-trigger:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci')
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.parse.outputs.runner }}
+      should_run: ${{ steps.parse.outputs.should_run }}
+    steps:
+      - name: Parse comment
+        id: parse
+        run: |
+          comment="${{ github.event.comment.body }}"
+          if [[ "$comment" =~ /run-ci[[:space:]]+([^[:space:]]+) ]]; then
+            runner="${BASH_REMATCH[1]}"
+          else
+            runner="nixos-amd"
+          fi
+          echo "runner=$runner" >> $GITHUB_OUTPUT
+          echo "should_run=true" >> $GITHUB_OUTPUT
+
+      - name: React to comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            })
+
+  run-ci:
+    needs: parse-and-trigger
+    if: needs.parse-and-trigger.outputs.should_run == 'true'
+    uses: ./.github/workflows/core-build-test.yml
+    with:
+      runner: ${{ needs.parse-and-trigger.outputs.runner }}
+    secrets: inherit
+
+  comment-result:
+    needs: [parse-and-trigger, run-ci]
+    if: always() && needs.parse-and-trigger.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment result
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const runner = '${{ needs.parse-and-trigger.outputs.runner }}';
+            const result = '${{ needs.run-ci.result }}';
+            const icon = result === 'success' ? '[PASS]' : '[FAIL]';
+            const message = `${icon} CI ${result} on ${runner}`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: message
+            })
