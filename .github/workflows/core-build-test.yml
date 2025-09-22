@@ -36,18 +36,41 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            code:
+              - '!**/*.md'
+              - '!LICENSE*'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/PULL_REQUEST_TEMPLATE.md'
+              - '!.github/dependabot.yml'
+              - '!.github/CODEOWNERS'
+              - '!.github/workflows/**'
+              - '!examples/**'
+              - '!vm2/move-examples/**'
+              - '!scripts/**'
+              - '!kube/**'
+              - '!docker/**'
+              - '**'
       - name: run fmt check
+        if: steps.changes.outputs.code == 'true'
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: -- --check
       - name: setup environment
+        if: steps.changes.outputs.code == 'true'
         run: bash ./scripts/dev_setup.sh  -b -t -y -m
       - name: run cargo clean
+        if: steps.changes.outputs.code == 'true'
         uses: actions-rs/cargo@v1
         with:
           command: clean
       - name: run cargo check
+        if: steps.changes.outputs.code == 'true'
         uses: actions-rs/cargo@v1
         env:
           RUSTFLAGS: -D warnings
@@ -56,18 +79,22 @@ jobs:
           args: --all-targets
 
       - name: build
+        if: steps.changes.outputs.code == 'true'
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --all
       - name: test
+        if: steps.changes.outputs.code == 'true'
         run: ./scripts/nextest.sh
       - name: Doc Tests
+        if: steps.changes.outputs.code == 'true'
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --doc
       - name: integration test dev environment
+        if: steps.changes.outputs.code == 'true'
         env:
           RUST_LOG: info
           RUST_BACKTRACE: full
