@@ -197,7 +197,7 @@ impl Registry {
 
         let arbiter = Arbiter::with_tokio_rt(|| {
             tokio::runtime::Builder::new_multi_thread()
-                .enable_time()
+                .enable_all()
                 .build()
                 .unwrap()
         });
@@ -319,7 +319,7 @@ impl RegistryService {
     pub fn launch() -> ServiceRef<Self> {
         let arbiter = Arbiter::with_tokio_rt(|| {
             tokio::runtime::Builder::new_multi_thread()
-                .enable_time()
+                .enable_all()
                 .build()
                 .unwrap()
         });
