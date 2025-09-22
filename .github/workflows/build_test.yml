@@ -2,8 +2,23 @@ name: Build and Test
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - dual-verse-dag
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/dependabot.yml'
+      - '.github/CODEOWNERS'
+      - 'examples/**'
+      - 'vm2/move-examples/'
+      - 'scripts/**'
+      - 'kube/**'
+      - 'docker/**'
 
 jobs:
   build-and-test:

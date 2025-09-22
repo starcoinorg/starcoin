@@ -286,8 +286,8 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
             strategy: 0, //ConsensusStrategy::Dummy.value(),
             max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
-            pruning_depth: G_PRUNING_DEPTH,
-            pruning_finality: G_PRUNING_FINALITY,
+            pruning_depth: 4,
+            pruning_finality: 3,
         },
         association_key_pair: (
             Some(Arc::new(association_private_key)),
