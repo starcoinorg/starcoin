@@ -2,7 +2,7 @@ name: Build and Test
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
     branches:
       - dual-verse-dag
     paths-ignore:
@@ -23,7 +23,7 @@ on:
 jobs:
   build-and-test:
     name: build and test
-    runs-on: self-hosted
+    runs-on: ${{ github.actor == 'welbon' && 'bobong' || 'self-hosted' }}
     timeout-minutes: 120
     steps:
       - name: checkout
