@@ -38,7 +38,6 @@ static COLLECTOR_RUNTIME: OnceLock<Runtime> = OnceLock::new();
 fn block_collector_rt() -> &'static Runtime {
     COLLECTOR_RUNTIME.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(3)
             .thread_name("block-collector")
             .enable_all()
             .build()

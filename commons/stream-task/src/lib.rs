@@ -34,7 +34,7 @@ impl TaskError {
     pub fn map(error: anyhow::Error) -> Self {
         error
             .downcast::<Self>()
-            .unwrap_or_else(|err| TaskError::BreakError(err))
+            .unwrap_or_else(TaskError::BreakError)
     }
 
     pub fn is_canceled(&self) -> bool {
