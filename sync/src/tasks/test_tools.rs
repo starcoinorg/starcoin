@@ -28,7 +28,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use stest::actix_export::System;
 use test_helper::DummyNetworkService;
-use tokio::task;
 
 #[cfg(test)]
 pub struct SyncTestSystem {
@@ -98,31 +97,29 @@ impl SyncTestSystem {
                     .build()
                     .expect("failed to create tokio runtime for main")
             });
-            task::block_in_place(|| {
-                system.block_on(async {
-                    let registry = RegistryService::launch();
+            system.block_on(async {
+                let registry = RegistryService::launch();
 
-                    registry.put_shared(config.clone()).await.unwrap();
-                    registry.put_shared(storage.clone()).await.unwrap();
-                    registry.put_shared(storage2.clone()).await.unwrap();
-                    registry.put_shared(genesis).await.unwrap();
-                    registry
-                        .put_shared(dag)
-                        .await
-                        .expect("failed to put dag in registry");
-                    registry.put_shared(MockTxPoolService::new()).await.unwrap();
+                registry.put_shared(config.clone()).await.unwrap();
+                registry.put_shared(storage.clone()).await.unwrap();
+                registry.put_shared(storage2.clone()).await.unwrap();
+                registry.put_shared(genesis).await.unwrap();
+                registry
+                    .put_shared(dag)
+                    .await
+                    .expect("failed to put dag in registry");
+                registry.put_shared(MockTxPoolService::new()).await.unwrap();
 
-                    Delay::new(Duration::from_secs(2)).await;
+                Delay::new(Duration::from_secs(2)).await;
 
-                    registry.register::<ChainReaderService>().await.unwrap();
-                    registry.register::<PruningPointService>().await.unwrap();
-                    registry
-                        .register::<BlockConnectorService<MockTxPoolService>>()
-                        .await
-                        .unwrap();
+                registry.register::<ChainReaderService>().await.unwrap();
+                registry.register::<PruningPointService>().await.unwrap();
+                registry
+                    .register::<BlockConnectorService<MockTxPoolService>>()
+                    .await
+                    .unwrap();
 
-                    registry_sender.send(registry).unwrap();
-                })
+                registry_sender.send(registry).unwrap();
             });
 
             system.run().unwrap();
