@@ -31,7 +31,6 @@ use move_binary_format::file_format_common::Opcodes;
 use starcoin_gas_algebra_ext::InstructionGasParameters;
 use starcoin_gas_algebra_ext::TransactionGasParameters;
 
-
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 
