@@ -66,6 +66,7 @@ pub enum FeatureFlag {
     COIN_TO_FUNGIBLE_ASSET_MIGRATION = 60,
     DISPATCHABLE_FUNGIBLE_ASSET = 63,
     NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE = 64,
+    OPERATIONS_DEFAULT_TO_FA_STC_STOR = 65,
     DISALLOW_USER_NATIVES = 71,
 }
 
@@ -113,7 +114,8 @@ impl FeatureFlag {
             FeatureFlag::TRANSACTION_CONTEXT_EXTENSION,
             FeatureFlag::COIN_TO_FUNGIBLE_ASSET_MIGRATION,
             FeatureFlag::DISPATCHABLE_FUNGIBLE_ASSET,
-            //FeatureFlag::NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE,
+            FeatureFlag::NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE,
+            FeatureFlag::OPERATIONS_DEFAULT_TO_FA_STC_STOR,
         ]
     }
 }
