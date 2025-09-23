@@ -195,12 +195,7 @@ impl Registry {
         }
         info!("Registry service: {}", service_name);
 
-        let arbiter = Arbiter::with_tokio_rt(|| {
-            tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-        });
+        let arbiter = Arbiter::new();
         let registry_ref = self.service_ref.clone();
         let addr = ServiceActor::start_in_arbiter(&arbiter.handle(), move |_ctx| f(registry_ref));
         let service_ref: ServiceRef<S> = addr.into();
@@ -317,12 +312,7 @@ impl ServiceFactory<RegistryService> for RegistryService {
 
 impl RegistryService {
     pub fn launch() -> ServiceRef<Self> {
-        let arbiter = Arbiter::with_tokio_rt(|| {
-            tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-        });
+        let arbiter = Arbiter::new();
         let addr = ServiceActor::start_in_arbiter(&arbiter.handle(), |ctx| {
             let service_ref: ServiceRef<RegistryService> = ctx.address().into();
             ServiceActor::new::<RegistryService>(service_ref)

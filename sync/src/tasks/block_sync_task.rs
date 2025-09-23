@@ -25,25 +25,13 @@ use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
-use tokio::runtime::Runtime;
 use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
-
-static COLLECTOR_RUNTIME: OnceLock<Runtime> = OnceLock::new();
-fn block_collector_rt() -> &'static Runtime {
-    COLLECTOR_RUNTIME.get_or_init(|| {
-        tokio::runtime::Builder::new_multi_thread()
-            .thread_name("block-collector")
-            .enable_all()
-            .build()
-            .expect("Failed to create tokio runtime for BlockCollector")
-    })
-}
 
 const ASYNC_BLOCK_COUNT: u64 = 1000;
 
@@ -510,8 +498,7 @@ where
             }
         };
 
-        let handle =
-            tokio::runtime::Handle::try_current().unwrap_or(block_collector_rt().handle().clone());
+        let handle = tokio::runtime::Handle::current();
         task::block_in_place(|| handle.block_on(fut))
     }
 

@@ -73,6 +73,7 @@ pub struct SyncService {
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
+    runtime: tokio::runtime::Runtime,
 }
 
 impl SyncService {
@@ -109,6 +110,7 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
+        let runtime = tokio::runtime::Runtime::new()?;
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
@@ -120,6 +122,7 @@ impl SyncService {
             metrics,
             peer_score_metrics,
             vm_metrics,
+            runtime,
         })
     }
 
@@ -541,7 +544,7 @@ impl SyncService {
             .as_ref()
             .map(|metrics| metrics.sync_task_break_total.clone());
 
-        ctx.spawn(fut.then(
+        self.runtime.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let mut chain_status: Option<ChainStatus> = None;
                 let cancel = match result {
@@ -578,7 +581,7 @@ impl SyncService {
                                             )
                                         }
                                         "verify_err"
-                                    }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
+                                    } else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>() {
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                         "bcs_err"
                                     } else {
@@ -614,7 +617,7 @@ impl SyncService {
                         }
                     }
                 };
-                if let Err(e) = self_ref.notify(SyncDoneEvent{ cancel, chain_status, }) {
+                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
                     error!("[sync] Broadcast SyncDone event error: {:?}", e);
                 }
             },
