@@ -76,6 +76,9 @@ fn test_client_reconnect() -> Result<()> {
 
     let _e = node_handle.stop();
 
+    // wait for the threads that are minting and executing blocks to exit
+    std::thread::sleep(Duration::from_millis(3000));
+
     let node_handle = test_helper::run_node_by_config(config)?;
     std::thread::sleep(Duration::from_millis(300));
     //first call after lost connection will return error
