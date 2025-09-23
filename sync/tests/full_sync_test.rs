@@ -80,7 +80,7 @@ fn test_sync_and_notify_by_config(first_config: Arc<NodeConfig>, second_config: 
     for _i in 0..5 {
         first_node.generate_block().unwrap();
     }
-    sleep(Duration::from_millis(500));
+    sleep(Duration::from_millis(2000));
 
     let second_node = run_node_by_config(second_config).unwrap();
     //wait first sync.

@@ -205,7 +205,7 @@ impl NodeHandle {
                 async_std::future::timeout(Duration::from_secs(5), receiver).await
             {
                 //wait for new block event to been processed.
-                Delay::new(Duration::from_millis(100)).await;
+                Delay::new(Duration::from_millis(2000)).await;
                 event.executed_block.block().clone()
             } else {
                 let latest_head = chain_service.main_head_block().await?;
