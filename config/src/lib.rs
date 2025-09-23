@@ -75,7 +75,7 @@ pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
-pub static G_CRATE_VERSION: &str = clap::crate_version!();
+pub static G_CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static G_GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
     fallback = "unknown"

@@ -12,25 +12,25 @@ task 6 'run'. lines 25-50:
   "status": "Executed"
 }
 
-task 8 'run'. lines 54-68:
+task 8 'run'. lines 54-67:
 {
   "gas_used": 168960,
   "status": "Executed"
 }
 
-task 10 'run'. lines 72-88:
+task 10 'run'. lines 71-87:
 {
-  "gas_used": 277860,
+  "gas_used": 277360,
   "status": "Executed"
 }
 
-task 11 'run'. lines 91-105:
+task 11 'run'. lines 90-104:
 {
-  "gas_used": 110329,
+  "gas_used": 109829,
   "status": "Executed"
 }
 
-task 12 'run'. lines 107-121:
+task 12 'run'. lines 106-120:
 {
   "gas_used": 28463,
   "status": {
@@ -38,7 +38,7 @@ task 12 'run'. lines 107-121:
       "location": {
         "Module": {
           "address": "0x00000000000000000000000000000001",
-          "name": "dao_featuers_proposal"
+          "name": "dao_features_proposal"
         }
       },
       "abort_code": "262145"

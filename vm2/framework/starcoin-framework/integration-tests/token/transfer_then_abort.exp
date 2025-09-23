@@ -2,7 +2,7 @@ processed 5 tasks
 
 task 3 'run'. lines 7-18:
 {
-  "gas_used": 481299,
+  "gas_used": 485891,
   "status": {
     "MoveAbort": {
       "location": "Script",
@@ -13,6 +13,6 @@ task 3 'run'. lines 7-18:
 
 task 4 'run'. lines 20-29:
 {
-  "gas_used": 812246,
+  "gas_used": 824057,
   "status": "Executed"
 }

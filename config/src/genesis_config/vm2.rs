@@ -192,63 +192,6 @@ pub static G_PRUNING_FINALITY: u64 = 86400;
 //static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
-pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let (association_private_key, association_public_key) = genesis_multi_key_pair();
-    let (genesis_private_key, genesis_public_key) = genesis_key_pair();
-
-    GenesisConfig {
-        genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
-            parent_hash: HashValue::sha3_256_of(b"starcoin_dag_test"),
-            //Test timestamp set to 0 for mock time.
-            timestamp: 0,
-            difficulty: 1.into(),
-        }),
-        version: Version { major: 1 },
-        reward_delay: 1,
-        pre_mine_amount: G_DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
-        vm_config: VMConfig {
-            gas_schedule: GasSchedule {
-                feature_version: LATEST_GAS_FEATURE_VERSION,
-                entries: StarcoinGasParameters::initial()
-                    .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
-            },
-        },
-        publishing_option: TransactionPublishOption::open(),
-        consensus_config: ConsensusConfig {
-            uncle_rate_target: G_UNCLE_RATE_TARGET,
-            base_block_time_target: G_DEFAULT_BASE_BLOCK_TIME_TARGET,
-            base_reward_per_block: G_DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-            epoch_block_count: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
-            base_block_difficulty_window: G_DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-            base_reward_per_uncle_percent: G_BASE_REWARD_PER_UNCLE_PERCENT,
-            min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
-            max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
-            base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
-            strategy: 0, //ConsensusStrategy::Dummy.value(),
-            max_transaction_per_block: G_MAX_TRANSACTION_PER_BLOCK,
-            pruning_depth: G_PRUNING_DEPTH,
-            pruning_finality: G_PRUNING_FINALITY,
-        },
-        association_key_pair: (
-            Some(Arc::new(association_private_key)),
-            association_public_key,
-        ),
-        genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
-        time_service_type: TimeServiceType::MockTimeService,
-        stdlib_version: StdlibVersion::Latest,
-        dao_config: DaoConfig {
-            voting_delay: 60_000,          // 1min
-            voting_period: 60 * 60 * 1000, // 1h
-            voting_quorum_rate: 4,
-            min_action_delay: 60 * 60 * 1000, // 1h
-        },
-        transaction_timeout: ONE_DAY,
-    }
-});
-
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
