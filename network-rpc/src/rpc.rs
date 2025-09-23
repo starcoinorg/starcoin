@@ -9,6 +9,7 @@ use network_p2p_core::NetRpcError;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_chain_service::{ChainAsyncService, ChainReaderService};
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::error;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAbsentBlockRequest, GetAbsentBlockResponse,
     GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber, GetBlockIds, GetRangeInLocationRequest,
@@ -60,7 +61,10 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         } else {
             MAX_TXN_REQUEST_SIZE
         };
-        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None).unwrap_or_else(|e| {
+            error!("get_txns_from_pool error in get_txns_from_pool in gen_server: {}", e);
+            vec![]
+        }))};
         Box::pin(fut)
     }
 

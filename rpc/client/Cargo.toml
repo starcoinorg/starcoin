@@ -51,6 +51,7 @@ starcoin-vm2-account-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
+starcoin-dag = { workspace = true }
 
 [dev-dependencies]
 starcoin-config = { workspace = true }

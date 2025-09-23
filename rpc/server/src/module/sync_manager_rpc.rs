@@ -6,10 +6,9 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use network_api::PeerStrategy;
 use network_p2p_types::peer_id::PeerId;
-use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
+use starcoin_rpc_api::{sync_manager::SyncManagerApi, types::SyncStatusView};
 use starcoin_sync_api::{PeerScoreResponse, SyncAsyncService, SyncProgressReport};
-use starcoin_types::sync_status::SyncStatus;
 
 pub struct SyncManagerRpcImpl<S>
 where
@@ -31,11 +30,11 @@ impl<S> SyncManagerApi for SyncManagerRpcImpl<S>
 where
     S: SyncAsyncService,
 {
-    fn status(&self) -> FutureResult<SyncStatus> {
+    fn status(&self) -> FutureResult<SyncStatusView> {
         let service = self.service.clone();
         let fut = async move {
             let result = service.status().await?;
-            Ok(result)
+            Ok(result.into())
         }
         .map_err(map_err);
         Box::pin(fut.boxed())

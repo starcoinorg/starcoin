@@ -55,7 +55,7 @@ impl AccountInfo {
         let (_private_key, public_key) = key_gen.generate_keypair();
         let address = account_address::from_public_key(&public_key);
         let account_public_key = AccountPublicKey::Single(public_key);
-        AccountInfo {
+        Self {
             address,
             is_default: false,
             is_readonly: false,
@@ -68,7 +68,7 @@ impl AccountInfo {
 
 impl From<&Account> for AccountInfo {
     fn from(account: &Account) -> Self {
-        AccountInfo::new(account.addr, account.public_key(), false, false, false)
+        Self::new(account.addr, account.public_key(), false, false, false)
     }
 }
 

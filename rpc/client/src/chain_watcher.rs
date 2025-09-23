@@ -24,7 +24,7 @@ pub struct ThinHeadBlock {
 
 impl From<BlockView> for ThinHeadBlock {
     fn from(view: BlockView) -> Self {
-        ThinHeadBlock {
+        Self {
             header: view.header,
             txn_hashes: view.body.txn_hashes(),
         }

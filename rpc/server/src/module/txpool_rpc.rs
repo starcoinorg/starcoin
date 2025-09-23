@@ -65,6 +65,21 @@ where
         self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
     }
 
+    fn submit_transactions(
+        &self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> FutureResult<Vec<HashValue>> {
+        let txn_hashes = txns.iter().map(|txn| txn.id()).collect();
+        let result: Result<(), jsonrpc_core::Error> = self
+            .service
+            .add_txns(txns)
+            .pop()
+            .expect("txpool should return result")
+            .map_err(convert_to_rpc_error);
+
+        Box::pin(futures::future::ready(result.map(|_| txn_hashes)))
+    }
+
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
         let result = hex::decode(tx)
@@ -168,6 +183,14 @@ where
 
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
         let result = self.service.next_sequence_number(address);
+        Box::pin(futures::future::ok(result))
+    }
+
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> FutureResult<Option<Vec<(AccountAddress, Option<u64>)>>> {
+        let result = self.service.next_sequence_number_in_batch(addresses);
         Box::pin(futures::future::ok(result))
     }
 

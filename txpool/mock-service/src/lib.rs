@@ -101,11 +101,12 @@ impl TxPoolSyncService for MockTxPoolService {
         unimplemented!()
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         _current_timestamp_secs: Option<u64>,
-        _header: &BlockHeader,
+        _state_root1: HashValue,
+        _state_root2: HashValue,
     ) -> Vec<MultiSignedUserTransaction> {
         self.pool
             .lock()
@@ -116,18 +117,10 @@ impl TxPoolSyncService for MockTxPoolService {
             .collect()
     }
 
-    fn next_sequence_number_with_header(
+    fn next_sequence_number_with_state(
         &self,
         _address: AccountAddress,
-        _header: &BlockHeader,
-    ) -> Option<u64> {
-        todo!()
-    }
-
-    fn next_sequence_number2_with_header(
-        &self,
-        _address: AccountAddress2,
-        _header: &BlockHeader,
+        _state_root: HashValue,
     ) -> Option<u64> {
         todo!()
     }
@@ -146,6 +139,45 @@ impl TxPoolSyncService for MockTxPoolService {
 
     fn next_sequence_number2(&self, _address: AccountAddress2) -> Option<u64> {
         unimplemented!("no need implemented for MockTxPoolService")
+    }
+    
+    fn get_pending_with_state(
+        &self,
+        max_len: u64,
+        current_timestamp_secs: Option<u64>,
+        state_root: HashValue,
+    ) -> Vec<MultiSignedUserTransaction> {
+        todo!()
+    }
+    
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        todo!()
+    }
+    
+    fn next_sequence_number_with_state(
+        &self,
+        address: AccountAddress,
+        state_root: HashValue,
+    ) -> Option<u64> {
+        todo!()
+    }
+    
+    fn next_sequence_number2_with_state(
+        &self,
+        address: AccountAddress2,
+        state_root: HashValue,
+    ) -> Option<u64> {
+        todo!()
+    }
+    
+    fn next_sequence_number2_in_batch(
+        &self,
+        addresses: Vec<AccountAddress2>,
+    ) -> Option<Vec<(AccountAddress2, Option<u64>)>> {
+        todo!()
     }
 }
 

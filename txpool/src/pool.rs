@@ -268,7 +268,7 @@ pub struct PendingSettings {
 impl PendingSettings {
     /// Get all transactions (no cap or len limit) prioritized.
     pub fn all_prioritized(block_number: u64, current_timestamp: u64) -> Self {
-        PendingSettings {
+        Self {
             block_number,
             current_timestamp,
             max_len: usize::MAX,

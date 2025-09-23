@@ -1,6 +1,8 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
+use anyhow::format_err;
 use anyhow::Result;
 use parking_lot::RwLock;
+use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
@@ -10,10 +12,8 @@ use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
     MultiTransactionError,
 };
-use starcoin_types::{
-    block::BlockHeader,
-    transaction::{CallError, TransactionError},
-};
+use starcoin_types::transaction::CallError;
+use starcoin_types::transaction::TransactionError;
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::transaction::{
@@ -31,7 +31,7 @@ pub struct NonceCache {
 impl NonceCache {
     /// Create new cache with a limit of `limit` entries.
     pub fn new(limit: usize) -> Self {
-        NonceCache {
+        Self {
             nonces: Arc::new(RwLock::new(HashMap::with_capacity(limit / 2))),
             limit,
         }
@@ -141,7 +141,8 @@ impl AccountSeqNumberClient for CachedSeqNumberClient {
 
 #[derive(Clone)]
 pub struct PoolClient {
-    best_block_header: BlockHeader,
+    state_root1: HashValue,
+    state_root2: HashValue,
     nonce_client: CachedSeqNumberClient,
     vm_metrics: Option<VMMetrics>,
 }
@@ -154,19 +155,19 @@ impl std::fmt::Debug for PoolClient {
 
 impl PoolClient {
     pub fn new(
-        best_block_header: BlockHeader,
+        state_root1: HashValue,
+        state_root2: HashValue,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         cache: NonceCache,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
-        let state = storage.get_vm_multi_state(best_block_header.id()).unwrap();
-        let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let statedb2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
         let nonce_client = CachedSeqNumberClient::new(statedb, statedb2, cache);
         Self {
-            best_block_header,
+            state_root1,
+            state_root2,
             nonce_client,
             vm_metrics,
         }

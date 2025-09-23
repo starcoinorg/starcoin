@@ -1,5 +1,5 @@
 use crate::vm_status::VMStatus;
-use std::{error, fmt};
+use std::{error, fmt::{self, format}};
 
 type Gas = u64;
 type GasPrice = u64;
@@ -66,6 +66,8 @@ pub enum Error {
     /// Transaction too big
     TooBig,
     CallErr(CallError),
+    /// Api error, some technical error
+    ApiInterrupted(String),
 }
 
 impl fmt::Display for Error {
@@ -75,34 +77,34 @@ impl fmt::Display for Error {
             AlreadyImported => "Already imported".into(),
             Old => "No longer valid".into(),
             TooCheapToReplace { prev, new } => format!(
-                "Gas price too low to replace, previous tx gas: {:?}, new tx gas: {:?}",
-                prev, new
-            ),
+                        "Gas price too low to replace, previous tx gas: {:?}, new tx gas: {:?}",
+                        prev, new
+                    ),
             LimitReached(e) => format!("Transaction limit reached, {e}"),
             InsufficientGasPrice { minimal, got } => {
-                format!("Insufficient gas price. Min={}, Given={}", minimal, got)
-            }
+                        format!("Insufficient gas price. Min={}, Given={}", minimal, got)
+                    }
             InsufficientGas { minimal, got } => {
-                format!("Insufficient gas. Min={}, Given={}", minimal, got)
-            }
+                        format!("Insufficient gas. Min={}, Given={}", minimal, got)
+                    }
             InsufficientBalance { balance, cost } => format!(
-                "Insufficient balance for transaction. Balance={}, Cost={}",
-                balance, cost
-            ),
+                        "Insufficient balance for transaction. Balance={}, Cost={}",
+                        balance, cost
+                    ),
             GasLimitExceeded { limit, got } => {
-                format!("Gas limit exceeded. Limit={}, Given={}", limit, got)
-            }
-            //            InvalidGasLimit(ref err) => format!("Invalid gas limit. {}", err),
+                        format!("Gas limit exceeded. Limit={}, Given={}", limit, got)
+                    }
             SenderBanned => "Sender is temporarily banned.".into(),
             RecipientBanned => "Recipient is temporarily banned.".into(),
             CodeBanned => "Contract code is temporarily banned.".into(),
             InvalidChainId => "Transaction of this chain ID is not allowed on this chain.".into(),
             InvalidSignature(ref err) => format!("Transaction has invalid signature: {}.", err),
             NotAllowed => {
-                "Sender does not have permissions to execute this type of transaction".into()
-            }
+                        "Sender does not have permissions to execute this type of transaction".into()
+                    }
             TooBig => "Transaction too big".into(),
             CallErr(call_err) => format!("Call txn err: {}.", call_err),
+            ApiInterrupted(msg) => format!("Api interupted for the reason: {}.", msg),
         };
 
         f.write_fmt(format_args!("Transaction error ({})", msg))

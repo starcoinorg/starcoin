@@ -195,9 +195,21 @@ impl From<MultiSignedUserTransaction> for Transaction {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ApiInterruptedError(pub String);
+
+impl std::fmt::Display for ApiInterruptedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "API interrupted: {}", self.0)
+    }
+}
+
+impl std::error::Error for ApiInterruptedError {}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MultiTransactionError {
     VM1(TransactionError),
     VM2(TransactionError2),
+    ApiInterrupted(ApiInterruptedError),
 }
 
 impl Display for MultiTransactionError {
@@ -205,6 +217,7 @@ impl Display for MultiTransactionError {
         match self {
             MultiTransactionError::VM1(e) => write!(f, "VM1 error: {}", e),
             MultiTransactionError::VM2(e) => write!(f, "VM2 error: {}", e),
+            MultiTransactionError::ApiInterrupted(msg) => write!(f, "API interrupted: {}", msg),
         }
     }
 }
@@ -226,6 +239,7 @@ impl std::error::Error for MultiTransactionError {
         match self {
             Self::VM1(e) => Some(e),
             Self::VM2(e) => Some(e),
+            Self::ApiInterrupted(msg) => Some(msg),
         }
     }
 }
