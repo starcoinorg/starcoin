@@ -538,7 +538,10 @@ impl TransactionQueue {
 
         let state_readiness = ready::State::new(client, stale_id);
 
-        let pool = self.pool.try_read()?;
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
 
         pool.pending_from_sender(state_readiness, address)
             .last()
@@ -552,7 +555,10 @@ impl TransactionQueue {
         client: C,
         addresses: Vec<MultiAccountAddress>,
     ) -> Option<Vec<(MultiAccountAddress, Option<u64>)>> {
-        let pool = self.pool.try_read()?;
+        let pool = match self.pool.try_read() {
+            Some(pool) => pool,
+            None => return None,
+        };
 
         Some(
             addresses
