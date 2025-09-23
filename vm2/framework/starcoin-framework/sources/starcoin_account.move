@@ -29,7 +29,7 @@ module starcoin_framework::starcoin_account {
     /// Account does not exist.
     const EACCOUNT_NOT_FOUND: u64 = 1;
     /// Account is not registered to receive APT.
-    const EACCOUNT_NOT_REGISTERED_FOR_APT: u64 = 2;
+    const EACCOUNT_NOT_REGISTERED_FOR_STC: u64 = 2;
     /// Account opted out of receiving coins that they did not register to receive.
     const EACCOUNT_DOES_NOT_ACCEPT_DIRECT_COIN_TRANSFERS: u64 = 3;
     /// Account opted out of directly receiving NFT tokens.
@@ -86,7 +86,7 @@ module starcoin_framework::starcoin_account {
             create_account(to)
         };
 
-        if (features::operations_default_to_fa_apt_store_enabled()) {
+        if (features::operations_default_to_fa_stc_store_enabled()) {
             fungible_transfer_only(source, to, amount)
         } else {
             // Resource accounts can be created without registering them to receive APT.
@@ -146,7 +146,7 @@ module starcoin_framework::starcoin_account {
 
     public fun assert_account_is_registered_for_stc(addr: address) {
         assert_account_exists(addr);
-        assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
+        assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_STC));
     }
 
     /// Set whether `account` can receive direct transfers of coins that they have not explicitly registered to receive.

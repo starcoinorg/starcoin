@@ -192,12 +192,12 @@ Account does not exist.
 
 
 
-<a id="0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT"></a>
+<a id="0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_STC"></a>
 
 Account is not registered to receive APT.
 
 
-<pre><code><b>const</b> <a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT">EACCOUNT_NOT_REGISTERED_FOR_APT</a>: u64 = 2;
+<pre><code><b>const</b> <a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_STC">EACCOUNT_NOT_REGISTERED_FOR_STC</a>: u64 = 2;
 </code></pre>
 
 
@@ -294,7 +294,7 @@ This would create the recipient account first, which also registers it to receiv
         <a href="starcoin_account.md#0x1_starcoin_account_create_account">create_account</a>(<b>to</b>)
     };
 
-    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_stc_store_enabled">features::operations_default_to_fa_stc_store_enabled</a>()) {
         <a href="starcoin_account.md#0x1_starcoin_account_fungible_transfer_only">fungible_transfer_only</a>(source, <b>to</b>, amount)
     } <b>else</b> {
         // Resource accounts can be created without registering them <b>to</b> receive APT.
@@ -454,7 +454,7 @@ This would create the recipient account first and register it to receive the Coi
 
 <pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_stc">assert_account_is_registered_for_stc</a>(addr: <b>address</b>) {
     <a href="starcoin_account.md#0x1_starcoin_account_assert_account_exists">assert_account_exists</a>(addr);
-    <b>assert</b>!(<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT">EACCOUNT_NOT_REGISTERED_FOR_APT</a>));
+    <b>assert</b>!(<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_STC">EACCOUNT_NOT_REGISTERED_FOR_STC</a>));
 }
 </code></pre>
 
