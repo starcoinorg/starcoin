@@ -216,7 +216,7 @@ impl RpcClient {
                 None => r.await?,
             }
         };
-        futures::executor::block_on(f)
+        self.provider.block_on(f)
     }
 
     pub fn watch_block(
@@ -228,7 +228,7 @@ impl RpcClient {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
             r.await?
         };
-        futures::executor::block_on(f)
+        self.provider.block_on(f)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
