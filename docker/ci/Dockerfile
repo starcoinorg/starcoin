@@ -4,7 +4,7 @@ WORKDIR /starcoin
 COPY rust-toolchain.toml /starcoin/rust-toolchain.toml
 COPY scripts/dev_setup.sh /starcoin/scripts/dev_setup.sh
 
-RUN /starcoin/scripts/dev_setup.sh -b -t -y -o -p && \
+RUN /starcoin/scripts/dev_setup.sh -b -t -p && \
   sudo apt-get clean && \
   sudo rm -rf /var/lib/apt/lists/*
 

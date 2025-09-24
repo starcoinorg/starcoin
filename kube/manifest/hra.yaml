@@ -1,0 +1,17 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: starcoin-runners-autoscaler
+  namespace: actions-runner-system
+spec:
+  scaleTargetRef:
+    name: starcoin-runners
+    kind: RunnerDeployment
+  minReplicas: 0
+  maxReplicas: 1
+  scaleDownDelaySecondsAfterScaleOut: 20
+  metrics:
+    - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
+      repositoryNames:
+        - starcoinorg/starcoin
+

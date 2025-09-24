@@ -1,0 +1,28 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: starcoin-runners
+  namespace: actions-runner-system
+spec:
+  replicas: 0
+  template:
+    spec:
+      image: ghcr.io/starcoinorg/starcoin-builder:latest
+      repository: starcoinorg/starcoin
+      ephemeral: true
+      containerMode: dind
+      labels:
+        - self-hosted
+        - linux
+        - x64
+        - k8s
+        
+      nodeSelector:
+         doks.digitalocean.com/node-pool: pool-ci
+      resources:
+        requests:
+          cpu: "7000m"
+          memory: "27Gi"
+        limits:
+          memory: "27Gi"
+          cpu: "7500m"
