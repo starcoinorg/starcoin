@@ -101,8 +101,7 @@
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer_v2">transfer_scripts::peer_to_peer_v2</a> | Entered"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_name">coin::name</a>&lt;TokenType&gt;());
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_symbol">coin::symbol</a>&lt;TokenType&gt;());
-    // <a href="account.md#0x1_account_create_account_if_does_not_exist">account::create_account_if_does_not_exist</a>(payee);
-    /// <a href="starcoin_account.md#0x1_starcoin_account_create_account">starcoin_account::create_account</a>()
+    <a href="account.md#0x1_account_create_account_if_does_not_exist">account::create_account_if_does_not_exist</a>(payee);
     <a href="coin.md#0x1_coin_register">coin::register</a>&lt;TokenType&gt;(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(payee));
     <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;TokenType&gt;(&<a href="account.md#0x1_account">account</a>, payee, (amount <b>as</b> u64));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer_v2">transfer_scripts::peer_to_peer_v2</a> | Exited"));
