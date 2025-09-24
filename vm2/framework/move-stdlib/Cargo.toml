@@ -17,8 +17,8 @@ move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 once_cell = { workspace = true }
-sha2 = "0.9.3"
-sha3 = "0.9.1"
+sha2 = "0.10.6"
+sha3 = "0.10.1"
 smallvec = { workspace = true }
 starcoin-gas-schedule = { path = "../gas-schedule" }
 starcoin-logger = { workspace = true }
@@ -28,7 +28,7 @@ tempfile = { workspace = true }
 [dev-dependencies]
 dir-diff = "0.3.2"
 file_diff = "1.0.0"
-tempfile = "3.2.0"
+tempfile = "3.23.0"
 
 [features]
 testing = []
