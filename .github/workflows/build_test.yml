@@ -2,61 +2,51 @@ name: Build and Test
 
 on:
   workflow_dispatch:
+    inputs:
+      runner_label:
+        description: "self-hosted runner unique label (e.g. nixos-amd or k8s)"
+        required: true
+        type: string
+
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
     branches:
       - dual-verse-dag
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
-      - 'LICENSE*'
-      - '.gitignore'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
-      - '.github/dependabot.yml'
-      - '.github/CODEOWNERS'
-      - 'examples/**'
-      - 'vm2/move-examples/'
-      - 'scripts/**'
-      - 'kube/**'
-      - 'docker/**'
 
 jobs:
   choose-runner:
-    if: ${{ github.event_name != 'pull_request' || contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:') }}
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
     runs-on: ubuntu-latest
     outputs:
       runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
     steps:
-      - name: Pick runner from PR label (ci-runner: <label>)
+      - name: Pick runner from PR label
         id: pick
         env:
-          LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
           EVENT_NAME: ${{ github.event_name }}
+          LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
+          INPUT_LABEL: ${{ inputs.runner_label }}
         run: |
           set -euo pipefail
-          if [ "${EVENT_NAME:-}" = "pull_request" ]; then
-            python3 - <<'PY' >> "$GITHUB_OUTPUT"
-import json, os, sys
-labels = json.loads(os.environ.get("LABELS_JSON") or "[]")
-target = ""
-for l in labels or []:
-    name = (l.get("name") or "").strip()
-    if name.startswith("ci-runner:"):
-        target = name.split(":",1)[1].strip()  # "ci-runner: nixos-amd" -> "nixos-amd"
-        break
-if not target:
-    sys.exit("no ci-runner label found")
-print(f"runs_on_json={json.dumps(['self-hosted', target])}")
-PY
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            target=$(printf '%s' "$LABELS_JSON" \
+              | jq -r '.[]?.name
+                        | select(startswith("ci-runner:"))
+                        | sub("^ci-runner:\\s*"; "")' \
+              | head -n1)
+            if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+              echo "No ci-runner label found" >&2
+              exit 1
+            fi
+            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$target" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
           else
-            echo "runs_on_json=[\"self-hosted\",\"${INPUT_LABEL}\"]" >> "$GITHUB_OUTPUT"
+            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$INPUT_LABEL" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
           fi
 
   build-and-test:
     name: build and test
     needs: choose-runner
-    if: ${{ github.event_name != 'pull_request' || contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:') }}
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
     timeout-minutes: 120
     steps:
@@ -72,7 +62,7 @@ PY
           args: -- --check
 
       - name: setup environment
-        run: bash ./scripts/dev_setup.sh  -b -t -m
+        run: bash ./scripts/dev_setup.sh -b -t -m
 
       - name: run cargo clean
         uses: actions-rs/cargo@v1
