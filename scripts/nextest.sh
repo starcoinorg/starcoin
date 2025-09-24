@@ -22,11 +22,6 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.1
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs
 
-# TODO(BobOng): Should be addressed by the next PR and needs to be redesigned due to process changes
-# - and not (test(tests::test_custom_genesis))"
-# - and not (test(tests::test_builtin_genesis))"
-# - and not (test(tests::test_genesis_load))"
-
 RUST_LOG=info cargo nextest run --workspace --retries 3 --build-jobs 8 --failure-output immediate-final
 
 
