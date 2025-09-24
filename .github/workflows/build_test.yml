@@ -20,7 +20,7 @@ jobs:
     outputs:
       runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
     steps:
-      - name: Pick runner from PR label
+      - name: Pick runner from PR label.
         id: pick
         env:
           EVENT_NAME: ${{ github.event_name }}
