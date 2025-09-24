@@ -31,7 +31,7 @@ stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
 
 # extra dependences
-codespan-reporting = "0.11.1"
+codespan-reporting = "0.12.0"
 
 starcoin-vm2-framework = { workspace = true }
 starcoin-vm2-types = { workspace = true }
