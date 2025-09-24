@@ -2,25 +2,112 @@ name: Build and Test
 
 on:
   workflow_dispatch:
+    inputs:
+      runner_label:
+        description: "self-hosted runner unique label (e.g. nixos-amd or k8s)"
+        required: true
+        type: string
+
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
     branches:
       - dual-verse-dag
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
-      - 'LICENSE*'
-      - '.gitignore'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
-      - '.github/dependabot.yml'
-      - '.github/CODEOWNERS'
-      - 'examples/**'
-      - 'vm2/move-examples/'
-      - 'scripts/**'
-      - 'kube/**'
-      - 'docker/**'
 
+jobs:
+  choose-runner:
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
+    runs-on: ubuntu-latest
+    outputs:
+      runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
+    steps:
+      - name: Pick runner from PR label
+        id: pick
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
+          INPUT_LABEL: ${{ inputs.runner_label }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            target=$(printf '%s' "$LABELS_JSON" \
+              | jq -r '.[]?.name
+                        | select(startswith("ci-runner:"))
+                        | sub("^ci-runner:\\s*"; "")' \
+              | head -n1)
+            if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+              echo "No ci-runner label found" >&2
+              exit 1
+            fi
+            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$target" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
+          else
+            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$INPUT_LABEL" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-test:
+    name: build and test
+    needs: choose-runner
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
+    timeout-minutes: 120
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          submodules: recursive
+
+      - name: run fmt check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh -b -t -m
+
+      - name: run cargo clean
+        uses: actions-rs/cargo@v1
+        with:
+          command: clean
+
+      - name: run cargo check
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: -D warnings
+        with:
+          command: clippy
+          args: --all-targets
+
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all
+
+      - name: test
+        run: ./scripts/nextest.sh
+
+      - name: Doc Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --doc
+
+      - name: integration test dev environment
+        env:
+          RUST_LOG: info
+          RUST_BACKTRACE: full
+          STARCOIN_WS: ${{ secrets.STARCOIN_WS }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration -- -e cmdname: Build and Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    branches:
+      - dual-verse-dag
 jobs:
   choose-runner:
     if: ${{ github.event_name != 'pull_request' || contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:') }}
@@ -28,7 +115,7 @@ jobs:
     outputs:
       runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
     steps:
-      - name: Pick runner from PR label (ci-runner: <label>)
+      - name: Pick runner from PR label ci-runner
         id: pick
         env:
           LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
@@ -43,7 +130,7 @@ target = ""
 for l in labels or []:
     name = (l.get("name") or "").strip()
     if name.startswith("ci-runner:"):
-        target = name.split(":",1)[1].strip()  # "ci-runner: nixos-amd" -> "nixos-amd"
+        target = name.split(":",1)[1].strip()
         break
 if not target:
     sys.exit("no ci-runner label found")
