@@ -570,7 +570,7 @@ impl TxnMocker {
 
         if !addr_vec.is_empty() {
             self.recheck_sequence_number()?;
-            self.unlock_account_association_account()?;
+            self.unlock_account()?;
             let txn = self.generator.generate_account_txn(
                 self.next_sequence_number,
                 self.account_address,
@@ -619,7 +619,7 @@ impl TxnMocker {
             .collect())
     }
 
-    fn sequence_number<R>(&self, state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
+    fn sequence_number<R>(&self, _state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
     where
         R: ChainStateReader,
     {
