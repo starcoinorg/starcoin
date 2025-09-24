@@ -54,8 +54,10 @@ jobs:
         with:
           command: build
           args: --all
-      - name: test
+      - name: Cargo Next Test
         run: ./scripts/nextest.sh
+      - name: Move Package Manaer Test
+        run: ./scripts/mpm_test.sh
       - name: Doc Tests
         uses: actions-rs/cargo@v1
         with:
