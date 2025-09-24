@@ -39,9 +39,21 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
+use tokio::runtime::Runtime;
+
+static SYNC_RUNTIME: OnceLock<Runtime> = OnceLock::new();
+fn global_sync_runtime() -> &'static Runtime {
+    SYNC_RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .thread_name("sync-global-runtime")
+            .enable_all()
+            .build()
+            .expect("Global sync runtime init failed")
+    })
+}
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -73,7 +85,6 @@ pub struct SyncService {
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
-    runtime: tokio::runtime::Runtime,
 }
 
 impl SyncService {
@@ -110,7 +121,6 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
-        let runtime = tokio::runtime::Runtime::new()?;
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
@@ -122,7 +132,6 @@ impl SyncService {
             metrics,
             peer_score_metrics,
             vm_metrics,
-            runtime,
         })
     }
 
@@ -544,7 +553,7 @@ impl SyncService {
             .as_ref()
             .map(|metrics| metrics.sync_task_break_total.clone());
 
-        self.runtime.spawn(fut.then(
+        global_sync_runtime().spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let mut chain_status: Option<ChainStatus> = None;
                 let cancel = match result {
