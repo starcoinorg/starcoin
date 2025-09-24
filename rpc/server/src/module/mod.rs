@@ -120,19 +120,19 @@ impl From<TransactionError> for RpcError {
         let err_message = err.to_string();
         let (err_code, err_data) = match err {
             TransactionError::AlreadyImported
-            | TransactionError::Old
-            | TransactionError::InsufficientGasPrice { .. }
-            | TransactionError::TooCheapToReplace { .. }
-            | TransactionError::InsufficientGas { .. }
-            | TransactionError::InsufficientBalance { .. }
-            | TransactionError::GasLimitExceeded { .. }
-            | TransactionError::SenderBanned
-            | TransactionError::RecipientBanned
-            | TransactionError::CodeBanned
-            | TransactionError::InvalidChainId
-            | TransactionError::InvalidSignature(..)
-            | TransactionError::NotAllowed
-            | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
+                    | TransactionError::Old
+                    | TransactionError::InsufficientGasPrice { .. }
+                    | TransactionError::TooCheapToReplace { .. }
+                    | TransactionError::InsufficientGas { .. }
+                    | TransactionError::InsufficientBalance { .. }
+                    | TransactionError::GasLimitExceeded { .. }
+                    | TransactionError::SenderBanned
+                    | TransactionError::RecipientBanned
+                    | TransactionError::CodeBanned
+                    | TransactionError::InvalidChainId
+                    | TransactionError::InvalidSignature(..)
+                    | TransactionError::NotAllowed
+                    | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
             TransactionError::LimitReached(..) => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
             TransactionError::CallErr(call_err) => match call_err {
                 CallError::TransactionNotFound => (ErrorCode::InvalidParams, None),
@@ -150,7 +150,7 @@ impl From<TransactionError> for RpcError {
                     ),
                 ),
             },
-            TransactionError::ApiInterrupted(_) => (ErrorCode::InternalError, None),
+            TransactionError::APIInterrupted(_) => (ErrorCode::InternalError, None),
         };
         Self(jsonrpc_core::Error {
             code: err_code,
@@ -219,19 +219,19 @@ impl From<TransactionError2> for RpcError {
         let err_message = err.to_string();
         let (err_code, err_data) = match err {
             TransactionError2::AlreadyImported
-            | TransactionError2::Old
-            | TransactionError2::InsufficientGasPrice { .. }
-            | TransactionError2::TooCheapToReplace { .. }
-            | TransactionError2::InsufficientGas { .. }
-            | TransactionError2::InsufficientBalance { .. }
-            | TransactionError2::GasLimitExceeded { .. }
-            | TransactionError2::SenderBanned
-            | TransactionError2::RecipientBanned
-            | TransactionError2::CodeBanned
-            | TransactionError2::InvalidChainId
-            | TransactionError2::InvalidSignature(..)
-            | TransactionError2::NotAllowed
-            | TransactionError2::TooBig => (ErrorCode::InvalidParams, None),
+                    | TransactionError2::Old
+                    | TransactionError2::InsufficientGasPrice { .. }
+                    | TransactionError2::TooCheapToReplace { .. }
+                    | TransactionError2::InsufficientGas { .. }
+                    | TransactionError2::InsufficientBalance { .. }
+                    | TransactionError2::GasLimitExceeded { .. }
+                    | TransactionError2::SenderBanned
+                    | TransactionError2::RecipientBanned
+                    | TransactionError2::CodeBanned
+                    | TransactionError2::InvalidChainId
+                    | TransactionError2::InvalidSignature(..)
+                    | TransactionError2::NotAllowed
+                    | TransactionError2::TooBig => (ErrorCode::InvalidParams, None),
             TransactionError2::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
             TransactionError2::CallErr(call_err) => match call_err {
                 CallError2::TransactionNotFound => (ErrorCode::InvalidParams, None),
@@ -249,7 +249,7 @@ impl From<TransactionError2> for RpcError {
                     ),
                 ),
             },
-            TransactionError2::ApiInterrupted(_) => (ErrorCode::InternalError, None),
+            TransactionError2::APIInterrupted(_) => (ErrorCode::InternalError, None),
         };
         RpcError(jsonrpc_core::Error {
             code: err_code,
@@ -263,7 +263,7 @@ impl From<MultiTransactionError> for RpcError {
         match err {
             MultiTransactionError::VM1(error) => error.into(),
             MultiTransactionError::VM2(error) => error.into(),
-            MultiTransactionError::ApiInterrupted(api_interrupted_error) => {
+            MultiTransactionError::APIInterrupted(api_interrupted_error) => {
                 Error::from(api_interrupted_error).into()
             }
         }
