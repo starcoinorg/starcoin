@@ -27,7 +27,9 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.1
 # - and not (test(tests::test_builtin_genesis))"
 # - and not (test(tests::test_genesis_load))"
 
-RUST_LOG=info cargo nextest run --workspace --retries 3 --build-jobs 8 --failure-output immediate-final
+BUILD_JOBS=${STARCOIN_NEXTEST_BUILD_JOBS:-8}
+
+RUST_LOG=info cargo nextest run --workspace --retries 3 --build-jobs "$BUILD_JOBS" --failure-output immediate-final
 
 
 # please ensure the two test commands' arguments (e.g. `-j 15`) are the same to avoid recompilation

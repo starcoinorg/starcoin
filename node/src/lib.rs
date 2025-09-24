@@ -199,27 +199,43 @@ impl NodeHandle {
             let chain_service = registry.service_ref::<ChainReaderService>().await?;
             let head = chain_service.main_head_block().await?;
             debug!("generate_block: current head block: {:?}", head.header);
-            let receiver = bus.oneshot::<NewHeadBlock>().await?;
-            bus.broadcast(GenerateBlockEvent::new_break(true))?;
-            let block = if let Ok(Ok(event)) =
-                async_std::future::timeout(Duration::from_secs(5), receiver).await
-            {
-                //wait for new block event to been processed.
-                Delay::new(Duration::from_millis(100)).await;
-                event.executed_block.block().clone()
-            } else {
-                let latest_head = chain_service.main_head_block().await?;
-                debug!(
-                    "generate_block: head before generate:{:?}, head after generate:{:?}",
-                    head.header(),
-                    latest_head.header
-                );
-                if latest_head.header().number() > head.header().number() {
-                    latest_head
+
+            let mut total_count: i32 = 30;
+            let block = loop {
+                let receiver = bus.oneshot::<NewHeadBlock>().await?;
+                bus.broadcast(GenerateBlockEvent::new_break(true))?;
+                let block = if let Ok(Ok(event)) =
+                    async_std::future::timeout(Duration::from_secs(5), receiver).await
+                {
+                    //wait for new block event to been processed.
+                    Delay::new(Duration::from_millis(2000)).await;
+                    Some(event.executed_block.block().clone())
                 } else {
-                    bail!("Wait timeout for generate_block")
+                    let latest_head = chain_service.main_head_block().await?;
+                    debug!(
+                        "generate_block: head before generate:{:?}, head after generate:{:?}",
+                        head.header(),
+                        latest_head.header
+                    );
+                    if latest_head.header().number() > head.header().number() {
+                        Some(latest_head)
+                    } else {
+                        Delay::new(Duration::from_millis(2000)).await;
+                        None
+                    }
+                };
+
+                if let Some(block) = block {
+                    break block;
+                } else {
+                    total_count = total_count.saturating_sub(1);
+                    if total_count < 0 {
+                        bail!("Wait timeout for generate_block");
+                    }
+                    continue;
                 }
             };
+
             Ok(block)
         })
     }
