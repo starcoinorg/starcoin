@@ -454,6 +454,12 @@ pub struct BlockHeaderView {
     pub nonce: u32,
     /// block header extra
     pub extra: BlockHeaderExtra,
+    /// DAG parents hash
+    pub parents_hash: Vec<HashValue>,
+    /// DAG block version
+    pub version: u8,
+    /// DAG pruning point
+    pub pruning_point: HashValue,
 }
 
 impl From<BlockHeader> for BlockHeaderView {
@@ -474,6 +480,9 @@ impl From<BlockHeader> for BlockHeaderView {
             chain_id: origin.chain_id().id(),
             nonce: origin.nonce(),
             extra: *origin.extra(),
+            parents_hash: origin.parents_hash().to_vec(),
+            version: origin.version(),
+            pruning_point: origin.pruning_point(),
         }
     }
 }
@@ -494,6 +503,9 @@ impl From<BlockHeaderView> for BlockHeader {
             genesis_config::ChainId::new(header_view.chain_id),
             header_view.nonce,
             header_view.extra,
+            header_view.parents_hash,
+            header_view.version,
+            header_view.pruning_point,
         )
     }
 }

@@ -203,7 +203,7 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle_event(&mut self, msg: BlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
-        let header_version = 1u32; // Default block header version for now
+        let header_version = 1u8; // Default block header version for now
         let miner_serivce = ctx
             .service_ref::<MinerService>()
             .expect("MinerService should exist")

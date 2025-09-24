@@ -148,7 +148,7 @@
                     "version": {
                       "description": "Header version",
                       "type": "integer",
-                      "format": "uint32",
+                      "format": "uint8",
                       "minimum": 0.0
                     }
                   }
