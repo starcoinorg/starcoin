@@ -1,5 +1,9 @@
 name: Build and Test
 
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
@@ -82,10 +86,13 @@ jobs:
         with:
           command: build
           args: --all
-
-      - name: test
+          
+      - name: Cargo Next Test
         run: ./scripts/nextest.sh
-
+        
+      - name: Move Package Manager Test
+        run: ./scripts/move_test.sh
+        
       - name: Doc Tests
         uses: actions-rs/cargo@v1
         with:

@@ -22,15 +22,9 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.1
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs
 
-# TODO(BobOng): Should be addressed by the next PR and needs to be redesigned due to process changes
-# - and not (test(tests::test_custom_genesis))"
-# - and not (test(tests::test_builtin_genesis))"
-# - and not (test(tests::test_genesis_load))"
 
 BUILD_JOBS=${STARCOIN_NEXTEST_BUILD_JOBS:-8}
-
 RUST_LOG=info cargo nextest run --workspace --retries 3 --build-jobs "$BUILD_JOBS" --failure-output immediate-final
-
 
 # please ensure the two test commands' arguments (e.g. `-j 15`) are the same to avoid recompilation
 # RUST_LOG=OFF RUST_BACKTRACE=0 cargo xtest --no-fail-fast --exclude starcoin-move-prover -j 15 -- --test-threads=10 --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
