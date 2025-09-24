@@ -2,6 +2,11 @@ processed 3 tasks
 
 task 2 'run'. lines 5-38:
 {
-  "gas_used": 57927,
-  "status": "Executed"
+  "gas_used": 49784,
+  "status": {
+    "MoveAbort": {
+      "location": "Script",
+      "abort_code": "105"
+    }
+  }
 }
