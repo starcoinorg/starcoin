@@ -16,7 +16,7 @@ module starcoin_framework::transfer_scripts {
     }
 
     public entry fun peer_to_peer_v2<TokenType>(account: &signer, payee: address, amount: u128) {
-        starcoin_account::transfer_coins<TokenType>(account, payee, amount as u64);
+        starcoin_account::transfer_coins<TokenType>(account, payee, (amount as u64));
     }
 
     /// Batch transfer token to others.
