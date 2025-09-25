@@ -97,7 +97,9 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                             });
 
                             if !fresh_txns.is_empty() {
-                                txpool.add_txns_multi_signed(fresh_txns, true, None);
+                                if let Err(e) = txpool.add_txns_multi_signed(fresh_txns, true, None) {
+                                    error!("[sync] handle announcement msg error: {:?}, peer_id:{:?} ", e, peer_id);
+                                }
                             }
                         }
                     }

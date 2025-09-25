@@ -619,6 +619,7 @@ impl TxnMocker {
             .collect())
     }
 
+    #[allow(dead_code)]
     fn sequence_number<R>(&self, _state_reader: &R, address: AccountAddress) -> Result<Option<u64>>
     where
         R: ChainStateReader,

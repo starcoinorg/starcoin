@@ -558,7 +558,10 @@ impl Inner {
         }
 
         // remove outdated txns.
-        self.cull();
+        if let Err(e) = self.cull() {
+            error!("failed to cull in chain_new_block: {}", e);
+            return;
+        }
 
         // import retracted txns.
         let txns = retracted

@@ -249,7 +249,7 @@ impl From<TransactionError2> for RpcError {
                     ),
                 ),
             },
-            TransactionError2::ApiInterrupted(err_message) => (ErrorCode::InternalError, None),
+            TransactionError2::ApiInterrupted(_) => (ErrorCode::InternalError, None),
         };
         RpcError(jsonrpc_core::Error {
             code: err_code,

@@ -628,7 +628,7 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
-    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
+    fn get_block_info_by_hash(&self, _id: HashValue) -> FutureResult<Option<BlockInfoView>> {
         let fut = async move {
             bail!("not implemented.");
         };
