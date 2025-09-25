@@ -7,6 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::SyncStatusView;
+use starcoin_types::sync_status::SyncStatus;
 
 #[derive(Debug, Parser, Default)]
 #[clap(name = "status")]

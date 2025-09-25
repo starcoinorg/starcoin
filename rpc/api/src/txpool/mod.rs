@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::FutureResult;
-use openrpc_derive::openrpc;
 pub use self::gen_client::Client as TxPoolClient;
 use crate::multi_types::MultiSignedUserTransactionView;
 use crate::types::{SignedUserTransactionView, StrView};
@@ -20,7 +18,7 @@ use starcoin_vm2_types::{
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
-    
+
     #[rpc(name = "txpool.submit_transactions")]
     fn submit_transactions(&self, txs: Vec<SignedUserTransaction>) -> FutureResult<Vec<HashValue>>;
 
