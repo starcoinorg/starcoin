@@ -25,6 +25,7 @@ module starcoin_framework::starcoin_account {
     use starcoin_std::from_bcs;
 
     friend starcoin_framework::resource_account;
+    friend starcoin_framework::stc_genesis;
 
     /// Account does not exist.
     const EACCOUNT_NOT_FOUND: u64 = 1;
@@ -246,7 +247,12 @@ module starcoin_framework::starcoin_account {
         if (fungible_asset::store_exists(store_addr)) {
             store_addr
         } else {
-            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@starcoin_fungible_asset)))
+            object::object_address(
+                &primary_fungible_store::create_primary_store(
+                    owner,
+                    object::address_to_object<Metadata>(@starcoin_fungible_asset)
+                )
+            )
         }
     }
 
@@ -441,7 +447,13 @@ module starcoin_framework::starcoin_account {
 
         let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         let user_addr = signer::address_of(user);
-        assert!(primary_fungible_store_address(user_addr) == primary_fungible_store::primary_store_address(user_addr, apt_metadata), 1);
+        assert!(
+            primary_fungible_store_address(user_addr) == primary_fungible_store::primary_store_address(
+                user_addr,
+                apt_metadata
+            ),
+            1
+        );
 
         ensure_primary_fungible_store_exists(user_addr);
         assert!(primary_fungible_store::primary_store_exists(user_addr, apt_metadata), 2);
