@@ -158,8 +158,8 @@ module starcoin_framework::starcoin_coin {
     use starcoin_framework::fungible_asset::FungibleAsset;
 
     #[test_only]
-    public fun mint_apt_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
-        ensure_initialized_with_apt_fa_metadata_for_test();
+    public fun mint_stc_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
+        ensure_initialized_with_stc_fa_metadata_for_test();
         coin::coin_to_fungible_asset(
             coin::mint(
                 amount,
@@ -169,7 +169,7 @@ module starcoin_framework::starcoin_coin {
     }
 
     #[test_only]
-    public fun ensure_initialized_with_apt_fa_metadata_for_test() {
+    public fun ensure_initialized_with_stc_fa_metadata_for_test() {
         let starcoin_framework = account::create_signer_for_test(@starcoin_framework);
         if (!exists<MintCapStore>(@starcoin_framework)) {
             if (!aggregator_factory::aggregator_factory_exists_for_testing()) {
