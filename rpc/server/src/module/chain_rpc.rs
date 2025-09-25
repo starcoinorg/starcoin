@@ -78,7 +78,7 @@ where
 
 impl<S> ChainApi for ChainRpcImpl<S>
 where
-    S: ChainAsyncService
+    S: ChainAsyncService,
 {
     fn id(&self) -> jsonrpc_core::Result<ChainId> {
         Ok(self.config.net().id().into())
@@ -205,7 +205,7 @@ where
 
         Box::pin(fut.boxed())
     }
-    
+
     fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 
@@ -713,7 +713,7 @@ where
 
         Box::pin(fut.boxed())
     }
-    
+
     fn get_transaction_proof2(
         &self,
         block_hash: HashValue,

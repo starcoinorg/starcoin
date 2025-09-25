@@ -252,17 +252,18 @@ impl TemplateTxProvider for TxPoolService {
                 error!(
                     "Failed to get vm_multi_state when creating block template: {}",
                     e
-                );   
+                );
                 return vec![];
             }
         };
-        self.get_pending_with_state(max, None, state_root1, state_root2).unwrap_or_else(|e| {
-            error!(
-                "Failed to get pending txns when creating block template: {}",
-                e
-            );
-            vec![]
-        })
+        self.get_pending_with_state(max, None, state_root1, state_root2)
+            .unwrap_or_else(|e| {
+                error!(
+                    "Failed to get pending txns when creating block template: {}",
+                    e
+                );
+                vec![]
+            })
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {

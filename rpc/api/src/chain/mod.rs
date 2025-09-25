@@ -56,7 +56,7 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
-    
+
     #[rpc(name = "chain.get_block_info_by_hash")]
     fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
 
@@ -184,7 +184,7 @@ pub trait ChainApi {
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<StrView<Vec<u8>>>>;
-    
+
     /// Get TransactionInfoWithProof2, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
     /// if `event_index` is some, also return the EventWithProof in current transaction event_root
     /// if `access_path` is some, also return the StateWithProof in current transaction state_root

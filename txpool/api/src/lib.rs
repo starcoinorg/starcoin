@@ -10,11 +10,7 @@ use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::{
-    account_address::AccountAddress,
-    block::Block,
-    transaction,
-};
+use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -96,17 +92,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn next_sequence_number_in_batch(
         &self,
         addresses: Vec<AccountAddress>,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<Vec<(AccountAddress, Option<u64>)>>;
-
-    /// alike next_sequence_number, it needs the pool client with the specific account state
-    fn next_sequence_number_with_state(
-        &self,
-        address: AccountAddress,
-        state_root1: HashValue,
-        state_root2: HashValue,
-    ) -> Option<u64>;
 
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
@@ -132,21 +118,11 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64>;
 
-    /// Returns next valid sequence number for given sender (vm2 AccountAddress) with a specific header state.
-    fn next_sequence_number2_with_state(
-        &self,
-        address: AccountAddress2,
-        state_root1: HashValue,
-        state_root2: HashValue,
-    ) -> Option<u64>;
-
     /// For vm2, returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number2_in_batch(
         &self,
         addresses: Vec<AccountAddress2>,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<Vec<(AccountAddress2, Option<u64>)>>;
 }
 

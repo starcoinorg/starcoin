@@ -61,10 +61,17 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         } else {
             MAX_TXN_REQUEST_SIZE
         };
-        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None).unwrap_or_else(|e| {
-            error!("get_txns_from_pool error in get_txns_from_pool in gen_server: {}", e);
-            vec![]
-        }))};
+        let fut = async move {
+            Ok(txpool
+                .get_pending_txns(Some(max_size), None)
+                .unwrap_or_else(|e| {
+                    error!(
+                        "get_txns_from_pool error in get_txns_from_pool in gen_server: {}",
+                        e
+                    );
+                    vec![]
+                }))
+        };
         Box::pin(fut)
     }
 

@@ -22,7 +22,8 @@ use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
-    ApiInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction, MultiTransactionError
+    ApiInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction,
+    MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::{
     account_address::AccountAddress,
@@ -30,8 +31,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use core::error;
-use std::{clone, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
@@ -98,7 +98,8 @@ impl TxPoolService {
         tx: MultiSignedUserTransaction,
     ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
         self.get_inner()
-            .get_pool_client().map_err(|e| MultiTransactionError::ApiInterrupted(ApiInterruptedError(e.to_string())))?
+            .get_pool_client()
+            .map_err(|e| MultiTransactionError::ApiInterrupted(ApiInterruptedError(e.to_string())))?
             .verify_transaction(tx.into())
     }
 }
@@ -156,7 +157,7 @@ impl TxPoolSyncService for TxPoolService {
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs)?;
         Ok(r.into_iter().map(|t| t.signed().clone()).collect())
     }
-    
+
     fn get_pending_with_state(
         &self,
         max_len: u64,
@@ -164,7 +165,7 @@ impl TxPoolSyncService for TxPoolService {
         state_root1: HashValue,
         state_root2: HashValue,
     ) -> Result<Vec<MultiSignedUserTransaction>> {
-       let _timer: Option<starcoin_metrics::HistogramTimer> =
+        let _timer: Option<starcoin_metrics::HistogramTimer> =
             self.inner.metrics.as_ref().map(|metrics| {
                 metrics
                     .txpool_service_time
@@ -196,14 +197,13 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
-        self.inner.next_sequence_number(MultiAccountAddress::VM1(address))
+        self.inner
+            .next_sequence_number(MultiAccountAddress::VM1(address))
     }
 
     fn next_sequence_number_in_batch(
         &self,
         addresses: Vec<AccountAddress>,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
@@ -211,28 +211,29 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
-        self.inner.next_sequence_number_in_batch(addresses.into_iter().map(MultiAccountAddress::VM1).collect(), state_root1, state_root2).map(|results| {
-            results.into_iter().map(|(address, seq)| (match address {
-                MultiAccountAddress::VM1(account_address) => account_address,
-                MultiAccountAddress::VM2(_account_address) => panic!("unexpected account address in next_sequence_number2_in_batch"),
-            }, seq)).collect()
-        })
-    }
-
-    fn next_sequence_number_with_state(
-        &self,
-        address: AccountAddress,
-        state_root1: HashValue,
-        state_root2: HashValue,
-    ) -> Option<u64> {
-        let _timer = self.inner.metrics.as_ref().map(|metrics| {
-            metrics
-                .txpool_service_time
-                .with_label_values(&["next_sequence_number_with_header"])
-                .start_timer()
-        });
         self.inner
-            .next_sequence_number_with_state(MultiAccountAddress::VM1(address), state_root1, state_root2)
+            .next_sequence_number_in_batch(
+                addresses
+                    .into_iter()
+                    .map(MultiAccountAddress::VM1)
+                    .collect(),
+            )
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(address, seq)| {
+                        (
+                            match address {
+                                MultiAccountAddress::VM1(account_address) => account_address,
+                                MultiAccountAddress::VM2(_account_address) => panic!(
+                                    "unexpected account address in next_sequence_number2_in_batch"
+                                ),
+                            },
+                            seq,
+                        )
+                    })
+                    .collect()
+            })
     }
 
     /// subscribe
@@ -298,30 +299,13 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number2"])
                 .start_timer()
         });
-        self.inner.next_sequence_number(MultiAccountAddress::VM2(address))
+        self.inner
+            .next_sequence_number(MultiAccountAddress::VM2(address))
     }
 
-    fn next_sequence_number2_with_state(
-        &self,
-        address: AccountAddress2,
-        state_root1: HashValue,
-        state_root2: HashValue,
-    ) -> Option<u64> {
-        let _timer = self.inner.metrics.as_ref().map(|metrics| {
-            metrics
-                .txpool_service_time
-                .with_label_values(&["next_sequence_number2_with_header"])
-                .start_timer()
-        });
-        self.inner
-            .next_sequence_number_with_state(MultiAccountAddress::VM2(address), state_root1, state_root2)
-    }
-    
     fn next_sequence_number2_in_batch(
         &self,
         addresses: Vec<AccountAddress2>,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<Vec<(AccountAddress2, Option<u64>)>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
@@ -329,14 +313,30 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
-        self.inner.next_sequence_number_in_batch(addresses.into_iter().map(MultiAccountAddress::VM2).collect(), state_root1, state_root2).map(|results| {
-            results.into_iter().map(|(address, seq)| (match address {
-                MultiAccountAddress::VM1(_account_address) => panic!("unexpected account address in next_sequence_number2_in_batch"),
-                MultiAccountAddress::VM2(account_address) => account_address,
-            }, seq)).collect()
-        })
+        self.inner
+            .next_sequence_number_in_batch(
+                addresses
+                    .into_iter()
+                    .map(MultiAccountAddress::VM2)
+                    .collect(),
+            )
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(address, seq)| {
+                        (
+                            match address {
+                                MultiAccountAddress::VM1(_account_address) => panic!(
+                                    "unexpected account address in next_sequence_number2_in_batch"
+                                ),
+                                MultiAccountAddress::VM2(account_address) => account_address,
+                            },
+                            seq,
+                        )
+                    })
+                    .collect()
+            })
     }
-    
 }
 
 pub(crate) type TxnQueue = TransactionQueue;
@@ -384,7 +384,7 @@ impl Inner {
         ))
     }
 
-    pub(crate) fn cull(&self) -> Result<()>{
+    pub(crate) fn cull(&self) -> Result<()> {
         // NOTICE: as the new head block event is repeated with chain_new_block event,
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
@@ -403,7 +403,8 @@ impl Inner {
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
-        Ok(self.queue
+        Ok(self
+            .queue
             .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id))
     }
     pub(crate) fn remove_txn(
@@ -430,7 +431,11 @@ impl Inner {
         // self.queue
         //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         // self.queue.pending(self.get_pool_client(), pending_settings)
-        Ok(self.get_pending_with_pool_client(max_len, current_timestamp_secs, self.get_pool_client()?))
+        Ok(self.get_pending_with_pool_client(
+            max_len,
+            current_timestamp_secs,
+            self.get_pool_client()?,
+        ))
     }
 
     pub fn get_pending_with_pool_client(
@@ -463,16 +468,26 @@ impl Inner {
                 return None;
             }
         };
-        self.queue
-            .next_sequence_number(client, &address)
+        self.queue.next_sequence_number(client, &address)
     }
 
     pub(crate) fn next_sequence_number_in_batch(
         &self,
         addresses: Vec<MultiAccountAddress>,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<Vec<(MultiAccountAddress, Option<u64>)>> {
+        let (state_root1, state_root2) = match self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())
+        {
+            Ok(multi_state) => (multi_state.state_root1(), multi_state.state_root2()),
+            Err(e) => {
+                error!(
+                    "failed to get vm multi state in next_sequence_number_in_batch: {}",
+                    e
+                );
+                return None;
+            }
+        };
         let pool_client = PoolClient::new(
             state_root1,
             state_root2,
@@ -488,9 +503,20 @@ impl Inner {
     pub(crate) fn next_sequence_number_with_state(
         &self,
         address: MultiAccountAddress,
-        state_root1: HashValue,
-        state_root2: HashValue,
     ) -> Option<u64> {
+        let (state_root1, state_root2) = match self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())
+        {
+            Ok(multi_state) => (multi_state.state_root1(), multi_state.state_root2()),
+            Err(e) => {
+                error!(
+                    "failed to get vm multi state in next_sequence_number_in_batch: {}",
+                    e
+                );
+                return None;
+            }
+        };
         let pool_client = PoolClient::new(
             state_root1,
             state_root2,
@@ -499,8 +525,7 @@ impl Inner {
             NonceCache::new(0),
             self.vm_metrics.clone(),
         );
-        self.queue
-            .next_sequence_number(pool_client, &address)
+        self.queue.next_sequence_number(pool_client, &address)
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
@@ -559,7 +584,9 @@ impl Inner {
     }
 
     fn get_pool_client(&self) -> Result<PoolClient> {
-        let state = self.storage.get_vm_multi_state(self.chain_header.read().id())?;
+        let state = self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())?;
         let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         Ok(PoolClient::new(
             state_root1,

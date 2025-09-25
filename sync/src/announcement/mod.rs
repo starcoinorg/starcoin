@@ -118,7 +118,7 @@ mod tests {
     use std::time::Duration;
 
     #[stest::test]
-    fn test_get_txns_with_hash_from_pool() {
+    fn test_get_txns_with_hash_from_pool() -> Result<()> {
         let mut config_1 = NodeConfig::random_for_test();
         config_1.miner.disable_miner_client = Some(true);
         let config_1 = Arc::new(config_1);
@@ -149,11 +149,12 @@ mod tests {
         let txpool = service1.txpool();
         let txns = test_helper::txn::create_account(config_1.net(), 0, 1);
         txpool
-            .add_txns(txns.into_iter().map(|(_, txn)| txn).collect())
+            .add_txns(txns.into_iter().map(|(_, txn)| txn).collect())?
             .into_iter()
             .for_each(|r| r.unwrap());
 
         std::thread::sleep(Duration::from_secs(5));
         assert_eq!(service2.txpool().status().txn_count, 1);
+        Ok(())
     }
 }

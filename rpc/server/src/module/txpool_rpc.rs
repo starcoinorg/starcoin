@@ -42,9 +42,15 @@ where
             Some("local-rpc".to_string())
         };
         let txn_hash = txn.id();
-        let result: Result<(), jsonrpc_core::Error> = self
-            .service
-            .add_txns_multi_signed(vec![txn], bypass_vm1_limit, local_peer_id)
+        let mut result =
+            match self
+                .service
+                .add_txns_multi_signed(vec![txn], bypass_vm1_limit, local_peer_id)
+            {
+                Ok(result) => result,
+                Err(e) => return Box::pin(futures::future::ready(Err(convert_to_rpc_error(e)))),
+            };
+        let result = result
             .pop()
             .expect("txpool should return result")
             .map_err(convert_to_rpc_error);
@@ -70,9 +76,13 @@ where
         txns: Vec<SignedUserTransaction>,
     ) -> FutureResult<Vec<HashValue>> {
         let txn_hashes = txns.iter().map(|txn| txn.id()).collect();
-        let result: Result<(), jsonrpc_core::Error> = self
-            .service
-            .add_txns(txns)
+        let mut result = match self.service.add_txns(txns) {
+            Ok(result) => result,
+            Err(e) => {
+                return Box::pin(futures::future::ready(Err(convert_to_rpc_error(e))));
+            }
+        };
+        let result = result
             .pop()
             .expect("txpool should return result")
             .map_err(convert_to_rpc_error);
@@ -87,8 +97,11 @@ where
             .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
             .and_then(|txn| {
                 let txn_hash = txn.id();
-                self.service
-                    .add_txns(vec![txn])
+                let mut result = match self.service.add_txns(vec![txn]) {
+                    Ok(result) => result,
+                    Err(e) => return Err(convert_to_rpc_error(e)),
+                };
+                result
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)
@@ -104,8 +117,15 @@ where
             .and_then(|txn_bytes| SignedUserTransaction2::decode(&txn_bytes).map_err(map_err))
             .and_then(|txn| {
                 let txn_hash = txn.id();
-                self.service
-                    .add_txns_multi_signed(vec![MultiSignedUserTransaction::VM2(txn)], true, None)
+                let mut result = match self.service.add_txns_multi_signed(
+                    vec![MultiSignedUserTransaction::VM2(txn)],
+                    true,
+                    None,
+                ) {
+                    Ok(result) => result,
+                    Err(e) => return Err(convert_to_rpc_error(e)),
+                };
+                result
                     .pop()
                     .expect("txpool should return result")
                     .map(|_| txn_hash)

@@ -36,7 +36,13 @@ use starcoin_rpc_api::state::{
 };
 use starcoin_rpc_api::types::pubsub::{EventFilter, EventFilterV2};
 use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView, DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView, MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, SyncStatusView, TransactionEventResponse, TransactionEventView, TransactionInfoView, TransactionInfoWithProofView, TransactionRequest, TransactionView
+    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
+    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
+    DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
+    MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, SyncStatusView,
+    TransactionEventResponse, TransactionEventView, TransactionInfoView,
+    TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -843,7 +849,7 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_number2(number))
             .map_err(map_err)
     }
-    
+
     pub fn chain_get_block_info_by_hash(
         &self,
         id: HashValue,

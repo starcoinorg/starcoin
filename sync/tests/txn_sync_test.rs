@@ -12,7 +12,7 @@ use test_helper::run_node_by_config;
 //TODO
 #[ignore]
 #[stest::test]
-fn test_txn_sync_actor() {
+fn test_txn_sync_actor() -> anyhow::Result<()> {
     let mut first_config = NodeConfig::random_for_test();
     first_config.miner.disable_miner_client = Some(false);
     let first_network_address = first_config.network.self_address();
@@ -25,7 +25,7 @@ fn test_txn_sync_actor() {
 
     // add txn to node1
     let user_txn = gen_user_txn(&first_config);
-    let import_result = txpool_1.add_txns(vec![user_txn.clone()]).pop();
+    let import_result = txpool_1.add_txns(vec![user_txn.clone()])?.pop();
     assert!(import_result.unwrap().is_ok());
 
     let mut second_config = NodeConfig::random_for_test();
@@ -43,12 +43,14 @@ fn test_txn_sync_actor() {
     std::thread::sleep(Duration::from_secs(2));
     let current_timestamp = second_config.net().time_service().now_secs();
     // check txn
-    let mut txns = txpool_2.get_pending_txns(None, Some(current_timestamp));
+    let mut txns = txpool_2.get_pending_txns(None, Some(current_timestamp))?;
     assert_eq!(txns.len(), 1);
     let txn = txns.pop().unwrap();
     assert_eq!(user_txn.id(), txn.id());
     second_node.stop().unwrap();
     first_node.stop().unwrap();
+
+    Ok(())
 }
 
 fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
