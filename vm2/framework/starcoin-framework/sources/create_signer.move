@@ -16,7 +16,6 @@ module starcoin_framework::create_signer {
     friend starcoin_framework::object;
     friend starcoin_framework::stc_transaction_validation;
     friend starcoin_framework::block_reward;
-    friend starcoin_framework::transfer_scripts;
     friend starcoin_framework::dao_features_proposal;
 
     public(friend) native fun create_signer(addr: address): signer;
