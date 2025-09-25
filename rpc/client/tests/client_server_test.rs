@@ -96,6 +96,7 @@ fn test_client_reconnect() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 fn test_client_reconnect_subscribe() -> Result<()> {
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let node_config = NodeConfig::random_for_test();
     let config = Arc::new(node_config);
     let url = config.rpc.get_ws_address().unwrap();
@@ -108,7 +109,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     let ws_client =
         RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let stream1 = ws_client.subscribe_new_mint_blocks()?;
-    let handle1 = async_std::task::spawn(async move {
+    let handle1 = rt.spawn(async move {
         stream1
             .into_stream()
             .collect::<Vec<Result<MintBlockEvent>>>()
@@ -125,7 +126,7 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     assert!(result.is_err());
 
     let stream2 = ws_client.subscribe_new_mint_blocks()?;
-    let handle2 = async_std::task::spawn(async move {
+    let handle2 = rt.spawn(async move {
         stream2
             .into_stream()
             .collect::<Vec<Result<MintBlockEvent>>>()
@@ -136,8 +137,8 @@ fn test_client_reconnect_subscribe() -> Result<()> {
     std::thread::sleep(Duration::from_millis(300));
     let _e = node_handle.stop();
 
-    let events1 = futures::executor::block_on(handle1);
-    let events2 = futures::executor::block_on(handle2);
+    let events1 = futures::executor::block_on(handle1)?;
+    let events2 = futures::executor::block_on(handle2)?;
     assert_ne!(events1.len(), 0);
     assert_ne!(events2.len(), 0);
     Ok(())

@@ -32,10 +32,9 @@ pub enum TaskError {
 
 impl TaskError {
     pub fn map(error: anyhow::Error) -> Self {
-        match error.downcast::<Self>() {
-            Ok(task_err) => task_err,
-            Err(err) => TaskError::BreakError(err),
-        }
+        error
+            .downcast::<Self>()
+            .unwrap_or_else(TaskError::BreakError)
     }
 
     pub fn is_canceled(&self) -> bool {

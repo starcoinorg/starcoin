@@ -28,6 +28,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
@@ -342,9 +343,7 @@ where
                         e,
                         block_info.block_id()
                     );
-                    async_std::task::block_on(async_std::task::sleep(Duration::from_millis(
-                        time_to_wait,
-                    )));
+                    std::thread::sleep(Duration::from_millis(time_to_wait));
                     time_to_wait = time_to_wait.saturating_mul(2);
                 }
             }
@@ -498,7 +497,9 @@ where
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
-        async_std::task::block_on(fut)
+
+        let handle = tokio::runtime::Handle::current();
+        task::block_in_place(|| handle.block_on(fut))
     }
 
     pub fn read_local_absent_block(

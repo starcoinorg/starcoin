@@ -2,7 +2,6 @@
 actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 backtrace = { workspace = true }
 chrono = { workspace = true }

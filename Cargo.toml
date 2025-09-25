@@ -283,7 +283,6 @@ arc-swap = "1.5.1"
 arr_macro = "0.2.1"
 arrayref = "0.3"
 ascii = "1.0.0"
-async-std = { version = "1.12", features = ["attributes", "tokio1"] }
 async-trait = "0.1.53"
 asynchronous-codec = "0.5"
 atomic-counter = "1.0.1"
@@ -531,8 +530,7 @@ starcoin-executor = { path = "executor" }
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "6486837ca8b0578ed569a256a7605b1ad5735973" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
-#starcoin-metrics = { path = "commons/metrics" }
-starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-metrics = { path = "commons/metrics" }
 starcoin-miner = { path = "miner" }
 starcoin-miner-client = { path = "cmd/miner_client" }
 starcoin-miner-client-api = { path = "cmd/miner_client/api" }
@@ -552,8 +550,7 @@ starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
-#starcoin-service-registry = { path = "commons/service-registry" }
-starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-service-registry = { path = "commons/service-registry" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
@@ -596,7 +593,7 @@ starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runt
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
 starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework" }
-starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness"}
+starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness" }
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
 starcoin-vm2-gas-schedule = { path = "vm2/framework/gas-schedule", package = "starcoin-gas-schedule" }
@@ -637,6 +634,7 @@ timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
 tokio = { version = "^1", features = ["full"] }
+tokio-util = "0.7.16"
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 toml = "0.5.9"
 trace-time = "0.1"

@@ -188,7 +188,7 @@ async fn test_event_notify_receive_repeat_block() {
     assert_eq!(msg_send1.notification, msg_receive1.notification);
 
     //repeat message is filter, so expect timeout error.
-    let msg_receive2 = async_std::future::timeout(Duration::from_secs(2), receiver.next()).await;
+    let msg_receive2 = tokio::time::timeout(Duration::from_secs(2), receiver.next()).await;
     assert!(msg_receive2.is_err());
 }
 
@@ -235,7 +235,7 @@ async fn test_event_notify_receive_repeat_transaction() {
     );
 
     //msg3 is empty after filter, so expect timeout error.
-    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    let msg_receive3 = tokio::time::timeout(Duration::from_secs(1), receiver.next()).await;
     assert!(msg_receive3.is_err());
 }
 
@@ -277,10 +277,10 @@ async fn test_event_broadcast() {
     //repeat broadcast
     node2.service_ref.broadcast(notification.clone());
 
-    let msg_receive1 = async_std::future::timeout(Duration::from_secs(1), receiver1.next()).await;
+    let msg_receive1 = tokio::time::timeout(Duration::from_secs(1), receiver1.next()).await;
     assert!(msg_receive1.is_err());
 
-    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
+    let msg_receive3 = tokio::time::timeout(Duration::from_secs(1), receiver3.next()).await;
     assert!(msg_receive3.is_err());
 
     print!("{:?}", node1.config.metrics.registry().unwrap().gather());

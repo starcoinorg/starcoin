@@ -6,7 +6,6 @@ use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
 use anyhow::{format_err, Context, Ok, Result};
-use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
@@ -32,6 +31,7 @@ use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::task::JoinHandle;
 
 use super::BlockIdRangeFetcher;
 
@@ -396,7 +396,7 @@ impl SyncNodeMocker {
                 })
                 .await
         };
-        async_std::task::spawn(fut)
+        tokio::spawn(fut)
     }
 
     pub fn select_a_peer(&self) -> Result<PeerId> {
