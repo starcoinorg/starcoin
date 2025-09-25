@@ -33,7 +33,6 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
-use starcoin_types::{language_storage::StcTypeTag, startup_info::ChainStatus, sync_status::{SyncState, SyncStatus}};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber},

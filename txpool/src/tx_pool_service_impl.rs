@@ -31,8 +31,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use core::error;
-use std::{clone, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
