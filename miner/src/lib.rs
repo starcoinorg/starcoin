@@ -325,12 +325,11 @@ impl EventHandler<Self, BlockTemplateResponse> for MinerService {
                 && block_time_gap < 3600 * 1000;
             if should_skip {
                 info!("Skipping minting empty block");
-            } else { match addr
+            } else if let Err(e) = addr
                 .send(DispatchMintBlockTemplate { block_template })
-                .await
-            { Err(e) => {
+                .await {
                 warn!("Failed to dispatch block template: {}", e);
-            } _ => {}}}
+            }
         });
     }
 }

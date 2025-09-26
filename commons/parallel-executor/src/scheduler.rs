@@ -193,10 +193,9 @@ impl Scheduler {
                 if let Some((version_to_validate, guard)) = self.try_validate_next_version() {
                     return SchedulerTask::ValidationTask(version_to_validate, guard);
                 }
-            } else { match self.try_execute_next_version()
-            { Some((version_to_execute, maybe_condvar, guard)) => {
+            } else if let Some((version_to_execute, maybe_condvar, guard)) = self.try_execute_next_version() {
                 return SchedulerTask::ExecutionTask(version_to_execute, maybe_condvar, guard);
-            } _ => {}}}
+            }
         }
     }
 
