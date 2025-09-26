@@ -50,8 +50,8 @@ impl JobClient for StratumJobClient {
                         let blob = hex::decode(&job.blob);
                         let diff = target_hex_to_difficulty(&job.target);
                         let extra = job.get_extra();
-                        let event = match (blob, diff, extra) { (Ok(blob), Ok(diff), Ok(extra)) => {
-                            Some(MintBlockEvent {
+                        let event = match (blob, diff, extra) {
+                            (Ok(blob), Ok(diff), Ok(extra)) => Some(MintBlockEvent {
                                 parent_hash: Default::default(),
                                 strategy: ConsensusStrategy::CryptoNight,
                                 minting_blob: blob,
@@ -62,10 +62,9 @@ impl JobClient for StratumJobClient {
                                     job_id: job.job_id,
                                     extra,
                                 }),
-                            })
-                        } _ => {
-                            None
-                        }};
+                            }),
+                            _ => None,
+                        };
                         future::ready(event)
                     })
                     .boxed()

@@ -133,7 +133,10 @@ impl<T: ReachabilityStoreReader + ?Sized> MTReachabilityService<T> {
 
     /// Returns the default chain iterator, walking from `from` backward down the
     /// selected chain until `virtual genesis` (aka `blockhash::ORIGIN`; exclusive)
-    pub fn default_backward_chain_iterator(&self, from: Hash) -> impl Iterator<Item = Hash> + use<T> {
+    pub fn default_backward_chain_iterator(
+        &self,
+        from: Hash,
+    ) -> impl Iterator<Item = Hash> + use<T> {
         BackwardChainIterator::new(
             self.store.clone(),
             from,

@@ -205,18 +205,21 @@ where
     let mut no_more = false;
 
     loop {
-        match old_iter.next() { Some(item) => {
-            let (id, old_val) = item?;
-            let (new_id, new_val) = (id.into(), old_val.into());
-            to_put
-                .as_mut()
-                .unwrap()
-                .put(new_id, new_val)
-                .expect("should never fail");
-            item_count += 1;
-        } _ => {
-            no_more = true;
-        }}
+        match old_iter.next() {
+            Some(item) => {
+                let (id, old_val) = item?;
+                let (new_id, new_val) = (id.into(), old_val.into());
+                to_put
+                    .as_mut()
+                    .unwrap()
+                    .put(new_id, new_val)
+                    .expect("should never fail");
+                item_count += 1;
+            }
+            _ => {
+                no_more = true;
+            }
+        }
         if item_count == batch_size || no_more {
             if item_count == 0 {
                 debug!("no more items to be processed");

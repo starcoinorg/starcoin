@@ -1030,7 +1030,8 @@ impl RpcClient {
         &self,
         filter: EventFilter,
         decode: bool,
-    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error> + use<>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error> + use<>>
+    {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter, decode).await;
             res.map(|s| s.map_err(map_err))
@@ -1041,7 +1042,8 @@ impl RpcClient {
         &self,
         filter: EventFilterV2,
         decode: bool,
-    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView2, Error = anyhow::Error> + use<>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView2, Error = anyhow::Error> + use<>>
+    {
         self.call_rpc_blocking(|inner| async move {
             let res = inner
                 .pubsub_client

@@ -150,21 +150,22 @@ impl InnerStore for StorageInstance {
             Self::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
-                match cache.get(prefix_name, key.clone()) { Ok(Some(value)) => {
-                    Ok(Some(value))
-                } _ => {
-                    match db.get(prefix_name, key)? {
-                        Some(value) => {
-                            // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
-                            Ok(Some(value))
-                        }
-                        None => {
-                            // put null vec to cache for avoid repeatedly querying non-existent data from db
-                            // cache.put_obj(prefix_name, key, CACHE_NONE_OBJECT.clone())?;
-                            Ok(None)
+                match cache.get(prefix_name, key.clone()) {
+                    Ok(Some(value)) => Ok(Some(value)),
+                    _ => {
+                        match db.get(prefix_name, key)? {
+                            Some(value) => {
+                                // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
+                                Ok(Some(value))
+                            }
+                            None => {
+                                // put null vec to cache for avoid repeatedly querying non-existent data from db
+                                // cache.put_obj(prefix_name, key, CACHE_NONE_OBJECT.clone())?;
+                                Ok(None)
+                            }
                         }
                     }
-                }}
+                }
             }
         }
     }

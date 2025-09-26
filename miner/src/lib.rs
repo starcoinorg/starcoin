@@ -327,7 +327,8 @@ impl EventHandler<Self, BlockTemplateResponse> for MinerService {
                 info!("Skipping minting empty block");
             } else if let Err(e) = addr
                 .send(DispatchMintBlockTemplate { block_template })
-                .await {
+                .await
+            {
                 warn!("Failed to dispatch block template: {}", e);
             }
         });

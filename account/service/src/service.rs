@@ -74,11 +74,14 @@ impl ActorService for AccountService {
                     association_address(),
                     association_private_key.to_bytes().to_vec(),
                     "",
-                ) { Err(e) => {
-                    error!("Import association account error:{:?}", e)
-                } _ => {
-                    info!("Import association account to wallet.");
-                }}
+                ) {
+                    Err(e) => {
+                        error!("Import association account error:{:?}", e)
+                    }
+                    _ => {
+                        info!("Import association account to wallet.");
+                    }
+                }
             }
         }
         Ok(())

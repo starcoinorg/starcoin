@@ -116,10 +116,11 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
             .swap(None)
             .expect("Output must be recorded after execution");
 
-        match Arc::try_unwrap(owning_ptr) { Ok(output) => {
-            output
-        } _ => {
-            unreachable!("Output should be uniquely owned after execution");
-        }}
+        match Arc::try_unwrap(owning_ptr) {
+            Ok(output) => output,
+            _ => {
+                unreachable!("Output should be uniquely owned after execution");
+            }
+        }
     }
 }

@@ -22,7 +22,8 @@ fn init_store(
         .into_iter()
         .map(|(index, r#gen)| {
             Transaction::UserTransaction(
-                r#gen.materialize(index, &mut universe, 4_0000, None)
+                r#gen
+                    .materialize(index, &mut universe, 4_0000, None)
                     .into_inner(),
             )
         })

@@ -1473,35 +1473,39 @@ impl NetworkBehaviour for GenericProto {
                                             _ => None,
                                         })
                                         .next()
-                                    { Some((replacement_pos, replacement_sink)) => {
-                                        if pos <= replacement_pos {
+                                    {
+                                        Some((replacement_pos, replacement_sink)) => {
+                                            if pos <= replacement_pos {
+                                                debug!(
+                                                    target: "sub-libp2p",
+                                                    "External API <= Sink replaced({}, {:?})",
+                                                    peer_id, set_id
+                                                );
+                                                let event =
+                                                    GenericProtoOut::CustomProtocolReplaced {
+                                                        peer_id,
+                                                        set_id,
+                                                        notifications_sink: replacement_sink,
+                                                    };
+                                                self.events.push_back(
+                                                    NetworkBehaviourAction::GenerateEvent(event),
+                                                );
+                                            }
+                                        }
+                                        _ => {
                                             debug!(
-                                                target: "sub-libp2p",
-                                                "External API <= Sink replaced({}, {:?})",
+                                                target: "sub-libp2p", "External API <= Closed({}, {:?})",
                                                 peer_id, set_id
                                             );
-                                            let event = GenericProtoOut::CustomProtocolReplaced {
+                                            let event = GenericProtoOut::CustomProtocolClosed {
                                                 peer_id,
                                                 set_id,
-                                                notifications_sink: replacement_sink,
                                             };
                                             self.events.push_back(
                                                 NetworkBehaviourAction::GenerateEvent(event),
                                             );
                                         }
-                                    } _ => {
-                                        debug!(
-                                            target: "sub-libp2p", "External API <= Closed({}, {:?})",
-                                            peer_id, set_id
-                                        );
-                                        let event = GenericProtoOut::CustomProtocolClosed {
-                                            peer_id,
-                                            set_id,
-                                        };
-                                        self.events.push_back(
-                                            NetworkBehaviourAction::GenerateEvent(event),
-                                        );
-                                    }}
+                                    }
                                 }
                             } else {
                                 error!(target: "sub-libp2p",
@@ -1861,47 +1865,50 @@ impl NetworkBehaviour for GenericProto {
                                 _ => None,
                             })
                             .next()
-                        { Some((replacement_pos, replacement_sink)) => {
-                            if pos <= replacement_pos {
-                                debug!(target: "sub-libp2p", "External API <= Sink replaced({:?})", source);
-                                let event = GenericProtoOut::CustomProtocolReplaced {
+                        {
+                            Some((replacement_pos, replacement_sink)) => {
+                                if pos <= replacement_pos {
+                                    debug!(target: "sub-libp2p", "External API <= Sink replaced({:?})", source);
+                                    let event = GenericProtoOut::CustomProtocolReplaced {
+                                        peer_id: source,
+                                        set_id,
+                                        notifications_sink: replacement_sink,
+                                    };
+                                    self.events
+                                        .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                                }
+
+                                *entry.into_mut() = PeerState::Enabled { connections };
+                            }
+                            _ => {
+                                // List of open connections wasn't empty before but now it is.
+                                if !connections
+                                    .iter()
+                                    .any(|(_, s)| matches!(s, ConnectionState::Opening))
+                                {
+                                    debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", source, set_id);
+                                    self.peerset.dropped(
+                                        set_id,
+                                        source,
+                                        sc_peerset::DropReason::Refused,
+                                    );
+                                    *entry.into_mut() = PeerState::Disabled {
+                                        connections,
+                                        backoff_until: None,
+                                    };
+                                } else {
+                                    *entry.into_mut() = PeerState::Enabled { connections };
+                                }
+
+                                debug!(target: "sub-libp2p", "External API <= Closed({}, {:?})", source, set_id);
+                                let event = GenericProtoOut::CustomProtocolClosed {
                                     peer_id: source,
                                     set_id,
-                                    notifications_sink: replacement_sink,
                                 };
                                 self.events
                                     .push_back(NetworkBehaviourAction::GenerateEvent(event));
                             }
-
-                            *entry.into_mut() = PeerState::Enabled { connections };
-                        } _ => {
-                            // List of open connections wasn't empty before but now it is.
-                            if !connections
-                                .iter()
-                                .any(|(_, s)| matches!(s, ConnectionState::Opening))
-                            {
-                                debug!(target: "sub-libp2p", "PSM <= Dropped({}, {:?})", source, set_id);
-                                self.peerset.dropped(
-                                    set_id,
-                                    source,
-                                    sc_peerset::DropReason::Refused,
-                                );
-                                *entry.into_mut() = PeerState::Disabled {
-                                    connections,
-                                    backoff_until: None,
-                                };
-                            } else {
-                                *entry.into_mut() = PeerState::Enabled { connections };
-                            }
-
-                            debug!(target: "sub-libp2p", "External API <= Closed({}, {:?})", source, set_id);
-                            let event = GenericProtoOut::CustomProtocolClosed {
-                                peer_id: source,
-                                set_id,
-                            };
-                            self.events
-                                .push_back(NetworkBehaviourAction::GenerateEvent(event));
-                        }}
+                        }
                     }
 
                     // All connections in `Disabled` and `DisabledPendingEnable` have been sent a

@@ -111,13 +111,14 @@ fn txn_transfer(
                 temp_index = Some(index);
             }
             Transaction::UserTransaction(
-                r#gen.materialize(
-                    temp_index.unwrap(),
-                    universe,
-                    expired,
-                    Some(gen_script_payload()),
-                )
-                .into_inner(),
+                r#gen
+                    .materialize(
+                        temp_index.unwrap(),
+                        universe,
+                        expired,
+                        Some(gen_script_payload()),
+                    )
+                    .into_inner(),
             )
         })
         .collect::<Vec<_>>()

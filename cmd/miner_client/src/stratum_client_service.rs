@@ -280,15 +280,18 @@ impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService
         msg: LoginRequest,
         _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <LoginRequest as ServiceRequest>::Response {
-        match self.sender.clone() { Some(sender) => {
-            let (s, r) = futures::channel::oneshot::channel();
-            if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg, s)) {
-                error!("stratum handle login_request failed: {}", err);
+        match self.sender.clone() {
+            Some(sender) => {
+                let (s, r) = futures::channel::oneshot::channel();
+                if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg, s)) {
+                    error!("stratum handle login_request failed: {}", err);
+                }
+                r
             }
-            r
-        } _ => {
-            unreachable!()
-        }}
+            _ => {
+                unreachable!()
+            }
+        }
     }
 }
 
@@ -299,13 +302,16 @@ impl ServiceHandler<StratumClientService, SubmitSealRequest> for StratumClientSe
         _ctx: &mut ServiceContext<StratumClientService>,
     ) -> <SubmitSealRequest as ServiceRequest>::Response {
         //FIXME: Failed to receive this msg since upgrade actix to 0.13.
-        match self.sender.clone() { Some(sender) => {
-            if let Err(e) = sender.unbounded_send(Request::SubmitSealRequest(msg)) {
-                error!("stratum handle submit seal request failed:{}", e);
+        match self.sender.clone() {
+            Some(sender) => {
+                if let Err(e) = sender.unbounded_send(Request::SubmitSealRequest(msg)) {
+                    error!("stratum handle submit seal request failed:{}", e);
+                }
             }
-        } _ => {
-            unreachable!()
-        }}
+            _ => {
+                unreachable!()
+            }
+        }
     }
 }
 
