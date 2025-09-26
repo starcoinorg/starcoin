@@ -13224,10 +13224,15 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "clap 4.5.47",
+ "csv",
  "ctrlc",
  "futures 0.3.31",
+ "once_cell",
+ "rand 0.8.5",
+ "serde 1.0.205",
  "starcoin-account-api",
  "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-executor",
  "starcoin-logger",
@@ -13235,7 +13240,10 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-transaction-builder",
+ "starcoin-types",
+ "starcoin-vm-types",
  "starcoin-vm1-types",
+ "starcoin-vm2-account-api",
  "tokio",
 ]
 
