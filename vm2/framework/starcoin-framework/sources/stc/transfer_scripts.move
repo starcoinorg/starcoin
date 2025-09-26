@@ -1,4 +1,5 @@
 module starcoin_framework::transfer_scripts {
+    use std::vector;
     use starcoin_framework::starcoin_account;
 
 
@@ -24,7 +25,7 @@ module starcoin_framework::transfer_scripts {
         account: &signer,
         payeees: vector<address>,
         _payee_auth_keys: vector<vector<u8>>,
-        amounts: vector<u64>
+        amounts: vector<u128>
     ) {
         batch_peer_to_peer_v2<TokenType>(account, payeees, amounts)
     }
@@ -33,8 +34,12 @@ module starcoin_framework::transfer_scripts {
     public entry fun batch_peer_to_peer_v2<TokenType>(
         account: &signer,
         payeees: vector<address>,
-        amounts: vector<u64>
+        amounts: vector<u128>
     ) {
-        starcoin_account::batch_transfer_coins<TokenType>(account, payeees, amounts);
+        let amounts_u64 = vector::empty<u64>();
+        for (i in 0 .. vector::length(&amounts)) {
+            vector::push_back(&mut amounts_u64, (*vector::borrow(&amounts, i) as u64));
+        };
+        starcoin_account::batch_transfer_coins<TokenType>(account, payeees, amounts_u64);
     }
 }

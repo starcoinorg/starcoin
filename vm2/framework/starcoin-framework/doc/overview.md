@@ -71,6 +71,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::system_addresses`](system_addresses.md#0x1_system_addresses)
 -  [`0x1::timestamp`](timestamp.md#0x1_timestamp)
 -  [`0x1::transaction_context`](transaction_context.md#0x1_transaction_context)
+-  [`0x1::transaction_fee`](transaction_fee.md#0x1_transaction_fee)
 -  [`0x1::transaction_publish_option`](stc_transaction_publish_option.md#0x1_transaction_publish_option)
 -  [`0x1::transfer_scripts`](transfer_scripts.md#0x1_transfer_scripts)
 -  [`0x1::treasury`](treasury.md#0x1_treasury)

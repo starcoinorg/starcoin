@@ -505,11 +505,11 @@ It collects gas and bumps the sequence number
     };
 
     <b>if</b> (transaction_fee_amount &gt; 0) {
-        <b>let</b> transaction_fee = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
+        <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a> = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
             &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender),
             (transaction_fee_amount <b>as</b> u64)
         );
-        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender), transaction_fee);
+        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(<a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
     };
 }
 </code></pre>
