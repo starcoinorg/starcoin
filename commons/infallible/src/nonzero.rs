@@ -5,10 +5,10 @@
 /// A wrapper around `std::num::NonZeroUsize` to no longer worry about `unwrap()`
 #[macro_export]
 macro_rules! NonZeroUsize {
-    ($num:expr) => {
+    ($num:expr_2021) => {
         NonZeroUsize!($num, "Must be non-zero")
     };
-    ($num:expr, $message:literal) => {
+    ($num:expr_2021, $message:literal) => {
         std::num::NonZeroUsize::new($num).expect($message)
     };
 }

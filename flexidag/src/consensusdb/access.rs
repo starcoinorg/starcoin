@@ -51,20 +51,20 @@ where
     }
 
     pub fn read(&self, key: S::Key) -> Result<S::Value, StoreError> {
-        if let Some(data) = self.cache.get(&key) {
+        match self.cache.get(&key) { Some(data) => {
             Ok(data)
-        } else if let Some(slice) = self
+        } _ => { match self
             .db
             .raw_get_pinned_cf(S::COLUMN_FAMILY, key.encode_key().unwrap())
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-        {
+        { Some(slice) => {
             let data = S::Value::decode_value(slice.as_ref())
                 .map_err(|o| StoreError::DecodeError(o.to_string()))?;
             self.cache.insert(key, data.clone());
             Ok(data)
-        } else {
+        } _ => {
             Err(StoreError::KeyNotFound(format!("{:?}", key)))
-        }
+        }}}}
     }
 
     pub fn iterator(

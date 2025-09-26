@@ -9,22 +9,22 @@ use thiserror::Error;
 
 #[macro_export]
 macro_rules! verify_block {
-    ($verify_field:expr, $cond:expr) => {
+    ($verify_field:expr_2021, $cond:expr_2021) => {
         if !$cond {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!("check condition {} fail")).into())
         }
     };
-    ($verify_field:expr, $cond:expr, $msg:literal) => {
+    ($verify_field:expr_2021, $cond:expr_2021, $msg:literal) => {
         if !$cond {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!($msg)).into())
         }
     };
-    ($verify_field:expr, $cond:expr, $err:expr $(,)?) => {
+    ($verify_field:expr_2021, $cond:expr_2021, $err:expr_2021 $(,)?) => {
         if !$cond {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!($err)).into())
         }
     };
-    ($verify_field:expr, $cond:expr, $fmt:expr, $($arg:tt)*) => {
+    ($verify_field:expr_2021, $cond:expr_2021, $fmt:expr_2021, $($arg:tt)*) => {
         if !$cond {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!($fmt,  $($arg)*)).into());
         }

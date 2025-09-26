@@ -20,9 +20,9 @@ fn init_store(
 ) -> Vec<Transaction> {
     let txns = gens
         .into_iter()
-        .map(|(index, gen)| {
+        .map(|(index, r#gen)| {
             Transaction::UserTransaction(
-                gen.materialize(index, &mut universe, 4_0000, None)
+                r#gen.materialize(index, &mut universe, 4_0000, None)
                     .into_inner(),
             )
         })

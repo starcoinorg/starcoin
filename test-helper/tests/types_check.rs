@@ -172,12 +172,12 @@ fn check_data<T: Sample + Serialize + DeserializeOwned + PartialEq>() -> Result<
         "Type {}'s sample return result is not stable.",
         type_name
     );
-    if let Some(t) = read_and_check_data::<T>()? {
+    match read_and_check_data::<T>()? { Some(t) => {
         info!("Check {} ok", type_name);
         Ok(t)
-    } else {
+    } _ => {
         let t = T::sample();
         write_data(&t)?;
         Ok(t)
-    }
+    }}
 }

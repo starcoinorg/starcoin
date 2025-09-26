@@ -58,10 +58,10 @@ impl EventHandler<Self, StartTaskEvent> for LoopTaskService {
                 if current > msg.target_number {
                     break;
                 }
-                if let Err(e) = cal_service.add(current).await {
+                match cal_service.add(current).await { Err(e) => {
                     error!("Add error: {:?}", e);
                     Delay::new(Duration::from_millis(1000)).await;
-                } else {
+                } _ => {
                     if let Err(e) = self_ref.notify(TaskStatusUpdateEvent {
                         finished_number: current,
                     }) {
@@ -69,7 +69,7 @@ impl EventHandler<Self, StartTaskEvent> for LoopTaskService {
                         Delay::new(Duration::from_millis(1000)).await;
                     }
                     Delay::new(Duration::from_millis(100)).await;
-                }
+                }}
             }
         })
     }

@@ -52,7 +52,7 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     // The effect is to build a layer in front of the `StateView` which keeps
     // track of the data as if the changes were applied immediately.
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
-        for (ref ap, ref write_op) in write_set.iter() {
+        for (ap, write_op) in write_set.iter() {
             match write_op {
                 WriteOp::Value(blob) => {
                     self.data_map.insert(ap.clone(), Some(blob.clone()));

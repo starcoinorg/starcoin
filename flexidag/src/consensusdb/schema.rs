@@ -26,7 +26,7 @@ pub trait Schema: Debug + Send + Sync + 'static {
 
 #[macro_export]
 macro_rules! define_schema {
-    ($schema_type: ident, $key_type: ty, $value_type: ty, $cf_name: expr) => {
+    ($schema_type: ident, $key_type: ty, $value_type: ty, $cf_name: expr_2021) => {
         #[derive(Clone, Debug)]
         pub(crate) struct $schema_type;
 

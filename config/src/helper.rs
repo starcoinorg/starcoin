@@ -64,8 +64,8 @@ pub(crate) fn load_key<P: AsRef<Path>>(path: P) -> Result<(Ed25519PrivateKey, Ed
 }
 
 pub(crate) fn gen_keypair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
-    let mut gen = KeyGen::from_os_rng();
-    gen.generate_keypair()
+    let mut r#gen = KeyGen::from_os_rng();
+    r#gen.generate_keypair()
 }
 
 /// Opens a file containing a secret key in write mode.

@@ -1,7 +1,7 @@
 use libc::{c_char, c_int, c_void, size_t};
 
 #[link(name = "cryptonight", kind = "static")]
-extern "C" {
+unsafe extern "C" {
     fn cryptonight_hash(
         data: *const c_char,
         hash: *mut c_char,
@@ -12,7 +12,7 @@ extern "C" {
 }
 
 #[link(name = "cryptonight", kind = "static")]
-extern "C" {
+unsafe extern "C" {
     fn hash_extra_jh(data: *const c_char, length: size_t, hash: *mut c_char) -> c_void;
 }
 const VARIANT: i32 = 4;

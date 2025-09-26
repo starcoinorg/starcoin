@@ -246,7 +246,7 @@ impl AsyncRpcClient {
 
     pub async fn subscribe_new_mint_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error> + use<>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.map_err(map_err))
@@ -257,7 +257,7 @@ impl AsyncRpcClient {
 
     pub async fn subscribe_new_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = BlockView, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = BlockView, Error = anyhow::Error> + use<>> {
         self.call_rpc_async(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
             res.map(|s| s.map_err(map_err))

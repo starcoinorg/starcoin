@@ -6,7 +6,7 @@ pub mod web;
 
 #[macro_export]
 macro_rules! unwrap_or_handle_error {
-    ($e:expr, $r:expr) => {
+    ($e:expr_2021, $r:expr_2021) => {
         match $e {
             Ok(e) => e,
             Err(e) => return $r(e),

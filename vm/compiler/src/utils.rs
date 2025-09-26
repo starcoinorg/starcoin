@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 /// Helper function to iterate through all the files in the given directory, skipping hidden files,
 /// and return an iterator of their paths.
-pub fn iterate_directory(path: &Path) -> impl Iterator<Item = PathBuf> {
+pub fn iterate_directory(path: &Path) -> impl Iterator<Item = PathBuf> + use<> {
     walkdir::WalkDir::new(path)
         .into_iter()
         .map(::std::result::Result::unwrap)

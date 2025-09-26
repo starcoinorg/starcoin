@@ -95,29 +95,29 @@ pub fn print_bcs_decoded_resources(bcs_content: Vec<u8>) -> anyhow::Result<()> {
                     );
 
                     // Try to decode as some common resource types
-                    if let Ok(version) = bcs_ext::from_bytes::<
+                    match bcs_ext::from_bytes::<
                         starcoin_vm_types::on_chain_config::Version,
                     >(value.as_slice())
-                    {
+                    { Ok(version) => {
                         debug!("  Decoded as Version: {:?}", version);
-                    } else if let Ok(balance) = bcs_ext::from_bytes::<
+                    } _ => { match bcs_ext::from_bytes::<
                         starcoin_vm_types::account_config::BalanceResource,
                     >(value.as_slice())
-                    {
+                    { Ok(balance) => {
                         debug!("  Decoded as BalanceResource: {:?}", balance);
-                    } else if let Ok(account) = bcs_ext::from_bytes::<
+                    } _ => { match bcs_ext::from_bytes::<
                         starcoin_vm_types::account_config::AccountResource,
                     >(value.as_slice())
-                    {
+                    { Ok(account) => {
                         debug!("  Decoded as AccountResource: {:?}", account);
-                    } else if let Ok(token_info) = bcs_ext::from_bytes::<
+                    } _ => { match bcs_ext::from_bytes::<
                         starcoin_vm_types::account_config::TokenInfo,
                     >(value.as_slice())
-                    {
+                    { Ok(token_info) => {
                         debug!("  Decoded as TokenInfo: {:?}", token_info);
-                    } else {
+                    } _ => {
                         debug!("  Could not decode as common resource types");
-                    }
+                    }}}}}}}}
                 }
                 Err(e) => {
                     debug!(

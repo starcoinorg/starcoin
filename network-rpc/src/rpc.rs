@@ -110,16 +110,16 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
     ) -> BoxFuture<Result<Option<Vec<StcTransactionInfo>>>> {
         let storage = self.storage.clone();
         let fut = async move {
-            if let Ok(txn_infos) = storage.get_block_transaction_infos(block_id) {
+            match storage.get_block_transaction_infos(block_id) { Ok(txn_infos) => {
                 Ok(Some(
                     txn_infos
                         .into_iter()
                         .map(|info| info.transaction_info)
                         .collect(),
                 ))
-            } else {
+            } _ => {
                 Ok(None)
-            }
+            }}
         };
         Box::pin(fut)
     }

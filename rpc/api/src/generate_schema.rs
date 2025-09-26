@@ -15,7 +15,7 @@ pub struct RpcSchemaGenerateOpt {
 }
 
 macro_rules! generate_rpc_schema_docs {
-    ($data_dir: expr,$($name: ident),+) => {
+    ($data_dir: expr_2021,$($name: ident),+) => {
         ||->Result<()>{
             $(let schema = $name::gen_schema();
               let file_name = format!("{}.json", stringify!($name));

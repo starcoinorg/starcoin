@@ -212,13 +212,12 @@ impl BlockRelayer {
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
-            if let Ok(Some((_, _, _, version))) =
-                txpool.get_store().get_failed_block_by_id(block_id)
-            {
+            match txpool.get_store().get_failed_block_by_id(block_id)
+            { Ok(Some((_, _, _, version))) => {
                 if version == *G_CRATE_VERSION {
                     warn!("Block is failed block : {:?}", block_id);
                 }
-            } else {
+            } _ => {
                 let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {
                     format_err!(
                         "CompatBlockMessage's peer {} is not connected",
@@ -240,7 +239,7 @@ impl BlockRelayer {
                 .await?;
 
                 block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
-            }
+            }}
             Ok(())
         };
         ctx.spawn(fut.then(|result: Result<()>| async move {

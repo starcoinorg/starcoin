@@ -1465,7 +1465,7 @@ impl NetworkBehaviour for GenericProto {
                             {
                                 let (_, state) = connections.remove(pos);
                                 if let ConnectionState::Open(_) = state {
-                                    if let Some((replacement_pos, replacement_sink)) = connections
+                                    match connections
                                         .iter()
                                         .enumerate()
                                         .filter_map(|(num, (_, s))| match s {
@@ -1473,7 +1473,7 @@ impl NetworkBehaviour for GenericProto {
                                             _ => None,
                                         })
                                         .next()
-                                    {
+                                    { Some((replacement_pos, replacement_sink)) => {
                                         if pos <= replacement_pos {
                                             debug!(
                                                 target: "sub-libp2p",
@@ -1489,7 +1489,7 @@ impl NetworkBehaviour for GenericProto {
                                                 NetworkBehaviourAction::GenerateEvent(event),
                                             );
                                         }
-                                    } else {
+                                    } _ => {
                                         debug!(
                                             target: "sub-libp2p", "External API <= Closed({}, {:?})",
                                             peer_id, set_id
@@ -1501,7 +1501,7 @@ impl NetworkBehaviour for GenericProto {
                                         self.events.push_back(
                                             NetworkBehaviourAction::GenerateEvent(event),
                                         );
-                                    }
+                                    }}
                                 }
                             } else {
                                 error!(target: "sub-libp2p",
@@ -1853,7 +1853,7 @@ impl NetworkBehaviour for GenericProto {
                                 },
                             });
 
-                        if let Some((replacement_pos, replacement_sink)) = connections
+                        match connections
                             .iter()
                             .enumerate()
                             .filter_map(|(num, (_, s))| match s {
@@ -1861,7 +1861,7 @@ impl NetworkBehaviour for GenericProto {
                                 _ => None,
                             })
                             .next()
-                        {
+                        { Some((replacement_pos, replacement_sink)) => {
                             if pos <= replacement_pos {
                                 debug!(target: "sub-libp2p", "External API <= Sink replaced({:?})", source);
                                 let event = GenericProtoOut::CustomProtocolReplaced {
@@ -1874,7 +1874,7 @@ impl NetworkBehaviour for GenericProto {
                             }
 
                             *entry.into_mut() = PeerState::Enabled { connections };
-                        } else {
+                        } _ => {
                             // List of open connections wasn't empty before but now it is.
                             if !connections
                                 .iter()
@@ -1901,7 +1901,7 @@ impl NetworkBehaviour for GenericProto {
                             };
                             self.events
                                 .push_back(NetworkBehaviourAction::GenerateEvent(event));
-                        }
+                        }}
                     }
 
                     // All connections in `Disabled` and `DisabledPendingEnable` have been sent a

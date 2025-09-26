@@ -159,11 +159,11 @@ impl OpenedBlock {
         self.block_meta.number()
     }
 
-    pub fn state_reader(&self) -> Arc<impl ChainStateReader> {
+    pub fn state_reader(&self) -> Arc<impl ChainStateReader + use<>> {
         self.state.0.clone()
     }
 
-    pub fn state_reader2(&self) -> Arc<impl ChainStateReader2> {
+    pub fn state_reader2(&self) -> Arc<impl ChainStateReader2 + use<>> {
         self.state.1.clone()
     }
 

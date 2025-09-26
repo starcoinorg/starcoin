@@ -150,9 +150,9 @@ impl InnerStore for StorageInstance {
             Self::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
-                if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
+                match cache.get(prefix_name, key.clone()) { Ok(Some(value)) => {
                     Ok(Some(value))
-                } else {
+                } _ => {
                     match db.get(prefix_name, key)? {
                         Some(value) => {
                             // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
@@ -164,7 +164,7 @@ impl InnerStore for StorageInstance {
                             Ok(None)
                         }
                     }
-                }
+                }}
             }
         }
     }

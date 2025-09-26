@@ -17,7 +17,7 @@ macro_rules! define_gas_parameters {
         $params_name: ident,
         $prefix: literal,
         [$(
-            [$name: ident: $ty: ty, $(optional $($dummy: ident)?)? $key: literal $(,)?, $initial: expr $(,)?]
+            [$name: ident: $ty: ty, $(optional $($dummy: ident)?)? $key: literal $(,)?, $initial: expr_2021 $(,)?]
         ),* $(,)?]
     ) => {
         #[derive(Debug, Clone)]

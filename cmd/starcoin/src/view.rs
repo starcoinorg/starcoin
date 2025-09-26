@@ -174,45 +174,45 @@ pub enum EventDataView {
 impl EventDataView {
     pub fn new(event_type_tag: &TypeTag, event_data: &[u8]) -> anyhow::Result<Self> {
         if event_type_tag == &TypeTag::Struct(Box::new(DepositEvent::struct_tag())) {
-            if let Ok(received_event) = DepositEvent::try_from_bytes(event_data) {
+            match DepositEvent::try_from_bytes(event_data) { Ok(received_event) => {
                 Ok(EventDataView::ReceivedPayment {
                     amount: received_event.amount(),
                     token_code: received_event.token_code().to_string(),
                     metadata: StrView(received_event.metadata().clone()),
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse ReceivedPaymentEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(WithdrawEvent::struct_tag())) {
-            if let Ok(sent_event) = WithdrawEvent::try_from_bytes(event_data) {
+            match WithdrawEvent::try_from_bytes(event_data) { Ok(sent_event) => {
                 Ok(EventDataView::SentPayment {
                     amount: sent_event.amount(),
                     token_code: sent_event.token_code().to_string(),
                     metadata: StrView(sent_event.metadata().clone()),
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse SentPaymentEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(MintEvent::struct_tag())) {
-            if let Ok(mint_event) = MintEvent::try_from_bytes(event_data) {
+            match MintEvent::try_from_bytes(event_data) { Ok(mint_event) => {
                 Ok(EventDataView::Mint {
                     amount: mint_event.amount(),
                     token_code: mint_event.token_code().to_string(),
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse MintEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(ProposalCreatedEvent::struct_tag())) {
-            if let Ok(event) = ProposalCreatedEvent::try_from_bytes(event_data) {
+            match ProposalCreatedEvent::try_from_bytes(event_data) { Ok(event) => {
                 Ok(EventDataView::ProposalCreated {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse ProposalCreatedEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(VoteChangedEvent::struct_tag())) {
-            if let Ok(event) = VoteChangedEvent::try_from_bytes(event_data) {
+            match VoteChangedEvent::try_from_bytes(event_data) { Ok(event) => {
                 Ok(EventDataView::VoteChanged {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
@@ -220,17 +220,17 @@ impl EventDataView {
                     agree: event.agree,
                     vote: event.vote,
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse VoteChangedEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(AcceptTokenEvent::struct_tag())) {
-            if let Ok(event) = AcceptTokenEvent::try_from_bytes(event_data) {
+            match AcceptTokenEvent::try_from_bytes(event_data) { Ok(event) => {
                 Ok(EventDataView::AcceptToken {
                     token_code: event.token_code().to_string(),
                 })
-            } else {
+            } _ => {
                 Err(format_err!("Unable to parse VoteChangedEvent"))
-            }
+            }}
         } else if event_type_tag == &TypeTag::Struct(Box::new(BlockRewardEvent::struct_tag())) {
             Ok(BlockRewardEvent::try_from_bytes(event_data)
                 .map_err(|_| format_err!("Unable to parse {}", BlockRewardEvent::struct_tag()))?

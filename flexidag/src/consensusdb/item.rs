@@ -26,20 +26,20 @@ impl<S: Schema> CachedDbItem<S> {
         // if let Some(item) = self.cached_item.read().clone() {
         //     return Ok(item);
         // }
-        if let Some(slice) = self
+        match self
             .db
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-        {
+        { Some(slice) => {
             let item = S::Value::decode_value(&slice)?;
             // *self.cached_item.write() = Some(item.clone());
             Ok(item)
-        } else {
+        } _ => {
             Err(StoreError::KeyNotFound(
                 String::from_utf8(self.key.encode_key()?)
                     .unwrap_or_else(|_| ("unrecoverable key string").to_string()),
             ))
-        }
+        }}
     }
 
     pub fn write(&mut self, mut writer: impl DbWriter, item: &S::Value) -> Result<(), StoreError> {
@@ -65,17 +65,17 @@ where {
         F: Fn(S::Value) -> S::Value,
     {
         let mut guard = self.cached_item.write();
-        let mut item = if let Some(item) = guard.take() {
+        let mut item = match guard.take() { Some(item) => {
             item
-        } else if let Some(slice) = self
+        } _ => { match self
             .db
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-        {
+        { Some(slice) => {
             S::Value::decode_value(&slice)?
-        } else {
+        } _ => {
             return Err(StoreError::KeyNotFound(format!("{:?}", self.key)));
-        };
+        }}}};
 
         item = op(item); // Apply the update op
         *guard = Some(item.clone());
