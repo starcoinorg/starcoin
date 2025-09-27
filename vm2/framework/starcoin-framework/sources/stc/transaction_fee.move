@@ -121,4 +121,9 @@ module starcoin_framework::transaction_fee {
     spec distribute_transaction_fees {
         pragma verify = false;
     }
+
+    // #[test(framework = @0x1)]
+    // fun test_intialize(framework: &signer) {
+    //     Self::initialize(framework)
+    // }
 }
