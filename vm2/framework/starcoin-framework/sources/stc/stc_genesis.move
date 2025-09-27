@@ -416,6 +416,8 @@ module starcoin_framework::stc_genesis {
         let feature = features::get_new_accounts_default_to_fa_stc_store_feature();
         features::change_feature_flags_for_testing(framework, vector[feature], vector[]);
 
+        aggregator_factory::initialize_aggregator_factory_for_test(framework);
+
         let (burn_cap, mint_cap) = starcoin_coin::initialize(framework);
         starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
 

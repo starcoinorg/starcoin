@@ -2270,13 +2270,18 @@ module starcoin_framework::coin {
         assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
         assert!(balance<FakeMoney>(account_addr) == 100, 0);
         let coin = withdraw<FakeMoney>(account, 50);
-        assert!(!migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
-        maybe_convert_to_fungible_store<FakeMoney>(account_addr);
-        assert!(migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
-        deposit(account_addr, coin);
-        assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
-        assert!(balance<FakeMoney>(account_addr) == 100, 0);
 
+        if (!features::operations_default_to_fa_stc_store_enabled()) {
+            assert!(!migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
+            maybe_convert_to_fungible_store<FakeMoney>(account_addr);
+            assert!(migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
+
+            deposit(account_addr, coin);
+            assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
+            assert!(balance<FakeMoney>(account_addr) == 100, 0);
+        } else {
+            deposit(account_addr, coin);
+        };
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
             freeze_cap,
