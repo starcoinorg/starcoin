@@ -320,7 +320,7 @@ module starcoin_framework::stc_genesis {
         dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
     }
 
-    // #[test]
+    #[test_only]
     public fun initialize_for_unit_tests() {
         let stdlib_version: u64 = 6;
         let reward_delay: u64 = 7;
@@ -336,14 +336,14 @@ module starcoin_framework::stc_genesis {
         let genesis_timestamp: u64 = 0;
 
         //consensus config
-        let uncle_rate_target: u64 = 1;  // DAG mode: expect few uncles
+        let uncle_rate_target: u64 = 240;  // DAG mode: expect few uncles
         let epoch_block_count: u64 = 240;
         let base_block_time_target: u64 = 10000;
         let base_block_difficulty_window: u64 = 24;
         let base_reward_per_block: u128 = 1000000000;
         let base_reward_per_uncle_percent: u64 = 10;
-        let min_block_time_target: u64 = 1000;
-        let max_block_time_target: u64 = 20000;
+        let min_block_time_target: u64 = 5000;
+        let max_block_time_target: u64 = 60000;
         let base_max_uncles_per_block: u64 = 2;
         let base_block_gas_limit: u64 = 500000000;
         let strategy: u8 = 0;
@@ -405,8 +405,8 @@ module starcoin_framework::stc_genesis {
         );
     }
 
-    #[test(aptos_framework = @0x1, root = @0xabcd)]
-    fun test_create_root_account(aptos_framework: &signer) {
+    #[test(framework = @0x1, root = @0xabcd)]
+    fun test_create_root_account(framework: &signer) {
         use starcoin_framework::fungible_asset::Metadata;
         use starcoin_framework::primary_fungible_store;
         use starcoin_framework::object;
@@ -414,18 +414,18 @@ module starcoin_framework::stc_genesis {
         use std::features;
 
         let feature = features::get_new_accounts_default_to_fa_stc_store_feature();
-        features::change_feature_flags_for_testing(aptos_framework, vector[feature], vector[]);
+        features::change_feature_flags_for_testing(framework, vector[feature], vector[]);
 
-        let (burn_cap, mint_cap) = starcoin_coin::initialize(aptos_framework);
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(framework);
         starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
 
         let core_resources = account::create_account(@core_resources);
         starcoin_account::register_stc(&core_resources); // registers STC store
 
-        let apt_metadata = object::address_to_object<Metadata>(@aptos_fungible_asset);
+        let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         assert!(primary_fungible_store::primary_store_exists(@core_resources, apt_metadata), 2);
 
-        starcoin_coin::configure_accounts_for_test(aptos_framework, &core_resources, mint_cap);
+        starcoin_coin::configure_accounts_for_test(framework, &core_resources, mint_cap);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
