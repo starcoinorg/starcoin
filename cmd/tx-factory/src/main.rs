@@ -162,7 +162,7 @@ fn main() {
         txn_generator,
         account.address,
         account_password,
-        Duration::from_secs(60 * 1000),
+        Duration::from_secs(86400), // 24 hours
         watch_timeout,
     );
 
@@ -575,7 +575,7 @@ impl TxnMocker {
                 self.next_sequence_number,
                 self.account_address,
                 addr_vec.clone(),
-                10000,
+                1,
                 1,
                 expiration_timestamp,
             )?;

@@ -500,34 +500,6 @@ impl Inner {
             .next_sequence_number_in_batch(pool_client, addresses)
     }
 
-    pub(crate) fn next_sequence_number_with_state(
-        &self,
-        address: MultiAccountAddress,
-    ) -> Option<u64> {
-        let (state_root1, state_root2) = match self
-            .storage
-            .get_vm_multi_state(self.chain_header.read().id())
-        {
-            Ok(multi_state) => (multi_state.state_root1(), multi_state.state_root2()),
-            Err(e) => {
-                error!(
-                    "failed to get vm multi state in next_sequence_number_in_batch: {}",
-                    e
-                );
-                return None;
-            }
-        };
-        let pool_client = PoolClient::new(
-            state_root1,
-            state_root2,
-            self.storage.clone(),
-            self.storage2.clone(),
-            NonceCache::new(0),
-            self.vm_metrics.clone(),
-        );
-        self.queue.next_sequence_number(pool_client, &address)
-    }
-
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
         let (tx, rx) = mpsc::unbounded();
         self.queue.add_full_listener(tx);
