@@ -223,7 +223,7 @@ impl EventDataView {
                 Ok(event) => Ok(EventDataView::AcceptToken {
                     token_code: event.token_code().to_string(),
                 }),
-                _ => Err(format_err!("Unable to parse VoteChangedEvent")),
+                _ => Err(format_err!("Unable to parse AcceptTokenEvent")),
             }
         } else if event_type_tag == &TypeTag::Struct(Box::new(BlockRewardEvent::struct_tag())) {
             Ok(BlockRewardEvent::try_from_bytes(event_data)

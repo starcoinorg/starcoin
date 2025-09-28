@@ -5,17 +5,16 @@
 /// A wrapper around `std::num::NonZeroUsize` to no longer worry about `unwrap()`
 #[macro_export]
 macro_rules! NonZeroUsize {
-    ($num:expr_2021) => {
+    ($num:expr) => {
         NonZeroUsize!($num, "Must be non-zero")
     };
-    ($num:expr_2021, $message:literal) => {
+    ($num:expr, $message:literal) => {
         std::num::NonZeroUsize::new($num).expect($message)
     };
 }
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn test_nonzero() {
         assert_eq!(1, NonZeroUsize!(1).get());
