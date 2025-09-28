@@ -1,10 +1,10 @@
 #[macro_export]
 macro_rules! register_uint_gauge_vec {
-    ($OPTS:expr_2021, $LABELS_NAMES:expr_2021) => {{
+    ($OPTS:expr, $LABELS_NAMES:expr) => {{
         __register_gauge_vec!(UIntGaugeVec, $OPTS, $LABELS_NAMES)
     }};
 
-    ($NAME:expr_2021, $HELP:expr_2021, $LABELS_NAMES:expr_2021) => {{
+    ($NAME:expr, $HELP:expr, $LABELS_NAMES:expr) => {{
         register_uint_gauge_vec!(opts!($NAME, $HELP), $LABELS_NAMES)
     }};
 }
@@ -12,11 +12,11 @@ macro_rules! register_uint_gauge_vec {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! register_uint_gauge {
-    ($OPTS:expr_2021) => {{
+    ($OPTS:expr) => {{
         let gauge = $crate::UIntGauge::with_opts($OPTS).expect("register_uint_gauge failed");
         $crate::prometheus_export::register(Box::new(gauge.clone())).map(|_| gauge)
     }};
-    ($NAME:expr_2021, $HELP:expr_2021) => {{
+    ($NAME:expr, $HELP:expr) => {{
         register_uint_gauge!($crate::opts!($NAME, $HELP))
     }};
 }
@@ -24,7 +24,7 @@ macro_rules! register_uint_gauge {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __register_gauge_vec {
-    ($TYPE:ident, $OPTS:expr_2021, $LABELS_NAMES:expr_2021) => {{
+    ($TYPE:ident, $OPTS:expr, $LABELS_NAMES:expr) => {{
         let gauge_vec =
             $crate::$TYPE::new($OPTS, $LABELS_NAMES).expect("__register_gauge_vec failed");
         $crate::prometheus_export::register(Box::new(gauge_vec.clone())).map(|_| gauge_vec)
