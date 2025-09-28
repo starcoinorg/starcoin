@@ -10,7 +10,6 @@ module starcoin_framework::starcoin_coin {
     use starcoin_framework::coin::{Self, BurnCapability, MintCapability};
     use starcoin_framework::system_addresses;
 
-    // friend starcoin_framework::genesis;
     friend starcoin_framework::stc_genesis;
 
     /// Account does not have mint capability
@@ -170,6 +169,10 @@ module starcoin_framework::starcoin_coin {
 
     #[test_only]
     public fun ensure_initialized_with_stc_fa_metadata_for_test() {
+        use starcoin_std::debug;
+        use std::string::utf8;
+
+        debug::print(&utf8(b"ensure_initialized_with_stc_fa_metadata_for_test | entered"));
         let starcoin_framework = account::create_signer_for_test(@starcoin_framework);
         if (!exists<MintCapStore>(@starcoin_framework)) {
             if (!aggregator_factory::aggregator_factory_exists_for_testing()) {
@@ -181,6 +184,8 @@ module starcoin_framework::starcoin_coin {
         };
         coin::create_coin_conversion_map(&starcoin_framework);
         coin::create_pairing<STC>(&starcoin_framework);
+
+        debug::print(&utf8(b"ensure_initialized_with_stc_fa_metadata_for_test | exited"));
     }
 
     #[test_only]
