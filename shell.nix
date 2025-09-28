@@ -24,6 +24,7 @@ pkgs.mkShell {
       rustup override set "$rust_version"
       rustup component add rustfmt --toolchain "$rust_version"
       rustup component add rust-analysis --toolchain "$rust_version"
+      rustup component add llvm-tools-preview --toolchain "$rust_version"
     fi
     
     # use mold as linker (let mold auto-detect optimal thread count)
