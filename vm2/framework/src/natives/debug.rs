@@ -19,7 +19,7 @@ use starcoin_native_interface::{
     SafeNativeResult,
 };
 use std::collections::VecDeque;
-
+use log::debug;
 /***************************************************************************************************
  * native fun print
  *
@@ -37,7 +37,7 @@ fn native_print(
         let val = safely_pop_arg!(args, Struct);
         let bytes = val.unpack()?.next().unwrap();
 
-        println!(
+        debug!(
             "[debug] {}",
             std::str::from_utf8(&bytes.value_as::<Vec<u8>>()?).unwrap()
         );
