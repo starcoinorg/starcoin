@@ -35,7 +35,9 @@ module std::features {
     /// Initialized from parameters
     public fun initialize(framework: &signer, features: vector<u8>) {
         assert!(signer::address_of(framework) == @std, error::permission_denied(EFRAMEWORK_SIGNER_NEEDED));
-        move_to<Features>(framework, Features { features })
+        if (!exists<Features>(signer::address_of(framework))) {
+            move_to<Features>(framework, Features { features })
+        }
     }
 
     // --------------------------------------------------------------------------------------------

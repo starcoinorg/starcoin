@@ -276,8 +276,9 @@ module starcoin_framework::coin {
     #[view]
     /// Get the paired fungible asset metadata object of a coin type. If not exist, return option::none().
     public fun paired_metadata<CoinType>(): Option<Object<Metadata>> acquires CoinConversionMap {
-        if (exists<CoinConversionMap>(@starcoin_framework) && features::coin_to_fungible_asset_migration_feature_enabled(
-        )) {
+        if (exists<CoinConversionMap>(
+            @starcoin_framework
+        ) && features::coin_to_fungible_asset_migration_feature_enabled()) {
             let map = &borrow_global<CoinConversionMap>(@starcoin_framework).coin_to_fungible_asset_map;
             let type = type_info::type_of<CoinType>();
             if (table::contains(map, type)) {
@@ -331,7 +332,6 @@ module starcoin_framework::coin {
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
-
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,
                 option::none(),
@@ -668,10 +668,16 @@ module starcoin_framework::coin {
                 account_addr,
                 option::destroy_some(metadata)
             )) {
-                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance"));
+                debug::print(
+                    &std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance")
+                );
                 (coin_balance, amount - coin_balance)
             } else {
-                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Abort with primary_fungible_store check not valid"));
+                debug::print(
+                    &std::string::utf8(
+                        b"coin::calculate_amount_to_withdraw | Abort with primary_fungible_store check not valid"
+                    )
+                );
                 abort error::invalid_argument(EINSUFFICIENT_BALANCE)
             }
         }
@@ -809,7 +815,11 @@ module starcoin_framework::coin {
             debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore exist"));
             true
         } else {
-            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore not exist, convert to primary fungible store"));
+            debug::print(
+                &std::string::utf8(
+                    b"coin::is_account_registered | CoinStore not exist, convert to primary fungible store"
+                )
+            );
             let paired_metadata_opt = paired_metadata<CoinType>();
             (option::is_some(
                 &paired_metadata_opt
