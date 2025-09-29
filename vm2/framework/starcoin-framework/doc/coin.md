@@ -1326,8 +1326,9 @@ Get the paired fungible asset metadata object of a coin type. If not exist, retu
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;(): Option&lt;Object&lt;Metadata&gt;&gt; <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework) && <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>(
-    )) {
+    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(
+        @starcoin_framework
+    ) && <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>()) {
         <b>let</b> map = &<b>borrow_global</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework).coin_to_fungible_asset_map;
         <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
         <b>if</b> (<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(map, type)) {
@@ -1461,7 +1462,6 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
                     *<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;())
                 )
             };
-
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store_enabled_fungible_asset">primary_fungible_store::create_primary_store_enabled_fungible_asset</a>(
             &metadata_object_cref,
             <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),
@@ -2268,10 +2268,16 @@ Collects a specified amount of coin form an account into aggregatable coin.
             account_addr,
             <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(metadata)
         )) {
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Exited <b>with</b> enough <a href="coin.md#0x1_coin">coin</a> balance"));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                &std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Exited <b>with</b> enough <a href="coin.md#0x1_coin">coin</a> balance")
+            );
             (coin_balance, amount - coin_balance)
         } <b>else</b> {
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Abort <b>with</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">primary_fungible_store</a> check not valid"));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                &std::string::utf8(
+                    b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Abort <b>with</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">primary_fungible_store</a> check not valid"
+                )
+            );
             <b>abort</b> <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
         }
     }
@@ -2585,7 +2591,11 @@ Returns <code><b>true</b></code> if <code>account_addr</code> is registered to r
         <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> exist"));
         <b>true</b>
     } <b>else</b> {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> not exist, convert <b>to</b> primary fungible store"));
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+            &std::string::utf8(
+                b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> not exist, convert <b>to</b> primary fungible store"
+            )
+        );
         <b>let</b> paired_metadata_opt = <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;();
         (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(
             &paired_metadata_opt

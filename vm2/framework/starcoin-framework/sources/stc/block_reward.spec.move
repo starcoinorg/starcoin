@@ -5,12 +5,12 @@ spec starcoin_framework::block_reward {
         pragma aborts_if_is_strict = true;
     }
 
-    spec initialize(account: &signer, reward_delay: u64) {
+    spec initialize(framework: &signer, reward_delay: u64) {
         use std::signer;
         use starcoin_framework::on_chain_config;
 
         // aborts_if !Timestamp::is_genesis();
-        aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
+        aborts_if signer::address_of(framework) != system_addresses::get_starcoin_framework();
         include on_chain_config::PublishNewConfigAbortsIf<block_reward_config::RewardConfig>;
         include on_chain_config::PublishNewConfigEnsures<block_reward_config::RewardConfig>;
         aborts_if exists<RewardQueue>(system_addresses::get_starcoin_framework());

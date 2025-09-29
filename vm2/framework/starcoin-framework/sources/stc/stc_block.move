@@ -2,15 +2,15 @@
 module starcoin_framework::stc_block {
     use std::error;
     use std::vector;
+    use starcoin_framework::fungible_asset;
+    use starcoin_framework::transaction_fee;
 
     use starcoin_framework::account;
     use starcoin_framework::block_reward;
     use starcoin_framework::chain_id;
-    use starcoin_framework::coin;
     use starcoin_framework::epoch;
     use starcoin_framework::event;
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
     use starcoin_std::debug;
@@ -28,9 +28,7 @@ module starcoin_framework::stc_block {
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 1006;
     const EBLOCK_NUMBER_MISMATCH: u64 = 1017;
-    //const ERROR_NO_HAVE_CHECKPOINT: u64 = 18;
-    //const ERROR_NOT_BLOCK_HEADER: u64 = 19;
-    //const ERROR_INTERVAL_TOO_LITTLE: u64 = 20;
+
 
     /// Block metadata struct.
     struct BlockMetadata has key {
@@ -146,12 +144,10 @@ module starcoin_framework::stc_block {
         );
 
         // deal with previous block first.
-        let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
-        // clear cache
-        let _stale_cache = stc_transaction_fee::read_and_clear_payer_address();
-
+        let txn_fee = transaction_fee::distribute_transaction_fees<STC>(&account);
+        let _stale_cache = transaction_fee::read_and_clear_payer_address();
         debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
-        debug::print(&coin::value(&txn_fee));
+        debug::print(&fungible_asset::amount(&txn_fee));
 
         // then deal with current block.
         debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
@@ -180,7 +176,7 @@ module starcoin_framework::stc_block {
     public fun block_epilogue(account: signer) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
         system_addresses::assert_starcoin_framework(&account);
-        stc_transaction_fee::merge_fee_to_framework_account(&account);
+        transaction_fee::merge_fee_to_framework_account(&account);
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }
 

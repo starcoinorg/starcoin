@@ -6,7 +6,6 @@ module starcoin_framework::transaction_fee {
     use std::signer;
     use std::vector;
 
-
     use starcoin_framework::object::{Self, Object};
     use starcoin_framework::fungible_asset::{Self, FungibleStore, create_store, FungibleAsset, Metadata};
     use starcoin_framework::starcoin_coin::STC;
