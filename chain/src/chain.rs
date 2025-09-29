@@ -688,7 +688,8 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute block and save, block_id: {:?}, executed_accumulator_root: {:?}, header.txn_accumulator_root: {:?}",  
+            block_id, executed_accumulator_root, header.txn_accumulator_root(),
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
@@ -921,7 +922,8 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute save directly, block id: {}, executed_accumulator_root: {:?}, header txn_accumulator_root: {:?}",
+            block_id, executed_accumulator_root, header.txn_accumulator_root()
         );
 
         statedb
@@ -1079,7 +1081,8 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in executed block without save, block_id: {:?}, expected accumulator root: {:?}, header accumulator root: {:?}",
+            block_id, executed_accumulator_root, header.txn_accumulator_root(),
         );
 
         let pre_total_difficulty = parent_status
@@ -1494,7 +1497,7 @@ impl ChainReader for BlockChain {
             None
         };
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash());
+            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None
@@ -1565,7 +1568,7 @@ impl ChainReader for BlockChain {
             None
         };
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash());
+            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
             let state_key = match access_path.path {
                 DataPath2::Code(module_name) => {
                     StateKey::module(&access_path.address, &module_name)
@@ -2335,7 +2338,10 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute dag block , block_id: {}, expected accumulator root: {:?}, header txn_accumulator_root: {:?}",
+            block_id,
+            executed_accumulator_root,
+            header.txn_accumulator_root(),
         );
 
         // Flush state to ensure state tree nodes are persisted

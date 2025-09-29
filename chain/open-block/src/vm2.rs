@@ -41,7 +41,7 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                self.push_txn_and_state2(block_meta_txn_hash, output)?;
+                self.push_txn_and_state2(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
                 bail!(
@@ -88,7 +88,8 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let last_index = txns.len().saturating_sub(1);
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
@@ -100,7 +101,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state2(txn_hash, output)?;
+                    self.push_txn_and_state2(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
                         .push(txn.try_into().expect("user txn"));
@@ -122,6 +123,7 @@ impl OpenedBlock {
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput2,
+        state_root_calc: bool,
     ) -> anyhow::Result<()> {
         let state = &mut self.state.1;
         let (write_set, events, gas_used, status, _) = output.into_inner();
@@ -132,9 +134,15 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let txn_state_root = state
-            .commit()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let txn_state_root = if state_root_calc {
+            Some(
+                state
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?,
+            )
+        } else {
+            None
+        };
 
         let txn_info = TransactionInfo2::new(
             txn_hash,

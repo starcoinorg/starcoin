@@ -31,4 +31,6 @@ pub enum BlockExecutorError {
     OtherError(Box<dyn Error + Send + Sync + 'static>),
     #[error("block transaction execute Retry error")]
     BlockExecuteRetryErr,
+    #[error("block transaction is zero")]
+    BlockTransactionZero,
 }
