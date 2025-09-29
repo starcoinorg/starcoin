@@ -16,7 +16,8 @@
     -  [Function `initialize`](#@Specification_0_initialize)
 
 
-<pre><code><b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
+<pre><code><b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="util.md#0x1_util">0x1::util</a>;
@@ -166,6 +167,8 @@ Initialize the table under the genesis account
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="vm_config.md#0x1_vm_config_initialize">vm_config::initialize</a> | entered"));
+
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
     <b>let</b> gas_schedule  = <a href="util.md#0x1_util_from_bytes">util::from_bytes</a>&lt;<a href="vm_config.md#0x1_vm_config_GasScheduleV2">GasScheduleV2</a>&gt;(gas_schedule_blob);
     <a href="on_chain_config.md#0x1_on_chain_config_publish_new_config">on_chain_config::publish_new_config</a>&lt;<a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a>&gt;(
@@ -174,6 +177,8 @@ Initialize the table under the genesis account
             gas_schedule,
         },
     );
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="vm_config.md#0x1_vm_config_initialize">vm_config::initialize</a> | exited"));
 }
 </code></pre>
 
