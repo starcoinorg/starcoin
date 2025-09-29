@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::string_utils::native_format_debug;
+use log::debug;
 use move_vm_runtime::native_functions::NativeFunction;
 #[allow(unused_imports)]
 use move_vm_types::{
@@ -19,7 +20,6 @@ use starcoin_native_interface::{
     SafeNativeResult,
 };
 use std::collections::VecDeque;
-use log::debug;
 /***************************************************************************************************
  * native fun print
  *
