@@ -7,7 +7,6 @@ spec starcoin_framework::block_reward {
 
     spec initialize(framework: &signer, reward_delay: u64) {
         use std::signer;
-        use starcoin_framework::on_chain_config;
 
         // aborts_if !Timestamp::is_genesis();
         aborts_if signer::address_of(framework) != system_addresses::get_starcoin_framework();
