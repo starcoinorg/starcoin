@@ -156,10 +156,14 @@ impl Genesis {
                 let state_root1 = if starcoin_chain::should_do_migration(net.chain_id()) {
                     starcoin_chain::do_migration(&chain_state_db, net.chain_id())?
                 } else {
-                    txn_info.state_root_hash
+                    txn_info
+                        .state_root_hash
+                        .expect("genesis state root hash cannot be none!")
                 };
 
-                let state_root2 = txn2_info.state_root_hash();
+                let state_root2 = txn2_info
+                    .state_root_hash()
+                    .expect("genesis state root hash cannot be none for vm2!");
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
                     vm_state_accumulator.root_hash(),
@@ -257,7 +261,7 @@ impl Genesis {
             table_infos,
             TransactionInfo::new(
                 txn_hash,
-                state_root,
+                Some(state_root),
                 events.as_slice(),
                 gas_used,
                 keep_status,

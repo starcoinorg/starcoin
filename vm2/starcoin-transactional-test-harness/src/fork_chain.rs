@@ -170,8 +170,13 @@ impl ForkBlockChain {
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
-        let txn_info =
-            TransactionInfo::new(txn_hash, state_root, events.as_slice(), gas_used, status);
+        let txn_info = TransactionInfo::new(
+            txn_hash,
+            Some(state_root),
+            events.as_slice(),
+            gas_used,
+            status,
+        );
         self.txn_accumulator.append(&[txn_info.id()])?;
 
         let stc_events = events
