@@ -290,8 +290,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
     );
 
     if cmd.update_baseline {
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::set_var(UPDATE_BASELINE, "true") };
+        std::env::set_var(UPDATE_BASELINE, "true");
     }
     let mut test_args = vec![
         "test_runner".to_string(),

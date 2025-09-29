@@ -51,23 +51,19 @@ where
     }
 
     pub fn read(&self, key: S::Key) -> Result<S::Value, StoreError> {
-        match self.cache.get(&key) {
-            Some(data) => Ok(data),
-            _ => {
-                match self
-                    .db
-                    .raw_get_pinned_cf(S::COLUMN_FAMILY, key.encode_key().unwrap())
-                    .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
-                {
-                    Some(slice) => {
-                        let data = S::Value::decode_value(slice.as_ref())
-                            .map_err(|o| StoreError::DecodeError(o.to_string()))?;
-                        self.cache.insert(key, data.clone());
-                        Ok(data)
-                    }
-                    _ => Err(StoreError::KeyNotFound(format!("{:?}", key))),
-                }
-            }
+        if let Some(data) = self.cache.get(&key) {
+            Ok(data)
+        } else if let Some(slice) = self
+            .db
+            .raw_get_pinned_cf(S::COLUMN_FAMILY, key.encode_key().unwrap())
+            .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
+        {
+            let data = S::Value::decode_value(slice.as_ref())
+                .map_err(|o| StoreError::DecodeError(o.to_string()))?;
+            self.cache.insert(key, data.clone());
+            Ok(data)
+        } else {
+            Err(StoreError::KeyNotFound(format!("{:?}", key)))
         }
     }
 

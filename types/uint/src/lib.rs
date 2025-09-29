@@ -30,7 +30,7 @@ impl Sum for U256 {
 
 #[macro_export]
 macro_rules! impl_uint_serde {
-    ($name: ident, $len: expr_2021) => {
+    ($name: ident, $len: expr) => {
         impl Serialize for $name {
             fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 let mut bytes = [0u8; $len * 8];

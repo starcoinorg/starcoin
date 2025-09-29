@@ -16,7 +16,7 @@ macro_rules! expand_get_impl_for_native_gas_params {
 }
 
 macro_rules! expand_get_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional $($dummy: ident)?)? $key: literal, $initial_val: expr_2021, $param_ty: ty, $package_name: literal, $params: ident, $gas_schedule: ident) => {
+    (test_only $(.$field: ident)+, $(optional $($dummy: ident)?)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident, $gas_schedule: ident) => {
         // TODO(Gas): this is a hack to work-around issue
         // https://github.com/rust-lang/rust/issues/15701
         {
@@ -34,13 +34,13 @@ macro_rules! expand_get_for_native_gas_params {
             assign(&mut $params, &$gas_schedule)?;
         }
     };
-    ($(.$field: ident)+, $(optional $($dummy: ident)?)? $key: literal, $initial_val: expr_2021, $param_ty: ty, $package_name: literal, $params: ident, $gas_schedule: ident) => {
+    ($(.$field: ident)+, $(optional $($dummy: ident)?)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident, $gas_schedule: ident) => {
         $crate::natives::expand_get_impl_for_native_gas_params!($params $(.$field)+, $gas_schedule, $package_name, $(optional $($dummy)?)? $key);
     }
 }
 
 macro_rules! expand_set_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021, $param_ty: ty, $package_name: literal, $params: ident) => {
+    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
         {
             #[cfg(feature = "testing")]
             fn assign(params: &mut $param_ty)  {
@@ -54,45 +54,45 @@ macro_rules! expand_set_for_native_gas_params {
             assign(&mut $params);
         }
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021, $param_ty: ty, $package_name: literal, $params: ident) => {
+    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
         $params $(.$field)+ = $initial_val.into()
     };
 }
 
 macro_rules! expand_kv_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021, $self: ident) => {
+    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $self: ident) => {
         #[cfg(feature = "testing")]
         ($key, u64::from($self $(.$field)+))
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021, $self: ident) => {
+    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $self: ident) => {
         ($key, u64::from($self $(.$field)+))
     }
 }
 
 #[cfg(test)]
 macro_rules! extract_key_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021) => {
+    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
         #[cfg(feature = "testing")]
         $key
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021) => {
+    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
         $key
     };
 }
 
 #[cfg(test)]
 macro_rules! extract_path_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021) => {
+    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
         #[cfg(feature = "testing")]
         stringify!($($field).*)
     };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr_2021) => {
+    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
         stringify!($($field).*)
     };
 }
 
 macro_rules! define_gas_parameters_for_natives {
-    ($param_ty: ty, $package_name: literal, [$([$($t: tt)*]),* $(,)?] $(, allow_unmapped = $allow_unmapped: expr_2021)?) => {
+    ($param_ty: ty, $package_name: literal, [$([$($t: tt)*]),* $(,)?] $(, allow_unmapped = $allow_unmapped: expr)?) => {
         impl crate::gas_meter::FromOnChainGasSchedule for $param_ty {
             fn from_on_chain_gas_schedule(gas_schedule: &std::collections::BTreeMap<String, u64>) -> Option<Self> {
                 let mut params = <$param_ty>::zeros();
