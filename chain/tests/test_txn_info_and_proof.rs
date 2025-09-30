@@ -181,7 +181,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 }
             };
 
-            if index == state_root_index1 {
+            if index == state_root_index1 || index == 1 {
+                // 1 is the block metadata txn of vm1
                 let account_address = match &txn {
                     Transaction::UserTransaction(user_txn) => user_txn.sender(),
                     Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
@@ -229,7 +230,12 @@ fn test_transaction_info_and_proof() -> Result<()> {
                         index
                     )
                 })?;
-                assert!(info.state_root_hash().is_none());
+                assert!(
+                    info.state_root_hash().is_none(),
+                    "state root hash should be none, index: {}, state root index1: {}",
+                    index,
+                    state_root_index1
+                );
             }
         }
         transaction_accumulator_index_begin =
