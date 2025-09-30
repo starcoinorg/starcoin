@@ -180,7 +180,9 @@ where
         if let AccountResponse::SignedTxnList(txns) = response {
             Ok(txns)
         } else {
-            panic!("Unexpect response type.")
+            return Err(anyhow::anyhow!(
+                "unexpected response type: expected SignedTxnList"
+            ));
         }
     }
 
@@ -211,7 +213,9 @@ where
         if let AccountResponse::AccountList(account_info) = response {
             Ok(account_info)
         } else {
-            panic!("Unexpect response type.")
+            return Err(anyhow::anyhow!(
+                "unexpected response type: expected AccountList"
+            ));
         }
     }
 
