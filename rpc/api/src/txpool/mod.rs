@@ -1,12 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::FutureResult;
-use openrpc_derive::openrpc;
-
 pub use self::gen_client::Client as TxPoolClient;
 use crate::multi_types::MultiSignedUserTransactionView;
 use crate::types::{SignedUserTransactionView, StrView};
+use crate::FutureResult;
+use openrpc_derive::openrpc;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
@@ -19,6 +18,9 @@ use starcoin_vm2_types::{
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
+
+    #[rpc(name = "txpool.submit_transactions")]
+    fn submit_transactions(&self, txs: Vec<SignedUserTransaction>) -> FutureResult<Vec<HashValue>>;
 
     #[rpc(name = "txpool.submit_transaction2")]
     fn submit_transaction2(&self, tx: SignedUserTransaction2) -> FutureResult<HashValue>;
@@ -63,6 +65,14 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.next_sequence_number")]
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>>;
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender in txpool.
+    #[rpc(name = "txpool.next_sequence_number_in_batch")]
+    fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> FutureResult<Option<Vec<(AccountAddress, Option<u64>)>>>;
 
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.state")]

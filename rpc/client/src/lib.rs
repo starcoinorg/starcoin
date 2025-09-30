@@ -40,7 +40,7 @@ use starcoin_rpc_api::types::{
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
-    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, SyncStatusView,
     TransactionEventResponse, TransactionEventView, TransactionInfoView,
     TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
@@ -58,7 +58,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
@@ -97,9 +96,9 @@ pub enum ConnSource {
 impl std::fmt::Debug for ConnSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConnSource::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
-            ConnSource::WebSocket(url) => write!(f, "WebSocket({})", url),
-            ConnSource::Local(_) => write!(f, "Local"),
+            Self::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
+            Self::WebSocket(url) => write!(f, "WebSocket({})", url),
+            Self::Local(_) => write!(f, "Local"),
         }
     }
 }
@@ -315,8 +314,24 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn next_sequence_number_in_batch(
+        &self,
+        addresses: Vec<AccountAddress>,
+    ) -> anyhow::Result<Option<Vec<(AccountAddress, Option<u64>)>>> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.next_sequence_number_in_batch(addresses))
+            .map_err(map_err)
+    }
+
     pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
+            .map_err(map_err)
+    }
+
+    pub fn submit_transactions(
+        &self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> anyhow::Result<Vec<HashValue>> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transactions(txns))
             .map_err(map_err)
     }
 
@@ -401,6 +416,14 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn account_sign_txn_in_batch(
+        &self,
+        raw_txns: Vec<RawUserTransaction>,
+    ) -> anyhow::Result<Vec<SignedUserTransaction>> {
+        self.call_rpc_blocking(|inner| inner.account_client.sign_txn_in_batch(raw_txns))
+            .map_err(map_err)
+    }
+
     pub fn account_sign_message(
         &self,
         signer: AccountAddress,
@@ -437,6 +460,19 @@ impl RpcClient {
             inner
                 .account_client
                 .unlock(address, password, Some(duration.as_secs() as u32))
+        })
+        .map_err(map_err)
+    }
+
+    pub fn account_unlock_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: std::time::Duration,
+    ) -> anyhow::Result<Vec<AccountInfo>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .account_client
+                .unlock_in_batch(batch, Some(duration.as_secs() as u32))
         })
         .map_err(map_err)
     }
@@ -814,6 +850,14 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn chain_get_block_info_by_hash(
+        &self,
+        id: HashValue,
+    ) -> anyhow::Result<Option<BlockInfoView>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_hash(id))
+            .map_err(map_err)
+    }
+
     pub fn chain_get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -1083,7 +1127,7 @@ impl RpcClient {
         result
     }
 
-    pub fn sync_status(&self) -> anyhow::Result<SyncStatus> {
+    pub fn sync_status(&self) -> anyhow::Result<SyncStatusView> {
         self.call_rpc_blocking(|inner| inner.sync_client.status())
             .map_err(map_err)
     }

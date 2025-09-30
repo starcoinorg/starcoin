@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::sync_status::SyncStatus;
+use starcoin_rpc_api::types::SyncStatusView;
 
 #[derive(Debug, Parser, Default)]
 #[clap(name = "status")]
@@ -18,7 +18,7 @@ impl CommandAction for StatusCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = StatusOpt;
-    type ReturnItem = SyncStatus;
+    type ReturnItem = SyncStatusView;
 
     fn run(
         &self,

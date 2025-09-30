@@ -68,11 +68,11 @@ impl AccountSeqNumberClient for MockNonceClient {
 async fn test_txn_expire() -> Result<()> {
     let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
     let txn = generate_txn(config, 0);
-    txpool_service.add_txns(vec![txn]).pop().unwrap()?;
-    let pendings = txpool_service.get_pending_txns(None, Some(0));
+    txpool_service.add_txns(vec![txn])?.pop().unwrap()?;
+    let pendings = txpool_service.get_pending_txns(None, Some(0))?;
     assert_eq!(pendings.len(), 1);
 
-    let pendings = txpool_service.get_pending_txns(None, Some(2));
+    let pendings = txpool_service.get_pending_txns(None, Some(2))?;
     assert_eq!(pendings.len(), 0);
 
     Ok(())
@@ -92,9 +92,9 @@ async fn test_tx_pool() -> Result<()> {
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.id();
-    let mut result = txpool_service.add_txns(vec![txn]);
+    let mut result = txpool_service.add_txns(vec![txn])?;
     assert!(result.pop().unwrap().is_ok());
-    let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
+    let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0))?;
     assert_eq!(pending_txns.pop().unwrap().id(), txn_hash);
 
     let next_sequence_number =
@@ -165,7 +165,7 @@ async fn test_pool_pending() -> Result<()> {
         .collect::<Vec<_>>();
 
     let _ = txpool_service.add_txns_multi_signed(txn_vec.clone(), true, None);
-    let pending = txpool_service.get_pending_txns(Some(pool_size), None);
+    let pending = txpool_service.get_pending_txns(Some(pool_size), None)?;
     assert!(!pending.is_empty());
 
     sleep(Duration::from_millis(200)).await;
@@ -313,7 +313,7 @@ async fn test_rollback() -> Result<()> {
     }
     pool.chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
-    let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
+    let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10))?;
     assert_eq!(txns.len(), 0);
     Ok(())
 }
@@ -350,12 +350,12 @@ async fn test_vm1_txn_early_reject() -> Result<()> {
         .map(|i| generate_txn(config.clone(), i).into())
         .collect();
     let results =
-        txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()));
+        txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()))?;
 
     assert!(results.iter().take(100).all(|r| r.is_ok()));
     assert!(results.iter().skip(100).all(|r| r.is_err()));
 
-    let pendings = txpool_service.get_pending_txns(None, None);
+    let pendings = txpool_service.get_pending_txns(None, None)?;
 
     let vm1: Vec<_> = pendings.into_iter().filter(|txn| txn.is_v1()).collect();
 

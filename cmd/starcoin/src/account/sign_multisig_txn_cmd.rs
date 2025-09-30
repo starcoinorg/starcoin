@@ -205,6 +205,9 @@ impl CommandAction for GenerateMultisigTxnCommand {
         }
 
         let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
+        if !output_dir.exists() {
+            std::fs::create_dir_all(output_dir.as_path())?;
+        }
         let _ = ctx.state().vm2()?.sign_multisig_txn_to_file_or_submit(
             raw_txn.sender(),
             account_public_key,

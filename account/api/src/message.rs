@@ -22,6 +22,9 @@ pub enum AccountRequest {
         txn: Box<RawUserTransaction>,
         signer: AccountAddress,
     },
+    SignTxnInBatch {
+        txns: Vec<RawUserTransaction>,
+    },
     SignMessage {
         signer: AccountAddress,
         message: SigningMessage,
@@ -30,6 +33,7 @@ pub enum AccountRequest {
         address: AccountAddress,
     },
     UnlockAccount(AccountAddress, String, Duration),
+    UnlockAccountInBatch(Vec<(AccountAddress, String)>, Duration),
     LockAccount(AccountAddress),
     ImportAccount {
         address: AccountAddress,
@@ -60,6 +64,7 @@ pub enum AccountResponse {
     AccountInfoOption(Box<Option<AccountInfo>>),
     AccountList(Vec<AccountInfo>),
     SignedTxn(Box<SignedUserTransaction>),
+    SignedTxnList(Vec<SignedUserTransaction>),
     UnlockAccountResponse,
     ExportAccountResponse(Vec<u8>),
     AcceptedTokens(Vec<TokenCode>),

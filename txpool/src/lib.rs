@@ -85,7 +85,7 @@ impl TxPoolActorService {
         let current_timestamp = reader.get_timestamp()?.seconds();
         Ok(self
             .inner
-            .get_pending(max_len, current_timestamp)
+            .get_pending(max_len, current_timestamp)?
             .into_iter()
             .map(|t| t.signed().clone())
             .collect())
@@ -93,7 +93,7 @@ impl TxPoolActorService {
 }
 
 impl ServiceFactory<Self> for TxPoolActorService {
-    fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;

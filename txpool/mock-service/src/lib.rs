@@ -8,10 +8,7 @@ use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
-use starcoin_types::{
-    account_address::AccountAddress,
-    block::{Block, BlockHeader},
-};
+use starcoin_types::{account_address::AccountAddress, block::Block};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::{
     iter::Iterator,
@@ -41,12 +38,12 @@ impl TxPoolSyncService for MockTxPoolService {
         mut txns: Vec<MultiSignedUserTransaction>,
         _bypass_vm1_limit: bool,
         _peer_id: Option<String>,
-    ) -> Vec<Result<(), MultiTransactionError>> {
+    ) -> Result<Vec<Result<(), MultiTransactionError>>> {
         let len = txns.len();
         self.pool.lock().unwrap().append(&mut txns);
         let mut results = vec![];
         results.resize_with(len, || Ok(()));
-        results
+        Ok(results)
     }
 
     /// Removes transaction from the pool.
@@ -66,17 +63,17 @@ impl TxPoolSyncService for MockTxPoolService {
         &self,
         max_len: Option<u64>,
         _now: Option<u64>,
-    ) -> Vec<MultiSignedUserTransaction> {
+    ) -> Result<Vec<MultiSignedUserTransaction>> {
         match max_len {
-            Some(max) => self
+            Some(max) => Ok(self
                 .pool
                 .lock()
                 .unwrap()
                 .iter()
                 .take(max as usize)
                 .cloned()
-                .collect::<Vec<_>>(),
-            None => self.pool.lock().unwrap().clone(),
+                .collect::<Vec<_>>()),
+            None => Ok(self.pool.lock().unwrap().clone()),
         }
     }
 
@@ -101,35 +98,21 @@ impl TxPoolSyncService for MockTxPoolService {
         unimplemented!()
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         _current_timestamp_secs: Option<u64>,
-        _header: &BlockHeader,
-    ) -> Vec<MultiSignedUserTransaction> {
-        self.pool
+        _state_root1: HashValue,
+        _state_root2: HashValue,
+    ) -> Result<Vec<MultiSignedUserTransaction>> {
+        Ok(self
+            .pool
             .lock()
             .unwrap()
             .iter()
             .take(max_len as usize)
             .cloned()
-            .collect()
-    }
-
-    fn next_sequence_number_with_header(
-        &self,
-        _address: AccountAddress,
-        _header: &BlockHeader,
-    ) -> Option<u64> {
-        todo!()
-    }
-
-    fn next_sequence_number2_with_header(
-        &self,
-        _address: AccountAddress2,
-        _header: &BlockHeader,
-    ) -> Option<u64> {
-        todo!()
+            .collect())
     }
 
     fn find_txn(&self, _hash: &HashValue) -> Option<MultiSignedUserTransaction> {
@@ -147,6 +130,20 @@ impl TxPoolSyncService for MockTxPoolService {
     fn next_sequence_number2(&self, _address: AccountAddress2) -> Option<u64> {
         unimplemented!("no need implemented for MockTxPoolService")
     }
+
+    fn next_sequence_number_in_batch(
+        &self,
+        _addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+        unimplemented!()
+    }
+
+    fn next_sequence_number2_in_batch(
+        &self,
+        _addresses: Vec<AccountAddress2>,
+    ) -> Option<Vec<(AccountAddress2, Option<u64>)>> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
@@ -155,14 +152,16 @@ mod tests {
     use starcoin_types::transaction::SignedUserTransaction;
 
     #[stest::test]
-    async fn test_txpool() {
+    async fn test_txpool() -> Result<()> {
         let pool = MockTxPoolService::new();
 
-        pool.add_txns(vec![SignedUserTransaction::mock()])
+        pool.add_txns(vec![SignedUserTransaction::mock()])?
             .pop()
             .unwrap()
             .unwrap();
-        let txns = pool.get_pending_txns(None, None);
-        assert_eq!(1, txns.len())
+        let txns = pool.get_pending_txns(None, None)?;
+        assert_eq!(1, txns.len());
+
+        Ok(())
     }
 }

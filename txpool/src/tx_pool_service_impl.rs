@@ -22,8 +22,8 @@ use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
-    MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
-    MultiTransactionError,
+    ApiInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction,
+    MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::{
     account_address::AccountAddress,
@@ -99,6 +99,7 @@ impl TxPoolService {
     ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
         self.get_inner()
             .get_pool_client()
+            .map_err(|e| MultiTransactionError::ApiInterrupted(ApiInterruptedError(e.to_string())))?
             .verify_transaction(tx.into())
     }
 }
@@ -109,7 +110,7 @@ impl TxPoolSyncService for TxPoolService {
         txns: Vec<MultiSignedUserTransaction>,
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
-    ) -> Vec<Result<(), MultiTransactionError>> {
+    ) -> Result<Vec<Result<(), MultiTransactionError>>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
@@ -142,7 +143,7 @@ impl TxPoolSyncService for TxPoolService {
         &self,
         max_len: Option<u64>,
         current_timestamp_secs: Option<u64>,
-    ) -> Vec<MultiSignedUserTransaction> {
+    ) -> Result<Vec<MultiSignedUserTransaction>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
@@ -153,16 +154,17 @@ impl TxPoolSyncService for TxPoolService {
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let r = self
             .inner
-            .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
-        r.into_iter().map(|t| t.signed().clone()).collect()
+            .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs)?;
+        Ok(r.into_iter().map(|t| t.signed().clone()).collect())
     }
 
-    fn get_pending_with_header(
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         current_timestamp_secs: Option<u64>,
-        header: &BlockHeader,
-    ) -> Vec<MultiSignedUserTransaction> {
+        state_root1: HashValue,
+        state_root2: HashValue,
+    ) -> Result<Vec<MultiSignedUserTransaction>> {
         let _timer: Option<starcoin_metrics::HistogramTimer> =
             self.inner.metrics.as_ref().map(|metrics| {
                 metrics
@@ -173,7 +175,8 @@ impl TxPoolSyncService for TxPoolService {
         let current_timestamp_secs = current_timestamp_secs
             .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let pool_client = PoolClient::new(
-            header.clone(),
+            state_root1,
+            state_root2,
             self.inner.storage.clone(),
             self.inner.storage2.clone(),
             NonceCache::new(0),
@@ -182,7 +185,7 @@ impl TxPoolSyncService for TxPoolService {
         let r =
             self.inner
                 .get_pending_with_pool_client(max_len, current_timestamp_secs, pool_client);
-        r.into_iter().map(|t| t.signed().clone()).collect()
+        Ok(r.into_iter().map(|t| t.signed().clone()).collect())
     }
 
     /// Returns next valid sequence number for given sender
@@ -194,21 +197,43 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
-        self.inner.next_sequence_number(address)
+        self.inner
+            .next_sequence_number(MultiAccountAddress::VM1(address))
     }
 
-    fn next_sequence_number_with_header(
+    fn next_sequence_number_in_batch(
         &self,
-        address: AccountAddress,
-        header: &BlockHeader,
-    ) -> Option<u64> {
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
-                .with_label_values(&["next_sequence_number_with_header"])
+                .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
-        self.inner.next_sequence_number_with_header(address, header)
+        self.inner
+            .next_sequence_number_in_batch(
+                addresses
+                    .into_iter()
+                    .map(MultiAccountAddress::VM1)
+                    .collect(),
+            )
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(address, seq)| {
+                        (
+                            match address {
+                                MultiAccountAddress::VM1(account_address) => account_address,
+                                MultiAccountAddress::VM2(_account_address) => panic!(
+                                    "unexpected account address in next_sequence_number2_in_batch"
+                                ),
+                            },
+                            seq,
+                        )
+                    })
+                    .collect()
+            })
     }
 
     /// subscribe
@@ -274,22 +299,43 @@ impl TxPoolSyncService for TxPoolService {
                 .with_label_values(&["next_sequence_number2"])
                 .start_timer()
         });
-        self.inner.next_sequence_number2(address)
+        self.inner
+            .next_sequence_number(MultiAccountAddress::VM2(address))
     }
 
-    fn next_sequence_number2_with_header(
+    fn next_sequence_number2_in_batch(
         &self,
-        address: AccountAddress2,
-        header: &BlockHeader,
-    ) -> Option<u64> {
+        addresses: Vec<AccountAddress2>,
+    ) -> Option<Vec<(AccountAddress2, Option<u64>)>> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
-                .with_label_values(&["next_sequence_number2_with_header"])
+                .with_label_values(&["next_sequence_number"])
                 .start_timer()
         });
         self.inner
-            .next_sequence_number2_with_header(address, header)
+            .next_sequence_number_in_batch(
+                addresses
+                    .into_iter()
+                    .map(MultiAccountAddress::VM2)
+                    .collect(),
+            )
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(address, seq)| {
+                        (
+                            match address {
+                                MultiAccountAddress::VM1(_account_address) => panic!(
+                                    "unexpected account address in next_sequence_number2_in_batch"
+                                ),
+                                MultiAccountAddress::VM2(account_address) => account_address,
+                            },
+                            seq,
+                        )
+                    })
+                    .collect()
+            })
     }
 }
 
@@ -338,13 +384,14 @@ impl Inner {
         ))
     }
 
-    pub(crate) fn cull(&self) {
+    pub(crate) fn cull(&self) -> Result<()> {
         // NOTICE: as the new head block event is repeated with chain_new_block event,
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.
         let now_seconds = self.chain_header.read().timestamp() / 1000;
-        self.queue.cull(self.get_pool_client(), now_seconds)
+        self.queue.cull(self.get_pool_client()?, now_seconds);
+        Ok(())
     }
 
     pub(crate) fn import_txns(
@@ -352,12 +399,13 @@ impl Inner {
         txns: Vec<MultiSignedUserTransaction>,
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
-    ) -> Vec<Result<(), MultiTransactionError>> {
+    ) -> Result<Vec<Result<(), MultiTransactionError>>> {
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
-        self.queue
-            .import(self.get_pool_client(), txns, bypass_vm1_limit, peer_id)
+        Ok(self
+            .queue
+            .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id))
     }
     pub(crate) fn remove_txn(
         &self,
@@ -373,16 +421,21 @@ impl Inner {
         &self,
         max_len: u64,
         current_timestamp_secs: u64,
-    ) -> Vec<Arc<VerifiedTransaction>> {
-        let pending_settings = PendingSettings {
-            block_number: u64::MAX,
-            current_timestamp: current_timestamp_secs,
-            max_len: max_len as usize,
-            ordering: PendingOrdering::Priority,
-        };
-        self.queue
-            .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
-        self.queue.pending(self.get_pool_client(), pending_settings)
+    ) -> Result<Vec<Arc<VerifiedTransaction>>> {
+        // let pending_settings = PendingSettings {
+        //     block_number: u64::MAX,
+        //     current_timestamp: current_timestamp_secs,
+        //     max_len: max_len as usize,
+        //     ordering: PendingOrdering::Priority,
+        // };
+        // self.queue
+        //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
+        // self.queue.pending(self.get_pool_client(), pending_settings)
+        Ok(self.get_pending_with_pool_client(
+            max_len,
+            current_timestamp_secs,
+            self.get_pool_client()?,
+        ))
     }
 
     pub fn get_pending_with_pool_client(
@@ -407,25 +460,44 @@ impl Inner {
         self.queue.try_read()
     }
 
-    pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
-        self.queue
-            .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM1(address))
+    pub(crate) fn next_sequence_number(&self, address: MultiAccountAddress) -> Option<u64> {
+        let client = match self.get_pool_client() {
+            Ok(client) => client,
+            Err(e) => {
+                error!("failed to get pool client in next_sequence_number: {}", e);
+                return None;
+            }
+        };
+        self.queue.next_sequence_number(client, &address)
     }
 
-    pub(crate) fn next_sequence_number_with_header(
+    pub(crate) fn next_sequence_number_in_batch(
         &self,
-        address: AccountAddress,
-        header: &BlockHeader,
-    ) -> Option<u64> {
+        addresses: Vec<MultiAccountAddress>,
+    ) -> Option<Vec<(MultiAccountAddress, Option<u64>)>> {
+        let (state_root1, state_root2) = match self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())
+        {
+            Ok(multi_state) => (multi_state.state_root1(), multi_state.state_root2()),
+            Err(e) => {
+                error!(
+                    "failed to get vm multi state in next_sequence_number_in_batch: {}",
+                    e
+                );
+                return None;
+            }
+        };
         let pool_client = PoolClient::new(
-            header.clone(),
+            state_root1,
+            state_root2,
             self.storage.clone(),
             self.storage2.clone(),
             NonceCache::new(0),
             self.vm_metrics.clone(),
         );
         self.queue
-            .next_sequence_number(pool_client, &MultiAccountAddress::VM1(address))
+            .next_sequence_number_in_batch(pool_client, addresses)
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
@@ -458,7 +530,10 @@ impl Inner {
         }
 
         // remove outdated txns.
-        self.cull();
+        if let Err(e) = self.cull() {
+            error!("failed to cull in chain_new_block: {}", e);
+            return;
+        }
 
         // import retracted txns.
         let txns = retracted
@@ -468,7 +543,14 @@ impl Inner {
                 txns.into_iter()
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
-        let results = self.queue.import(self.get_pool_client(), txns, true, None);
+        let client = match self.get_pool_client() {
+            Ok(client) => client,
+            Err(e) => {
+                error!("failed to get pool client in chain_new_block: {}", e);
+                return;
+            }
+        };
+        let results = self.queue.import(client, txns, true, None);
         for result in results {
             if let Err(err) = result {
                 debug!("retracted transaction fail: {}", err);
@@ -476,34 +558,18 @@ impl Inner {
         }
     }
 
-    fn get_pool_client(&self) -> PoolClient {
-        PoolClient::new(
-            self.chain_header.read().clone(),
+    fn get_pool_client(&self) -> Result<PoolClient> {
+        let state = self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())?;
+        let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
+        Ok(PoolClient::new(
+            state_root1,
+            state_root2,
             self.storage.clone(),
             self.storage2.clone(),
             self.sequence_number_cache.clone(),
             self.vm_metrics.clone(),
-        )
-    }
-
-    pub(crate) fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64> {
-        self.queue
-            .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM2(address))
-    }
-
-    pub(crate) fn next_sequence_number2_with_header(
-        &self,
-        address: AccountAddress2,
-        header: &BlockHeader,
-    ) -> Option<u64> {
-        let pool_client = PoolClient::new(
-            header.clone(),
-            self.storage.clone(),
-            self.storage2.clone(),
-            NonceCache::new(0),
-            self.vm_metrics.clone(),
-        );
-        self.queue
-            .next_sequence_number(pool_client, &MultiAccountAddress::VM2(address))
+        ))
     }
 }

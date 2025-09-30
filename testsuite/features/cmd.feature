@@ -68,7 +68,7 @@ Feature: cmd integration test
     Then cmd: "account transfer -s 0x056d9bed868f8e8c74cf19109a2b375a -r 0x056d9bed868f8e8c74cf19109a2b375b -v 10000000 -b"
     Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
     # sign to file first
-    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::transfer_scripts::peer_to_peer_v2 -t 0x1::starcoin_coin::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
+    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::transfer_scripts::peer_to_peer_v2 -t 0x1::starcoin_coin::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp/integration_test"
     Then cmd: "account submit-txn {{$.account[-1].ok}} -b"
     Then stop
 

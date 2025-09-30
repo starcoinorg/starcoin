@@ -246,7 +246,24 @@ impl TemplateTxProvider for TxPoolService {
         max: u64,
         header: &BlockHeader,
     ) -> Vec<MultiSignedUserTransaction> {
-        self.get_pending_with_header(max, None, header)
+        let (state_root1, state_root2) = match self.get_store().get_vm_multi_state(header.id()) {
+            Ok(state) => (state.state_root1(), state.state_root2()),
+            Err(e) => {
+                error!(
+                    "Failed to get vm_multi_state when creating block template: {}",
+                    e
+                );
+                return vec![];
+            }
+        };
+        self.get_pending_with_state(max, None, state_root1, state_root2)
+            .unwrap_or_else(|e| {
+                error!(
+                    "Failed to get pending txns when creating block template: {}",
+                    e
+                );
+                vec![]
+            })
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
