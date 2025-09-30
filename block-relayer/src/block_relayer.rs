@@ -212,36 +212,39 @@ impl BlockRelayer {
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
-            match txpool.get_store().get_failed_block_by_id(block_id) {
-                Ok(Some((_, _, _, version))) => {
-                    if version == *G_CRATE_VERSION {
-                        warn!("Block is failed block : {:?}", block_id);
-                    }
+            if let Ok(Some((_, _, _, version))) =
+                txpool.get_store().get_failed_block_by_id(block_id)
+            {
+                if version == *G_CRATE_VERSION {
+                    warn!("Block is failed block : {:?}", block_id);
+                } else {
+                    warn!(
+                        "Block is failed block : {:?}, but with different version: app {}, db {}",
+                        block_id, G_CRATE_VERSION, version
+                    );
                 }
-                _ => {
-                    let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {
-                        format_err!(
-                            "CompatBlockMessage's peer {} is not connected",
-                            peer_id.clone()
-                        )
-                    })?;
-                    let peer_selector =
-                        PeerSelector::new(vec![peer], PeerStrategy::default(), None);
-                    let rpc_client = VerifiedRpcClient::new(peer_selector, network);
-                    let _timer = metrics
-                        .as_ref()
-                        .map(|metrics| metrics.txns_filled_time.start_timer());
-                    let block = BlockRelayer::fill_compact_block(
-                        txpool.clone(),
-                        rpc_client,
-                        compact_block,
-                        peer_id.clone(),
-                        metrics,
+            } else {
+                let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {
+                    format_err!(
+                        "CompatBlockMessage's peer {} is not connected",
+                        peer_id.clone()
                     )
-                    .await?;
+                })?;
+                let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default(), None);
+                let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+                let _timer = metrics
+                    .as_ref()
+                    .map(|metrics| metrics.txns_filled_time.start_timer());
+                let block = BlockRelayer::fill_compact_block(
+                    txpool.clone(),
+                    rpc_client,
+                    compact_block,
+                    peer_id.clone(),
+                    metrics,
+                )
+                .await?;
 
-                    block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
-                }
+                block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
             }
             Ok(())
         };
