@@ -75,7 +75,7 @@ module starcoin_framework::block_reward {
 
         let constructor_ref = object::create_named_object(framework, b"block_reward");
         let stc_metadata = coin::paired_metadata<STC>();
-        assert!(option::is_some(&stc_metadata), error::invalid_state(EREWARD_STC_FA_NOT_INITIALIZED));
+        assert!(option::is_none(&stc_metadata), error::invalid_state(EREWARD_STC_FA_NOT_INITIALIZED));
 
         let gas_fees_store = create_store(&constructor_ref, option::destroy_some(stc_metadata));
 

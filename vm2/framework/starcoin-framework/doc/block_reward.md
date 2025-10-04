@@ -263,7 +263,7 @@ Initialize the module, should be called in genesis.
 
     <b>let</b> constructor_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(framework, b"<a href="block_reward.md#0x1_block_reward">block_reward</a>");
     <b>let</b> stc_metadata = <a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;STC&gt;();
-    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&stc_metadata), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="block_reward.md#0x1_block_reward_EREWARD_STC_FA_NOT_INITIALIZED">EREWARD_STC_FA_NOT_INITIALIZED</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_none">option::is_none</a>(&stc_metadata), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="block_reward.md#0x1_block_reward_EREWARD_STC_FA_NOT_INITIALIZED">EREWARD_STC_FA_NOT_INITIALIZED</a>));
 
     <b>let</b> gas_fees_store = create_store(&constructor_ref, <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(stc_metadata));
 
