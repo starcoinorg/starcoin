@@ -25,6 +25,10 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
+<b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
+<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
@@ -69,6 +73,18 @@ Queue of rewards distributed to miners.
 <dd>
  event handle used to emit block reward event.
 </dd>
+<dt>
+<code>gas_fees_store: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">fungible_asset::FungibleStore</a>&gt;</code>
+</dt>
+<dd>
+ Gas fee store for every reward info
+</dd>
+<dt>
+<code>owner_address: <b>address</b></code>
+</dt>
+<dd>
+ <code>gas_fees_store</code> Gas fee store owner address
+</dd>
 </dl>
 
 
@@ -110,7 +126,7 @@ Reward info of miners.
  miner who mint the block.
 </dd>
 <dt>
-<code>gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
+<code>gas_fee_amount: u64</code>
 </dt>
 <dd>
  store the gas fee that users consumed.
@@ -216,6 +232,15 @@ block reward event
 
 
 
+<a id="0x1_block_reward_EREWARD_STC_FA_NOT_INITIALIZED"></a>
+
+
+
+<pre><code><b>const</b> <a href="block_reward.md#0x1_block_reward_EREWARD_STC_FA_NOT_INITIALIZED">EREWARD_STC_FA_NOT_INITIALIZED</a>: u64 = 106;
+</code></pre>
+
+
+
 <a id="0x1_block_reward_initialize"></a>
 
 ## Function `initialize`
@@ -223,7 +248,7 @@ block reward event
 Initialize the module, should be called in genesis.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64)
 </code></pre>
 
 
@@ -232,15 +257,23 @@ Initialize the module, should be called in genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64) {
     // Timestamp::assert_genesis();
-    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
 
-    <a href="block_reward_config.md#0x1_block_reward_config_initialize">block_reward_config::initialize</a>(<a href="account.md#0x1_account">account</a>, reward_delay);
-    <b>move_to</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
+    <b>let</b> constructor_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(framework, b"<a href="block_reward.md#0x1_block_reward">block_reward</a>");
+    <b>let</b> stc_metadata = <a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;STC&gt;();
+    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&stc_metadata), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="block_reward.md#0x1_block_reward_EREWARD_STC_FA_NOT_INITIALIZED">EREWARD_STC_FA_NOT_INITIALIZED</a>));
+
+    <b>let</b> gas_fees_store = create_store(&constructor_ref, <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(stc_metadata));
+
+    <a href="block_reward_config.md#0x1_block_reward_config_initialize">block_reward_config::initialize</a>(framework, reward_delay);
+    <b>move_to</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(framework, <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
         reward_number: 0,
         infos: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
-        reward_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="block_reward.md#0x1_block_reward_BlockRewardEvent">Self::BlockRewardEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
+        reward_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="block_reward.md#0x1_block_reward_BlockRewardEvent">Self::BlockRewardEvent</a>&gt;(framework),
+        gas_fees_store,
+        owner_address: <a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&constructor_ref),
     });
 }
 </code></pre>
@@ -256,7 +289,7 @@ Initialize the module, should be called in genesis.
 Process the given block rewards.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_process_block_reward">process_block_reward</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, current_number: u64, current_reward: u128, current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_process_block_reward">process_block_reward</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, current_number: u64, current_reward: u128, current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, previous_block_gas_fees: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>)
 </code></pre>
 
 
@@ -271,37 +304,38 @@ Process the given block rewards.
     current_reward: u128,
     current_author: <b>address</b>,
     _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;
+    previous_block_gas_fees: FungibleAsset
 ) <b>acquires</b> <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Entered"));
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     <b>if</b> (current_number == 0) {
-        <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(previous_block_gas_fees);
+        <a href="fungible_asset.md#0x1_fungible_asset_destroy_zero">fungible_asset::destroy_zero</a>(previous_block_gas_fees);
         <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Exited, current_number is 0"));
         <b>return</b>
     };
 
-    <b>let</b> rewards = <b>borrow_global_mut</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
-    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&rewards.infos);
+    <b>let</b> reward_queue = <b>borrow_global_mut</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&reward_queue.infos);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | rewards info len: "));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&len);
 
     <b>assert</b>!(
-        (current_number == (rewards.reward_number + len + 1)),
+        (current_number == (reward_queue.reward_number + len + 1)),
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block_reward.md#0x1_block_reward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>)
     );
 
     // distribute gas fee <b>to</b> last block reward info.
     // <b>if</b> not last block reward info, the passed in gas fee must be zero.
     <b>if</b> (len == 0) {
-        <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(previous_block_gas_fees);
+        <a href="fungible_asset.md#0x1_fungible_asset_destroy_zero">fungible_asset::destroy_zero</a>(previous_block_gas_fees);
     } <b>else</b> {
-        <b>let</b> reward_info = <a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> rewards.infos, len - 1);
+        <b>let</b> reward_info = <a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> reward_queue.infos, len - 1);
         <b>assert</b>!(current_number == reward_info.number + 1, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block_reward.md#0x1_block_reward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>));
-        <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> reward_info.gas_fees, previous_block_gas_fees);
+        reward_info.gas_fee_amount = reward_info.gas_fee_amount + <a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&previous_block_gas_fees);
+        <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(reward_queue.gas_fees_store, previous_block_gas_fees);
     };
 
     <b>let</b> reward_delay = <a href="block_reward_config.md#0x1_block_reward_config_reward_delay">block_reward_config::reward_delay</a>();
@@ -314,17 +348,13 @@ Process the given block rewards.
             <b>let</b> <a href="block_reward.md#0x1_block_reward_RewardInfo">RewardInfo</a> {
                 number: reward_block_number,
                 reward: <a href="block_reward.md#0x1_block_reward">block_reward</a>,
-                gas_fees,
+                gas_fee_amount,
                 miner
-            } = <a href="../../move-stdlib/doc/vector.md#0x1_vector_remove">vector::remove</a>(
-                &<b>mut</b> rewards.infos,
-                0
-            );
+            } = <a href="../../move-stdlib/doc/vector.md#0x1_vector_remove">vector::remove</a>(&<b>mut</b> reward_queue.infos, 0);
 
-            <b>let</b> gas_fee_value = (<a href="coin.md#0x1_coin_value">coin::value</a>(&gas_fees) <b>as</b> u128);
-            <b>let</b> total_reward = gas_fees;
+            <b>let</b> total_reward = gas_fee_amount;
             <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | total_reward: "));
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&gas_fee_amount);
 
             // add block reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
@@ -336,38 +366,41 @@ Process the given block rewards.
                 <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | treasury_balance: "));
                 <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&treasury_balance);
                 <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
-                    <b>let</b> reward = <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">dao_treasury_withdraw_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
-                    <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);
+                    <b>let</b> reward_stc = <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">dao_treasury_withdraw_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(
+                        <a href="account.md#0x1_account">account</a>,
+                        <a href="block_reward.md#0x1_block_reward">block_reward</a>
+                    );
+                    // TODO(BobOng): To remove this convert after all <b>module</b> converting <b>to</b> fungible asset
+                    <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(reward_queue.gas_fees_store, <a href="coin.md#0x1_coin_coin_to_fungible_asset">coin::coin_to_fungible_asset</a>(reward_stc));
                 };
             };
 
-            // distribute total.
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | distribute total reward: "));
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward));
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&miner);
-
-            <b>if</b> (<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward) &gt; 0) {
-                <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;STC&gt;(miner, total_reward);
-            } <b>else</b> {
-                <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(total_reward);
+            <b>if</b> (total_reward &gt; 0) {
+                <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit">primary_fungible_store::deposit</a>(
+                    miner,
+                    <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(
+                        &<a href="create_signer.md#0x1_create_signer">create_signer</a>(reward_queue.owner_address),
+                        reward_queue.gas_fees_store,
+                        total_reward
+                    )
+                );
             };
-
             <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | before emit reward <a href="event.md#0x1_event">event</a>"));
 
             // emit reward <a href="event.md#0x1_event">event</a>.
             <a href="event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="block_reward.md#0x1_block_reward_BlockRewardEvent">BlockRewardEvent</a>&gt;(
-                &<b>mut</b> rewards.reward_events,
+                &<b>mut</b> reward_queue.reward_events,
                 <a href="block_reward.md#0x1_block_reward_BlockRewardEvent">BlockRewardEvent</a> {
                     block_number: reward_block_number,
                     <a href="block_reward.md#0x1_block_reward">block_reward</a>,
-                    gas_fees: gas_fee_value,
+                    gas_fees: (gas_fee_amount <b>as</b> u128),
                     miner,
                 }
             );
 
             <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | after emit reward <a href="event.md#0x1_event">event</a>"));
 
-            rewards.reward_number = rewards.reward_number + 1;
+            reward_queue.reward_number = reward_queue.reward_number + 1;
             i = i - 1;
         }
     };
@@ -381,9 +414,9 @@ Process the given block rewards.
         number: current_number,
         reward: current_reward,
         miner: current_author,
-        gas_fees: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
+        gas_fee_amount: 0
     };
-    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> rewards.infos, current_info);
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> reward_queue.infos, current_info);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Exited"));
 }
@@ -410,15 +443,13 @@ Process the given block rewards.
 ### Function `initialize`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64)
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
-<b>include</b> <a href="on_chain_config.md#0x1_on_chain_config_PublishNewConfigAbortsIf">on_chain_config::PublishNewConfigAbortsIf</a>&lt;<a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;;
-<b>include</b> <a href="on_chain_config.md#0x1_on_chain_config_PublishNewConfigEnsures">on_chain_config::PublishNewConfigEnsures</a>&lt;<a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;;
+<pre><code><b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework) != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 <b>ensures</b> <b>exists</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 </code></pre>
@@ -430,14 +461,13 @@ Process the given block rewards.
 ### Function `process_block_reward`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_process_block_reward">process_block_reward</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, current_number: u64, current_reward: u128, current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_process_block_reward">process_block_reward</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, current_number: u64, current_reward: u128, current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, previous_block_gas_fees: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
-<b>aborts_if</b> current_number == 0 && <a href="coin.md#0x1_coin_value">coin::value</a>(previous_block_gas_fees) != 0;
 <b>aborts_if</b> current_number &gt; 0 && !<b>exists</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 <b>aborts_if</b> current_number &gt; 0 && (<b>global</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(
     <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
@@ -448,7 +478,6 @@ Process the given block rewards.
     <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()
 );
 <b>let</b> reward_info_length = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(<b>global</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).infos);
-<b>aborts_if</b> current_number &gt; 0 && reward_info_length == 0 && <a href="coin.md#0x1_coin_value">coin::value</a>(previous_block_gas_fees) != 0;
 <b>aborts_if</b> current_number &gt; 0 && reward_info_length != 0 && <a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(
     <b>global</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).infos,
     reward_info_length - 1
