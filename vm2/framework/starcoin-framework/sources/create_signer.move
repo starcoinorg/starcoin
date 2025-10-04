@@ -19,6 +19,7 @@ module starcoin_framework::create_signer {
     friend starcoin_framework::dao_features_proposal;
     friend starcoin_framework::transaction_fee;
     friend starcoin_framework::treasury_fa;
+    friend starcoin_framework::dao_fa;
 
     public(friend) native fun create_signer(addr: address): signer;
 }
