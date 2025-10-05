@@ -16,7 +16,7 @@ bcs-ext = { workspace = true }
 log = { workspace = true }
 tempfile = { workspace = true }
 
-flate2 = "1.1.2"
+flate2 = "1.1.4"
 tar = "0.4.44"
 
 starcoin-crypto = { workspace = true }
