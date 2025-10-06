@@ -178,9 +178,6 @@ The module for init Genesis
         <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(0u64),
     );
 
-    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="block_reward.md#0x1_block_reward">block_reward</a> initialized "));
-
     // Initliaze STC
     <b>let</b> total_supply_coin = <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a>(
         &starcoin_framework_account,
@@ -190,8 +187,10 @@ The module for init Genesis
         voting_quorum_rate,
         min_action_delay
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | after <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a> called"));
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
+    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | after <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a> called"));
 
     // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
@@ -207,7 +206,7 @@ The module for init Genesis
 
     <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a>(&starcoin_framework_account);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">stc_transaction_fee</a> initialized "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a> called"));
 
     // Only test/dev network set genesis auth key.
     <b>if</b> (!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&genesis_auth_key) && (<a href="stc_util.md#0x1_stc_util_is_net_dev">stc_util::is_net_dev</a>() || <a href="stc_util.md#0x1_stc_util_is_net_test">stc_util::is_net_test</a>())) {

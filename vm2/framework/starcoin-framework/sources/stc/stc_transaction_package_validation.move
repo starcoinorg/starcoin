@@ -1,24 +1,17 @@
 /// The module provides strategies for module upgrading.
 module starcoin_framework::stc_transaction_package_validation {
+
     use std::error;
     use std::option;
     use std::signer;
-    use starcoin_std::debug;
-    use starcoin_framework::system_addresses;
-    use starcoin_framework::stc_version;
 
     use starcoin_framework::account;
     use starcoin_framework::event;
     use starcoin_framework::on_chain_config;
+    use starcoin_framework::stc_version;
+    use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
-
-
-    // /// module upgrade plan
-    // struct UpgradePlan has copy, drop, store {
-    //     package_hash: vector<u8>,
-    //     active_after_time: u64,
-    //     version: u64,
-    // }
+    use starcoin_std::debug;
 
     /// The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
     struct UpgradePlanCapability has key, store {
@@ -97,8 +90,9 @@ module starcoin_framework::stc_transaction_package_validation {
         strategy: u8,
         min_time: option::Option<u64>
     ) acquires ModuleUpgradeStrategy, TwoPhaseUpgradeV2, UpgradePlanCapability {
-
-        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | entered "));
+        debug::print(
+            &std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | entered ")
+        );
 
         assert!(
             strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE || strategy == STRATEGY_FREEZE,
@@ -114,7 +108,11 @@ module starcoin_framework::stc_transaction_package_validation {
             move_to(account, ModuleUpgradeStrategy { strategy: strategy });
         };
 
-        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | ModuleUpgradeStrategy updated "));
+        debug::print(
+            &std::string::utf8(
+                b"stc_transaction_package_validation::update_module_upgrade_strategy | ModuleUpgradeStrategy updated "
+            )
+        );
 
         if (strategy == STRATEGY_TWO_PHASE) {
             let version_cap = on_chain_config::extract_modify_config_capability<stc_version::Version>(account);
@@ -126,7 +124,11 @@ module starcoin_framework::stc_transaction_package_validation {
                 version_cap,
                 upgrade_event: account::new_event_handle<Self::UpgradeEvent>(account)
             });
-            debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | UpgradePlanCapability && TwoPhaseUpgradeV2 updated "));
+            debug::print(
+                &std::string::utf8(
+                    b"stc_transaction_package_validation::update_module_upgrade_strategy | UpgradePlanCapability && TwoPhaseUpgradeV2 updated "
+                )
+            );
         };
 
         //clean two phase upgrade resource
@@ -149,7 +151,9 @@ module starcoin_framework::stc_transaction_package_validation {
                 destroy_upgrade_plan_cap(cap);
             };
         };
-        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | exited "));
+        debug::print(
+            &std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | exited ")
+        );
     }
 
 
@@ -176,37 +180,6 @@ module starcoin_framework::stc_transaction_package_validation {
         move_from<UpgradePlanCapability>(account_address)
     }
 
-    // public entry fun convert_TwoPhaseUpgrade_to_TwoPhaseUpgradeV2(
-    //     account: signer,
-    //     package_address: address
-    // ) acquires TwoPhaseUpgrade {
-    //     let account_address = signer::address_of(&account);
-    //     // sender should be package owner
-    //     assert!(account_address == package_address, error::not_found(ESENDER_AND_PACKAGE_ADDRESS_MISMATCH));
-    //     let tpu = move_from<TwoPhaseUpgrade>(account_address);
-    //     let TwoPhaseUpgrade { config, plan, version_cap, upgrade_event } = tpu;
-    //     if (option::is_some(&plan)) {
-    //         let old_plan = option::borrow(&plan);
-    //         move_to(&account, TwoPhaseUpgradeV2 {
-    //             config: config,
-    //             plan: option::some(UpgradePlanV2 {
-    //                 package_hash: *&old_plan.package_hash,
-    //                 active_after_time: old_plan.active_after_time,
-    //                 version: old_plan.version,
-    //                 enforced: false
-    //             }),
-    //             version_cap: version_cap,
-    //             upgrade_event: upgrade_event
-    //         });
-    //     } else {
-    //         move_to(&account, TwoPhaseUpgradeV2 {
-    //             config: config,
-    //             plan: option::none<UpgradePlanV2>(),
-    //             version_cap: version_cap,
-    //             upgrade_event: upgrade_event
-    //         });
-    //     };
-    // }
 
     public fun submit_upgrade_plan_v2(
         account: &signer,
@@ -269,12 +242,6 @@ module starcoin_framework::stc_transaction_package_validation {
             0
         }
     }
-
-    // /// Get module upgrade plan of an address.
-    // public fun get_upgrade_plan(_module_address: address): option::Option<UpgradePlan> {
-    //     // DEPRECATED_CODE
-    //     option::none<UpgradePlan>()
-    // }
 
     /// Get module upgrade plan of an address.
     public fun get_upgrade_plan_v2(module_address: address): option::Option<UpgradePlanV2> acquires TwoPhaseUpgradeV2 {
@@ -352,17 +319,6 @@ module starcoin_framework::stc_transaction_package_validation {
         };
         tpu.plan = option::none<UpgradePlanV2>();
     }
-
-    // /// Prologue of package transaction.
-    // public fun package_txn_prologue(
-    //     account: &signer,
-    //     package_address: address,
-    //     package_hash: vector<u8>
-    // ) acquires TwoPhaseUpgradeV2, ModuleUpgradeStrategy {
-    //     // Can only be invoked by genesis account
-    //     system_addresses::assert_starcoin_framework(account);
-    //     check_package_txn(package_address, package_hash);
-    // }
 
     public fun package_txn_prologue_v2(
         account: &signer,

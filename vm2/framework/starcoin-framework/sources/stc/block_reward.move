@@ -4,23 +4,20 @@ module starcoin_framework::block_reward {
     use std::error;
     use std::option;
     use std::vector;
-    use starcoin_framework::create_signer::create_signer;
-
-    use starcoin_framework::object::{Self, Object};
-    use starcoin_framework::primary_fungible_store;
-    use starcoin_framework::fungible_asset;
-    use starcoin_framework::fungible_asset::{FungibleAsset, FungibleStore, create_store};
 
     use starcoin_framework::account;
     use starcoin_framework::block_reward_config;
     use starcoin_framework::coin;
     use starcoin_framework::create_signer;
-    use starcoin_framework::event;
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::system_addresses;
-    use starcoin_framework::treasury;
+    use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::dao_treasury_withdraw_proposal;
-
+    use starcoin_framework::event;
+    use starcoin_framework::fungible_asset::{Self, create_store, FungibleAsset, FungibleStore};
+    use starcoin_framework::object::{Self, Object};
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::system_addresses::{Self, get_starcoin_framework};
+    use starcoin_framework::treasury;
     use starcoin_std::debug;
 
     /// Queue of rewards distributed to miners.
@@ -70,6 +67,8 @@ module starcoin_framework::block_reward {
 
     /// Initialize the module, should be called in genesis.
     public fun initialize(framework: &signer, reward_delay: u64) {
+        debug::print(&std::string::utf8(b"block_reward::initialize | Entered "));
+
         // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(framework);
 
@@ -87,6 +86,8 @@ module starcoin_framework::block_reward {
             gas_fees_store,
             owner_address: object::address_from_constructor_ref(&constructor_ref),
         });
+
+        debug::print(&std::string::utf8(b"block_reward::initialize | Exited"));
     }
 
     /// Process the given block rewards.
@@ -151,7 +152,7 @@ module starcoin_framework::block_reward {
                 // add block reward to total.
                 if (block_reward > 0) {
                     // if no STC in Treasury, BlockReward will been 0.
-                    let treasury_balance = treasury::balance<STC>();
+                    let treasury_balance = treasury::balance<STC>(get_starcoin_framework());
                     if (treasury_balance < block_reward) {
                         block_reward = treasury_balance;
                     };
@@ -162,8 +163,7 @@ module starcoin_framework::block_reward {
                             account,
                             block_reward
                         );
-                        // TODO(BobOng): To remove this convert after all module converting to fungible asset
-                        fungible_asset::deposit(reward_queue.gas_fees_store, coin::coin_to_fungible_asset(reward_stc));
+                        fungible_asset::deposit(reward_queue.gas_fees_store, reward_stc);
                     };
                 };
 
