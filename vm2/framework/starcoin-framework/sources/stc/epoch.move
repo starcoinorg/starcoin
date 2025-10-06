@@ -86,6 +86,8 @@ module starcoin_framework::epoch {
 
     /// Initialization of the module.
     public fun initialize(account: &signer) {
+        debug::print(&std::string::utf8(b"epoch::initialize | Entered "));
+
         // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
 
@@ -111,6 +113,8 @@ module starcoin_framework::epoch {
             },
         );
         move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0, red_blocks: 0 });
+
+        debug::print(&std::string::utf8(b"epoch::initialize | Exited "));
     }
 
     /// compute next block time_target using DAG-based algorithm
@@ -125,22 +129,22 @@ module starcoin_framework::epoch {
         // blue_blocks: uncle blocks in this epoch (not on selected chain)
         // red_blocks: red blocks in DAG (conflicting blocks)
         // selected_count: number of blocks in the selected chain (epoch_block_count from config)
-        
+
         let blue_blocks = total_uncles;
         let selected_count = consensus_config::epoch_block_count(config);
         let min_block_time_target = consensus_config::min_block_time_target(config);
         let max_block_time_target = consensus_config::max_block_time_target(config);
         let k = consensus_config::base_max_uncles_per_block(config); // DAG width parameter (max uncle rate)
         let ratio = consensus_config::uncle_rate_target(config); // Target uncle rate
-        
+
         // Validate ratio
         assert!(ratio >= 1 && ratio <= k, error::invalid_argument(EINVALID_RATIO));
-        
+
         let duration = now_milli_second - epoch_start_time;
-        
+
         let total_blue_count = blue_blocks + selected_count;
         let total_block_count = total_blue_count + red_blocks;
-	
+
         let expected_blue_count = (selected_count * (k - ratio)) / ratio;
         let average_time = duration / total_block_count;
 
@@ -152,7 +156,7 @@ module starcoin_framework::epoch {
         } else {
             average_time
         };
-        
+
         // Apply stability constraints (limit change to ~66% to 150% of last epoch)
         let new_epoch_block_time_target = if (new_epoch_block_time_target > last_epoch_time_target * 3 / 2) {
             last_epoch_time_target * 3 / 2
@@ -161,7 +165,7 @@ module starcoin_framework::epoch {
         } else {
             new_epoch_block_time_target
         };
-        
+
         // Apply absolute bounds
         let new_epoch_block_time_target = if (new_epoch_block_time_target < min_block_time_target) {
             min_block_time_target
@@ -170,7 +174,7 @@ module starcoin_framework::epoch {
         } else {
             new_epoch_block_time_target
         };
-        
+
         new_epoch_block_time_target
     }
 

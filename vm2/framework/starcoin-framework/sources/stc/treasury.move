@@ -1,30 +1,40 @@
 /// The module for the Treasury of DAO, which can hold the token of DAO.
 module starcoin_framework::treasury {
     use std::error;
+    use std::option;
     use std::signer;
+    use starcoin_framework::create_signer::create_signer;
+
+    use starcoin_framework::fungible_asset;
+    use starcoin_framework::object;
+    use starcoin_framework::object::{Object};
+    use starcoin_framework::fungible_asset::{FungibleStore, FungibleAsset};
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
     use starcoin_framework::event;
-    use starcoin_framework::stc_util;
     use starcoin_framework::timestamp;
 
     use starcoin_std::math128;
-    use starcoin_std::type_info;
 
-    struct Treasury<phantom TokenT> has store, key {
-        balance: coin::Coin<TokenT>,
+    struct Treasury<phantom CoinT> has store, key {
+        fa_store: Object<FungibleStore>,
+        store_owner: address,
         /// event handle for treasury withdraw event
         withdraw_events: event::EventHandle<WithdrawEvent>,
         /// event handle for treasury deposit event
         deposit_events: event::EventHandle<DepositEvent>,
     }
 
-    /// A withdraw capability allows tokens of type `TokenT` to be withdraw from Treasury.
-    struct WithdrawCapability<phantom TokenT> has key, store {}
+    /// A withdraw capability allows tokens of type `CoinT` to be withdraw from Treasury.
+    struct WithdrawCapability<phantom CoinT> has key, store {
+        owner: address,
+    }
 
     /// A linear time withdraw capability which can withdraw token from Treasury in a period by time-based linear release.
-    struct LinearWithdrawCapability<phantom TokenT> has key, store {
+    struct LinearWithdrawCapability<phantom CoinT> has key, store {
+        owner: address,
+
         /// The total amount of tokens that can be withdrawn by this capability
         total: u128,
         /// The amount of tokens that have been withdrawn by this capability
@@ -50,94 +60,122 @@ module starcoin_framework::treasury {
     const ERR_TOO_BIG_AMOUNT: u64 = 103;
     const ERR_NOT_AUTHORIZED: u64 = 104;
     const ERR_TREASURY_NOT_EXIST: u64 = 105;
+    const ERR_TOKEN_NOT_CREATE_TOKEN_PAIR: u64 = 106;
+    const ERR_INITA_ASSET_NOT_MATCH: u64 = 107;
+    const ERR_TREASURY_INIAIZLIED: u64 = 108;
 
+    /// Init a Treasury for CoinT. Can only be called by token issuer.
+    public fun initialize<CoinT>(
+        account: &signer,
+        initia_fa: FungibleAsset,
+    ): WithdrawCapability<CoinT> acquires Treasury {
+        let account_addr = signer::address_of(account);
+        assert!(!exists_at<CoinT>(account_addr), error::invalid_state(ERR_TREASURY_INIAIZLIED));
 
-    /// Init a Treasury for TokenT. Can only be called by token issuer.
-    public fun initialize<TokenT>(signer: &signer, init_token: coin::Coin<TokenT>): WithdrawCapability<TokenT> {
-        let token_issuer = stc_util::token_issuer<TokenT>();
-        assert!(signer::address_of(signer) == token_issuer, error::invalid_state(ERR_NOT_AUTHORIZED));
-        let treasure = Treasury {
-            balance: init_token,
-            withdraw_events: account::new_event_handle<WithdrawEvent>(signer),
-            deposit_events: account::new_event_handle<DepositEvent>(signer),
-        };
-        move_to(signer, treasure);
-        WithdrawCapability<TokenT> {}
+        let coin_metadata_opt = coin::paired_metadata<CoinT>();
+        assert!(option::is_some(&coin_metadata_opt), error::invalid_state(ERR_TOKEN_NOT_CREATE_TOKEN_PAIR));
+
+        let asset_metadata = fungible_asset::asset_metadata(&initia_fa);
+        assert!(
+            asset_metadata == option::destroy_some(coin_metadata_opt),
+            error::invalid_state(ERR_INITA_ASSET_NOT_MATCH)
+        );
+
+        let constructor_ref = object::create_object(signer::address_of(account));
+        let fa_store = fungible_asset::create_store(&constructor_ref, asset_metadata);
+        fungible_asset::deposit(fa_store, initia_fa);
+
+        // Check fungible asset
+        move_to<Treasury<CoinT>>(account, Treasury {
+            fa_store,
+            store_owner: object::address_from_constructor_ref(&constructor_ref),
+            withdraw_events: account::new_event_handle<WithdrawEvent>(account),
+            deposit_events: account::new_event_handle<DepositEvent>(account),
+        });
+
+        WithdrawCapability<CoinT> {
+            owner: signer::address_of(account),
+        }
     }
 
+    /// Check the Treasury of CoinT is exists.
+    public fun exists_at<CoinT>(owner: address): bool acquires Treasury {
+        exists<Treasury<CoinT>>(owner);
 
-    /// Check the Treasury of TokenT is exists.
-    public fun exists_at<TokenT>(): bool {
-        let token_issuer = type_info::account_address(&type_info::type_of<TokenT>());
-        exists<Treasury<TokenT>>(token_issuer)
+        let treasury = borrow_global<Treasury<CoinT>>(owner);
+        fungible_asset::store_exists(object::owner(treasury.fa_store))
     }
 
-    /// Get the balance of TokenT's Treasury
+    /// Get the balance of CoinT's Treasury
     /// if the Treasury do not exists, return 0.
-    public fun balance<TokenT>(): u128 acquires Treasury {
-        let token_issuer = stc_util::token_issuer<TokenT>();
-        if (!exists<Treasury<TokenT>>(token_issuer)) {
+    public fun balance<CoinT>(owner: address): u128 acquires Treasury {
+        if (!exists<Treasury<CoinT>>(owner)) {
             return 0
         };
-        let treasury = borrow_global<Treasury<TokenT>>(token_issuer);
-        (coin::value(&treasury.balance) as u128)
+        let treasury = borrow_global<Treasury<CoinT>>(owner);
+        (fungible_asset::balance(treasury.fa_store) as u128)
     }
 
-    public fun deposit<TokenT>(token: coin::Coin<TokenT>) acquires Treasury {
-        assert!(exists_at<TokenT>(), error::not_found(ERR_TREASURY_NOT_EXIST));
-        let token_address = stc_util::token_issuer<TokenT>();
-        let treasury = borrow_global_mut<Treasury<TokenT>>(token_address);
-        let amount = coin::value(&token);
+    public fun deposit<CoinT>(owner: address, fa: FungibleAsset) acquires Treasury {
+        assert!(exists_at<Treasury<CoinT>>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
+
+        let treasury = borrow_global_mut<Treasury<CoinT>>(owner);
+
+        let amount = fungible_asset::amount(&fa);
+        fungible_asset::deposit(treasury.fa_store, fa);
         event::emit_event(
             &mut treasury.deposit_events,
             DepositEvent {
                 amount: (amount as u128)
             },
         );
-        coin::merge(&mut treasury.balance, token);
     }
 
-    fun do_withdraw<TokenT>(amount: u128): coin::Coin<TokenT> acquires Treasury {
+    fun inner_do_withdraw<CoinT>(owner: address, amount: u128): FungibleAsset acquires Treasury {
         assert!(amount > 0, error::invalid_argument(ERR_ZERO_AMOUNT));
-        assert!(exists_at<TokenT>(), error::not_found(ERR_TREASURY_NOT_EXIST));
-        let token_address = stc_util::token_issuer<TokenT>();
-        let treasury = borrow_global_mut<Treasury<TokenT>>(token_address);
-        assert!(amount <= (coin::value(&treasury.balance) as u128), error::invalid_argument(ERR_TOO_BIG_AMOUNT));
+        assert!(exists_at<Treasury<CoinT>>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
+
+        let treasury = borrow_global_mut<Treasury<CoinT>>(owner);
+        assert!(
+            amount <= (fungible_asset::balance(treasury.fa_store) as u128),
+            error::invalid_argument(ERR_TOO_BIG_AMOUNT)
+        );
         event::emit_event(
             &mut treasury.withdraw_events,
             WithdrawEvent { amount },
         );
-        coin::extract(&mut treasury.balance, (amount as u64))
+        let store_signer = create_signer(object::owner(treasury.fa_store));
+        fungible_asset::withdraw(&store_signer, treasury.fa_store, (amount as u64))
     }
 
     /// Withdraw tokens with given `LinearWithdrawCapability`.
-    public fun withdraw_with_capability<TokenT>(
-        _cap: &mut WithdrawCapability<TokenT>,
+    public fun withdraw_with_capability<CoinT>(
+        cap: &mut WithdrawCapability<CoinT>,
         amount: u128,
-    ): coin::Coin<TokenT> acquires Treasury {
-        do_withdraw(amount)
+    ): FungibleAsset acquires Treasury {
+        inner_do_withdraw<CoinT>(cap.owner, amount)
     }
 
-
-    /// Withdraw from TokenT's treasury, the signer must have WithdrawCapability<TokenT>
-    public fun withdraw<TokenT>(
+    /// Withdraw from CoinT's treasury, the signer must have WithdrawCapability<CoinT>
+    public fun withdraw<CoinT>(
         signer: &signer,
         amount: u128
-    ): coin::Coin<TokenT> acquires Treasury, WithdrawCapability {
-        let cap = borrow_global_mut<WithdrawCapability<TokenT>>(signer::address_of(signer));
+    ): FungibleAsset acquires Treasury, WithdrawCapability {
+        let cap = borrow_global_mut<WithdrawCapability<CoinT>>(signer::address_of(signer));
         Self::withdraw_with_capability(cap, amount)
     }
 
     /// Issue a `LinearWithdrawCapability` with given `WithdrawCapability`.
-    public fun issue_linear_withdraw_capability<TokenT>(
-        _capability: &mut WithdrawCapability<TokenT>,
+    public fun issue_linear_withdraw_capability<CoinT>(
+        cap: &mut WithdrawCapability<CoinT>,
         amount: u128,
         period: u64
-    ): LinearWithdrawCapability<TokenT> {
+    ): LinearWithdrawCapability<CoinT> {
         assert!(period > 0, error::invalid_argument(ERR_INVALID_PERIOD));
         assert!(amount > 0, error::invalid_argument(ERR_ZERO_AMOUNT));
         let start_time = timestamp::now_seconds();
-        LinearWithdrawCapability<TokenT> {
+        LinearWithdrawCapability<CoinT> {
+            owner: cap.owner,
             total: amount,
             withdraw: 0,
             start_time,
@@ -147,36 +185,28 @@ module starcoin_framework::treasury {
 
 
     /// Withdraw tokens with given `LinearWithdrawCapability`.
-    public fun withdraw_with_linear_capability<TokenT>(
-        cap: &mut LinearWithdrawCapability<TokenT>,
-    ): coin::Coin<TokenT> acquires Treasury {
+    public fun withdraw_with_linear_capability<CoinT>(
+        cap: &mut LinearWithdrawCapability<CoinT>,
+    ): FungibleAsset acquires Treasury {
         let amount = withdraw_amount_of_linear_cap(cap);
-        let token = do_withdraw(amount);
+        let fa = Self::inner_do_withdraw<CoinT>(cap.owner, amount);
         cap.withdraw = cap.withdraw + amount;
-        token
+        fa
     }
-
-    /// Withdraw from TokenT's  treasury, the signer must have LinearWithdrawCapability<TokenT>
-    public fun withdraw_by_linear<TokenT>(
-        signer: &signer,
-    ): coin::Coin<TokenT> acquires Treasury, LinearWithdrawCapability {
-        let cap = borrow_global_mut<LinearWithdrawCapability<TokenT>>(signer::address_of(signer));
-        Self::withdraw_with_linear_capability(cap)
-    }
-
 
     /// Split the given `LinearWithdrawCapability`.
-    public fun split_linear_withdraw_cap<TokenT>(
-        cap: &mut LinearWithdrawCapability<TokenT>,
+    public fun split_linear_withdraw_cap<CoinT>(
+        cap: &mut LinearWithdrawCapability<CoinT>,
         amount: u128,
-    ): (coin::Coin<TokenT>, LinearWithdrawCapability<TokenT>) acquires Treasury {
+    ): (FungibleAsset, LinearWithdrawCapability<CoinT>) acquires Treasury {
         assert!(amount > 0, error::invalid_argument(ERR_ZERO_AMOUNT));
         let token = Self::withdraw_with_linear_capability(cap);
         assert!((cap.withdraw + amount) <= cap.total, error::invalid_argument(ERR_TOO_BIG_AMOUNT));
         cap.total = cap.total - amount;
         let start_time = timestamp::now_seconds();
         let new_period = cap.start_time + cap.period - start_time;
-        let new_key = LinearWithdrawCapability<TokenT> {
+        let new_key = LinearWithdrawCapability<CoinT> {
+            owner: cap.owner,
             total: amount,
             withdraw: 0,
             start_time,
@@ -186,7 +216,7 @@ module starcoin_framework::treasury {
     }
 
     /// Returns the amount of the LinearWithdrawCapability can mint now.
-    public fun withdraw_amount_of_linear_cap<TokenT>(cap: &LinearWithdrawCapability<TokenT>): u128 {
+    public fun withdraw_amount_of_linear_cap<CoinT>(cap: &LinearWithdrawCapability<CoinT>): u128 {
         let now = timestamp::now_seconds();
         let elapsed_time = now - cap.start_time;
         if (elapsed_time >= cap.period) {
@@ -198,69 +228,68 @@ module starcoin_framework::treasury {
 
 
     /// Check if the given `LinearWithdrawCapability` is empty.
-    public fun is_empty_linear_withdraw_cap<TokenT>(key: &LinearWithdrawCapability<TokenT>): bool {
+    public fun is_empty_linear_withdraw_cap<CoinT>(key: &LinearWithdrawCapability<CoinT>): bool {
         key.total == key.withdraw
     }
 
     /// Remove mint capability from `signer`.
-    public fun remove_withdraw_capability<TokenT>(
+    public fun remove_withdraw_capability<CoinT>(
         signer: &signer
-    ): WithdrawCapability<TokenT> acquires WithdrawCapability {
-        move_from<WithdrawCapability<TokenT>>(signer::address_of(signer))
+    ): WithdrawCapability<CoinT> acquires WithdrawCapability {
+        move_from<WithdrawCapability<CoinT>>(signer::address_of(signer))
     }
 
-
     /// Save mint capability to `signer`.
-    public fun add_withdraw_capability<TokenT>(signer: &signer, cap: WithdrawCapability<TokenT>) {
+    public fun add_withdraw_capability<CoinT>(signer: &signer, cap: WithdrawCapability<CoinT>) {
         move_to(signer, cap)
     }
 
 
     /// Destroy the given mint capability.
-    public fun destroy_withdraw_capability<TokenT>(cap: WithdrawCapability<TokenT>) {
-        let WithdrawCapability<TokenT> {} = cap;
+    public fun destroy_withdraw_capability<CoinT>(cap: WithdrawCapability<CoinT>) {
+        let WithdrawCapability<CoinT> { owner: _ } = cap;
     }
 
 
     /// Add LinearWithdrawCapability to `signer`, a address only can have one LinearWithdrawCapability<T>
-    public fun add_linear_withdraw_capability<TokenT>(signer: &signer, cap: LinearWithdrawCapability<TokenT>) {
+    public fun add_linear_withdraw_capability<CoinT>(signer: &signer, cap: LinearWithdrawCapability<CoinT>) {
         move_to(signer, cap)
     }
 
 
     /// Remove LinearWithdrawCapability from `signer`.
-    public fun remove_linear_withdraw_capability<TokenT>(
+    public fun remove_linear_withdraw_capability<CoinT>(
         signer: &signer
-    ): LinearWithdrawCapability<TokenT> acquires LinearWithdrawCapability {
-        move_from<LinearWithdrawCapability<TokenT>>(signer::address_of(signer))
+    ): LinearWithdrawCapability<CoinT> acquires LinearWithdrawCapability {
+        move_from<LinearWithdrawCapability<CoinT>>(signer::address_of(signer))
     }
 
     /// Destroy LinearWithdrawCapability.
-    public fun destroy_linear_withdraw_capability<TokenT>(cap: LinearWithdrawCapability<TokenT>) {
-        let LinearWithdrawCapability { total: _, withdraw: _, start_time: _, period: _ } = cap;
+    public fun destroy_linear_withdraw_capability<CoinT>(cap: LinearWithdrawCapability<CoinT>) {
+        let LinearWithdrawCapability { owner: _, total: _, withdraw: _, start_time: _, period: _ } = cap;
     }
 
-    public fun is_empty_linear_withdraw_capability<TokenT>(cap: &LinearWithdrawCapability<TokenT>): bool {
+    public fun is_empty_linear_withdraw_capability<CoinT>(cap: &LinearWithdrawCapability<CoinT>): bool {
         cap.total == cap.withdraw
     }
 
     /// Get LinearWithdrawCapability total amount
-    public fun get_linear_withdraw_capability_total<TokenT>(cap: &LinearWithdrawCapability<TokenT>): u128 {
+    public fun get_linear_withdraw_capability_total<CoinT>(cap: &LinearWithdrawCapability<CoinT>): u128 {
         cap.total
     }
 
     /// Get LinearWithdrawCapability withdraw amount
-    public fun get_linear_withdraw_capability_withdraw<TokenT>(cap: &LinearWithdrawCapability<TokenT>): u128 {
+    public fun get_linear_withdraw_capability_withdraw<CoinT>(cap: &LinearWithdrawCapability<CoinT>): u128 {
         cap.withdraw
     }
 
     /// Get LinearWithdrawCapability period in seconds
-    public fun get_linear_withdraw_capability_period<TokenT>(cap: &LinearWithdrawCapability<TokenT>): u64 {
+    public fun get_linear_withdraw_capability_period<CoinT>(cap: &LinearWithdrawCapability<CoinT>): u64 {
         cap.period
     }
 
     /// Get LinearWithdrawCapability start_time in seconds
-    public fun get_linear_withdraw_capability_start_time<TokenT>(cap: &LinearWithdrawCapability<TokenT>): u64 {
+    public fun get_linear_withdraw_capability_start_time<CoinT>(cap: &LinearWithdrawCapability<CoinT>): u64 {
         cap.start_time
     }
 }
