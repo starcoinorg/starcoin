@@ -331,8 +331,6 @@ module starcoin_framework::object {
         object: address,
         can_delete: bool,
     ): ConstructorRef {
-        // debug::print(&string::utf8(b"object::create_object_internal | entered"));
-
         assert!(!exists<ObjectCore>(object), error::already_exists(EOBJECT_EXISTS));
 
         let object_signer = create_signer(object);
@@ -348,8 +346,6 @@ module starcoin_framework::object {
                 transfer_events: event::new_event_handle(transfer_events_guid),
             },
         );
-
-        // debug::print(&string::utf8(b"object::create_object_internal | exited"));
         ConstructorRef { self: object, can_delete }
     }
 
