@@ -191,22 +191,6 @@ pub enum EntryFunctionCall {
         proposal_id: u64,
     },
 
-    /// remove terminated proposal from proposer
-    DaoFaDestroyTerminatedProposal {
-        coin_t: TypeTag,
-        action_t: TypeTag,
-        proposer_address: AccountAddress,
-        proposal_id: u64,
-    },
-
-    /// queue agreed proposal to execute.
-    DaoFaQueueProposalAction {
-        coin_t: TypeTag,
-        action_t: TypeTag,
-        proposer_address: AccountAddress,
-        proposal_id: u64,
-    },
-
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
     DaoFeaturesProposalExecute {
         proposal_adderss: AccountAddress,
@@ -697,20 +681,6 @@ impl EntryFunctionCall {
                 proposer_address,
                 proposal_id,
             } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
-            DaoFaDestroyTerminatedProposal {
-                coin_t,
-                action_t,
-                proposer_address,
-                proposal_id,
-            } => {
-                dao_fa_destroy_terminated_proposal(coin_t, action_t, proposer_address, proposal_id)
-            }
-            DaoFaQueueProposalAction {
-                coin_t,
-                action_t,
-                proposer_address,
-                proposal_id,
-            } => dao_fa_queue_proposal_action(coin_t, action_t, proposer_address, proposal_id),
             DaoFeaturesProposalExecute {
                 proposal_adderss,
                 proposal_id,
@@ -1431,48 +1401,6 @@ pub fn dao_queue_proposal_action(
         ),
         ident_str!("queue_proposal_action").to_owned(),
         vec![token_t, action_t],
-        vec![
-            bcs::to_bytes(&proposer_address).unwrap(),
-            bcs::to_bytes(&proposal_id).unwrap(),
-        ],
-    ))
-}
-
-/// remove terminated proposal from proposer
-pub fn dao_fa_destroy_terminated_proposal(
-    coin_t: TypeTag,
-    action_t: TypeTag,
-    proposer_address: AccountAddress,
-    proposal_id: u64,
-) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("dao_fa").to_owned(),
-        ),
-        ident_str!("destroy_terminated_proposal").to_owned(),
-        vec![coin_t, action_t],
-        vec![
-            bcs::to_bytes(&proposer_address).unwrap(),
-            bcs::to_bytes(&proposal_id).unwrap(),
-        ],
-    ))
-}
-
-/// queue agreed proposal to execute.
-pub fn dao_fa_queue_proposal_action(
-    coin_t: TypeTag,
-    action_t: TypeTag,
-    proposer_address: AccountAddress,
-    proposal_id: u64,
-) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("dao_fa").to_owned(),
-        ),
-        ident_str!("queue_proposal_action").to_owned(),
-        vec![coin_t, action_t],
         vec![
             bcs::to_bytes(&proposer_address).unwrap(),
             bcs::to_bytes(&proposal_id).unwrap(),
@@ -2771,34 +2699,6 @@ mod decoder {
         }
     }
 
-    pub fn dao_fa_destroy_terminated_proposal(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::DaoFaDestroyTerminatedProposal {
-                coin_t: script.ty_args().get(0)?.clone(),
-                action_t: script.ty_args().get(1)?.clone(),
-                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
-                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn dao_fa_queue_proposal_action(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::DaoFaQueueProposalAction {
-                coin_t: script.ty_args().get(0)?.clone(),
-                action_t: script.ty_args().get(1)?.clone(),
-                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
-                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
     pub fn dao_features_proposal_execute(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -3665,14 +3565,6 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "dao_queue_proposal_action".to_string(),
             Box::new(decoder::dao_queue_proposal_action),
-        );
-        map.insert(
-            "dao_fa_destroy_terminated_proposal".to_string(),
-            Box::new(decoder::dao_fa_destroy_terminated_proposal),
-        );
-        map.insert(
-            "dao_fa_queue_proposal_action".to_string(),
-            Box::new(decoder::dao_fa_queue_proposal_action),
         );
         map.insert(
             "dao_features_proposal_execute".to_string(),

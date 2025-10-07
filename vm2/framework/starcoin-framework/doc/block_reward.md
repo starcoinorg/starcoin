@@ -258,6 +258,8 @@ Initialize the module, should be called in genesis.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="block_reward.md#0x1_block_reward_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward_delay: u64) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a> | Entered "));
+
     // Timestamp::assert_genesis();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
 
@@ -275,6 +277,8 @@ Initialize the module, should be called in genesis.
         gas_fees_store,
         owner_address: <a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&constructor_ref),
     });
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a> | Exited"));
 }
 </code></pre>
 
@@ -359,7 +363,7 @@ Process the given block rewards.
             // add block reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
                 // <b>if</b> no STC in Treasury, BlockReward will been 0.
-                <b>let</b> treasury_balance = <a href="treasury.md#0x1_treasury_balance">treasury::balance</a>&lt;STC&gt;();
+                <b>let</b> treasury_balance = <a href="treasury.md#0x1_treasury_balance">treasury::balance</a>&lt;STC&gt;(get_starcoin_framework());
                 <b>if</b> (treasury_balance &lt; <a href="block_reward.md#0x1_block_reward">block_reward</a>) {
                     <a href="block_reward.md#0x1_block_reward">block_reward</a> = treasury_balance;
                 };
@@ -370,8 +374,7 @@ Process the given block rewards.
                         <a href="account.md#0x1_account">account</a>,
                         <a href="block_reward.md#0x1_block_reward">block_reward</a>
                     );
-                    // TODO(BobOng): To remove this convert after all <b>module</b> converting <b>to</b> fungible asset
-                    <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(reward_queue.gas_fees_store, <a href="coin.md#0x1_coin_coin_to_fungible_asset">coin::coin_to_fungible_asset</a>(reward_stc));
+                    <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(reward_queue.gas_fees_store, reward_stc);
                 };
             };
 
