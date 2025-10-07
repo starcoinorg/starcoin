@@ -58,12 +58,14 @@ The module for the Treasury of DAO, which can hold the token of DAO.
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 </code></pre>
 
@@ -346,7 +348,10 @@ Init a Treasury for TokenT. Can only be called by token issuer.
 <pre><code><b>public</b> <b>fun</b> <a href="treasury.md#0x1_treasury_initialize">initialize</a>&lt;TokenT&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     initia_fa: FungibleAsset,
-): <a href="treasury.md#0x1_treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt; <b>acquires</b> <a href="treasury.md#0x1_treasury_Treasury">Treasury</a> {
+): <a href="treasury.md#0x1_treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt; {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a> | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(<a href="account.md#0x1_account">account</a>);
+
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     <b>assert</b>!(!<a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;TokenT&gt;(account_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="treasury.md#0x1_treasury_ERR_TREASURY_INIAIZLIED">ERR_TREASURY_INIAIZLIED</a>));
 
@@ -361,19 +366,23 @@ Init a Treasury for TokenT. Can only be called by token issuer.
 
     <b>let</b> constructor_ref = <a href="object.md#0x1_object_create_object">object::create_object</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
     <b>let</b> fa_store = <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&constructor_ref, asset_metadata);
+
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fa_store, initia_fa);
 
     // Check fungible asset
-    <b>move_to</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(<a href="account.md#0x1_account">account</a>, <a href="treasury.md#0x1_treasury_Treasury">Treasury</a> {
+    <b>move_to</b>(<a href="account.md#0x1_account">account</a>, <a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt; {
         fa_store,
         store_owner: <a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&constructor_ref),
         withdraw_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="treasury.md#0x1_treasury_WithdrawEvent">WithdrawEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
         deposit_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="treasury.md#0x1_treasury_DepositEvent">DepositEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
     });
 
-    <a href="treasury.md#0x1_treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt; {
+    <b>let</b> cap = <a href="treasury.md#0x1_treasury_WithdrawCapability">WithdrawCapability</a>&lt;TokenT&gt; {
         owner: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>),
-    }
+    };
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a> | Exited"));
+    cap
 }
 </code></pre>
 
@@ -397,11 +406,8 @@ Check the Treasury of TokenT is exists.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;TokenT&gt;(owner: <b>address</b>): bool <b>acquires</b> <a href="treasury.md#0x1_treasury_Treasury">Treasury</a> {
-    <b>exists</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner);
-
-    <b>let</b> <a href="treasury.md#0x1_treasury">treasury</a> = <b>borrow_global</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner);
-    <a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(<a href="object.md#0x1_object_owner">object::owner</a>(<a href="treasury.md#0x1_treasury">treasury</a>.fa_store))
+<pre><code><b>public</b> <b>fun</b> <a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;TokenT&gt;(owner: <b>address</b>): bool {
+    <b>exists</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner)
 }
 </code></pre>
 
@@ -455,7 +461,7 @@ if the Treasury do not exists, return 0.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="treasury.md#0x1_treasury_deposit">deposit</a>&lt;TokenT&gt;(owner: <b>address</b>, fa: FungibleAsset) <b>acquires</b> <a href="treasury.md#0x1_treasury_Treasury">Treasury</a> {
-    <b>assert</b>!(<a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="treasury.md#0x1_treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>));
+    <b>assert</b>!(<a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;TokenT&gt;(owner), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="treasury.md#0x1_treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>));
 
     <b>let</b> <a href="treasury.md#0x1_treasury">treasury</a> = <b>borrow_global_mut</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner);
 
@@ -491,7 +497,7 @@ if the Treasury do not exists, return 0.
 
 <pre><code><b>fun</b> <a href="treasury.md#0x1_treasury_inner_do_withdraw">inner_do_withdraw</a>&lt;TokenT&gt;(owner: <b>address</b>, amount: u128): FungibleAsset <b>acquires</b> <a href="treasury.md#0x1_treasury_Treasury">Treasury</a> {
     <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="treasury.md#0x1_treasury_ERR_ZERO_AMOUNT">ERR_ZERO_AMOUNT</a>));
-    <b>assert</b>!(<a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="treasury.md#0x1_treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>));
+    <b>assert</b>!(<a href="treasury.md#0x1_treasury_exists_at">exists_at</a>&lt;TokenT&gt;(owner), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="treasury.md#0x1_treasury_ERR_TREASURY_NOT_EXIST">ERR_TREASURY_NOT_EXIST</a>));
 
     <b>let</b> <a href="treasury.md#0x1_treasury">treasury</a> = <b>borrow_global_mut</b>&lt;<a href="treasury.md#0x1_treasury_Treasury">Treasury</a>&lt;TokenT&gt;&gt;(owner);
     <b>assert</b>!(

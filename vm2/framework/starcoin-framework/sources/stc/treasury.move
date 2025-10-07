@@ -3,18 +3,18 @@ module starcoin_framework::treasury {
     use std::error;
     use std::option;
     use std::signer;
-    use starcoin_framework::create_signer::create_signer;
-
-    use starcoin_framework::fungible_asset;
-    use starcoin_framework::object;
-    use starcoin_framework::object::{Object};
-    use starcoin_framework::fungible_asset::{FungibleStore, FungibleAsset};
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
+    use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event;
+    use starcoin_framework::fungible_asset;
+    use starcoin_framework::fungible_asset::{FungibleAsset, FungibleStore};
+    use starcoin_framework::object;
+    use starcoin_framework::object::Object;
     use starcoin_framework::timestamp;
 
+    use starcoin_std::debug;
     use starcoin_std::math128;
 
     struct Treasury<phantom TokenT> has store, key {
@@ -68,7 +68,10 @@ module starcoin_framework::treasury {
     public fun initialize<TokenT>(
         account: &signer,
         initia_fa: FungibleAsset,
-    ): WithdrawCapability<TokenT> acquires Treasury {
+    ): WithdrawCapability<TokenT> {
+        debug::print(&std::string::utf8(b"treasury::initialize | Entered"));
+        debug::print(account);
+
         let account_addr = signer::address_of(account);
         assert!(!exists_at<TokenT>(account_addr), error::invalid_state(ERR_TREASURY_INIAIZLIED));
 
@@ -83,27 +86,28 @@ module starcoin_framework::treasury {
 
         let constructor_ref = object::create_object(signer::address_of(account));
         let fa_store = fungible_asset::create_store(&constructor_ref, asset_metadata);
+
         fungible_asset::deposit(fa_store, initia_fa);
 
         // Check fungible asset
-        move_to<Treasury<TokenT>>(account, Treasury {
+        move_to(account, Treasury<TokenT> {
             fa_store,
             store_owner: object::address_from_constructor_ref(&constructor_ref),
             withdraw_events: account::new_event_handle<WithdrawEvent>(account),
             deposit_events: account::new_event_handle<DepositEvent>(account),
         });
 
-        WithdrawCapability<TokenT> {
+        let cap = WithdrawCapability<TokenT> {
             owner: signer::address_of(account),
-        }
+        };
+
+        debug::print(&std::string::utf8(b"treasury::initialize | Exited"));
+        cap
     }
 
     /// Check the Treasury of TokenT is exists.
-    public fun exists_at<TokenT>(owner: address): bool acquires Treasury {
-        exists<Treasury<TokenT>>(owner);
-
-        let treasury = borrow_global<Treasury<TokenT>>(owner);
-        fungible_asset::store_exists(object::owner(treasury.fa_store))
+    public fun exists_at<TokenT>(owner: address): bool {
+        exists<Treasury<TokenT>>(owner)
     }
 
     /// Get the balance of TokenT's Treasury
@@ -117,7 +121,7 @@ module starcoin_framework::treasury {
     }
 
     public fun deposit<TokenT>(owner: address, fa: FungibleAsset) acquires Treasury {
-        assert!(exists_at<Treasury<TokenT>>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
+        assert!(exists_at<TokenT>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
 
         let treasury = borrow_global_mut<Treasury<TokenT>>(owner);
 
@@ -133,7 +137,7 @@ module starcoin_framework::treasury {
 
     fun inner_do_withdraw<TokenT>(owner: address, amount: u128): FungibleAsset acquires Treasury {
         assert!(amount > 0, error::invalid_argument(ERR_ZERO_AMOUNT));
-        assert!(exists_at<Treasury<TokenT>>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
+        assert!(exists_at<TokenT>(owner), error::not_found(ERR_TREASURY_NOT_EXIST));
 
         let treasury = borrow_global_mut<Treasury<TokenT>>(owner);
         assert!(

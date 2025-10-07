@@ -32,8 +32,6 @@ spec starcoin_framework::treasury {
             result == 0;
     }
 
-
-
     spec deposit {
         aborts_if !exists<Treasury<TokenT>>(@0x2);
         aborts_if spec_balance<TokenT>() + fa.amount > MAX_U128;

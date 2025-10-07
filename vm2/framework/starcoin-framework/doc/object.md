@@ -1327,8 +1327,6 @@ doesn't have the same bottlenecks.
     <a href="object.md#0x1_object">object</a>: <b>address</b>,
     can_delete: bool,
 ): <a href="object.md#0x1_object_ConstructorRef">ConstructorRef</a> {
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="object.md#0x1_object_create_object_internal">object::create_object_internal</a> | entered"));
-
     <b>assert</b>!(!<b>exists</b>&lt;<a href="object.md#0x1_object_ObjectCore">ObjectCore</a>&gt;(<a href="object.md#0x1_object">object</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="object.md#0x1_object_EOBJECT_EXISTS">EOBJECT_EXISTS</a>));
 
     <b>let</b> object_signer = <a href="create_signer.md#0x1_create_signer">create_signer</a>(<a href="object.md#0x1_object">object</a>);
@@ -1344,8 +1342,6 @@ doesn't have the same bottlenecks.
             transfer_events: <a href="event.md#0x1_event_new_event_handle">event::new_event_handle</a>(transfer_events_guid),
         },
     );
-
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="object.md#0x1_object_create_object_internal">object::create_object_internal</a> | exited"));
     <a href="object.md#0x1_object_ConstructorRef">ConstructorRef</a> { self: <a href="object.md#0x1_object">object</a>, can_delete }
 }
 </code></pre>

@@ -271,6 +271,8 @@ module starcoin_framework::stc_genesis {
         voting_quorum_rate: u8,
         min_action_delay: u64
     ) {
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | Entered "));
+
         dao::plugin<STC>(
             starcoin_framework,
             voting_delay,
@@ -278,13 +280,15 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
         );
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 1 "));
         dao_modify_config_proposal::plugin<STC>(starcoin_framework);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 2 "));
 
         let upgrade_plan_cap = stc_transaction_package_validation::extract_submit_upgrade_plan_cap(starcoin_framework);
         dao_upgrade_module_proposal::plugin<STC>(starcoin_framework, upgrade_plan_cap);
 
-        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc | plugin upgrade cap "));
-
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 3 "));
         // the following configurations are gov-ed by Dao.
         on_chain_config_dao::plugin<STC, transaction_publish_option::TransactionPublishOption>(starcoin_framework);
         on_chain_config_dao::plugin<STC, vm_config::VMConfig>(starcoin_framework);
@@ -292,7 +296,7 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
 
-        debug::print(&std::string::utf8(b"initialize_stc | Exited"));
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | Exited"));
     }
 
     /// Overall governance allocation strategy:
@@ -306,6 +310,8 @@ module starcoin_framework::stc_genesis {
         time_mint_stc_amount: u128,
         time_mint_stc_period: u64,
     ) {
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc_governance_allocation | Entered"));
+
         let treasury_withdraw_cap = treasury::initialize<STC>(starcoin_framework, total_supply_stc);
 
         if (pre_mine_stc_amount > 0) {
@@ -325,6 +331,8 @@ module starcoin_framework::stc_genesis {
             treasury::add_linear_withdraw_capability(core_resource_account, liner_withdraw_cap);
         };
         dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc_governance_allocation | Exited"));
     }
 
     #[test_only]
