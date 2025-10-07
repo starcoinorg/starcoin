@@ -1,6 +1,5 @@
 /// The module for the Treasury of DAO, which can hold the token of DAO.
 spec starcoin_framework::treasury {
-
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -13,10 +12,10 @@ spec starcoin_framework::treasury {
     spec initialize {
         use std::signer;
 
-        aborts_if signer::address_of(signer) != @0x2;
+        aborts_if signer::address_of(account) != @0x2;
         aborts_if exists<Treasury<TokenT>>(@0x2);
         ensures exists<Treasury<TokenT>>(@0x2);
-        ensures result == WithdrawCapability<TokenT> {};
+        ensures result == WithdrawCapability<TokenT> { owner: signer::address_of(account) };
     }
 
     spec exists_at {
@@ -37,14 +36,13 @@ spec starcoin_framework::treasury {
 
     spec deposit {
         aborts_if !exists<Treasury<TokenT>>(@0x2);
-        aborts_if spec_balance<TokenT>() + token.value > MAX_U128;
-        ensures spec_balance<TokenT>() == old(spec_balance<TokenT>()) + token.value;
+        aborts_if spec_balance<TokenT>() + fa.amount > MAX_U128;
+        ensures spec_balance<TokenT>() == old(spec_balance<TokenT>()) + fa.amount;
     }
 
-
-    spec do_withdraw {
-        include WithdrawSchema<TokenT>;
-    }
+    // spec do_withdraw {
+    //     include WithdrawSchema<TokenT>;
+    // }
 
     spec schema WithdrawSchema<TokenT> {
         amount: u64;
@@ -83,21 +81,10 @@ spec starcoin_framework::treasury {
         // include WithdrawSchema<TokenT> {amount: ?};
     }
 
-
-    spec withdraw_by_linear {
-        use std::signer;
-
-        pragma aborts_if_is_partial;
-        aborts_if !exists<LinearWithdrawCapability<TokenT>>(signer::address_of(signer));
-        // TODO: See [MUL_DIV]
-        // include WithdrawSchema<TokenT> {amount: ?};
-    }
-
-
     spec split_linear_withdraw_cap {
         pragma aborts_if_is_partial;
         ensures old(cap.total - cap.withdraw) ==
-            result_1.value + (result_2.total - result_2.withdraw) + (cap.total - cap.withdraw);
+            result_1.amount + (result_2.total - result_2.withdraw) + (cap.total - cap.withdraw);
     }
 
     spec withdraw_amount_of_linear_cap {
@@ -146,8 +133,7 @@ spec starcoin_framework::treasury {
         ensures exists<WithdrawCapability<TokenT>>(signer::address_of(signer));
     }
 
-    spec destroy_withdraw_capability {
-    }
+    spec destroy_withdraw_capability {}
 
 
     spec add_linear_withdraw_capability {
@@ -165,7 +151,6 @@ spec starcoin_framework::treasury {
 
 
     spec fun spec_balance<TokenType>(): num {
-        global<Treasury<TokenType>>(@0x2).balance.value
+        fungible_asset::balance(global<Treasury<TokenType>>(@0x2).fa_store)
     }
-
 }
