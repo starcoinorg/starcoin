@@ -175,6 +175,12 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
+    public fun block_epilogue(account: signer) {
+        debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
+        stc_transaction_fee::merge_fee_to_framework_account(&account);
+        debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
+    }
+
     /// Call at block prologue
     fun process_block_metadata(
         account: &signer,
