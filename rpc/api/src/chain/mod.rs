@@ -60,9 +60,6 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_block_info_by_hash")]
     fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
 
-    #[rpc(name = "chain.get_block_info_by_hash")]
-    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
-
     #[rpc(name = "chain.get_block_info_by_number2")]
     fn get_block_info_by_number2(
         &self,

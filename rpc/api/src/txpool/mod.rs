@@ -22,9 +22,6 @@ pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transactions")]
     fn submit_transactions(&self, txs: Vec<SignedUserTransaction>) -> FutureResult<Vec<HashValue>>;
 
-    #[rpc(name = "txpool.submit_transactions")]
-    fn submit_transactions(&self, txs: Vec<SignedUserTransaction>) -> FutureResult<Vec<HashValue>>;
-
     #[rpc(name = "txpool.submit_transaction2")]
     fn submit_transaction2(&self, tx: SignedUserTransaction2) -> FutureResult<HashValue>;
 
