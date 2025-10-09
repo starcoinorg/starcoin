@@ -28,16 +28,17 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_block;
     use starcoin_framework::stc_language_version;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout_config;
     use starcoin_framework::stc_util;
     use starcoin_framework::stc_version;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
+    use starcoin_framework::transaction_fee;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
     use starcoin_framework::vm_config;
+
     use starcoin_std::debug;
 
     const ERR_INITIALIZE_STC_AMOUNT_ERROR: u64 = 1;
@@ -186,8 +187,8 @@ module starcoin_framework::stc_genesis {
             time_mint_stc_period,
         );
 
-        stc_transaction_fee::initialize(&starcoin_framework_account);
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | stc_transaction_fee::initialize called"));
+        transaction_fee::initialize(&starcoin_framework_account);
+        debug::print(&std::string::utf8(b"stc_genesis::initialize | transaction_fee::initialize called"));
 
         // Only test/dev network set genesis auth key.
         if (!vector::is_empty(&genesis_auth_key) && (stc_util::is_net_dev() || stc_util::is_net_test())) {
