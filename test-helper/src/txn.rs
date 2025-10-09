@@ -15,6 +15,7 @@ use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use rand::Rng;
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 const TRANSFER_AMOUNT: u128 = 1_000;
@@ -65,11 +66,12 @@ pub fn gen_random_txn(
     let mut accounts = accounts;
     let mut txns = Vec::new();
     let len = accounts.len();
+    let mut rng = rand::rng();
     for i in 0..len {
         let account1 = accounts.get(i).expect("account1 is none.").account.clone();
         for _j in 0..txn_count_per_account {
             loop {
-                let index = rand::random::<usize>() % len;
+                let index = rng.random_range(0..len);
                 if index != i {
                     let txn = peer_to_peer_txn(
                         &account1,

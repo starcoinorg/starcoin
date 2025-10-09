@@ -3,8 +3,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use rand::distributions::Alphanumeric;
-use rand::rngs::OsRng;
+use rand::distr::Alphanumeric;
 use rand::Rng;
 use scmd::{CmdContext, CommandAction, CustomCommand, ExecContext};
 use serde::{Deserialize, Serialize};
@@ -37,19 +36,19 @@ struct User {
 
 impl User {
     pub fn random(index: usize) -> Self {
-        let mut rng = OsRng;
-        let name: String = rng
+        let mut rng = rand::rng();
+        let name: String = (&mut rng)
             .sample_iter(&Alphanumeric)
             .take(10)
             .map(char::from)
             .collect();
-        let age: u32 = rng.gen();
-        let city = rng
+        let age: u32 = rng.random();
+        let city = (&mut rng)
             .sample_iter(&Alphanumeric)
             .take(5)
             .map(char::from)
             .collect();
-        let zip = rng.gen_range(10000..99999);
+        let zip = rng.random_range(10000..=99999);
         let address = Address { city, zip };
         Self {
             index,

@@ -18,7 +18,8 @@
 
 use futures::prelude::*;
 use libp2p::PeerId;
-use rand::distributions::{Distribution, Uniform, WeightedIndex};
+use rand::distr::{Distribution, Uniform};
+use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use sc_peerset::{
     DropReason, IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange, SetConfig, SetId,
@@ -34,7 +35,7 @@ fn run() {
 
 fn test_once() {
     // PRNG to use.
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Nodes that the peerset knows about.
     let mut known_nodes = HashSet::<PeerId>::new();
@@ -43,15 +44,19 @@ fn test_once() {
 
     let (mut peerset, peerset_handle) = Peerset::from_config(PeersetConfig {
         sets: vec![SetConfig {
-            bootnodes: (0..Uniform::new_inclusive(0, 4).sample(&mut rng))
-                .map(|_| {
-                    let id = PeerId::random();
-                    known_nodes.insert(id);
-                    id
-                })
-                .collect(),
+            bootnodes: {
+                let count = Uniform::new_inclusive(0, 4).unwrap().sample(&mut rng);
+                (0..count)
+                    .map(|_| {
+                        let id = PeerId::random();
+                        known_nodes.insert(id);
+                        id
+                    })
+                    .collect()
+            },
             reserved_nodes: {
-                (0..Uniform::new_inclusive(0, 2).sample(&mut rng))
+                let count = Uniform::new_inclusive(0, 2).unwrap().sample(&mut rng);
+                (0..count)
                     .map(|_| {
                         let id = PeerId::random();
                         known_nodes.insert(id);
@@ -60,9 +65,9 @@ fn test_once() {
                     })
                     .collect()
             },
-            in_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
-            out_peers: Uniform::new_inclusive(0, 25).sample(&mut rng),
-            reserved_only: Uniform::new_inclusive(0, 10).sample(&mut rng) == 0,
+            in_peers: Uniform::new_inclusive(0, 25).unwrap().sample(&mut rng),
+            out_peers: Uniform::new_inclusive(0, 25).unwrap().sample(&mut rng),
+            reserved_only: Uniform::new_inclusive(0, 10).unwrap().sample(&mut rng) == 0,
         }],
     });
 
@@ -118,7 +123,9 @@ fn test_once() {
                 // If we generate 2, adjust a random reputation.
                 2 => {
                     if let Some(id) = known_nodes.iter().choose(&mut rng) {
-                        let val = Uniform::new_inclusive(i32::MIN, i32::MAX).sample(&mut rng);
+                        let val = Uniform::new_inclusive(i32::MIN, i32::MAX)
+                            .unwrap()
+                            .sample(&mut rng);
                         peerset_handle.report_peer(*id, ReputationChange::new(val, ""));
                     }
                 }

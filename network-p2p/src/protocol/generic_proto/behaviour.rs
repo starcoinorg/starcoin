@@ -31,7 +31,7 @@ use libp2p::swarm::{
 };
 use log::{debug, error, trace, warn};
 use parking_lot::RwLock;
-use rand::distributions::{Distribution as _, Uniform};
+use rand::distr::{Distribution as _, Uniform};
 use sc_peerset::peersstate::PeersState;
 use smallvec::SmallVec;
 use std::task::{Context, Poll};
@@ -1516,7 +1516,10 @@ impl NetworkBehaviour for GenericProto {
                                     peer_id,
                                     sc_peerset::DropReason::Unknown,
                                 );
-                                let ban_dur = Uniform::new(5, 10).sample(&mut rand::thread_rng());
+                                let mut rng = rand::rng();
+                                let ban_dur = Uniform::new(5, 10)
+                                    .unwrap()
+                                    .sample(&mut rng);
 
                                 let delay_id = self.next_delay_id;
                                 self.next_delay_id.0 += 1;

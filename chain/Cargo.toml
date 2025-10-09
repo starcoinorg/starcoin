@@ -53,8 +53,8 @@ starcoin-vm2-test-helper = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 
-tempfile = "3.23.0"
-flate2 = "1.1"
+tempfile = { workspace = true }
+flate2 = { workspace = true }
 tar = "0.4"
 
 [features]

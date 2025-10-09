@@ -23,6 +23,7 @@ use starcoin_native_interface::{
 };
 use starcoin_vm_types::on_chain_config::FeatureFlag;
 use std::{collections::VecDeque, rc::Rc};
+use sha2::Sha256;
 
 fn feature_flag_of_hash_to_structure(
     structure_opt: Option<Structure>,
@@ -105,7 +106,7 @@ pub fn hash_to_internal(
             ))?;
             let mapper = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
                 ark_ec::models::short_weierstrass::Projective<ark_bls12_381::g1::Config>,
-                ark_ff::fields::field_hashers::DefaultFieldHasher<sha2_0_10_6::Sha256, 128>,
+                ark_ff::fields::field_hashers::DefaultFieldHasher<Sha256, 128>,
                 ark_ec::hashing::curve_maps::wb::WBMap<ark_bls12_381::g1::Config>,
             >::new(dst)
             .unwrap();
@@ -124,7 +125,7 @@ pub fn hash_to_internal(
             ))?;
             let mapper = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
                 ark_ec::models::short_weierstrass::Projective<ark_bls12_381::g2::Config>,
-                ark_ff::fields::field_hashers::DefaultFieldHasher<sha2_0_10_6::Sha256, 128>,
+                ark_ff::fields::field_hashers::DefaultFieldHasher<Sha256, 128>,
                 ark_ec::hashing::curve_maps::wb::WBMap<ark_bls12_381::g2::Config>,
             >::new(dst)
             .unwrap();
