@@ -1517,9 +1517,7 @@ impl NetworkBehaviour for GenericProto {
                                     sc_peerset::DropReason::Unknown,
                                 );
                                 let mut rng = rand::rng();
-                                let ban_dur = Uniform::new(5, 10)
-                                    .unwrap()
-                                    .sample(&mut rng);
+                                let ban_dur = Uniform::new(5, 10).unwrap().sample(&mut rng);
 
                                 let delay_id = self.next_delay_id;
                                 self.next_delay_id.0 += 1;

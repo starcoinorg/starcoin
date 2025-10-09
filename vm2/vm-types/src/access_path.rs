@@ -183,10 +183,7 @@ impl Distribution<char> for IdentifierSymbols {
 
 pub fn random_identity() -> Identifier {
     let mut rng = rand::rng();
-    let id: String = (&mut rng)
-        .sample_iter(&IdentifierSymbols)
-        .take(7)
-        .collect();
+    let id: String = (&mut rng).sample_iter(&IdentifierSymbols).take(7).collect();
     Identifier::new(id).expect("random identity should valid.")
 }
 

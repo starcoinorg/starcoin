@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::Account;
+use rand::Rng;
 use starcoin_config::ChainNetwork;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
@@ -15,7 +16,6 @@ use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
-use rand::Rng;
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 const TRANSFER_AMOUNT: u128 = 1_000;

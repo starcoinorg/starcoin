@@ -18,8 +18,8 @@
 
 use futures::prelude::*;
 use libp2p::PeerId;
-use rand::distr::{Distribution, Uniform};
 use rand::distr::weighted::WeightedIndex;
+use rand::distr::{Distribution, Uniform};
 use rand::seq::IteratorRandom;
 use sc_peerset::{
     DropReason, IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange, SetConfig, SetId,

@@ -16,6 +16,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{Value, VectorRef},
 };
+use sha2::Sha256;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::{move_stdlib::*, starcoin_framework::*};
 use starcoin_native_interface::{
@@ -23,7 +24,6 @@ use starcoin_native_interface::{
 };
 use starcoin_vm_types::on_chain_config::FeatureFlag;
 use std::{collections::VecDeque, rc::Rc};
-use sha2::Sha256;
 
 fn feature_flag_of_hash_to_structure(
     structure_opt: Option<Structure>,
