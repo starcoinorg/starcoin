@@ -218,18 +218,6 @@ where
         Box::pin(fut.boxed())
     }
 
-    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
-        let service = self.service.clone();
-
-        let fut = async move {
-            let result = service.get_block_info_by_hash(&id).await?.map(Into::into);
-            Ok(result)
-        }
-        .map_err(map_err);
-
-        Box::pin(fut.boxed())
-    }
-
     fn get_block_info_by_number2(&self, number: u64) -> FutureResult<Option<BlockInfoView2>> {
         let service = self.service.clone();
 

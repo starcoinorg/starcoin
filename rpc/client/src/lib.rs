@@ -858,14 +858,6 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn chain_get_block_info_by_hash(
-        &self,
-        id: HashValue,
-    ) -> anyhow::Result<Option<BlockInfoView>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_block_info_by_hash(id))
-            .map_err(map_err)
-    }
-
     pub fn chain_get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
