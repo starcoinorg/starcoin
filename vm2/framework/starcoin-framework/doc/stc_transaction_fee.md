@@ -89,7 +89,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -98,7 +98,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;;
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;;
 </code></pre>
 
 
@@ -220,18 +220,18 @@ Deposit <code>token</code> into the transaction fees bucket
 <pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_inner_distribute_transaction_fees">inner_distribute_transaction_fees</a>&lt;TokenType&gt;(
     addr: <b>address</b>,
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_inner_distribute_transaction_fees">stc_transaction_fee::inner_distribute_transaction_fees</a> | Entered"));
 
     // extract fees
     <b>let</b> txn_fees = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(addr);
     <b>let</b> value = <a href="coin.md#0x1_coin_value">coin::value</a>&lt;TokenType&gt;(&txn_fees.fee);
 
     <b>if</b> (value &gt; 0) {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Exit <b>with</b> value: "));
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_inner_distribute_transaction_fees">stc_transaction_fee::inner_distribute_transaction_fees</a> | Exit <b>with</b> value: "));
         <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&value);
         <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> txn_fees.fee, value)
     } <b>else</b> {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Exit <b>with</b> zero"));
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_inner_distribute_transaction_fees">stc_transaction_fee::inner_distribute_transaction_fees</a> | Exit <b>with</b> zero"));
         <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;()
     }
 }

@@ -147,6 +147,8 @@ module starcoin_framework::stc_block {
 
         // deal with previous block first.
         let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
+        // clear cache
+        let _stale_cache = stc_transaction_fee::read_and_clear_payer_address();
 
         debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
         debug::print(&coin::value(&txn_fee));
@@ -177,6 +179,7 @@ module starcoin_framework::stc_block {
 
     public fun block_epilogue(account: signer) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
+        system_addresses::assert_starcoin_framework(&account);
         stc_transaction_fee::merge_fee_to_framework_account(&account);
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }

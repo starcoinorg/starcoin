@@ -419,6 +419,8 @@ The runtime always runs this before executing the transactions in a block.
 
     // deal <b>with</b> previous block first.
     <b>let</b> txn_fee = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">stc_transaction_fee::distribute_transaction_fees</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
+    // clear cache
+    <b>let</b> _stale_cache = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">stc_transaction_fee::read_and_clear_payer_address</a>();
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | txn_fee"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&txn_fee));
@@ -469,6 +471,7 @@ The runtime always runs this before executing the transactions in a block.
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Entered"));
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
     <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">stc_transaction_fee::merge_fee_to_framework_account</a>(&<a href="account.md#0x1_account">account</a>);
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Exited"));
 }

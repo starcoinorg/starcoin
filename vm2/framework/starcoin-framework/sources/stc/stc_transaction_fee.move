@@ -8,8 +8,10 @@ module starcoin_framework::stc_transaction_fee {
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
 
+    friend starcoin_framework::stc_block;
+
     native fun record_payer_address(addr: address);
-    native fun read_and_clear_payer_address(): vector<address>;
+    native public(friend) fun read_and_clear_payer_address(): vector<address>;
 
     spec module {
         pragma verify;
@@ -75,18 +77,18 @@ module starcoin_framework::stc_transaction_fee {
     fun inner_distribute_transaction_fees<TokenType>(
         addr: address,
     ): coin::Coin<TokenType> acquires TransactionFee {
-        debug::print(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Entered"));
+        debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Entered"));
 
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(addr);
         let value = coin::value<TokenType>(&txn_fees.fee);
 
         if (value > 0) {
-            debug::print(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Exit with value: "));
+            debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Exit with value: "));
             debug::print(&value);
             coin::extract(&mut txn_fees.fee, value)
         } else {
-            debug::print(&std::string::utf8(b"stc_block::inner_distribute_transaction_fees | Exit with zero"));
+            debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Exit with zero"));
             coin::zero<TokenType>()
         }
     }
