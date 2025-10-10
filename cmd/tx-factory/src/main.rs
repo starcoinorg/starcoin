@@ -8,7 +8,9 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
-use starcoin_tx_factory::pressure_vm1::TxnMocker;
+use starcoin_tx_factory::mocker::TxnMocker;
+use starcoin_tx_factory::pressure_vm1::start_vm1_pressure_test;
+use starcoin_tx_factory::pressure_vm2::start_vm2_pressure_test;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
@@ -75,6 +77,7 @@ pub struct TxFactoryOpt {
     pub round_num: u32,
     #[clap(long, short = 'w', default_value = "60", help = "watch_timeout")]
     pub watch_timeout: u32,
+
     #[clap(
         long,
         short = 'b',
@@ -82,6 +85,14 @@ pub struct TxFactoryOpt {
         help = "create account batch size"
     )]
     pub batch_size: u32,
+
+    #[clap(
+        long,
+        short = 'v',
+        default_value = "1",
+        help = "vm1 or vm2 test"
+    )]
+    pub vm_version: u32,
 }
 
 fn get_account_or_default(
@@ -128,6 +139,10 @@ fn main() {
     let is_stress = opts.stress;
     let mut account_num = opts.account_num;
     let round_num = opts.round_num;
+    let vm_version = opts.vm_version;
+    if vm_version != 1 && vm_version != 2 {
+        panic!("vm version must be 1 or 2");
+    }
 
     if !is_stress {
         account_num = 0;
@@ -172,67 +187,32 @@ fn main() {
     })
     .unwrap();
 
-    let handle = start_vm1_pressure_test(
-        tx_mocker,
-        round_num,
-        account_num,
-        batch_size,
-        interval,
-        transfer_account_size,
-        is_stress,
-        stopping_signal,
-    );
+    let handle = if vm_version == 1 { 
+        start_vm1_pressure_test(
+            tx_mocker,
+            round_num,
+            account_num,
+            batch_size,
+            interval,
+            transfer_account_size,
+            is_stress,
+            stopping_signal,
+        )
+    } else if vm_version == 2 {
+        start_vm2_pressure_test(
+            tx_mocker,
+            round_num,
+            account_num,
+            batch_size,
+            interval,
+            transfer_account_size,
+            is_stress,
+            stopping_signal,
+        )
+    } else {
+        panic!("vm version must be 1 or 2");
+    };
 
     handle.join().unwrap();
     info!("txfactory: stop now");
-}
-
-fn start_vm1_pressure_test(
-    mut tx_mocker: TxnMocker,
-    round_num: u32,
-    account_num: u32,
-    batch_size: u32,
-    interval: Duration,
-    transfer_account_size: usize,
-    is_stress: bool,
-    stopping_signal: Arc<AtomicBool>,
-) -> std::thread::JoinHandle<()> {
-    std::thread::spawn(move || {
-        let accounts = tx_mocker
-            .get_or_create_accounts(account_num, batch_size)
-            .expect("create accounts should success");
-        while !stopping_signal.load(Ordering::SeqCst) {
-            if tx_mocker.get_factory_status() {
-                if is_stress {
-                    info!("stress account: {}", accounts.len());
-                    let success = tx_mocker.stress_test(
-                        accounts.clone(),
-                        round_num,
-                        interval,
-                        transfer_account_size,
-                    );
-                    if let Err(e) = success {
-                        error!("fail to run stress test, err: {:?}", &e);
-                        // if txn is rejected, recheck sequence number, and start over
-                        if let Err(e) = tx_mocker.recheck_sequence_number() {
-                            error!("fail to start over, err: {:?}", e);
-                        }
-                    }
-                } else {
-                    let success = tx_mocker.gen_and_submit_txn(false);
-                    if let Err(e) = success {
-                        error!("fail to generate/submit mock txn, err: {:?}", &e);
-                        // if txn is rejected, recheck sequence number, and start over
-                        if let Err(e) = tx_mocker.recheck_sequence_number() {
-                            error!("fail to start over, err: {:?}", e);
-                        }
-                    }
-                }
-            } else {
-                info!("txfactory is stop.");
-            }
-
-            std::thread::sleep(interval);
-        }
-    })
 }
