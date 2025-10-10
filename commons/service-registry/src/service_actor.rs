@@ -75,20 +75,26 @@ where
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.set_mailbox_capacity(DEFAULT_MAIL_BOX_CAP);
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
-        if let Err(e) = self.proxy.start(&mut service_ctx) {
-            error!("{} service start fail: {:?}.", S::service_name(), e);
-        } else {
-            info!("{} service actor started", S::service_name());
+        match self.proxy.start(&mut service_ctx) {
+            Err(e) => {
+                error!("{} service start fail: {:?}.", S::service_name(), e);
+            }
+            _ => {
+                info!("{} service actor started", S::service_name());
+            }
         }
         self.notify_status();
     }
 
     fn stopped(&mut self, ctx: &mut Self::Context) {
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
-        if let Err(e) = self.proxy.stop(&mut service_ctx) {
-            error!("{} service stop fail: {:?}.", S::service_name(), e);
-        } else {
-            info!("{} service actor stopped", S::service_name());
+        match self.proxy.stop(&mut service_ctx) {
+            Err(e) => {
+                error!("{} service stop fail: {:?}.", S::service_name(), e);
+            }
+            _ => {
+                info!("{} service actor stopped", S::service_name());
+            }
         }
         self.notify_status();
     }

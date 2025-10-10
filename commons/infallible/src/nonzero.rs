@@ -15,7 +15,6 @@ macro_rules! NonZeroUsize {
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn test_nonzero() {
         assert_eq!(1, NonZeroUsize!(1).get());
