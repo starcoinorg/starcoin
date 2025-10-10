@@ -142,7 +142,7 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                self.push_txn_and_state2(block_epilogue_txn_hash, output)?;
+                self.push_txn_and_state2(block_epilogue_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
                 bail!(
