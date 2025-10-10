@@ -9,7 +9,7 @@ use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 #[cfg(any(test, feature = "fuzzing"))]
-use rand::{rngs::OsRng, RngCore};
+use rand::Rng;
 use schemars::{self, JsonSchema};
 use serde::{de, ser, Deserialize, Serialize};
 use std::str::FromStr;
@@ -58,8 +58,8 @@ impl EventKey {
     #[cfg(any(test, feature = "fuzzing"))]
     /// Create a random event key for testing
     pub fn random() -> Self {
-        let mut rng = OsRng;
-        let salt = rng.next_u64();
+        let mut rng = rand::rng();
+        let salt: u64 = rng.random();
         EventKey::new_from_address(&AccountAddress::random(), salt)
     }
 

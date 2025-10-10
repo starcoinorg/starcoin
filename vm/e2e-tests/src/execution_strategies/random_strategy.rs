@@ -6,10 +6,7 @@ use crate::{
     execution_strategies::types::{Block, Executor, ExecutorResult, PartitionStrategy},
     executor::FakeExecutor,
 };
-use rand::{
-    rngs::{OsRng, StdRng},
-    Rng, SeedableRng,
-};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use starcoin_vm_types::{transaction::SignedUserTransaction, vm_status::VMStatus};
 
 #[derive(Debug, Clone)]
@@ -25,8 +22,8 @@ impl RandomizedStrategy {
     }
 
     pub fn from_os_rng() -> Self {
-        let mut seed_rng = OsRng;
-        let seed: [u8; 32] = seed_rng.gen();
+        let mut seed_rng = rand::rng();
+        let seed: [u8; 32] = seed_rng.random();
         Self::from_seed(seed)
     }
 }
@@ -36,7 +33,7 @@ impl PartitionStrategy for RandomizedStrategy {
     fn partition(&mut self, mut block: Block<Self::Txn>) -> Vec<Block<SignedUserTransaction>> {
         let mut blocks = vec![];
         while !block.is_empty() {
-            let block_size = self.gen.gen_range(0..block.len());
+            let block_size = self.gen.random_range(0..block.len());
             let new_block: Vec<_> = block.drain(0..block_size + 1).collect();
             blocks.push(new_block);
         }
@@ -59,7 +56,8 @@ impl RandomExecutor {
     }
 
     pub fn from_os_rng() -> Self {
-        RandomExecutor::from_seed(OsRng.gen::<[u8; 32]>())
+        let mut rng = rand::rng();
+        RandomExecutor::from_seed(rng.random())
     }
 }
 

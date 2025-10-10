@@ -416,7 +416,7 @@ pub async fn async_main(
     set_info(node_info);
 
     let mut accounts = load_accounts(&account_path).await?;
-    accounts.shuffle(&mut rand::thread_rng());
+    accounts.shuffle(&mut rand::rng());
 
     let mut handles = Vec::new();
     let info_handle = tokio::spawn({

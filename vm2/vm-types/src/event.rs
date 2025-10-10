@@ -7,7 +7,7 @@
 use crate::account_address::AccountAddress;
 use anyhow::ensure;
 #[cfg(any(test, feature = "fuzzing"))]
-use rand::{rngs::OsRng, RngCore};
+use rand::Rng;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -52,8 +52,8 @@ impl EventKey {
     #[cfg(any(test, feature = "fuzzing"))]
     /// Create a random event key for testing
     pub fn random() -> Self {
-        let mut rng = OsRng;
-        let salt = rng.next_u64();
+        let mut rng = rand::rng();
+        let salt: u64 = rng.random();
         EventKey::new(salt, AccountAddress::random())
     }
 

@@ -873,7 +873,7 @@ where
     let mut count = (peers_len as f64).powf(0.5).round() as u32;
     count = count.clamp(min_peers, max_peers);
 
-    let mut random = rand::thread_rng();
+    let mut random = rand::rng();
     let mut peer_ids: Vec<_> = peers.cloned().collect();
     peer_ids.shuffle(&mut random);
     peer_ids.truncate(count as usize);

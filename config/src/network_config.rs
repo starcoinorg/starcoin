@@ -16,8 +16,8 @@ use network_p2p_types::{
     MultiaddrWithPeerId,
 };
 use once_cell::sync::Lazy;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -276,7 +276,7 @@ impl NetworkConfig {
         });
         let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
         // shuffle seeds, connect seeds with random orders.
-        seeds.shuffle(&mut thread_rng());
+        seeds.shuffle(&mut rng());
         seeds
     }
 

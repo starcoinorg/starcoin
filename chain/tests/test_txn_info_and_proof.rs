@@ -30,9 +30,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
-    let block_count: u64 = rng.gen_range(2..10);
+    let block_count: u64 = rng.random_range(2..10);
     let mut seq_number = 0;
     let mut all_txns: Vec<StcTransaction> = vec![];
     let mut executed_blocks = vec![];
@@ -50,9 +50,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
         Transaction::UserTransaction(genesis_block.body.transactions.first().cloned().unwrap())
             .into(),
     ]);
-    executed_blocks.push(genesis_block);
-    let execution_result: Result<()> = (0..block_count).try_for_each(|_block_idx| {
-        let txn_count: u64 = rng.gen_range(1..10);
+
+    (0..block_count).for_each(|_block_idx| {
+        let txn_count: u64 = rng.random_range(1..10);
         let txns: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
                 let account_address = AccountAddress::random();
