@@ -53,7 +53,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
     executed_blocks.push(genesis_block);
     let execution_result: Result<()> = (0..block_count).try_for_each(|_block_idx| {
-        let txn_count: u64 = rng.gen_range(1..10);
+        let txn_count: u64 = rng.random_range(1..10);
         let txns: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
                 let account_address = AccountAddress::random();
