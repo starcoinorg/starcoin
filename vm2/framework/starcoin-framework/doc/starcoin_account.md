@@ -366,7 +366,15 @@ This would create the recipient account first and register it to receive the Coi
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_transfer_coins">transfer_coins</a>&lt;CoinType&gt;(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <b>to</b>: <b>address</b>, amount: u64) <b>acquires</b> <a href="starcoin_account.md#0x1_starcoin_account_DirectTransferConfig">DirectTransferConfig</a> {
-    <a href="starcoin_account.md#0x1_starcoin_account_deposit_coins">deposit_coins</a>(<b>to</b>, <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;CoinType&gt;(from, amount));
+    <b>if</b> (!<a href="account.md#0x1_account_exists_at">account::exists_at</a>(<b>to</b>)) {
+        <a href="starcoin_account.md#0x1_starcoin_account_create_account">create_account</a>(<b>to</b>)
+    };
+
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_stc_store_enabled">features::operations_default_to_fa_stc_store_enabled</a>()) {
+        <a href="starcoin_account.md#0x1_starcoin_account_fungible_transfer_only">fungible_transfer_only</a>(from, <b>to</b>, amount)
+    } <b>else</b> {
+        <a href="starcoin_account.md#0x1_starcoin_account_deposit_coins">deposit_coins</a>(<b>to</b>, <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;CoinType&gt;(from, amount));
+    }
 }
 </code></pre>
 
@@ -563,10 +571,9 @@ By default, this returns true if an account has not explicitly set whether the c
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_stc">register_stc</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(account_signer);
     <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">features::new_accounts_default_to_fa_stc_store_enabled</a>()) {
         <a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">ensure_primary_fungible_store_exists</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(account_signer));
-    } <b>else</b> {
-        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(account_signer);
     }
 }
 </code></pre>

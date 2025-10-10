@@ -12,7 +12,7 @@ use crate::state_store::state_key::StateKey;
 use crate::state_store::StateView;
 use crate::{
     account_config::{
-        genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
+        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource, TokenInfo,
         G_STC_TOKEN_CODE,
     },
     move_resource::MoveResource,
@@ -94,7 +94,7 @@ pub trait StateReaderExt: StateView {
         let rsrc_bytes = self
             .get_state_value_bytes(&StateKey::resource(
                 &address,
-                &BalanceResource::struct_tag_for_token(type_tag.clone()),
+                &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
             )?)?
             .ok_or_else(|| {
                 format_err!(
@@ -103,8 +103,8 @@ pub trait StateReaderExt: StateView {
                     type_tag
                 )
             })?;
-        let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
-        Ok(rsrc.token())
+        let rsrc = bcs_ext::from_bytes::<CoinStoreResource>(&rsrc_bytes)?;
+        Ok(rsrc.coin() as u128)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
