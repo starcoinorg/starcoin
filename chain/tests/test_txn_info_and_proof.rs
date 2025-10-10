@@ -51,7 +51,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .into(),
     ]);
 
-    (0..block_count).for_each(|_block_idx| {
+    executed_blocks.push(genesis_block);
+    let execution_result: Result<()> = (0..block_count).try_for_each(|_block_idx| {
         let txn_count: u64 = rng.random_range(1..10);
         let txns: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
