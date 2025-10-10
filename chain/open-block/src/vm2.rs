@@ -124,7 +124,6 @@ impl OpenedBlock {
         // Directly use VM2 BlockEpilogue
         let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone());
         let block_epilogue_txn_hash = block_epilogue_txn.id();
-        println!("finalize_block_epilogue txn hash: {}", block_epilogue_txn_hash);
         let mut results = do_execute_block_transactions(
             state,
             vec![block_epilogue_txn],
