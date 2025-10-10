@@ -4316,7 +4316,6 @@
             "block_number",
             "event_root_hash",
             "gas_used",
-            "state_root_hash",
             "status",
             "transaction_global_index",
             "transaction_hash",
@@ -4341,7 +4340,10 @@
             },
             "state_root_hash": {
               "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "HashValue"
             },
             "status": {
@@ -4484,7 +4486,6 @@
             "block_number",
             "event_root_hash",
             "gas_used",
-            "state_root_hash",
             "status",
             "transaction_global_index",
             "transaction_hash",
@@ -4509,7 +4510,10 @@
             },
             "state_root_hash": {
               "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "HashValue"
             },
             "status": {
@@ -4651,7 +4655,6 @@
               "block_number",
               "event_root_hash",
               "gas_used",
-              "state_root_hash",
               "status",
               "transaction_global_index",
               "transaction_hash",
@@ -4676,7 +4679,10 @@
               },
               "state_root_hash": {
                 "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "HashValue"
               },
               "status": {
@@ -4819,7 +4825,6 @@
               "block_number",
               "event_root_hash",
               "gas_used",
-              "state_root_hash",
               "status",
               "transaction_global_index",
               "transaction_hash",
@@ -4844,7 +4849,10 @@
               },
               "state_root_hash": {
                 "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "HashValue"
               },
               "status": {
@@ -4998,7 +5006,6 @@
             "block_number",
             "event_root_hash",
             "gas_used",
-            "state_root_hash",
             "status",
             "transaction_global_index",
             "transaction_hash",
@@ -5023,7 +5030,10 @@
             },
             "state_root_hash": {
               "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "HashValue"
             },
             "status": {
@@ -5176,7 +5186,6 @@
             "block_number",
             "event_root_hash",
             "gas_used",
-            "state_root_hash",
             "status",
             "transaction_global_index",
             "transaction_hash",
@@ -5201,7 +5210,10 @@
             },
             "state_root_hash": {
               "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "HashValue"
             },
             "status": {
@@ -5904,7 +5916,6 @@
               "block_number",
               "event_root_hash",
               "gas_used",
-              "state_root_hash",
               "status",
               "transaction_global_index",
               "transaction_hash",
@@ -5929,7 +5940,10 @@
               },
               "state_root_hash": {
                 "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "HashValue"
               },
               "status": {
@@ -6091,7 +6105,6 @@
               "block_number",
               "event_root_hash",
               "gas_used",
-              "state_root_hash",
               "status",
               "transaction_global_index",
               "transaction_hash",
@@ -6116,7 +6129,10 @@
               },
               "state_root_hash": {
                 "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "HashValue"
               },
               "status": {
@@ -6441,7 +6457,6 @@
                 "block_number",
                 "event_root_hash",
                 "gas_used",
-                "state_root_hash",
                 "status",
                 "transaction_global_index",
                 "transaction_hash",
@@ -6466,7 +6481,10 @@
                 },
                 "state_root_hash": {
                   "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                  "type": "string",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "format": "HashValue"
                 },
                 "status": {
@@ -6851,7 +6869,6 @@
                 "block_number",
                 "event_root_hash",
                 "gas_used",
-                "state_root_hash",
                 "status",
                 "transaction_global_index",
                 "transaction_hash",
@@ -6876,7 +6893,10 @@
                 },
                 "state_root_hash": {
                   "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                  "type": "string",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "format": "HashValue"
                 },
                 "status": {

@@ -41,7 +41,7 @@ pub struct TransactionInfo {
 
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
-    pub state_root_hash: HashValue,
+    pub state_root_hash: Option<HashValue>,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
     pub event_root_hash: HashValue,
@@ -60,7 +60,7 @@ impl TransactionInfo {
     /// root hash.
     pub fn new(
         transaction_hash: HashValue,
-        state_root_hash: HashValue,
+        state_root_hash: Option<HashValue>,
         events: &[ContractEvent],
         gas_used: u64,
         status: crate::vm_error::KeptVMStatus,
@@ -88,7 +88,7 @@ impl TransactionInfo {
 
     /// Returns root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
-    pub fn state_root_hash(&self) -> HashValue {
+    pub fn state_root_hash(&self) -> Option<HashValue> {
         self.state_root_hash
     }
 
@@ -112,7 +112,7 @@ impl Sample for TransactionInfo {
     fn sample() -> Self {
         Self::new(
             SignedUserTransaction::sample().id(),
-            *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            Some(*SPARSE_MERKLE_PLACEHOLDER_HASH),
             &[],
             0,
             crate::vm_error::KeptVMStatus::Executed,

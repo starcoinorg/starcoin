@@ -150,7 +150,7 @@ impl From<TransactionError> for RpcError {
                     ),
                 ),
             },
-            TransactionError::ApiInterrupted(_) => (ErrorCode::InternalError, None),
+            TransactionError::APIInterrupted(_) => (ErrorCode::InternalError, None),
         };
         Self(jsonrpc_core::Error {
             code: err_code,
@@ -249,7 +249,7 @@ impl From<TransactionError2> for RpcError {
                     ),
                 ),
             },
-            TransactionError2::ApiInterrupted(_) => (ErrorCode::InternalError, None),
+            TransactionError2::APIInterrupted(_) => (ErrorCode::InternalError, None),
         };
         RpcError(jsonrpc_core::Error {
             code: err_code,
@@ -263,7 +263,7 @@ impl From<MultiTransactionError> for RpcError {
         match err {
             MultiTransactionError::VM1(error) => error.into(),
             MultiTransactionError::VM2(error) => error.into(),
-            MultiTransactionError::ApiInterrupted(api_interrupted_error) => {
+            MultiTransactionError::APIInterrupted(api_interrupted_error) => {
                 Error::from(api_interrupted_error).into()
             }
         }
