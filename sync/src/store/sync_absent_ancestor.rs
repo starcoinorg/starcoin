@@ -136,11 +136,14 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
             .iter::<HashValue, DagSyncBlock>(SYNC_ABSENT_BLOCK_CF)?;
         iter.seek_to_first();
         for _i in 0..count {
-            if let Some(result) = iter.next() {
-                let (_, block) = result?;
-                blocks.push(block);
-            } else {
-                break;
+            match iter.next() {
+                Some(result) => {
+                    let (_, block) = result?;
+                    blocks.push(block);
+                }
+                _ => {
+                    break;
+                }
             }
         }
         anyhow::Result::Ok(blocks)

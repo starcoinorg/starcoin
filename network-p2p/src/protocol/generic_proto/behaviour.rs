@@ -1488,6 +1488,11 @@ impl NetworkBehaviour for GenericProto {
                                             self.events.push_back(
                                                 NetworkBehaviourAction::GenerateEvent(event),
                                             );
+                                        } else {
+                                            warn!(target: "sub-libp2p",
+                                                            "No replacement sink found for disconnected connection of {} {:?}",
+                                            peer_id, connection_id
+                                                            );
                                         }
                                     } else {
                                         debug!(

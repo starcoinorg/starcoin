@@ -104,7 +104,7 @@ impl Solver for CpuSolver {
                                     if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, &extra) {
                                         let pow_hash_u256: U256 = pow_hash.into();
                                         hash_counter += 1;
-                                        if let Ok(target) = difficult_to_target(diff) {
+                                        match difficult_to_target(diff) { Ok(target) => {
                                             if pow_hash_u256 <= target {
                                                 let elapsed_sec: f64 = start.elapsed().as_nanos() as f64 / 1_000_000_000.0;
                                                 let hash_rate = hash_counter as f64 / elapsed_sec;
@@ -119,10 +119,10 @@ impl Solver for CpuSolver {
                                                 };
                                                 break;
                                             }
-                                        } else {
+                                        } _ => {
                                             error!("[miner-client-solver] Failed to calculate target: {diff}");
                                             break;
-                                        }
+                                        }}
                                     }
                                 }
                             }
