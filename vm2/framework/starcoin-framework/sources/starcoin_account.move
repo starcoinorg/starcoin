@@ -116,7 +116,15 @@ module starcoin_framework::starcoin_account {
     /// Convenient function to transfer a custom CoinType to a recipient account that might not exist.
     /// This would create the recipient account first and register it to receive the CoinType, before transferring.
     public entry fun transfer_coins<CoinType>(from: &signer, to: address, amount: u64) acquires DirectTransferConfig {
-        deposit_coins(to, coin::withdraw<CoinType>(from, amount));
+        if (!account::exists_at(to)) {
+            create_account(to)
+        };
+
+        if (features::operations_default_to_fa_stc_store_enabled()) {
+            fungible_transfer_only(from, to, amount)
+        } else {
+            deposit_coins(to, coin::withdraw<CoinType>(from, amount));
+        }
     }
 
     /// Convenient function to deposit a custom CoinType into a recipient account that might not exist.
@@ -193,10 +201,9 @@ module starcoin_framework::starcoin_account {
     }
 
     public(friend) fun register_stc(account_signer: &signer) {
+        coin::register<STC>(account_signer);
         if (features::new_accounts_default_to_fa_stc_store_enabled()) {
             ensure_primary_fungible_store_exists(signer::address_of(account_signer));
-        } else {
-            coin::register<STC>(account_signer);
         }
     }
 
