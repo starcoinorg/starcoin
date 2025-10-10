@@ -70,9 +70,9 @@ rand_core_0_5_1 = { workspace = true }
 ripemd = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
-sha2 = "0.9.3"
-sha2_0_10_6 = { workspace = true }
-sha3 = "0.9.1"
+sha2 = { workspace = true }
+sha2_0_9 = { workspace = true }
+sha3 = { workspace = true }
 siphasher = { workspace = true }
 smallvec = { workspace = true }
 tempfile = { workspace = true }

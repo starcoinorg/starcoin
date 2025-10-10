@@ -158,7 +158,7 @@ mod tests {
     use super::*;
     use hex::FromHex;
     use libsecp256k1::{PublicKey, SecretKey};
-    use rand::rngs::OsRng;
+    use rand::Rng;
     use starcoin_crypto::HashValue;
 
     #[test]
@@ -172,10 +172,16 @@ mod tests {
 
     #[test]
     fn test_random() {
-        let mut rng = OsRng;
+        let mut rng = rand::rng();
         let data = HashValue::random();
         let message = Message::parse(&data);
-        let seckey = SecretKey::random(&mut rng);
+        let mut key_buf = [0u8; 32];
+        let seckey = loop {
+            rng.fill(&mut key_buf);
+            if let Ok(key) = SecretKey::parse(&key_buf) {
+                break key;
+            }
+        };
         let pubkey = PublicKey::from_secret_key(&seckey);
         let address = pubkey_to_address(&pubkey);
         let (sig, rec_id) = libsecp256k1::sign(&message, &seckey);

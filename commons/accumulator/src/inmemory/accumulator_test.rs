@@ -108,8 +108,8 @@ fn test_accumulator_append() {
 
 #[test]
 fn test_tree_and_inmemory_compare() {
-    let mut rng = rand::thread_rng();
-    let leaf_count = rng.gen_range(100..200);
+    let mut rng = rand::rng();
+    let leaf_count = rng.random_range(100..200);
     let leaves = create_leaves(0..leaf_count);
     let mut accumulator = InMemoryAccumulator::default();
     accumulator = accumulator.append(leaves.as_slice());
@@ -128,12 +128,12 @@ fn test_tree_and_inmemory_compare() {
 
 #[test]
 fn test_proof() {
-    let mut rng = rand::thread_rng();
-    let leaf_count = rng.gen_range(1000..2000);
+    let mut rng = rand::rng();
+    let leaf_count = rng.random_range(1000..2000);
     let leaves = create_leaves(0..leaf_count);
     let accumulator = InMemoryAccumulator::from_leaves(leaves.as_slice());
     let root = accumulator.root_hash;
-    let leaf_index = rng.gen_range(0..leaf_count as u64);
+    let leaf_index = rng.random_range(0..leaf_count as u64);
     let proof = InMemoryAccumulator::get_proof_from_leaves(leaves.as_slice(), leaf_index).unwrap();
     assert!(
         proof

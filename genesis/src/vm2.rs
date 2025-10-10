@@ -107,7 +107,7 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
             executed_data.state_root = txn_state_root;
             executed_data.txn_infos.push(TransactionInfo::new(
                 txn_hash,
-                txn_state_root,
+                Some(txn_state_root),
                 events.as_slice(),
                 gas_used,
                 status,

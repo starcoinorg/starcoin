@@ -49,8 +49,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use rand::prelude::{Distribution, SliceRandom};
-use rand::rngs::OsRng;
+use rand::distr::Distribution;
+use rand::seq::IndexedRandom;
 use rand::Rng;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
@@ -162,8 +162,8 @@ impl Distribution<char> for IdentifierSymbols {
 }
 
 fn random_identity() -> Identifier {
-    let rng = OsRng;
-    let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
+    let mut rng = rand::rng();
+    let id: String = (&mut rng).sample_iter(&IdentifierSymbols).take(7).collect();
     Identifier::new(id).expect("random identity should valid.")
 }
 

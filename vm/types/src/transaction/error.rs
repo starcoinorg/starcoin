@@ -67,7 +67,7 @@ pub enum Error {
     TooBig,
     CallErr(CallError),
     /// API error, some technical error
-    ApiInterrupted(String),
+    APIInterrupted(String),
 }
 
 impl fmt::Display for Error {
@@ -104,7 +104,7 @@ impl fmt::Display for Error {
             }
             TooBig => "Transaction too big".into(),
             CallErr(call_err) => format!("Call txn err: {}.", call_err),
-            ApiInterrupted(msg) => format!("API interupted for the reason: {}.", msg),
+            APIInterrupted(msg) => format!("API interupted for the reason: {}.", msg),
         };
 
         f.write_fmt(format_args!("Transaction error ({})", msg))

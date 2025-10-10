@@ -22,7 +22,7 @@ use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
-    ApiInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction,
+    APIInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction,
     MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::{
@@ -99,7 +99,7 @@ impl TxPoolService {
     ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
         self.get_inner()
             .get_pool_client()
-            .map_err(|e| MultiTransactionError::ApiInterrupted(ApiInterruptedError(e.to_string())))?
+            .map_err(|e| MultiTransactionError::APIInterrupted(APIInterruptedError(e.to_string())))?
             .verify_transaction(tx.into())
     }
 }
@@ -226,7 +226,7 @@ impl TxPoolSyncService for TxPoolService {
                             match address {
                                 MultiAccountAddress::VM1(account_address) => account_address,
                                 MultiAccountAddress::VM2(_account_address) => panic!(
-                                    "unexpected account address in next_sequence_number2_in_batch"
+                                    "unexpected VM2 account address in next_sequence_number2_in_batch"
                                 ),
                             },
                             seq,

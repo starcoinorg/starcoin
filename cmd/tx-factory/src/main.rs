@@ -576,7 +576,7 @@ impl TxnMocker {
                 self.account_address,
                 addr_vec.clone(),
                 1,
-                1,
+                10000,
                 expiration_timestamp,
             )?;
             let result = self.submit_txn(txn, self.account_address, true);

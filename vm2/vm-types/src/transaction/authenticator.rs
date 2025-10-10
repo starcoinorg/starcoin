@@ -6,7 +6,7 @@ use crate::sign_message::SigningMessage;
 use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use rand::{rngs::OsRng, Rng};
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{
@@ -254,8 +254,9 @@ impl AuthenticationKey {
 
     /// Create a random authentication key. For testing only
     pub fn random() -> Self {
-        let mut rng = OsRng;
-        let buf: [u8; Self::LENGTH] = rng.gen();
+        let mut rng = rand::rng();
+        let mut buf = [0u8; Self::LENGTH];
+        rng.fill(&mut buf);
         Self::new(buf)
     }
 

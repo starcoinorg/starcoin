@@ -51,8 +51,8 @@ pub fn randomly_check_layout_matches(
         // We generally call this `randomly_check_layout_matches` function when we know
         // that the layouts are supposed to match. As an optimization, we only randomly
         // check if the layouts are matching.
-        let mut rng = rand::thread_rng();
-        let random_number: u32 = rng.gen_range(0..100);
+        let mut rng = rand::rng();
+        let random_number: u32 = rng.random_range(0..100);
         if random_number == 1 && layout_1 != layout_2 {
             return Err(code_invariant_error(format!(
                 "Layouts don't match when they are expected to: {:?} and {:?}",

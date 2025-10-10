@@ -115,7 +115,7 @@ impl Consensus for ConsensusStrategy {
 }
 
 pub fn generate_nonce() -> u32 {
-    let mut rng = rand::thread_rng();
-    rng.gen::<u32>();
-    rng.gen_range(0..u32::MAX)
+    let mut rng = rand::rng();
+    rng.random::<u32>();
+    rng.random_range(0..u32::MAX)
 }

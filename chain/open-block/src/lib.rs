@@ -212,7 +212,8 @@ impl OpenedBlock {
                     .collect()
             };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let last_index = txn_outputs.len().saturating_sub(1);
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus::Discard(status) => {
@@ -224,7 +225,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state(txn_hash, output)?;
+                    self.push_txn_and_state(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns
                         .push(txn.try_into().expect("user txn"));
@@ -264,7 +265,7 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus::Keep(_) => {
-                let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
+                let _ = self.push_txn_and_state(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
                 bail!(
@@ -291,7 +292,8 @@ impl OpenedBlock {
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput,
-    ) -> Result<(HashValue, HashValue)> {
+        root_state_calc: bool,
+    ) -> Result<(Option<HashValue>, HashValue)> {
         let (state, _state2) = &mut self.state;
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
@@ -304,10 +306,15 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let txn_state_root = state
-            .commit()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
-
+        let txn_state_root = if root_state_calc {
+            Some(
+                state
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?,
+            )
+        } else {
+            None
+        };
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,

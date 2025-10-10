@@ -665,7 +665,7 @@ where
                 if i >= slice.len() {
                     break;
                 }
-                let j = rand::thread_rng().gen_range(i..slice.len()); // i < max_candidates < slice.len()
+                let j = rand::rng().random_range(i..slice.len()); // i < max_candidates < slice.len()
                 slice.swap(i, j);
             }
 
@@ -673,7 +673,7 @@ where
             candidates.truncate(max_candidates);
         } else if candidates.len() > max_block_parents / 2 {
             // Fallback to a simpler algo in this case
-            candidates.make_contiguous()[max_block_parents / 2..].shuffle(&mut rand::thread_rng());
+            candidates.make_contiguous()[max_block_parents / 2..].shuffle(&mut rand::rng());
         }
 
         let mut parents = Vec::with_capacity(min(max_block_parents, candidates.len() + 1));

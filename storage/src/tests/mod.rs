@@ -18,7 +18,7 @@ fn random_txn_info2(block_number: u64, gas_used: u64) -> StcRichTransactionInfo 
         block_number,
         TransactionInfo::new(
             HashValue::random(),
-            HashValue::zero(),
+            Some(HashValue::zero()),
             vec![].as_slice(),
             gas_used,
             KeptVMStatus::Executed,

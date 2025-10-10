@@ -1018,7 +1018,7 @@ pub struct TransactionInfoView {
     pub transaction_global_index: StrView<u64>,
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
-    pub state_root_hash: HashValue,
+    pub state_root_hash: Option<HashValue>,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
     pub event_root_hash: HashValue,
