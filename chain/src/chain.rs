@@ -449,6 +449,7 @@ impl BlockChain {
             opened_block.process_vm1_transactions(vm1_txns)?
         };
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
+        opened_block.finalize_block_epilogue()?;
         let template = opened_block.finalize()?;
 
         Ok((template, excluded_txns.absorb(excluded_txns2)))
@@ -1393,7 +1394,9 @@ impl ChainReader for BlockChain {
             )
         } else {
             // Use DAG execution with multi-VM support
-            self.execute_dag_block(verified_block)
+            let result = self.execute_dag_block(verified_block);
+            println!("result:{:?}", result);
+            result
         }
     }
 

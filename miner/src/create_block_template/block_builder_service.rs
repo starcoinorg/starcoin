@@ -565,6 +565,14 @@ where
                 excluded_txns2.untouched_txns.len()
             );
 
+            match opened_block.finalize_block_epilogue() {
+                Ok(()) => {}
+                Err(e) => {
+                    error!("[BlockProcess] finalize block epilogue error: {}", e);
+                    return;
+                }
+            }
+
             let template = match opened_block.finalize() {
                 Ok(template) => template,
                 Err(e) => {

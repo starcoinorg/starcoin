@@ -981,6 +981,7 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
+    BlockEpilogue(BlockMetadata),
 }
 
 // Legacy BlockMetadata for database upgrade compatibility
@@ -1061,6 +1062,10 @@ impl Transaction {
         match self {
             Self::UserTransaction(signed) => signed.id(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
+            Self::BlockEpilogue(block_metadata) => {
+                let meta_id: HashValue = block_metadata.id();
+                HashValue::sha3_256_of(meta_id.as_ref())
+            }
         }
     }
 }

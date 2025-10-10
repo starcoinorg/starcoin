@@ -55,6 +55,7 @@ impl TransactionView2 {
         let (meta, txn) = match txn {
             Transaction::BlockMetadata(meta) => (Some(meta.into()), None),
             Transaction::UserTransaction(t) => (None, Some(t.try_into()?)),
+            Transaction::BlockEpilogue(_) => (None, None),
         };
         Ok(Self {
             block_hash,

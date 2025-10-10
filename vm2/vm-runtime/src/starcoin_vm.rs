@@ -1260,7 +1260,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
-                TransactionBlock::BlockEpilogue => {
+                TransactionBlock::BlockEpilogue(_) => {
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1519,7 +1519,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
-    BlockEpilogue,
+    BlockEpilogue(BlockMetadata),
 }
 
 impl TransactionBlock {
@@ -1527,7 +1527,7 @@ impl TransactionBlock {
         match self {
             Self::UserTransaction(_) => "UserTransaction",
             Self::BlockPrologue(_) => "BlockMetadata",
-            Self::BlockEpilogue => "BlockEpilogue",
+            Self::BlockEpilogue(_) => "BlockEpilogue",
         }
     }
 }
@@ -1536,30 +1536,29 @@ impl TransactionBlock {
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
-    let mut saw_block_metadata = false;
     for txn in txns {
         match txn {
             Transaction::BlockMetadata(data) => {
                 if !buf.is_empty() {
                     blocks.push(TransactionBlock::UserTransaction(buf));
                     buf = vec![];
-                    if saw_block_metadata {
-                        blocks.push(TransactionBlock::BlockEpilogue);
-                    }
                 }
-                saw_block_metadata = true;
                 blocks.push(TransactionBlock::BlockPrologue(data));
             }
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
+            Transaction::BlockEpilogue(data) => {
+                if !buf.is_empty() {
+                    blocks.push(TransactionBlock::UserTransaction(buf));
+                    buf = vec![];
+                }
+                blocks.push(TransactionBlock::BlockEpilogue(data));
+            }
         }
     }
     if !buf.is_empty() {
         blocks.push(TransactionBlock::UserTransaction(buf));
-        if saw_block_metadata {
-            blocks.push(TransactionBlock::BlockEpilogue);
-        }
     }
     blocks
 }
@@ -1723,6 +1722,13 @@ impl StarcoinVM {
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
                 (vm_status, output, Some("block_meta".to_string()))
+            }
+            PreprocessedTransaction::BlockEpilogue(_) => {
+                let (vm_status, output) = match self.process_block_epilogue(data_cache) {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
+                (vm_status, output, Some("block_epilogue".to_string()))
             }
         })
     }

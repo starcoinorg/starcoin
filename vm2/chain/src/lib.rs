@@ -29,12 +29,18 @@ pub fn build_block_transactions(
     block_meta: Option<BlockMetadata>,
 ) -> Vec<Transaction> {
     let mut txns = block_meta
-        .map(|m| vec![Transaction::BlockMetadata(m)])
+        .as_ref()
+        .map(|m| vec![Transaction::BlockMetadata(m.clone())])
         .unwrap_or_default();
     txns.extend(
         signed_txns
             .iter()
             .map(|t| Transaction::UserTransaction(t.clone())),
+    );
+    txns.extend(
+        block_meta
+            .map(|m| vec![Transaction::BlockEpilogue(m)])
+            .unwrap_or_default(),
     );
     txns
 }
