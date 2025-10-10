@@ -67,7 +67,7 @@ impl ErrorMocker {
 
     pub async fn random_err(&self) -> Result<()> {
         if self.random_error_percent > 0 {
-            let rnd = rand::thread_rng().gen_range(0..100);
+            let rnd = rand::rng().random_range(0..100);
             if rnd <= self.random_error_percent {
                 return match &self.strategy {
                     ErrorStrategy::RandomErr => Err(format_err!("Random error {}", rnd)),

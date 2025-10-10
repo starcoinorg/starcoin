@@ -9,8 +9,7 @@ use futures::future::BoxFuture;
 use itertools::Itertools;
 use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
-use rand::prelude::IteratorRandom;
-use rand::prelude::SliceRandom;
+use rand::seq::IteratorRandom;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -303,7 +302,8 @@ impl PeerSelector {
 
     pub fn best(&self) -> Option<PeerInfo> {
         if let Some(peers) = self.bests(0.into()) {
-            peers.choose(&mut rand::thread_rng()).cloned()
+            let mut rng = rand::rng();
+            peers.iter().choose(&mut rng).cloned()
         } else {
             None
         }
@@ -390,10 +390,11 @@ impl PeerSelector {
     }
 
     pub fn random(&self) -> Option<PeerId> {
+        let mut rng = rand::rng();
         self.details
             .lock()
             .iter()
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rng)
             .map(|peer| peer.peer_info.peer_id())
     }
 
@@ -434,9 +435,9 @@ impl PeerSelector {
             return self.details.lock().first().map(|peer| peer.peer_id());
         }
 
-        let mut random = rand::thread_rng();
+        let mut random = rand::rng();
         let total_score = self.total_score.load(Ordering::SeqCst);
-        let random_score: u64 = random.gen_range(1..total_score);
+        let random_score: u64 = random.random_range(1..total_score);
         let mut tmp_score: u64 = 0;
         for peer_detail in self.details.lock().iter() {
             tmp_score = tmp_score.saturating_add(peer_detail.score_counter.score());
@@ -448,10 +449,11 @@ impl PeerSelector {
     }
 
     pub fn random_peer(&self) -> Option<PeerInfo> {
+        let mut rng = rand::rng();
         self.details
             .lock()
             .iter()
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rng)
             .map(|peer| peer.peer_info.clone())
     }
 

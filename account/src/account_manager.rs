@@ -5,7 +5,8 @@ use crate::account::Account;
 use crate::account_storage::AccountStorage;
 use anyhow::format_err;
 use parking_lot::RwLock;
-use rand::prelude::*;
+use rand::Rng;
+use rand_0_8::{rngs::StdRng as StdRng08, SeedableRng as SeedableRng08};
 use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
@@ -397,8 +398,8 @@ impl AccountManager {
 }
 
 pub(crate) fn gen_private_key() -> Ed25519PrivateKey {
-    let mut seed_rng = rand::rngs::OsRng;
-    let seed_buf: [u8; 32] = seed_rng.gen();
-    let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
+    let mut seed_rng = rand::rng();
+    let seed_buf: [u8; 32] = seed_rng.random();
+    let mut rng: StdRng08 = SeedableRng08::from_seed(seed_buf);
     Ed25519PrivateKey::generate(&mut rng)
 }

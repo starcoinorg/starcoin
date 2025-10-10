@@ -21,7 +21,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{Reference, StructRef, Value, VectorRef},
 };
-use sha2::Sha512;
+use sha2_0_9::Sha512;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
