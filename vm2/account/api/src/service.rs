@@ -34,12 +34,23 @@ pub trait AccountAsyncService:
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
     ) -> Result<SignedUserTransaction>;
+
+    async fn sign_txn_in_batch(
+        &self,
+        raw_txn: Vec<RawUserTransaction>,
+    ) -> Result<Vec<SignedUserTransaction>>;
+
     async fn unlock_account(
         &self,
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
     ) -> Result<AccountInfo>;
+    async fn unlock_account_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: std::time::Duration,
+    ) -> Result<Vec<AccountInfo>>;
     async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo>;
     async fn import_account(
         &self,
@@ -161,6 +172,22 @@ where
         }
     }
 
+    async fn sign_txn_in_batch(
+        &self,
+        raw_txn: Vec<RawUserTransaction>,
+    ) -> Result<Vec<SignedUserTransaction>> {
+        let response = self
+            .send(AccountRequest::SignTxnInBatch { txns: raw_txn })
+            .await??;
+        if let AccountResponse::SignedTxnList(txns) = response {
+            Ok(txns)
+        } else {
+            return Err(anyhow::anyhow!(
+                "unexpected response type: expected SignedTxnList"
+            ));
+        }
+    }
+
     async fn unlock_account(
         &self,
         address: AccountAddress,
@@ -172,6 +199,21 @@ where
             .await??;
         if let AccountResponse::AccountInfo(account_info) = response {
             Ok(*account_info)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn unlock_account_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: std::time::Duration,
+    ) -> Result<Vec<AccountInfo>> {
+        let response = self
+            .send(AccountRequest::UnlockAccountInBatch(batch, duration))
+            .await??;
+        if let AccountResponse::AccountList(accounts) = response {
+            Ok(accounts)
         } else {
             panic!("Unexpect response type.")
         }

@@ -12,6 +12,7 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_types::{
     account_address::AccountAddress,
+    account_config::BalanceResource,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
@@ -57,6 +58,18 @@ impl<'a> RemoteStateReader<'a> {
 
     fn new_with_root(client: &'a RpcClient, state_root: HashValue) -> Self {
         Self { client, state_root }
+    }
+
+    pub fn get_balance2(&self, address: AccountAddress) -> Result<Option<u128>> {
+        let state_key = StateKey::resource_typed::<BalanceResource>(&address)?;
+        self.client
+            .state_get_with_proof2(state_key)?
+            .state
+            .map_or(Ok(None), |state| {
+                Ok(Some(
+                    bcs_ext::from_bytes::<BalanceResource>(state.0.as_slice())?.token(),
+                ))
+            })
     }
 }
 

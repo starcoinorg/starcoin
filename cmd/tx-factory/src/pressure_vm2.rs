@@ -1,10 +1,14 @@
-use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
 use starcoin_logger::prelude::{error, info};
 
 use crate::mocker::TxnMocker;
-
-
 
 pub fn start_vm2_pressure_test(
     mut tx_mocker: TxnMocker,
@@ -18,13 +22,13 @@ pub fn start_vm2_pressure_test(
 ) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
         let accounts = tx_mocker
-            .get_or_create_accounts(account_num, batch_size)
+            .get_or_create_accounts2(account_num, batch_size)
             .expect("create accounts should success");
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
                 if is_stress {
                     info!("stress account: {}", accounts.len());
-                    let success = tx_mocker.stress_test(
+                    let success = tx_mocker.stress_test2(
                         accounts.clone(),
                         round_num,
                         interval,
@@ -38,7 +42,7 @@ pub fn start_vm2_pressure_test(
                         }
                     }
                 } else {
-                    let success = tx_mocker.gen_and_submit_txn(false);
+                    let success = tx_mocker.gen_and_submit_txn2(false);
                     if let Err(e) = success {
                         error!("fail to generate/submit mock txn, err: {:?}", &e);
                         // if txn is rejected, recheck sequence number, and start over
@@ -55,4 +59,3 @@ pub fn start_vm2_pressure_test(
         }
     })
 }
-
