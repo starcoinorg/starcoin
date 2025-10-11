@@ -10,6 +10,11 @@ pub fn association_address() -> AccountAddress {
         .expect("Parsing valid hex literal should always succeed")
 }
 
+pub fn stc_fungible_asset_derive_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0xA")
+        .expect("Parsing valid hex literal should always succeed")
+}
+
 pub fn core_code_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }

@@ -41,6 +41,7 @@ hashbrown = { workspace = true }
 arr_macro = { workspace = true }
 rayon = { workspace = true }
 starcoin-infallible = { workspace = true }
+sha3 = "0.10"
 
 [dev-dependencies]
 proptest = { workspace = true, features = ["std"] }

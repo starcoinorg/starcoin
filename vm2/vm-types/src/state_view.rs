@@ -12,8 +12,10 @@ use crate::state_store::state_key::StateKey;
 use crate::state_store::StateView;
 use crate::{
     account_config::{
-        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource, TokenInfo,
-        G_STC_TOKEN_CODE,
+        genesis_address,
+        resources::{primary_store, FungibleStoreResource},
+        token_code::TokenCode,
+        AccountResource, CoinStoreResource, ObjectGroupResource, TokenInfo, G_STC_TOKEN_CODE,
     },
     move_resource::MoveResource,
     on_chain_config::{GlobalTimeOnChain, OnChainConfig},
@@ -25,10 +27,15 @@ use crate::{
 };
 use anyhow::{format_err, Result};
 use bytes::Bytes;
+use log::info;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
+    move_resource::MoveStructType,
+    vm_status::StatusCode,
 };
+use std::collections::BTreeMap;
+use vm::errors::PartialVMError;
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
@@ -98,13 +105,65 @@ pub trait StateReaderExt: StateView {
             )?)?
             .ok_or_else(|| {
                 format_err!(
-                    "BalanceResource not exists at address:{} for type tag:{}",
+                    "CoinStoreResource not exists at address:{} for type tag:{}",
                     address,
                     type_tag
                 )
             })?;
         let rsrc = bcs_ext::from_bytes::<CoinStoreResource>(&rsrc_bytes)?;
-        Ok(rsrc.coin() as u128)
+
+        // Read primary fungible store from user
+        let primary_fungible_store_address =
+            primary_store(&address, &type_tag.to_canonical_string())?;
+        info!(
+            "get_balance_by_type | primary_fungible_store_address:{:?}",
+            primary_fungible_store_address
+        );
+
+        let tag_bytes = self.get_resource_group_struct_tag_bytes(
+            &primary_fungible_store_address,
+            &StateKey::resource_group(&address, &ObjectGroupResource::struct_tag()),
+            &FungibleStoreResource::struct_tag(),
+        )?;
+        let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes)?;
+
+        Ok(rsrc.coin() as u128 + fungible_store.balance() as u128)
+    }
+
+    fn get_resource_group_struct_tag_bytes(
+        &self,
+        address: &AccountAddress,
+        group_key: &StateKey,
+        struct_tag: &StructTag,
+    ) -> Result<Bytes> {
+        info!(
+            "get_resource_group_struct_tag_bytes | entered, address: {}, struct_tag: {}",
+            address, struct_tag
+        );
+        let group_data = self
+            .get_state_value_bytes(group_key)?
+            .ok_or(format_err!("ObjectCore group not exists"))?;
+
+        let group_data_map =
+            bcs::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data).map_err(|e| {
+                PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
+                    format!(
+                        "Failed to deserialize the resource group at {:? }: {:?}",
+                        group_key, e
+                    ),
+                )
+            })?;
+
+        Ok(group_data_map
+            .get(struct_tag)
+            .ok_or_else(|| {
+                format_err!(
+                    "Group struct tag not exists at address:{} for type tag:{}",
+                    address,
+                    struct_tag
+                )
+            })?
+            .clone())
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
