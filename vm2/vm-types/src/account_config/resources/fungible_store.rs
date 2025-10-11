@@ -51,7 +51,6 @@ use sha3::{Digest, Sha3_256};
 /// }
 ///
 ///
-
 const OBJECT_FROM_SEED_ADDRESS_SCHEME: u8 = 0xFE;
 
 pub fn create_derivd_address_by_seed(
@@ -78,12 +77,12 @@ pub fn primary_store(
         return Err(anyhow!("coin_canonical_string is empty"));
     }
     let ret_address = if coin_canonical_string == stc_type_tag().to_canonical_string() {
-        AuthenticationKey::object_address_from_object(&source, &stc_fungible_asset_derive_address())
+        AuthenticationKey::object_address_from_object(source, &stc_fungible_asset_derive_address())
             .derived_address()
     } else {
         AuthenticationKey::object_address_from_object(
-            &source,
-            &create_derivd_address_by_seed(&source, coin_canonical_string)?,
+            source,
+            &create_derivd_address_by_seed(source, coin_canonical_string)?,
         )
         .derived_address()
     };

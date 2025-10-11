@@ -10,9 +10,9 @@ use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
+use starcoin_vm2_types::account::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
-use starcoin_vm2_types::account::DEFAULT_MAX_GAS_AMOUNT;
 
 #[stest::test]
 pub fn test_open_block() -> Result<()> {

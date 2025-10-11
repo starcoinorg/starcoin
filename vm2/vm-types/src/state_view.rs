@@ -27,13 +27,13 @@ use crate::{
 };
 use anyhow::{format_err, Result};
 use bytes::Bytes;
-use log::info;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
     move_resource::MoveStructType,
     vm_status::StatusCode,
 };
+use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
 use vm::errors::PartialVMError;
 
@@ -129,7 +129,6 @@ pub trait StateReaderExt: StateView {
             &FungibleStoreResource::struct_tag(),
         )?;
         let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes)?;
-
         Ok(rsrc.coin() as u128 + fungible_store.balance() as u128)
     }
 
@@ -140,12 +139,14 @@ pub trait StateReaderExt: StateView {
         struct_tag: &StructTag,
     ) -> Result<Bytes> {
         info!(
-            "get_resource_group_struct_tag_bytes | entered, group_key: {:?}, address: {}, struct_tag: {}",
-            group_key, address, struct_tag
+            "get_resource_resource_group_struct_tag_bytes | entered {:?}, {:?}, {:?} ",
+            address, group_key, struct_tag,
         );
-        let group_data = self
-            .get_state_value_bytes(group_key)?
-            .ok_or(format_err!("ObjectCore group not exists"))?;
+
+        let group_data = self.get_state_value_bytes(group_key)?.ok_or(format_err!(
+            "ObjectCore group not exists, address: {:?}",
+            address
+        ))?;
 
         let group_data_map =
             bcs::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data).map_err(|e| {
