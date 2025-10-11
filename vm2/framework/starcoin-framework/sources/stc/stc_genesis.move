@@ -282,15 +282,12 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
         );
-        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 1 "));
         dao_modify_config_proposal::plugin<STC>(starcoin_framework);
 
-        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 2 "));
 
         let upgrade_plan_cap = stc_transaction_package_validation::extract_submit_upgrade_plan_cap(starcoin_framework);
         dao_upgrade_module_proposal::plugin<STC>(starcoin_framework, upgrade_plan_cap);
 
-        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | 3 "));
         // the following configurations are gov-ed by Dao.
         on_chain_config_dao::plugin<STC, transaction_publish_option::TransactionPublishOption>(starcoin_framework);
         on_chain_config_dao::plugin<STC, vm_config::VMConfig>(starcoin_framework);
