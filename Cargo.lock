@@ -13472,6 +13472,7 @@ dependencies = [
  "starcoin-aggregator",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
+ "starcoin-logger",
  "starcoin-types",
  "starcoin-vm-types",
  "test-case",

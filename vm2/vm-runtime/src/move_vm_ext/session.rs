@@ -39,7 +39,7 @@ use starcoin_framework::natives::aggregator_natives::{
     AggregatorChangeSet, AggregatorChangeV1, NativeAggregatorContext,
 };
 use starcoin_framework::natives::event::NativeEventContext;
-use starcoin_logger::prelude::error;
+use starcoin_logger::prelude::{error, info};
 use starcoin_table_natives::NativeTableContext;
 use starcoin_table_natives::TableChangeSet;
 use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
@@ -146,7 +146,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         let resource_converter = |value: Value,
                                   layout: MoveTypeLayout,
                                   has_aggregator_lifting: bool|
-         -> PartialVMResult<BytesWithResourceLayout> {
+                                  -> PartialVMResult<BytesWithResourceLayout> {
             let serialization_result = if has_aggregator_lifting {
                 // We allow serialization of native values here because we want to
                 // temporarily store native values (via encoding to ensure deterministic
@@ -198,7 +198,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             aggregator_change_set,
             configs.legacy_resource_creation_as_modification(),
         )
-        .map_err(|e| e.finish(Location::Undefined))?;
+            .map_err(|e| e.finish(Location::Undefined))?;
 
         Ok((change_set, module_write_set))
     }
@@ -316,6 +316,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                     });
 
                 if let Some(resource_group_tag) = resource_group_tag {
+                    info!("Merging resource: {:?} to group: {:?}", struct_tag, resource_group_tag);
                     if resource_groups
                         .entry(resource_group_tag)
                         .or_default()
@@ -650,7 +651,7 @@ impl SessionExt<'_, '_> {
                     IndexKind::AddressIdentifier,
                     module.self_handle_idx().0,
                 )
-                .finish(Location::Undefined));
+                    .finish(Location::Undefined));
             }
         }
 
@@ -687,7 +688,7 @@ impl SessionExt<'_, '_> {
                     return Err(PartialVMError::new(
                         StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE,
                     )
-                    .finish(Location::Undefined));
+                        .finish(Location::Undefined));
                 }
             }
 
