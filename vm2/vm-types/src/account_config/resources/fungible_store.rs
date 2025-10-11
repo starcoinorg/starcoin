@@ -54,7 +54,10 @@ use sha3::{Digest, Sha3_256};
 
 const OBJECT_FROM_SEED_ADDRESS_SCHEME: u8 = 0xFE;
 
-fn create_derivd_address_by_seed(source: &AccountAddress, seed: &str) -> Result<AccountAddress> {
+pub fn create_derivd_address_by_seed(
+    source: &AccountAddress,
+    seed: &str,
+) -> Result<AccountAddress> {
     let mut bytes = bcs::to_bytes(source)?;
     bytes.extend_from_slice(seed.as_bytes());
     bytes.push(OBJECT_FROM_SEED_ADDRESS_SCHEME);
@@ -72,7 +75,7 @@ pub fn primary_store(
         source, coin_canonical_string
     );
     if coin_canonical_string.is_empty() {
-        anyhow!("coin_canonical_string is empty");
+        return Err(anyhow!("coin_canonical_string is empty"));
     }
     let ret_address = if coin_canonical_string == stc_type_tag().to_canonical_string() {
         AuthenticationKey::object_address_from_object(&source, &stc_fungible_asset_derive_address())
@@ -129,21 +132,17 @@ impl MoveStructType for FungibleStoreResource {
 
 impl MoveResource for FungibleStoreResource {}
 
+#[cfg(test)]
 mod test {
-    use crate::account_config::{
-        resources::fungible_store::create_derivd_address_by_seed, stc_type_tag,
-    };
-    use anyhow::Result;
-    use move_core_types::account_address::AccountAddress;
+    use super::*;
 
     #[test]
     fn test_primary_store() -> Result<()> {
-        let random_addr = AccountAddress::from_hex_literal("0x5217516b60c33f0d859e36103940bc2c")?;
+        let random_addr = "0x5217516b60c33f0d859e36103940bc2c".parse::<AccountAddress>()?;
         let stc_fungible_store =
             create_derivd_address_by_seed(&random_addr, &stc_type_tag().to_canonical_string())?;
         assert!(
-            stc_fungible_store
-                == AccountAddress::from_hex_literal("0xb9e16bcae35a6dd8c0d63c5cdc2914f8")?
+            stc_fungible_store == "0xb9e16bcae35a6dd8c0d63c5cdc2914f8".parse::<AccountAddress>()?
         );
         Ok(())
     }
