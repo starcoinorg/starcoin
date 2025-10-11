@@ -2387,6 +2387,7 @@ impl BlockChain {
 
         // DAG specific saves
         // Update k parameter for DAG
+        // TODO: The k should be reload or update only on new epoch.
         self.dag()
             .ghost_dag_manager()
             .update_k(self.epoch.max_uncles_per_block().try_into().unwrap());
