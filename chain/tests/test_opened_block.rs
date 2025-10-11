@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -74,7 +74,7 @@ pub fn test_open_block() -> Result<()> {
         let state_reader = opened_block.state_reader2();
         let account_reader = AccountStateReader::new(state_reader.as_ref());
         let account_balance = account_reader.get_balance(&receiver)?;
-        assert_eq!(account_balance, 50_000_000);
+        ensure!(account_balance == 50_000_000, "receiver balance not match");
 
         let account_resource = account_reader.get_account_resource(&receiver)?;
         assert_eq!(account_resource.sequence_number(), 0);

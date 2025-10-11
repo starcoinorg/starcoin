@@ -60,7 +60,7 @@ pub fn group_tagged_resource_size<T: Serialize + Clone + Debug>(
 
 /// Utility method to compute the size of the group as GroupSizeKind::AsSum.
 pub fn group_size_as_sum<T: Serialize + Clone + Debug>(
-    mut group: impl Iterator<Item=(T, usize)>,
+    mut group: impl Iterator<Item = (T, usize)>,
 ) -> PartialVMResult<ResourceGroupSize> {
     let (count, len) = group.try_fold((0, 0), |(count, len), (tag, value_byte_len)| {
         let delta = group_tagged_resource_size(&tag, value_byte_len)?;
@@ -115,7 +115,7 @@ fn test_group_size_same_as_bcs() {
 /// also released to the session for older feature versions (needed to prepare VM output).
 pub struct ResourceGroupAdapter<'r> {
     maybe_resource_group_view: Option<&'r dyn ResourceGroupView>,
-    resource_view: &'r dyn TResourceView<Key=StateKey, Layout=MoveTypeLayout>,
+    resource_view: &'r dyn TResourceView<Key = StateKey, Layout = MoveTypeLayout>,
     group_size_kind: GroupSizeKind,
     group_cache: RefCell<HashMap<StateKey, (BTreeMap<StructTag, Bytes>, ResourceGroupSize)>>,
 }
@@ -123,7 +123,7 @@ pub struct ResourceGroupAdapter<'r> {
 impl<'r> ResourceGroupAdapter<'r> {
     pub fn new(
         maybe_resource_group_view: Option<&'r dyn ResourceGroupView>,
-        resource_view: &'r dyn TResourceView<Key=StateKey, Layout=MoveTypeLayout>,
+        resource_view: &'r dyn TResourceView<Key = StateKey, Layout = MoveTypeLayout>,
         gas_feature_version: u64,
         resource_groups_split_in_vm_change_set_enabled: bool,
     ) -> Self {
@@ -145,7 +145,7 @@ impl<'r> ResourceGroupAdapter<'r> {
             //     but gas is not relevant for those contexts.
             resource_groups_split_in_vm_change_set_enabled
                 && maybe_resource_group_view
-                .is_some_and(|v| v.is_resource_group_split_in_change_set_capable()),
+                    .is_some_and(|v| v.is_resource_group_split_in_change_set_capable()),
         );
 
         Self {

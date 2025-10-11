@@ -121,8 +121,11 @@ pub trait StateReaderExt: StateView {
         );
 
         let tag_bytes = self.get_resource_group_struct_tag_bytes(
-            &primary_fungible_store_address,
-            &StateKey::resource_group(&address, &ObjectGroupResource::struct_tag()),
+            &address,
+            &StateKey::resource_group(
+                &primary_fungible_store_address,
+                &ObjectGroupResource::struct_tag(),
+            ),
             &FungibleStoreResource::struct_tag(),
         )?;
         let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes)?;
@@ -137,8 +140,8 @@ pub trait StateReaderExt: StateView {
         struct_tag: &StructTag,
     ) -> Result<Bytes> {
         info!(
-            "get_resource_group_struct_tag_bytes | entered, address: {}, struct_tag: {}",
-            address, struct_tag
+            "get_resource_group_struct_tag_bytes | entered, group_key: {:?}, address: {}, struct_tag: {}",
+            group_key, address, struct_tag
         );
         let group_data = self
             .get_state_value_bytes(group_key)?
