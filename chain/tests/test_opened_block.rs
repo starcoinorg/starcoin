@@ -12,6 +12,7 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
 use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
+use starcoin_vm2_types::account::DEFAULT_MAX_GAS_AMOUNT;
 
 #[stest::test]
 pub fn test_open_block() -> Result<()> {
@@ -92,7 +93,7 @@ pub fn test_open_block() -> Result<()> {
             seq_number,
             10_000,
             1,
-            1_000_000,
+            DEFAULT_MAX_GAS_AMOUNT,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id().id(),
         )
