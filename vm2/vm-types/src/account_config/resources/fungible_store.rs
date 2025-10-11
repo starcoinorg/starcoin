@@ -1,6 +1,11 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::stc_fungible_asset_derive_address;
+use crate::{account_config::stc_type_tag, transaction::authenticator::AuthenticationKey};
+use anyhow::{anyhow, Result};
+use bcs;
+use log::info;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -10,13 +15,80 @@ use move_core_types::{
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash;
+use sha3::{Digest, Sha3_256};
 
-pub fn primary_store(address: &AccountAddress) -> AccountAddress {
-    let mut bytes = address.to_vec();
-    bytes.append(&mut AccountAddress::TEN.to_vec());
-    bytes.push(0xFC);
-    AccountAddress::from_bytes(hash::HashValue::sha3_256_of(&bytes).to_vec()).unwrap()
+///
+/// For the coin_canonical_string parameter, please refer to the following code
+///
+/// Using starcoin_fungible_asset as the derived address if STC,
+/// otherwise use type_info::type_name<CoinType>() to generate the derived address
+///
+/// coin_canonical_string must be a normalized Token string, such as
+/// 0x0000000000000001::starcoin_coin::STC, 0x0000000000000123::USDT::USDT etc
+///
+/// ```
+/// inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_stc_creation: bool): Object<Metadata> {
+///     ...
+///            let metadata_object_cref =
+///                 if (is_stc) {
+///                     object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
+///                 } else {
+///                     object::create_named_object(
+///                         &create_signer::create_signer(@starcoin_fungible_asset),
+///                         *string::bytes(&type_info::type_name<CoinType>())
+///                     )
+///                 };
+///            primary_fungible_store::create_primary_store_enabled_fungible_asset(
+///                &metadata_object_cref,
+///                option::none(),
+///                name<CoinType>(),
+///                symbol<CoinType>(),
+///                decimals<CoinType>(),
+///                string::utf8(b""),
+///                string::utf8(b""),
+///            );
+///  ...
+/// }
+///
+///
+
+const OBJECT_FROM_SEED_ADDRESS_SCHEME: u8 = 0xFE;
+
+fn create_derivd_address_by_seed(source: &AccountAddress, seed: &str) -> Result<AccountAddress> {
+    let mut bytes = bcs::to_bytes(source)?;
+    bytes.extend_from_slice(seed.as_bytes());
+    bytes.push(OBJECT_FROM_SEED_ADDRESS_SCHEME);
+    let hash = Sha3_256::digest(&bytes);
+    let truncation_hash_16 = &hash[16..32];
+    Ok(AccountAddress::from_bytes(truncation_hash_16)?)
+}
+
+pub fn primary_store(
+    source: &AccountAddress,
+    coin_canonical_string: &str,
+) -> Result<AccountAddress> {
+    info!(
+        "fungible_store::primary_store | Entered, source: {:?}, coin_canonical_string: {:?}",
+        source, coin_canonical_string
+    );
+    if coin_canonical_string.is_empty() {
+        anyhow!("coin_canonical_string is empty");
+    }
+    let ret_address = if coin_canonical_string == stc_type_tag().to_canonical_string() {
+        AuthenticationKey::object_address_from_object(&source, &stc_fungible_asset_derive_address())
+            .derived_address()
+    } else {
+        AuthenticationKey::object_address_from_object(
+            &source,
+            &create_derivd_address_by_seed(&source, coin_canonical_string)?,
+        )
+        .derived_address()
+    };
+    info!(
+        "fungible_store::primary_store | Exited, source: {:?}, coin_canonical_string: {:?}, ret_address {:?}",
+        source, coin_canonical_string, ret_address
+    );
+    Ok(ret_address)
 }
 
 /// The balance resource held under an account.
@@ -56,3 +128,23 @@ impl MoveStructType for FungibleStoreResource {
 }
 
 impl MoveResource for FungibleStoreResource {}
+
+mod test {
+    use crate::account_config::{
+        resources::fungible_store::create_derivd_address_by_seed, stc_type_tag,
+    };
+    use anyhow::Result;
+    use move_core_types::account_address::AccountAddress;
+
+    #[test]
+    fn test_primary_store() -> Result<()> {
+        let random_addr = AccountAddress::from_hex_literal("0x5217516b60c33f0d859e36103940bc2c")?;
+        let stc_fungible_store =
+            create_derivd_address_by_seed(&random_addr, &stc_type_tag().to_canonical_string())?;
+        assert!(
+            stc_fungible_store
+                == AccountAddress::from_hex_literal("0xb9e16bcae35a6dd8c0d63c5cdc2914f8")?
+        );
+        Ok(())
+    }
+}

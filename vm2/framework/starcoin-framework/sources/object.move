@@ -30,8 +30,6 @@ module starcoin_framework::object {
     use starcoin_std::from_bcs;
 
     #[test_only]
-    use std::debug;
-    #[test_only]
     use std::option::{Self, Option};
 
     friend starcoin_framework::coin;
@@ -1082,6 +1080,7 @@ module starcoin_framework::object {
 
     #[test]
     fun test_basic_create_object() {
+        use starcoin_std::debug;
         // fb7e666b5b28a6ab7ccb4c406dc23e95f32719c365d013d80c061b57c62715f9
         // fb7e666b5b28a6ab7ccb4c406dc23e95
         assert!(from_bcs::to_address(x"f32719c365d013d80c061b57c62715f9") != @0x1, 1);

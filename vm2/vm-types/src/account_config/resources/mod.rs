@@ -13,6 +13,7 @@ mod withdraw_capability;
 pub use crate::token::token_info::*;
 pub use account::*;
 pub use coin_store::*;
+pub use fungible_store::*;
 pub use key_rotation_capability::*;
 pub use module_upgrade_strategy::*;
 pub use object::*;

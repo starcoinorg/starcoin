@@ -24,9 +24,9 @@ module starcoin_framework::transaction_fee {
     const ETXN_FEE_FA_METADATA_NOT_INITIALIZED: u64 = 3;
     const ETXN_FEE_FA_STORE_NOT_FOUND: u64 = 4;
 
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The `TransactionFee` resource holds a preburn resource for each
     /// fiat `TokenType` that can be collected as a transaction fee.
-    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     struct TransactionFeePod has key {
         fee_stores: vector<Object<FungibleStore>>,
         owner_address: address,
@@ -125,8 +125,6 @@ module starcoin_framework::transaction_fee {
         target_metadata: Object<Metadata>
     ): Option<Object<FungibleStore>> {
         let fee_len = vector::length(fee_stores);
-        debug::print(&std::string::utf8(b"transaction_fee::find_asset_store_with_metadata | Entered"));
-
         assert!(fee_len > 0, error::invalid_state(ETXN_FEE_FA_STORE_NOT_INITIALIZED));
 
         let idx: u64 = 0;
@@ -139,12 +137,10 @@ module starcoin_framework::transaction_fee {
             debug::print(&target_metadata);
 
             if (store_metadata == target_metadata) {
-                debug::print(&std::string::utf8(b"transaction_fee::find_asset_store_with_metadata | Matched!"));
                 return option::some(*store)
             };
             idx = idx + 1;
         };
-        debug::print(&std::string::utf8(b"transaction_fee::find_asset_store_with_metadata | Exited"));
         option::none()
     }
 

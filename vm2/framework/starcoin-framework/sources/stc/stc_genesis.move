@@ -4,6 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::error;
     use std::features;
     use std::option;
+    use std::string::utf8;
     use std::vector;
 
     use starcoin_framework::account;

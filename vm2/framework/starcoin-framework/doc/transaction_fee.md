@@ -38,6 +38,8 @@ Then they are distributed in <code>TransactionManager</code>.
 
 ## Resource `TransactionFeePod`
 
+The <code>TransactionFee</code> resource holds a preburn resource for each
+fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 <pre><code>#[resource_group_member(#[group = <a href="object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
@@ -268,8 +270,6 @@ underlying fiat.
     target_metadata: Object&lt;Metadata&gt;
 ): Option&lt;Object&lt;FungibleStore&gt;&gt; {
     <b>let</b> fee_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(fee_stores);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">transaction_fee::find_asset_store_with_metadata</a> | Entered"));
-
     <b>assert</b>!(fee_len &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>));
 
     <b>let</b> idx: u64 = 0;
@@ -282,12 +282,10 @@ underlying fiat.
         <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&target_metadata);
 
         <b>if</b> (store_metadata == target_metadata) {
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">transaction_fee::find_asset_store_with_metadata</a> | Matched!"));
             <b>return</b> <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*store)
         };
         idx = idx + 1;
     };
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">transaction_fee::find_asset_store_with_metadata</a> | Exited"));
     <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
 }
 </code></pre>
