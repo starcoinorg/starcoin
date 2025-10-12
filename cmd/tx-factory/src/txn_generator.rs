@@ -96,7 +96,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount,
             gas_price,
-            10000,
+            20000,
             expiration_timestamp,
             self.chain_id.id().into(),
         );
@@ -139,8 +139,8 @@ impl MockTxnGenerator {
             receiver_address_vec,
             sequence_number,
             amount,
-            gas_price,
-            10000,
+            gas_price, // 1 -1000
+            20000, // no more than 40_000_000
             expiration_timestamp,
             self.chain_id.id().into(),
         );
