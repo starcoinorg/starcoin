@@ -54,7 +54,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount_to_transfer,
             1,
-            40000000,
+            4000000,
             expiration_timestamp,
             self.chain_id.id().into(),
         );
@@ -140,7 +140,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount,
             gas_price,
-            40000000,
+            4000000,
             expiration_timestamp,
             self.chain_id.id().into(),
         );
@@ -162,7 +162,7 @@ impl MockTxnGenerator {
             sequence_number,
             amount,
             gas_price,
-            40000000,
+            4000000,
             expiration_timestamp,
             self.chain_id,
         );
