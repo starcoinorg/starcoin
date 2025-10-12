@@ -1397,9 +1397,7 @@ impl ChainReader for BlockChain {
             )
         } else {
             // Use DAG execution with multi-VM support
-            let result = self.execute_dag_block(verified_block);
-            println!("result:{:?}", result);
-            result
+            self.execute_dag_block(verified_block)
         }
     }
 
