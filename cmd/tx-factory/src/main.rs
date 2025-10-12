@@ -6,8 +6,6 @@ use clap::Parser;
 use starcoin_account_api::AccountInfo;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
-use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::StateReaderExt;
 use starcoin_tx_factory::mocker::TxnMocker;
 use starcoin_tx_factory::pressure_vm1::start_vm1_pressure_test;
 use starcoin_tx_factory::pressure_vm2::start_vm2_pressure_test;
@@ -119,15 +117,15 @@ fn get_account_or_default2(
                 default_account = client.account_default2()?;
             }
 
-            let addr = default_account.clone().unwrap().address;
-            let state_reader = client.state_reader2(StateRootOption::Latest)?;
-            let mut balance = state_reader.get_balance2(addr)?;
-            // balance resource has not been created
-            while balance.is_none() {
-                std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance2(addr)?;
-                info!("account balance is null.");
-            }
+            // let addr = default_account.clone().unwrap().address;
+            // let state_reader = client.state_reader2(StateRootOption::Latest)?;
+            // let mut balance = state_reader.get_balance2(addr)?;
+            // // balance resource has not been created
+            // while balance.is_none() {
+            //     std::thread::sleep(Duration::from_millis(1000));
+            //     balance = state_reader.get_balance2(addr)?;
+            //     info!("account balance is null.");
+            // }
             default_account.unwrap()
         }
         Some(a) => match client.account_get2(a)? {
@@ -151,15 +149,15 @@ fn get_account_or_default(
                 default_account = client.account_default()?;
             }
 
-            let addr = default_account.clone().unwrap().address;
-            let state_reader = client.state_reader(StateRootOption::Latest)?;
-            let mut balance = state_reader.get_balance(addr)?;
+            // let addr = default_account.clone().unwrap().address;
+            // let state_reader = client.state_reader(StateRootOption::Latest)?;
+            // let mut balance = state_reader.get_balance(addr)?;
             // balance resource has not been created
-            while balance.is_none() {
-                std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance(addr)?;
-                info!("account balance is null.");
-            }
+            // while balance.is_none() {
+            //     std::thread::sleep(Duration::from_millis(1000));
+            //     balance = state_reader.get_balance(addr)?;
+            //     info!("account balance is null.");
+            // }
             default_account.unwrap()
         }
         Some(a) => match client.account_get(a)? {
