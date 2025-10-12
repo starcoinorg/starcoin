@@ -44,16 +44,13 @@ impl TxnMocker {
         unlock_duration: Duration,
         watch_timeout: u32,
     ) -> Result<Self> {
-        let state_reader = client.state_reader(StateRootOption::Latest)?;
+        let state_reader = client.state_reader2(StateRootOption::Latest)?;
 
-        let account_resource = state_reader.get_account_resource(account_address)?;
-        if account_resource.is_none() {
-            bail!("account {} not exists, please faucet it", account_address);
-        }
-        let account_resource = account_resource.unwrap();
+        let account_resource = state_reader.get_account_resource(account_address2)?;
+        
         let mut next_sequence_number = account_resource.sequence_number();
         // if txpool already has some future txn, use the sequence number after that.
-        let seq_number_in_txpool = client.next_sequence_number_in_txpool(account_address)?;
+        let seq_number_in_txpool = client.next_sequence_number_in_txpool2(account_address2)?;
         if let Some(n) = seq_number_in_txpool {
             if n > next_sequence_number {
                 next_sequence_number = n;
