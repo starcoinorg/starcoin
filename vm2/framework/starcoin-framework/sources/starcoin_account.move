@@ -13,13 +13,11 @@ module starcoin_framework::starcoin_account {
     use starcoin_framework::object;
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::starcoin_coin::STC;
-    #[test_only]
-    use std::string;
 
     #[test_only]
     use std::string::utf8;
     #[test_only]
-    use starcoin_framework::account::create_account_for_test;
+    use starcoin_framework::account::{create_account_for_test};
     #[test_only]
     use starcoin_std::from_bcs;
 
@@ -277,6 +275,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer(alice: &signer, core: &signer) {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let bob = from_bcs::to_address(x"00000000000000000000000000000b0b");
         let carol = from_bcs::to_address(x"000000000000000000000000000ca501");
 
@@ -296,7 +301,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer_to_resource_account(alice: &signer, core: &signer) {
-        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | entered"));
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
 
@@ -305,18 +316,23 @@ module starcoin_framework::starcoin_account {
 
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
-        debug::print(&coin::balance<STC>(signer::address_of(alice)));
 
         transfer(alice, resource_acc_addr, 500);
         assert!(coin::balance<STC>(resource_acc_addr) == 500, 1);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
-        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | exited"));
     }
 
     #[test(from = @0x123, core = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer(from: &signer, core: &signer, recipient_1: &signer, recipient_2: &signer) {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         create_account(signer::address_of(from));
         let recipient_1_addr = signer::address_of(recipient_1);
@@ -337,6 +353,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(from = @0x1, to = @0x12)]
     public fun test_direct_coin_transfers(from: &signer, to: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
@@ -360,6 +383,13 @@ module starcoin_framework::starcoin_account {
     #[test(from = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer_coins(
         from: &signer, recipient_1: &signer, recipient_2: &signer) acquires DirectTransferConfig {
+        // Only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
@@ -367,12 +397,16 @@ module starcoin_framework::starcoin_account {
             10,
             true,
         );
+
         create_account_for_test(signer::address_of(from));
+
         let recipient_1_addr = signer::address_of(recipient_1);
         let recipient_2_addr = signer::address_of(recipient_2);
         create_account_for_test(recipient_1_addr);
         create_account_for_test(recipient_2_addr);
+
         deposit_coins(signer::address_of(from), coin::mint(1000, &mint_cap));
+
         batch_transfer_coins<FakeCoin>(
             from,
             vector[recipient_1_addr, recipient_2_addr],
@@ -386,8 +420,15 @@ module starcoin_framework::starcoin_account {
         coin::destroy_freeze_cap(freeze_cap);
     }
 
-    #[test(user = @0x123)]
-    public fun test_set_allow_direct_coin_transfers(user: &signer) acquires DirectTransferConfig {
+    #[test(framework = @0x1, user = @0x123)]
+    public fun test_set_allow_direct_coin_transfers(framework: &signer, user: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            framework,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let addr = signer::address_of(user);
         create_account_for_test(addr);
         set_allow_direct_coin_transfers(user, true);
@@ -401,6 +442,13 @@ module starcoin_framework::starcoin_account {
     #[test(from = @0x1, to = @0x12)]
     public fun test_direct_coin_transfers_with_explicit_direct_coin_transfer_config(
         from: &signer, to: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
