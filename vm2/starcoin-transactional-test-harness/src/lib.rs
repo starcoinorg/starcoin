@@ -15,6 +15,7 @@ use move_compiler::{
 };
 use move_core_types::{
     account_address::AccountAddress as AccountAddress2,
+    ident_str,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag, TypeTag},
     value::MoveValue,
@@ -40,7 +41,8 @@ use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, T
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_core_types::resolver::ResourceResolver;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_transactional_test_runner::tasks::{
     PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
@@ -91,7 +93,6 @@ use starcoin_vm2_vm_types::{
         authenticator::AccountPrivateKey, EntryFunction, Module, Package, Script, Transaction,
         TransactionStatus,
     },
-    write_set::{WriteOp, WriteSetMut},
 };
 
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
@@ -1093,7 +1094,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             named_address_mapping.insert(name, addr);
         }
         named_address_mapping.insert(
-            "Std".to_string(),
+            "std".to_string(),
             NumericalAddress::parse_str("0x1").unwrap(),
         );
 
@@ -1133,43 +1134,53 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             )
         };
 
-        // add pre compiled modules
-        if let Some(pre_compiled_lib) = pre_compiled_deps_v1 {
-            let mut writes = WriteSetMut::default();
-            for c in &pre_compiled_lib.0.compiled {
-                if let CompiledUnitEnum::Module(m) = c {
-                    // update named_address_mapping
-                    if let Some(named_address) = &m.address_name {
-                        let name = named_address.value.to_string();
-                        let already_assigned_with_different_value = named_address_mapping
-                            .get(&name)
-                            .filter(|existed| {
-                                existed.into_inner() != m.named_module.address.into_inner()
-                            })
-                            .is_some();
-                        if already_assigned_with_different_value {
-                            panic!(
-                                "Invalid init. The named address '{}' is already assigned with {}",
-                                name,
-                                named_address_mapping.get(&name).unwrap(),
-                            )
-                        }
-                        named_address_mapping.insert(name, m.named_module.address);
-                    }
+        // // add pre compiled modules
+        // if let Some(pre_compiled_lib) = pre_compiled_deps_v1 {
+        //     let mut writes = WriteSetMut::default();
+        //     for c in &pre_compiled_lib.0.compiled {
+        //         if let CompiledUnitEnum::Module(m) = c {
+        //             // update named_address_mapping
+        //             if let Some(named_address) = &m.address_name {
+        //                 let name = named_address.value.to_string();
+        //                 let already_assigned_with_different_value = named_address_mapping
+        //                     .get(&name)
+        //                     .filter(|existed| {
+        //                         existed.into_inner() != m.named_module.address.into_inner()
+        //                     })
+        //                     .is_some();
+        //                 if already_assigned_with_different_value {
+        //                     panic!(
+        //                         "Invalid init. The named address '{}' is already assigned with {}",
+        //                         name,
+        //                         named_address_mapping.get(&name).unwrap(),
+        //                     )
+        //                 }
+        //                 named_address_mapping.insert(name, m.named_module.address);
+        //             }
+        //
+        //             let state_key = StateKey::module_id(&m.named_module.module.self_id());
+        //             info!("MoveAdapter::init | write pre_compiled_lib, write: {:?}", state_key);
+        //             writes.insert((
+        //                 state_key,
+        //                 WriteOp::legacy_modification({
+        //                     let mut bytes = vec![];
+        //                     m.named_module.module.serialize(&mut bytes).unwrap();
+        //                     bytes.into()
+        //                 }),
+        //             ));
+        //         }
+        //     }
+        //     context.apply_write_set(writes.freeze().unwrap()).unwrap();
+        // }
 
-                    let state_key = StateKey::module_id(&m.named_module.module.self_id());
-                    writes.insert((
-                        state_key,
-                        WriteOp::legacy_modification({
-                            let mut bytes = vec![];
-                            m.named_module.module.serialize(&mut bytes).unwrap();
-                            bytes.into()
-                        }),
-                    ));
-                }
-            }
-            context.apply_write_set(writes.freeze().unwrap()).unwrap();
-        }
+        // let metadata = context
+        //     .storage
+        //     .as_move_resolver()
+        //     .get_module_metadata(&ModuleId::new(
+        //         AccountAddress::ONE,
+        //         ident_str!("account").to_owned(),
+        //     ));
+        // assert!(metadata.len() > 0);
 
         let mut me = Self {
             compiled_state: CompiledState::new(
