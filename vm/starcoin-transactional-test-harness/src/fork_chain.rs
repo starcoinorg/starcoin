@@ -654,6 +654,16 @@ impl ChainApi for MockChainApi {
     fn get_vm_multi_state(&self, _block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
         todo!()
     }
+
+    fn get_ghostdagdata(
+        &self,
+        _ids: Vec<HashValue>,
+    ) -> FutureResult<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
 }
 
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {

@@ -13,6 +13,7 @@ use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_types::view::{
@@ -209,6 +210,10 @@ pub trait ChainApi {
 
     #[rpc(name = "chain.get_vm_multi_state")]
     fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>>;
+
+    /// Get block ghostdag data
+    #[rpc(name = "chain.get_ghostdagdata")]
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
