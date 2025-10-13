@@ -193,6 +193,11 @@ pub trait ChainAsyncService:
 
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
 
+    async fn get_ghostdagdata(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
+
     async fn get_range_in_location(
         &self,
         req: starcoin_network_rpc_api::GetRangeInLocationRequest,
@@ -559,6 +564,18 @@ where
             Ok(hashes)
         } else {
             bail!("get dag block children error")
+        }
+    }
+
+    async fn get_ghostdagdata(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>> {
+        let response = self.send(ChainRequest::GetGhostdagData(ids)).await??;
+        if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
+            Ok(*ghostdag_data)
+        } else {
+            bail!("failed to get ghostdag data")
         }
     }
 

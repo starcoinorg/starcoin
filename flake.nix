@@ -26,7 +26,7 @@
 
           shellHook = ''
             # Set SCCACHE_DIR with proper home directory expansion
-            export SCCACHE_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/sccache"
+            export SCCACHE_DIR="''${~/.cache}/sccache"
             export SCCACHE_CACHE_SIZE="100G"
 
             if [ -f rust-toolchain.toml ]; then
