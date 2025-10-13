@@ -633,6 +633,16 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_ghostdagdata(
+        &self,
+        _ids: Vec<HashValue>,
+    ) -> FutureResult<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
     fn get_block_info_by_hash(&self, _id: HashValue) -> FutureResult<Option<BlockInfoView>> {
         let fut = async move {
             bail!("not implemented.");

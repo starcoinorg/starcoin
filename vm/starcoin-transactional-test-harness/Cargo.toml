@@ -46,6 +46,7 @@ starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-dev = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }

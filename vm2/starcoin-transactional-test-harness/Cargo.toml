@@ -51,6 +51,7 @@ jsonrpc-http-server = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-rpc-server = { workspace = true }
