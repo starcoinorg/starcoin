@@ -38,7 +38,6 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
     use starcoin_framework::vm_config;
-
     use starcoin_std::debug;
 
     const ERR_INITIALIZE_STC_AMOUNT_ERROR: u64 = 1;

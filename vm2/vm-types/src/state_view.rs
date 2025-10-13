@@ -128,8 +128,13 @@ pub trait StateReaderExt: StateView {
             ),
             &FungibleStoreResource::struct_tag(),
         )?;
-        let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes)?;
-        Ok(rsrc.coin() as u128 + fungible_store.balance() as u128)
+
+        if tag_bytes.is_some() {
+            let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes.unwrap())?;
+            Ok(rsrc.coin() as u128 + fungible_store.balance() as u128)
+        } else {
+            Ok(rsrc.coin() as u128)
+        }
     }
 
     fn get_resource_group_struct_tag_bytes(
@@ -137,16 +142,22 @@ pub trait StateReaderExt: StateView {
         address: &AccountAddress,
         group_key: &StateKey,
         struct_tag: &StructTag,
-    ) -> Result<Bytes> {
+    ) -> Result<Option<Bytes>> {
         info!(
             "get_resource_resource_group_struct_tag_bytes | entered {:?}, {:?}, {:?} ",
             address, group_key, struct_tag,
         );
 
-        let group_data = self.get_state_value_bytes(group_key)?.ok_or(format_err!(
-            "ObjectCore group not exists, address: {:?}",
-            address
-        ))?;
+        let group_data = match self.get_state_value_bytes(group_key)? {
+            Some(data) => data,
+            None => {
+                info!(
+                    "get_resource_resource_group_struct_tag_bytes | exited {:?} cannot find ",
+                    group_key
+                );
+                return Ok(None);
+            }
+        };
 
         let group_data_map =
             bcs::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data).map_err(|e| {
@@ -158,16 +169,18 @@ pub trait StateReaderExt: StateView {
                 )
             })?;
 
-        Ok(group_data_map
-            .get(struct_tag)
-            .ok_or_else(|| {
-                format_err!(
-                    "Group struct tag not exists at address:{} for type tag:{}",
-                    address,
-                    struct_tag
-                )
-            })?
-            .clone())
+        Ok(Some(
+            group_data_map
+                .get(struct_tag)
+                .ok_or_else(|| {
+                    format_err!(
+                        "Group struct tag not exists at address:{} for type tag:{}",
+                        address,
+                        struct_tag
+                    )
+                })?
+                .clone(),
+        ))
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
