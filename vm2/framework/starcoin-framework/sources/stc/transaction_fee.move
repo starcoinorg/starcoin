@@ -20,9 +20,10 @@ module starcoin_framework::transaction_fee {
     }
 
     const ETXN_FEE_STC_METADATA_NOT_INITIALIZED: u64 = 1;
-    const ETXN_FEE_FA_STORE_NOT_INITIALIZED: u64 = 2;
-    const ETXN_FEE_FA_METADATA_NOT_INITIALIZED: u64 = 3;
+    const ETXN_FEE_POD_NOT_INITIALIZED: u64 = 2;
+    const ETXN_FEE_FA_METADATA_NOT_FOUND: u64 = 3;
     const ETXN_FEE_FA_STORE_NOT_FOUND: u64 = 4;
+    const ETXN_FEE_STORES_IS_EMPTY: u64 = 5;
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The `TransactionFee` resource holds a preburn resource for each
@@ -36,6 +37,7 @@ module starcoin_framework::transaction_fee {
     /// `TransactionFee` resource with the TreasuryCompliance account.
     public fun initialize(framework: &signer) {
         debug::print(&std::string::utf8(b"transaction_fee::initialize | Entered"));
+
         system_addresses::assert_starcoin_framework(framework);
 
         let constructor_ref = object::create_named_object(framework, b"txn_fee");
@@ -70,7 +72,7 @@ module starcoin_framework::transaction_fee {
     /// Deposit `token` into the transaction fees bucket
     public fun pay_fee(fa: FungibleAsset) acquires TransactionFeePod {
         assert!(exists<TransactionFeePod>(get_starcoin_framework()), error::invalid_state(
-            ETXN_FEE_FA_STORE_NOT_INITIALIZED
+            ETXN_FEE_POD_NOT_INITIALIZED
         ));
 
         let fee_pod = borrow_global_mut<TransactionFeePod>(get_starcoin_framework());
@@ -78,7 +80,7 @@ module starcoin_framework::transaction_fee {
             &fee_pod.fee_stores,
             fungible_asset::metadata_from_asset(&fa)
         );
-        assert!(option::is_some(&store_opt), error::invalid_state(ETXN_FEE_FA_STORE_NOT_INITIALIZED));
+        assert!(option::is_some(&store_opt), error::invalid_state(ETXN_FEE_POD_NOT_INITIALIZED));
 
         let store = option::destroy_some(store_opt);
         fungible_asset::deposit(store, fa);
@@ -98,11 +100,11 @@ module starcoin_framework::transaction_fee {
 
         system_addresses::assert_starcoin_framework(framework);
         let framework_addr = signer::address_of(framework);
-        assert!(exists<TransactionFeePod>(framework_addr), error::not_found(ETXN_FEE_FA_STORE_NOT_INITIALIZED));
+        assert!(exists<TransactionFeePod>(framework_addr), error::not_found(ETXN_FEE_POD_NOT_INITIALIZED));
 
         let fee_pod = borrow_global_mut<TransactionFeePod>(framework_addr);
         let coin_metadata_opt = coin::paired_metadata<TokenType>();
-        assert!(option::is_some(&coin_metadata_opt), error::invalid_state(ETXN_FEE_FA_METADATA_NOT_INITIALIZED));
+        assert!(option::is_some(&coin_metadata_opt), error::invalid_state(ETXN_FEE_FA_METADATA_NOT_FOUND));
 
         let coin_metatdata = option::destroy_some(coin_metadata_opt);
         let fa_store_opt = find_asset_store_with_metadata(&fee_pod.fee_stores, coin_metatdata);
@@ -125,7 +127,7 @@ module starcoin_framework::transaction_fee {
         target_metadata: Object<Metadata>
     ): Option<Object<FungibleStore>> {
         let fee_len = vector::length(fee_stores);
-        assert!(fee_len > 0, error::invalid_state(ETXN_FEE_FA_STORE_NOT_INITIALIZED));
+        assert!(fee_len > 0, error::invalid_state(ETXN_FEE_STORES_IS_EMPTY));
 
         let idx: u64 = 0;
         while (idx < fee_len) {

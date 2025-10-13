@@ -75,11 +75,11 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 ## Constants
 
 
-<a id="0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_INITIALIZED"></a>
+<a id="0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_INITIALIZED">ETXN_FEE_FA_METADATA_NOT_INITIALIZED</a>: u64 = 3;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>: u64 = 3;
 </code></pre>
 
 
@@ -93,11 +93,11 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<a id="0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED"></a>
+<a id="0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>: u64 = 2;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>: u64 = 2;
 </code></pre>
 
 
@@ -107,6 +107,15 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 <pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STC_METADATA_NOT_INITIALIZED">ETXN_FEE_STC_METADATA_NOT_INITIALIZED</a>: u64 = 1;
+</code></pre>
+
+
+
+<a id="0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY"></a>
+
+
+
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>: u64 = 5;
 </code></pre>
 
 
@@ -130,6 +139,7 @@ Called in genesis. Sets up the needed resources to collect transaction fees from
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_initialize">transaction_fee::initialize</a> | Entered"));
+
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
 
     <b>let</b> constructor_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(framework, b"txn_fee");
@@ -180,7 +190,7 @@ Deposit <code>token</code> into the transaction fees bucket
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">pay_fee</a>(fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
     <b>assert</b>!(<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(get_starcoin_framework()), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(
-        <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>
+        <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>
     ));
 
     <b>let</b> fee_pod = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(get_starcoin_framework());
@@ -188,7 +198,7 @@ Deposit <code>token</code> into the transaction fees bucket
         &fee_pod.fee_stores,
         <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">fungible_asset::metadata_from_asset</a>(&fa)
     );
-    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&store_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&store_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>));
 
     <b>let</b> store = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(store_opt);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(store, fa);
@@ -224,11 +234,11 @@ underlying fiat.
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
     <b>let</b> framework_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework);
-    <b>assert</b>!(<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(framework_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(framework_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>));
 
     <b>let</b> fee_pod = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(framework_addr);
     <b>let</b> coin_metadata_opt = <a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;TokenType&gt;();
-    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_metadata_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_INITIALIZED">ETXN_FEE_FA_METADATA_NOT_INITIALIZED</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_metadata_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>));
 
     <b>let</b> coin_metatdata = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(coin_metadata_opt);
     <b>let</b> fa_store_opt = <a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">find_asset_store_with_metadata</a>(&fee_pod.fee_stores, coin_metatdata);
@@ -270,7 +280,7 @@ underlying fiat.
     target_metadata: Object&lt;Metadata&gt;
 ): Option&lt;Object&lt;FungibleStore&gt;&gt; {
     <b>let</b> fee_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(fee_stores);
-    <b>assert</b>!(fee_len &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_INITIALIZED">ETXN_FEE_FA_STORE_NOT_INITIALIZED</a>));
+    <b>assert</b>!(fee_len &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>));
 
     <b>let</b> idx: u64 = 0;
     <b>while</b> (idx &lt; fee_len) {

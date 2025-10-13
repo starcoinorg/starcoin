@@ -6812,7 +6812,7 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-framework 0.1.0",
  "starcoin-gas-schedule",
- "starcoin-move-compiler",
+ "starcoin-logger",
  "starcoin-rpc-client",
  "starcoin-types",
  "starcoin-vm-runtime",
@@ -6821,7 +6821,6 @@ dependencies = [
  "starcoin-vm1-vm-types",
  "starcoin-vm2-move-compiler",
  "starcoin-vm2-transactional-test-harness",
- "stdlib",
  "vm-status-translator",
 ]
 
@@ -11327,6 +11326,7 @@ dependencies = [
  "flate2",
  "futures 0.3.31",
  "log 0.4.27",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "proptest",
  "proptest-derive 0.6.0",
