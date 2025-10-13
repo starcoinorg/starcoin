@@ -191,6 +191,8 @@ impl<S: StateView> ModuleResolver for StorageAdapter<'_, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        info!("get_module_metadata | module_id: {:?}", module_id);
+
         let module = match self.get_module(module_id) {
             Ok(Some(module)) => module,
             _ => return vec![],

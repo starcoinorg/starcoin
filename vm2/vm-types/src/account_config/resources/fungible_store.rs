@@ -5,7 +5,6 @@ use crate::account_config::stc_fungible_asset_derive_address;
 use crate::{account_config::stc_type_tag, transaction::authenticator::AuthenticationKey};
 use anyhow::{anyhow, Result};
 use bcs;
-use log::info;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -69,10 +68,6 @@ pub fn primary_store(
     source: &AccountAddress,
     coin_canonical_string: &str,
 ) -> Result<AccountAddress> {
-    info!(
-        "fungible_store::primary_store | Entered, source: {:?}, coin_canonical_string: {:?}",
-        source, coin_canonical_string
-    );
     if coin_canonical_string.is_empty() {
         return Err(anyhow!("coin_canonical_string is empty"));
     }
@@ -86,10 +81,6 @@ pub fn primary_store(
         )
         .derived_address()
     };
-    info!(
-        "fungible_store::primary_store | Exited, source: {:?}, coin_canonical_string: {:?}, ret_address {:?}",
-        source, coin_canonical_string, ret_address
-    );
     Ok(ret_address)
 }
 

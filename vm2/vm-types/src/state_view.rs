@@ -33,7 +33,6 @@ use move_core_types::{
     move_resource::MoveStructType,
     vm_status::StatusCode,
 };
-use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
 use vm::errors::PartialVMError;
 
@@ -115,10 +114,6 @@ pub trait StateReaderExt: StateView {
         // Read primary fungible store from user
         let primary_fungible_store_address =
             primary_store(&address, &type_tag.to_canonical_string())?;
-        info!(
-            "get_balance_by_type | primary_fungible_store_address:{:?}",
-            primary_fungible_store_address
-        );
 
         let tag_bytes = self.get_resource_group_struct_tag_bytes(
             &address,
@@ -143,20 +138,9 @@ pub trait StateReaderExt: StateView {
         group_key: &StateKey,
         struct_tag: &StructTag,
     ) -> Result<Option<Bytes>> {
-        info!(
-            "get_resource_resource_group_struct_tag_bytes | entered {:?}, {:?}, {:?} ",
-            address, group_key, struct_tag,
-        );
-
         let group_data = match self.get_state_value_bytes(group_key)? {
             Some(data) => data,
-            None => {
-                info!(
-                    "get_resource_resource_group_struct_tag_bytes | exited {:?} cannot find ",
-                    group_key
-                );
-                return Ok(None);
-            }
+            None => return Ok(None),
         };
 
         let group_data_map =

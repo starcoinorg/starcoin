@@ -8,7 +8,6 @@ use bytes::Bytes;
 use move_core_types::vm_status::StatusCode;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use serde::Serialize;
-use starcoin_logger::prelude::*;
 use starcoin_vm2_vm_types::errors::{PartialVMError, PartialVMResult};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use std::{
@@ -241,7 +240,7 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
         if let Some(group_view) = self.maybe_resource_group_view {
             return group_view.get_resource_from_group(group_key, resource_tag, maybe_layout);
         }
-        info!("get resource {:?} from group {:?}", resource_tag, group_key);
+        // info!("get resource {:?} from group {:?}", resource_tag, group_key);
         self.load_to_cache(group_key)?;
         Ok(self
             .group_cache

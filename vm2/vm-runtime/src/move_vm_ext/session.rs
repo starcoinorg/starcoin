@@ -39,7 +39,7 @@ use starcoin_framework::natives::aggregator_natives::{
     AggregatorChangeSet, AggregatorChangeV1, NativeAggregatorContext,
 };
 use starcoin_framework::natives::event::NativeEventContext;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::error;
 use starcoin_table_natives::NativeTableContext;
 use starcoin_table_natives::TableChangeSet;
 use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
@@ -342,7 +342,6 @@ impl<'r, 'l> SessionExt<'r, 'l> {
 
             for (resource_group_tag, resources) in resource_groups {
                 let state_key = StateKey::resource_group(&addr, &resource_group_tag);
-                info!("split_and_merge_resource_groups | write group into address, address: {:?}, group: {:?}", addr, state_key);
                 match &mut resource_group_change_set {
                     ResourceGroupChangeSet::V0(v0_changes) => {
                         let source_data = maybe_resource_group_cache
