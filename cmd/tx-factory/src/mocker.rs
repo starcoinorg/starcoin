@@ -133,12 +133,12 @@ impl TxnMocker {
         let expiration_timestamp = self.fetch_expiration_time();
         let raw_txn = self
             .generator
-            .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
+            .generate_mock_txn2(self.next_sequence_number, expiration_timestamp)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
         self.unlock_account()?;
 
-        let user_txn = match self.client.account_sign_txn(raw_txn) {
+        let user_txn = match self.client.account_sign_txn2(raw_txn) {
             Err(e) => {
                 // sign txn fail, we should unlock again
                 self.account_unlock_time = None;
@@ -153,7 +153,7 @@ impl TxnMocker {
             user_txn.id(),
         );
         let txn_hash = user_txn.id();
-        let result = self.client.submit_transaction(user_txn);
+        let result = self.client.submit_transaction2(user_txn);
 
         // increase sequence number if added in pool.
         if result.is_ok() {
