@@ -341,8 +341,9 @@ impl BlockHeader {
     }
 
     pub fn random() -> Self {
+        let parent_hash = HashValue::random();
         Self::new(
-            HashValue::random(),
+            parent_hash,
             rand::random(),
             rand::random(),
             AccountAddress::random(),
@@ -355,34 +356,10 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            vec![HashValue::random()], // Random parent
-            rand::random(),            // Random version
-            HashValue::random(),       // Random pruning point
+            vec![parent_hash],
+            0,
+            HashValue::random(),
         )
-    }
-
-    pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
-        let mut header = Self::random();
-        header.parents_hash = vec![];
-        header.number = dag_genesis_number;
-        header.id = Some(header.calc_hash());
-        header
-    }
-
-    //for test
-    pub fn dag_genesis_random_with_parent(parent: Self) -> anyhow::Result<Self> {
-        let header_builder = BlockHeaderBuilder::random();
-        anyhow::Result::Ok(
-            header_builder
-                .with_parent_hash(parent.id())
-                .with_parents_hash(vec![parent.id()])
-                .with_number(0)
-                .build(),
-        )
-    }
-
-    pub fn calc_hash(&self) -> HashValue {
-        self.crypto_hash()
     }
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {
