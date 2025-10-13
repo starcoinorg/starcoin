@@ -82,6 +82,7 @@ impl StarcoinGasMeter {
                 Ok(())
             }
             None => {
+                info!("jacktest: error: deduct_gas amount: {:?}, balance: {:?}, charge: {:?}", amount, self.balance, self.charge);
                 self.balance = 0.into();
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
@@ -118,6 +119,7 @@ impl StarcoinGasMeter {
                 (amount, Ok(()))
             }
             None => {
+                info!("jacktest: error: charge amount: {:?}, balance: {:?}", amount, self.balance);
                 let old_balance = self.balance;
                 self.balance = 0.into();
                 (
@@ -150,6 +152,7 @@ impl StarcoinGasMeter {
         info!("jacktest: charge_execution max_execution_gas: {:?}, execution_gas_used: {:?}", self.max_execution_gas, self.execution_gas_used);
 
         if self.execution_gas_used > self.max_execution_gas {
+            info!("jacktest: error: charge_execution max_execution_gas: {:?}, execution_gas_used: {:?}", self.max_execution_gas, self.execution_gas_used);
             return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
         }
         Ok(())
