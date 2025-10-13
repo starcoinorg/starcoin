@@ -15,7 +15,6 @@ use move_compiler::{
 };
 use move_core_types::{
     account_address::AccountAddress as AccountAddress2,
-    ident_str,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag, TypeTag},
     value::MoveValue,
@@ -31,9 +30,8 @@ use starcoin_types::account_address::AccountAddress as AccountAddress1;
 
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
-use starcoin_vm2_vm_types::{
-    account_config::{association_address, core_code_address, STC_TOKEN_CODE_STR},
-    state_store::state_key::StateKey,
+use starcoin_vm2_vm_types::account_config::{
+    association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 
 use move_core_types::vm_status::KeptVMStatus;
@@ -41,8 +39,7 @@ use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, T
 
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_core_types::account_address::AccountAddress;
-use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_core_types::resolver::ResourceResolver;
 use move_transactional_test_runner::tasks::{
     PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
