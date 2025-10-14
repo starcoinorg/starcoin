@@ -478,6 +478,7 @@ rlp = "0.4"
 rlp-derive = "0.1"
 rocksdb = { default-features = false, features = ["lz4"], version = "0.21.0" }
 rpassword = "~5"
+rusqlite = { version = "0.37.0" }
 rust-argon2 = "0.8"
 rust-embed = "6.3.0"
 rust-flatten-json = "0.2.0"

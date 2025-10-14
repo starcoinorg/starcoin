@@ -3,7 +3,7 @@
 
 // vm2 txn factory
 // A minimal prototype that demonstrates the workflow described:
-// 1. Load accounts from CSV (AccountAddress,Password)
+// 1. Load accounts from SQLite store
 // 2. Create & persist new accounts
 // 3. Randomly pick an account, ensure no unfinished txns, then:
 //    a. unlock
@@ -15,7 +15,7 @@
 // Standard library
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, OnceLock},
 };
 
@@ -24,10 +24,11 @@ use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
+use rusqlite::{params, Connection, Error as RusqliteError};
 use tokio::{
-    fs::{self, File},
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    fs,
     sync::{mpsc, oneshot, RwLock},
+    task,
     time::{sleep, Duration},
 };
 
@@ -109,46 +110,206 @@ struct TxnReceipt {
     response_tx: oneshot::Sender<Result<()>>,
 }
 
-/// Load Account from file
-async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
-    let file = match File::open(&path).await {
-        Ok(f) => f,
-        Err(_) => return Ok(Vec::new()),
-    };
-    let reader = BufReader::new(file);
-    let mut lines = reader.lines();
-    let mut accounts = Vec::new();
-    while let Some(line) = lines.next_line().await? {
-        let private_key = AccountPrivateKey::from_encoded_string(&line)?;
-        let ae = AccountEntry {
-            address: private_key.public_key().derived_address(),
-            private_key,
-        };
-        accounts.push(ae);
-    }
+fn init_account_table(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        r#"
+        PRAGMA journal_mode = WAL;
+        CREATE TABLE IF NOT EXISTS accounts (
+            address TEXT PRIMARY KEY,
+            private_key TEXT NOT NULL UNIQUE,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+        );
+        "#,
+    )?;
+    Ok(())
+}
 
+fn sqlite_not_a_database(err: &RusqliteError) -> bool {
+    matches!(
+        err,
+        RusqliteError::SqliteFailure(_, Some(message))
+            if message.to_ascii_lowercase().contains("not a database")
+    )
+}
+
+fn next_backup_path(path: &Path) -> PathBuf {
+    if !path.exists() {
+        return path.with_extension("bak");
+    }
+    let mut idx = 0usize;
+    loop {
+        let candidate = if idx == 0 {
+            path.with_extension("bak")
+        } else {
+            path.with_extension(format!("bak{}", idx))
+        };
+        if !candidate.exists() {
+            return candidate;
+        }
+        idx += 1;
+    }
+}
+
+fn migrate_plaintext_accounts(path: &Path) -> Result<()> {
+    let content = std::fs::read_to_string(path)?;
+    let backup_path = next_backup_path(path);
+    std::fs::rename(path, &backup_path)?;
+    let conn = Connection::open(path)?;
+    init_account_table(&conn)?;
+    let mut imported = 0usize;
+    for line in content.lines().map(str::trim).filter(|l| !l.is_empty()) {
+        let private_key = match AccountPrivateKey::from_encoded_string(line) {
+            Ok(pk) => pk,
+            Err(e) => {
+                warn!("Skipping invalid account entry during migration: {e}");
+                continue;
+            }
+        };
+        let encoded = match private_key.to_encoded_string() {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("Failed to re-encode migrated key: {e}");
+                continue;
+            }
+        };
+        let address = private_key.public_key().derived_address().to_string();
+        if let Err(e) = conn.execute(
+            "INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)",
+            params![address, encoded],
+        ) {
+            warn!("Failed to insert migrated account: {e}");
+        } else {
+            imported += 1;
+        }
+    }
+    info!(
+        "Migrated {} accounts into SQLite store at {} (backup: {})",
+        imported,
+        path.display(),
+        backup_path.display()
+    );
+    Ok(())
+}
+
+async fn with_account_conn<T, F>(path: &Path, f: F) -> Result<T>
+where
+    T: Send + 'static,
+    F: FnOnce(&Connection) -> Result<T> + Send + 'static,
+{
+    let path = path.to_owned();
+    task::spawn_blocking(move || -> Result<T> {
+        let conn = match Connection::open(&path) {
+            Ok(conn) => conn,
+            Err(err) => {
+                if sqlite_not_a_database(&err) && path.exists() {
+                    migrate_plaintext_accounts(&path)?;
+                    Connection::open(&path)?
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
+        init_account_table(&conn)?;
+        let result = f(&conn)?;
+        Ok(result)
+    })
+        .await
+        .map_err(|e| anyhow!("blocking SQLite task panicked: {}", e))?
+}
+
+async fn deduplicate_accounts<P: AsRef<Path>>(path: P) -> Result<usize> {
+    let removed = with_account_conn(path.as_ref(), |conn| {
+        let removed_by_address = conn.execute(
+            r#"
+            DELETE FROM accounts
+            WHERE rowid NOT IN (
+                SELECT MIN(rowid) FROM accounts GROUP BY address
+            )
+            "#,
+            [],
+        )?;
+        let removed_by_key = conn.execute(
+            r#"
+            DELETE FROM accounts
+            WHERE rowid NOT IN (
+                SELECT MIN(rowid) FROM accounts GROUP BY private_key
+            )
+            "#,
+            [],
+        )?;
+        Ok(removed_by_address + removed_by_key)
+    })
+        .await?;
+    if removed > 0 {
+        info!("Removed {} duplicated account entries", removed);
+    }
+    Ok(removed)
+}
+
+async fn account_count<P: AsRef<Path>>(path: P) -> Result<usize> {
+    with_account_conn(path.as_ref(), |conn| {
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM accounts", [], |row| row.get(0))?;
+        Ok(count as usize)
+    })
+        .await
+}
+
+/// Load accounts from SQLite store.
+async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
+    let path_buf = path.as_ref().to_owned();
+    deduplicate_accounts(&path_buf).await?;
+    let rows: Vec<String> = with_account_conn(&path_buf, |conn| {
+        let mut stmt =
+            conn.prepare("SELECT private_key FROM accounts ORDER BY created_at ASC, address ASC")?;
+        let keys = stmt
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(keys)
+    })
+        .await?;
+    let mut accounts = Vec::with_capacity(rows.len());
+    for encoded in rows {
+        let private_key = AccountPrivateKey::from_encoded_string(&encoded)?;
+        let address = private_key.public_key().derived_address();
+        accounts.push(AccountEntry {
+            address,
+            private_key,
+        });
+    }
     Ok(accounts)
 }
 
-/// Append a new account line.
-async fn append_account<P: AsRef<Path>>(path: P, account: &AccountEntry) -> Result<()> {
+/// Append a new account entry. Returns `true` if insertion happened, `false` otherwise.
+async fn append_account<P: AsRef<Path>>(path: P, account: &AccountEntry) -> Result<bool> {
     let encoded = account.private_key.to_encoded_string()?;
-    let mut file = File::options().append(true).create(true).open(path).await?;
-    file.write_all(format!("{}\n", encoded).as_bytes()).await?;
-    Ok(())
+    let address = account.address.to_string();
+    let inserted = with_account_conn(path.as_ref(), move |conn| {
+        let affected = conn.execute(
+            "INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)",
+            params![address, encoded],
+        )?;
+        Ok(affected > 0)
+    })
+        .await?;
+    Ok(inserted)
 }
 
 /// Create a fresh account locally
 async fn create_account(account_path: &str) -> Result<AccountEntry> {
-    let mut key_gen = KeyGen::from_os_rng();
-    let (private_key, public_key) = key_gen.generate_keypair();
-    let address = account_address::from_public_key(&public_key);
-    let entry = AccountEntry {
-        address,
-        private_key: AccountPrivateKey::Single(private_key),
-    };
-    append_account(account_path, &entry).await?;
-    Ok(entry)
+    loop {
+        let mut key_gen = KeyGen::from_os_rng();
+        let (private_key, public_key) = key_gen.generate_keypair();
+        let address = account_address::from_public_key(&public_key);
+        let entry = AccountEntry {
+            address,
+            private_key: AccountPrivateKey::Single(private_key),
+        };
+        if append_account(account_path, &entry).await? {
+            return Ok(entry);
+        } else {
+            warn!("Generated duplicate account {}, retrying", entry.address);
+        }
+    }
 }
 
 /// Ensure balance >= min_balance (in STC nano).
@@ -232,11 +393,17 @@ async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -
 }
 
 async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
-    let existed_accounts = load_accounts(account_path).await?;
-    let existed = existed_accounts.len();
-    let to_delete = if existed > count { existed - count } else { 0 };
-    // todo: handle duplicated accounts
-    for _ in 0..to_delete {
+    deduplicate_accounts(account_path).await?;
+    let existed = account_count(account_path).await?;
+    if existed >= count {
+        info!(
+            "Account store already has {} entries, target {} -> nothing to create",
+            existed, count
+        );
+        return Ok(());
+    }
+    let to_create = count - existed;
+    for _ in 0..to_create {
         let entry = create_account(account_path).await?;
         info!("Created account {}", entry.address);
     }
@@ -289,7 +456,7 @@ async fn account_worker(
                     timestamp,
                     chain_id,
                 )
-                .await
+                    .await
                 {
                     Ok(hash) => {
                         info!("submitted txn {hash} for {}", entry.address);
@@ -298,8 +465,8 @@ async fn account_worker(
                             txn_hash: hash,
                             response_tx: tx,
                         })
-                        .await
-                        .expect("Failed to send txn receipt");
+                            .await
+                            .expect("Failed to send txn receipt");
                         state = AccountState::Submitted((hash, rx));
                     }
                     Err(e) => {
