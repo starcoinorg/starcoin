@@ -234,8 +234,9 @@ async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -
 async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
     let existed_accounts = load_accounts(account_path).await?;
     let existed = existed_accounts.len();
+    let to_delete = if existed > count { existed - count } else { 0 };
     // todo: handle duplicated accounts
-    for _ in 0..count - existed {
+    for _ in 0..to_delete {
         let entry = create_account(account_path).await?;
         info!("Created account {}", entry.address);
     }
