@@ -3,6 +3,7 @@ module starcoin_framework::dao {
     use std::error;
     use std::option;
     use std::signer;
+    use starcoin_std::type_info;
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
@@ -127,6 +128,7 @@ module starcoin_framework::dao {
     const ERR_FUNGIBLE_ASSET_NOT_MATCH: u64 = 1413;
     const ERR_REVOKE_INSUFFICIENT_BALANCE: u64 = 1414;
     const ERR_REVOKE_WITHDRAW_WRONG_FA: u64 = 1415;
+    const ERR_COIN_PAIR_META_DATA_NOT_FOUND: u64 = 1416;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to have gov functionality
@@ -138,8 +140,21 @@ module starcoin_framework::dao {
         voting_quorum_rate: u8,
         min_action_delay: u64,
     ) {
-        let token_issuer = stc_util::token_issuer<TokenT>();
-        assert!(signer::address_of(signer) == token_issuer, error::not_found(ERR_NOT_AUTHORIZED));
+        let token_metadata = coin::paired_metadata<TokenT>();
+        let signer_addr = signer::address_of(signer);
+        if (option::is_some(&token_metadata)) {
+            assert!(
+                signer::address_of(signer) == object::owner(option::destroy_some(token_metadata)),
+                error::unauthenticated(ERR_NOT_AUTHORIZED)
+            );
+        } else {
+            assert!(
+                signer_addr == type_info::account_address(&type_info::type_of<TokenT>()),
+                error::unauthenticated(ERR_NOT_AUTHORIZED)
+            );
+        };
+
+
         // let proposal_id = ProposalId {next: 0};
         let gov_info = DaoGlobalInfo<TokenT> {
             next_proposal_id: 0,

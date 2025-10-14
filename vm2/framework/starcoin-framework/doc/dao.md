@@ -93,6 +93,7 @@
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info">0x1::type_info</a>;
 </code></pre>
 
 
@@ -473,6 +474,15 @@ User vote info.
 
 
 
+<a id="0x1_dao_ERR_COIN_PAIR_META_DATA_NOT_FOUND"></a>
+
+
+
+<pre><code><b>const</b> <a href="dao.md#0x1_dao_ERR_COIN_PAIR_META_DATA_NOT_FOUND">ERR_COIN_PAIR_META_DATA_NOT_FOUND</a>: u64 = 1416;
+</code></pre>
+
+
+
 <a id="0x1_dao_ERR_CONFIG_PARAM_INVALID"></a>
 
 
@@ -634,8 +644,21 @@ can optin this module by call this <code>register function</code>.
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ) {
-    <b>let</b> token_issuer = <a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;();
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) == token_issuer, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="dao.md#0x1_dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
+    <b>let</b> token_metadata = <a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;TokenT&gt;();
+    <b>let</b> signer_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>);
+    <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&token_metadata)) {
+        <b>assert</b>!(
+            <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) == <a href="object.md#0x1_object_owner">object::owner</a>(<a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(token_metadata)),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao.md#0x1_dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>)
+        );
+    } <b>else</b> {
+        <b>assert</b>!(
+            signer_addr == <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_account_address">type_info::account_address</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;()),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao.md#0x1_dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>)
+        );
+    };
+
+
     // <b>let</b> proposal_id = ProposalId {next: 0};
     <b>let</b> gov_info = <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; {
         next_proposal_id: 0,
