@@ -88,8 +88,7 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        let last_index = txns.len().saturating_sub(1);
-        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
+        for (_, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
@@ -101,7 +100,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state2(txn_hash, output, index == last_index)?;
+                    self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
                         .push(txn.try_into().expect("user txn"));
