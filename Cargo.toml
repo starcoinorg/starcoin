@@ -133,7 +133,7 @@ members = [
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "cmd/cmd-utils",
+    "cmd/cmd-utils", "simnet",
 ]
 
 default-members = [
