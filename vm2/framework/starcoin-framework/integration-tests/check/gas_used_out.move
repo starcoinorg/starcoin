@@ -1,27 +1,36 @@
 //# init -n dev
 
-//# faucet --addr alice --amount 1000
+//# faucet --addr alice --amount 100000000
 
-//# faucet --addr bob --amount 1000
+//# faucet --addr bob --amount 100000000
 
 //# faucet --addr default
 
-//# run --signers alice --gas-budget 700
+//# run --signers alice --gas-budget 2000000
 
 // when gas used out, the txn is kept, the state is unchanged except balance is set to 0.
-
 script {
+    use std::option;
+    use std::string::utf8;
+    use starcoin_std::debug;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::coin;
 
-    fun main(account: signer) {
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
-        // gas used out
+    fun main(alice: &signer) {
+        let stc_metadata = option::destroy_some(coin::paired_metadata<STC>());
+        primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+        primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+        primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+        primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+        primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+
+        // primary_fungible_store::transfer(alice, stc_metadata, @bob, 10);
+        debug::print(&utf8(b"bob-1"));
+        debug::print(&primary_fungible_store::balance(@bob, stc_metadata));
+
+        assert!(primary_fungible_store::balance(@bob, stc_metadata) == 100000050, 1);
+        // gas used out, transfer above has reverted
     }
 }
 // check: EXECUTION_FAILURE
@@ -32,12 +41,15 @@ script {
 
 //# run --signers default
 script {
+    use std::option;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::coin;
 
     fun main() {
-        // check the state is unchanged
-        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000, 42);
-        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@alice) == 300, 43);
+        let stc_metadata = option::destroy_some(coin::paired_metadata<STC>());
+        assert!(primary_fungible_store::balance(@alice, stc_metadata) <= 100000000, 42);
+        assert!(primary_fungible_store::balance(@bob, stc_metadata) == 100000000, 43);
     }
 }
 

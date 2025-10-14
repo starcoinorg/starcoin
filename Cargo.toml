@@ -592,7 +592,7 @@ starcoin-vm2-rpc-server = { path = "vm2/rpc/server" }
 starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
-starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework", features = ["testing"] }
+starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework"}
 starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness" }
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
