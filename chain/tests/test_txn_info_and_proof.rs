@@ -241,7 +241,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         }
         transaction_accumulator_index_begin =
             transaction_accumulator_index_begin.saturating_add(transaction_count);
-            if block_index != 0 {
+        if block_index != 0 {
             // BlockEpilogue was counted but we skip genesis, genesis didn't contain BlockEpilogue
             transaction_accumulator_index_begin =
                 transaction_accumulator_index_begin.saturating_add(1);
