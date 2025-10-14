@@ -548,6 +548,7 @@ where
             }
 
             // Process VM2 transactions
+            let vm2_contains_user_transaction = !txns2.is_empty();
             let excluded_txns2 = match opened_block.push_txns2(txns2) {
                 Ok(excluded_txns) => excluded_txns,
                 Err(e) => {
@@ -565,11 +566,13 @@ where
                 excluded_txns2.untouched_txns.len()
             );
 
-            match opened_block.finalize_block_epilogue() {
-                Ok(()) => {}
-                Err(e) => {
-                    error!("[BlockProcess] finalize block epilogue error: {}", e);
-                    return;
+            if vm2_contains_user_transaction {
+                match opened_block.finalize_block_epilogue() {
+                    Ok(()) => {}
+                    Err(e) => {
+                        error!("[BlockProcess] finalize block epilogue error: {}", e);
+                        return;
+                    }
                 }
             }
 
