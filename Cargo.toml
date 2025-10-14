@@ -333,6 +333,7 @@ futures-core = "0.3.4"
 futures-retry = "0.6"
 futures-timer = "3.0"
 futures-util = "~0.3"
+# remove
 fxhash = "0.2.1"
 git-version = "0.3.9"
 goldenfile = "1.8.0"
@@ -482,6 +483,7 @@ rusqlite = { version = "0.37.0" }
 rust-argon2 = "0.8"
 rust-embed = "6.3.0"
 rust-flatten-json = "0.2.0"
+# remove
 rustc-serialize = "^0.3"
 rustyline = "9.1.2"
 rustyline-derive = "0.6.0"
