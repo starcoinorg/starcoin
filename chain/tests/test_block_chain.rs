@@ -13,7 +13,7 @@ use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::language_storage::{StcTypeTag, TypeTag2};
 use starcoin_vm2_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
-use starcoin_vm2_test_helper::build_transfer_from_association;
+use starcoin_vm2_test_helper::{build_transfer_from_association, txn};
 use starcoin_vm2_types::account_address;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::identifier::Identifier;
@@ -230,6 +230,18 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     };
     let txn_hash = signed_txn.id();
 
+    let signed_txn2 = {
+        let txn2 = build_transfer_from_association(
+            account_address,
+            1,
+            10000,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net(),
+        );
+        txn2.as_signed_user_txn()?.clone()
+    };
+    let txn_hash2 = signed_txn2.id();
+
     // DAG scenario: Create and apply b2 first
     let tips = vec![block_b1.id()];
 
@@ -237,7 +249,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner1.address(),
         None, // No specific parent header
-        vec![signed_txn.clone().into()],
+        vec![signed_txn.clone().into(), signed_txn2.clone().into()],
         None,               // uncles
         None,               // block_gas_limit
         Some(tips.clone()), // Tips: [b1]
@@ -268,7 +280,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let (template_b2_1, excluded) = block_chain_1.create_block_template(
         *miner2.address(),
         None, // No specific parent header
-        vec![signed_txn.clone().into()],
+        vec![signed_txn.clone().into(), signed_txn2.clone().into()],
         None,                      // uncles
         None,                      // block_gas_limit
         Some(vec![block_b1.id()]), // Explicitly use b1 as tip (not seeing b2)
@@ -284,6 +296,17 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 
     // Apply b3 (parallel to b2, both children of b1)
     block_chain_1.apply(block_b2_1.clone())?;
+
+    let txn_info_ids = block_chain
+        .get_storage()
+        .get_transaction_info_ids_by_txn_hash(txn_hash2)?;
+
+    // Should have 2 transaction infos (one in each block)
+    assert_eq!(
+        txn_info_ids.len(),
+        2,
+        "Should have 2 transaction infos in DAG"
+    );
 
     // Query all transaction_info for this transaction
     let txn_info_ids = block_chain
