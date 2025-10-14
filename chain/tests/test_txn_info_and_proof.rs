@@ -105,7 +105,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
     );
 
     let mut transaction_accumulator_index_begin: u64 = 0;
-    for block in executed_blocks {
+    for (block_index, block) in executed_blocks.into_iter().enumerate() {
         let mut transactions: Vec<StcTransaction> = vec![];
 
         let (state_root_index1, _state_root_index2) = if block.header().is_genesis() {
@@ -241,6 +241,11 @@ fn test_transaction_info_and_proof() -> Result<()> {
         }
         transaction_accumulator_index_begin =
             transaction_accumulator_index_begin.saturating_add(transaction_count);
+            if block_index != 0 {
+            // BlockEpilogue was counted but we skip genesis, genesis didn't contain BlockEpilogue
+            transaction_accumulator_index_begin =
+                transaction_accumulator_index_begin.saturating_add(1);
+        }
     }
 
     Ok(())
