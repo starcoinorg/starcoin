@@ -74,6 +74,8 @@ tokio = { features = ["full"], workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+
 
 [package]
 authors = { workspace = true }

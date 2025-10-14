@@ -3,6 +3,7 @@
 
 use crate::executor::do_execute_block_transactions;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::info;
 pub use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};
@@ -39,6 +40,11 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
+    info!(
+        "jacktest: block_execute begin, txns len: {}, first user transaction id: {:?}",
+        txns.len(),
+        txns.first().map(|t| t.id())
+    );
     let txn_outputs = do_execute_block_transactions(
         chain_state,
         txns.clone(),
@@ -46,6 +52,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
         vm_metrics.clone(),
     )
     .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    info!("jacktest: block_execute end and begin to output, txns len: {}, first user transaction id: {:?}", txns.len(), txns.first().map(|t| t.id()));
 
     let mut executed_data = BlockExecutedData::default();
     let last_index = txn_outputs
@@ -94,5 +101,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     }
 
     executed_data.state_root = chain_state.state_root();
+    info!(
+        "jacktest: block_execute end and return, txns len: {}, first user transaction id: {:?}",
+        txns.len(),
+        txns.first().map(|t| t.id())
+    );
     Ok(executed_data)
 }

@@ -47,7 +47,7 @@ impl TxnMocker {
         let state_reader = client.state_reader2(StateRootOption::Latest)?;
 
         let account_resource = state_reader.get_account_resource(account_address2)?;
-        
+
         let mut next_sequence_number = account_resource.sequence_number();
         // if txpool already has some future txn, use the sequence number after that.
         let seq_number_in_txpool = client.next_sequence_number_in_txpool2(account_address2)?;
