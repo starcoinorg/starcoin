@@ -126,8 +126,8 @@ impl MoveVmExt {
         extensions.add(NativeEventContext::default());
         extensions.add(NativeObjectContext::default());
         extensions.add(NativeTransactionContext::new(
-            vec![1],
-            vec![1],
+            txn_hash.to_vec(),
+            vec![],
             ChainId::test().id(),
             None,
         ));
