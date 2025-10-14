@@ -88,7 +88,7 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (_, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
+        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
