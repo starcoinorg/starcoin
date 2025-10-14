@@ -390,12 +390,6 @@ User vote info.
  how many tokens to stake.
 </dd>
 <dt>
-<code>stake_store_delete_ref: <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a></code>
-</dt>
-<dd>
- Delete ref for delete stake store
-</dd>
-<dt>
 <code>agree: bool</code>
 </dt>
 <dd>
@@ -813,25 +807,30 @@ So think twice before casting vote.
     stake: FungibleAsset,
     agree: bool,
 ) <b>acquires</b> <a href="dao.md#0x1_dao_Proposal">Proposal</a>, <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>, <a href="dao.md#0x1_dao_Vote">Vote</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | entered"));
     {
         <b>let</b> state = <a href="dao.md#0x1_dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can cast vote.
         <b>assert</b>!(state == <a href="dao.md#0x1_dao_ACTIVE">ACTIVE</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="dao.md#0x1_dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
 
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 1"));
     <b>let</b> fa_metadata = <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">fungible_asset::metadata_from_asset</a>(&stake);
     <b>let</b> coin_metadata = <a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;TokenT&gt;();
     <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_metadata), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="dao.md#0x1_dao_ERR_COIN_NOT_FOUND">ERR_COIN_NOT_FOUND</a>));
 
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 2"));
     <b>let</b> coin_metadata = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(coin_metadata);
     <b>assert</b>!(fa_metadata == coin_metadata, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(
         <a href="dao.md#0x1_dao_ERR_FUNGIBLE_ASSET_NOT_MATCH">ERR_FUNGIBLE_ASSET_NOT_MATCH</a>
     ));
 
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 3"));
     <b>let</b> proposal = <b>borrow_global_mut</b>&lt;<a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>!(proposal.id == proposal_id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao.md#0x1_dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> sender = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>);
     <b>let</b> total_voted = <b>if</b> (<b>exists</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender)) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 4"));
         <b>let</b> my_vote = <b>borrow_global_mut</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
         <b>assert</b>!(my_vote.id == proposal_id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao.md#0x1_dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
         <b>assert</b>!(my_vote.agree == agree, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="dao.md#0x1_dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>));
@@ -839,21 +838,36 @@ So think twice before casting vote.
         <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, my_vote, stake);
         <a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(my_vote.stake_store)
     } <b>else</b> {
-        <b>let</b> construct_ref = <a href="object.md#0x1_object_create_object">object::create_object</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>));
-        <b>let</b> stake_store = <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata);
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 5"));
+        <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
+            <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+            <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
+        );
+
+        // <b>if</b> fungible store <b>has</b> exist, restore it from construct_ref
+        <b>let</b> stake_store = <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(<a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&construct_ref))) {
+            <a href="object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;FungibleStore&gt;(&construct_ref)
+        } <b>else</b> {
+            // or create it
+            <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata)
+        };
+
         <b>let</b> my_vote = <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt; {
             proposer: proposer_address,
             id: proposal_id,
             stake_store,
-            stake_store_delete_ref: <a href="object.md#0x1_object_generate_delete_ref">object::generate_delete_ref</a>(&construct_ref),
             agree,
         };
         <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, &<b>mut</b> my_vote, stake);
+
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 5 - 1"));
+
         <b>let</b> total_voted = <a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(my_vote.stake_store);
         <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, my_vote);
         total_voted
     };
 
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | 6"));
     // emit <a href="event.md#0x1_event">event</a>
     <b>let</b> gov_info = <b>borrow_global_mut</b>&lt;<a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;());
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
@@ -866,6 +880,7 @@ So think twice before casting vote.
             vote: (total_voted <b>as</b> u128),
         },
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_cast_vote">dao::cast_vote</a> | exited"));
 }
 </code></pre>
 
@@ -893,6 +908,7 @@ So think twice before casting vote.
     vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;,
     stake: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>,
 ) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_do_cast_vote">dao::do_cast_vote</a> | entered"));
     <b>let</b> stake_value = <a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&stake);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(vote.stake_store, stake);
     <b>if</b> (vote.agree) {
@@ -900,6 +916,7 @@ So think twice before casting vote.
     } <b>else</b> {
         proposal.against_votes = proposal.against_votes + (stake_value <b>as</b> u128);
     };
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="dao.md#0x1_dao_do_cast_vote">dao::do_cast_vote</a> | exited"));
 }
 </code></pre>
 
@@ -1054,8 +1071,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
 
     // <b>if</b> user <b>has</b> no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
     <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(my_vote.stake_store) == 0) {
-        <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { stake_store: _, stake_store_delete_ref: store_delete_ref, proposer: _, id: _, agree: _ } = my_vote;
-        <a href="fungible_asset.md#0x1_fungible_asset_remove_store">fungible_asset::remove_store</a>(&store_delete_ref);
+        <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { stake_store: _, proposer: _, id: _, agree: _ } = my_vote;
     } <b>else</b> {
         <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, my_vote);
     };
@@ -1142,7 +1158,6 @@ Retrieve back my staked token voted for a proposal.
         proposer,
         id,
         stake_store,
-        stake_store_delete_ref,
         agree: _
     } = <b>move_from</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>),
@@ -1157,7 +1172,6 @@ Retrieve back my staked token voted for a proposal.
         stake_store,
         staking_amount
     );
-    <a href="fungible_asset.md#0x1_fungible_asset_remove_store">fungible_asset::remove_store</a>(&stake_store_delete_ref);
     asset
 }
 </code></pre>

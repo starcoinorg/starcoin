@@ -7,8 +7,7 @@ module starcoin_framework::dao {
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
-    use starcoin_framework::create_signer;
-    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::create_signer::{Self, create_signer};
     use starcoin_framework::event;
     use starcoin_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata};
     use starcoin_framework::object::{Self, DeleteRef, Object};
@@ -107,8 +106,6 @@ module starcoin_framework::dao {
         id: u64,
         /// how many tokens to stake.
         stake_store: object::Object<FungibleStore>,
-        /// Delete ref for delete stake store
-        stake_store_delete_ref: DeleteRef,
         /// vote for or vote against.
         agree: bool,
     }
@@ -278,13 +275,23 @@ module starcoin_framework::dao {
             do_cast_vote(proposal, my_vote, stake);
             fungible_asset::balance(my_vote.stake_store)
         } else {
-            let construct_ref = object::create_object(signer::address_of(signer));
-            let stake_store = fungible_asset::create_store(&construct_ref, coin_metadata);
+            let construct_ref = object::create_named_object(
+                signer,
+                type_info::struct_name(&type_info::type_of<TokenT>())
+            );
+
+            // if fungible store has exist, restore it from construct_ref
+            let stake_store = if (fungible_asset::store_exists(object::address_from_constructor_ref(&construct_ref))) {
+                object::object_from_constructor_ref<FungibleStore>(&construct_ref)
+            } else {
+                // or create it
+                fungible_asset::create_store(&construct_ref, coin_metadata)
+            };
+
             let my_vote = Vote<TokenT> {
                 proposer: proposer_address,
                 id: proposal_id,
                 stake_store,
-                stake_store_delete_ref: object::generate_delete_ref(&construct_ref),
                 agree,
             };
             do_cast_vote(proposal, &mut my_vote, stake);
@@ -416,8 +423,7 @@ module starcoin_framework::dao {
 
         // if user has no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
         if (fungible_asset::balance(my_vote.stake_store) == 0) {
-            let Vote { stake_store: _, stake_store_delete_ref: store_delete_ref, proposer: _, id: _, agree: _ } = my_vote;
-            fungible_asset::remove_store(&store_delete_ref);
+            let Vote { stake_store: _, proposer: _, id: _, agree: _ } = my_vote;
         } else {
             move_to(signer, my_vote);
         };
@@ -464,7 +470,6 @@ module starcoin_framework::dao {
             proposer,
             id,
             stake_store,
-            stake_store_delete_ref,
             agree: _
         } = move_from<Vote<TokenT>>(
             signer::address_of(signer),
@@ -479,7 +484,6 @@ module starcoin_framework::dao {
             stake_store,
             staking_amount
         );
-        fungible_asset::remove_store(&stake_store_delete_ref);
         asset
     }
 
