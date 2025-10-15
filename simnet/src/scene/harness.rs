@@ -5,6 +5,100 @@ use starcoin_crypto::HashValue;
 use starcoin_types::U256;
 use std::collections::VecDeque;
 
+#[derive(Clone)]
+struct PendingVisibility {
+    time: u64,
+    block: HashValue,
+    parents: Vec<HashValue>,
+}
+
+struct MinerView {
+    tips: Vec<HashValue>,
+}
+
+impl MinerView {
+    fn new(genesis: HashValue) -> Self {
+        Self {
+            tips: vec![genesis],
+        }
+    }
+
+    fn observe_block(
+        &mut self,
+        ghost: &GhostAdpter,
+        block: HashValue,
+        parents: &[HashValue],
+    ) -> Result<()> {
+        if self.tips.is_empty() {
+            self.tips.push(ghost.genesis_id());
+        }
+
+        self.tips.retain(|tip| !parents.contains(tip));
+        self.tips.push(block);
+        self.normalize(ghost)
+    }
+
+    fn normalize(&mut self, ghost: &GhostAdpter) -> Result<()> {
+        if self.tips.is_empty() {
+            self.tips.push(ghost.genesis_id());
+            return Ok(());
+        }
+
+        self.tips.sort_unstable();
+        self.tips.dedup();
+
+        let mut filtered = Vec::with_capacity(self.tips.len());
+        'outer: for i in 0..self.tips.len() {
+            let tip_i = self.tips[i];
+            for (j, tip_j) in self.tips.iter().enumerate() {
+                if i == j {
+                    continue;
+                }
+                if ghost.is_ancestor(tip_i, *tip_j)? {
+                    continue 'outer;
+                }
+            }
+            filtered.push(tip_i);
+        }
+
+        if filtered.is_empty() {
+            filtered.push(ghost.genesis_id());
+        }
+
+        self.tips = filtered;
+        Ok(())
+    }
+
+    fn parents_for_mining(&self, ghost: &GhostAdpter) -> Result<Vec<HashValue>> {
+        if self.tips.is_empty() {
+            return Ok(vec![ghost.genesis_id()]);
+        }
+
+        let max_parents = ghost.max_parents().max(1);
+        if self.tips.len() <= max_parents {
+            return Ok(self.tips.clone());
+        }
+
+        let mut ranked = Vec::with_capacity(self.tips.len());
+        for tip in &self.tips {
+            let (score, work) = ghost.ghost_stats(*tip)?.unwrap_or((0, U256::from(0u8)));
+            ranked.push((*tip, score, work));
+        }
+
+        ranked.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+                .then_with(|| b.2.cmp(&a.2))
+                .then_with(|| a.0.cmp(&b.0))
+        });
+
+        Ok(ranked
+            .into_iter()
+            .take(max_parents)
+            .map(|(hash, _, _)| hash)
+            .collect())
+    }
+}
+
 pub fn drive_harness<F>(
     ghost: &mut GhostAdpter,
     mut events: Vec<BlockEvent>,
@@ -33,8 +127,10 @@ where
         miner_delays[ev.miner_id] = ev.network_delay;
     }
 
-    let mut visibility: Vec<VecDeque<(u64, HashValue)>> = vec![VecDeque::new(); miner_count];
-    let mut last_seen = vec![genesis_id; miner_count];
+    let mut visibility: Vec<VecDeque<PendingVisibility>> = vec![VecDeque::new(); miner_count];
+    let mut miner_views: Vec<MinerView> = (0..miner_count)
+        .map(|_| MinerView::new(genesis_id))
+        .collect();
 
     while index < events.len() {
         let current_time = events[index].arrival_time;
@@ -44,13 +140,15 @@ where
         }
 
         for miner_id in 0..miner_count {
-            while let Some(&(vis_time, hash)) = visibility[miner_id].front() {
-                if vis_time <= current_time {
-                    last_seen[miner_id] = hash;
-                    visibility[miner_id].pop_front();
-                } else {
+            while let Some(front) = visibility[miner_id].front() {
+                if front.time > current_time {
                     break;
                 }
+
+                let pending = visibility[miner_id]
+                    .pop_front()
+                    .expect("front just checked to exist");
+                miner_views[miner_id].observe_block(&*ghost, pending.block, &pending.parents)?;
             }
         }
 
@@ -58,8 +156,8 @@ where
             let ev = &events[index];
             let diff = U256::from(1u64);
 
-            let visible_parent = last_seen.get(ev.miner_id).copied().unwrap_or(genesis_id);
-            let plan = ghost.plan_with_parents(vec![visible_parent])?;
+            let parents = miner_views[ev.miner_id].parents_for_mining(&*ghost)?;
+            let plan = ghost.plan_with_parents(parents.clone())?;
 
             if std::env::var("SIMNET_DEBUG").is_ok() {
                 println!(
@@ -69,22 +167,32 @@ where
             }
 
             let choice = if _is_adversary(ev.miner_id) {
-                ParentChoice::Subset(vec![visible_parent])
+                ParentChoice::Subset(parents)
             } else {
-                ParentChoice::Custom(vec![visible_parent])
+                ParentChoice::Honest
             };
 
             let block_id = ghost.commit_with_parents(diff, ev, plan, choice)?;
 
+            let parents_committed = ghost
+                .records()
+                .last()
+                .map(|record| record.parents.clone())
+                .unwrap_or_else(|| vec![genesis_id]);
+
+            miner_views[ev.miner_id].observe_block(&*ghost, block_id, &parents_committed)?;
+
             for (miner_id, delay) in miner_delays.iter().enumerate() {
-                let vis_time = if miner_id == ev.miner_id {
-                    current_time
-                } else {
-                    current_time.saturating_add(*delay)
-                };
-                visibility[miner_id].push_back((vis_time, block_id));
+                if miner_id == ev.miner_id {
+                    continue;
+                }
+                let vis_time = current_time.saturating_add(*delay);
+                visibility[miner_id].push_back(PendingVisibility {
+                    time: vis_time,
+                    block: block_id,
+                    parents: parents_committed.clone(),
+                });
             }
-            last_seen[ev.miner_id] = block_id;
             accepted += 1;
             index += 1;
         }

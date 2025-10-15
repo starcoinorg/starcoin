@@ -49,17 +49,17 @@ impl TipManager {
         if tips.is_empty() && !parents.is_empty() {
             tips.extend_from_slice(parents);
         }
-
-        let mut filtered = Vec::new();
-        for tip in tips {
-            if tip != block_id && !self.dag.check_ancestor_of(tip, block_id)? {
-                filtered.push(tip);
-            }
-        }
-        filtered.push(block_id);
-
+        tips.push(block_id);
+        tips = tips
+            .into_iter()
+            .filter(|tip| {
+                *tip == block_id || !self.dag.check_ancestor_of(*tip, block_id).unwrap_or(false)
+            })
+            .collect();
+        tips.sort_unstable();
+        tips.dedup();
         self.dag
-            .save_dag_state(self.current_pruning, DagState { tips: filtered })?;
+            .save_dag_state(self.current_pruning, DagState { tips })?;
         Ok(())
     }
 

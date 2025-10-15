@@ -26,6 +26,7 @@ pub struct GhostAdpter {
     k: KType,
     virtual_tips: Vec<VirtualTip>,
     tips: TipManager,
+    max_parents: usize,
 }
 
 impl GhostAdpter {
@@ -54,11 +55,31 @@ impl GhostAdpter {
             k,
             virtual_tips: Vec::new(),
             tips,
+            max_parents: max_parents_count,
         })
     }
 
     pub fn genesis(&self) -> &BlockHeader {
         &self.genesis
+    }
+
+    pub fn genesis_id(&self) -> HashValue {
+        self.genesis.id()
+    }
+
+    pub fn max_parents(&self) -> usize {
+        self.max_parents
+    }
+
+    pub fn ghost_stats(&self, hash: HashValue) -> Result<Option<(u64, U256)>> {
+        Ok(self
+            .dag
+            .ghostdata_by_hash(hash)?
+            .map(|data| (data.blue_score, data.blue_work.clone())))
+    }
+
+    pub fn is_ancestor(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
+        self.dag.check_ancestor_of(ancestor, descendant)
     }
 
     pub fn plan_next_block(&mut self) -> Result<MineNewDagBlockInfo> {
