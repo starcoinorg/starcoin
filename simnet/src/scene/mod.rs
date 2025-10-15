@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
 
-use crate::{tips::TipManager, BlockEvent};
+use crate::BlockEvent;
 
 pub struct GhostAdpter {
     genesis: BlockHeader,
@@ -25,7 +25,6 @@ pub struct GhostAdpter {
     records: Vec<BlockRecord>,
     k: KType,
     virtual_tips: Vec<VirtualTip>,
-    tips: TipManager,
     max_parents: usize,
 }
 
@@ -44,8 +43,6 @@ impl GhostAdpter {
         let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage);
         dag.init_with_genesis(genesis.clone())?;
         let genesis_id = genesis.id();
-        let tips = TipManager::new(dag.clone(), genesis_id)?;
-
         Ok(Self {
             genesis,
             dag,
@@ -54,7 +51,6 @@ impl GhostAdpter {
             records: Vec::new(),
             k,
             virtual_tips: Vec::new(),
-            tips,
             max_parents: max_parents_count,
         })
     }
@@ -104,6 +100,18 @@ impl GhostAdpter {
         choice: ParentChoice,
     ) -> Result<HashValue> {
         let previous_pruning_point = self.pruning_point;
+        // snapshot current tips before commit for renew_tips-like update
+        let mut tips_snapshot = match self.dag.get_dag_state(previous_pruning_point) {
+            Ok(state) => state.tips,
+            Err(e) => {
+                // In practice genesis bucket should exist; in case of a missing state, seed with genesis
+                eprintln!(
+                    "warn: failed to load dag state at {:?}: {:?}",
+                    previous_pruning_point, e
+                );
+                vec![self.genesis.id()]
+            }
+        };
         let parents = match choice {
             ParentChoice::Honest => plan.selected_parents.clone(),
             ParentChoice::Subset(mut subset) => {
@@ -131,15 +139,40 @@ impl GhostAdpter {
 
         let block_id = block.id();
         self.dag.commit_trusted_block(block, ghostdata)?;
-        self.tips.set_pruning_point(self.pruning_point);
-        self.tips.on_commit(block_id, &parents)?;
+        // renew tips according to chain::renew_tips semantics
+        // 1) remove old tips that are ancestors of the new block, then add the new block
+        let mut new_tips = Vec::with_capacity(tips_snapshot.len() + 1);
+        for tip in tips_snapshot.drain(..) {
+            if !self.dag.check_ancestor_of(tip, block_id)? {
+                new_tips.push(tip);
+            }
+        }
+        new_tips.push(block_id);
 
         let virtual_info = self
             .dag
             .calc_mergeset_and_tips(previous_pruning_point, self.genesis.id())?;
-        self.tips
-            .prune_if_needed(previous_pruning_point, virtual_info.pruning_point)?;
-        self.pruning_point = self.tips.current_pruning();
+        if virtual_info.pruning_point == previous_pruning_point {
+            // Same bucket: save tips directly; DAG will merge/order/cap
+            self.dag.save_dag_state(
+                previous_pruning_point,
+                starcoin_dag::consensusdb::consensus_state::DagState { tips: new_tips },
+            )?;
+        } else {
+            // Bucket advanced: prune tips from previous bucket into the new pruning point, then save
+            let pruned = self.dag.pruning_point_manager().prune(
+                &starcoin_dag::consensusdb::consensus_state::DagState {
+                    tips: new_tips.clone(),
+                },
+                previous_pruning_point,
+                virtual_info.pruning_point,
+            )?;
+            self.dag.save_dag_state(
+                virtual_info.pruning_point,
+                starcoin_dag::consensusdb::consensus_state::DagState { tips: pruned },
+            )?;
+            self.pruning_point = virtual_info.pruning_point;
+        }
 
         self.records.push(BlockRecord {
             block_id,

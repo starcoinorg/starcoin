@@ -7,7 +7,6 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 pub mod scene;
-pub mod tips;
 
 // Configuration structs
 #[derive(Debug, Clone)]
@@ -121,9 +120,7 @@ impl BlkStream {
             }
 
             let miner = &self.miners[produce.miner_id];
-            let raw_arrival = produce.time + miner.network_delay;
-            let slot = 200;
-            let arrival_time = (raw_arrival / slot) * slot;
+            let arrival_time = produce.time + miner.network_delay;
 
             events.push(BlockEvent {
                 arrival_time,
