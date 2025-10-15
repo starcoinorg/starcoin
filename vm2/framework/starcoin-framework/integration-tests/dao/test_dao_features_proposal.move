@@ -11,10 +11,11 @@ script {
     use std::vector;
     use starcoin_framework::dao_features_proposal;
 
-    fun proposal(account: &signer) {
+    fun proposal(alice: &signer) {
         let disable = vector::empty<u64>();
         vector::push_back(&mut disable, 1);
-        dao_features_proposal::propose(account, vector::empty<u64>(), disable, 3600000);
+
+        dao_features_proposal::propose(alice, vector::empty<u64>(), disable, 3600000);
     }
 }
 // check: EXECUTED
@@ -25,21 +26,24 @@ script {
 //# run --signers alice
 script {
     use std::vector;
+    use starcoin_framework::starcoin_coin;
+    use starcoin_framework::primary_fungible_store;
 
-    use starcoin_framework::coin;
     use starcoin_framework::dao;
     use starcoin_framework::dao_features_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun cast_vote_proposal(account: &signer) {
+    fun cast_vote_proposal(alice: &signer) {
         let disable = vector::empty<u64>();
         vector::push_back(&mut disable, 1);
-        let balance = coin::withdraw<STC>(
-            account,
+
+        let balance = primary_fungible_store::withdraw(
+            alice,
+            starcoin_coin::get_stc_fa_metadata(),
             6370272400000001
         );
         dao::cast_vote<STC, dao_features_proposal::FeaturesUpdate>(
-            account,
+            alice,
             @alice,
             0,
             balance,
