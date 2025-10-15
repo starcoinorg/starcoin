@@ -275,16 +275,15 @@ module starcoin_framework::dao {
             do_cast_vote(proposal, my_vote, stake);
             fungible_asset::balance(my_vote.stake_store)
         } else {
-            let construct_ref = object::create_named_object(
-                signer,
-                type_info::struct_name(&type_info::type_of<TokenT>())
-            );
-
-            // if fungible store has exist, restore it from construct_ref
-            let stake_store = if (fungible_asset::store_exists(object::address_from_constructor_ref(&construct_ref))) {
-                object::object_from_constructor_ref<FungibleStore>(&construct_ref)
+            let object_seed = type_info::struct_name(&type_info::type_of<TokenT>());
+            let construct_addr = object::create_object_address(&sender, object_seed);
+            let stake_store = if (object::object_exists<FungibleStore>(construct_addr)) {
+                object::address_to_object<FungibleStore>(construct_addr)
             } else {
-                // or create it
+                let construct_ref = object::create_named_object(
+                    signer,
+                    type_info::struct_name(&type_info::type_of<TokenT>())
+                );
                 fungible_asset::create_store(&construct_ref, coin_metadata)
             };
 
