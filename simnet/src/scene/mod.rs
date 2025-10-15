@@ -5,10 +5,7 @@ use anyhow::{ensure, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
-    consensusdb::{
-        consensus_state::DagState,
-        prelude::{FlexiDagStorage, FlexiDagStorageConfig},
-    },
+    consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig},
 };
 use starcoin_time_service::{MockTimeService, TimeService};
 use starcoin_types::{block::BlockHeader, blockhash::KType, U256};
@@ -18,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
 
-use crate::BlockEvent;
+use crate::{tips::TipManager, BlockEvent};
 
 pub struct GhostAdpter {
     genesis: BlockHeader,
@@ -28,6 +25,7 @@ pub struct GhostAdpter {
     records: Vec<BlockRecord>,
     k: KType,
     virtual_tips: Vec<VirtualTip>,
+    tips: TipManager,
 }
 
 impl GhostAdpter {
@@ -45,6 +43,7 @@ impl GhostAdpter {
         let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage);
         dag.init_with_genesis(genesis.clone())?;
         let genesis_id = genesis.id();
+        let tips = TipManager::new(dag.clone(), genesis_id)?;
 
         Ok(Self {
             genesis,
@@ -54,6 +53,7 @@ impl GhostAdpter {
             records: Vec::new(),
             k,
             virtual_tips: Vec::new(),
+            tips,
         })
     }
 
@@ -64,6 +64,15 @@ impl GhostAdpter {
     pub fn plan_next_block(&mut self) -> Result<MineNewDagBlockInfo> {
         self.dag
             .calc_mergeset_and_tips(self.pruning_point, self.genesis.id())
+    }
+
+    pub fn plan_with_parents(&mut self, parents: Vec<HashValue>) -> Result<MineNewDagBlockInfo> {
+        let ghostdata = self.dag.ghostdata(&parents)?;
+        Ok(MineNewDagBlockInfo {
+            selected_parents: parents,
+            ghostdata,
+            pruning_point: self.pruning_point,
+        })
     }
 
     pub fn commit_with_parents(
@@ -101,13 +110,16 @@ impl GhostAdpter {
 
         let block_id = block.id();
         self.dag.commit_trusted_block(block, ghostdata)?;
-        self.dag.save_dag_state(
-            previous_pruning_point,
-            DagState {
-                tips: parents.clone(),
-            },
-        )?;
-        self.pruning_point = plan.pruning_point;
+        self.tips.set_pruning_point(self.pruning_point);
+        self.tips.on_commit(block_id, &parents)?;
+
+        let virtual_info = self
+            .dag
+            .calc_mergeset_and_tips(previous_pruning_point, self.genesis.id())?;
+        self.tips
+            .prune_if_needed(previous_pruning_point, virtual_info.pruning_point)?;
+        self.pruning_point = self.tips.current_pruning();
+
         self.records.push(BlockRecord {
             block_id,
             parents,
@@ -115,10 +127,6 @@ impl GhostAdpter {
             header_time: event.header_time,
             miner_id: event.miner_id,
         });
-
-        let virtual_info = self
-            .dag
-            .calc_mergeset_and_tips(self.pruning_point, self.genesis.id())?;
         let tip_id = virtual_info.ghostdata.selected_parent;
         let tip_data = Arc::new(virtual_info.ghostdata);
         self.virtual_tips.push(VirtualTip {
@@ -300,12 +308,32 @@ impl GhostAdpter {
         }
 
         let mut label_cache: HashMap<HashValue, String> = HashMap::new();
+        let mut node_cache: HashMap<HashValue, String> = HashMap::new();
         let mut label = |hash: &HashValue| {
             label_cache
                 .entry(*hash)
-                .or_insert_with(|| hash.to_string()[..8].to_string())
+                .or_insert_with(|| {
+                    let hex = hash.to_hex();
+                    format!("0x{}", &hex[..8])
+                })
                 .clone()
         };
+        let mut node_id = |hash: &HashValue| {
+            node_cache
+                .entry(*hash)
+                .or_insert_with(|| {
+                    let hex = hash.to_hex();
+                    format!("n{}", &hex[..8])
+                })
+                .clone()
+        };
+
+        let genesis_id = self.genesis.id();
+        buf.push_str(&format!(
+            "  {} [label=\"{}\\n(genesis)\", shape=oval, color=blue, penwidth=2];\n",
+            node_id(&genesis_id),
+            label(&genesis_id)
+        ));
 
         for record in &self.records {
             let color = if selected_chain.contains(&record.block_id) {
@@ -315,7 +343,7 @@ impl GhostAdpter {
             };
             buf.push_str(&format!(
                 "  {} [label=\"{}\", {}];\n",
-                label(&record.block_id),
+                node_id(&record.block_id),
                 label(&record.block_id),
                 color
             ));
@@ -329,8 +357,8 @@ impl GhostAdpter {
                     };
                     buf.push_str(&format!(
                         "  {} -> {} [{}];\n",
-                        label(parent),
-                        label(&record.block_id),
+                        node_id(parent),
+                        node_id(&record.block_id),
                         attrs
                     ));
                 }
