@@ -833,18 +833,28 @@ So think twice before casting vote.
         <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, my_vote, stake);
         <a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(my_vote.stake_store)
     } <b>else</b> {
-        <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
-            <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-            <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
-        );
-
-        // <b>if</b> fungible store <b>has</b> exist, restore it from construct_ref
-        <b>let</b> stake_store = <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(<a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&construct_ref))) {
-            <a href="object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;FungibleStore&gt;(&construct_ref)
+        <b>let</b> object_seed = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;());
+        <b>let</b> construct_addr = <a href="object.md#0x1_object_create_object_address">object::create_object_address</a>(&sender, object_seed);
+        <b>let</b> stake_store = <b>if</b> (<a href="object.md#0x1_object_object_exists">object::object_exists</a>&lt;FungibleStore&gt;(construct_addr)) {
+            <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;FungibleStore&gt;(construct_addr)
         } <b>else</b> {
-            // or create it
+            <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
+                <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+                <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
+            );
             <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata)
         };
+        // <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
+        //     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+        //     <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
+        // );
+        // // <b>if</b> fungible store <b>has</b> exist, restore it from construct_ref
+        // <b>let</b> stake_store = <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(<a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&construct_ref))) {
+        //     <a href="object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;FungibleStore&gt;(&construct_ref)
+        // } <b>else</b> {
+        //     // or create it
+        //     <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata)
+        // };
 
         <b>let</b> my_vote = <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt; {
             proposer: proposer_address,
