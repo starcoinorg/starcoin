@@ -300,13 +300,13 @@ fn init_account_table(conn: &Connection) -> Result<()> {
 async fn with_account_conn<T, F>(path: &Path, f: F) -> Result<T>
 where
     T: Send + 'static,
-    F: FnOnce(&Connection) -> Result<T> + Send + 'static,
+    F: FnOnce(&mut Connection) -> Result<T> + Send + 'static,
 {
     let path = path.to_owned();
     task::spawn_blocking(move || -> Result<T> {
-        let conn = Connection::open(&path)?;
+        let mut conn = Connection::open(&path)?;
         init_account_table(&conn)?;
-        let result = f(&conn)?;
+        let result = f(&mut conn)?;
         Ok(result)
     })
     .await
@@ -375,36 +375,43 @@ async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
     Ok(accounts)
 }
 
-/// Append a new account entry. Returns `true` if insertion happened, `false` otherwise.
-async fn append_account<P: AsRef<Path>>(path: P, account: &AccountEntry) -> Result<bool> {
-    let encoded = account.private_key.to_encoded_string()?;
-    let address = account.address.to_string();
+/// Append account entries in batch. Returns number of newly inserted rows.
+async fn append_account<P: AsRef<Path>>(path: P, accounts: Vec<AccountEntry>) -> Result<usize> {
+    if accounts.is_empty() {
+        return Ok(0);
+    }
+    let entries = accounts
+        .into_iter()
+        .map(|account| {
+            let encoded = account.private_key.to_encoded_string()?;
+            Ok((account.address.to_string(), encoded))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
     let inserted = with_account_conn(path.as_ref(), move |conn| {
-        let affected = conn.execute(
-            "INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)",
-            params![address, encoded],
-        )?;
-        Ok(affected > 0)
+        let tx = conn.transaction()?;
+        let mut stmt =
+            tx.prepare("INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)")?;
+        let mut total = 0usize;
+        for (address, encoded) in entries {
+            total += stmt.execute(params![address, encoded])? as usize;
+        }
+        drop(stmt);
+        tx.commit()?;
+        Ok(total)
     })
     .await?;
     Ok(inserted)
 }
 
 /// Create a fresh account locally
-async fn create_account(account_path: &str) -> Result<AccountEntry> {
-    loop {
-        let mut key_gen = KeyGen::from_os_rng();
-        let (private_key, public_key) = key_gen.generate_keypair();
-        let address = account_address::from_public_key(&public_key);
-        let entry = AccountEntry {
-            address,
-            private_key: AccountPrivateKey::Single(private_key),
-        };
-        if append_account(account_path, &entry).await? {
-            return Ok(entry);
-        } else {
-            warn!("Generated duplicate account {}, retrying", entry.address);
-        }
+fn create_account() -> AccountEntry {
+    let mut key_gen = KeyGen::from_os_rng();
+    let (private_key, public_key) = key_gen.generate_keypair();
+    let address = account_address::from_public_key(&public_key);
+    AccountEntry {
+        address,
+        private_key: AccountPrivateKey::Single(private_key),
     }
 }
 
@@ -513,10 +520,13 @@ async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
         return Ok(());
     }
     let to_create = count - existed;
+    let mut accounts = Vec::with_capacity(to_create);
     for _ in 0..to_create {
-        let entry = create_account(account_path).await?;
+        let entry = create_account();
         info!("Created account {}", entry.address);
+        accounts.push(entry);
     }
+    append_account(account_path, accounts).await?;
     Ok(())
 }
 
