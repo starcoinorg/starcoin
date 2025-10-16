@@ -3500,6 +3500,7 @@ dependencies = [
  "mirai-annotations",
  "num-derive",
  "num-traits 0.2.19",
+ "parking_lot 0.12.1",
  "proptest",
  "proptest-derive 0.6.0",
  "rand 0.7.3",
