@@ -5,7 +5,8 @@ use crate::account::Account;
 use crate::account_storage::AccountStorage;
 use anyhow::format_err;
 use parking_lot::RwLock;
-use rand::prelude::*;
+use rand_0_8::{rngs::OsRng as OsRng08, rngs::StdRng as StdRng08, SeedableRng as SeedableRng08};
+use rand_core::RngCore;
 use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
@@ -97,6 +98,25 @@ impl AccountManager {
             .write()
             .cache_pass(address, password.to_string(), ttl);
         Ok(account.info())
+    }
+
+    pub fn unlock_account_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: Duration,
+    ) -> AccountResult<Vec<AccountInfo>> {
+        let mut accounts = vec![];
+        for (address, password) in batch.into_iter() {
+            let account = Account::load(address, Some(password.to_string()), self.store.clone())?
+                .ok_or(AccountError::AccountNotExist(address))?;
+            let ttl = std::time::Instant::now().add(duration);
+            self.key_cache
+                .write()
+                .cache_pass(address, password.to_string(), ttl);
+            accounts.push(account.info());
+        }
+
+        Ok(accounts)
     }
 
     pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
@@ -254,6 +274,30 @@ impl AccountManager {
         }
     }
 
+    pub fn sign_txn_in_batch(
+        &self,
+        raw_txns: Vec<RawUserTransaction>,
+    ) -> AccountResult<Vec<SignedUserTransaction>> {
+        let mut signed_transactions = vec![];
+        for raw_txn in raw_txns {
+            let signer_address = raw_txn.sender(); // TODO: check if the signer is the same as the one in the txi
+            let pass = self.key_cache.write().get_pass(&signer_address);
+            match pass {
+                None => return Err(AccountError::AccountLocked(signer_address)),
+                Some(p) => {
+                    let account = Account::load(signer_address, Some(p), self.store.clone())?
+                        .ok_or(AccountError::AccountNotExist(signer_address))?;
+                    signed_transactions.push(
+                        account
+                            .sign_txn(raw_txn)
+                            .map_err(AccountError::TransactionSignError)?,
+                    );
+                }
+            }
+        }
+        Ok(signed_transactions)
+    }
+
     pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
         let mut account_info = self
             .account_info(address)?
@@ -354,8 +398,9 @@ impl AccountManager {
 }
 
 pub(crate) fn gen_private_key() -> Ed25519PrivateKey {
-    let mut seed_rng = rand::rngs::OsRng;
-    let seed_buf: [u8; 32] = seed_rng.gen();
-    let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
+    let mut seed_rng = OsRng08;
+    let mut seed_buf: [u8; 32] = [0u8; 32];
+    seed_rng.fill_bytes(&mut seed_buf);
+    let mut rng: StdRng08 = SeedableRng08::from_seed(seed_buf);
     Ed25519PrivateKey::generate(&mut rng)
 }

@@ -35,7 +35,7 @@ better_any = { workspace = true }
 blake2-rfc = { workspace = true }
 bulletproofs = { workspace = true }
 byteorder = { workspace = true }
-clap = { version = "4.5", features = ["derive"] }
+clap = { features = ["derive"], workspace = true }
 codespan-reporting = { workspace = true }
 # We need `zkcrypto/curve25519-dalek-ng` here instead of the normal `dalek-cryptography/curve25519-dalek` package. This
 # is because the `dalek-cryptography/bulletproofs` works with version 2 of `dalek-cryptography/curve25519-dalek` and
@@ -70,9 +70,9 @@ rand_core_0_5_1 = { workspace = true }
 ripemd = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
-sha2 = "0.9.3"
-sha2_0_10_6 = { workspace = true }
-sha3 = "0.9.1"
+sha2 = { workspace = true }
+sha2_0_9 = { workspace = true }
+sha3 = { workspace = true }
 siphasher = { workspace = true }
 smallvec = { workspace = true }
 tempfile = { workspace = true }

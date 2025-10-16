@@ -48,10 +48,15 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
     let mut executed_data = BlockExecutedData::default();
-    for (txn, output) in txns
+    let last_index = txn_outputs
+        .len()
+        .checked_sub(1)
+        .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
+    for (index, (txn, output)) in txns
         .iter()
         .take(txn_outputs.len())
         .zip(txn_outputs.into_iter())
+        .enumerate()
     {
         let txn_hash = txn.id();
         let (write_set, events, gas_used, status, _) = output.into_inner();
@@ -65,10 +70,16 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 chain_state
                     .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
+                let txn_state_root = if index == last_index || index == 0 {
+                    Some(
+                        chain_state
+                            .commit()
+                            .map_err(BlockExecutorError::BlockChainStateErr)?,
+                    )
+                } else {
+                    None
+                };
 
-                let txn_state_root = chain_state
-                    .commit()
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
                 executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,
                     txn_state_root,

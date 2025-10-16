@@ -3,7 +3,7 @@
 
 pub mod vm_exec_benchmark;
 
-use rand::{rngs::StdRng, SeedableRng};
+use rand_0_8::{rngs::StdRng, seq::index, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
@@ -173,7 +173,7 @@ impl TransactionGenerator {
             transactions.push(Transaction::BlockMetadata(block_meta));
 
             for j in 0..block_size {
-                let indices = rand::seq::index::sample(&mut self.rng, self.accounts.len(), 1);
+                let indices = index::sample(&mut self.rng, self.accounts.len(), 1);
                 //                let sender_idx = indices.index(0);
                 let receiver_idx = indices.index(0);
 

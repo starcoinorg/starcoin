@@ -26,12 +26,12 @@ pub struct ExecuteScriptFunctionOpt {
     short = 't',
     long = "type_tag",
     name = "type-tag",
-    parse(try_from_str = parse_type_tag)
+    value_parser = parse_type_tag,
     )]
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument_advance))]
+    #[clap(long = "arg", name = "transaction-args", value_parser = parse_transaction_argument_advance)]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 

@@ -1,7 +1,7 @@
 use aes_gcm::aead::{generic_array::GenericArray, Aead, NewAead};
 use anyhow::{bail, format_err, Result};
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use rand::RngCore;
+use rand::Rng;
 use std::io::{Cursor, Read, Write};
 
 pub const PBKDF2_DEFAULT_ITERATIONS: usize = 1000;
@@ -17,7 +17,8 @@ struct KeyDerivationParams {
 impl KeyDerivationParams {
     pub fn generate() -> Self {
         let mut salt = [0u8; PBKDF2_SALT_SIZE];
-        rand::thread_rng().fill_bytes(&mut salt);
+        let mut rng = rand::rng();
+        rng.fill(&mut salt);
         Self {
             pbkdf2_iterations: PBKDF2_DEFAULT_ITERATIONS as u32,
             pbkdf2_salt: salt,
@@ -34,7 +35,8 @@ impl EncryptionParams {
     /// Generate encryption params
     pub fn generate() -> Self {
         let mut nonce = [0u8; AES_NONCE_SIZE];
-        rand::thread_rng().fill_bytes(&mut nonce);
+        let mut rng = rand::rng();
+        rng.fill(&mut nonce);
         Self { nonce }
     }
 }

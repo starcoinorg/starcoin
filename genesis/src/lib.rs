@@ -156,14 +156,18 @@ impl Genesis {
                 let state_root1 = if starcoin_chain::should_do_migration(net.chain_id()) {
                     starcoin_chain::do_migration(&chain_state_db, net.chain_id())?
                 } else {
-                    txn_info.state_root_hash
+                    txn_info
+                        .state_root_hash
+                        .expect("genesis state root hash cannot be none!")
                 };
 
-                let state_root2 = txn2_info.state_root_hash();
+                let state_root2 = txn2_info
+                    .state_root_hash()
+                    .expect("genesis state root hash cannot be none for vm2!");
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
                     vm_state_accumulator.root_hash(),
-                    vec![txn_info.id(), txn2_info.id()],
+                    vec![txn2_info.id(), txn_info.id()],
                 )
             };
 
@@ -257,7 +261,7 @@ impl Genesis {
             table_infos,
             TransactionInfo::new(
                 txn_hash,
-                state_root,
+                Some(state_root),
                 events.as_slice(),
                 gas_used,
                 keep_status,
@@ -749,7 +753,28 @@ mod tests {
             storage1_2.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
 
-        let genesis_txn = genesis_block.body.transactions.first().cloned().unwrap();
+        let genesis_txn = genesis_block
+            .body
+            .transactions
+            .first()
+            .ok_or_else(|| format_err!("genesis block should have block metadata for vm1"))?
+            .clone();
+        assert_eq!(
+            txn_accumulator.get_leaf(1)?.unwrap(),
+            storage1
+                .get_transaction_info_by_txn_hash(genesis_txn.id())?
+                .pop()
+                .unwrap()
+                .id(),
+            "block metadata txn hash"
+        );
+
+        let genesis_txn = genesis_block
+            .body
+            .transactions2
+            .first()
+            .ok_or_else(|| format_err!("genesis block should have block metadata of vm2"))?
+            .clone();
         assert_eq!(
             txn_accumulator.get_leaf(0)?.unwrap(),
             storage1

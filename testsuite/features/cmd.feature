@@ -16,8 +16,8 @@ Feature: cmd integration test
     Then cmd: "chain get-events {{$.chain[4].ok[0].transaction_hash}}"
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then cmd: "chain get-block-info {{$.chain[1].ok[0].number}}"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 1"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 1 --raw"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw"
     Then stop
 
     Examples:
@@ -68,7 +68,7 @@ Feature: cmd integration test
     Then cmd: "account transfer -s 0x056d9bed868f8e8c74cf19109a2b375a -r 0x056d9bed868f8e8c74cf19109a2b375b -v 10000000 -b"
     Then cmd: "account unlock 0x056d9bed868f8e8c74cf19109a2b375a"
     # sign to file first
-    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::transfer_scripts::peer_to_peer_v2 -t 0x1::starcoin_coin::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp"
+    Then cmd: "account sign-multisig-txn -s 0x056d9bed868f8e8c74cf19109a2b375a --function 0x1::transfer_scripts::peer_to_peer_v2 -t 0x1::starcoin_coin::STC --arg 0x991c2f856a1e32985d9793b449c0f9d3 --arg 1000000u128 --output-dir /tmp/integration_test"
     Then cmd: "account submit-txn {{$.account[-1].ok}} -b"
     Then stop
 
@@ -237,7 +237,7 @@ Feature: cmd integration test
     Then assert: "{{$.dev[-1].ok[0]}} == 7"
      # 11. clean up proposal
     Then cmd: "account execute-function --function 0x1::dao::destroy_terminated_proposal -t 0x1::starcoin_coin::STC -t 0x1::on_chain_config_dao::OnChainConfigUpdate<0x1::block_reward_config::RewardConfig> --arg {{$.account[0].ok.address}} --arg 0u64"
-     # 12. check the latest flexidagconfig
+     # 12. check the latest config
     Then cmd: "state get resource 0x1 0x1::on_chain_config::Config<0x01::block_reward_config::RewardConfig>"
     Then assert: "{{$.state[0].ok.json.payload.reward_delay}} == 10"
 

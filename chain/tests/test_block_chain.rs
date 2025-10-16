@@ -53,7 +53,7 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         // block 1 has two vms, then two blockmeta events
-        assert_eq!(evt.transaction_index, 1);
+        assert_eq!(evt.transaction_index, 0);
         assert_eq!(evt.event.type_tag(), StcTypeTag::V2(event_type_tag.clone()));
     }
 
@@ -198,7 +198,7 @@ fn test_find_ancestor_fork() -> Result<()> {
 #[stest::test(timeout = 480)]
 ///             ╭--> b2(t2)
 /// Genesis--> b1
-///             ╰--> b3(t2)
+///             ╰--> b2_1(t2)
 ///
 /// In DAG mode: Two blocks with same transaction coexist in DAG
 fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
@@ -261,9 +261,11 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Advance time slightly to ensure different block hash
     config.net().time_service().sleep(1);
 
+    let mut block_chain_1 = block_chain.fork(block_b1.id())?;
+
     // Miner2 creates block b3 also based on b1 (parallel to b2)
     // Use explicit tips [b1] to simulate miner2 hasn't seen b2 yet
-    let (template_b3, excluded) = block_chain.create_block_template(
+    let (template_b2_1, excluded) = block_chain_1.create_block_template(
         *miner2.address(),
         None, // No specific parent header
         vec![signed_txn.clone().into()],
@@ -276,12 +278,12 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         excluded.discarded_txns.is_empty(),
         "txn is discarded by miner2"
     );
-    let block_b3 = block_chain
+    let block_b2_1 = block_chain_1
         .consensus()
-        .create_block(template_b3, config.net().time_service().as_ref())?;
+        .create_block(template_b2_1, config.net().time_service().as_ref())?;
 
     // Apply b3 (parallel to b2, both children of b1)
-    block_chain.apply(block_b3.clone())?;
+    block_chain_1.apply(block_b2_1.clone())?;
 
     // Query all transaction_info for this transaction
     let txn_info_ids = block_chain
@@ -300,7 +302,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .get_storage()
         .get_transaction_info(txn_info_ids[0])?
         .expect("transaction_info should exist");
-    let txn_info2 = block_chain
+    let txn_info2 = block_chain_1
         .get_storage()
         .get_transaction_info(txn_info_ids[1])?
         .expect("transaction_info should exist");
@@ -317,7 +319,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     );
 
     // Verify they belong to different blocks
-    let block_ids = [block_b2.id(), block_b3.id()];
+    let block_ids = [block_b2.id(), block_b2_1.id()];
     assert!(
         block_ids.contains(&txn_info1.block_id()),
         "txn_info1 should be in b2 or b3"

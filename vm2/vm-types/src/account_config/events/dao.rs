@@ -19,7 +19,7 @@ impl ProposalCreatedEvent {
     }
 }
 impl MoveStructType for ProposalCreatedEvent {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ProposalCreatedEvent");
 }
 
@@ -37,7 +37,7 @@ pub struct VoteChangedEvent {
 }
 
 impl MoveStructType for VoteChangedEvent {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("VoteChangedEvent");
 }
 

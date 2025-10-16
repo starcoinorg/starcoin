@@ -8,3 +8,11 @@ updates:
     # Use UTC +08:00
     timezone: "Asia/Shanghai"
   open-pull-requests-limit: 10
+  groups:
+    minor-and-patch:
+      patterns:
+        - "*"
+      update-types:
+        - "minor"
+        - "patch"
+  # Major updates will be created as separate PRs for careful review

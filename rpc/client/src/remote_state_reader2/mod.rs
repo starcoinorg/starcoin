@@ -1,8 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+mod async_reader;
+
 use crate::{RpcClient, StateRootOption};
 use anyhow::{format_err, Result};
+pub use async_reader::AsyncRemoteStateReader;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     AccountStateSetIterator, ChainStateReader, StateWithProof, StateWithTableItemProof,

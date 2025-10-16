@@ -9,6 +9,7 @@ log = { workspace = true }
 network-api = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
+rand_0_8 = { workspace = true }
 rand_core = { workspace = true }
 serde = { workspace = true }
 serde_derive = { workspace = true }
@@ -50,6 +51,7 @@ tempfile = { workspace = true }
 test-helper = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-dag = { workspace = true }
+starcoin-accumulator = { workspace = true }
 
 [features]
 default = []

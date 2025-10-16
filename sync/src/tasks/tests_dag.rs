@@ -30,9 +30,9 @@ async fn sync_block_process(
         let local_net = local_node.chain_mocker.net();
         let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
 
-        let block_chain_service = async_std::task::block_on(
-            registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
-        )?;
+        let block_chain_service = registry
+            .service_ref::<BlockConnectorService<MockTxPoolService>>()
+            .await?;
 
         let storage2 = local_node.get_storage2();
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -110,8 +110,9 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .get_storage()
         .get_block_header_by_hash(target_dag_genesis_header_id)?
         .ok_or_else(|| format_err!("dag genesis header should exist."))?;
-    assert!(
-        dag_genesis_header.number() == 0,
+    assert_eq!(
+        dag_genesis_header.number(),
+        0,
         "dag genesis header number should be 0, but {:?}",
         dag_genesis_header.number()
     );

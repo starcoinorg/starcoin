@@ -20,7 +20,7 @@ pub struct ExportOpt {
     account_address: AccountAddress,
     #[clap(short = 'p', default_value = "")]
     password: String,
-    #[clap(short = 'o', parse(from_os_str))]
+    #[clap(short = 'o')]
     output_file: Option<PathBuf>,
 }
 

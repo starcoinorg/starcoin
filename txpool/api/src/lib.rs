@@ -10,11 +10,7 @@ use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::{
-    account_address::AccountAddress,
-    block::{Block, BlockHeader},
-    transaction,
-};
+use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -35,10 +31,10 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
         &self,
         txns: Vec<SignedUserTransaction>,
-    ) -> Vec<Result<(), transaction::TransactionError>> {
+    ) -> Result<Vec<Result<(), transaction::TransactionError>>> {
         let local_peer_id = Some("local-rpc".to_string());
         let multi_txns = txns.into_iter().map(|txn| txn.into()).collect();
-        let rets = self.add_txns_multi_signed(multi_txns, false, local_peer_id);
+        let rets = self.add_txns_multi_signed(multi_txns, false, local_peer_id)?;
         let mut results = vec![];
         for ret in rets {
             match ret {
@@ -49,7 +45,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
                 },
             }
         }
-        results
+        Ok(results)
     }
 
     fn add_txns_multi_signed(
@@ -57,7 +53,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         txns: Vec<MultiSignedUserTransaction>,
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
-    ) -> Vec<Result<(), MultiTransactionError>>;
+    ) -> Result<Vec<Result<(), MultiTransactionError>>>;
 
     /// Removes transaction from the pool.
     ///
@@ -76,26 +72,27 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         &self,
         max_len: Option<u64>,
         now: Option<u64>,
-    ) -> Vec<MultiSignedUserTransaction>;
+    ) -> Result<Vec<MultiSignedUserTransaction>>;
 
-    /// Get all pending txns which is ok to be packaged to mining with a specific header state.
-    fn get_pending_with_header(
+    /// alike get_pending_txns, it needs the pool client with the specific account state
+    fn get_pending_with_state(
         &self,
         max_len: u64,
         current_timestamp_secs: Option<u64>,
-        header: &BlockHeader,
-    ) -> Vec<MultiSignedUserTransaction>;
+        state_root1: HashValue,
+        state_root2: HashValue,
+    ) -> Result<Vec<MultiSignedUserTransaction>>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number(&self, address: AccountAddress) -> Option<u64>;
 
-    /// Returns next valid sequence number for given sender with a specific header state.
-    fn next_sequence_number_with_header(
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    fn next_sequence_number_in_batch(
         &self,
-        address: AccountAddress,
-        header: &BlockHeader,
-    ) -> Option<u64>;
+        addresses: Vec<AccountAddress>,
+    ) -> Option<Vec<(AccountAddress, Option<u64>)>>;
 
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
@@ -121,12 +118,12 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// or `None` if there are no pending transactions from that sender.
     fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64>;
 
-    /// Returns next valid sequence number for given sender (vm2 AccountAddress) with a specific header state.
-    fn next_sequence_number2_with_header(
+    /// For vm2, returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender.
+    fn next_sequence_number2_in_batch(
         &self,
-        address: AccountAddress2,
-        header: &BlockHeader,
-    ) -> Option<u64>;
+        addresses: Vec<AccountAddress2>,
+    ) -> Option<Vec<(AccountAddress2, Option<u64>)>>;
 }
 
 #[derive(Clone, Debug)]

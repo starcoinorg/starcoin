@@ -536,6 +536,8 @@ pub enum EntryFunctionCall {
         features: Vec<u8>,
     },
 
+    StdlibUpgradeScriptsDummyUpgrade {},
+
     /// Batch transfer token to others.
     TransferScriptsBatchPeerToPeer {
         token_type: TypeTag,
@@ -1008,6 +1010,7 @@ impl EntryFunctionCall {
                 transaction_timeout,
                 features,
             ),
+            StdlibUpgradeScriptsDummyUpgrade {} => stdlib_upgrade_scripts_dummy_upgrade(),
             TransferScriptsBatchPeerToPeer {
                 token_type,
                 payeees,
@@ -2318,6 +2321,18 @@ pub fn stc_genesis_initialize(
     ))
 }
 
+pub fn stdlib_upgrade_scripts_dummy_upgrade() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stdlib_upgrade_scripts").to_owned(),
+        ),
+        ident_str!("dummy_upgrade").to_owned(),
+        vec![],
+        vec![],
+    ))
+}
+
 /// Batch transfer token to others.
 pub fn transfer_scripts_batch_peer_to_peer(
     token_type: TypeTag,
@@ -3345,6 +3360,16 @@ mod decoder {
         }
     }
 
+    pub fn stdlib_upgrade_scripts_dummy_upgrade(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::StdlibUpgradeScriptsDummyUpgrade {})
+        } else {
+            None
+        }
+    }
+
     pub fn transfer_scripts_batch_peer_to_peer(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -3724,6 +3749,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "stc_genesis_initialize".to_string(),
             Box::new(decoder::stc_genesis_initialize),
+        );
+        map.insert(
+            "stdlib_upgrade_scripts_dummy_upgrade".to_string(),
+            Box::new(decoder::stdlib_upgrade_scripts_dummy_upgrade),
         );
         map.insert(
             "transfer_scripts_batch_peer_to_peer".to_string(),

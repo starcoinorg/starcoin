@@ -34,10 +34,10 @@ impl Consensus for DummyConsensus {
         difficulty: U256,
         time_service: &dyn TimeService,
     ) -> u32 {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let low = difficulty.as_u32() / 2;
         let high = difficulty.as_u32().saturating_add(low);
-        let time: u32 = rng.gen_range(low..high);
+        let time: u32 = rng.random_range(low..high);
         info!(
             "DummyConsensus rand sleep time in millis second : {}, difficulty : {}",
             time,

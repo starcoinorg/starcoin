@@ -25,6 +25,7 @@ starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 
 
 [package]

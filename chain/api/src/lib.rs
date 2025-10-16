@@ -103,7 +103,7 @@ impl TransactionInfoWithProof {
         match (self.state_proof.as_ref(), access_path) {
             (Some(state_proof), Some(access_path)) => {
                 state_proof
-                    .verify(self.transaction_info.state_root_hash(), access_path)
+                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
                     .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
             (Some(_), None) => {
@@ -177,7 +177,7 @@ impl TransactionInfoWithProof2 {
         match (self.state_proof.as_ref(), access_path) {
             (Some(state_proof), Some(access_path)) => {
                 state_proof
-                    .verify(self.transaction_info.state_root_hash(), access_path)
+                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
                     .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
             (Some(_), None) => {

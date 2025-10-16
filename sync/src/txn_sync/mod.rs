@@ -106,8 +106,8 @@ impl Inner {
             .await?;
         let import_result =
             self.pool
-                .add_txns_multi_signed(txn_data, false, Some(peer_id.to_string()));
-        let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
+                .add_txns_multi_signed(txn_data, false, Some(peer_id.to_string()))?;
+        let succ_num = import_result.into_iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);
         Ok(())
     }

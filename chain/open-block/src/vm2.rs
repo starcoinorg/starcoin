@@ -18,11 +18,7 @@ use starcoin_vm2_types::transaction::{
 };
 
 impl OpenedBlock {
-    pub fn initialize_v2(
-        &mut self,
-        _parents_hash: Vec<HashValue>,
-        _red_blocks: u64,
-    ) -> anyhow::Result<()> {
+    pub fn initialize(&mut self) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         // Directly use VM2 BlockMetadata
         let block_metadata_txn = Transaction2::BlockMetadata(self.block_meta.clone());
@@ -30,7 +26,7 @@ impl OpenedBlock {
         let mut results = do_execute_block_transactions(
             state,
             vec![block_metadata_txn],
-            None,
+            Some(self.gas_limit()),
             self.vm_metrics.clone(),
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
@@ -45,7 +41,7 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                self.push_txn_and_state2(block_meta_txn_hash, output)?;
+                self.push_txn_and_state2(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
                 bail!(
@@ -54,18 +50,12 @@ impl OpenedBlock {
                 );
             }
         };
-        debug_assert!(!self.vm2_initialized);
-        self.vm2_initialized = true;
         Ok(())
     }
     pub fn push_txns2(
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
     ) -> anyhow::Result<ExcludedTxns> {
-        // if the vm2 block meta has not been executed, do it first.
-        if !self.vm2_initialized {
-            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
-        }
         let state = &self.state.1;
         let mut txns = user_txns
             .into_iter()
@@ -98,7 +88,8 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let last_index = txns.len().saturating_sub(1);
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
@@ -110,7 +101,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state2(txn_hash, output)?;
+                    self.push_txn_and_state2(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
                         .push(txn.try_into().expect("user txn"));
@@ -132,6 +123,7 @@ impl OpenedBlock {
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput2,
+        state_root_calc: bool,
     ) -> anyhow::Result<()> {
         let state = &mut self.state.1;
         let (write_set, events, gas_used, status, _) = output.into_inner();
@@ -142,9 +134,15 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let txn_state_root = state
-            .commit()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let txn_state_root = if state_root_calc {
+            Some(
+                state
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?,
+            )
+        } else {
+            None
+        };
 
         let txn_info = TransactionInfo2::new(
             txn_hash,

@@ -185,7 +185,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     };
     let txn_id = txn.id();
     txpool_service
-        .add_txns_multi_signed(vec![txn.into()], true, None)
+        .add_txns_multi_signed(vec![txn.into()], true, None)?
         .pop()
         .unwrap()
         .unwrap();

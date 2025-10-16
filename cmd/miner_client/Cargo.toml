@@ -6,7 +6,6 @@ path = "src/main.rs"
 actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
-async-std = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }
 futures = { workspace = true }

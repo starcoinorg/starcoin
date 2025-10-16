@@ -27,17 +27,17 @@ pub struct ExecuteScriptOpt {
     long = "type_tag",
     name = "type-tag",
     help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+    value_parser = parse_type_tag,
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument_advance))]
+    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", value_parser = parse_transaction_argument_advance)]
     args: Option<Vec<TransactionArgument>>,
 
     #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[clap(name = "mv_file", parse(from_os_str))]
+    #[clap(name = "mv_file")]
     /// bytecode file of the script to execute.
     mv_file: PathBuf,
 }

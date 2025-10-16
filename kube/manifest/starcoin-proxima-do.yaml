@@ -12,6 +12,7 @@ spec:
       app: starcoin
   serviceName: starcoin-svc
   replicas: 3
+  podManagementPolicy: Parallel
   template:
     metadata:
       name: starcoin
@@ -19,11 +20,21 @@ spec:
         app: starcoin
         network: proxima
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: starcoin
+                  network: proxima
+              topologyKey: kubernetes.io/hostname
       nodeSelector:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-84f04d9
+        image: ghcr.io/starcoinorg/starcoin:sha-05398a5
         imagePullPolicy: Always
         command:
           - bash
@@ -46,6 +57,13 @@ spec:
             rm /sc-data/proxima/config.toml;
             rm /sc-data/proxima/genesis_config.json;
             fi;
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "800Mi"
+          limits:
+            cpu: "2500m"
+            memory: "4Gi"
         ports:
           - containerPort: 9840
         volumeMounts:
@@ -64,19 +82,7 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 30
-          timeoutSeconds: 10
-          failureThreshold: 5
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - >-
-                 /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
-          initialDelaySeconds: 10
+          initialDelaySeconds: 600
           periodSeconds: 30
           timeoutSeconds: 10
           failureThreshold: 5

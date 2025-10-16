@@ -39,9 +39,21 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
+use tokio::runtime::Runtime;
+
+static SYNC_RUNTIME: OnceLock<Runtime> = OnceLock::new();
+fn global_sync_runtime() -> &'static Runtime {
+    SYNC_RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .thread_name("sync-global-runtime")
+            .enable_all()
+            .build()
+            .expect("Global sync runtime init failed")
+    })
+}
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -541,7 +553,7 @@ impl SyncService {
             .as_ref()
             .map(|metrics| metrics.sync_task_break_total.clone());
 
-        ctx.spawn(fut.then(
+        global_sync_runtime().spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
                 let mut chain_status: Option<ChainStatus> = None;
                 let cancel = match result {
@@ -578,7 +590,7 @@ impl SyncService {
                                             )
                                         }
                                         "verify_err"
-                                    }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
+                                    } else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>() {
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                         "bcs_err"
                                     } else {
@@ -614,7 +626,7 @@ impl SyncService {
                         }
                     }
                 };
-                if let Err(e) = self_ref.notify(SyncDoneEvent{ cancel, chain_status, }) {
+                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
                     error!("[sync] Broadcast SyncDone event error: {:?}", e);
                 }
             },

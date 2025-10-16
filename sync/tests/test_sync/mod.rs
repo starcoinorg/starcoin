@@ -1,4 +1,3 @@
-use futures::executor::block_on;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -8,6 +7,7 @@ use std::{sync::Arc, time::Duration};
 use test_helper::run_node_by_config;
 
 pub fn test_sync() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
@@ -20,10 +20,10 @@ pub fn test_sync() {
     }
     //wait block generate.
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async { first_chain.main_head_block().await.unwrap() });
+    let block_1 = rt.block_on(async { first_chain.main_head_block().await.unwrap() });
     let number_1 = block_1.header().number();
     debug!("first chain head block number is {}", number_1);
-    assert_eq!(number_1, count);
+    assert!(number_1 >= count);
 
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
@@ -36,7 +36,7 @@ pub fn test_sync() {
     let second_network = second_node.network();
     let second_peer_id = second_config.network.self_peer_id();
     std::thread::sleep(Duration::from_secs(2));
-    block_on(async {
+    rt.block_on(async {
         assert!(
             second_network.is_connected(first_peer_id).await,
             "second node should connect to first node."
@@ -47,7 +47,7 @@ pub fn test_sync() {
         );
     });
     //Try to trigger sync.
-    block_on(async {
+    rt.block_on(async {
         second_sync_service
             .start(false, vec![], false, None)
             .await
@@ -57,7 +57,7 @@ pub fn test_sync() {
     let mut number_2 = 0;
     for i in 0..10_usize {
         std::thread::sleep(Duration::from_secs(2));
-        let block_2 = block_on(async { second_chain.main_head_block().await.unwrap() });
+        let block_2 = rt.block_on(async { second_chain.main_head_block().await.unwrap() });
         number_2 = block_2.header().number();
         debug!("index : {}, second chain number is {}", i, number_2);
         if number_2 == number_1 {

@@ -5,7 +5,8 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use ripemd::Digest as OtherDigest;
-use sha2::Digest;
+use sha2::Sha512;
+use sha3::Sha3_512;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
@@ -76,7 +77,7 @@ fn native_sha2_512(
     let cost = HASH_SHA2_512_BASE + HASH_SHA2_512_PER_BYTE * NumBytes::new(bytes.len() as u64);
     context.charge(cost)?;
 
-    let mut hasher = sha2::Sha512::new();
+    let mut hasher = Sha512::new();
     hasher.update(&bytes);
     let output = hasher.finalize().to_vec();
 
@@ -96,7 +97,7 @@ fn native_sha3_512(
     let cost = HASH_SHA3_512_BASE + HASH_SHA3_512_PER_BYTE * NumBytes::new(bytes.len() as u64);
     context.charge(cost)?;
 
-    let mut hasher = sha3::Sha3_512::new();
+    let mut hasher = Sha3_512::new();
     hasher.update(&bytes);
     let output = hasher.finalize().to_vec();
 

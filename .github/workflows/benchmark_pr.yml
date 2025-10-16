@@ -1,4 +1,20 @@
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/dependabot.yml'
+      - '.github/CODEOWNERS'
+      - 'examples/**'
+      - 'vm2/move-examples/'
+      - 'scripts/**'
+      - 'kube/**'
+      - 'docker/**'
 
 name: benchmark pull requests
 jobs:

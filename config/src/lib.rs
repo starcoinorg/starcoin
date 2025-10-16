@@ -75,7 +75,7 @@ pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
-pub static G_CRATE_VERSION: &str = clap::crate_version!();
+pub static G_CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static G_GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
     fallback = "unknown"
@@ -187,7 +187,7 @@ pub struct StarcoinOpt {
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
+    #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 

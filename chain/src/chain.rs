@@ -33,7 +33,6 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
-use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -48,6 +47,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
@@ -399,6 +399,15 @@ impl BlockChain {
         author_array.copy_from_slice(&author_bytes[..16]);
         let author_v2 = starcoin_vm2_types::account_address::AccountAddress::new(author_array);
 
+        let chain_state = ChainStateDB::new(
+            self.storage.0.clone().into_super_arc(),
+            Some(self.statedb.0.state_root()),
+        );
+        let chain_state2 = ChainStateDB2::new(
+            self.storage.1.clone().into_super_arc(),
+            Some(self.statedb.1.state_root()),
+        );
+
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
             self.storage.1.clone(),
@@ -414,6 +423,7 @@ impl BlockChain {
             0,
             pruning_point,
             ghostdata.mergeset_reds.len() as u64,
+            (Arc::new(chain_state), Arc::new(chain_state2)),
         )?;
 
         // split user_txns to two parts for dual VM support
@@ -425,7 +435,19 @@ impl BlockChain {
                 MultiSignedUserTransaction::VM2(txn) => vm2_txns.push(txn),
             }
         }
-        let excluded_txns = opened_block.push_txns(vm1_txns)?;
+        let excluded_txns: ExcludedTxns = if parent_header.number().saturating_add(1)
+            >= vm1_offline_height(parent_header.chain_id().id().into())
+        {
+            ExcludedTxns {
+                discarded_txns: vm1_txns
+                    .into_iter()
+                    .map(MultiSignedUserTransaction::VM1)
+                    .collect(),
+                untouched_txns: vec![],
+            }
+        } else {
+            opened_block.process_vm1_transactions(vm1_txns)?
+        };
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
 
@@ -649,15 +671,25 @@ impl BlockChain {
             let included_txn_info_hashes2: Vec<_> =
                 vm2_txn_infos.iter().map(|info| info.id()).collect();
             // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
-            txn_accumulator.append(&included_txn_info_hashes)?;
-            txn_accumulator.append(&included_txn_info_hashes2)?;
+            if included_txn_info_hashes.is_empty() {
+                txn_accumulator.append(&included_txn_info_hashes2)?;
+            } else {
+                txn_accumulator.append(
+                    included_txn_info_hashes2
+                        .get(0..1)
+                        .expect("vm2 block meta transaction is none"),
+                )?;
+                txn_accumulator.append(&included_txn_info_hashes)?;
+                txn_accumulator.append(included_txn_info_hashes2.get(1..).unwrap_or_default())?;
+            }
             txn_accumulator.root_hash()
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute block and save, block_id: {:?}, executed_accumulator_root: {:?}, header.txn_accumulator_root: {:?}",  
+            block_id, executed_accumulator_root, header.txn_accumulator_root(),
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
@@ -748,16 +780,43 @@ impl BlockChain {
             }
         }
 
-        storage.save_transaction_infos(
-            txn_infos
-                .into_iter()
-                .map(Into::into)
-                .chain(executed_data2.txn_infos.into_iter().map(Into::into))
+        if txn_infos.is_empty() {
+            storage.save_transaction_infos(
+                executed_data2
+                    .txn_infos
+                    .into_iter()
+                    .map(Into::into)
+                    .enumerate()
+                    .map(|(transaction_index, info)| {
+                        StcRichTransactionInfo::new(
+                            block_id,
+                            header.number(),
+                            info,
+                            transaction_index as u32,
+                            transaction_global_index
+                                .checked_add(transaction_index as u64)
+                                .expect("transaction_global_index overflow."),
+                        )
+                    })
+                    .collect(),
+            )?;
+        } else {
+            storage.save_transaction_infos(
+                std::iter::once::<StcTransactionInfo>(
+                    executed_data2
+                        .txn_infos
+                        .first()
+                        .expect("vm2 block meta transaction is none")
+                        .clone()
+                        .into(),
+                )
+                .chain(txn_infos.into_iter().map(Into::into))
+                .chain(executed_data2.txn_infos.into_iter().skip(1).map(Into::into))
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     StcRichTransactionInfo::new(
                         block_id,
-                        block.header().number(),
+                        header.number(),
                         info,
                         transaction_index as u32,
                         transaction_global_index
@@ -766,7 +825,8 @@ impl BlockChain {
                     )
                 })
                 .collect(),
-        )?;
+            )?;
+        }
 
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
@@ -860,9 +920,10 @@ impl BlockChain {
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute save directly, block id: {}, executed_accumulator_root: {:?}, header txn_accumulator_root: {:?}",
+            block_id, executed_accumulator_root, header.txn_accumulator_root()
         );
 
         statedb
@@ -1018,9 +1079,10 @@ impl BlockChain {
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in executed block without save, block_id: {:?}, expected accumulator root: {:?}, header accumulator root: {:?}",
+            block_id, executed_accumulator_root, header.txn_accumulator_root(),
         );
 
         let pre_total_difficulty = parent_status
@@ -1073,6 +1135,10 @@ impl BlockChain {
 
     pub fn get_vm_state_accumulator(&self) -> &MerkleAccumulator {
         &self.vm_state_accumulator
+    }
+
+    pub fn into_state_dbs(self) -> (Arc<ChainStateDB>, Arc<ChainStateDB2>) {
+        (Arc::new(self.statedb.0), Arc::new(self.statedb.1))
     }
 }
 
@@ -1275,7 +1341,7 @@ impl ChainReader for BlockChain {
         );
         let head = storage
             .get_block_by_hash(block_id)?
-            .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+            .ok_or_else(|| format_err!("Cannot find block by hash {:?}", block_id))?;
         BlockChain::new_with_uncles(
             self.time_service.clone(),
             head,
@@ -1431,7 +1497,7 @@ impl ChainReader for BlockChain {
             None
         };
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash());
+            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None
@@ -1502,7 +1568,7 @@ impl ChainReader for BlockChain {
             None
         };
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash());
+            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
             let state_key = match access_path.path {
                 DataPath2::Code(module_name) => {
                     StateKey::module(&access_path.address, &module_name)
@@ -1849,8 +1915,25 @@ impl BlockChain {
                 .find_selected_parent(state.tips.into_iter())?;
             self.fork(block_id)?
         } else {
-            // Handle pruning point change if needed
-            bail!("Pruning point change not yet fully implemented")
+            // Handle pruning point change: select best header from both states
+            let new_state = self.dag().get_dag_state(new_pruning_point)?;
+            let current_state = self.dag().get_dag_state(current_pruning_point)?;
+
+            let new_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent(new_state.tips.into_iter())?;
+            let current_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent(current_state.tips.into_iter())?;
+
+            let selected_header = self
+                .dag()
+                .ghost_dag_manager()
+                .find_selected_parent([new_header, current_header].into_iter())?;
+
+            self.fork(selected_header)?
         };
 
         Ok(chain)
@@ -2223,26 +2306,42 @@ impl BlockChain {
                 .iter()
                 .map(|info| info.id())
                 .collect();
-            let included_txn_info_hashes2: Vec<_> = executed_data2
+            let included_txn_info_hashes2 = executed_data2
                 .txn_infos
                 .iter()
                 .map(|info| info.id())
-                .collect();
+                .collect::<Vec<_>>();
 
-            if !included_txn_info_hashes.is_empty() {
-                txn_accumulator.append(&included_txn_info_hashes)?;
-            }
-            if !included_txn_info_hashes2.is_empty() {
+            if vm1_offline {
                 txn_accumulator.append(&included_txn_info_hashes2)?;
+            } else {
+                // append the block meta txns of vm2 firstly
+                txn_accumulator.append(
+                    included_txn_info_hashes2
+                        .get(0..1)
+                        .ok_or_else(|| format_err!("block meta txns of vm2 is None"))?,
+                )?;
+
+                if !included_txn_info_hashes.is_empty() {
+                    txn_accumulator.append(&included_txn_info_hashes)?;
+                }
+
+                if !included_txn_info_hashes2.is_empty() {
+                    txn_accumulator
+                        .append(included_txn_info_hashes2.get(1..).unwrap_or_default())?;
+                }
             }
 
             txn_accumulator.root_hash()
         };
 
         verify_block!(
-            VerifyBlockField::State,
+            VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
-            "verify block: txn accumulator root mismatch"
+            "verify block: txn accumulator root mismatch in execute dag block , block_id: {}, expected accumulator root: {:?}, header txn_accumulator_root: {:?}",
+            block_id,
+            executed_accumulator_root,
+            header.txn_accumulator_root(),
         );
 
         // Flush state to ensure state tree nodes are persisted
@@ -2282,6 +2381,7 @@ impl BlockChain {
 
         // DAG specific saves
         // Update k parameter for DAG
+        // TODO: The k should be reload or update only on new epoch.
         self.dag()
             .ghost_dag_manager()
             .update_k(epoch.max_uncles_per_block().try_into().unwrap());
@@ -2330,11 +2430,36 @@ impl BlockChain {
         }
 
         // Save transaction infos
-        storage.save_transaction_infos(
-            txn_infos
-                .into_iter()
-                .map(Into::into)
-                .chain(vm2_txn_infos.into_iter().map(Into::into))
+        if txn_infos.is_empty() {
+            storage.save_transaction_infos(
+                vm2_txn_infos
+                    .into_iter()
+                    .map(Into::into)
+                    .enumerate()
+                    .map(|(transaction_index, info)| {
+                        StcRichTransactionInfo::new(
+                            block_id,
+                            header.number(),
+                            info,
+                            transaction_index as u32,
+                            transaction_global_index
+                                .checked_add(transaction_index as u64)
+                                .expect("transaction_global_index overflow."),
+                        )
+                    })
+                    .collect(),
+            )?;
+        } else {
+            storage.save_transaction_infos(
+                std::iter::once::<StcTransactionInfo>(
+                    vm2_txn_infos
+                        .first()
+                        .expect("vm2 block meta transaction is none")
+                        .clone()
+                        .into(),
+                )
+                .chain(txn_infos.into_iter().map(Into::into))
+                .chain(vm2_txn_infos.into_iter().skip(1).map(Into::into))
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     StcRichTransactionInfo::new(
@@ -2348,8 +2473,8 @@ impl BlockChain {
                     )
                 })
                 .collect(),
-        )?;
-
+            )?;
+        }
         // Save transactions
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()

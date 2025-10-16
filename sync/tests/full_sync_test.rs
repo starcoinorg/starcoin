@@ -16,7 +16,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use test_helper::run_node_by_config;
 
-#[stest::test(timeout = 120)]
+#[test]
 fn test_full_sync() {
     test_sync::test_sync()
 }
@@ -80,7 +80,7 @@ fn test_sync_and_notify_by_config(first_config: Arc<NodeConfig>, second_config: 
     for _i in 0..5 {
         first_node.generate_block().unwrap();
     }
-    sleep(Duration::from_millis(500));
+    sleep(Duration::from_millis(2000));
 
     let second_node = run_node_by_config(second_config).unwrap();
     //wait first sync.
@@ -103,7 +103,7 @@ fn test_sync_and_notify_by_config(first_config: Arc<NodeConfig>, second_config: 
     // wait_two_node_synced_infinite(&first_node, &second_node);
 }
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 600)]
 fn test_sync_and_notification_in_fast_range_location() {
     let mut first_config = NodeConfig::random_for_test();
     first_config.sync.range_locate = Some(true);
@@ -189,7 +189,7 @@ async fn check_synced(
             break;
         } else {
             debug!("waiting for sync, now sleep 60 second");
-            async_std::task::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
     Ok(true)

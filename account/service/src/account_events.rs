@@ -25,8 +25,8 @@ impl ActorService for AccountEventService {
     }
 }
 
-impl ServiceFactory<AccountEventService> for AccountEventService {
-    fn create(ctx: &mut ServiceContext<AccountEventService>) -> Result<AccountEventService> {
+impl ServiceFactory<Self> for AccountEventService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         Ok(Self {
             storage: ctx.get_shared::<AccountStorage>()?,
         })
@@ -34,11 +34,7 @@ impl ServiceFactory<AccountEventService> for AccountEventService {
 }
 
 impl EventHandler<Self, ContractEventNotification> for AccountEventService {
-    fn handle_event(
-        &mut self,
-        item: ContractEventNotification,
-        _ctx: &mut ServiceContext<AccountEventService>,
-    ) {
+    fn handle_event(&mut self, item: ContractEventNotification, _ctx: &mut ServiceContext<Self>) {
         let addrs = match self.storage.list_addresses() {
             Ok(addresses) => addresses,
             Err(e) => {

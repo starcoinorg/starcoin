@@ -208,9 +208,9 @@ impl EventHandler<Self, NewDagBlockFromPeer> for NewHeaderService {
     fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
         info!(
             "handle_event: NewDagBlockFromPeer, msg: {:?}",
-            msg.executed_block.header().id()
+            msg.executed_block.id()
         );
-        match self.determine_header(msg.executed_block.as_ref().header(), ctx) {
+        match self.determine_header(msg.executed_block.as_ref(), ctx) {
             anyhow::Result::Ok(()) => (),
             Err(e) => error!(
                 "Failed to determine header: {:?} when processing NewDagBlockFromPeer",

@@ -170,8 +170,13 @@ impl ForkBlockChain {
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
-        let txn_info =
-            TransactionInfo::new(txn_hash, state_root, events.as_slice(), gas_used, status);
+        let txn_info = TransactionInfo::new(
+            txn_hash,
+            Some(state_root),
+            events.as_slice(),
+            gas_used,
+            status,
+        );
         self.txn_accumulator.append(&[txn_info.id()])?;
 
         let stc_events = events
@@ -622,6 +627,23 @@ impl ChainApi for MockChainApi {
     }
 
     fn get_vm_multi_state(&self, _block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_ghostdagdata(
+        &self,
+        _ids: Vec<HashValue>,
+    ) -> FutureResult<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_block_info_by_hash(&self, _id: HashValue) -> FutureResult<Option<BlockInfoView>> {
         let fut = async move {
             bail!("not implemented.");
         };

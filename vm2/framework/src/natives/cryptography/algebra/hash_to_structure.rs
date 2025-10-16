@@ -16,6 +16,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{Value, VectorRef},
 };
+use sha2::Sha256;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::{move_stdlib::*, starcoin_framework::*};
 use starcoin_native_interface::{
@@ -105,7 +106,7 @@ pub fn hash_to_internal(
             ))?;
             let mapper = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
                 ark_ec::models::short_weierstrass::Projective<ark_bls12_381::g1::Config>,
-                ark_ff::fields::field_hashers::DefaultFieldHasher<sha2_0_10_6::Sha256, 128>,
+                ark_ff::fields::field_hashers::DefaultFieldHasher<Sha256, 128>,
                 ark_ec::hashing::curve_maps::wb::WBMap<ark_bls12_381::g1::Config>,
             >::new(dst)
             .unwrap();
@@ -124,7 +125,7 @@ pub fn hash_to_internal(
             ))?;
             let mapper = ark_ec::hashing::map_to_curve_hasher::MapToCurveBasedHasher::<
                 ark_ec::models::short_weierstrass::Projective<ark_bls12_381::g2::Config>,
-                ark_ff::fields::field_hashers::DefaultFieldHasher<sha2_0_10_6::Sha256, 128>,
+                ark_ff::fields::field_hashers::DefaultFieldHasher<Sha256, 128>,
                 ark_ec::hashing::curve_maps::wb::WBMap<ark_bls12_381::g2::Config>,
             >::new(dst)
             .unwrap();

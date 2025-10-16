@@ -217,6 +217,11 @@ impl BlockRelayer {
             {
                 if version == *G_CRATE_VERSION {
                     warn!("Block is failed block : {:?}", block_id);
+                } else {
+                    warn!(
+                        "Block is failed block : {:?}, but with different version: app {}, db {}",
+                        block_id, G_CRATE_VERSION, version
+                    );
                 }
             } else {
                 let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {

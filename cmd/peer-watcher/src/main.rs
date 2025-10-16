@@ -18,7 +18,7 @@ fn main() {
     let (peer_info, worker) = build_lighting_network(config.net(), &config.network).unwrap();
     println!("Self peer_info: {:?}", peer_info);
     let service = worker.service().clone();
-    async_std::task::spawn(worker);
+    tokio::spawn(worker);
     let stream = service.event_stream("peer_watcher");
     futures::executor::block_on(async move {
         stream

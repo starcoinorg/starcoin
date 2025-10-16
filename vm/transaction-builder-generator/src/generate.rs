@@ -15,7 +15,7 @@ use std::str::FromStr;
 use transaction_builder_generator as buildgen;
 use transaction_builder_generator::is_supported_abi;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 enum Language {
     Python3,
     Rust,
@@ -52,7 +52,7 @@ struct Options {
     abi_directory: PathBuf,
 
     /// Language for code generation.
-    #[clap(long, possible_values = Language::variants(), default_value = "python3")]
+    #[clap(long, value_parser = Language::variants(), default_value = "python3")]
     language: Language,
 
     /// Directory where to write generated modules (otherwise print code on stdout).

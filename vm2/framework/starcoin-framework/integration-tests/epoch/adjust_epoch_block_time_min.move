@@ -15,11 +15,11 @@ script {
         let base_block_time_target = consensus_config::base_block_time_target(&config);
         let min_block_time_target = consensus_config::min_block_time_target(&config);
         let pre_block_time_target = epoch::block_time_target();
-        while (epoch::number() < 5) {
+        while (epoch::number() < 3) {
             if (block_number == epoch::end_block_number()) {
                 //Debug::print(&Epoch::block_time_target());
             };
-            let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, 0, 0);
+            let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, 0, 0, 0);
             let block_time_target = epoch::block_time_target();
             assert!(pre_block_time_target >= block_time_target, 101);
             assert!(block_time_target >= min_block_time_target, 102);

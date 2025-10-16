@@ -29,7 +29,12 @@ module shared_account::SharedAccount {
     const EINSUFFICIENT_BALANCE: u64 = 2;
 
     // Create and initialize a shared account
-    public entry fun initialize(source: &signer, seed: vector<u8>, addresses: vector<address>, numerators: vector<u64>) {
+    public entry fun initialize(
+        source: &signer,
+        seed: vector<u8>,
+        addresses: vector<address>,
+        numerators: vector<u64>
+    ) {
         let total = 0;
         let share_record = vector::empty<Share>();
 
@@ -61,6 +66,40 @@ module shared_account::SharedAccount {
         });
     }
 
+    #[view]
+    public fun get_derive_account(source_addr: address, seed: vector<u8>): address {
+        let (derive_address, _) = account::create_resource_address(&source_addr, seed);
+        derive_address
+    }
+
+    public entry fun initialize_with_resource_account(source: &signer, seed: vector<u8>) {
+        let total = 0;
+        let share_record = vector::empty<Share>();
+
+        let (resource_signer, resource_signer_cap) = account::create_resource_account(source, seed);
+        move_to(
+            &resource_signer,
+            SharedAccount {
+                share_record,
+                total_shares: total,
+                signer_capability: resource_signer_cap,
+            }
+        );
+        move_to(source, SharedAccountEvent {
+            resource_addr: signer::address_of(&resource_signer)
+        });
+    }
+
+    public entry fun add_address(source: &signer, seed: vector<u8>, share_holder: address, num_shares: u64) acquires SharedAccount {
+        let resource_addr = get_derive_account(signer::address_of(source), seed);
+        let shared_account = borrow_global_mut<SharedAccount>(resource_addr);
+        vector::push_back(&mut shared_account.share_record, Share {
+            share_holder,
+            num_shares,
+        });
+        shared_account.total_shares = shared_account.total_shares + num_shares;
+    }
+
     // Disperse all available balance to addresses in the shared account
     public entry fun disperse<CoinType>(resource_addr: address) acquires SharedAccount {
         assert!(exists<SharedAccount>(resource_addr), error::invalid_argument(ERESOURCE_DNE));
@@ -79,7 +118,7 @@ module shared_account::SharedAccount {
     }
 
     #[test_only]
-    public fun set_up(user: signer, test_user1: signer, test_user2: signer) : address acquires SharedAccountEvent {
+    public fun set_up(user: signer, test_user1: signer, test_user2: signer): address acquires SharedAccountEvent {
         let addresses = vector::empty<address>();
         let numerators = vector::empty<u64>();
         let seed = x"01";
@@ -104,7 +143,12 @@ module shared_account::SharedAccount {
     }
 
     #[test(user = @0x1111, test_user1 = @0x1112, test_user2 = @0x1113, core_framework = @starcoin_framework)]
-    public entry fun test_disperse(user: signer, test_user1: signer, test_user2: signer, core_framework: signer) acquires SharedAccount, SharedAccountEvent {
+    public entry fun test_disperse(
+        user: signer,
+        test_user1: signer,
+        test_user2: signer,
+        core_framework: signer
+    ) acquires SharedAccount, SharedAccountEvent {
         use starcoin_framework::starcoin_coin::{Self, STC};
         let user_addr1 = signer::address_of(&test_user1);
         let user_addr2 = signer::address_of(&test_user2);
@@ -125,12 +169,26 @@ module shared_account::SharedAccount {
 
     #[test(user = @0x1111, test_user1 = @0x1112, test_user2 = @0x1113)]
     #[expected_failure]
-    public entry fun test_disperse_insufficient_balance(user: signer, test_user1: signer, test_user2: signer) acquires SharedAccount, SharedAccountEvent {
+    public entry fun test_disperse_insufficient_balance(
+        user: signer,
+        test_user1: signer,
+        test_user2: signer
+    ) acquires SharedAccount, SharedAccountEvent {
         use starcoin_framework::starcoin_coin::STC;
         let resource_addr = set_up(user, test_user1, test_user2);
         let shared_account = borrow_global<SharedAccount>(resource_addr);
         let resource_signer = account::create_signer_with_capability(&shared_account.signer_capability);
         coin::register<STC>(&resource_signer);
         disperse<STC>(resource_addr);
+    }
+
+    #[test]
+    public fun test_view_derive_address() {
+        use starcoin_std::debug;
+        let derive_address1 = Self::get_derive_account(@shared_account, b"1234");
+        let derive_address2 = Self::get_derive_account(@shared_account, b"3456");
+        assert!(derive_address1 != derive_address2, 100);
+        debug::print(&derive_address1);
+        debug::print(&derive_address2);
     }
 }

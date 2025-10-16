@@ -51,7 +51,6 @@ use crate::{
 };
 use crate::{config, Multiaddr};
 use crate::{config::parse_str_addr, transport};
-use async_std::future;
 use futures::channel::oneshot::{Canceled, Receiver};
 use futures::{
     channel::{mpsc, oneshot},
@@ -77,6 +76,7 @@ use starcoin_metrics::{Histogram, HistogramVec};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+use tokio::time as future;
 const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
 /// A cloneable handle for reporting cost/benefits of peers.
@@ -1131,7 +1131,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     this.network_service
                         .behaviour_mut()
                         .user_protocol_mut()
-                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                        .add_set_discovered_nodes(iter::once(peer_id));
                 }
 
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::ReputationChanges {
@@ -1520,7 +1520,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     this.network_service
                         .behaviour_mut()
                         .user_protocol_mut()
-                        .add_default_set_discovered_nodes(iter::once(peer_id));
+                        .add_set_discovered_nodes(iter::once(peer_id));
                 }
             };
         }

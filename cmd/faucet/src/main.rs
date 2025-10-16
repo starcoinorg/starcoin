@@ -15,7 +15,7 @@ use tiny_http::Server;
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "starcoin-faucet", about = "Starcoin")]
 pub struct FaucetOpt {
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[clap(long, short = 'i')]
     pub ipc_path: PathBuf,
     #[clap(long, short = 'a', default_value = "0.0.0.0:8000")]
     pub server_addr: String,

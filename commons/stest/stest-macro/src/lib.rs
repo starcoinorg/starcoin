@@ -3,6 +3,7 @@
 
 //! The stest lib enhances the rust test framework with some useful functions.
 //! Copy from /actix/actix-net/actix-macros and do some enhancement.
+#![allow(clippy::manual_unwrap_or_default)]
 extern crate proc_macro;
 
 use darling::FromMeta;
