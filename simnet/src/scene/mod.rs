@@ -5,7 +5,9 @@ use anyhow::{ensure, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
+    consensusdb::consensus_state::DagState,
     consensusdb::prelude::{FlexiDagStorage, FlexiDagStorageConfig},
+    types::ghostdata::GhostdagData,
 };
 use starcoin_time_service::{MockTimeService, TimeService};
 use starcoin_types::{block::BlockHeader, blockhash::KType, U256};
@@ -74,6 +76,10 @@ impl GhostAdpter {
             .map(|data| (data.blue_score, data.blue_work.clone())))
     }
 
+    pub fn ghostdata(&self, hash: HashValue) -> Result<Option<Arc<GhostdagData>>> {
+        self.dag.ghostdata_by_hash(hash)
+    }
+
     pub fn is_ancestor(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
         self.dag.check_ancestor_of(ancestor, descendant)
     }
@@ -100,33 +106,9 @@ impl GhostAdpter {
         choice: ParentChoice,
     ) -> Result<HashValue> {
         let previous_pruning_point = self.pruning_point;
-        // snapshot current tips before commit for renew_tips-like update
-        let mut tips_snapshot = match self.dag.get_dag_state(previous_pruning_point) {
-            Ok(state) => state.tips,
-            Err(e) => {
-                // In practice genesis bucket should exist; in case of a missing state, seed with genesis
-                eprintln!(
-                    "warn: failed to load dag state at {:?}: {:?}",
-                    previous_pruning_point, e
-                );
-                vec![self.genesis.id()]
-            }
-        };
-        let parents = match choice {
-            ParentChoice::Honest => plan.selected_parents.clone(),
-            ParentChoice::Subset(mut subset) => {
-                subset.retain(|p| plan.selected_parents.contains(p));
-                ensure!(!subset.is_empty(), "subset parent choice cannot be empty");
-                subset
-            }
-            ParentChoice::Custom(custom) => custom,
-        };
-
-        let ghostdata = if parents == plan.selected_parents {
-            Arc::new(plan.ghostdata)
-        } else {
-            Arc::new(self.dag.ghostdata(&parents)?)
-        };
+        let tips_snapshot = self.load_bucket_tips(previous_pruning_point);
+        let parents = Self::select_parents(&plan, choice)?;
+        let ghostdata = self.resolve_ghostdata(&parents)?;
         let selected_parent = ghostdata.selected_parent;
 
         let block = BlockHeader::random()
@@ -139,41 +121,82 @@ impl GhostAdpter {
 
         let block_id = block.id();
         self.dag.commit_trusted_block(block, ghostdata)?;
-        // renew tips according to chain::renew_tips semantics
-        // 1) remove old tips that are ancestors of the new block, then add the new block
-        let mut new_tips = Vec::with_capacity(tips_snapshot.len() + 1);
-        for tip in tips_snapshot.drain(..) {
-            if !self.dag.check_ancestor_of(tip, block_id)? {
-                new_tips.push(tip);
-            }
-        }
-        new_tips.push(block_id);
 
+        let new_tips = self.merge_tips_with_block(tips_snapshot, block_id)?;
         let virtual_info = self
             .dag
             .calc_mergeset_and_tips(previous_pruning_point, self.genesis.id())?;
-        if virtual_info.pruning_point == previous_pruning_point {
-            // Same bucket: save tips directly; DAG will merge/order/cap
-            self.dag.save_dag_state(
-                previous_pruning_point,
-                starcoin_dag::consensusdb::consensus_state::DagState { tips: new_tips },
-            )?;
-        } else {
-            // Bucket advanced: prune tips from previous bucket into the new pruning point, then save
-            let pruned = self.dag.pruning_point_manager().prune(
-                &starcoin_dag::consensusdb::consensus_state::DagState {
-                    tips: new_tips.clone(),
-                },
-                previous_pruning_point,
-                virtual_info.pruning_point,
-            )?;
-            self.dag.save_dag_state(
-                virtual_info.pruning_point,
-                starcoin_dag::consensusdb::consensus_state::DagState { tips: pruned },
-            )?;
-            self.pruning_point = virtual_info.pruning_point;
-        }
+        self.persist_tips(previous_pruning_point, virtual_info.pruning_point, new_tips)?;
 
+        self.push_record(block_id, parents, event);
+        self.push_virtual_tip(virtual_info);
+
+        Ok(block_id)
+    }
+
+    fn load_bucket_tips(&self, bucket: HashValue) -> Vec<HashValue> {
+        self.dag
+            .get_dag_state(bucket)
+            .map(|state| state.tips)
+            .unwrap_or_else(|_| vec![self.genesis_id()])
+    }
+
+    fn select_parents(plan: &MineNewDagBlockInfo, choice: ParentChoice) -> Result<Vec<HashValue>> {
+        Ok(match choice {
+            ParentChoice::Honest => plan.selected_parents.clone(),
+            ParentChoice::Subset(mut subset) => {
+                subset.retain(|p| plan.selected_parents.contains(p));
+                ensure!(!subset.is_empty(), "subset parent choice cannot be empty");
+                subset
+            }
+            ParentChoice::Custom(custom) => custom,
+        })
+    }
+
+    fn resolve_ghostdata(&mut self, parents: &[HashValue]) -> Result<Arc<GhostdagData>> {
+
+        // Always recompute ghostdata: the harness plans blocks well before they are committed,
+        // so the cached classification becomes outdated once newer blocks land.
+        Ok(Arc::new(self.dag.ghostdata(parents)?))
+    }
+
+    fn merge_tips_with_block(
+        &self,
+        tips_snapshot: Vec<HashValue>,
+        block_id: HashValue,
+    ) -> Result<Vec<HashValue>> {
+        let mut merged = Vec::with_capacity(tips_snapshot.len() + 1);
+        for tip in tips_snapshot {
+            if !self.dag.check_ancestor_of(tip, block_id)? {
+                merged.push(tip);
+            }
+        }
+        merged.push(block_id);
+        Ok(merged)
+    }
+
+    fn persist_tips(
+        &mut self,
+        previous_pp: HashValue,
+        next_pp: HashValue,
+        tips: Vec<HashValue>,
+    ) -> Result<()> {
+        if next_pp == previous_pp {
+            self.dag.save_dag_state(previous_pp, DagState { tips })?;
+        } else {
+            let state = DagState { tips };
+            let pruned = self
+                .dag
+                .pruning_point_manager()
+                .prune(&state, previous_pp, next_pp)?;
+            self.dag
+                .save_dag_state(next_pp, DagState { tips: pruned })?;
+        }
+        self.pruning_point = next_pp;
+        Ok(())
+    }
+
+    fn push_record(&mut self, block_id: HashValue, parents: Vec<HashValue>, event: &BlockEvent) {
         self.records.push(BlockRecord {
             block_id,
             parents,
@@ -181,14 +204,15 @@ impl GhostAdpter {
             header_time: event.header_time,
             miner_id: event.miner_id,
         });
-        let tip_id = virtual_info.ghostdata.selected_parent;
-        let tip_data = Arc::new(virtual_info.ghostdata);
+    }
+
+    fn push_virtual_tip(&mut self, info: MineNewDagBlockInfo) {
+        let tip_data = info.ghostdata;
         self.virtual_tips.push(VirtualTip {
-            tip: tip_id,
+            tip: tip_data.selected_parent,
             blue_score: tip_data.blue_score,
             blue_work: tip_data.blue_work,
         });
-        Ok(block_id)
     }
 
     pub fn records(&self) -> &[BlockRecord] {
@@ -346,6 +370,8 @@ impl GhostAdpter {
         let mut buf =
             String::from("digraph G {\n  rankdir=LR;\n  node [shape=box, fontsize=10];\n");
         let mut selected_chain = HashSet::new();
+        let mut blue_nodes: HashSet<HashValue> = HashSet::new();
+        let mut red_nodes: HashSet<HashValue> = HashSet::new();
         if let Some(last) = self.virtual_tips.last() {
             let mut cursor = last.tip;
             selected_chain.insert(cursor);
@@ -390,32 +416,34 @@ impl GhostAdpter {
         ));
 
         for record in &self.records {
-            let color = if selected_chain.contains(&record.block_id) {
-                "color=green,penwidth=2"
+            if let Some(ghostdata) = self.dag.ghostdata_by_hash(record.block_id)? {
+                blue_nodes.extend(ghostdata.mergeset_blues.iter().copied());
+                red_nodes.extend(ghostdata.mergeset_reds.iter().copied());
+            }
+        }
+
+        for record in &self.records {
+            let node_attrs = if red_nodes.contains(&record.block_id) {
+                "style=filled,fillcolor=\"#ffb7b7\",color=red"
+            } else if selected_chain.contains(&record.block_id) {
+                "style=filled,fillcolor=\"#174a96\",color=blue,penwidth=2,fontcolor=white"
             } else {
-                "color=black"
+                "style=\"filled,dashed\",fillcolor=\"#b7d9ff\",color=blue"
             };
+
             buf.push_str(&format!(
                 "  {} [label=\"{}\", {}];\n",
                 node_id(&record.block_id),
                 label(&record.block_id),
-                color
+                node_attrs
             ));
 
-            if let Some(ghostdata) = self.dag.ghostdata_by_hash(record.block_id)? {
-                for parent in &record.parents {
-                    let attrs = if ghostdata.mergeset_blues.contains(parent) {
-                        "color=blue"
-                    } else {
-                        "color=red,style=dashed"
-                    };
-                    buf.push_str(&format!(
-                        "  {} -> {} [{}];\n",
-                        node_id(parent),
-                        node_id(&record.block_id),
-                        attrs
-                    ));
-                }
+            for parent in &record.parents {
+                buf.push_str(&format!(
+                    "  {} -> {} [color=blue,style=solid];\n",
+                    node_id(parent),
+                    node_id(&record.block_id)
+                ));
             }
         }
 

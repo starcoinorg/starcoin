@@ -6,54 +6,48 @@ use std::cmp::Ordering;
 
 pub fn drive_harness<F>(
     ghost: &mut GhostAdpter,
-    mut events: Vec<BlockEvent>,
+    events: Vec<BlockEvent>,
     _is_adversary: F,
 ) -> Result<usize>
 where
     F: Fn(usize) -> bool,
 {
-    // 两阶段：按 header_time 计划父集，按 arrival_time 提交
-    // 确保在计划时先提交所有 arrival_time <= 当前 header_time 的任务
+    // Two-phase scheduling: select parents ordered by header_time, commit ordered by arrival_time
+    // Before each planning step flush every pending block whose arrival_time is already due
     #[derive(Clone)]
     struct PendingPlan {
         event: BlockEvent,
-        selected_parents: Vec<starcoin_crypto::HashValue>,
-        ghostdata_planned: starcoin_dag::types::ghostdata::GhostdagData,
-        pruning_point: starcoin_crypto::HashValue,
+        parents: Vec<starcoin_crypto::HashValue>,
     }
 
-    // 生产顺序：按 header_time
+    // Planning order: header_time ascending
     let mut by_start = events.clone();
     by_start.sort_by(|a, b| a.header_time.cmp(&b.header_time));
-    // 提交顺序：按 arrival_time
+    // Commit order: arrival_time ascending
     let mut pending: Vec<PendingPlan> = Vec::new();
     let mut accepted = 0usize;
     let mut i = 0usize; // index over by_start
 
-    // 小工具：提交到达时间 <= t 的所有计划
-    let mut flush_until = |t: u64,
-                           ghost: &mut GhostAdpter,
-                           pending: &mut Vec<PendingPlan>,
-                           accepted: &mut usize|
+    // Helper: commit all pending plans whose arrival_time <= t
+    let flush_until = |t: u64,
+                       ghost: &mut GhostAdpter,
+                       pending: &mut Vec<PendingPlan>,
+                       accepted: &mut usize|
      -> Result<()> {
-        // 稳定排序，先到先提交
+        // Stable sort so earlier arrival and lower miner id are committed first
         pending.sort_by(
             |a, b| match a.event.arrival_time.cmp(&b.event.arrival_time) {
                 Ordering::Equal => a.event.miner_id.cmp(&b.event.miner_id),
                 other => other,
             },
         );
-        let mut j = 0;
-        while j < pending.len() {
-            if pending[j].event.arrival_time > t {
+        while !pending.is_empty() {
+            if pending[0].event.arrival_time > t {
                 break;
             }
-            let plan = starcoin_dag::blockdag::MineNewDagBlockInfo {
-                selected_parents: pending[j].selected_parents.clone(),
-                ghostdata: pending[j].ghostdata_planned.clone(),
-                pruning_point: pending[j].pruning_point,
-            };
-            let ev = pending[j].event.clone();
+            let pending_plan = pending.remove(0);
+            let plan = ghost.plan_with_parents(pending_plan.parents.clone())?;
+            let ev = pending_plan.event;
             let diff = U256::from(1u64);
             let choice = if _is_adversary(ev.miner_id) {
                 ParentChoice::Subset(plan.selected_parents.clone())
@@ -62,42 +56,26 @@ where
             };
             let _ = ghost.commit_with_parents(diff, &ev, plan, choice)?;
             *accepted += 1;
-            pending.remove(j);
         }
         Ok(())
     };
 
     while i < by_start.len() {
         let start_t = by_start[i].header_time;
-        // 先提交所有已经到达的任务
+        // Commit tasks that have already arrived before planning a new one
         flush_until(start_t, ghost, &mut pending, &mut accepted)?;
 
-        // 以当前视图规划本次模板
+        // Plan a template against the current DAG view
         let base = ghost.plan_next_block()?;
-        let plan = starcoin_dag::blockdag::MineNewDagBlockInfo {
-            selected_parents: base.selected_parents.clone(),
-            ghostdata: base.ghostdata.clone(),
-            pruning_point: base.pruning_point,
-        };
-
-        if std::env::var("SIMNET_DEBUG").is_ok() {
-            println!(
-                "plan at start_t={} parents {:?}",
-                start_t, plan.selected_parents
-            );
-        }
-
         pending.push(PendingPlan {
             event: by_start[i].clone(),
-            selected_parents: plan.selected_parents,
-            ghostdata_planned: plan.ghostdata,
-            pruning_point: plan.pruning_point,
+            parents: base.selected_parents.clone(),
         });
 
         i += 1;
     }
 
-    // 提交剩余
+    // Flush any remaining plans
     if !pending.is_empty() {
         let max_arrival = pending
             .iter()

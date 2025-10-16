@@ -1,24 +1,30 @@
-use super::harness::drive_harness;
-use super::GhostAdpter;
+use super::{harness::drive_harness, GhostAdpter};
 use crate::{BlkStream, DAGGenCfg, Miner};
 use proptest::prelude::*;
 
 fn deterministic_cfg() -> DAGGenCfg {
     DAGGenCfg {
         total_time: 10_000,
-        block_interval: 500,
+        block_interval: 200,
         miners: vec![
             Miner {
                 name: "alice",
                 hash_power_ratio: 0.5,
-                network_delay: 50,
+                network_delay: 1000,
                 is_attacker: false,
                 hide_blocks_plan: vec![],
             },
             Miner {
                 name: "bob",
-                hash_power_ratio: 0.5,
-                network_delay: 300,
+                hash_power_ratio: 0.3,
+                network_delay: 1200,
+                is_attacker: false,
+                hide_blocks_plan: vec![],
+            },
+            Miner {
+                name: "carol",
+                hash_power_ratio: 0.2,
+                network_delay: 180,
                 is_attacker: false,
                 hide_blocks_plan: vec![],
             },
@@ -55,6 +61,7 @@ fn weighted_cfg() -> DAGGenCfg {
         ],
     }
 }
+
 
 fn arb_weights(count: usize) -> impl Strategy<Value = Vec<f64>> {
     prop::collection::vec(0.1f64..1.0, count).prop_map(|mut raw| {
@@ -100,7 +107,7 @@ proptest! {
         let events = gen.run();
         prop_assume!(!events.is_empty());
 
-        let mut ghost = GhostAdpter::new(16, 3600, 8)
+        let mut ghost = GhostAdpter::new(8, 3600, 8)
             .map_err(|e| TestCaseError::fail(e.to_string()))?;
         let accepted = drive_harness(&mut ghost, events.clone(), |_| false)
             .map_err(|e| TestCaseError::fail(e.to_string()))?;
@@ -112,17 +119,6 @@ proptest! {
             .dump_dot(&format!("honest_topology_{}", seed))
             .map_err(|e| TestCaseError::fail(e.to_string()))?;
         prop_assert!(dot_path.exists(), "dot file not generated");
-
-        if std::env::var("SIMNET_DEBUG").is_ok() {
-            for record in ghost.records().iter().take(5) {
-                println!(
-                    "block {:?} parents {:?}",
-                    record.block_id,
-                    record.parents
-                );
-            }
-        }
-
         prop_assert_eq!(accepted, events.len());
     }
 
@@ -188,3 +184,4 @@ proptest! {
         }
     }
 }
+
