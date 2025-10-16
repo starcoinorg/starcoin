@@ -20,7 +20,7 @@ use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm2_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
 };
-use std::cmp::max;
+use std::cmp::min;
 use std::sync::Arc;
 
 const INIT_ACCOUNT_BALANCE: u64 = 40_000_000_000;
@@ -157,7 +157,7 @@ impl<
         Self { chain_state }
     }
 
-    fn run(&mut self, txns: Vec<SignedUserTransaction>) -> BenchmarkReport {
+    fn run(&mut self, txns: Vec<SignedUserTransaction>, persist_result: bool) -> BenchmarkReport {
         let num_txns = txns.len();
 
         let registry = Registry::new();
@@ -166,13 +166,23 @@ impl<
         let user_txns: Vec<Transaction> =
             txns.into_iter().map(Transaction::UserTransaction).collect();
 
-        let _ = block_executor::block_execute(
-            self.chain_state,
-            user_txns,
-            u64::MAX,
-            vm_metrics.clone(),
-        )
-        .expect("Execute txns fail.");
+        if persist_result {
+            let _ = block_executor::block_execute(
+                self.chain_state,
+                user_txns,
+                u64::MAX,
+                vm_metrics.clone(),
+            )
+            .expect("Execute txns fail.");
+        } else {
+            let _ = starcoin_vm2_executor::do_execute_block_transactions(
+                self.chain_state,
+                user_txns,
+                Some(u64::MAX),
+                vm_metrics.clone(),
+            )
+            .expect("Execute txns fail.");
+        }
 
         self.chain_state.flush().expect("flush state should be ok");
 
@@ -236,16 +246,21 @@ impl BenchmarkManager {
             .max()
             .copied()
             .unwrap_or(0);
-        let mut generator =
-            TransactionGenerator::new(max(max_txns_once * 2, 200), self.net.clone());
+        // 200 account is enough to avoid conflict in parallel execution.
+        let account_num = min(max_txns_once * 2, 200);
+
+        let mut generator = TransactionGenerator::new(account_num, self.net.clone());
         let txns = generator.gen_create_account_transactions();
         let mut executor = TransactionExecutor::new(&self.chain_state);
-        let _ = executor.run(txns);
+        let _ = executor.run(txns, true);
+
+        // do not persist the execution result to storage to save benchmark time
+        let do_not_persist_result = (serialize_bench_txns.len() + parallel_bench_txns.len()) <= 1;
 
         // run serialize txns
         for txns_num in serialize_bench_txns.iter() {
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns));
+            reports.push(executor.run(txns, do_not_persist_result));
         }
 
         // this variable could only be set once, default is serialize, so we run serialize first.
@@ -255,7 +270,7 @@ impl BenchmarkManager {
         // run parallel txns
         for txns_num in parallel_bench_txns.iter() {
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns));
+            reports.push(executor.run(txns, do_not_persist_result));
         }
 
         reports
