@@ -41,11 +41,13 @@ fn main() {
         let serialize_txns: Vec<usize> = opt
             .serialize_txns
             .split(',')
+            .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().parse().expect("Invalid transaction count"))
             .collect();
         let parallel_txns: Vec<usize> = opt
             .parallel_txns
             .split(',')
+            .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().parse().expect("Invalid transaction count"))
             .collect();
         let reports = manager.run(&serialize_txns, &parallel_txns);
