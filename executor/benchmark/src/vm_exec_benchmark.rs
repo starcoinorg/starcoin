@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 const INIT_ACCOUNT_BALANCE: u64 = 40_000_000_000;
 
-struct AccountDataVM2 {
+struct AccountData {
     private_key: AccountPrivateKey,
     address: AccountAddress,
     sequence_number: u64,
@@ -37,23 +37,23 @@ pub struct BenchmarkReport {
     tps: f64,
 }
 
-struct TransactionGeneratorVM2 {
-    accounts: Vec<AccountDataVM2>,
+struct TransactionGenerator {
+    accounts: Vec<AccountData>,
     net: ChainNetwork,
 }
 
-struct TransactionExecutorVM2<'test, S> {
+struct TransactionExecutor<'test, S> {
     chain_state: &'test S,
 }
 
-impl TransactionGeneratorVM2 {
+impl TransactionGenerator {
     fn new(num_accounts: usize, net: ChainNetwork) -> Self {
         let mut accounts = Vec::with_capacity(num_accounts);
         let mut key_gen = KeyGen::from_os_rng();
         for _i in 0..num_accounts {
             let (private_key, public_key) = key_gen.generate_keypair();
             let address = account_address::from_public_key(&public_key);
-            let account = AccountDataVM2 {
+            let account = AccountData {
                 private_key: AccountPrivateKey::Single(private_key),
                 address,
                 sequence_number: 0,
@@ -122,7 +122,7 @@ impl TransactionGeneratorVM2 {
 
     fn create_transaction_with_sender(
         &self,
-        sender: &AccountDataVM2,
+        sender: &AccountData,
         sequence_number: u64,
         payload: TransactionPayload,
         expiration_timestamp_secs: u64,
@@ -146,7 +146,7 @@ impl TransactionGeneratorVM2 {
 impl<
         'test,
         S: starcoin_vm2_state_api::ChainStateReader + starcoin_vm2_state_api::ChainStateWriter + Sync,
-    > TransactionExecutorVM2<'test, S>
+    > TransactionExecutor<'test, S>
 {
     fn new(chain_state: &'test S) -> Self {
         Self { chain_state }
@@ -197,16 +197,12 @@ impl<
 }
 
 pub struct BenchmarkManager {
-    vm2: Option<BenchmarkManagerVM2>,
-}
-
-struct BenchmarkManagerVM2 {
     chain_state: ChainStateDB,
     net: ChainNetwork,
 }
 
-impl BenchmarkManagerVM2 {
-    fn new() -> Self {
+impl BenchmarkManager {
+    pub fn new() -> Self {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_instance()).expect("new storage should be ok"),
         );
@@ -235,9 +231,9 @@ impl BenchmarkManagerVM2 {
             .max()
             .copied()
             .unwrap_or(0);
-        let mut generator = TransactionGeneratorVM2::new(max_txns_once * 2, self.net.clone());
+        let mut generator = TransactionGenerator::new(max_txns_once * 2, self.net.clone());
         let txns = generator.gen_create_account_transactions();
-        let mut executor = TransactionExecutorVM2::new(&self.chain_state);
+        let mut executor = TransactionExecutor::new(&self.chain_state);
         let _ = executor.run(txns);
 
         // run serialize txns
@@ -258,14 +254,6 @@ impl BenchmarkManagerVM2 {
 
         reports
     }
-}
-
-impl BenchmarkManager {
-    pub fn new() -> Self {
-        Self {
-            vm2: Some(BenchmarkManagerVM2::new()),
-        }
-    }
 
     pub fn pretty_print_reports(&mut self, reports: &[BenchmarkReport]) {
         println!("┌─────────────┬──────────┬─────────────┬─────────────┐");
@@ -280,17 +268,5 @@ impl BenchmarkManager {
         }
 
         println!("└─────────────┴──────────┴─────────────┴─────────────┘");
-    }
-
-    pub fn run(
-        &mut self,
-        serialize_bench_txns: &[usize],
-        parallel_bench_txns: &[usize],
-    ) -> Vec<BenchmarkReport> {
-        if let Some(ref mut vm2) = self.vm2 {
-            vm2.run(serialize_bench_txns, parallel_bench_txns)
-        } else {
-            panic!("BenchmarkManagerVM2 is not initialized.");
-        }
     }
 }
