@@ -47,7 +47,6 @@ hex = { workspace = true }
 itertools = { workspace = true }
 libsecp256k1 = { workspace = true }
 log = { workspace = true }
-lru = { workspace = true }
 merlin = { workspace = true }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 move-cli = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
@@ -78,6 +77,7 @@ smallvec = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tiny-keccak = { workspace = true }
+quick_cache = { workspace = true }
 
 [dev-dependencies]
 starcoin-aggregator = { path = "../aggregator", features = ["testing"] }
