@@ -66,28 +66,30 @@ impl TransactionGenerator {
 
     fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction> {
         self.net.time_service().sleep(1000);
+        let mut txns = vec![];
+        let mut sequence_number = 0;
+        for receiver in self.accounts.iter() {
+            let payload = transfer_scripts_batch_peer_to_peer_v2(
+                stc_type_tag(),
+                vec![receiver.address],
+                vec![INIT_ACCOUNT_BALANCE as u128],
+            );
 
-        let receivers: Vec<_> = self.accounts.iter().map(|d| d.address).collect();
-        let amounts: Vec<_> = self
-            .accounts
-            .iter()
-            .map(|_| INIT_ACCOUNT_BALANCE as u128)
-            .collect();
+            let txn = transaction_builder2::create_signed_txn_with_association_account(
+                payload,
+                sequence_number, // The first transaction from the association account should have sequence number 0
+                DEFAULT_MAX_GAS_AMOUNT,
+                1,
+                self.net.time_service().now_secs() + sequence_number,
+                self.net.chain_id().id().into(),
+                self.net.genesis_config2(),
+            );
 
-        let payload = transfer_scripts_batch_peer_to_peer_v2(stc_type_tag(), receivers, amounts);
+            sequence_number += 1;
+            txns.push(txn);
+        }
 
-        let txn = transaction_builder2::create_signed_txn_with_association_account(
-            payload,
-            0, // The first transaction from the association account should have sequence number 0
-            DEFAULT_MAX_GAS_AMOUNT,
-            1,
-            self.net.time_service().now_secs() + 1,
-            self.net.chain_id().id().into(),
-            self.net.genesis_config2(),
-        );
-
-        // Return a Vec containing just this single, powerful batch transaction
-        vec![txn]
+        txns
     }
 
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction> {
@@ -132,7 +134,7 @@ impl TransactionGenerator {
             sender.address,
             sequence_number,
             payload,
-            40_000_000,
+            DEFAULT_MAX_GAS_AMOUNT,
             1,
             expiration_timestamp_secs,
             net.chain_id().id().into(),
