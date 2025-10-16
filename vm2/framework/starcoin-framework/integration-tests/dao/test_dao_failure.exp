@@ -45,7 +45,7 @@ task 9 'run'. lines 94-110:
           "name": "dao"
         }
       },
-      "function": 19,
+      "function": 20,
       "code_offset": 59
     }
   }
@@ -53,13 +53,13 @@ task 9 'run'. lines 94-110:
 
 task 11 'run'. lines 114-143:
 {
-  "gas_used": 1962479,
+  "gas_used": 2131500,
   "status": "Executed"
 }
 
 task 12 'run'. lines 146-174:
 {
-  "gas_used": 2046447,
+  "gas_used": 2215468,
   "status": "Executed"
 }
 
@@ -363,7 +363,7 @@ task 39 'run'. lines 667-681:
 
 task 40 'run'. lines 684-715:
 {
-  "gas_used": 2046445,
+  "gas_used": 2215466,
   "status": "Executed"
 }
 
