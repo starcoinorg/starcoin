@@ -29,7 +29,12 @@ use starcoin_types::write_set::{WriteOp, WriteSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
 
 fn main() {
-    generate().unwrap();
+    match generate() {
+        Ok(_) => println!("Data format generated successfully."),
+        Err(e) => {
+            eprintln!("Error generating data format: {:?}", e);
+        }
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, CryptoHasher, CryptoHash)]
