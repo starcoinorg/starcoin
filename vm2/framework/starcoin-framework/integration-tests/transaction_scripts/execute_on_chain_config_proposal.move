@@ -37,14 +37,15 @@ script {
     use starcoin_framework::on_chain_config_dao::OnChainConfigUpdate;
     use starcoin_framework::transaction_publish_option::TransactionPublishOption;
 
-    fun main(account: signer,
-             proposer_address: address,
-             proposal_id: u64,
-             agree: bool,
-             votes: u128
+    fun main(
+        bob: signer,
+        proposer_address: address,
+        proposal_id: u64,
+        agree: bool,
+        votes: u128
     ) {
         dao_vote_scripts::cast_vote<STC, OnChainConfigUpdate<TransactionPublishOption>>(
-            account,
+            &bob,
             proposer_address,
             proposal_id,
             agree,
@@ -86,7 +87,7 @@ script {
              proposal_id: u64,
     ) {
         dao_vote_scripts::unstake_vote<STC, on_chain_config_dao::OnChainConfigUpdate<TransactionPublishOption>>(
-            account,
+            &account,
             proposer_address,
             proposal_id
         );
