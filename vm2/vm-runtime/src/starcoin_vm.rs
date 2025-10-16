@@ -1100,6 +1100,7 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
+        info!("jacktest: execute_block_transactions begin, load configs begin");
         // TODO load config by config change event
         self.load_configs(&data_cache).map_err(|err| {
             error!(
@@ -1108,6 +1109,7 @@ impl StarcoinVM {
             );
             VMStatus::error(StatusCode::STORAGE_ERROR, None)
         })?;
+        info!("jacktest: execute_block_transactions begin, load configs begin");
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
         let blocks = chunk_block_transactions(transactions);
@@ -1128,8 +1130,10 @@ impl StarcoinVM {
 
                         let gas_unit_price = transaction.gas_unit_price();
 
+                        info!("jacktest: execute_block_transactions begin, user transaction, execute_user_transaction begin");
                         let (status, output) = self
                             .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+                        info!("jacktest: execute_block_transactions begin, user transaction, execute_user_transaction end");
 
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
@@ -1156,11 +1160,13 @@ impl StarcoinVM {
                                 })?;
                         }
                         // TODO load config by config change event
+                        info!("jacktest: execute_block_transactions begin, user transaction, check_reconfigure begin");
                         self.check_reconfigure(&data_cache, &output)
                             .map_err(|err| {
                                 info!("check_reconfigure error: {:?}", err);
                                 VMStatus::error(StatusCode::STORAGE_ERROR, None)
                             })?;
+                        info!("jacktest: execute_block_transactions begin, user transaction, check_reconfigure end");
 
                         #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
@@ -1189,12 +1195,14 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
+                    info!("jacktest: execute_block_transactions begin, meta transaction, process_block_metadata begin");
                     let (status, output) = match self
                         .process_block_metadata(&data_cache.as_move_resolver(), block_metadata)
                     {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
+                    info!("jacktest: execute_block_transactions begin, meta transaction, process_block_metadata end");
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1586,12 +1594,14 @@ impl VMExecutor for StarcoinVM {
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {
+            info!("jacktest: execute_block_and_keep_vm_status start");
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
                 block_gas_limit,
                 metrics,
             )?;
+            info!("jacktest: execute_block_and_keep_vm_status end");
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)

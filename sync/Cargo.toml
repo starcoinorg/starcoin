@@ -75,6 +75,7 @@ starcoin-genesis = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-vm-runtime = { workspace = true }
 
 
 [package]

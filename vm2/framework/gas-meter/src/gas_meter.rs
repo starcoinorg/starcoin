@@ -27,7 +27,6 @@ use starcoin_gas_algebra::{Gas, GasExpression};
 use starcoin_gas_schedule::{
     gas_params::instr::*, StarcoinGasParameters, VMGasParameters, LATEST_GAS_FEATURE_VERSION,
 };
-use starcoin_logger::prelude::info;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -72,10 +71,6 @@ impl StarcoinGasMeter {
 
     // todo: remove me and use charge instead
     pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
-        info!(
-            "jacktest: deduct_gas amount: {:?}, balance: {:?}, charge: {:?}",
-            amount, self.balance, self.charge
-        );
         if !self.charge {
             return Ok(());
         }
@@ -85,10 +80,6 @@ impl StarcoinGasMeter {
                 Ok(())
             }
             None => {
-                info!(
-                    "jacktest: error: deduct_gas amount: {:?}, balance: {:?}, charge: {:?}",
-                    amount, self.balance, self.charge
-                );
                 self.balance = 0.into();
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
@@ -114,10 +105,6 @@ impl StarcoinGasMeter {
     }
 
     fn charge(&mut self, amount: InternalGas) -> (InternalGas, PartialVMResult<()>) {
-        info!(
-            "jacktest: charge amount: {:?}, balance: {:?}",
-            amount, self.balance
-        );
         if !self.charge {
             return (amount, Ok(()));
         }
@@ -128,10 +115,6 @@ impl StarcoinGasMeter {
                 (amount, Ok(()))
             }
             None => {
-                info!(
-                    "jacktest: error: charge amount: {:?}, balance: {:?}",
-                    amount, self.balance
-                );
                 let old_balance = self.balance;
                 self.balance = 0.into();
                 (
@@ -161,13 +144,7 @@ impl StarcoinGasMeter {
         res?;
 
         self.execution_gas_used += actual;
-        info!(
-            "jacktest: charge_execution max_execution_gas: {:?}, execution_gas_used: {:?}",
-            self.max_execution_gas, self.execution_gas_used
-        );
-
         if self.execution_gas_used > self.max_execution_gas {
-            info!("jacktest: error: charge_execution max_execution_gas: {:?}, execution_gas_used: {:?}", self.max_execution_gas, self.execution_gas_used);
             return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
         }
         Ok(())

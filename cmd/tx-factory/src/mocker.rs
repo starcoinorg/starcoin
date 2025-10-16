@@ -5,6 +5,7 @@ use starcoin_logger::prelude::{error, info, warn};
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_transaction_builder::vm2::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::{
     account_address::AccountAddress, sync_status::SyncStatus, transaction::RawUserTransaction,
 };
@@ -13,7 +14,7 @@ use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2, state_view::StateReaderExt as _,
     transaction::RawUserTransaction as RawUserTransaction2,
 };
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use crate::txn_generator::MockTxnGenerator;
 
@@ -73,16 +74,11 @@ impl TxnMocker {
 
 impl TxnMocker {
     fn fetch_expiration_time(&self) -> u64 {
-        let now = SystemTime::now();
-        now.duration_since(UNIX_EPOCH)
-            .expect("time error")
-            .as_secs()
-            + 180 // 3 minutes
-                  // let node_info = self
-                  //     .client
-                  //     .node_info()
-                  //     .expect("node_info() should not failed");
-                  // node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+        let node_info = self
+            .client
+            .node_info()
+            .expect("node_info() should not failed");
+        node_info.now_seconds + DEFAULT_EXPIRATION_TIME
     }
     pub fn get_factory_status(&self) -> bool {
         self.client
