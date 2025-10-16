@@ -13,7 +13,7 @@ module starcoin_framework::coin {
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, Metadata, MintRef, TransferRef};
     use starcoin_framework::guid;
-    use starcoin_framework::object::{Self, Object, object_address};
+    use starcoin_framework::object::{Self, Object, object_address, ConstructorRef};
     use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::system_addresses;
@@ -107,6 +107,9 @@ module starcoin_framework::coin {
 
     /// The coin decimal too long
     const ECOIN_COIN_DECIMAL_TOO_LARGE: u64 = 29;
+
+    /// No corresponding owner's rights
+    const ECOIN_COIN_CREATE_PAIR_NOT_OWNER: u64 = 29;
 
     //
     // Constants
@@ -303,6 +306,23 @@ module starcoin_framework::coin {
     ) acquires CoinConversionMap, CoinInfo {
         system_addresses::assert_starcoin_framework(starcoin_framework);
         create_and_return_paired_metadata_if_not_exist<CoinType>(true);
+    }
+
+    /// Make type pair without initalize coin
+    public fun make_pair_coin_type_with_metadata<CoinType>(
+        constrcut_ref: &ConstructorRef,
+        metadata_obj: Object<Metadata>
+    ) acquires CoinConversionMap {
+        assert!(exists<CoinConversionMap>(@starcoin_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
+        assert!(
+            object::address_from_constructor_ref(constrcut_ref) == object_address(&metadata_obj),
+            error::unauthenticated(ECOIN_COIN_CREATE_PAIR_NOT_OWNER)
+        );
+
+        let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
+        let type = type_info::type_of<CoinType>();
+
+        table::add(&mut map.coin_to_fungible_asset_map, type, metadata_obj);
     }
 
     inline fun is_stc<CoinType>(): bool {

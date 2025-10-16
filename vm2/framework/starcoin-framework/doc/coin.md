@@ -35,6 +35,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `paired_metadata`](#0x1_coin_paired_metadata)
 -  [Function `create_coin_conversion_map`](#0x1_coin_create_coin_conversion_map)
 -  [Function `create_pairing`](#0x1_coin_create_pairing)
+-  [Function `make_pair_coin_type_with_metadata`](#0x1_coin_make_pair_coin_type_with_metadata)
 -  [Function `is_stc`](#0x1_coin_is_stc)
 -  [Function `create_and_return_paired_metadata_if_not_exist`](#0x1_coin_create_and_return_paired_metadata_if_not_exist)
 -  [Function `ensure_paired_metadata`](#0x1_coin_ensure_paired_metadata)
@@ -1061,6 +1062,16 @@ The BurnRefReceipt does not match the BurnRef to be returned.
 
 
 
+<a id="0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER"></a>
+
+No corresponding owner's rights
+
+
+<pre><code><b>const</b> <a href="coin.md#0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER">ECOIN_COIN_CREATE_PAIR_NOT_OWNER</a>: u64 = 29;
+</code></pre>
+
+
+
 <a id="0x1_coin_ECOIN_COIN_DECIMAL_TOO_LARGE"></a>
 
 The coin decimal too long
@@ -1393,6 +1404,43 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 ) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(<b>true</b>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_coin_make_pair_coin_type_with_metadata"></a>
+
+## Function `make_pair_coin_type_with_metadata`
+
+Make type pair without initalize coin
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_make_pair_coin_type_with_metadata">make_pair_coin_type_with_metadata</a>&lt;CoinType&gt;(constrcut_ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>, metadata_obj: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_make_pair_coin_type_with_metadata">make_pair_coin_type_with_metadata</a>&lt;CoinType&gt;(
+    constrcut_ref: &ConstructorRef,
+    metadata_obj: Object&lt;Metadata&gt;
+) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin.md#0x1_coin_ECOIN_CONVERSION_MAP_NOT_FOUND">ECOIN_CONVERSION_MAP_NOT_FOUND</a>));
+    <b>assert</b>!(
+        <a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(constrcut_ref) == object_address(&metadata_obj),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="coin.md#0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER">ECOIN_COIN_CREATE_PAIR_NOT_OWNER</a>)
+    );
+
+    <b>let</b> map = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework);
+    <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
+
+    <a href="../../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> map.coin_to_fungible_asset_map, type, metadata_obj);
 }
 </code></pre>
 
