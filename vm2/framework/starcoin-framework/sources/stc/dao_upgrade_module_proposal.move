@@ -3,6 +3,7 @@ module starcoin_framework::dao_upgrade_module_proposal {
 
     use std::error;
     use std::signer;
+    use starcoin_std::type_info;
 
     use starcoin_framework::dao;
     use starcoin_framework::stc_transaction_package_validation;
@@ -35,8 +36,9 @@ module starcoin_framework::dao_upgrade_module_proposal {
         signer: &signer,
         cap: stc_transaction_package_validation::UpgradePlanCapability,
     ) {
-        let token_issuer = stc_util::token_issuer<TokenT>();
-        assert!(signer::address_of(signer) == token_issuer, error::unauthenticated(ERR_NOT_AUTHORIZED));
+        // let token_issuer = stc_util::token_issuer<TokenT>();
+        let type_owner = type_info::account_address(&type_info::type_of<TokenT>());
+        assert!(signer::address_of(signer) == type_owner, error::unauthenticated(ERR_NOT_AUTHORIZED));
         move_to(signer, UpgradeModuleCapability<TokenT> { cap })
     }
 
@@ -66,7 +68,8 @@ module starcoin_framework::dao_upgrade_module_proposal {
         exec_delay: u64,
         enforced: bool,
     ) acquires UpgradeModuleCapability {
-        let cap = borrow_global<UpgradeModuleCapability<TokenT>>(stc_util::token_issuer<TokenT>());
+        let type_owner = type_info::account_address(&type_info::type_of<TokenT>());
+        let cap = borrow_global<UpgradeModuleCapability<TokenT>>(type_owner);
         let account_address = stc_transaction_package_validation::account_address(&cap.cap);
 
         assert!(account_address == module_address, error::permission_denied(ERR_ADDRESS_MISSMATCH));
