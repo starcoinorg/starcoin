@@ -44,6 +44,7 @@
 -  [Function `set_voting_period`](#0x1_dao_set_voting_period)
 -  [Function `set_voting_quorum_rate`](#0x1_dao_set_voting_quorum_rate)
 -  [Function `set_min_action_delay`](#0x1_dao_set_min_action_delay)
+-  [Function `get_vote_fa_store_address_seed`](#0x1_dao_get_vote_fa_store_address_seed)
 -  [Specification](#@Specification_1)
     -  [Struct `DaoConfig`](#@Specification_1_DaoConfig)
     -  [Function `plugin`](#@Specification_1_plugin)
@@ -94,6 +95,7 @@
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info">0x1::type_info</a>;
+<b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
 
@@ -833,28 +835,17 @@ So think twice before casting vote.
         <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, my_vote, stake);
         <a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(my_vote.stake_store)
     } <b>else</b> {
-        <b>let</b> object_seed = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;());
-        <b>let</b> construct_addr = <a href="object.md#0x1_object_create_object_address">object::create_object_address</a>(&sender, object_seed);
+        <b>let</b> vote_store_seed = <a href="dao.md#0x1_dao_get_vote_fa_store_address_seed">Self::get_vote_fa_store_address_seed</a>&lt;TokenT&gt;();
+        <b>let</b> construct_addr = <a href="object.md#0x1_object_create_object_address">object::create_object_address</a>(&sender, vote_store_seed);
         <b>let</b> stake_store = <b>if</b> (<a href="object.md#0x1_object_object_exists">object::object_exists</a>&lt;FungibleStore&gt;(construct_addr)) {
             <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;FungibleStore&gt;(construct_addr)
         } <b>else</b> {
             <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
                 <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-                <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
+                vote_store_seed
             );
             <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata)
         };
-        // <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
-        //     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-        //     <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;())
-        // );
-        // // <b>if</b> fungible store <b>has</b> exist, restore it from construct_ref
-        // <b>let</b> stake_store = <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(<a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&construct_ref))) {
-        //     <a href="object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;FungibleStore&gt;(&construct_ref)
-        // } <b>else</b> {
-        //     // or create it
-        //     <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, coin_metadata)
-        // };
 
         <b>let</b> my_vote = <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt; {
             proposer: proposer_address,
@@ -1897,6 +1888,33 @@ set min action delay
     <b>let</b> config = <a href="dao.md#0x1_dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.min_action_delay = value;
     <a href="on_chain_config.md#0x1_on_chain_config_set_with_capability">on_chain_config::set_with_capability</a>&lt;<a href="dao.md#0x1_dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_dao_get_vote_fa_store_address_seed"></a>
+
+## Function `get_vote_fa_store_address_seed`
+
+
+
+<pre><code><b>fun</b> <a href="dao.md#0x1_dao_get_vote_fa_store_address_seed">get_vote_fa_store_address_seed</a>&lt;TokenT&gt;(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="dao.md#0x1_dao_get_vote_fa_store_address_seed">get_vote_fa_store_address_seed</a>&lt;TokenT&gt;(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>let</b> seed = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, b"dao::vote");
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;()));
+    seed
 }
 </code></pre>
 

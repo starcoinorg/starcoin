@@ -3,6 +3,7 @@ module starcoin_framework::dao {
     use std::error;
     use std::option;
     use std::signer;
+    use std::vector;
     use starcoin_std::type_info;
 
     use starcoin_framework::account;
@@ -275,14 +276,14 @@ module starcoin_framework::dao {
             do_cast_vote(proposal, my_vote, stake);
             fungible_asset::balance(my_vote.stake_store)
         } else {
-            let object_seed = type_info::struct_name(&type_info::type_of<TokenT>());
-            let construct_addr = object::create_object_address(&sender, object_seed);
+            let vote_store_seed = Self::get_vote_fa_store_address_seed<TokenT>();
+            let construct_addr = object::create_object_address(&sender, vote_store_seed);
             let stake_store = if (object::object_exists<FungibleStore>(construct_addr)) {
                 object::address_to_object<FungibleStore>(construct_addr)
             } else {
                 let construct_ref = object::create_named_object(
                     signer,
-                    type_info::struct_name(&type_info::type_of<TokenT>())
+                    vote_store_seed
                 );
                 fungible_asset::create_store(&construct_ref, coin_metadata)
             };
@@ -784,5 +785,12 @@ module starcoin_framework::dao {
         let config = get_config<TokenT>();
         config.min_action_delay = value;
         on_chain_config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    fun get_vote_fa_store_address_seed<TokenT>(): vector<u8> {
+        let seed = vector::empty<u8>();
+        vector::append(&mut seed, b"dao::vote");
+        vector::append(&mut seed, type_info::struct_name(&type_info::type_of<TokenT>()));
+        seed
     }
 }
