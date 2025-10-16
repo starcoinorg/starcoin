@@ -6,10 +6,13 @@
 
 //# run --signers alice
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
 
     fun main(account: signer) {
-        coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
+        primary_fungible_store::transfer(&account, destroy_some(coin::paired_metadata<STC>()), @bob, 10);
         abort 41
     }
 }
@@ -19,11 +22,14 @@ script {
 
 //# run --signers bob
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::coin;
 
     fun main() {
         // check the state is unchanged
-        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000000, 42);
+        assert!(primary_fungible_store::balance(@bob, destroy_some(coin::paired_metadata<STC>())) == 1000000, 42);
     }
 }
 // check: EXECUTED
