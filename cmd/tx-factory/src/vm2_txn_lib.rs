@@ -313,7 +313,7 @@ where
     .map_err(|e| anyhow!("blocking SQLite task panicked: {}", e))?
 }
 
-async fn deduplicate_accounts<P: AsRef<Path>>(path: P) -> Result<usize> {
+async fn dedup_accounts<P: AsRef<Path>>(path: P) -> Result<usize> {
     let removed = with_account_conn(path.as_ref(), |conn| {
         let removed_by_address = conn.execute(
             r#"
@@ -353,7 +353,7 @@ async fn account_count<P: AsRef<Path>>(path: P) -> Result<usize> {
 /// Load accounts from SQLite store.
 async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
     let path_buf = path.as_ref().to_owned();
-    deduplicate_accounts(&path_buf).await?;
+    dedup_accounts(&path_buf).await?;
     let rows: Vec<String> = with_account_conn(&path_buf, |conn| {
         let mut stmt =
             conn.prepare("SELECT private_key FROM accounts ORDER BY created_at ASC, address ASC")?;
@@ -503,7 +503,7 @@ async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -
 }
 
 async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
-    deduplicate_accounts(account_path).await?;
+    dedup_accounts(account_path).await?;
     let existed = account_count(account_path).await?;
     if existed >= count {
         info!(
@@ -533,8 +533,8 @@ async fn account_worker(
     target_addr: AccountAddress,
     min_balance: u128,
     tx_amount: u128,
-    tx: mpsc::Sender<AccountAddress>,
-    tx1: mpsc::Sender<TxnReceipt>,
+    balancer_tx: mpsc::Sender<AccountAddress>,
+    confirmer_tx: mpsc::Sender<TxnReceipt>,
     limiter: Arc<AdaptiveLimiter>,
     min_submit_interval_ms: Arc<AtomicU64>,
     metrics_tx: mpsc::Sender<MetricsEvent>,
@@ -556,7 +556,7 @@ async fn account_worker(
                     state = AccountState::Ready;
                     continue;
                 }
-                if let Err(e) = tx.send(entry.address).await {
+                if let Err(e) = balancer_tx.send(entry.address).await {
                     warn!("Failed to send account to get tokens: {e}");
                 };
                 sleep(Duration::from_secs(2)).await;
@@ -591,7 +591,7 @@ async fn account_worker(
                         lifecycle.mark_submitted();
                         info!("submitted txn {hash} for {}", entry.address);
                         let (tx_receipt, rx) = oneshot::channel();
-                        if let Err(e) = tx1
+                        if let Err(e) = confirmer_tx
                             .send(TxnReceipt {
                                 txn_hash: hash,
                                 response_tx: tx_receipt,
