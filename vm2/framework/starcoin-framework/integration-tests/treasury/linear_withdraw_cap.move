@@ -24,17 +24,19 @@ script {
 script {
     use std::signer;
     use starcoin_std::debug;
-    use starcoin_framework::coin;
+
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::treasury;
     use starcoin_framework::starcoin_coin::STC;
 
     fun mint(account: signer) {
         let linear_cap = treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = treasury::withdraw_with_linear_capability(&mut linear_cap);
-        debug::print(&coin::value(&token));
-        assert!(coin::value(&token) == 19907100000000000, 1004);
+        let fa = treasury::withdraw_with_linear_capability(&mut linear_cap);
+        debug::print(&fungible_asset::amount(&fa));
+        assert!(fungible_asset::amount(&fa) == 19907100000000000, 1004);
         treasury::add_linear_withdraw_capability(&account, linear_cap);
-        coin::deposit(signer::address_of(&account), token);
+        primary_fungible_store::deposit(signer::address_of(&account), fa);
     }
 }
 
@@ -44,19 +46,20 @@ script {
 //# run --signers StarcoinAssociation
 script {
     use std::signer;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::fungible_asset;
     use starcoin_std::debug;
 
-    use starcoin_framework::coin;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::treasury;
 
     fun mint(account: signer) {
         let linear_cap = treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = treasury::withdraw_with_linear_capability(&mut linear_cap);
-        debug::print(&coin::value(&token));
-        assert!(coin::value(&token) == 19907100000000000, 1005);
+        let fa = treasury::withdraw_with_linear_capability(&mut linear_cap);
+        debug::print(&fungible_asset::amount(&fa));
+        assert!(fungible_asset::amount(&fa) == 19907100000000000, 1005);
         treasury::add_linear_withdraw_capability(&account, linear_cap);
-        coin::deposit(signer::address_of(&account), token);
+        primary_fungible_store::deposit(signer::address_of(&account), fa);
     }
 }
 
@@ -66,17 +69,18 @@ script {
 //# run --signers StarcoinAssociation
 script {
     use std::signer;
-    use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::fungible_asset;
     use starcoin_std::debug;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::treasury;
 
     fun mint(account: signer) {
         let cap = treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = treasury::withdraw_with_linear_capability(&mut cap);
-        debug::print(&coin::value(&token));
-        assert!(coin::value(&token) == (477770400000000000 - 19907100000000000 * 2), 1006);
-        coin::deposit(signer::address_of(&account), token);
+        let fa = treasury::withdraw_with_linear_capability(&mut cap);
+        debug::print(&fungible_asset::amount(&fa));
+        assert!(fungible_asset::amount(&fa) == (477770400000000000 - 19907100000000000 * 2), 1006);
+        primary_fungible_store::deposit(signer::address_of(&account), fa);
         assert!(
             treasury::get_linear_withdraw_capability_withdraw(&cap) == treasury::get_linear_withdraw_capability_total(
                 &cap
