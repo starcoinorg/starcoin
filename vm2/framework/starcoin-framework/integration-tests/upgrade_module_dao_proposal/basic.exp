@@ -1,39 +1,30 @@
 processed 19 tasks
 
-task 3 'publish'. lines 7-94:
-warning[W09001]: unused alias
-   ┌─ TEMPFILE:13:35
-   │
-13 │     use starcoin_framework::coin::paired_metadata;
-   │                                   ^^^^^^^^^^^^^^^ Unused 'use' of alias 'paired_metadata'. Consider removing it
-
-
-
-task 5 'run'. lines 98-119:
+task 5 'run'. lines 97-118:
 {
   "gas_used": 2011967,
   "status": "Executed"
 }
 
-task 6 'run'. lines 121-143:
+task 6 'run'. lines 120-142:
 {
   "gas_used": 285367,
   "status": "Executed"
 }
 
-task 7 'run'. lines 144-157:
+task 7 'run'. lines 143-156:
 {
   "gas_used": 25441,
   "status": "Executed"
 }
 
-task 8 'run'. lines 159-178:
+task 8 'run'. lines 158-177:
 {
   "gas_used": 207203,
   "status": "Executed"
 }
 
-task 9 'run'. lines 180-192:
+task 9 'run'. lines 179-191:
 {
   "gas_used": 43196,
   "status": {
@@ -49,13 +40,13 @@ task 9 'run'. lines 180-192:
   }
 }
 
-task 10 'run'. lines 195-207:
+task 10 'run'. lines 194-206:
 {
   "gas_used": 45335,
   "status": "Executed"
 }
 
-task 11 'run'. lines 209-229:
+task 11 'run'. lines 208-228:
 {
   "gas_used": 61569,
   "status": {
@@ -71,25 +62,25 @@ task 11 'run'. lines 209-229:
   }
 }
 
-task 12 'run'. lines 231-250:
+task 12 'run'. lines 230-249:
 {
   "gas_used": 1915406,
   "status": "Executed"
 }
 
-task 14 'run'. lines 255-295:
+task 14 'run'. lines 254-294:
 {
   "gas_used": 2616854,
   "status": "Executed"
 }
 
-task 16 'run'. lines 300-315:
+task 16 'run'. lines 299-314:
 {
   "gas_used": 202632,
   "status": "Executed"
 }
 
-task 18 'run'. lines 319-335:
+task 18 'run'. lines 318-334:
 {
   "gas_used": 194312,
   "status": "Executed"
