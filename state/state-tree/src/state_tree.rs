@@ -82,12 +82,12 @@ pub struct StateTree<K: RawKey> {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     updates: RwLock<BTreeMap<K, Option<Blob>>>,
-    cache: Mutex<StateCache<K>>,
+    cache: RwLock<StateCache<K>>,
 }
 
 impl<K> Clone for StateTree<K>
 where
-    K: RawKey,
+    K: RawKey + std::fmt::Debug,
 {
     fn clone(&self) -> Self {
         StateTree::new(self.storage.clone(), Some(*self.storage_root_hash.read()))
@@ -96,7 +96,7 @@ where
 
 impl<K> StateTree<K>
 where
-    K: RawKey,
+    K: RawKey + std::fmt::Debug,
 {
     /// Construct a new state_db from provided `state_root_hash` with underline `state_storage`
     pub fn new(state_storage: Arc<dyn StateNodeStore>, state_root_hash: Option<HashValue>) -> Self {
@@ -105,7 +105,7 @@ where
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
             updates: RwLock::new(BTreeMap::new()),
-            cache: Mutex::new(StateCache::new(state_root_hash)),
+            cache: RwLock::new(StateCache::new(state_root_hash)),
         }
     }
 
@@ -113,7 +113,7 @@ where
     /// if any modification is not committed into state tree, the root hash is not changed.
     /// You can use `commit` to make current modification committed into local state tree.
     pub fn root_hash(&self) -> HashValue {
-        self.cache.lock().root_hash
+        self.cache.read().root_hash
     }
 
     /// put a kv pair into tree.
@@ -122,6 +122,7 @@ where
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn put(&self, key: K, value: Vec<u8>) {
+        // println!("acquiring write lock {}:{}", file!(), line!());
         self.updates.write().insert(key, Some(value.into()));
     }
 
@@ -129,6 +130,7 @@ where
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn remove(&self, key: &K) {
+        // println!("acquiring write lock {}:{}", file!(), line!());
         self.updates.write().insert(key.clone(), None);
     }
 
@@ -146,23 +148,48 @@ where
         self.get(key).map(|result| result.is_some())
     }
 
+    fn reduce_zeros(s: &str) -> String {
+        let mut result = String::new();
+        let mut prev_zero = false;
+        for c in s.chars() {
+            if c == '0' {
+                if !prev_zero {
+                    result.push('0');
+                    prev_zero = true;
+                }
+            } else {
+                result.push(c);
+                prev_zero = false;
+            }
+        }
+        result
+    }
+
     /// return value with it proof.
     /// NOTICE: this will only read from state tree.
     /// Any un-committed modification will not visible to the method.
     pub fn get_with_proof(&self, key: &K) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        let mut cache_guard = self.cache.lock();
-        let cache = cache_guard.deref_mut();
-        let cur_root_hash = cache.root_hash;
+        let now = std::time::Instant::now();
+        let cache_guard = self.cache.read();
+        // let cache = *cache_guard;
+        let cur_root_hash = cache_guard.root_hash;
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
-            cache,
+            cache: &*cache_guard,
         };
         let tree = JellyfishMerkleTree::new(&reader);
         let (data, proof) = tree.get_with_proof(cur_root_hash, key.key_hash())?;
-        match data {
+        let result = match data {
             Some(b) => Ok((Some(b.into()), proof)),
             None => Ok((None, proof)),
-        }
+        };
+        // println!(
+        //     "[get_with_proof] get {} tid:{:?} cost: {:?}",
+        //     Self::reduce_zeros(&format!("{:?}", key)),
+        //     std::thread::current().id(),
+        //     now.elapsed()
+        // );
+        result
     }
 
     /// Commit current modification into state tree's local cache,
@@ -199,7 +226,7 @@ where
     /// commit the state change into underline storage.
     pub fn flush(&self) -> Result<()> {
         let change_set_list = {
-            let mut cache_guard = self.cache.lock();
+            let mut cache_guard = self.cache.write();
             cache_guard.split_off_idx = Some(cache_guard.change_set_list.len());
             cache_guard.change_set_list.clone()
         };
@@ -221,14 +248,14 @@ where
         self.storage.write_nodes(node_map)?;
         // and then advance the storage root hash
         *self.storage_root_hash.write() = root_hash;
-        self.cache.lock().reset(root_hash);
+        self.cache.write().reset(root_hash);
         Ok(())
     }
 
     /// Dump tree to state set.
     pub fn dump(&self) -> Result<StateSet> {
         let cur_root_hash = self.root_hash();
-        let mut cache_guard = self.cache.lock();
+        let mut cache_guard = self.cache.write();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -246,7 +273,7 @@ where
     pub fn dump_iter(&self) -> Result<JellyfishMerkleIntoIterator<K, StorageTreeReader<K>>> {
         let cur_root_hash = self.root_hash();
         let cache = {
-            let cache_guard = self.cache.lock();
+            let cache_guard = self.cache.read();
             cache_guard.clone()
         };
         let iterator = JellyfishMerkleIntoIterator::new(
@@ -267,7 +294,7 @@ where
         if updates.is_empty() {
             return Ok(cur_root_hash);
         }
-        let mut cache_guard = self.cache.lock();
+        let mut cache_guard = self.cache.write();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -316,7 +343,7 @@ where
     } */
     /// get last changes root_hash
     pub fn last_change_sets(&self) -> Option<(HashValue, TreeUpdateBatch<K>)> {
-        let cache_guard = self.cache.lock();
+        let cache_guard = self.cache.read();
         cache_guard.change_set_list.last().cloned()
     }
 

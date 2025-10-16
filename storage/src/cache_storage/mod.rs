@@ -1,34 +1,32 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 use crate::batch::{WriteBatch, WriteBatchWithColumn};
 use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
-use lru::LruCache;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use starcoin_config::DEFAULT_CACHE_SIZE;
+use std::collections::HashMap;
+
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
+    cache: RwLock<HashMap<Vec<u8>, Vec<u8>>>,
     metrics: Option<StorageMetrics>,
 }
 
 impl CacheStorage {
     pub fn new(metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
-            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            cache: RwLock::new(HashMap::with_capacity(DEFAULT_CACHE_SIZE)),
             metrics,
         }
     }
     pub fn new_with_capacity(size: usize, metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
-            cache: Mutex::new(LruCache::new(size)),
+            cache: RwLock::new(HashMap::with_capacity(size)),
             metrics,
         }
     }
 
     pub fn capacity(&self) -> usize {
-        self.cache.lock().cap()
+        self.cache.read().capacity()
     }
 }
 
@@ -43,17 +41,15 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "get", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
-                .lock()
+                .read()
                 .get(&compose_key(prefix_name.to_string(), key))
                 .cloned())
         })
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        // remove record_metrics for performance
-        // record_metrics add in write_batch to reduce Instant::now system call
-        let mut cache = self.cache.lock();
-        cache.put(compose_key(prefix_name.to_string(), key), value);
+        let mut cache = self.cache.write();
+        cache.insert(compose_key(prefix_name.to_string(), key), value);
         if let Some(metrics) = self.metrics.as_ref() {
             metrics.cache_items.set(cache.len() as u64);
         }
@@ -64,15 +60,13 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "contains_key", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
-                .lock()
-                .contains(&compose_key(prefix_name.to_string(), key)))
+                .read()
+                .contains_key(&compose_key(prefix_name.to_string(), key)))
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
-        // remove record_metrics for performance
-        // record_metrics add in write_batch to reduce Instant::now system call
-        let mut cache = self.cache.lock();
-        cache.pop(&compose_key(prefix_name.to_string(), key));
+        let mut cache = self.cache.write();
+        cache.remove(&compose_key(prefix_name.to_string(), key));
         if let Some(metrics) = self.metrics.as_ref() {
             metrics.cache_items.set(cache.len() as u64);
         }
@@ -92,12 +86,12 @@ impl InnerStore for CacheStorage {
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        Ok(self.cache.lock().len() as u64)
+        Ok(self.cache.read().len() as u64)
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         let mut all_keys = vec![];
-        for (key, _) in self.cache.lock().iter() {
+        for key in self.cache.read().keys() {
             all_keys.push(key.to_vec());
         }
         Ok(all_keys)
@@ -112,7 +106,7 @@ impl InnerStore for CacheStorage {
     }
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        let mut cache = self.cache.lock();
+        let cache = self.cache.read();
         let mut result = vec![];
         for key in keys.into_iter() {
             let item = cache

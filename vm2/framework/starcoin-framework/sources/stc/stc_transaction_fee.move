@@ -1,58 +1,107 @@
 /// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
+/// Then they are distributed in `TransactionManager`.
 module starcoin_framework::stc_transaction_fee {
     use starcoin_std::debug;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::create_signer;
-    use starcoin_std::from_bcs;
+    use starcoin_framework::stc_gas_fee_freeze;
+    use starcoin_framework::transaction_context;
 
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
     }
 
-    native fun address_to_u128(addr: address): u128;
-
-    /// Deposit `token` into one of the storage accounts
-    ///  txn sender is used as hasher to uniquely locate a reserved account to receive the gas
-    public fun pay_fee<TokenType>(txn_sender: address, token: coin::Coin<TokenType>) {
-        // Get the target reserved account address
-        let range_from = system_addresses::reserved_account_from();
-        let range_to = system_addresses::reserved_account_to();
-        let span = range_to - range_from;
-        let addr_u128 = range_from + (address_to_u128(txn_sender) % span); 
-        let addr = from_bcs::u128_to_address(addr_u128);
-        
-        // Deposit the fee directly to the selected genesis account
-        coin::deposit(addr, token);
+    /// The `TransactionFee` resource holds a preburn resource for each
+    /// fiat `TokenType` that can be collected as a transaction fee.
+    struct TransactionFee<phantom TokenType> has key {
+        fee: coin::Coin<TokenType>,
     }
 
-    /// This function iterates through all genesis accounts and withdraws available fees.
-    public fun distribute_transaction_fees<TokenType>(
-        account: &signer,
-    ): coin::Coin<TokenType> {
-        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
-
+    /// Called in genesis. Sets up the needed resources to collect transaction fees from the
+    /// `TransactionFee` resource with the TreasuryCompliance account.
+    public fun initialize(account: &signer) {
+        // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
 
-        // Create accumulator for all collected fees
-        let total_fees = coin::zero<TokenType>();
-        
-        let range_from = system_addresses::reserved_account_from();
-        let range_to = system_addresses::reserved_account_to();
-        for (addr_u128 in range_from..range_to) {
-            let withdraw_address = from_bcs::u128_to_address(addr_u128);
-            let balance = coin::balance<TokenType>(withdraw_address);
-            if (balance > 0) {
-                // Create signer for the genesis account and withdraw all funds
-                let genesis_signer = create_signer::create_signer(withdraw_address);
-                let withdrawn_coin = coin::withdraw<TokenType>(&genesis_signer, balance);
-                coin::merge(&mut total_fees, withdrawn_coin);
-            };
+        // accept fees in all the currencies
+        add_txn_fee_token<STC>(account);
+        // initialize freeze index for STC
+        stc_gas_fee_freeze::init_index<STC>(account);
+    }
+
+    spec initialize {
+        use std::signer;
+
+        // aborts_if !Timestamp::is_genesis();
+        aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
+        aborts_if exists<TransactionFee<STC>>(signer::address_of(account));
+    }
+
+    /// publishing a wrapper of the `Preburn<TokenType>` resource under `fee_account`
+    fun add_txn_fee_token<TokenType>(account: &signer) {
+        move_to(
+            account,
+            TransactionFee<TokenType> {
+                fee: coin::zero(),
+            }
+        )
+    }
+
+    spec add_txn_fee_token {
+        use std::signer;
+        aborts_if exists<TransactionFee<TokenType>>(signer::address_of(account));
+    }
+
+    /// Deposit `token` into the transaction fees bucket
+    public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) {
+        // Route fee to per-address freeze bucket of gas payer for this tx.
+        // This keeps concurrent fees on different addresses conflict-free.
+        let sender = transaction_context::sender();
+        stc_gas_fee_freeze::deposit<TokenType>(sender, token)
+    }
+
+    spec pay_fee {
+        use starcoin_framework::system_addresses;
+
+        aborts_if !exists<TransactionFee<TokenType>>(system_addresses::get_starcoin_framework());
+        aborts_if global<TransactionFee<TokenType>>(
+            system_addresses::get_starcoin_framework()
+        ).fee.value + token.value > max_u128();
+    }
+
+    /// Distribute the transaction fees collected in the `TokenType` token.
+    /// If the `TokenType` is STC, it unpacks the token and preburns the
+    /// underlying fiat.
+    public fun distribute_transaction_fees<TokenType>(
+        account: &signer,
+    ): coin::Coin<TokenType> acquires TransactionFee {
+        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
+
+        let fee_address = system_addresses::get_starcoin_framework();
+        system_addresses::assert_starcoin_framework(account);
+
+        // First, sweep all per-address frozen fees for this block into TransactionFee bucket
+        // so distribution includes the latest collected fees.
+        let newly_collected = stc_gas_fee_freeze::drain_index_all<TokenType>(account);
+        if (coin::value(&newly_collected) > 0) {
+            let txn_fees = &mut borrow_global_mut<TransactionFee<TokenType>>(fee_address).fee;
+            coin::merge(txn_fees, newly_collected);
         };
 
-        total_fees
+        // extract fees
+        let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);
+        let value = coin::value<TokenType>(&txn_fees.fee);
+
+        if (value > 0) {
+            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with value: "));
+            debug::print(&value);
+            coin::extract(&mut txn_fees.fee, value)
+        } else {
+            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with zero"));
+            coin::zero<TokenType>()
+        }
     }
 
     spec distribute_transaction_fees {
@@ -60,5 +109,6 @@ module starcoin_framework::stc_transaction_fee {
 
         pragma verify = false;
         aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
+        aborts_if !exists<TransactionFee<TokenType>>(system_addresses::get_starcoin_framework());
     }
 }

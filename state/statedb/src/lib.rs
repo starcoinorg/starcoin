@@ -279,7 +279,7 @@ impl ChainStateDB {
         Self::new(self.store.clone(), Some(state_root))
     }
 
-    fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {
+    fn new_state_tree<K: RawKey + std::fmt::Debug>(&self, root_hash: HashValue) -> StateTree<K> {
         StateTree::new(self.store.clone(), Some(root_hash))
     }
 

@@ -27,7 +27,7 @@ struct Opt {
     #[clap(long, default_value = "true")]
     bench_vm2: bool,
 
-    #[clap(long, default_value = "500")]
+    #[clap(long, default_value = "")]
     serialize_txns: String,
 
     #[clap(long, default_value = "500")]

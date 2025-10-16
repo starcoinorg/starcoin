@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_transaction_builder::{
     encode_create_account_script_function, encode_transfer_script_function, StdlibVersion,
 };
@@ -31,6 +31,7 @@ use starcoin_metrics::Registry;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 
 // vm2
+use rand::{thread_rng, RngCore};
 use starcoin_genesis::vm2::{build_genesis_transaction, execute_genesis_transaction};
 use starcoin_transaction_builder::vm2::{self as transaction_builder2, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_vm2_cached_packages::starcoin_framework_sdk_builder::transfer_scripts_batch_peer_to_peer_v2;
@@ -78,6 +79,7 @@ struct TransactionGeneratorVM1 {
 struct TransactionGeneratorVM2 {
     accounts: Vec<AccountDataVM2>,
     net: ChainNetwork,
+    storage: Arc<Storage>,
 }
 
 struct TransactionExecutorVM1<'test, S> {
@@ -228,7 +230,7 @@ impl<'test, S: ChainStateReader + ChainStateWriter> TransactionExecutorVM1<'test
 }
 
 impl TransactionGeneratorVM2 {
-    fn new(num_accounts: usize, net: ChainNetwork) -> Self {
+    fn new(num_accounts: usize, net: ChainNetwork, storage: Arc<Storage>) -> Self {
         let mut accounts = Vec::with_capacity(num_accounts);
         let mut key_gen = KeyGen2::from_os_rng();
         for _i in 0..num_accounts {
@@ -242,10 +244,52 @@ impl TransactionGeneratorVM2 {
             accounts.push(account);
         }
 
-        Self { accounts, net }
+        Self {
+            accounts,
+            net,
+            storage,
+        }
     }
 
-    fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction2> {
+    fn gen_block_meta_transaction(
+        &self,
+        parent_hash: Option<starcoin_crypto::HashValue>,
+        block_number: Option<u64>,
+    ) -> Transaction2 {
+        use starcoin_vm2_vm_types::block_metadata::BlockMetadata;
+        use starcoin_vm2_vm_types::on_chain_resource::ChainId;
+
+        let timestamp = self.net.time_service().now_secs();
+        let parent_hash = parent_hash.unwrap_or_else(|| {
+            let mut seed = [0u8; 32];
+            rand::thread_rng().fill_bytes(&mut seed);
+            starcoin_crypto::HashValue::new(seed)
+        });
+
+        let author = if !self.accounts.is_empty() {
+            self.accounts[0].address
+        } else {
+            AccountAddress2::random()
+        };
+
+        let number = block_number.unwrap_or(1);
+
+        let block_meta = BlockMetadata::new(
+            parent_hash,
+            timestamp,
+            author,
+            0,
+            number,
+            ChainId::test(),
+            0,
+            vec![parent_hash],
+            0,
+        );
+
+        Transaction2::BlockMetadata(block_meta)
+    }
+
+    fn gen_create_account_transactions(&mut self) -> Vec<Transaction2> {
         self.net.time_service().sleep(1000);
         let mut sequence_number = 0;
         let mut result = vec![];
@@ -271,11 +315,33 @@ impl TransactionGeneratorVM2 {
         }
         // Return a Vec containing just this single, powerful batch transaction
         result
+            .iter()
+            .map(|t| Transaction2::UserTransaction(t.clone()))
+            .collect()
     }
 
-    fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction2> {
+    fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<Transaction2> {
         self.net.time_service().sleep(1000);
-        let mut txns = Vec::with_capacity(txns_num);
+        let mut txns = Vec::with_capacity(txns_num + 1);
+
+        // for better caching updated block info in StateTree of @framework_account
+        // let startup_info = self
+        //     .storage
+        //     .get_startup_info()
+        //     .expect("get_startup_info should succeed")
+        //     .expect("startup_info must exist");
+
+        // let head_hash = startup_info.main;
+        // let header = self
+        //     .storage
+        //     .get_block_header_by_hash(head_hash)
+        //     .expect("get_block_header_by_hash should succeed")
+        //     .expect("header must exist");
+
+        // let parent_hash = Some(header.id());
+        // let block_number = Some(header.number() + 1);
+
+        txns.push(self.gen_block_meta_transaction(None, None));
         self.accounts.iter_mut().for_each(|a| a.sequence_number = 0);
 
         loop {
@@ -298,7 +364,7 @@ impl TransactionGeneratorVM2 {
                     &self.net,
                 );
                 self.accounts[sender_idx].sequence_number += 1;
-                txns.push(txn);
+                txns.push(Transaction2::UserTransaction(txn));
                 if txns.len() >= txns_num {
                     return txns;
                 }
@@ -338,30 +404,21 @@ impl<
         Self { chain_state }
     }
 
-    fn run(&mut self, txns: Vec<SignedUserTransaction2>, persist_result: bool) -> BenchmarkReport {
+    fn run(&mut self, txns: Vec<Transaction2>, persist_result: bool) -> BenchmarkReport {
         let num_txns = txns.len();
 
         let registry = Registry::new();
         let vm_metrics = VMMetrics::register(&registry).ok();
 
-        let user_txns: Vec<Transaction2> = txns
-            .into_iter()
-            .map(Transaction2::UserTransaction)
-            .collect();
-
         // do not persist the execution result to storage
         if persist_result {
-            let _ = block_executor::block_execute(
-                self.chain_state,
-                user_txns,
-                u64::MAX,
-                vm_metrics.clone(),
-            )
-            .expect("Execute txns fail.");
+            let _ =
+                block_executor::block_execute(self.chain_state, txns, u64::MAX, vm_metrics.clone())
+                    .expect("Execute txns fail.");
         } else {
             let _ = starcoin_vm2_executor::do_execute_block_transactions(
                 self.chain_state,
-                user_txns,
+                txns,
                 Some(u64::MAX),
                 vm_metrics.clone(),
             )
@@ -407,6 +464,7 @@ struct BenchmarkManagerVM1 {
 }
 
 struct BenchmarkManagerVM2 {
+    storage: Arc<Storage>,
     chain_state: ChainStateDB2,
     net: ChainNetwork,
 }
@@ -462,7 +520,7 @@ impl BenchmarkManagerVM1 {
 
 impl BenchmarkManagerVM2 {
     fn new() -> Self {
-        let storage = Arc::new(
+        let storage: Arc<Storage> = Arc::new(
             Storage::new(StorageInstance::new_cache_instance()).expect("new storage should be ok"),
         );
         let net: ChainNetwork = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
@@ -473,7 +531,11 @@ impl BenchmarkManagerVM2 {
         let _ =
             execute_genesis_transaction(&chain_state, Transaction2::UserTransaction(genesis_txn))
                 .unwrap();
-        Self { chain_state, net }
+        Self {
+            storage,
+            chain_state,
+            net,
+        }
     }
 
     pub fn run(
@@ -492,7 +554,8 @@ impl BenchmarkManagerVM2 {
             .unwrap_or(0);
         // 200 account is enough to avoid conflict in parallel execution.
         let account_num = min(max_txns_once * 2, 200);
-        let mut generator = TransactionGeneratorVM2::new(account_num, self.net.clone());
+        let mut generator =
+            TransactionGeneratorVM2::new(account_num, self.net.clone(), self.storage.clone());
         let txns = generator.gen_create_account_transactions();
         let mut executor = TransactionExecutorVM2::new(&self.chain_state);
         let _ = executor.run(txns, true);
