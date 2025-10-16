@@ -20,6 +20,7 @@ use starcoin_vm2_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm2_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
 };
+use std::cmp::max;
 use std::sync::Arc;
 
 const INIT_ACCOUNT_BALANCE: u64 = 40_000_000_000;
@@ -95,31 +96,33 @@ impl TransactionGenerator {
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction> {
         self.net.time_service().sleep(1000);
         let mut txns = Vec::with_capacity(txns_num);
-        for index in 0..self.accounts.len() / 2 {
-            let sender_idx = 2 * index;
-            let receiver_idx = 2 * index + 1;
-            if receiver_idx >= self.accounts.len() {
-                break;
-            }
-            let sender = &self.accounts[sender_idx];
-            let receiver = &self.accounts[receiver_idx];
-            let payload =
-                transaction_builder2::encode_transfer_script_function(receiver.address, 1);
-            let txn = self.create_transaction_with_sender(
-                sender,
-                self.accounts[sender_idx].sequence_number,
-                payload,
-                self.net.time_service().now_secs() + self.accounts[sender_idx].sequence_number + 1,
-                &self.net,
-            );
-            self.accounts[sender_idx].sequence_number += 1;
-            txns.push(txn);
-            if txns.len() >= txns_num {
-                break;
+        loop {
+            // max accounts size is 200, it's ok to generate 100 txns that seperate from each other
+            // testing machine didn't have so much cores
+            for index in 0..self.accounts.len() / 2 {
+                let sender_idx = 2 * index;
+                let receiver_idx = 2 * index + 1;
+                assert!(receiver_idx < self.accounts.len());
+                let sender = &self.accounts[sender_idx];
+                let receiver = &self.accounts[receiver_idx];
+                let payload =
+                    transaction_builder2::encode_transfer_script_function(receiver.address, 1);
+                let txn = self.create_transaction_with_sender(
+                    sender,
+                    self.accounts[sender_idx].sequence_number,
+                    payload,
+                    self.net.time_service().now_secs()
+                        + self.accounts[sender_idx].sequence_number
+                        + 1,
+                    &self.net,
+                );
+                self.accounts[sender_idx].sequence_number += 1;
+                txns.push(txn);
+                if txns.len() >= txns_num {
+                    return txns;
+                }
             }
         }
-
-        txns
     }
 
     fn create_transaction_with_sender(
@@ -233,7 +236,8 @@ impl BenchmarkManager {
             .max()
             .copied()
             .unwrap_or(0);
-        let mut generator = TransactionGenerator::new(max_txns_once * 2, self.net.clone());
+        let mut generator =
+            TransactionGenerator::new(max(max_txns_once * 2, 200), self.net.clone());
         let txns = generator.gen_create_account_transactions();
         let mut executor = TransactionExecutor::new(&self.chain_state);
         let _ = executor.run(txns);
