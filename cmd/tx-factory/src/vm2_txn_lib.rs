@@ -15,7 +15,7 @@
 // Standard library
 use std::{
     collections::{BTreeMap, BTreeSet, VecDeque},
-    path::{Path, PathBuf},
+    path::Path,
     sync::{
         atomic::{AtomicU64, AtomicUsize, Ordering},
         Arc, Mutex, OnceLock,
@@ -27,7 +27,7 @@ use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
-use rusqlite::{params, Connection, Error as RusqliteError};
+use rusqlite::{params, Connection};
 use tokio::{
     fs,
     sync::{mpsc, oneshot, OwnedSemaphorePermit, RwLock, Semaphore},
@@ -297,73 +297,6 @@ fn init_account_table(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-fn sqlite_not_a_database(err: &RusqliteError) -> bool {
-    matches!(
-        err,
-        RusqliteError::SqliteFailure(_, Some(message))
-            if message.to_ascii_lowercase().contains("not a database")
-    )
-}
-
-fn next_backup_path(path: &Path) -> PathBuf {
-    if !path.exists() {
-        return path.with_extension("bak");
-    }
-    let mut idx = 0usize;
-    loop {
-        let candidate = if idx == 0 {
-            path.with_extension("bak")
-        } else {
-            path.with_extension(format!("bak{}", idx))
-        };
-        if !candidate.exists() {
-            return candidate;
-        }
-        idx += 1;
-    }
-}
-
-fn migrate_plaintext_accounts(path: &Path) -> Result<()> {
-    let content = std::fs::read_to_string(path)?;
-    let backup_path = next_backup_path(path);
-    std::fs::rename(path, &backup_path)?;
-    let conn = Connection::open(path)?;
-    init_account_table(&conn)?;
-    let mut imported = 0usize;
-    for line in content.lines().map(str::trim).filter(|l| !l.is_empty()) {
-        let private_key = match AccountPrivateKey::from_encoded_string(line) {
-            Ok(pk) => pk,
-            Err(e) => {
-                warn!("Skipping invalid account entry during migration: {e}");
-                continue;
-            }
-        };
-        let encoded = match private_key.to_encoded_string() {
-            Ok(s) => s,
-            Err(e) => {
-                warn!("Failed to re-encode migrated key: {e}");
-                continue;
-            }
-        };
-        let address = private_key.public_key().derived_address().to_string();
-        if let Err(e) = conn.execute(
-            "INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)",
-            params![address, encoded],
-        ) {
-            warn!("Failed to insert migrated account: {e}");
-        } else {
-            imported += 1;
-        }
-    }
-    info!(
-        "Migrated {} accounts into SQLite store at {} (backup: {})",
-        imported,
-        path.display(),
-        backup_path.display()
-    );
-    Ok(())
-}
-
 async fn with_account_conn<T, F>(path: &Path, f: F) -> Result<T>
 where
     T: Send + 'static,
@@ -371,17 +304,7 @@ where
 {
     let path = path.to_owned();
     task::spawn_blocking(move || -> Result<T> {
-        let conn = match Connection::open(&path) {
-            Ok(conn) => conn,
-            Err(err) => {
-                if sqlite_not_a_database(&err) && path.exists() {
-                    migrate_plaintext_accounts(&path)?;
-                    Connection::open(&path)?
-                } else {
-                    return Err(err.into());
-                }
-            }
-        };
+        let conn = Connection::open(&path)?;
         init_account_table(&conn)?;
         let result = f(&conn)?;
         Ok(result)
