@@ -10,7 +10,6 @@ module alice::fake_money {
     use std::signer;
     use std::string;
     use std::string::{bytes, utf8};
-    use starcoin_framework::coin::paired_metadata;
     use starcoin_framework::coin;
     use starcoin_framework::fungible_asset::{
         generate_mint_ref,
