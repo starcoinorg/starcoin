@@ -372,7 +372,6 @@ async fn account_count<P: AsRef<Path>>(path: P) -> Result<usize> {
 /// Load accounts from SQLite store.
 async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
     let path_buf = path.as_ref().to_owned();
-    dedup_accounts(&path_buf).await?;
     let rows: Vec<String> = with_account_conn(&path_buf, |conn| {
         let mut stmt = conn.prepare("SELECT private_key FROM accounts ORDER BY created_at ASC")?;
         let keys = stmt
@@ -394,7 +393,7 @@ async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
 }
 
 /// Append account entries in batch. Returns number of newly inserted rows.
-async fn append_account<P: AsRef<Path>>(path: P, accounts: Vec<AccountEntry>) -> Result<usize> {
+async fn append_accounts<P: AsRef<Path>>(path: P, accounts: Vec<AccountEntry>) -> Result<usize> {
     if accounts.is_empty() {
         return Ok(0);
     }
@@ -524,6 +523,7 @@ async fn account_get_balance(client: &AsyncRpcClient, address: AccountAddress) -
 }
 
 async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
+    // just keep this for safety
     dedup_accounts(account_path).await?;
     let existed = account_count(account_path).await?;
     if existed >= count {
@@ -533,14 +533,23 @@ async fn generate_accounts(account_path: &str, count: usize) -> Result<()> {
         );
         return Ok(());
     }
-    let to_create = count - existed;
-    let mut accounts = Vec::with_capacity(to_create);
-    for _ in 0..to_create {
-        let entry = create_account();
-        info!("Created account {}", entry.address);
-        accounts.push(entry);
+    let mut to_create = count - existed;
+    while to_create > 0 {
+        let mut accounts = Vec::with_capacity(to_create);
+        for _ in 0..to_create {
+            let entry = create_account();
+            info!("Created account {}", entry.address);
+            accounts.push(entry);
+        }
+        let inserted = append_accounts(account_path, accounts).await?;
+        to_create -= inserted;
+        if to_create != 0 {
+            info!(
+                "Inserted {} accounts, {} more to create",
+                inserted, to_create
+            );
+        }
     }
-    append_account(account_path, accounts).await?;
     Ok(())
 }
 
