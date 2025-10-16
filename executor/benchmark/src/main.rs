@@ -24,9 +24,6 @@ struct Opt {
     #[clap(long, default_value = "warn")]
     log_level: String,
 
-    #[clap(long, default_value = "true")]
-    bench_vm2: bool,
-
     #[clap(long, default_value = "1,10")]
     serialize_txns: String,
 
@@ -40,7 +37,7 @@ fn main() {
     starcoin_logger::init_with_default_level(&opt.log_level, None);
 
     if opt.bench_vm_exec {
-        let mut manager = vm_exec_benchmark::BenchmarkManager::new(opt.bench_vm2);
+        let mut manager = vm_exec_benchmark::BenchmarkManager::new();
         let serialize_txns: Vec<usize> = opt
             .serialize_txns
             .split(',')
