@@ -2,9 +2,16 @@
 /// Then they are distributed in `TransactionManager`.
 module starcoin_framework::stc_transaction_fee {
     use starcoin_std::debug;
+    use std::signer;
+    use std::vector;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
+
+    friend starcoin_framework::stc_block;
+
+    native fun record_payer_address(addr: address);
+    native public(friend) fun read_and_clear_payer_address(): vector<address>;
 
     spec module {
         pragma verify;
@@ -51,20 +58,54 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     /// Deposit `token` into the transaction fees bucket
-    public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) acquires TransactionFee {
+    public fun pay_fee<TokenType>(account: &signer, token: coin::Coin<TokenType>) acquires TransactionFee {
+        if (!exists<TransactionFee<TokenType>>(signer::address_of(account))) {
+            move_to(
+                account,
+                TransactionFee<TokenType> { fee: coin::zero() }
+            );
+        };
+        
+        let addr = signer::address_of(account);
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
-            system_addresses::get_starcoin_framework()
+            addr
         );
+        record_payer_address(addr);
         coin::merge(&mut txn_fees.fee, token)
     }
 
-    spec pay_fee {
-        use starcoin_framework::system_addresses;
+    fun inner_distribute_transaction_fees<TokenType>(
+        addr: address,
+    ): coin::Coin<TokenType> acquires TransactionFee {
+        debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Entered"));
 
-        aborts_if !exists<TransactionFee<TokenType>>(system_addresses::get_starcoin_framework());
-        aborts_if global<TransactionFee<TokenType>>(
-            system_addresses::get_starcoin_framework()
-        ).fee.value + token.value > max_u128();
+        // extract fees
+        let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(addr);
+        let value = coin::value<TokenType>(&txn_fees.fee);
+
+        if (value > 0) {
+            debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Exit with value: "));
+            debug::print(&value);
+            coin::extract(&mut txn_fees.fee, value)
+        } else {
+            debug::print(&std::string::utf8(b"stc_transaction_fee::inner_distribute_transaction_fees | Exit with zero"));
+            coin::zero<TokenType>()
+        }
+    }
+
+    public fun merge_fee_to_framework_account(account: &signer) acquires TransactionFee {
+        system_addresses::assert_starcoin_framework(account);
+
+        let collected_addresses = read_and_clear_payer_address();
+        let framework_address = system_addresses::get_starcoin_framework();
+        let len = vector::length(&collected_addresses);
+        for (i in 0..len) {
+            let addr = *vector::borrow(&collected_addresses, i);
+            if (addr != framework_address && exists<TransactionFee<STC>>(addr)) {
+                let token = inner_distribute_transaction_fees<STC>(addr);
+                pay_fee<STC>(account, token);
+            }
+        }
     }
 
     /// Distribute the transaction fees collected in the `TokenType` token.
@@ -73,23 +114,8 @@ module starcoin_framework::stc_transaction_fee {
     public fun distribute_transaction_fees<TokenType>(
         account: &signer,
     ): coin::Coin<TokenType> acquires TransactionFee {
-        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
-
-        let fee_address = system_addresses::get_starcoin_framework();
         system_addresses::assert_starcoin_framework(account);
-
-        // extract fees
-        let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);
-        let value = coin::value<TokenType>(&txn_fees.fee);
-
-        if (value > 0) {
-            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with value: "));
-            debug::print(&value);
-            coin::extract(&mut txn_fees.fee, value)
-        } else {
-            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with zero"));
-            coin::zero<TokenType>()
-        }
+        inner_distribute_transaction_fees<TokenType>(signer::address_of(account))
     }
 
     spec distribute_transaction_fees {

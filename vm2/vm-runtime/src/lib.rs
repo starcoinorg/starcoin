@@ -52,6 +52,7 @@ pub trait VMExecutor: Send + Sync {
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
+    BlockEpilogue(BlockMetadata),
 }
 
 #[inline]
@@ -61,6 +62,7 @@ pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
+        Transaction::BlockEpilogue(b) => PreprocessedTransaction::BlockEpilogue(b),
     }
 }
 
