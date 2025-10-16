@@ -2,13 +2,20 @@
 /// modified from https://github.com/move-language/move/tree/main/language/documentation/tutorial
 module starcoin_framework::starcoin_coin {
     use std::error;
+    use std::option::{Self, destroy_some, Option};
     use std::signer;
     use std::string;
     use std::vector;
-    use std::option::{Self, Option};
 
     use starcoin_framework::coin::{Self, BurnCapability, MintCapability};
+    use starcoin_framework::fungible_asset::Metadata;
+    use starcoin_framework::object::Object;
     use starcoin_framework::system_addresses;
+
+    #[test_only]
+    use starcoin_framework::aggregator_factory;
+    #[test_only]
+    use starcoin_framework::fungible_asset::FungibleAsset;
 
     friend starcoin_framework::stc_genesis;
 
@@ -57,6 +64,10 @@ module starcoin_framework::starcoin_coin {
 
     public fun has_mint_capability(account: &signer): bool {
         exists<MintCapStore>(signer::address_of(account))
+    }
+
+    public fun get_stc_fa_metadata(): Object<Metadata> {
+        destroy_some(coin::paired_metadata<STC>())
     }
 
     /// Only called during genesis to destroy the starcoin framework account's mint capability once all initial validators
@@ -150,13 +161,6 @@ module starcoin_framework::starcoin_coin {
     }
 
     #[test_only]
-    use starcoin_framework::account;
-    #[test_only]
-    use starcoin_framework::aggregator_factory;
-    #[test_only]
-    use starcoin_framework::fungible_asset::FungibleAsset;
-
-    #[test_only]
     public fun mint_stc_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
         ensure_initialized_with_stc_fa_metadata_for_test();
         coin::coin_to_fungible_asset(
@@ -171,6 +175,7 @@ module starcoin_framework::starcoin_coin {
     public fun ensure_initialized_with_stc_fa_metadata_for_test() {
         use starcoin_std::debug;
         use std::string::utf8;
+        use starcoin_framework::account;
 
         debug::print(&utf8(b"ensure_initialized_with_stc_fa_metadata_for_test | entered"));
         let starcoin_framework = account::create_signer_for_test(@starcoin_framework);
