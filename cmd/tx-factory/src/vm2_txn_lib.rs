@@ -283,17 +283,45 @@ impl AdaptiveLimiter {
         self.limit.load(Ordering::SeqCst)
     }
 }
-fn init_account_table(conn: &Connection) -> Result<()> {
+fn init_account_table(conn: &mut Connection) -> Result<()> {
     conn.execute_batch(
         r#"
         PRAGMA journal_mode = WAL;
         CREATE TABLE IF NOT EXISTS accounts (
-            address TEXT PRIMARY KEY,
-            private_key TEXT NOT NULL UNIQUE,
+            private_key TEXT PRIMARY KEY,
             created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
         );
         "#,
     )?;
+
+    let mut stmt = conn.prepare("PRAGMA table_info(accounts)")?;
+    let columns = stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    drop(stmt);
+    if columns.iter().any(|c| c == "address") {
+        let tx = conn.transaction()?;
+        tx.execute("ALTER TABLE accounts RENAME TO accounts_with_address", [])?;
+        tx.execute(
+            r#"
+            CREATE TABLE accounts (
+                private_key TEXT PRIMARY KEY,
+                created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+            )
+            "#,
+            [],
+        )?;
+        tx.execute(
+            r#"
+            INSERT OR IGNORE INTO accounts(private_key, created_at)
+            SELECT private_key, created_at FROM accounts_with_address
+            "#,
+            [],
+        )?;
+        tx.execute("DROP TABLE accounts_with_address", [])?;
+        tx.commit()?;
+    }
+
     Ok(())
 }
 
@@ -305,7 +333,7 @@ where
     let path = path.to_owned();
     task::spawn_blocking(move || -> Result<T> {
         let mut conn = Connection::open(&path)?;
-        init_account_table(&conn)?;
+        init_account_table(&mut conn)?;
         let result = f(&mut conn)?;
         Ok(result)
     })
@@ -315,16 +343,7 @@ where
 
 async fn dedup_accounts<P: AsRef<Path>>(path: P) -> Result<usize> {
     let removed = with_account_conn(path.as_ref(), |conn| {
-        let removed_by_address = conn.execute(
-            r#"
-            DELETE FROM accounts
-            WHERE rowid NOT IN (
-                SELECT MIN(rowid) FROM accounts GROUP BY address
-            )
-            "#,
-            [],
-        )?;
-        let removed_by_key = conn.execute(
+        let removed = conn.execute(
             r#"
             DELETE FROM accounts
             WHERE rowid NOT IN (
@@ -333,7 +352,7 @@ async fn dedup_accounts<P: AsRef<Path>>(path: P) -> Result<usize> {
             "#,
             [],
         )?;
-        Ok(removed_by_address + removed_by_key)
+        Ok(removed)
     })
     .await?;
     if removed > 0 {
@@ -355,8 +374,7 @@ async fn load_accounts<P: AsRef<Path>>(path: P) -> Result<Vec<AccountEntry>> {
     let path_buf = path.as_ref().to_owned();
     dedup_accounts(&path_buf).await?;
     let rows: Vec<String> = with_account_conn(&path_buf, |conn| {
-        let mut stmt =
-            conn.prepare("SELECT private_key FROM accounts ORDER BY created_at ASC, address ASC")?;
+        let mut stmt = conn.prepare("SELECT private_key FROM accounts ORDER BY created_at ASC")?;
         let keys = stmt
             .query_map([], |row| row.get::<_, String>(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -382,19 +400,15 @@ async fn append_account<P: AsRef<Path>>(path: P, accounts: Vec<AccountEntry>) ->
     }
     let entries = accounts
         .into_iter()
-        .map(|account| {
-            let encoded = account.private_key.to_encoded_string()?;
-            Ok((account.address.to_string(), encoded))
-        })
-        .collect::<Result<Vec<_>>>()?;
+        .map(|account| account.private_key.to_encoded_string())
+        .collect::<Result<Vec<String>>>()?;
 
     let inserted = with_account_conn(path.as_ref(), move |conn| {
         let tx = conn.transaction()?;
-        let mut stmt =
-            tx.prepare("INSERT OR IGNORE INTO accounts(address, private_key) VALUES (?1, ?2)")?;
+        let mut stmt = tx.prepare("INSERT OR IGNORE INTO accounts(private_key) VALUES (?1)")?;
         let mut total = 0usize;
-        for (address, encoded) in entries {
-            total += stmt.execute(params![address, encoded])? as usize;
+        for encoded in entries {
+            total += stmt.execute(params![encoded])? as usize;
         }
         drop(stmt);
         tx.commit()?;
