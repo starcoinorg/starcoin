@@ -158,11 +158,10 @@ where
         };
         let tree = JellyfishMerkleTree::new(&reader);
         let (data, proof) = tree.get_with_proof(cur_root_hash, key.key_hash())?;
-        let result = match data {
+        match data {
             Some(b) => Ok((Some(b.into()), proof)),
             None => Ok((None, proof)),
-        };
-        result
+        }
     }
 
     /// Commit current modification into state tree's local cache,
