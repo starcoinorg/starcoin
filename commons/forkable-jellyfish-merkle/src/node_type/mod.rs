@@ -155,7 +155,6 @@ impl PartialEq for InternalNode {
     }
 }
 
-// 手动实现 Eq trait - 只需要标记即可，因为它已经实现了 PartialEq
 impl Eq for InternalNode {}
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -205,7 +204,6 @@ impl InternalNode {
             }
         }
 
-        // 计算哈希并更新缓存
         let hash = self.crypto_hash();
         *self.cached_hash.write() = Some(hash);
         hash
@@ -502,7 +500,6 @@ where
             }
         }
 
-        // 计算哈希并更新缓存
         let hash = self.crypto_hash();
         *self.cached_hash.write() = Some(hash);
         hash
