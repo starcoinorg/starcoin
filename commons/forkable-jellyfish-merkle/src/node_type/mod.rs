@@ -132,7 +132,7 @@ impl Clone for InternalNode {
 
         let cached_hash = {
             let read_guard = self.cached_hash.read();
-            RwLock::new(read_guard.clone())
+            RwLock::new(*read_guard)
         };
 
         Self {
@@ -551,7 +551,7 @@ impl<K: RawKey + Clone> Clone for LeafNode<K> {
 
         let cached_hash = {
             let read_guard = self.cached_hash.read();
-            RwLock::new(read_guard.clone())
+            RwLock::new(*read_guard)
         };
 
         Self {
