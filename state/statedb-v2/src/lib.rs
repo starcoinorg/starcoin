@@ -6,7 +6,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use quick_cache::sync::Cache;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
@@ -74,9 +74,9 @@ struct AccountStateObject {
     //TODO if use RefCell at here, compile error for ActorRef async interface
     // the trait `std::marker::Sync` is not implemented for AccountStateObject
     // refactor AccountStateObject to a readonly object.
-    code_tree: Mutex<Option<StateTree<ModuleName>>>,
-    resource_tree: Mutex<StateTree<StructTag>>,
-    resource_group_tree: Mutex<Option<StateTree<StructTag>>>,
+    code_tree: RwLock<Option<StateTree<ModuleName>>>,
+    resource_tree: RwLock<StateTree<StructTag>>,
+    resource_group_tree: RwLock<Option<StateTree<StructTag>>>,
     store: Arc<dyn StateNodeStore>,
 }
 
@@ -92,9 +92,9 @@ impl AccountStateObject {
             .map(|root| StateTree::<StructTag>::new(store.clone(), Some(root)));
 
         Self {
-            code_tree: Mutex::new(code_tree),
-            resource_tree: Mutex::new(resource_tree),
-            resource_group_tree: Mutex::new(resource_group_tree),
+            code_tree: RwLock::new(code_tree),
+            resource_tree: RwLock::new(resource_tree),
+            resource_group_tree: RwLock::new(resource_group_tree),
             store,
         }
     }
@@ -102,9 +102,9 @@ impl AccountStateObject {
     pub fn empty_account(store: Arc<dyn StateNodeStore>) -> Self {
         let resource_tree = StateTree::<StructTag>::new(store.clone(), None);
         Self {
-            code_tree: Mutex::new(None),
-            resource_tree: Mutex::new(resource_tree),
-            resource_group_tree: Mutex::new(None),
+            code_tree: RwLock::new(None),
+            resource_tree: RwLock::new(resource_tree),
+            resource_group_tree: RwLock::new(None),
             store,
         }
     }
@@ -113,15 +113,15 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get(module_name))
                 .transpose()?
                 .flatten()),
-            DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
+            DataPath::Resource(struct_tag) => self.resource_tree.read().get(struct_tag),
             DataPath::ResourceGroup(struct_tag) => Ok(self
                 .resource_group_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get(struct_tag))
                 .transpose()?
@@ -138,15 +138,15 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get_with_proof(module_name))
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
-            DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
+            DataPath::Resource(struct_tag) => self.resource_tree.read().get_with_proof(struct_tag),
             DataPath::ResourceGroup(struct_tag) => Ok(self
                 .resource_group_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get_with_proof(struct_tag))
                 .transpose()?
@@ -157,26 +157,25 @@ impl AccountStateObject {
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
         match data_path {
             DataPath::Code(module_name) => {
-                if self.code_tree.lock().is_none() {
-                    *self.code_tree.lock() =
-                        Some(StateTree::<ModuleName>::new(self.store.clone(), None));
+                let mut code_tree = self.code_tree.write();
+                if code_tree.is_none() {
+                    *code_tree = Some(StateTree::<ModuleName>::new(self.store.clone(), None));
                 }
-                self.code_tree
-                    .lock()
+                code_tree
                     .as_ref()
                     .expect("state tree must exist after set.")
                     .put(module_name, value);
             }
             DataPath::Resource(struct_tag) => {
-                self.resource_tree.lock().put(struct_tag, value);
+                self.resource_tree.write().put(struct_tag, value);
             }
             DataPath::ResourceGroup(struct_tag) => {
-                if self.resource_group_tree.lock().is_none() {
-                    *self.resource_group_tree.lock() =
+                let mut resource_group_tree = self.resource_group_tree.write();
+                if resource_group_tree.is_none() {
+                    *resource_group_tree =
                         Some(StateTree::<StructTag>::new(self.store.clone(), None));
                 }
-                self.resource_group_tree
-                    .lock()
+                resource_group_tree
                     .as_ref()
                     .expect("state tree must exist after set.")
                     .put(struct_tag, value);
@@ -189,10 +188,10 @@ impl AccountStateObject {
             bail!("Not supported remove code currently.");
         }
         if let Some(struct_tag) = data_path.resource_tag() {
-            self.resource_tree.lock().remove(struct_tag);
+            self.resource_tree.write().remove(struct_tag);
         }
         if let Some(struct_tag) = data_path.resource_group_tag() {
-            if let Some(resource_group_tree) = self.resource_group_tree.lock().as_mut() {
+            if let Some(resource_group_tree) = self.resource_group_tree.write().as_mut() {
                 resource_group_tree.remove(struct_tag);
             }
         }
@@ -200,15 +199,15 @@ impl AccountStateObject {
     }
 
     pub fn is_dirty(&self) -> bool {
-        if self.resource_tree.lock().is_dirty() {
+        if self.resource_tree.read().is_dirty() {
             return true;
         }
-        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+        if let Some(code_tree) = self.code_tree.read().as_ref() {
             if code_tree.is_dirty() {
                 return true;
             }
         }
-        if let Some(resource_group_tree) = self.resource_group_tree.lock().as_ref() {
+        if let Some(resource_group_tree) = self.resource_group_tree.read().as_ref() {
             if resource_group_tree.is_dirty() {
                 return true;
             }
@@ -219,7 +218,7 @@ impl AccountStateObject {
 
     pub fn commit(&self) -> Result<AccountState> {
         {
-            let code_tree = self.code_tree.lock();
+            let code_tree = self.code_tree.write();
             if let Some(code_tree) = code_tree.as_ref() {
                 if code_tree.is_dirty() {
                     code_tree.commit()?;
@@ -227,14 +226,14 @@ impl AccountStateObject {
             }
         }
         {
-            let resource_tree = self.resource_tree.lock();
+            let resource_tree = self.resource_tree.write();
             if resource_tree.is_dirty() {
                 resource_tree.commit()?;
             }
         }
 
         {
-            let resource_group_tree = self.resource_group_tree.lock();
+            let resource_group_tree = self.resource_group_tree.write();
             if let Some(resource_group_tree) = resource_group_tree.as_ref() {
                 if resource_group_tree.is_dirty() {
                     resource_group_tree.commit()?;
@@ -245,11 +244,11 @@ impl AccountStateObject {
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.resource_tree.lock().flush()?;
-        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+        self.resource_tree.write().flush()?;
+        if let Some(code_tree) = self.code_tree.write().as_ref() {
             code_tree.flush()?;
         }
-        if let Some(resource_group_tree) = self.resource_group_tree.lock().as_ref() {
+        if let Some(resource_group_tree) = self.resource_group_tree.write().as_ref() {
             resource_group_tree.flush()?;
         }
 
@@ -259,19 +258,19 @@ impl AccountStateObject {
     fn to_state_set(&self) -> Result<AccountStateSet> {
         let code_root = self
             .code_tree
-            .lock()
+            .read()
             .as_ref()
             .map(|tree| tree.dump())
             .transpose()?;
-        let resource_root = self.resource_tree.lock().dump()?;
+        let resource_root = self.resource_tree.read().dump()?;
         Ok(AccountStateSet::new(vec![code_root, Some(resource_root)]))
     }
     fn to_state(&self) -> AccountState {
-        let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
-        let resource_root = self.resource_tree.lock().root_hash();
+        let code_root = self.code_tree.read().as_ref().map(|tree| tree.root_hash());
+        let resource_root = self.resource_tree.read().root_hash();
         let resource_group_root = self
             .resource_group_tree
-            .lock()
+            .read()
             .as_ref()
             .map(|tree| tree.root_hash());
         AccountState::new(code_root, resource_root, resource_group_root)
@@ -291,7 +290,7 @@ pub struct ChainStateDB {
     /// state_tree_table_handles is element of state_tree_table_handles_list
     /// state_tree_table_handles SMT save TableHandle -> TableHandleState.root_hash
     state_tree_table_handles_list: Vec<StateTree<TableHandle>>,
-    update_table_handle_idx_list: Mutex<HashSet<usize>>,
+    update_table_handle_idx_list: RwLock<HashSet<usize>>,
 }
 
 static G_DEFAULT_CACHE_SIZE: usize = 10240;
@@ -310,7 +309,7 @@ impl ChainStateDB {
             updates_table_handle: RwLock::new(HashSet::new()),
             cache_table_handle: Cache::new(G_DEFAULT_CACHE_SIZE),
             state_tree_table_handles_list: vec![],
-            update_table_handle_idx_list: Mutex::new(HashSet::new()),
+            update_table_handle_idx_list: RwLock::new(HashSet::new()),
         };
         for (handle_address, table_path) in
             TABLE_HANDLE_ADDRESS_LIST.iter().zip(TABLE_PATH_LIST.iter())
@@ -785,12 +784,12 @@ impl ChainStateWriter for ChainStateDB {
             let table_handle_state_object = self.get_table_handle_state_object(handle)?;
             table_handle_state_object.commit()?;
             let idx = handle.get_idx()?;
-            self.update_table_handle_idx_list.lock().insert(idx);
+            self.update_table_handle_idx_list.write().insert(idx);
             // put table_handle_state_object commit
             self.get_state_tree_table_handles(idx)?
                 .put(*handle, table_handle_state_object.root_hash().to_vec());
         }
-        for idx in self.update_table_handle_idx_list.lock().iter() {
+        for idx in self.update_table_handle_idx_list.write().iter() {
             let state_tree_table_handle = self
                 .state_tree_table_handles_list
                 .get(*idx)
@@ -833,11 +832,11 @@ impl ChainStateWriter for ChainStateDB {
         }
         locks_table_handle.clear();
 
-        for idx in self.update_table_handle_idx_list.lock().iter() {
+        for idx in self.update_table_handle_idx_list.write().iter() {
             let state_tree_table_handle = self.get_state_tree_table_handles(*idx)?;
             state_tree_table_handle.flush()?;
         }
-        self.update_table_handle_idx_list.lock().clear();
+        self.update_table_handle_idx_list.write().clear();
 
         let mut locks = self.updates.write();
         for address in locks.iter() {
@@ -855,7 +854,7 @@ impl ChainStateWriter for ChainStateDB {
 /// TableHandle's SMT Save (table.key, table.value)
 struct TableHandleStateObject {
     _handle: TableHandle,
-    state_tree: Mutex<StateTree<Vec<u8>>>,
+    state_tree: RwLock<StateTree<Vec<u8>>>,
 }
 
 impl TableHandleStateObject {
@@ -863,20 +862,20 @@ impl TableHandleStateObject {
         let state_tree = StateTree::<Vec<u8>>::new(store.clone(), Some(root));
         Self {
             _handle,
-            state_tree: Mutex::new(state_tree),
+            state_tree: RwLock::new(state_tree),
         }
     }
 
     pub fn set(&self, key: Vec<u8>, value: Vec<u8>) {
-        self.state_tree.lock().put(key, value)
+        self.state_tree.write().put(key, value)
     }
 
     pub fn remove(&self, key: &Vec<u8>) {
-        self.state_tree.lock().remove(key)
+        self.state_tree.write().remove(key)
     }
 
     pub fn commit(&self) -> Result<()> {
-        let state_tree = self.state_tree.lock();
+        let state_tree = self.state_tree.read();
         if state_tree.is_dirty() {
             state_tree.commit()?;
         }
@@ -884,20 +883,20 @@ impl TableHandleStateObject {
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.state_tree.lock().flush()?;
+        self.state_tree.write().flush()?;
         Ok(())
     }
 
     pub fn root_hash(&self) -> HashValue {
-        self.state_tree.lock().root_hash()
+        self.state_tree.read().root_hash()
     }
 
     pub fn get(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
-        self.state_tree.lock().get(key)
+        self.state_tree.read().get(key)
     }
 
     pub fn get_with_proof(&self, key: &Vec<u8>) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        self.state_tree.lock().get_with_proof(key)
+        self.state_tree.read().get_with_proof(key)
     }
 }
 
