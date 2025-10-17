@@ -15,6 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tempfile::TempDir;
 
 use crate::BlockEvent;
@@ -28,6 +29,7 @@ pub struct GhostAdpter {
     k: KType,
     virtual_tips: Vec<VirtualTip>,
     max_parents: usize,
+    profiler: Option<CommitProfiler>,
 }
 
 impl GhostAdpter {
@@ -54,6 +56,11 @@ impl GhostAdpter {
             k,
             virtual_tips: Vec::new(),
             max_parents: max_parents_count,
+            profiler: if std::env::var("SIMNET_PROFILE").is_ok() {
+                Some(CommitProfiler::default())
+            } else {
+                None
+            },
         })
     }
 
@@ -106,11 +113,23 @@ impl GhostAdpter {
         choice: ParentChoice,
     ) -> Result<HashValue> {
         let previous_pruning_point = self.pruning_point;
+        let mut sample = CommitSample::default();
+        let total_start = Instant::now();
+
+        let tips_start = Instant::now();
         let tips_snapshot = self.load_bucket_tips(previous_pruning_point);
+        sample.load_tips = tips_start.elapsed();
+
+        let select_start = Instant::now();
         let parents = Self::select_parents(&plan, choice)?;
+        sample.select_parents = select_start.elapsed();
+
+        let resolve_start = Instant::now();
         let ghostdata = self.resolve_ghostdata(&parents)?;
+        sample.resolve = resolve_start.elapsed();
         let selected_parent = ghostdata.selected_parent;
 
+        let build_start = Instant::now();
         let block = BlockHeader::random()
             .as_builder()
             .with_parent_hash(selected_parent)
@@ -118,18 +137,36 @@ impl GhostAdpter {
             .with_difficulty(diff)
             .with_timestamp(event.header_time)
             .build();
+        sample.build_block = build_start.elapsed();
 
         let block_id = block.id();
-        self.dag.commit_trusted_block(block, ghostdata)?;
+        let commit_start = Instant::now();
+        self.dag.commit_trusted_block(block, ghostdata.clone())?;
+        sample.commit_block = commit_start.elapsed();
 
+        let merge_start = Instant::now();
         let new_tips = self.merge_tips_with_block(tips_snapshot, block_id)?;
+        sample.merge_tips = merge_start.elapsed();
+
+        let virtual_start = Instant::now();
         let virtual_info = self
             .dag
             .calc_mergeset_and_tips(previous_pruning_point, self.genesis.id())?;
-        self.persist_tips(previous_pruning_point, virtual_info.pruning_point, new_tips)?;
+        sample.calc_virtual = virtual_start.elapsed();
 
+        let persist_start = Instant::now();
+        self.persist_tips(previous_pruning_point, virtual_info.pruning_point, new_tips)?;
+        sample.persist_tips = persist_start.elapsed();
+
+        let record_start = Instant::now();
         self.push_record(block_id, parents, event);
         self.push_virtual_tip(virtual_info);
+        sample.record = record_start.elapsed();
+
+        sample.total = total_start.elapsed();
+        if let Some(profiler) = self.profiler.as_mut() {
+            profiler.record(sample);
+        }
 
         Ok(block_id)
     }
@@ -154,7 +191,6 @@ impl GhostAdpter {
     }
 
     fn resolve_ghostdata(&mut self, parents: &[HashValue]) -> Result<Arc<GhostdagData>> {
-
         // Always recompute ghostdata: the harness plans blocks well before they are committed,
         // so the cached classification becomes outdated once newer blocks land.
         Ok(Arc::new(self.dag.ghostdata(parents)?))
@@ -217,6 +253,14 @@ impl GhostAdpter {
 
     pub fn records(&self) -> &[BlockRecord] {
         &self.records
+    }
+
+    pub fn virtual_tips(&self) -> &[VirtualTip] {
+        &self.virtual_tips
+    }
+
+    pub fn header(&self, hash: HashValue) -> Result<BlockHeader> {
+        Ok(self.dag.storage.header_store.get_header(hash)?)
     }
 
     pub fn audit_basic(&self, events: &[BlockEvent]) -> Result<()> {
@@ -459,6 +503,14 @@ impl GhostAdpter {
     }
 }
 
+impl Drop for GhostAdpter {
+    fn drop(&mut self) {
+        if let Some(profiler) = self.profiler.as_ref() {
+            profiler.report();
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct BlockRecord {
     pub block_id: HashValue,
@@ -480,6 +532,73 @@ pub enum ParentChoice {
     Honest,
     Subset(Vec<HashValue>),
     Custom(Vec<HashValue>),
+}
+
+#[derive(Default, Clone, Debug)]
+struct CommitSample {
+    total: Duration,
+    load_tips: Duration,
+    select_parents: Duration,
+    resolve: Duration,
+    build_block: Duration,
+    commit_block: Duration,
+    merge_tips: Duration,
+    calc_virtual: Duration,
+    persist_tips: Duration,
+    record: Duration,
+}
+
+#[derive(Default, Clone, Debug)]
+struct CommitProfiler {
+    total: Duration,
+    load_tips: Duration,
+    select_parents: Duration,
+    resolve: Duration,
+    build_block: Duration,
+    commit_block: Duration,
+    merge_tips: Duration,
+    calc_virtual: Duration,
+    persist_tips: Duration,
+    record: Duration,
+    count: usize,
+}
+
+impl CommitProfiler {
+    fn record(&mut self, sample: CommitSample) {
+        self.total += sample.total;
+        self.load_tips += sample.load_tips;
+        self.select_parents += sample.select_parents;
+        self.resolve += sample.resolve;
+        self.build_block += sample.build_block;
+        self.commit_block += sample.commit_block;
+        self.merge_tips += sample.merge_tips;
+        self.calc_virtual += sample.calc_virtual;
+        self.persist_tips += sample.persist_tips;
+        self.record += sample.record;
+        self.count += 1;
+    }
+
+    fn report(&self) {
+        if self.count == 0 || std::env::var("SIMNET_PROFILE").is_err() {
+            return;
+        }
+        let ms = |d: Duration| d.as_secs_f64() * 1_000.0;
+        println!(
+            "[simnet::commit] blocks={} total={:.2}ms avg={:.2}ms load_tips={:.2}ms select={:.2}ms resolve={:.2}ms build={:.2}ms commit={:.2}ms merge={:.2}ms calc_virtual={:.2}ms persist={:.2}ms record={:.2}ms",
+            self.count,
+            ms(self.total),
+            ms(self.total) / self.count as f64,
+            ms(self.load_tips),
+            ms(self.select_parents),
+            ms(self.resolve),
+            ms(self.build_block),
+            ms(self.commit_block),
+            ms(self.merge_tips),
+            ms(self.calc_virtual),
+            ms(self.persist_tips),
+            ms(self.record)
+        );
+    }
 }
 
 pub struct TopologyAudit<'a> {
@@ -546,5 +665,7 @@ impl<'a> TopologyAudit<'a> {
 
 #[cfg(test)]
 mod basic;
+#[cfg(test)]
+mod common_prefix;
 #[cfg(test)]
 mod harness;

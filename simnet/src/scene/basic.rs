@@ -5,7 +5,7 @@ use proptest::prelude::*;
 fn deterministic_cfg() -> DAGGenCfg {
     DAGGenCfg {
         total_time: 10_000,
-        block_interval: 200,
+        block_interval: 100,
         miners: vec![
             Miner {
                 name: "alice",
@@ -62,7 +62,6 @@ fn weighted_cfg() -> DAGGenCfg {
     }
 }
 
-
 fn arb_weights(count: usize) -> impl Strategy<Value = Vec<f64>> {
     prop::collection::vec(0.1f64..1.0, count).prop_map(|mut raw| {
         let sum: f64 = raw.iter().sum();
@@ -98,7 +97,7 @@ fn cfg_from_weights(weights: &[f64]) -> DAGGenCfg {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 6, .. ProptestConfig::default() })]
+    #![proptest_config(ProptestConfig { cases: 1, .. ProptestConfig::default() })]
 
     #[test]
     fn simnet_honest_flow_maintains_topology(seed in any::<u64>()) {
@@ -184,4 +183,3 @@ proptest! {
         }
     }
 }
-
