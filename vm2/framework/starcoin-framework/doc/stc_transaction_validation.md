@@ -509,7 +509,7 @@ It collects gas and bumps the sequence number
             &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender),
             (transaction_fee_amount <b>as</b> u64)
         );
-        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(<a href="account.md#0x1_account">account</a>, transaction_fee);
+        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender), transaction_fee);
     };
 }
 </code></pre>
