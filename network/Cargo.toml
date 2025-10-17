@@ -19,7 +19,6 @@ zeroize = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 tempfile = { workspace = true }
-async-trait = { workspace = true }
 derive_more = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }

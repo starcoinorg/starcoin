@@ -8,30 +8,49 @@ use starcoin_service_registry::{
     ActorService, ServiceHandler, ServiceInfo, ServiceRef, ServiceStatus,
 };
 
-#[async_trait::async_trait]
 pub trait NodeAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
-    async fn list_service(&self) -> Result<Vec<ServiceInfo>>;
+    fn list_service(&self) -> impl std::future::Future<Output = Result<Vec<ServiceInfo>>> + Send;
 
-    async fn stop_service(&self, service_name: String) -> Result<()>;
+    fn stop_service(
+        &self,
+        service_name: String,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    async fn start_service(&self, service_name: String) -> Result<()>;
+    fn start_service(
+        &self,
+        service_name: String,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    async fn check_service(&self, service_name: String) -> Result<ServiceStatus>;
+    fn check_service(
+        &self,
+        service_name: String,
+    ) -> impl std::future::Future<Output = Result<ServiceStatus>> + Send;
 
-    async fn start_pacemaker(&self) -> Result<()>;
+    fn start_pacemaker(&self) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    async fn stop_pacemaker(&self) -> Result<()>;
+    fn stop_pacemaker(&self) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    async fn shutdown_system(&self) -> Result<()>;
-    async fn reset_node(&self, block_hash: HashValue) -> Result<()>;
-    async fn re_execute_block(&self, block_hash: HashValue) -> Result<()>;
-    async fn delete_block(&self, block_hash: HashValue) -> Result<()>;
-    async fn delete_failed_block(&self, block_hash: HashValue) -> Result<()>;
+    fn shutdown_system(&self) -> impl std::future::Future<Output = Result<()>> + Send;
+    fn reset_node(
+        &self,
+        block_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    fn re_execute_block(
+        &self,
+        block_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    fn delete_block(
+        &self,
+        block_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    fn delete_failed_block(
+        &self,
+        block_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 }
 
-#[async_trait::async_trait]
 impl<A> NodeAsyncService for ServiceRef<A>
 where
     A: ActorService,
