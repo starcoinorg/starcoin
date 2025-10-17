@@ -9,7 +9,6 @@ use starcoin_vm2_types::{
     vm_error::KeptVMStatus,
 };
 
-
 use move_vm2_transactional_test_runner::tasks::SyntaxChoice;
 use starcoin_config::genesis_config::ChainNetwork;
 use starcoin_transaction_builder::vm2::create_signed_txn_with_association_account;
@@ -23,14 +22,12 @@ use starcoin_vm2_test_helper::{
     txn::create_account_txn_sent_as_association,
 };
 use starcoin_vm2_types::{
-    account_config::{association_address, genesis_address, stc_type_tag},
-    language_storage::{ModuleId, StructTag},
+    account_config::{association_address, stc_type_tag},
+    language_storage::ModuleId,
     transaction::{
         EntryFunction, Package, Script, Transaction, TransactionPayload, TransactionStatus,
     },
 };
-use starcoin_vm2_vm_types::account_config::ObjectGroupResource;
-use starcoin_vm2_vm_types::errors::Location::Module;
 use std::ops::Sub;
 
 fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
