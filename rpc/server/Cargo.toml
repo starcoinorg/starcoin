@@ -72,16 +72,16 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-vm-runtime = { workspace = true }
 
+starcoin-dag = { workspace = true }
+
 [dev-dependencies]
 starcoin-chain-mock = { workspace = true }
-starcoin-dag = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-rpc-client = { workspace = true }

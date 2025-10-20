@@ -8,8 +8,8 @@ script {
 
     fun epoch_data() {
         // default value should be consistent with genesis config
-        let default_block_gas_limit = 50000000 * 10;
-        let default_block_time_target = 10000;
+        let default_block_gas_limit = 50_000_000 * 10;
+        let default_block_time_target = 1000;
         let default_number = 0;
         let default_start_block_number = 0;
         let default_end_block_number = 24 * 2;

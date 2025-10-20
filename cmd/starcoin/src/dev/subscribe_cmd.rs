@@ -28,13 +28,13 @@ pub struct SubscribeEventOpt {
         long = "event-key",
         name = "event_key",
         help = "event key",
-        multiple_occurrences = true
+        action = clap::ArgAction::Append
     )]
     event_key: Option<Vec<EventKey>>,
-    #[clap(long = "address", name = "address", multiple_occurrences = true)]
+    #[clap(long = "address", name = "address", action = clap::ArgAction::Append)]
     /// events of which addresses to subscribe
     addresses: Option<Vec<AccountAddress>>,
-    #[clap(long = "type_tag", name = "type-tag", multiple_occurrences = true)]
+    #[clap(long = "type_tag", name = "type-tag", action = clap::ArgAction::Append)]
     /// type tags of the events to subscribe
     type_tags: Option<Vec<TypeTagView>>,
     #[clap(short = 'l', long = "limit", name = "limit")]

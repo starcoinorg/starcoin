@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
-use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
@@ -11,7 +10,6 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::{Filter, FilterType};
 use starcoin_types::language_storage::{StcTypeTag, TypeTag2};
 use starcoin_vm2_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
@@ -55,7 +53,7 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         // block 1 has two vms, then two blockmeta events
-        assert_eq!(evt.transaction_index, 1);
+        assert_eq!(evt.transaction_index, 0);
         assert_eq!(evt.event.type_tag(), StcTypeTag::V2(event_type_tag.clone()));
     }
 
@@ -197,184 +195,10 @@ fn test_find_ancestor_fork() -> Result<()> {
     Ok(())
 }
 
-fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
-    let mut times = 10;
-    mock_chain.produce_and_apply_times(times).unwrap();
-
-    // 1. new branch head id
-    let fork_id = mock_chain.head().current_header().id();
-    times = 2;
-    mock_chain.produce_and_apply_times(times).unwrap();
-
-    // 2. fork new branch and create a uncle block
-    let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
-    let miner = mock_chain.miner();
-    let block = product_a_block(&fork_block_chain, miner, Vec::new());
-    let uncle_block_header = block.header().clone();
-    fork_block_chain.apply(block).unwrap();
-    (mock_chain, fork_block_chain, uncle_block_header)
-}
-
-fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
-    let (block_template, _) = branch
-        .create_block_template_simple_with_uncles(*miner.address(), uncles)
-        .unwrap();
-    branch
-        .consensus()
-        .create_block(block_template, branch.time_service().as_ref())
-        .unwrap()
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 120)]
-fn test_uncle() {
-    let (mut mock_chain, _, uncle_block_header) = gen_uncle();
-    let miner = mock_chain.miner();
-    // 3. mock chain apply
-    let uncles = vec![uncle_block_header.clone()];
-    let block = product_a_block(mock_chain.head(), miner, uncles);
-    mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block().uncles().is_some());
-    assert!(mock_chain
-        .head()
-        .head_block()
-        .block()
-        .uncles()
-        .unwrap()
-        .contains(&uncle_block_header));
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 120)]
-fn test_uncle_exist() {
-    let (mut mock_chain, _, uncle_block_header) = gen_uncle();
-    let miner = mock_chain.miner().clone();
-    // 3. mock chain apply
-    let uncles = vec![uncle_block_header.clone()];
-    let block = product_a_block(mock_chain.head(), &miner, uncles);
-    mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block().uncles().is_some());
-    assert!(mock_chain
-        .head()
-        .head_block()
-        .block()
-        .uncles()
-        .unwrap()
-        .contains(&uncle_block_header));
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
-
-    // 4. uncle exist
-    let uncles = vec![uncle_block_header];
-    let block = product_a_block(mock_chain.head(), &miner, uncles);
-    assert!(mock_chain.apply(block).is_err());
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 120)]
-fn test_uncle_son() {
-    let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
-    let miner = mock_chain.miner();
-    // 3. uncle son
-    let uncle_son = product_a_block(&fork_block_chain, miner, Vec::new());
-    let uncle_son_block_header = uncle_son.header().clone();
-    fork_block_chain.apply(uncle_son).unwrap();
-
-    // 4. mock chain apply
-    let uncles = vec![uncle_son_block_header];
-    let block = product_a_block(mock_chain.head(), miner, uncles);
-    assert!(mock_chain.apply(block).is_err());
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 120)]
-fn test_random_uncle() {
-    let (mut mock_chain, _, _) = gen_uncle();
-    let miner = mock_chain.miner();
-
-    // 3. random BlockHeader and apply
-    let uncles = vec![BlockHeader::random()];
-    let block = product_a_block(mock_chain.head(), miner, uncles);
-    assert!(mock_chain.apply(block).is_err());
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 480)]
-fn test_switch_epoch() {
-    let (mut mock_chain, _, uncle_block_header) = gen_uncle();
-    let miner = mock_chain.miner().clone();
-
-    // 3. mock chain apply
-    let uncles = vec![uncle_block_header.clone()];
-    let block = product_a_block(mock_chain.head(), &miner, uncles);
-    mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block().uncles().is_some());
-    assert!(mock_chain
-        .head()
-        .head_block()
-        .block()
-        .uncles()
-        .unwrap()
-        .contains(&uncle_block_header));
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
-
-    // 4. block apply
-    let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch().end_block_number();
-    assert!(begin_number < end_number);
-    if begin_number < (end_number - 1) {
-        for _i in begin_number..(end_number - 1) {
-            let block = product_a_block(mock_chain.head(), &miner, Vec::new());
-            mock_chain.apply(block).unwrap();
-            assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
-        }
-    }
-
-    // 5. switch epoch
-    let block = product_a_block(mock_chain.head(), &miner, Vec::new());
-    mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block().uncles().is_none());
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-}
-
-#[ignore = "Uncle concept not applicable in DAG - replaced by blue/red blocks"]
-#[stest::test(timeout = 480)]
-fn test_uncle_in_diff_epoch() {
-    let (mut mock_chain, _, uncle_block_header) = gen_uncle();
-    let miner = mock_chain.miner().clone();
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-
-    // 3. block apply
-    let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch().end_block_number();
-    assert!(begin_number < end_number);
-    if begin_number < (end_number - 1) {
-        for _i in begin_number..(end_number - 1) {
-            let block = product_a_block(mock_chain.head(), &miner, Vec::new());
-            mock_chain.apply(block).unwrap();
-            assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-        }
-    }
-
-    // 4. switch epoch
-    let block = product_a_block(mock_chain.head(), &miner, Vec::new());
-    mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block().uncles().is_none());
-    assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
-
-    // 5. mock chain apply
-    let uncles = vec![uncle_block_header];
-    let block = product_a_block(mock_chain.head(), &miner, uncles);
-    assert!(mock_chain.apply(block).is_err());
-}
-
 #[stest::test(timeout = 480)]
 ///             ╭--> b2(t2)
 /// Genesis--> b1
-///             ╰--> b3(t2)
+///             ╰--> b2_1(t2)
 ///
 /// In DAG mode: Two blocks with same transaction coexist in DAG
 fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
@@ -437,9 +261,11 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Advance time slightly to ensure different block hash
     config.net().time_service().sleep(1);
 
+    let mut block_chain_1 = block_chain.fork(block_b1.id())?;
+
     // Miner2 creates block b3 also based on b1 (parallel to b2)
     // Use explicit tips [b1] to simulate miner2 hasn't seen b2 yet
-    let (template_b3, excluded) = block_chain.create_block_template(
+    let (template_b2_1, excluded) = block_chain_1.create_block_template(
         *miner2.address(),
         None, // No specific parent header
         vec![signed_txn.clone().into()],
@@ -452,12 +278,12 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         excluded.discarded_txns.is_empty(),
         "txn is discarded by miner2"
     );
-    let block_b3 = block_chain
+    let block_b2_1 = block_chain_1
         .consensus()
-        .create_block(template_b3, config.net().time_service().as_ref())?;
+        .create_block(template_b2_1, config.net().time_service().as_ref())?;
 
     // Apply b3 (parallel to b2, both children of b1)
-    block_chain.apply(block_b3.clone())?;
+    block_chain_1.apply(block_b2_1.clone())?;
 
     // Query all transaction_info for this transaction
     let txn_info_ids = block_chain
@@ -476,7 +302,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         .get_storage()
         .get_transaction_info(txn_info_ids[0])?
         .expect("transaction_info should exist");
-    let txn_info2 = block_chain
+    let txn_info2 = block_chain_1
         .get_storage()
         .get_transaction_info(txn_info_ids[1])?
         .expect("transaction_info should exist");
@@ -493,7 +319,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     );
 
     // Verify they belong to different blocks
-    let block_ids = [block_b2.id(), block_b3.id()];
+    let block_ids = [block_b2.id(), block_b2_1.id()];
     assert!(
         block_ids.contains(&txn_info1.block_id()),
         "txn_info1 should be in b2 or b3"

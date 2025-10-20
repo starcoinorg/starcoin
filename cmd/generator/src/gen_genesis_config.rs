@@ -21,6 +21,7 @@ pub struct GenGenesisConfigOpt {}
 pub struct GenGenesisConfigResult {
     pub net: ChainNetworkID,
     pub config_path: PathBuf,
+    pub config_path2: PathBuf,
 }
 
 pub struct GenGenesisConfigCommand;
@@ -54,6 +55,9 @@ impl CommandAction for GenGenesisConfigCommand {
         let config_path = base
             .data_dir()
             .join(starcoin_config::G_GENESIS_CONFIG_FILE_NAME);
+        let config_path2 = base
+            .data_dir()
+            .join(starcoin_config::G_GENESIS_CONFIG_FILE_NAME_2);
         // genesis config file auto generate in BaseConfig::default_with_opt
         ensure!(
             config_path.exists(),
@@ -63,6 +67,7 @@ impl CommandAction for GenGenesisConfigCommand {
         Ok(GenGenesisConfigResult {
             net: base.net().id().clone(),
             config_path,
+            config_path2,
         })
     }
 }

@@ -23,7 +23,7 @@ use starcoin_vm2_types::view::{
 use crate::{
     cli_state::CliState, mutlisig_transaction_vm2::read_multisig_existing_signatures, StarcoinOpt,
 };
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
     language_storage::TypeTag,
@@ -54,15 +54,15 @@ pub struct GenerateMultisigTxnOpt {
     script_function: Option<FunctionIdView>,
 
     #[clap(
-    short = 't',
-    long = "type_tag",
-    name = "type-tag",
-    help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+        short = 't',
+        long = "type_tag",
+        name = "type-tag",
+        help = "can specify multi type_tag",
+        value_parser = parse_type_tag,
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance))]
+    #[clap(long = "arg", name = "transaction-arg", value_parser = parse_transaction_argument_advance)]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 
@@ -205,6 +205,9 @@ impl CommandAction for GenerateMultisigTxnCommand {
         }
 
         let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
+        if !output_dir.exists() {
+            std::fs::create_dir_all(output_dir.as_path())?;
+        }
         let _ = ctx.state().vm2()?.sign_multisig_txn_to_file_or_submit(
             raw_txn.sender(),
             account_public_key,

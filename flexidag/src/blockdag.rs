@@ -16,7 +16,7 @@ use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
-        HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
+        ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
 use crate::ghostdag::protocol::{GhostdagManager, KStore};
@@ -143,10 +143,11 @@ impl BlockDAG {
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
+        // Check ghostdag data exists
         match self.storage.ghost_dag_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!("failed to get ghostdata by hash, the block should be re-executed",);
+                warn!("failed to get ghostdata by hash, the block should be re-executed");
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -158,10 +159,11 @@ impl BlockDAG {
             }
         };
 
+        // Check header exists
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!("failed to get header by hash, the block should be re-executed",);
+                warn!("failed to get header by hash, the block should be re-executed");
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -173,6 +175,7 @@ impl BlockDAG {
             }
         };
 
+        // Check parent relations exist and are consistent
         let parents = match self
             .storage
             .relations_store
@@ -189,6 +192,7 @@ impl BlockDAG {
             }
         };
 
+        // Verify parent-child relationships are bidirectional
         if !parents.iter().all(|parent| {
             let children = match self.storage.relations_store.read().get_children(*parent) {
                 std::result::Result::Ok(children) => children,
@@ -203,6 +207,7 @@ impl BlockDAG {
                 return false;
             }
 
+            // Check reachability from parent to child
             match inquirer::is_dag_ancestor_of(&*self.storage.reachability_store.read(), *parent, block_header.id()) {
                 std::result::Result::Ok(pass) => {
                     if !pass {
@@ -220,6 +225,7 @@ impl BlockDAG {
             return anyhow::Result::Ok(false);
         }
 
+        // Check pruning point relationships if applicable
         if block_header.pruning_point() == HashValue::zero() {
             return anyhow::Result::Ok(true);
         } else {
@@ -486,7 +492,8 @@ impl BlockDAG {
         .expect("failed to insert relations in batch");
 
         // Store header store
-        process_key_already_error(self.storage.header_store.insert(
+        process_key_already_error(self.storage.header_store.insert_batch(
+            &mut batch,
             header.id(),
             Arc::new(header.clone()),
             1,

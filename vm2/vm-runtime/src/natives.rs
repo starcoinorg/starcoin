@@ -205,7 +205,7 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     use starcoin_framework::natives::event::NativeEventContext;
     use starcoin_framework::natives::transaction_context::NativeTransactionContext;
     use starcoin_table_natives::NativeTableContext;
-    use starcoin_vm_types::genesis_config::ChainId;
+    use starcoin_vm_types::on_chain_resource::ChainId;
 
     exts.add(NativeTableContext::new([0u8; 32], &*DUMMY_RESOLVER));
     exts.add(NativeCodeContext::default());

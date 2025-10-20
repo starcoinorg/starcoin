@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::string_utils::native_format_debug;
+use log::debug;
 use move_vm_runtime::native_functions::NativeFunction;
 #[allow(unused_imports)]
 use move_vm_types::{
@@ -37,8 +38,8 @@ fn native_print(
         let val = safely_pop_arg!(args, Struct);
         let bytes = val.unpack()?.next().unwrap();
 
-        println!(
-            "[debug] {}",
+        debug!(
+            "{}",
             std::str::from_utf8(&bytes.value_as::<Vec<u8>>()?).unwrap()
         );
     }
@@ -80,10 +81,7 @@ fn native_old_debug_print(
         let x = safely_pop_arg!(args, Reference);
         let val = x.read_ref().map_err(SafeNativeError::InvariantViolation)?;
 
-        println!(
-            "[debug] {}",
-            native_format_debug(context, &ty_args[0], val)?
-        );
+        debug!("{}", native_format_debug(context, &ty_args[0], val)?);
     }
     Ok(smallvec![])
 }
@@ -100,7 +98,7 @@ fn native_old_print_stacktrace(
     if cfg!(feature = "testing") {
         let mut s = String::new();
         context.print_stack_trace(&mut s)?;
-        println!("{}", s);
+        debug!("{}", s);
     }
     Ok(smallvec![])
 }

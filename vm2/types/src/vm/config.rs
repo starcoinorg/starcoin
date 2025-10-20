@@ -4,7 +4,9 @@ use move_binary_format::file_format_common::{IDENTIFIER_SIZE_MAX, LEGACY_IDENTIF
 use move_bytecode_verifier::VerifierConfig;
 use move_vm_runtime::config::VMConfig;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
-use starcoin_vm_types::on_chain_config::{FeatureFlag, Features, TimedFeatureFlag, TimedFeatures};
+use starcoin_vm2_vm_types::on_chain_config::{
+    FeatureFlag, Features, TimedFeatureFlag, TimedFeatures,
+};
 
 pub fn get_max_binary_format_version(
     features: &Features,

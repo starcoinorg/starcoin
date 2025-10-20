@@ -9,12 +9,11 @@ starcoin-logger = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
-starcoin-types = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
+starcoin-storage = { workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as SyncManagerClient;
-use crate::FutureResult;
+use crate::{types::SyncStatusView, FutureResult};
 use network_api::PeerStrategy;
 use network_p2p_types::peer_id::PeerId;
 use openrpc_derive::openrpc;
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
-use starcoin_types::sync_status::SyncStatus;
 
 #[openrpc]
 pub trait SyncManagerApi {
     #[rpc(name = "sync.status")]
-    fn status(&self) -> FutureResult<SyncStatus>;
+    fn status(&self) -> FutureResult<SyncStatusView>;
 
     #[rpc(name = "sync.cancel")]
     fn cancel(&self) -> FutureResult<()>;

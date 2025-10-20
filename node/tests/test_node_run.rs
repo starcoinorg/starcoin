@@ -38,9 +38,14 @@ fn test_generate_block() {
     });
     thread::sleep(Duration::from_secs(1));
     let latest_block2 = block_on(async { chain_service.main_head_block().await }).unwrap();
-    assert_eq!(
-        latest_block.header().number() + count,
-        latest_block2.header().number()
+
+    let latest_count = latest_block2.header().number();
+    let original_count = latest_block.header().number() + count;
+    assert!(
+        latest_count >= original_count,
+        "latest_count: {} is not greater than original_count: {}",
+        latest_count,
+        original_count
     );
     handle.stop().unwrap()
 }

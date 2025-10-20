@@ -47,6 +47,7 @@ pub mod upgrade_config;
 use thiserror::Error;
 
 use crate::account_provider_config::AccountProviderConfig;
+use crate::genesis_config::vm2::GenesisConfig as GenesisConfig2;
 use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
@@ -71,11 +72,10 @@ pub use rpc_config::{
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
-use starcoin_vm2_vm_types::genesis_config::GenesisConfig as GenesisConfig2;
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
-pub static G_CRATE_VERSION: &str = clap::crate_version!();
+pub static G_CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static G_GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
     fallback = "unknown"
@@ -187,7 +187,7 @@ pub struct StarcoinOpt {
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
+    #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
@@ -327,10 +327,9 @@ impl BaseConfig {
         let config_path2 = data_dir.join(G_GENESIS_CONFIG_FILE_NAME_2);
         // todo: handle the case with only one genesis_config missed
         let configs_in_file = if config_path.exists() && config_path2.exists() {
-            Some((
-                GenesisConfig::load(config_path.as_path())?,
-                GenesisConfig2::load(config_path2.as_path())?,
-            ))
+            let genesis_config1 = GenesisConfig::load(config_path.as_path())?;
+            let genesis_config2 = GenesisConfig2::load(config_path2.as_path())?;
+            Some((genesis_config1, genesis_config2))
         } else {
             ensure!(
                 !config_path.exists() && !config_path2.exists(),

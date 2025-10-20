@@ -4,9 +4,8 @@ use starcoin_config::TimeService;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::info;
-use starcoin_storage::Store;
+use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Block;
-use starcoin_vm2_storage::Storage as Storage2;
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,
@@ -32,7 +31,7 @@ pub struct DagBlockSender<'a> {
     queue_size: usize,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
     notifier: &'a mut dyn ContinueChainOperator,
@@ -44,7 +43,7 @@ impl<'a> DagBlockSender<'a> {
         queue_size: usize,
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
         notifier: &'a mut dyn ContinueChainOperator,

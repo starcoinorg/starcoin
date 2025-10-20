@@ -31,7 +31,6 @@ use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
 use crate::pending_transaction;
 use starcoin_types::multi_transaction::MultiAccountAddress;
 use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
-
 /// Checks readiness of transactions by comparing the nonce to state nonce.
 #[derive(Debug)]
 pub struct State<C> {
@@ -44,7 +43,7 @@ pub struct State<C> {
 impl<C> State<C> {
     /// Create new State checker, given client interface.
     pub fn new(state: C, stale_id: Option<usize>) -> Self {
-        State {
+        Self {
             nonces: Default::default(),
             state,
             // disable the feature for now.
@@ -96,7 +95,7 @@ pub struct Expiration {
 impl Expiration {
     /// Create a new expiration checker given current UTC timestamp.
     pub fn new(now: u64) -> Self {
-        Expiration { now }
+        Self { now }
     }
 }
 
@@ -120,7 +119,7 @@ pub struct Condition {
 impl Condition {
     /// Create a new condition checker given current block number and UTC timestamp.
     pub fn new(block_number: u64, now: u64) -> Self {
-        Condition { block_number, now }
+        Self { block_number, now }
     }
 }
 
@@ -150,7 +149,7 @@ pub struct OptionalState<C> {
 
 impl<C> OptionalState<C> {
     pub fn new(state: C) -> Self {
-        OptionalState {
+        Self {
             nonces: Default::default(),
             state,
         }

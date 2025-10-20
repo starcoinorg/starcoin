@@ -6,7 +6,6 @@ use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
 };
 use anyhow::{format_err, Context, Ok, Result};
-use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
 use futures::{FutureExt, StreamExt};
@@ -26,12 +25,13 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_network_rpc_api::{RangeInLocation, G_RPC_INFO};
-use starcoin_storage::{Storage, Store};
+use starcoin_storage::{Storage, Storage2, Store, Store2};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::task::JoinHandle;
 
 use super::BlockIdRangeFetcher;
 
@@ -67,7 +67,7 @@ impl ErrorMocker {
 
     pub async fn random_err(&self) -> Result<()> {
         if self.random_error_percent > 0 {
-            let rnd = rand::thread_rng().gen_range(0..100);
+            let rnd = rand::rng().random_range(0..100);
             if rnd <= self.random_error_percent {
                 return match &self.strategy {
                     ErrorStrategy::RandomErr => Err(format_err!("Random error {}", rnd)),
@@ -184,7 +184,8 @@ pub struct SyncNodeMocker {
     pub err_mocker: ErrorMocker,
     pub sync_dag_store: Arc<SyncDagStore>,
     peer_selector: PeerSelector,
-    storage2: Option<Arc<starcoin_vm2_storage::Storage>>,
+    #[allow(unused)]
+    storage2: Option<Arc<Storage2>>,
 }
 
 impl SyncNodeMocker {
@@ -223,7 +224,7 @@ impl SyncNodeMocker {
     pub fn new_with_storage(
         net: ChainNetwork,
         storage: Arc<Storage>,
-        storage2: Arc<starcoin_vm2_storage::Storage>,
+        storage2: Arc<Storage2>,
         chain_info: ChainInfo,
         miner: AccountInfo,
         delay_milliseconds: u64,
@@ -288,7 +289,7 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         peer_selector: PeerSelector,
         sync_dag_store: Arc<SyncDagStore>,
-        storage2: Option<Arc<starcoin_vm2_storage::Storage>>,
+        storage2: Option<Arc<Storage2>>,
     ) -> Self {
         Self::new_inner(
             peer_id,
@@ -308,7 +309,7 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         peer_selector: PeerSelector,
         sync_dag_store: Arc<SyncDagStore>,
-        storage2: Option<Arc<starcoin_vm2_storage::Storage>>,
+        storage2: Option<Arc<Storage2>>,
     ) -> Self {
         Self {
             peer_id: peer_id.clone(),
@@ -363,16 +364,8 @@ impl SyncNodeMocker {
         self.chain_mocker.get_storage()
     }
 
-    pub fn get_storage2(&self) -> Arc<starcoin_vm2_storage::Storage> {
-        self.storage2.clone().unwrap_or_else(|| {
-            // Fallback: create a new storage2 if not initialized
-            Arc::new(
-                starcoin_vm2_storage::Storage::new(
-                    starcoin_vm2_storage::storage::StorageInstance::new_cache_instance(),
-                )
-                .unwrap(),
-            )
-        })
+    pub fn get_storage2(&self) -> Arc<dyn Store2> {
+        self.chain_mocker.get_storage2()
     }
 
     pub fn produce_block(&mut self, times: u64) -> Result<()> {
@@ -403,7 +396,7 @@ impl SyncNodeMocker {
                 })
                 .await
         };
-        async_std::task::spawn(fut)
+        tokio::spawn(fut)
     }
 
     pub fn select_a_peer(&self) -> Result<PeerId> {

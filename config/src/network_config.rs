@@ -16,8 +16,8 @@ use network_p2p_types::{
     MultiaddrWithPeerId,
 };
 use once_cell::sync::Lazy;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_logger::prelude::*;
@@ -47,7 +47,8 @@ pub struct NetworkRpcQuotaConfiguration {
         name = "p2prpc-custom-global-api-quota",
         long,
         number_of_values = 1,
-        parse(try_from_str = parse_key_val)
+        action = clap::ArgAction::Append,
+        value_parser = parse_key_val::<String, ApiQuotaConfig>,
     )]
     /// customize global p2p rpc quota, eg: get_block=100/s
     /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
@@ -67,7 +68,7 @@ pub struct NetworkRpcQuotaConfiguration {
         name = "p2prpc-custom-user-api-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
-        parse(try_from_str = parse_key_val),
+        value_parser = parse_key_val::<String, ApiQuotaConfig>,
         number_of_values = 1
     )]
     pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
@@ -176,7 +177,7 @@ pub struct NetworkConfig {
     pub node_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    #[clap(long = "node-key-file", conflicts_with("node_key"))]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
@@ -275,7 +276,7 @@ impl NetworkConfig {
         });
         let mut seeds: Vec<MultiaddrWithPeerId> = seeds.into_iter().collect();
         // shuffle seeds, connect seeds with random orders.
-        seeds.shuffle(&mut thread_rng());
+        seeds.shuffle(&mut rng());
         seeds
     }
 

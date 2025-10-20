@@ -17,7 +17,7 @@ pub struct ApiRegistry {
 }
 
 impl ApiRegistry {
-    pub fn new(api_quotas: ApiQuotaConfiguration, metrics: Option<RpcMetrics>) -> ApiRegistry {
+    pub fn new(api_quotas: ApiQuotaConfiguration, metrics: Option<RpcMetrics>) -> Self {
         Self {
             apis: Default::default(),
             quotas: api_quotas,

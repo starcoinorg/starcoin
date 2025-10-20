@@ -104,9 +104,9 @@ impl PoolTransaction {
     /// Return transaction hash
     pub fn hash(&self) -> HashValue {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.hash(),
-            PoolTransaction::Retracted(ref tx) => tx.hash(),
-            PoolTransaction::Local(ref tx) => tx.id(),
+            PoolTransaction::Unverified(tx) => tx.hash(),
+            PoolTransaction::Retracted(tx) => tx.hash(),
+            PoolTransaction::Local(tx) => tx.id(),
         }
     }
 
@@ -121,17 +121,17 @@ impl PoolTransaction {
     /// Return transaction gas price
     pub fn gas_price(&self) -> GasPrice {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.gas_unit_price(),
-            PoolTransaction::Retracted(ref tx) => tx.gas_unit_price(),
-            PoolTransaction::Local(ref tx) => tx.gas_unit_price(),
+            PoolTransaction::Unverified(tx) => tx.gas_unit_price(),
+            PoolTransaction::Retracted(tx) => tx.gas_unit_price(),
+            PoolTransaction::Local(tx) => tx.gas_unit_price(),
         }
     }
 
     fn gas(&self) -> Gas {
         match self {
-            PoolTransaction::Unverified(ref tx) => tx.max_gas_amount(),
-            PoolTransaction::Retracted(ref tx) => tx.max_gas_amount(),
-            PoolTransaction::Local(ref tx) => tx.max_gas_amount(),
+            PoolTransaction::Unverified(tx) => tx.max_gas_amount(),
+            PoolTransaction::Retracted(tx) => tx.max_gas_amount(),
+            PoolTransaction::Local(tx) => tx.max_gas_amount(),
         }
     }
 
@@ -268,7 +268,7 @@ pub struct PendingSettings {
 impl PendingSettings {
     /// Get all transactions (no cap or len limit) prioritized.
     pub fn all_prioritized(block_number: u64, current_timestamp: u64) -> Self {
-        PendingSettings {
+        Self {
             block_number,
             current_timestamp,
             max_len: usize::MAX,

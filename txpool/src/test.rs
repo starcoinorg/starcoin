@@ -3,11 +3,12 @@
 
 use crate::pool::AccountSeqNumberClient;
 use crate::TxStatus;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
 use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{MetricsConfig, NodeConfig};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_genesis::Genesis;
@@ -15,8 +16,14 @@ use starcoin_genesis::Genesis;
 //     create_signed_txn_with_association_account, encode_transfer_script_function,
 //     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 // };
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_open_block::OpenedBlock;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
+use starcoin_storage::IntoSuper;
+use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
@@ -25,6 +32,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, TransactionPayload},
     U256,
 };
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress as VM2AccountAddress;
 use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
@@ -60,11 +68,11 @@ impl AccountSeqNumberClient for MockNonceClient {
 async fn test_txn_expire() -> Result<()> {
     let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
     let txn = generate_txn(config, 0);
-    txpool_service.add_txns(vec![txn]).pop().unwrap()?;
-    let pendings = txpool_service.get_pending_txns(None, Some(0));
+    txpool_service.add_txns(vec![txn])?.pop().unwrap()?;
+    let pendings = txpool_service.get_pending_txns(None, Some(0))?;
     assert_eq!(pendings.len(), 1);
 
-    let pendings = txpool_service.get_pending_txns(None, Some(2));
+    let pendings = txpool_service.get_pending_txns(None, Some(2))?;
     assert_eq!(pendings.len(), 0);
 
     Ok(())
@@ -84,9 +92,9 @@ async fn test_tx_pool() -> Result<()> {
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.id();
-    let mut result = txpool_service.add_txns(vec![txn]);
+    let mut result = txpool_service.add_txns(vec![txn])?;
     assert!(result.pop().unwrap().is_ok());
-    let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
+    let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0))?;
     assert_eq!(pending_txns.pop().unwrap().id(), txn_hash);
 
     let next_sequence_number =
@@ -157,7 +165,7 @@ async fn test_pool_pending() -> Result<()> {
         .collect::<Vec<_>>();
 
     let _ = txpool_service.add_txns_multi_signed(txn_vec.clone(), true, None);
-    let pending = txpool_service.get_pending_txns(Some(pool_size), None);
+    let pending = txpool_service.get_pending_txns(Some(pool_size), None)?;
     assert!(!pending.is_empty());
 
     sleep(Duration::from_millis(200)).await;
@@ -223,6 +231,30 @@ async fn test_rollback() -> Result<()> {
         let main = storage.get_startup_info()?.unwrap().main;
         let block_header = storage.get_block_header_by_hash(main)?.unwrap();
 
+        let block_info = storage
+            .get_block_info(block_header.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {}", block_header.id()))?;
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
+        let vm_state_accumulator = MerkleAccumulator::new_with_info(
+            vm_state_accumulator_info.clone(),
+            storage.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
+
+        let (state_root1, state_root2) = {
+            let num_leaves = vm_state_accumulator.num_leaves();
+            (
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 2)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 1)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
+            )
+        };
+
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
+        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
+
         let mut open_block = OpenedBlock::new(
             storage,
             storage2,
@@ -238,11 +270,15 @@ async fn test_rollback() -> Result<()> {
             block_header.version(),       // version
             block_header.pruning_point(), // pruning_point
             0,                            // red_blocks
+            (Arc::new(chain_state), Arc::new(chain_state2)),
         )?;
-        let excluded_txns = open_block.push_txns(vec![txn])?;
-        assert_eq!(excluded_txns.discarded_txns.len(), 0);
-        assert_eq!(excluded_txns.untouched_txns.len(), 0);
-
+        if open_block.block_meta().number()
+            < vm1_offline_height(block_header.chain_id().id().into())
+        {
+            let excluded_txns = open_block.process_vm1_transactions(vec![txn])?;
+            assert_eq!(excluded_txns.discarded_txns.len(), 0);
+            assert_eq!(excluded_txns.untouched_txns.len(), 0);
+        }
         let block_template = open_block.finalize()?;
         let (_, root1, _) = block_template.state_roots();
         let block =
@@ -277,7 +313,7 @@ async fn test_rollback() -> Result<()> {
     }
     pool.chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
-    let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
+    let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10))?;
     assert_eq!(txns.len(), 0);
     Ok(())
 }
@@ -314,12 +350,12 @@ async fn test_vm1_txn_early_reject() -> Result<()> {
         .map(|i| generate_txn(config.clone(), i).into())
         .collect();
     let results =
-        txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()));
+        txpool_service.add_txns_multi_signed(txns, false, Some("test_peer_1".to_string()))?;
 
     assert!(results.iter().take(100).all(|r| r.is_ok()));
     assert!(results.iter().skip(100).all(|r| r.is_err()));
 
-    let pendings = txpool_service.get_pending_txns(None, None);
+    let pendings = txpool_service.get_pending_txns(None, None)?;
 
     let vm1: Vec<_> = pendings.into_iter().filter(|txn| txn.is_v1()).collect();
 

@@ -7,35 +7,20 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2,
-    genesis_config::ChainId as ChainId2,
     transaction::{
         SignatureCheckedTransaction as SignatureCheckedTransaction2,
         SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-        TransactionError as TransactionError2, TransactionPayload as TransactionPayload2,
+        TransactionError as TransactionError2,
     },
 };
-use starcoin_vm_types::transaction::{
-    SignatureCheckedTransaction, Transaction, TransactionError, TransactionPayload,
-};
-use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
+use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::{SignatureCheckedTransaction, Transaction, TransactionError};
 use std::fmt::Display;
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub enum MultiChainId {
-    VM1(ChainId),
-    VM2(ChainId2),
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiSignedUserTransaction {
     VM1(SignedUserTransaction),
     VM2(SignedUserTransaction2),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub enum MultiTransactionPayload {
-    VM1(TransactionPayload),
-    VM2(TransactionPayload2),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -161,20 +146,6 @@ impl MultiSignedUserTransaction {
         }
     }
 
-    pub fn chain_id(&self) -> MultiChainId {
-        match self {
-            Self::VM1(sign) => MultiChainId::VM1(sign.chain_id()),
-            Self::VM2(sign) => MultiChainId::VM2(sign.chain_id()),
-        }
-    }
-
-    pub fn payload(&self) -> MultiTransactionPayload {
-        match self {
-            Self::VM1(sign) => MultiTransactionPayload::VM1(sign.payload().clone()),
-            Self::VM2(sign) => MultiTransactionPayload::VM2(sign.payload().clone()),
-        }
-    }
-
     pub fn raw_txn_bytes_len(&self) -> usize {
         match self {
             Self::VM1(sign) => sign.raw_txn_bytes_len(),
@@ -224,9 +195,21 @@ impl From<MultiSignedUserTransaction> for Transaction {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub struct APIInterruptedError(pub String);
+
+impl std::fmt::Display for APIInterruptedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "API interrupted: {}", self.0)
+    }
+}
+
+impl std::error::Error for APIInterruptedError {}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MultiTransactionError {
     VM1(TransactionError),
     VM2(TransactionError2),
+    APIInterrupted(APIInterruptedError),
 }
 
 impl Display for MultiTransactionError {
@@ -234,6 +217,7 @@ impl Display for MultiTransactionError {
         match self {
             MultiTransactionError::VM1(e) => write!(f, "VM1 error: {}", e),
             MultiTransactionError::VM2(e) => write!(f, "VM2 error: {}", e),
+            MultiTransactionError::APIInterrupted(msg) => write!(f, "API interrupted: {}", msg),
         }
     }
 }
@@ -255,6 +239,7 @@ impl std::error::Error for MultiTransactionError {
         match self {
             Self::VM1(e) => Some(e),
             Self::VM2(e) => Some(e),
+            Self::APIInterrupted(msg) => Some(msg),
         }
     }
 }

@@ -2,7 +2,6 @@
 actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 backtrace = { workspace = true }
 chrono = { workspace = true }
@@ -48,7 +47,6 @@ thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 num_cpus = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-state-service = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
 starcoin-vm2-rpc-server = { workspace = true }

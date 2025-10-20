@@ -1,5 +1,5 @@
-use crate::block::BlockNumber;
 use crate::contract_event::ContractEvent;
+use crate::BlockNumber;
 use starcoin_crypto::HashValue;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]

@@ -18,12 +18,7 @@ pub struct UpgradeModuleExeOpt {
     #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[clap(
-        short = 'm',
-        name = "mv-or-package-file",
-        long = "mv-or-package-file",
-        parse(from_os_str)
-    )]
+    #[clap(short = 'm', name = "mv-or-package-file", long = "mv-or-package-file")]
     /// path for module or package file.
     mv_or_package_file: PathBuf,
 }

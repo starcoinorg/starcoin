@@ -7,14 +7,12 @@ mod tests;
 
 pub mod raw_block_header;
 
-use crate::account_address::AccountAddress;
-use crate::block_metadata::BlockMetadata;
-use crate::genesis_config::ChainId;
-use crate::language_storage::CORE_CODE_ADDRESS;
-use crate::multi_state::MultiState;
-use crate::multi_transaction::MultiSignedUserTransaction;
-use crate::transaction::SignedUserTransaction;
-use crate::U256;
+use crate::{
+    account_address::AccountAddress, block_metadata::BlockMetadata, genesis_config::ChainId,
+    genesis_config::ConsensusStrategy, language_storage::CORE_CODE_ADDRESS,
+    multi_state::MultiState, multi_transaction::MultiSignedUserTransaction,
+    transaction::SignedUserTransaction, U256,
+};
 use bcs_ext::Sample;
 pub use legacy::{Block as LegacyBlock, BlockBody as LegacyBlockBody};
 pub use raw_block_header::RawBlockHeader;
@@ -27,7 +25,6 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddressV2,
     transaction::SignedUserTransaction as SignedUserTransactionV2,
@@ -43,7 +40,7 @@ pub type BlockNumber = u64;
 
 pub type ParentsHash = Vec<HashValue>;
 
-pub type Version = u32;
+pub type Version = u8;
 
 /// Type for block header extra
 #[derive(Clone, Default, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, JsonSchema)]
@@ -197,44 +194,8 @@ impl BlockHeader {
         chain_id: ChainId,
         nonce: u32,
         extra: BlockHeaderExtra,
-    ) -> BlockHeader {
-        // Default DAG fields for backward compatibility with tests
-        Self::new_with_dag(
-            parent_hash,
-            timestamp,
-            number,
-            author,
-            txn_accumulator_root,
-            block_accumulator_root,
-            state_root,
-            gas_used,
-            difficulty,
-            body_hash,
-            chain_id,
-            nonce,
-            extra,
-            vec![parent_hash], // Default to single parent for tests
-            0,                 // Default version
-            HashValue::zero(), // Default pruning point
-        )
-    }
-
-    pub fn new_with_dag(
-        parent_hash: HashValue,
-        timestamp: u64,
-        number: BlockNumber,
-        author: AccountAddress,
-        txn_accumulator_root: HashValue,
-        block_accumulator_root: HashValue,
-        state_root: HashValue,
-        gas_used: u64,
-        difficulty: U256,
-        body_hash: HashValue,
-        chain_id: ChainId,
-        nonce: u32,
-        extra: BlockHeaderExtra,
         parents_hash: Vec<HashValue>,
-        version: u32,
+        version: u8,
         pruning_point: HashValue,
     ) -> BlockHeader {
         let mut header = BlockHeader {
@@ -373,6 +334,9 @@ impl BlockHeader {
             chain_id,
             0,
             BlockHeaderExtra::default(),
+            vec![parent_hash], // Genesis has single parent
+            0,                 // Genesis version
+            HashValue::zero(), // Genesis pruning point
         )
     }
 
@@ -391,6 +355,9 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
+            vec![HashValue::random()], // Random parent
+            rand::random(),            // Random version
+            HashValue::random(),       // Random pruning point
         )
     }
 
@@ -495,6 +462,9 @@ impl Default for BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
+            vec![],            // Default empty parents
+            0,                 // Default version
+            HashValue::zero(), // Default pruning point
         )
     }
 }
@@ -515,6 +485,9 @@ impl Sample for BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
+            vec![HashValue::zero()], // Sample parent
+            0,                       // Sample version
+            HashValue::zero(),       // Sample pruning point
         )
     }
 }
@@ -1027,7 +1000,7 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
-        version: u32,                 // DAG: block version
+        version: u8,                  // DAG: block version
         pruning_point: HashValue,     // DAG: pruning point
         parents_hash: Vec<HashValue>, // DAG: parent hashes
     ) -> Self {
@@ -1070,7 +1043,7 @@ impl BlockTemplate {
     }
 
     pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
-        let header = BlockHeader::new_with_dag(
+        let header = BlockHeader::new(
             self.parent_hash,
             self.timestamp,
             self.number,
@@ -1143,6 +1116,9 @@ impl BlockTemplate {
             self.chain_id,
             nonce,
             extra,
+            self.parents_hash,
+            self.version,
+            self.pruning_point,
         )
     }
 

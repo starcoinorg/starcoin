@@ -200,7 +200,7 @@ async fn lots_of_incoming_peers_works() {
             ..config::NetworkConfiguration::new_local()
         });
 
-        background_tasks_to_wait.push(async_std::task::spawn(async move {
+        background_tasks_to_wait.push(tokio::spawn(async move {
             // Create a dummy timer that will "never" fire, and that will be overwritten when we
             // actually need the timer. Using an Option would be technically cleaner, but it would
             // make the code below way more complicated.

@@ -79,6 +79,7 @@ where
         false
     }
 }
+
 impl<A, B> ChainStateWriter for SelectableStateView<A, B>
 where
     A: ChainStateWriter,

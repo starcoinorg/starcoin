@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::Account;
+use rand::Rng;
 use starcoin_config::ChainNetwork;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
@@ -65,11 +66,12 @@ pub fn gen_random_txn(
     let mut accounts = accounts;
     let mut txns = Vec::new();
     let len = accounts.len();
+    let mut rng = rand::rng();
     for i in 0..len {
         let account1 = accounts.get(i).expect("account1 is none.").account.clone();
         for _j in 0..txn_count_per_account {
             loop {
-                let index = rand::random::<usize>() % len;
+                let index = rng.random_range(0..len);
                 if index != i {
                     let txn = peer_to_peer_txn(
                         &account1,

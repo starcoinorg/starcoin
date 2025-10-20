@@ -1,7 +1,6 @@
 use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSealRequest};
-use crate::{JobClient, SealEvent};
+use crate::{ConsensusStrategy, JobClient, SealEvent};
 use anyhow::Result;
-use async_std::sync::Arc;
 use async_trait::async_trait;
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::future;
@@ -12,7 +11,7 @@ use starcoin_stratum::rpc::LoginRequest;
 use starcoin_stratum::target_hex_to_difficulty;
 use starcoin_time_service::TimeService;
 use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct StratumJobClient {
@@ -51,8 +50,8 @@ impl JobClient for StratumJobClient {
                         let blob = hex::decode(&job.blob);
                         let diff = target_hex_to_difficulty(&job.target);
                         let extra = job.get_extra();
-                        let event = if let (Ok(blob), Ok(diff), Ok(extra)) = (blob, diff, extra) {
-                            Some(MintBlockEvent {
+                        let event = match (blob, diff, extra) {
+                            (Ok(blob), Ok(diff), Ok(extra)) => Some(MintBlockEvent {
                                 parent_hash: Default::default(),
                                 strategy: ConsensusStrategy::CryptoNight,
                                 minting_blob: blob,
@@ -63,9 +62,8 @@ impl JobClient for StratumJobClient {
                                     job_id: job.job_id,
                                     extra,
                                 }),
-                            })
-                        } else {
-                            None
+                            }),
+                            _ => None,
                         };
                         future::ready(event)
                     })

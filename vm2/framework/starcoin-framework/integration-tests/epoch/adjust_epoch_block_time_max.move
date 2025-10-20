@@ -17,13 +17,13 @@ script {
         let max_block_time_target = consensus_config::max_block_time_target(&config);
         let pre_block_time_target = epoch::block_time_target();
 
-        while (epoch::number() < 5) {
+        while (epoch::number() < 3) {
             let uncles = 1;
             if (block_number == epoch::end_block_number()) {
                 uncles = 0;
                 //Debug::print(&Epoch::block_time_target());
             };
-            let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0);
+            let _reward = epoch::adjust_epoch(&genesis_account, block_number, block_time_milliseonds, uncles, 0, 0);
 
             let block_time_target = epoch::block_time_target();
             //Debug::print(&block_time_target);

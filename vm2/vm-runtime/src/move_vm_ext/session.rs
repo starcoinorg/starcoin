@@ -1,3 +1,8 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+#![allow(unexpected_cfgs)]
+
 use crate::data_cache::get_resource_group_member_from_metadata;
 use crate::move_vm_ext::write_op_converter::WriteOpConverter;
 use crate::move_vm_ext::{resource_state_key, StarcoinMoveResolver};

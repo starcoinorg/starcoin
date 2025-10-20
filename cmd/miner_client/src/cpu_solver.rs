@@ -1,4 +1,4 @@
-use crate::SealEvent;
+use crate::{ConsensusStrategy, SealEvent};
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
 use futures_channel::mpsc;
@@ -11,7 +11,6 @@ use starcoin_miner_client_api::Solver;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
 use std::ops::Range;
 use std::sync::Arc;
 use std::thread;
@@ -32,9 +31,9 @@ impl CpuSolver {
     }
 
     fn nonce_generator(nonce_range: &Range<u32>) -> u32 {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let Range { start, end } = nonce_range;
-        rng.gen_range(*start..*end)
+        rng.random_range(*start..*end)
     }
 
     fn partition_nonce(id: u32, total: u32) -> Range<u32> {
@@ -105,7 +104,7 @@ impl Solver for CpuSolver {
                                     if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, &extra) {
                                         let pow_hash_u256: U256 = pow_hash.into();
                                         hash_counter += 1;
-                                        if let Ok(target) = difficult_to_target(diff) {
+                                        match difficult_to_target(diff) { Ok(target) => {
                                             if pow_hash_u256 <= target {
                                                 let elapsed_sec: f64 = start.elapsed().as_nanos() as f64 / 1_000_000_000.0;
                                                 let hash_rate = hash_counter as f64 / elapsed_sec;
@@ -120,11 +119,10 @@ impl Solver for CpuSolver {
                                                 };
                                                 break;
                                             }
-
-                                        } else {
+                                        } _ => {
                                             error!("[miner-client-solver] Failed to calculate target: {diff}");
                                             break;
-                                        }
+                                        }}
                                     }
                                 }
                             }

@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{Storage, Store};
+use starcoin_storage::{Storage, Storage2, Store};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -22,7 +22,6 @@ use starcoin_types::{
     block_metadata::BlockMetadataLegacy as BlockMetadata,
     U256,
 };
-use starcoin_vm2_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -40,7 +39,7 @@ pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
         BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let genesis = Genesis::load_or_build(&net).unwrap();
-    let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance()).unwrap());
+    let storage2 = Arc::new(Storage2(storage.clone()));
     let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
     genesis
         .execute_genesis_block(&net, storage, storage2, dag)
@@ -90,6 +89,9 @@ fn gen_header(
         parent_header.chain_id(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![parent_header.id()],
+        0,
+        HashValue::zero(),
     )
 }
 
@@ -104,18 +106,19 @@ fn txn_transfer(
     let mut temp_index: Option<Index> = None;
     let expired = universe.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
-        .map(|(index, gen)| {
+        .map(|(index, r#gen)| {
             if temp_index.is_none() {
                 temp_index = Some(index);
             }
             Transaction::UserTransaction(
-                gen.materialize(
-                    temp_index.unwrap(),
-                    universe,
-                    expired,
-                    Some(gen_script_payload()),
-                )
-                .into_inner(),
+                r#gen
+                    .materialize(
+                        temp_index.unwrap(),
+                        universe,
+                        expired,
+                        Some(gen_script_payload()),
+                    )
+                    .into_inner(),
             )
         })
         .collect::<Vec<_>>()

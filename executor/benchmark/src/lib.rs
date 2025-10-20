@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use rand::{rngs::StdRng, SeedableRng};
+use rand_0_8::{rngs::StdRng, seq::index, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::{
@@ -22,9 +22,9 @@ use starcoin_types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadataLegacy as BlockMetadata,
+    stdlib::StdlibVersion,
     transaction::{Transaction, TransactionPayload},
 };
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::ScriptFunction;
@@ -171,7 +171,7 @@ impl TransactionGenerator {
             transactions.push(Transaction::BlockMetadata(block_meta));
 
             for j in 0..block_size {
-                let indices = rand::seq::index::sample(&mut self.rng, self.accounts.len(), 1);
+                let indices = index::sample(&mut self.rng, self.accounts.len(), 1);
                 //                let sender_idx = indices.index(0);
                 let receiver_idx = indices.index(0);
 

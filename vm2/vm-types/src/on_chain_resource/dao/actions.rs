@@ -6,27 +6,12 @@ use crate::on_chain_config::OnChainConfig;
 use crate::on_chain_resource::dao::ProposalAction;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::TypeTag;
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::HashValue;
 
 /// A Rust representation of a UpgradeModule resource.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpgradeModule {
-    pub module_address: AccountAddress,
-    pub package_hash: HashValue,
-    pub version: u64,
-}
-
-impl MoveStructType for UpgradeModule {
-    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModule");
-}
-
-impl MoveResource for UpgradeModule {}
-
-impl ProposalAction for UpgradeModule {}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpgradeModuleV2 {
     pub module_address: AccountAddress,
@@ -36,13 +21,19 @@ pub struct UpgradeModuleV2 {
 }
 
 impl MoveStructType for UpgradeModuleV2 {
-    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao_upgrade_module_proposal");
     const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModuleV2");
 }
 
 impl MoveResource for UpgradeModuleV2 {}
 
 impl ProposalAction for UpgradeModuleV2 {}
+
+impl UpgradeModuleV2 {
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(UpgradeModuleV2::struct_tag()))
+    }
+}
 
 /// A Rust representation of a DaoConfigUpdate action.
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,7 +49,7 @@ pub struct DaoConfigUpdate {
 }
 
 impl MoveStructType for DaoConfigUpdate {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ModifyDaoConfigProposal");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao_modify_config_proposal");
     const STRUCT_NAME: &'static IdentStr = ident_str!("DaoConfigUpdate");
 }
 
@@ -91,6 +82,15 @@ where
 {
     const MODULE_NAME: &'static IdentStr = ident_str!("on_chain_config_dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
+}
+
+impl<C> OnChainConfigUpdate<C>
+where
+    C: OnChainConfig,
+{
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(OnChainConfigUpdate::<C>::struct_tag()))
+    }
 }
 
 //TODO fixme

@@ -7,6 +7,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{
@@ -22,6 +23,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
+use starcoin_storage::Storage2;
 use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
@@ -33,7 +35,6 @@ use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
@@ -199,6 +200,18 @@ where
                 .get_block_info_by_number(number)
                 .await?
                 .map(Into::into);
+            Ok(result)
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service.get_block_info_by_hash(&id).await?.map(Into::into);
             Ok(result)
         }
         .map_err(map_err);
@@ -763,6 +776,12 @@ where
             Ok(multi_state.map(Into::into))
         }
         .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
+        let service = self.service.clone();
+        let fut = async move { service.get_ghostdagdata(ids).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
 }

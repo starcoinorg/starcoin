@@ -21,9 +21,9 @@ use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
-use std::collections::HashMap;
 
 use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 pub struct VerifiedBlock {
     pub block: Block,
@@ -71,6 +71,7 @@ pub trait ChainReader {
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> Result<bool>;
     fn epoch(&self) -> &Epoch;
+    fn consensus_strategy(&self) -> ConsensusStrategy;
     /// Get block id vec by BlockNumber, `start_number`'s block id is include.
     fn get_block_ids(
         &self,
@@ -84,7 +85,6 @@ pub trait ChainReader {
     fn fork(&self, block_id: HashValue) -> Result<Self>
     where
         Self: Sized;
-    fn epoch_uncles(&self) -> &HashMap<HashValue, MintedUncleNumber>;
     /// Find two chain's ancestor
     fn find_ancestor(&self, another: &dyn ChainReader) -> Result<Option<BlockIdAndNumber>>;
     /// Verify block header and body, base current chain, but do not verify it execute state.

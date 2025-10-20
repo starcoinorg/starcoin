@@ -432,6 +432,9 @@ fn block_from_metadata(block_meta: BlockMetadata, chain_state: &ChainStateDB) ->
         chain_state.get_chain_id()?,
         0,
         BlockHeaderExtra::new([0u8; 4]),
+        vec![parent_hash],
+        0,
+        HashValue::zero(),
     );
     Ok(Block::new(block_header, block_body))
 }

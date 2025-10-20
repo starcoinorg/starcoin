@@ -15,12 +15,11 @@ use crate::{
         genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
         G_STC_TOKEN_CODE,
     },
-    genesis_config::ChainId,
     move_resource::MoveResource,
     on_chain_config::{GlobalTimeOnChain, OnChainConfig},
     on_chain_resource::{
         dao::{Proposal, ProposalAction},
-        BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
+        BlockMetadata, ChainId, Epoch, EpochData, EpochInfo, Treasury,
     },
     sips::SIP,
 };

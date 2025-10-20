@@ -72,7 +72,7 @@ pub fn compute_args(method: &syn::TraitItemMethod) -> Punctuated<syn::FnArg, syn
         };
         let segments = match &**ty {
             syn::Type::Path(syn::TypePath {
-                path: syn::Path { ref segments, .. },
+                path: syn::Path { segments, .. },
                 ..
             }) => segments,
             _ => continue,

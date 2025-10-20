@@ -50,6 +50,13 @@ impl SyncStatus {
         }
     }
 
+    pub fn new_with_state(chain_status: ChainStatus, state: SyncState) -> Self {
+        Self {
+            chain_status,
+            state,
+        }
+    }
+
     pub fn sync_begin(&mut self, target: BlockIdAndNumber, total_difficulty: U256) {
         self.state = SyncState::Synchronizing {
             target,

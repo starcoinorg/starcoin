@@ -4,7 +4,7 @@
 use crate::view::{str_view::StrView, table_item_view::TableItemView};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::{
+use starcoin_vm2_vm_types::{
     access_path::AccessPath,
     state_store::state_key::{inner::StateKeyInner, StateKey},
 };

@@ -41,7 +41,7 @@ use starcoin_storage::storage::DEFAULT_UPGRADE_BATCH_SIZE;
 use starcoin_storage::{
     block_info::BlockInfoStore, cache_storage::CacheStorage, db_storage::DBStorage,
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
-    Storage,
+    Storage, Storage2,
 };
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
@@ -56,10 +56,6 @@ use starcoin_vm2_account_service::{
     AccountStorage as AccountStorage2,
 };
 use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
-use starcoin_vm2_storage::{
-    cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
-    storage::StorageInstance as StorageInstance2, Storage as Storage2,
-};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
@@ -283,29 +279,14 @@ impl NodeService {
             )?,
         );
 
-        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig::new(
-            config.storage.rocksdb_config().max_open_files,
-            config.storage.rocksdb_config().max_total_wal_size,
-            config.storage.rocksdb_config().bytes_per_sync,
-            config.storage.rocksdb_config().wal_bytes_per_sync,
-        );
-        let storage_instance2 = StorageInstance2::new_cache_and_db_instance(
-            CacheStorage2::new_with_capacity(config.storage.cache_size(), None),
-            DBStorage2::new(config.storage.dir(), config2.clone(), None)?,
-        );
-
         let start_time = SystemTime::now();
         storage_instance.check_upgrade(DEFAULT_UPGRADE_BATCH_SIZE)?;
 
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
-        let storage2 = Arc::new(Storage2::new(storage_instance2)?);
+        let storage2 = Arc::new(Storage2(storage.clone()));
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
-        // Also share storage2 as Arc<dyn Store2> for PruningPointService
-        registry
-            .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
-            .await?;
 
         // Initialize DAG
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -329,7 +310,6 @@ impl NodeService {
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
             storage.clone(),
-            storage2.clone(),
             dag.clone(),
             config.data_dir(),
         )?;
@@ -359,7 +339,10 @@ impl NodeService {
             .put_shared::<AccountStorage>(account_storage.clone())
             .await?;
 
-        let account_storage2 = AccountStorage2::create_from_path(vault_config.dir2(), config2)?;
+        let account_storage2 = AccountStorage2::create_from_path(
+            vault_config.dir2(),
+            config.storage.rocksdb_config(),
+        )?;
         registry
             .put_shared::<AccountStorage2>(account_storage2.clone())
             .await?;

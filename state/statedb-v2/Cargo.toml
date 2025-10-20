@@ -1,0 +1,25 @@
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+lru = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-logger = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-types = { path = "../../vm2/types" }
+starcoin-vm-types = { path = "../../vm2/vm-types" }
+thiserror = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-statedb"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

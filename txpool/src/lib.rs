@@ -15,12 +15,12 @@ pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
 use starcoin_vm2_state_api::AccountStateReader;
-use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -85,7 +85,7 @@ impl TxPoolActorService {
         let current_timestamp = reader.get_timestamp()?.seconds();
         Ok(self
             .inner
-            .get_pending(max_len, current_timestamp)
+            .get_pending(max_len, current_timestamp)?
             .into_iter()
             .map(|t| t.signed().clone())
             .collect())
@@ -93,7 +93,7 @@ impl TxPoolActorService {
 }
 
 impl ServiceFactory<Self> for TxPoolActorService {
-    fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;

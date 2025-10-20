@@ -25,7 +25,6 @@ pub struct ImportOpt {
     #[clap(
         short = 'f',
         help = "file path of private key",
-        parse(from_os_str),
         conflicts_with("input")
     )]
     from_file: Option<PathBuf>,

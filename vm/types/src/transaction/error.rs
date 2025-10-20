@@ -66,6 +66,8 @@ pub enum Error {
     /// Transaction too big
     TooBig,
     CallErr(CallError),
+    /// API error, some technical error
+    APIInterrupted(String),
 }
 
 impl fmt::Display for Error {
@@ -92,17 +94,17 @@ impl fmt::Display for Error {
             GasLimitExceeded { limit, got } => {
                 format!("Gas limit exceeded. Limit={}, Given={}", limit, got)
             }
-            //            InvalidGasLimit(ref err) => format!("Invalid gas limit. {}", err),
             SenderBanned => "Sender is temporarily banned.".into(),
             RecipientBanned => "Recipient is temporarily banned.".into(),
             CodeBanned => "Contract code is temporarily banned.".into(),
             InvalidChainId => "Transaction of this chain ID is not allowed on this chain.".into(),
-            InvalidSignature(ref err) => format!("Transaction has invalid signature: {}.", err),
+            InvalidSignature(err) => format!("Transaction has invalid signature: {}.", err),
             NotAllowed => {
                 "Sender does not have permissions to execute this type of transaction".into()
             }
             TooBig => "Transaction too big".into(),
             CallErr(call_err) => format!("Call txn err: {}.", call_err),
+            APIInterrupted(msg) => format!("API interupted for the reason: {}.", msg),
         };
 
         f.write_fmt(format_args!("Transaction error ({})", msg))

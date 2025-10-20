@@ -21,13 +21,14 @@ use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::Store;
+use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_vm2_storage::Storage as Storage2;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
@@ -212,7 +213,7 @@ pub struct BlockCollector<N, H> {
     peer_provider: N,
     skip_pow_verify: bool,
     local_store: Arc<dyn Store>,
-    storage2: Arc<Storage2>,
+    storage2: Arc<dyn Store2>,
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
@@ -266,7 +267,7 @@ where
         peer_provider: N,
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
-        storage2: Arc<Storage2>,
+        storage2: Arc<dyn Store2>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
@@ -342,9 +343,7 @@ where
                         e,
                         block_info.block_id()
                     );
-                    async_std::task::block_on(async_std::task::sleep(Duration::from_millis(
-                        time_to_wait,
-                    )));
+                    std::thread::sleep(Duration::from_millis(time_to_wait));
                     time_to_wait = time_to_wait.saturating_mul(2);
                 }
             }
@@ -498,7 +497,9 @@ where
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
-        async_std::task::block_on(fut)
+
+        let handle = tokio::runtime::Handle::current();
+        task::block_in_place(|| handle.block_on(fut))
     }
 
     pub fn read_local_absent_block(

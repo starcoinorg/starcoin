@@ -3,16 +3,15 @@
 
 mod vm2;
 
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::Store;
+use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Version;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
@@ -29,18 +28,18 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm2_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
+
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
     gas_limit: u64,
 
-    state: (ChainStateDB, ChainStateDB2),
+    state: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
     txn_accumulator: MerkleAccumulator,
     vm_state_accumulator: MerkleAccumulator,
 
@@ -52,19 +51,17 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    vm2_initialized: bool,
     // DAG fields
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
-    red_blocks: u64,
 }
 
 impl OpenedBlock {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         storage: Arc<dyn Store>,
-        storage2: Arc<dyn Store2>,
+        _storage2: Arc<dyn Store2>,
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
@@ -77,6 +74,7 @@ impl OpenedBlock {
         version: Version,
         pruning_point: HashValue,
         red_blocks: u64,
+        chain_state_dbs: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -92,24 +90,6 @@ impl OpenedBlock {
             vm_state_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::VMState),
         );
-        let (state_root1, state_root2) = {
-            let num_leaves = vm_state_accumulator.num_leaves();
-            ensure!(
-                num_leaves > 1,
-                "vm_state_accumulator num_leaves should have 2 leaves at least",
-            );
-            (
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 2)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
-                vm_state_accumulator
-                    .get_leaf(num_leaves - 1)?
-                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
-            )
-        };
-
-        let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
-        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
@@ -124,12 +104,11 @@ impl OpenedBlock {
             red_blocks,
         );
 
-        let vm1_offline = block_meta.number() >= vm1_offline_height(chain_id.id().into());
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-            state: (chain_state, chain_state2),
+            state: chain_state_dbs,
             txn_accumulator,
             vm_state_accumulator,
             gas_used: 0,
@@ -140,20 +119,13 @@ impl OpenedBlock {
             difficulty,
             strategy,
             vm_metrics,
-            vm2_initialized: false,
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
-            red_blocks,
         };
 
-        // Donot execute vm2 blockmeta txn util we need to execute vm2 user txns,
-        // For executor, we will execute vm1 txns first, and then vm2 txns.
-        if !vm1_offline {
-            opened_block.initialize()?;
-        } else {
-            opened_block.initialize_v2(tips_hash, red_blocks)?;
-        }
+        opened_block.initialize()?;
+
         Ok(opened_block)
     }
 
@@ -180,19 +152,19 @@ impl OpenedBlock {
     }
 
     /// Convert VM2 BlockMetadata to VM1 format with uncles set to 0
-    fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
+    pub fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
         block_metadata::from(self.block_meta.clone())
     }
     pub fn block_number(&self) -> u64 {
         self.block_meta.number()
     }
 
-    pub fn state_reader(&self) -> &impl ChainStateReader {
-        &self.state.0
+    pub fn state_reader(&self) -> Arc<impl ChainStateReader> {
+        self.state.0.clone()
     }
 
-    pub fn state_reader2(&self) -> &impl ChainStateReader2 {
-        &self.state.1
+    pub fn state_reader2(&self) -> Arc<impl ChainStateReader2> {
+        self.state.1.clone()
     }
 
     pub fn chain_id(&self) -> ChainId {
@@ -205,22 +177,6 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
-        // All vm1 txns should be executed before vm2 block_meta txn
-        // shortcut for quick return
-        if self.vm2_initialized {
-            if !user_txns.is_empty() {
-                warn!("vm2 is initialized, all following vm1 user txns are discarded!");
-            }
-            let discarded_txns = user_txns
-                .into_iter()
-                .map(|txn| txn.into())
-                .collect::<Vec<_>>();
-            return Ok(ExcludedTxns {
-                discarded_txns,
-                untouched_txns: vec![],
-            });
-        }
-
         let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns
@@ -256,7 +212,8 @@ impl OpenedBlock {
                     .collect()
             };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let last_index = txn_outputs.len().saturating_sub(1);
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus::Discard(status) => {
@@ -268,7 +225,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state(txn_hash, output)?;
+                    self.push_txn_and_state(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns
                         .push(txn.try_into().expect("user txn"));
@@ -287,7 +244,7 @@ impl OpenedBlock {
     }
 
     /// Run blockmeta first
-    fn initialize(&mut self) -> Result<()> {
+    fn execute_block_meta_vm1(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
         let vm1_metadata = self.convert_block_meta_to_legacy();
         debug!("VM1 BlockMetadata: {:?}", vm1_metadata);
@@ -308,7 +265,7 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus::Keep(_) => {
-                let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;
+                let _ = self.push_txn_and_state(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
                 bail!(
@@ -320,11 +277,23 @@ impl OpenedBlock {
         Ok(())
     }
 
+    pub fn process_vm1_transactions(
+        &mut self,
+        txns: Vec<SignedUserTransaction>,
+    ) -> Result<ExcludedTxns> {
+        self.execute_block_meta_vm1()?;
+        match self.push_txns(txns) {
+            Ok(excluded_txns) => Ok(excluded_txns),
+            Err(e) => bail!("[BlockProcess] push txns error: {}", e),
+        }
+    }
+
     fn push_txn_and_state(
         &mut self,
         txn_hash: HashValue,
         output: TransactionOutput,
-    ) -> Result<(HashValue, HashValue)> {
+        root_state_calc: bool,
+    ) -> Result<(Option<HashValue>, HashValue)> {
         let (state, _state2) = &mut self.state;
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
@@ -337,10 +306,15 @@ impl OpenedBlock {
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        let txn_state_root = state
-            .commit()
-            .map_err(BlockExecutorError::BlockChainStateErr)?;
-
+        let txn_state_root = if root_state_calc {
+            Some(
+                state
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?,
+            )
+        } else {
+            None
+        };
         let txn_info = TransactionInfo::new(
             txn_hash,
             txn_state_root,
@@ -353,12 +327,7 @@ impl OpenedBlock {
     }
 
     /// Construct a block template for mining.
-    pub fn finalize(mut self) -> Result<BlockTemplate> {
-        // if vm2 is not initialized, we need to execute vm2 block_meta txn first
-        if !self.vm2_initialized {
-            self.initialize_v2(self.parents_hash.clone(), self.red_blocks)?;
-        }
-        debug_assert!(self.vm2_initialized);
+    pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
         let (state_root, state_root1, state_root2) = {

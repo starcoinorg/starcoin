@@ -12,10 +12,10 @@ use anyhow::{bail, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
-use starcoin_vm2_transaction_builder::build_module_upgrade_proposal;
+use starcoin_transaction_builder::vm2::build_module_upgrade_proposal;
+use starcoin_types::stdlib::StdlibVersion;
 use starcoin_vm2_vm_types::{
-    genesis_config::StdlibVersion, on_chain_config::Version, state_view::StateReaderExt,
-    token::token_code::TokenCode, transaction::TransactionPayload,
+    on_chain_config::Version, state_view::StateReaderExt, token::token_code::TokenCode,
 };
 use std::path::PathBuf;
 
@@ -30,12 +30,7 @@ pub struct UpgradeModuleProposalOpt {
     /// enforced upgrade regardless of compatible or not
     enforced: bool,
 
-    #[clap(
-        short = 'm',
-        name = "mv-or-package-file",
-        long = "mv-or-package-file",
-        parse(from_os_str)
-    )]
+    #[clap(short = 'm', name = "mv-or-package-file", long = "mv-or-package-file")]
     /// path for module or package file.
     mv_or_package_file: PathBuf,
 
@@ -99,12 +94,10 @@ impl CommandAction for UpgradeModuleProposalCommand {
             min_action_delay,
             opt.enforced,
             opt.dao_token.clone(),
-            true,
-        );
+        )?;
         eprintln!("package_hash {:?}", package_hash);
-        ctx.state().vm2()?.build_and_execute_transaction(
-            opt.transaction_opts.clone(),
-            TransactionPayload::EntryFunction(module_upgrade_proposal),
-        )
+        ctx.state()
+            .vm2()?
+            .build_and_execute_transaction(opt.transaction_opts.clone(), module_upgrade_proposal)
     }
 }

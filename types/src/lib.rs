@@ -155,12 +155,12 @@ pub mod language_storage {
         type Err = anyhow::Error;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            if let Ok(tag) = TypeTag2::from_str(s) {
-                Ok(StcTypeTag::V2(tag))
-            } else if let Ok(tag) = TypeTag::from_str(s) {
-                Ok(StcTypeTag::V1(tag))
-            } else {
-                Err(anyhow::anyhow!("Invalid TypeTag string: {}", s))
+            match TypeTag2::from_str(s) {
+                Ok(tag) => Ok(StcTypeTag::V2(tag)),
+                _ => match TypeTag::from_str(s) {
+                    Ok(tag) => Ok(StcTypeTag::V1(tag)),
+                    _ => Err(anyhow::anyhow!("Invalid TypeTag string: {}", s)),
+                },
             }
         }
     }
@@ -202,6 +202,7 @@ pub mod genesis_config {
     pub use starcoin_vm_types::genesis_config::*;
 }
 
+pub mod stdlib;
 pub mod stress_test;
 pub mod sync_status;
 pub mod table;

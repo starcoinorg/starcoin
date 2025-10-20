@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 bcs-ext = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
@@ -41,7 +40,6 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 stest = { workspace = true }
 stream-task = { workspace = true }
 sysinfo = { workspace = true }
@@ -53,6 +51,9 @@ serde = { workspace = true }
 byteorder = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 crossbeam = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

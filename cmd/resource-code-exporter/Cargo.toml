@@ -13,7 +13,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 clap = { workspace = true }
-tempfile = "3.19.1"
+tempfile = { workspace = true }
 
 starcoin-crypto = { workspace = true }
 starcoin-statedb = { workspace = true }
@@ -28,10 +28,9 @@ starcoin-config = { workspace = true }
 test-helper = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-chain = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
 starcoin-state-tree = { workspace = true }
-flate2 = "1.0"
+flate2 = { workspace = true }
 tar = "0.4"

@@ -7,7 +7,7 @@ use crate::{
 use anyhow::{ensure, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm2_transaction_builder::empty_txn_payload;
+use starcoin_transaction_builder::vm2::empty_txn_payload;
 
 /// Trigger a new block in dev.
 #[derive(Debug, Parser)]

@@ -9,7 +9,7 @@ STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 # cargo fmt check
 cargo fmt -- --check
 # cargo clippy check
-cargo clippy --all-targets  --  -Aclippy::doc_lazy_continuation -D warnings
+cargo clippy --all-targets  --  -D warnings
 # generate stdlib
 cargo run -p stdlib
 # generate genesis
@@ -19,7 +19,6 @@ cargo run -p starcoin-rpc-api -- -d ./rpc/api/generated_rpc_schema
 # generate rpc2 schema document
 cargo run -p starcoin-vm2-rpc-api -- -d ./vm2/rpc/api/generated_rpc_schema
 # test config file
-# TODO(BobOng) [migration]: block this check because the genesis has changed, unlock this part of the code after the code goes online
-# cargo test -p starcoin-config test_example_config_compact
+cargo test -p starcoin-config test_example_config_compact
 # check changed files
 "${STARCOIN_DIR}"/scripts/changed_files.sh

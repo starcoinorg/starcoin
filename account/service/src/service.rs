@@ -30,16 +30,12 @@ impl AccountService {
     }
 }
 
-impl MockHandler<AccountService> for AccountService {
-    fn handle(
-        &mut self,
-        r: Box<dyn Any>,
-        ctx: &mut ServiceContext<AccountService>,
-    ) -> Box<dyn Any> {
+impl MockHandler<Self> for AccountService {
+    fn handle(&mut self, r: Box<dyn Any>, ctx: &mut ServiceContext<Self>) -> Box<dyn Any> {
         let request = r
             .downcast::<AccountRequest>()
             .expect("Downcast to AccountRequest fail.");
-        let result = ServiceHandler::<AccountService, AccountRequest>::handle(self, *request, ctx);
+        let result = ServiceHandler::<Self, AccountRequest>::handle(self, *request, ctx);
         Box::new(result)
     }
 }
@@ -74,14 +70,17 @@ impl ActorService for AccountService {
         {
             let association_account = self.manager.account_info(association_address())?;
             if association_account.is_none() {
-                if let Err(e) = self.manager.import_account(
+                match self.manager.import_account(
                     association_address(),
                     association_private_key.to_bytes().to_vec(),
                     "",
                 ) {
-                    error!("Import association account error:{:?}", e)
-                } else {
-                    info!("Import association account to wallet.");
+                    Err(e) => {
+                        error!("Import association account error:{:?}", e)
+                    }
+                    _ => {
+                        info!("Import association account to wallet.");
+                    }
                 }
             }
         }
@@ -89,8 +88,8 @@ impl ActorService for AccountService {
     }
 }
 
-impl ServiceFactory<AccountService> for AccountService {
-    fn create(ctx: &mut ServiceContext<AccountService>) -> Result<AccountService> {
+impl ServiceFactory<Self> for AccountService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let manager = AccountManager::new(account_storage, config.net().chain_id())?;
@@ -98,7 +97,7 @@ impl ServiceFactory<AccountService> for AccountService {
     }
 }
 
-impl ServiceHandler<AccountService, AccountRequest> for AccountService {
+impl ServiceHandler<Self, AccountRequest> for AccountService {
     fn handle(
         &mut self,
         msg: AccountRequest,
@@ -141,6 +140,9 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 txn: raw_txn,
                 signer,
             } => AccountResponse::SignedTxn(Box::new(self.manager.sign_txn(signer, *raw_txn)?)),
+            AccountRequest::SignTxnInBatch { txns } => {
+                AccountResponse::SignedTxnList(self.manager.sign_txn_in_batch(txns)?)
+            }
             AccountRequest::SignMessage { message, signer } => AccountResponse::SignedMessage(
                 Box::new(self.manager.sign_message(signer, message)?),
             ),
@@ -149,6 +151,10 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                     self.manager
                         .unlock_account(address, password.as_str(), duration)?;
                 AccountResponse::AccountInfo(Box::new(account_info))
+            }
+            AccountRequest::UnlockAccountInBatch(batch, duration) => {
+                let account_infos = self.manager.unlock_account_in_batch(batch, duration)?;
+                AccountResponse::AccountList(account_infos)
             }
             AccountRequest::LockAccount(address) => {
                 AccountResponse::AccountInfo(Box::new(self.manager.lock_account(address)?))

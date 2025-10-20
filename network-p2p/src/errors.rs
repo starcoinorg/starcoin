@@ -82,9 +82,9 @@ impl fmt::Debug for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::Io(ref err) => Some(err),
+            Error::Io(err) => Some(err),
             Error::DuplicateBootnode { .. } => None,
-            Error::Prometheus(ref err) => Some(err),
+            Error::Prometheus(err) => Some(err),
             Error::AddressesForAnotherTransport { .. } => None,
             Error::DuplicateRequestResponseProtocol { .. } => None,
         }

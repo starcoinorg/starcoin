@@ -15,12 +15,12 @@ use starcoin_config::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_storage::Storage2;
 use starcoin_storage::Store;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;

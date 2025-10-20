@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use futures::executor::block_on;
 use starcoin_config::*;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{gen_client as starcoin_gen_client, GetBlockIds, Ping};
@@ -11,6 +10,7 @@ use std::sync::Arc;
 
 #[stest::test]
 fn test_network_rpc() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
     let (handle1, net_addr_1) = {
         let config_1 = NodeConfig::random_for_test();
         let net_addr = config_1.network.self_address();
@@ -36,11 +36,11 @@ fn test_network_rpc() {
         err: false,
     };
     let resp: String =
-        block_on(async { client.ping(peer_id_2.clone(), req.clone()).await.unwrap() });
+        rt.block_on(async { client.ping(peer_id_2.clone(), req.clone()).await.unwrap() });
     assert_eq!(req.msg, resp);
 
     //ping err
-    let ping = block_on(async {
+    let ping = rt.block_on(async {
         client
             .ping(
                 peer_id_2.clone(),
@@ -61,10 +61,11 @@ fn test_network_rpc() {
         reverse: false,
         max_size: 100,
     };
-    let block_ids = block_on(async { client.get_block_ids(peer_id_2.clone(), req).await.unwrap() });
+    let block_ids =
+        rt.block_on(async { client.get_block_ids(peer_id_2.clone(), req).await.unwrap() });
     assert_eq!(2, block_ids.len());
 
-    let blocks = block_on(async {
+    let blocks = rt.block_on(async {
         client
             .get_blocks(peer_id_2.clone(), block_ids)
             .await

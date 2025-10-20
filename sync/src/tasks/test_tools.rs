@@ -20,7 +20,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Storage2};
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
 use std::fs;
@@ -53,12 +53,7 @@ impl SyncTestSystem {
             .unwrap(),
         );
         // Create storage2 using cache instance for simplicity in tests
-        let storage2 = Arc::new(
-            starcoin_vm2_storage::Storage::new(
-                starcoin_vm2_storage::storage::StorageInstance::new_cache_instance(),
-            )
-            .unwrap(),
-        );
+        let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(config.net())?;
         // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
@@ -87,7 +82,7 @@ impl SyncTestSystem {
             dag.clone(),
         )?;
 
-        let (registry_sender, registry_receiver) = async_std::channel::unbounded();
+        let (registry_sender, mut registry_receiver) = tokio::sync::mpsc::unbounded_channel();
 
         info!(
         "in test_sync_block_apply_failed_but_connect_success, start tokio runtime for main thread"
@@ -102,17 +97,12 @@ impl SyncTestSystem {
                     .build()
                     .expect("failed to create tokio runtime for main")
             });
-            async_std::task::block_on(async {
+            system.block_on(async {
                 let registry = RegistryService::launch();
 
                 registry.put_shared(config.clone()).await.unwrap();
                 registry.put_shared(storage.clone()).await.unwrap();
                 registry.put_shared(storage2.clone()).await.unwrap();
-                // Also share storage2 as Arc<dyn Store2> for PruningPointService
-                registry
-                    .put_shared(storage2.clone() as Arc<dyn starcoin_vm2_storage::Store>)
-                    .await
-                    .unwrap();
                 registry.put_shared(genesis).await.unwrap();
                 registry
                     .put_shared(dag)
@@ -129,7 +119,7 @@ impl SyncTestSystem {
                     .await
                     .unwrap();
 
-                registry_sender.send(registry).await.unwrap();
+                registry_sender.send(registry).unwrap();
             });
 
             system.run().unwrap();
@@ -146,7 +136,7 @@ impl SyncTestSystem {
 }
 
 #[cfg(test)]
-pub async fn full_sync_new_node() -> Result<()> {
+pub(crate) async fn full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
     // Reduce delay from 300ms to 10ms to speed up test
     let mut node1 = SyncNodeMocker::new(net1, 10, 0)?;
@@ -188,7 +178,7 @@ pub async fn full_sync_new_node() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());
@@ -223,7 +213,7 @@ pub async fn full_sync_new_node() -> Result<()> {
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
-    let node2 = join_handle.await;
+    let node2 = join_handle.await?;
     let current_block_header = node2.chain().current_header();
     assert_eq!(branch.current_header().id(), target.target_id.id());
     assert_eq!(target.target_id.id(), current_block_header.id());

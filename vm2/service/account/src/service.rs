@@ -13,7 +13,7 @@ use starcoin_vm2_account_api::{
 };
 use starcoin_vm2_crypto::ValidCryptoMaterial;
 use starcoin_vm2_types::account_config::{association_address, G_STC_TOKEN_CODE};
-use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::on_chain_resource::ChainId;
 use std::any::Any;
 use std::sync::Arc;
 
@@ -72,14 +72,17 @@ impl ActorService for AccountService {
         {
             let association_account = self.manager.account_info(association_address())?;
             if association_account.is_none() {
-                if let Err(e) = self.manager.import_account(
+                match self.manager.import_account(
                     association_address(),
                     association_private_key.to_bytes().to_vec(),
                     "",
                 ) {
-                    error!("Import association account error:{:?}", e)
-                } else {
-                    info!("Import association account to wallet.");
+                    Err(e) => {
+                        error!("Import association account error:{:?}", e)
+                    }
+                    _ => {
+                        info!("Import association account to wallet.");
+                    }
                 }
             }
         }
@@ -198,18 +201,12 @@ mod tests {
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
     use starcoin_vm2_account_api::AccountAsyncService;
-    use starcoin_vm2_storage::db_storage::RocksdbConfig;
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let registry = RegistryService::launch();
         let vault_config = &config.vault;
-        let rocksdb_config = RocksdbConfig::new(
-            config.storage.rocksdb_config().max_open_files,
-            config.storage.rocksdb_config().max_total_wal_size,
-            config.storage.rocksdb_config().wal_bytes_per_sync,
-            config.storage.rocksdb_config().bytes_per_sync,
-        );
+        let rocksdb_config = config.storage.rocksdb_config();
         let account_storage =
             AccountStorage::create_from_path(vault_config.dir2(), rocksdb_config)?;
         registry.put_shared(config).await?;

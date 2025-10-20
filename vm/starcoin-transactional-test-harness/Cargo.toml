@@ -46,6 +46,7 @@ starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-dev = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
@@ -61,7 +62,6 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
