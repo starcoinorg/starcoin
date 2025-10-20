@@ -28,12 +28,11 @@ impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
 
-    fn is_block_prologue(&self) -> bool {
-        matches!(self, PreprocessedTransaction::BlockMetadata(_))
-    }
-
-    fn is_block_epilogue(&self) -> bool {
-        matches!(self, PreprocessedTransaction::BlockEpilogue(..))
+    fn is_block_meta_data(&self) -> bool {
+        match self {
+            PreprocessedTransaction::BlockMetadata(_) => true,
+            PreprocessedTransaction::UserTransaction(_) => false,
+        }
     }
 }
 
@@ -58,10 +57,6 @@ impl PTransactionOutput for StarcoinTransactionOutput {
             .iter()
             .map(|v| (v.0.clone(), v.1.clone()))
             .collect()
-    }
-
-    fn gas_used(&self) -> u64 {
-        self.0.gas_used()
     }
 
     /// Execution output for transactions that comes after SkipRest signal.
@@ -93,7 +88,6 @@ impl ParallelStarcoinVM {
 
         match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
             concurrency_level,
-            block_gas_limit,
         )
         .execute_transactions_parallel(state_view, signature_verified_block)
         {

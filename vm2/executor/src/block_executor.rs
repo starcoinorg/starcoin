@@ -3,6 +3,7 @@
 
 use crate::executor::do_execute_block_transactions;
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::info;
 pub use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};
