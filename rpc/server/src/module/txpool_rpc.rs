@@ -34,6 +34,39 @@ where
         Self { service }
     }
 
+    fn submit_transactions_multi(
+        &self,
+        txns: Vec<MultiSignedUserTransaction>,
+    ) -> FutureResult<Vec<HashValue>> {
+        let bypass_vm1_limit = txns
+            .iter()
+            .all(|t| matches!(t, MultiSignedUserTransaction::VM2(_)));
+        let local_peer_id = if bypass_vm1_limit {
+            None
+        } else {
+            Some("local-rpc".to_string())
+        };
+        let txn_hash: Vec<HashValue> = txns.iter().map(|t| t.id()).collect();
+        let results =
+            match self
+                .service
+                .add_txns_multi_signed(txns, bypass_vm1_limit, local_peer_id)
+            {
+                Ok(result) => result,
+                Err(e) => return Box::pin(futures::future::ready(Err(convert_to_rpc_error(e)))),
+            };
+
+        let result = txn_hash
+            .into_iter()
+            .zip(results)
+            .map(|(id, result)| match result {
+                Ok(_) => Ok(id),
+                Err(e) => Err(convert_to_rpc_error(e)),
+            })
+            .collect::<Result<Vec<_>, _>>();
+        Box::pin(futures::future::ready(result))
+    }
+
     fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
         let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
         let local_peer_id = if bypass_vm1_limit {
@@ -88,6 +121,17 @@ where
             .map_err(convert_to_rpc_error);
 
         Box::pin(futures::future::ready(result.map(|_| txn_hashes)))
+    }
+
+    fn submit_transactions2(
+        &self,
+        txns: Vec<SignedUserTransaction2>,
+    ) -> FutureResult<Vec<HashValue>> {
+        self.submit_transactions_multi(
+            txns.into_iter()
+                .map(MultiSignedUserTransaction::VM2)
+                .collect(),
+        )
     }
 
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
@@ -211,6 +255,14 @@ where
         addresses: Vec<AccountAddress>,
     ) -> FutureResult<Option<Vec<(AccountAddress, Option<u64>)>>> {
         let result = self.service.next_sequence_number_in_batch(addresses);
+        Box::pin(futures::future::ok(result))
+    }
+
+    fn next_sequence_number_in_batch2(
+        &self,
+        addresses: Vec<AccountAddress2>,
+    ) -> FutureResult<Option<Vec<(AccountAddress2, Option<u64>)>>> {
+        let result = self.service.next_sequence_number2_in_batch(addresses);
         Box::pin(futures::future::ok(result))
     }
 

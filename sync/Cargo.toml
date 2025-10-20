@@ -59,6 +59,7 @@ once_cell = { workspace = true }
 hex = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-account-api = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
 starcoin-block-relayer = { workspace = true }
 starcoin-chain-mock = { workspace = true }
 starcoin-consensus = { workspace = true }
@@ -71,6 +72,11 @@ starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-genesis = { workspace = true }
+starcoin-account-service = { workspace = true }
+starcoin-vm2-account-service = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-vm-runtime = { workspace = true }
+
 
 [package]
 authors = { workspace = true }

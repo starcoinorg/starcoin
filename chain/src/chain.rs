@@ -2148,25 +2148,24 @@ impl BlockChain {
                     format_err!("Can not find block info for parent {:?}", selected_parent)
                 })?;
 
-        let multi_state = self.storage.0.get_vm_multi_state(selected_parent)?;
+        // let multi_state = self.storage.0.get_vm_multi_state(selected_parent)?;
 
-        let statedb = self.statedb.0.fork_at(multi_state.state_root1());
-        let statedb2 = self.statedb.1.fork_at(multi_state.state_root2());
+        // let statedb = self.statedb.0.fork_at(multi_state.state_root1());
+        // let statedb2 = self.statedb.1.fork_at(multi_state.state_root2());
 
         // Get epoch from forked statedb (read from VM2's statedb)
-        let epoch = get_epoch_from_statedb(&statedb2)?;
 
         // Execute VM1 transactions
         let executed_data = if !transactions.is_empty() {
             starcoin_executor::block_execute(
-                &statedb,
+                &self.statedb.0,
                 transactions.clone(),
-                epoch.block_gas_limit(),
+                self.epoch.block_gas_limit(),
                 self.vm_metrics.clone(),
             )?
         } else {
             BlockExecutedData {
-                state_root: statedb.state_root(),
+                state_root: self.statedb.0.state_root(),
                 txn_infos: vec![],
                 txn_events: vec![],
                 txn_table_infos: BTreeMap::new(),
@@ -2176,10 +2175,12 @@ impl BlockChain {
 
         // Apply write sets for VM1
         for write_set in executed_data.write_sets {
-            statedb
+            self.statedb
+                .0
                 .apply_write_set(write_set)
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
-            statedb
+            self.statedb
+                .0
                 .commit()
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
         }
@@ -2192,9 +2193,9 @@ impl BlockChain {
             .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
 
         let executed_data2 = starcoin_vm2_chain::execute_transactions(
-            &statedb2,
+            &self.statedb.1,
             transactions2.clone(),
-            epoch.block_gas_limit() - vm1_gas_used,
+            self.epoch.block_gas_limit() - vm1_gas_used,
             self.vm_metrics.clone(),
         )?;
 
@@ -2346,8 +2347,8 @@ impl BlockChain {
 
         // Flush state to ensure state tree nodes are persisted
         // This is critical for dual-VM: both VM1 and VM2 states must be flushed
-        statedb.flush()?;
-        statedb2.flush()?;
+        self.statedb.0.flush()?;
+        self.statedb.1.flush()?;
 
         // Create local block_accumulator from parent's accumulator info
         let parent_block_accumulator_info = parent_block_info.get_block_accumulator_info();
@@ -2384,7 +2385,7 @@ impl BlockChain {
         // TODO: The k should be reload or update only on new epoch.
         self.dag()
             .ghost_dag_manager()
-            .update_k(epoch.max_uncles_per_block().try_into().unwrap());
+            .update_k(self.epoch.max_uncles_per_block().try_into().unwrap());
 
         // Commit the DAG block
         self.dag()

@@ -171,6 +171,19 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn sign_txn_in_batch(
+        &self,
+        raw_txn: Vec<RawUserTransaction2>,
+    ) -> FutureResult<Vec<SignedUserTransaction2>> {
+        let service = self.account.clone();
+        let fut = async move {
+            let result = service.sign_txn_in_batch(raw_txn).await?;
+            Ok(result)
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
     fn unlock(
         &self,
         address: AccountAddress2,
@@ -183,6 +196,24 @@ where
                 .unlock_account(
                     address,
                     password,
+                    Duration::from_secs(duration.unwrap_or(u32::MAX) as u64),
+                )
+                .await
+        }
+        .map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn unlock_in_batch(
+        &self,
+        batch: Vec<(AccountAddress2, String)>,
+        duration: Option<u32>,
+    ) -> FutureResult<Vec<AccountInfo2>> {
+        let service = self.account.clone();
+        let fut = async move {
+            service
+                .unlock_account_in_batch(
+                    batch,
                     Duration::from_secs(duration.unwrap_or(u32::MAX) as u64),
                 )
                 .await
