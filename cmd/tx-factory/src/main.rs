@@ -133,7 +133,7 @@ fn get_account_or_default2(
             Some(w) => w,
         },
     };
-    info!("get_account_or_default: {}", account.address);
+    info!("get_account_or_default for vm2: {}", account.address);
     Ok(account)
 }
 
@@ -165,7 +165,7 @@ fn get_account_or_default(
             Some(w) => w,
         },
     };
-    info!("get_account_or_default: {}", account.address);
+    info!("get_account_or_default for vm1: {}", account.address);
     Ok(account)
 }
 

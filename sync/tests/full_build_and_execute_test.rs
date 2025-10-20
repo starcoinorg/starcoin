@@ -1,7 +1,6 @@
 use std::{collections::HashMap, env::temp_dir, sync::Arc};
 
 use anyhow::{bail, format_err, Ok, Result};
-use rayon::vec;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{
@@ -11,13 +10,11 @@ use starcoin_logger::{
     prelude::{info, LevelFilter},
     LoggerHandle,
 };
-use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_service_registry::{RegistryAsyncService, ServiceRef};
 use starcoin_storage::{Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_types::{
     block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
-    system_events::DeterminedDagBlock,
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -26,9 +23,8 @@ use starcoin_vm2_account_api::{
 use starcoin_vm2_account_service::AccountService as AccountService2;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::transaction::SignedUserTransaction;
-use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm2_vm_types::state_view::StateReaderExt;
-use test_helper::run_node_by_config;
+use test_helper::run_node_with_all_service;
 
 async fn create_account(
     accoun_number: u32,
@@ -82,9 +78,9 @@ async fn build_transaction_to_send_token_to_account(
     let mut next_seq_map = HashMap::new();
     for s in &sender {
         let next_seq = statedb2
-            .get_account_resource(s.address.clone())?
+            .get_account_resource(*s.address())?
             .sequence_number();
-        next_seq_map.entry(s.address().clone()).or_insert(next_seq);
+        next_seq_map.entry(*s.address()).or_insert(next_seq);
     }
 
     let mut signed_transactions = vec![];
@@ -92,7 +88,7 @@ async fn build_transaction_to_send_token_to_account(
         let sender_address = sender.get(index).unwrap().address;
         let next_seq = *next_seq_map.get(&sender_address).unwrap();
         next_seq_map
-            .entry(sender_address.clone())
+            .entry(sender_address)
             .and_modify(|next_seq| *next_seq += 1);
         let transaction = build_batch_transfer_txn2(
             sender.get(index).unwrap().address,
@@ -106,7 +102,7 @@ async fn build_transaction_to_send_token_to_account(
         );
         match account_service
             .send(AccountRequest::UnlockAccount(
-                sender_address.clone(),
+                sender_address,
                 "".to_string(),
                 std::time::Duration::from_secs(100),
             ))
@@ -144,8 +140,9 @@ async fn get_current_header(
     Ok(current_header)
 }
 
+#[ignore = "This is a benchmark test, not a unit test"]
 #[test]
-fn test_transaction_in_custom_network() -> Result<()> {
+fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let mut opt = StarcoinOpt {
         net: Some(ChainNetworkID::Custom(CustomNetworkID::new(
             "my_chain".to_string(),
@@ -176,13 +173,11 @@ fn test_transaction_in_custom_network() -> Result<()> {
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
 
     // let node_config = Arc::new(NodeConfig::random_for_test());
-    let node = run_node_by_config(node_config.clone()).unwrap();
+    let node = run_node_with_all_service(node_config.clone()).unwrap();
     // StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let registry = node.registry();
     let storage1 = node.storage();
     let storage2 = node.storage2();
-
-    let genesis = node.genesis();
 
     let fut = async move {
         // let generate_block = registry.service_ref::<GenerateBlockEventPacemaker>().await?;
@@ -228,32 +223,8 @@ fn test_transaction_in_custom_network() -> Result<()> {
             false,
             None,
         )?;
-        // let transactions = txpool
-        //     .inner
-        //     .get_pending(100, config.net().time_service().now_secs())?;
-        // info!(
-        //     "jacktest: transaction in halley pending: {}",
-        //     transactions.len()
-        // );
-        // for txn in transactions {
-        //     match txn.signed() {
-        //         MultiSignedUserTransaction::VM1(signed_user_transaction) => info!(
-        //             "jacktest: transaction1 in halley pending: id: {}",
-        //             signed_user_transaction.id()
-        //         ),
-        //         MultiSignedUserTransaction::VM2(signed_user_transaction) => info!(
-        //             "jacktest: transaction2 in halley pending: id: {}",
-        //             signed_user_transaction.id()
-        //         ),
-        //     }
-        // }
 
         loop {
-            // let executed_block = node.generate_block()?;
-            // info!(
-            //     "jacktest: transaction in halley executed block: {}",
-            //     executed_block.body.transactions2.len()
-            // );
             let transactions = txpool
                 .inner
                 .get_pending(100, config.net().time_service().now_secs())?;
