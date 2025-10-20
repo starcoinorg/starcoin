@@ -190,6 +190,14 @@ impl ServiceHandler<Self, AccountRequest> for AccountService {
             } => AccountResponse::AccountInfo(Box::new(
                 self.manager.change_password(address, new_password)?,
             )),
+            AccountRequest::SignTxnInBatch { txns } => {
+                AccountResponse::SignedTxnList(self.manager.sign_txn_in_batch(txns)?)
+            }
+            AccountRequest::UnlockAccountInBatch(addresses, duration) => {
+                AccountResponse::AccountList(
+                    self.manager.unlock_account_in_batch(addresses, duration)?,
+                )
+            }
         };
         Ok(response)
     }

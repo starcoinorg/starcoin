@@ -20,3 +20,9 @@ pub fn run_node_by_config(config: Arc<NodeConfig>) -> Result<NodeHandle> {
     block_on(async { node_handle.node_service().stop_pacemaker().await })?;
     Ok(node_handle)
 }
+
+pub fn run_node_with_all_service(config: Arc<NodeConfig>) -> Result<NodeHandle> {
+    let logger_handle = starcoin_logger::init_for_test();
+    let node_handle = NodeService::launch(config, logger_handle)?;
+    Ok(node_handle)
+}
