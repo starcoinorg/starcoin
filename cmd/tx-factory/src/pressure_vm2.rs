@@ -37,7 +37,7 @@ pub fn start_vm2_pressure_test(
                     if let Err(e) = success {
                         error!("fail to run stress test, err: {:?}", &e);
                         // if txn is rejected, recheck sequence number, and start over
-                        if let Err(e) = tx_mocker.recheck_sequence_number2() {
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
                             error!("fail to start over, err: {:?}", e);
                         }
                     }
@@ -46,7 +46,7 @@ pub fn start_vm2_pressure_test(
                     if let Err(e) = success {
                         error!("fail to generate/submit mock txn, err: {:?}", &e);
                         // if txn is rejected, recheck sequence number, and start over
-                        if let Err(e) = tx_mocker.recheck_sequence_number2() {
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
                             error!("fail to start over, err: {:?}", e);
                         }
                     }

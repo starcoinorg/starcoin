@@ -132,7 +132,7 @@ impl TxnMocker {
             .generate_mock_txn2(self.next_sequence_number, expiration_timestamp)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
-        self.unlock_account2()?;
+        self.unlock_account()?;
 
         let user_txn = match self.client.account_sign_txn2(raw_txn) {
             Err(e) => {
@@ -585,8 +585,8 @@ impl TxnMocker {
         }
 
         if !addr_vec.is_empty() {
-            self.recheck_sequence_number2()?;
-            self.unlock_account2()?;
+            self.recheck_sequence_number()?;
+            self.unlock_account()?;
             let txn = self.generator.generate_account_txn2(
                 self.next_sequence_number,
                 self.account_address2,
