@@ -413,11 +413,11 @@ dependencies = [
  "aes-gcm 0.10.3",
  "anyhow",
  "aptos-crypto-derive",
- "ark-bn254 0.4.0",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
  "ark-groth16",
- "ark-std 0.4.0",
+ "ark-std",
  "base64 0.13.1",
  "bcs 0.1.4",
  "blst",
@@ -487,14 +487,14 @@ checksum = "bddcadddf5e9015d310179a59bb28c4d4b9920ad0f11e8e14dbadf654890c9a6"
 
 [[package]]
 name = "ark-bls12-381"
-version = "0.5.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3df4dcc01ff89867cd86b0da835f23c3f02738353aaee7dde7495af71363b8d5"
+checksum = "c775f0d12169cba7aae4caeb547bb6a50781c7449a8aa53793827c9ec4abf488"
 dependencies = [
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
 ]
 
 [[package]]
@@ -503,20 +503,9 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a22f4561524cd949590d78d7d4c5df8f592430d221f7f3c9497bbafd8972120f"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
-]
-
-[[package]]
-name = "ark-bn254"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d69eab57e8d2663efa5c63135b2af4f396d66424f88954c21104125ab6b3e6bc"
-dependencies = [
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-std 0.5.0",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -525,12 +514,12 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3a13b34da09176a8baba701233fdffbaa7c1b1192ce031a3da4e55ce1f1a56"
 dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
+ "ark-ec",
+ "ark-ff",
  "ark-relations",
- "ark-serialize 0.4.2",
+ "ark-serialize",
  "ark-snark",
- "ark-std 0.4.0",
+ "ark-std",
  "blake2",
  "derivative",
  "digest 0.10.7",
@@ -544,10 +533,10 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "defd9a439d56ac24968cca0571f598a61bc8c55f71d50a89cda591cb750670ba"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "hashbrown 0.13.2",
  "itertools 0.10.5",
@@ -557,36 +546,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-ec"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43d68f2d516162846c1238e755a7c4d131b892b70cc70c471a8e3ca3ed818fce"
-dependencies = [
- "ahash 0.8.11",
- "ark-ff 0.5.0",
- "ark-poly 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "educe",
- "fnv",
- "hashbrown 0.15.5",
- "itertools 0.13.0",
- "num-bigint 0.4.3",
- "num-integer",
- "num-traits 0.2.19",
- "zeroize",
-]
-
-[[package]]
 name = "ark-ff"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec847af850f44ad29048935519032c33da8aa03340876d351dfab5660d2966ba"
 dependencies = [
- "ark-ff-asm 0.4.2",
- "ark-ff-macros 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff-asm",
+ "ark-ff-macros",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "digest 0.10.7",
  "itertools 0.10.5",
@@ -599,26 +567,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-ff"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a177aba0ed1e0fbb62aa9f6d0502e9b46dad8c2eab04c14258a1212d2557ea70"
-dependencies = [
- "ark-ff-asm 0.5.0",
- "ark-ff-macros 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "arrayvec 0.7.2",
- "digest 0.10.7",
- "educe",
- "itertools 0.13.0",
- "num-bigint 0.4.3",
- "num-traits 0.2.19",
- "paste",
- "zeroize",
-]
-
-[[package]]
 name = "ark-ff-asm"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -626,16 +574,6 @@ checksum = "3ed4aa4fe255d0bc6d79373f7e31d2ea147bcf486cba1be5ba7ea85abdb92348"
 dependencies = [
  "quote 1.0.36",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "ark-ff-asm"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62945a2f7e6de02a31fe400aa489f0e0f5b2502e69f95f853adb82a96c7a6b60"
-dependencies = [
- "quote 1.0.36",
- "syn 2.0.106",
 ]
 
 [[package]]
@@ -652,31 +590,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-ff-macros"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09be120733ee33f7693ceaa202ca41accd5653b779563608f1234f78ae07c4b3"
-dependencies = [
- "num-bigint 0.4.3",
- "num-traits 0.2.19",
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 2.0.106",
-]
-
-[[package]]
 name = "ark-groth16"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20ceafa83848c3e390f1cbf124bc3193b3e639b3f02009e0e290809a501b95fc"
 dependencies = [
  "ark-crypto-primitives",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
  "ark-relations",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-serialize",
+ "ark-std",
  "rayon",
 ]
 
@@ -686,27 +611,12 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d320bfc44ee185d899ccbadfa8bc31aab923ce1558716e1997a1e74057fe86bf"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "derivative",
  "hashbrown 0.13.2",
  "rayon",
-]
-
-[[package]]
-name = "ark-poly"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "579305839da207f02b89cd1679e50e67b4331e2f9294a57693e5051b7703fe27"
-dependencies = [
- "ahash 0.8.11",
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
- "educe",
- "fnv",
- "hashbrown 0.15.5",
 ]
 
 [[package]]
@@ -715,8 +625,8 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00796b6efc05a3f48225e59cb6a2cda78881e7c390872d5786aaf112f31fb4f0"
 dependencies = [
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-ff",
+ "ark-std",
  "tracing",
  "tracing-subscriber",
 ]
@@ -727,21 +637,8 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb7b85a02b83d2f22f89bd5cac66c9c89474240cb6207cb1efc16d098e822a5"
 dependencies = [
- "ark-serialize-derive 0.4.2",
- "ark-std 0.4.0",
- "digest 0.10.7",
- "num-bigint 0.4.3",
-]
-
-[[package]]
-name = "ark-serialize"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f4d068aaf107ebcd7dfb52bc748f8030e0fc930ac8e360146ca54c1203088f7"
-dependencies = [
- "ark-serialize-derive 0.5.0",
- "ark-std 0.5.0",
- "arrayvec 0.7.2",
+ "ark-serialize-derive",
+ "ark-std",
  "digest 0.10.7",
  "num-bigint 0.4.3",
 ]
@@ -758,26 +655,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-serialize-derive"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "213888f660fddcca0d257e88e54ac05bca01885f258ccdf695bafd77031bb69d"
-dependencies = [
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 2.0.106",
-]
-
-[[package]]
 name = "ark-snark"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84d3cc6833a335bb8a600241889ead68ee89a3cf8448081fb7694c0fe503da63"
 dependencies = [
- "ark-ff 0.4.2",
+ "ark-ff",
  "ark-relations",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
+ "ark-serialize",
+ "ark-std",
 ]
 
 [[package]]
@@ -789,16 +675,6 @@ dependencies = [
  "num-traits 0.2.19",
  "rand 0.8.5",
  "rayon",
-]
-
-[[package]]
-name = "ark-std"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "246a225cc6131e9ee4f24619af0f19d67761fff15d7ccc22e42b80846e69449a"
-dependencies = [
- "num-traits 0.2.19",
- "rand 0.8.5",
 ]
 
 [[package]]
@@ -1195,12 +1071,6 @@ checksum = "b359aebd937c17c725e19efcb661200883f04c49c53e7132224dac26da39d4a0"
 dependencies = [
  "better_typeid_derive",
 ]
-
-[[package]]
-name = "better_any"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1795ebc740ea791ffbe6685e0688ab1effec16c2864e0476db40bfdf0c02cb3d"
 
 [[package]]
 name = "better_typeid_derive"
@@ -1940,17 +1810,7 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3362992a0d9f1dd7c3d0e89e0ab2bb540b7a95fea8cd798090e758fda2899b5e"
 dependencies = [
- "codespan-reporting 0.11.1",
- "serde 1.0.205",
-]
-
-[[package]]
-name = "codespan"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1f6b464842eee3e8a534bd4b6a501f3883636bfbd6e7d7e5118532ea2f22762"
-dependencies = [
- "codespan-reporting 0.13.0",
+ "codespan-reporting",
  "serde 1.0.205",
 ]
 
@@ -1963,17 +1823,6 @@ dependencies = [
  "serde 1.0.205",
  "termcolor",
  "unicode-width 0.1.10",
-]
-
-[[package]]
-name = "codespan-reporting"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba7a06c0b31fff5ff2e1e7d37dbf940864e2a974b336e1a2938d10af6e8fb283"
-dependencies = [
- "serde 1.0.205",
- "termcolor",
- "unicode-width 0.2.2",
 ]
 
 [[package]]
@@ -2627,7 +2476,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48fcaf066a053a41a81dfb14d57d99738b767febb8b735c3016e469fac5da690"
 dependencies = [
  "cc",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "once_cell",
  "proc-macro2 1.0.101",
  "quote 1.0.36",
@@ -2683,16 +2532,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling"
-version = "0.21.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cdf337090841a411e2a7f3deb9187445851f91b309c0c0a29e05f74a00a48c0"
-dependencies = [
- "darling_core 0.21.3",
- "darling_macro 0.21.3",
-]
-
-[[package]]
 name = "darling_core"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2735,20 +2574,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling_core"
-version = "0.21.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1247195ecd7e3c85f83c8d2a366e4210d588e802133e1e355180a9870b517ea4"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "strsim 0.11.1",
- "syn 2.0.106",
-]
-
-[[package]]
 name = "darling_macro"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2779,17 +2604,6 @@ dependencies = [
  "darling_core 0.14.4",
  "quote 1.0.36",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "darling_macro"
-version = "0.21.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d38308df82d1080de0afee5d069fa14b0326a88c14f15c5ccda35b4a6c414c81"
-dependencies = [
- "darling_core 0.21.3",
- "quote 1.0.36",
- "syn 2.0.106",
 ]
 
 [[package]]
@@ -3283,18 +3097,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "educe"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d7bc049e1bd8cdeb31b68bbd586a9464ecf9f3944af3958a7a9d0f8b9799417"
-dependencies = [
- "enum-ordinalize",
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 2.0.106",
-]
-
-[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3393,26 +3195,6 @@ dependencies = [
  "proc-macro2 1.0.101",
  "quote 1.0.36",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "enum-ordinalize"
-version = "4.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea0dcfa4e54eeb516fe454635a95753ddd39acda650ce703031c6973e315dd5"
-dependencies = [
- "enum-ordinalize-derive",
-]
-
-[[package]]
-name = "enum-ordinalize-derive"
-version = "4.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d28318a75d4aead5c4db25382e8ef717932d0346600cacae6357eb5941bc5ff"
-dependencies = [
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 2.0.106",
 ]
 
 [[package]]
@@ -4279,7 +4061,6 @@ version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
- "allocator-api2",
  "foldhash 0.1.5",
 ]
 
@@ -4886,15 +4667,6 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -6367,7 +6139,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "clap 4.5.47",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-viewer 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6398,7 +6170,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "colored",
  "difference",
  "itertools 0.10.5",
@@ -6478,7 +6250,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.47",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-borrow-graph 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6504,7 +6276,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "difference",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6534,7 +6306,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.47",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "ethnum",
  "flexi_logger",
  "im",
@@ -6615,7 +6387,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.47",
- "codespan 0.11.1",
+ "codespan",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6634,7 +6406,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "codespan 0.11.1",
+ "codespan",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6653,7 +6425,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 4.5.47",
- "codespan 0.13.0",
+ "codespan",
  "colored",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6705,8 +6477,8 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "clap 4.5.47",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6723,8 +6495,8 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "anyhow",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "itertools 0.10.5",
  "log 0.4.27",
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6802,7 +6574,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6820,7 +6592,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "anyhow",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6892,8 +6664,8 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "internment",
  "itertools 0.12.1",
  "log 0.4.27",
@@ -6918,8 +6690,8 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "anyhow",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "internment",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -7016,7 +6788,7 @@ dependencies = [
  "bcs-ext",
  "clap 3.2.23",
  "clap 4.5.47",
- "codespan-reporting 0.13.0",
+ "codespan-reporting",
  "datatest-stable 0.1.1",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7055,7 +6827,7 @@ dependencies = [
  "anyhow",
  "atty",
  "clap 4.5.47",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-abigen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7083,8 +6855,8 @@ dependencies = [
  "async-trait",
  "atty",
  "clap 3.2.23",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "futures 0.3.31",
  "hex",
  "itertools 0.10.5",
@@ -7118,8 +6890,8 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "async-trait",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "futures 0.3.31",
  "itertools 0.12.1",
  "log 0.4.27",
@@ -7147,8 +6919,8 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "async-trait",
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "futures 0.3.31",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -7175,7 +6947,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7241,7 +7013,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "abstract-domain-derive",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "ethnum",
  "im",
  "itertools 0.12.1",
@@ -7259,8 +7031,8 @@ name = "move-stackless-bytecode"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
- "codespan 0.11.1",
- "codespan-reporting 0.11.1",
+ "codespan",
+ "codespan-reporting",
  "ethnum",
  "im",
  "itertools 0.10.5",
@@ -7289,7 +7061,7 @@ dependencies = [
  "anyhow",
  "bytecode-interpreter-crypto",
  "clap 3.2.23",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7368,7 +7140,7 @@ name = "move-table-extension"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
- "better_any 0.1.1",
+ "better_any",
  "bytes 1.6.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7385,7 +7157,7 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "better_any 0.1.1",
+ "better_any",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-vm-runtime 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7465,9 +7237,9 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "better_any 0.1.1",
+ "better_any",
  "clap 4.5.47",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "colored",
  "itertools 0.12.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7493,9 +7265,9 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "anyhow",
- "better_any 0.1.1",
+ "better_any",
  "clap 3.2.23",
- "codespan-reporting 0.11.1",
+ "codespan-reporting",
  "colored",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7523,7 +7295,7 @@ name = "move-vm-runtime"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
- "better_any 0.1.1",
+ "better_any",
  "bytes 1.6.1",
  "fail 0.5.1",
  "hashbrown 0.14.5",
@@ -7547,7 +7319,7 @@ name = "move-vm-runtime"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
- "better_any 0.1.1",
+ "better_any",
  "fail 0.4.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -9026,9 +8798,9 @@ name = "poseidon-ark"
 version = "0.0.1"
 source = "git+https://github.com/arnaucube/poseidon-ark.git?rev=6d2487aa1308d9d3860a2b724c485d73095c1c68#6d2487aa1308d9d3860a2b724c485d73095c1c68"
 dependencies = [
- "ark-bn254 0.4.0",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
+ "ark-bn254",
+ "ark-ff",
+ "ark-std",
 ]
 
 [[package]]
@@ -12096,19 +11868,19 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "ark-bls12-381",
- "ark-bn254 0.5.0",
- "ark-ec 0.5.0",
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "ark-std 0.5.0",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
  "bcs 0.1.5",
- "better_any 0.2.0",
+ "better_any",
  "blake2-rfc",
  "bulletproofs 4.0.0 (git+https://github.com/zkcrypto/bulletproofs?tag=4.0.0)",
  "byteorder",
  "claims",
  "clap 4.5.47",
- "codespan-reporting 0.13.0",
+ "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
  "flate2",
@@ -12528,7 +12300,7 @@ dependencies = [
  "anyhow",
  "atty",
  "clap 4.5.47",
- "codespan-reporting 0.13.0",
+ "codespan-reporting",
  "datatest-stable 0.1.3",
  "hex",
  "itertools 0.10.5",
@@ -13389,7 +13161,7 @@ dependencies = [
 name = "starcoin-table-natives"
 version = "0.1.0"
 dependencies = [
- "better_any 0.2.0",
+ "better_any",
  "bytes 1.6.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -14287,7 +14059,7 @@ version = "2.1.1"
 dependencies = [
  "actix",
  "actix-rt",
- "darling 0.21.3",
+ "darling 0.14.4",
  "quote 1.0.36",
  "stest",
  "syn 1.0.107",

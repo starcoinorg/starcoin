@@ -327,7 +327,7 @@ impl AccountStorage {
         private_key: &AccountPrivateKey,
         password: impl AsRef<str>,
     ) -> Result<()> {
-        let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
+        let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes())?;
         self.private_key_store
             .put(address.into(), encrypted_prikey.into())?;
         let public_key = private_key.public_key();

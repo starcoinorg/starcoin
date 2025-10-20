@@ -302,8 +302,8 @@ claims = "0.8"
 clap = { version = "4.5.47", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
-codespan = { version = "0.13.0", features = ["serialization"] }
-codespan-reporting = "0.13.0"
+codespan = { version = "0.11.1", features = ["serialization"] }
+codespan-reporting = "0.11.1"
 colored = "2.0.0"
 criterion = "0.3"
 curve25519-dalek = { package = "curve25519-dalek-ng", version = "4" }
@@ -313,7 +313,7 @@ cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
 ctrlc = { version = "3.2.2", features = ["termination"] }
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
-darling = "0.21.3"
+darling = "0.14.4"
 dashmap = "~5"
 datatest-stable = "0.1.3"
 derive_more = "0.99.14"
@@ -418,13 +418,13 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "babf994a
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 
 # Ark crypto libraries
-ark-bls12-381 = "0.5.0"
-ark-bn254 = "0.5.0"
-ark-ec = "0.5.0"
-ark-ff = "0.5.0"
-ark-serialize = "0.5.0"
-ark-std = "0.5.0"
-better_any = "0.2.0"
+ark-bls12-381 = "0.4.0"
+ark-bn254 = "0.4.0"
+ark-ec = "0.4.0"
+ark-ff = "0.4.0"
+ark-serialize = "0.4.0"
+ark-std = "0.4.0"
+better_any = "0.1.1"
 blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
