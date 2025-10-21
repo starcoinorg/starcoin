@@ -24,7 +24,7 @@ task 5 'run'. lines 22-33:
 
 task 6 'run'. lines 34-49:
 {
-  "gas_used": 1207084,
+  "gas_used": 1224832,
   "status": "Executed"
 }
 

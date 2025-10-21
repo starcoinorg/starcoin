@@ -24,19 +24,19 @@ task 6 'run'. lines 29-45:
 
 task 7 'run'. lines 48-64:
 {
-  "gas_used": 1207368,
+  "gas_used": 1225116,
   "status": "Executed"
 }
 
 task 8 'run'. lines 67-83:
 {
-  "gas_used": 1207368,
+  "gas_used": 1225116,
   "status": "Executed"
 }
 
 task 9 'run'. lines 86-101:
 {
-  "gas_used": 1100146,
+  "gas_used": 1117894,
   "status": {
     "ExecutionFailure": {
       "location": {
@@ -309,7 +309,7 @@ task 34 'run'. lines 563-577:
 
 task 35 'run'. lines 580-593:
 {
-  "gas_used": 1207368,
+  "gas_used": 1225116,
   "status": "Executed"
 }
 
