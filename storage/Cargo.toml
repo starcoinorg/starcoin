@@ -3,7 +3,6 @@ anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 byteorder = { workspace = true }
 chrono = { workspace = true }
-lru = { workspace = true }
 num_enum = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
@@ -24,6 +23,7 @@ starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
+quick_cache = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

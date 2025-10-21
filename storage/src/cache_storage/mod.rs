@@ -5,30 +5,29 @@ use crate::batch::{WriteBatch, WriteBatchWithColumn};
 use crate::metrics::{record_metrics, StorageMetrics};
 use crate::storage::{InnerStore, WriteOp};
 use anyhow::{Error, Result};
-use lru::LruCache;
-use parking_lot::Mutex;
+use quick_cache::sync::Cache;
 use starcoin_config::DEFAULT_CACHE_SIZE;
 pub struct CacheStorage {
-    cache: Mutex<LruCache<Vec<u8>, Vec<u8>>>,
+    cache: Cache<Vec<u8>, Vec<u8>>,
     metrics: Option<StorageMetrics>,
 }
 
 impl CacheStorage {
     pub fn new(metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
-            cache: Mutex::new(LruCache::new(DEFAULT_CACHE_SIZE)),
+            cache: Cache::new(DEFAULT_CACHE_SIZE),
             metrics,
         }
     }
     pub fn new_with_capacity(size: usize, metrics: Option<StorageMetrics>) -> Self {
         CacheStorage {
-            cache: Mutex::new(LruCache::new(size)),
+            cache: Cache::new(size),
             metrics,
         }
     }
 
     pub fn capacity(&self) -> usize {
-        self.cache.lock().cap()
+        self.cache.capacity() as usize
     }
 }
 
@@ -40,22 +39,17 @@ impl Default for CacheStorage {
 
 impl InnerStore for CacheStorage {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
-        record_metrics("cache", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            Ok(self
-                .cache
-                .lock()
-                .get(&compose_key(prefix_name.to_string(), key))
-                .cloned())
-        })
+        record_metrics("cache", prefix_name, "get", self.metrics.as_ref())
+            .call(|| Ok(self.cache.get(&compose_key(prefix_name.to_string(), key))))
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
-        let mut cache = self.cache.lock();
-        cache.put(compose_key(prefix_name.to_string(), key), value);
+        self.cache
+            .insert(compose_key(prefix_name.to_string(), key), value);
         if let Some(metrics) = self.metrics.as_ref() {
-            metrics.cache_items.set(cache.len() as u64);
+            metrics.cache_items.set(self.cache.len() as u64);
         }
         Ok(())
     }
@@ -64,17 +58,16 @@ impl InnerStore for CacheStorage {
         record_metrics("cache", prefix_name, "contains_key", self.metrics.as_ref()).call(|| {
             Ok(self
                 .cache
-                .lock()
-                .contains(&compose_key(prefix_name.to_string(), key)))
+                .contains_key(&compose_key(prefix_name.to_string(), key)))
         })
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         // remove record_metrics for performance
         // record_metrics add in write_batch to reduce Instant::now system call
-        let mut cache = self.cache.lock();
-        cache.pop(&compose_key(prefix_name.to_string(), key));
+        self.cache
+            .remove(&compose_key(prefix_name.to_string(), key));
         if let Some(metrics) = self.metrics.as_ref() {
-            metrics.cache_items.set(cache.len() as u64);
+            metrics.cache_items.set(self.cache.len() as u64);
         }
         Ok(())
     }
@@ -92,12 +85,13 @@ impl InnerStore for CacheStorage {
     }
 
     fn get_len(&self) -> Result<u64, Error> {
-        Ok(self.cache.lock().len() as u64)
+        Ok(self.cache.len() as u64)
     }
 
+    // supply weak consistency after replace Mutex<LruCache> with quick_cache::sync::Cache
     fn keys(&self) -> Result<Vec<Vec<u8>>, Error> {
         let mut all_keys = vec![];
-        for (key, _) in self.cache.lock().iter() {
+        for (key, _) in self.cache.iter() {
             all_keys.push(key.to_vec());
         }
         Ok(all_keys)
@@ -112,12 +106,9 @@ impl InnerStore for CacheStorage {
     }
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
-        let mut cache = self.cache.lock();
         let mut result = vec![];
         for key in keys.into_iter() {
-            let item = cache
-                .get(&compose_key(prefix_name.to_string(), key))
-                .cloned();
+            let item = self.cache.get(&compose_key(prefix_name.to_string(), key));
             result.push(item);
         }
         Ok(result)

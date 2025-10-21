@@ -23,7 +23,6 @@ bincode = { version = "1", default-features = false }
 serde = { workspace = true }
 starcoin-storage = { workspace = true }
 parking_lot = { workspace = true }
-lru = { workspace = true }
 itertools = { workspace = true }
 starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
@@ -35,6 +34,7 @@ crossbeam = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-chain = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
+quick_cache = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

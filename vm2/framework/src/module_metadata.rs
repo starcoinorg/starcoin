@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::extended_checks::ResourceGroupScope;
-use lru::LruCache;
 use move_binary_format::{
     access::ModuleAccess,
     file_format::{
@@ -20,6 +19,7 @@ use move_core_types::{
 };
 use move_model::metadata::{CompilationMetadata, COMPILATION_METADATA_KEY};
 use move_vm_runtime::move_vm::MoveVM;
+use quick_cache::unsync::Cache;
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::{
     on_chain_config::{FeatureFlag, Features, TimedFeatures},
@@ -194,9 +194,9 @@ impl KnownAttribute {
 const METADATA_CACHE_SIZE: usize = 1024;
 
 thread_local! {
-    static V1_METADATA_CACHE: RefCell<LruCache<Vec<u8>, Option<Arc<RuntimeModuleMetadataV1>>>> = RefCell::new(LruCache::new(METADATA_CACHE_SIZE));
+    static V1_METADATA_CACHE: RefCell<Cache<Vec<u8>, Option<Arc<RuntimeModuleMetadataV1>>>> = RefCell::new(Cache::new(METADATA_CACHE_SIZE));
 
-    static V0_METADATA_CACHE: RefCell<LruCache<Vec<u8>, Option<Arc<RuntimeModuleMetadataV1>>>> = RefCell::new(LruCache::new(METADATA_CACHE_SIZE));
+    static V0_METADATA_CACHE: RefCell<Cache<Vec<u8>, Option<Arc<RuntimeModuleMetadataV1>>>> = RefCell::new(Cache::new(METADATA_CACHE_SIZE));
 }
 
 /// Extract metadata from the VM, upgrading V0 to V1 representation as needed
@@ -210,7 +210,7 @@ pub fn get_metadata(md: &[Metadata]) -> Option<Arc<RuntimeModuleMetadataV1>> {
                 let meta = bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
                     .ok()
                     .map(Arc::new);
-                cache.put(data.value.clone(), meta.clone());
+                cache.insert(data.value.clone(), meta.clone());
                 meta
             }
         })
@@ -230,7 +230,7 @@ pub fn get_metadata_v0(md: &[Metadata]) -> Option<Arc<RuntimeModuleMetadataV1>> 
                     .ok()
                     .map(RuntimeModuleMetadata::upgrade)
                     .map(Arc::new);
-                cache.put(data.value.clone(), meta.clone());
+                cache.insert(data.value.clone(), meta.clone());
                 meta
             }
         })
