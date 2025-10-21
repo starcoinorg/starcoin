@@ -88,8 +88,7 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        let last_index = txns.len().saturating_sub(1);
-        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
+        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
@@ -101,7 +100,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.push_txn_and_state2(txn_hash, output, index == last_index)?;
+                    self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
                         .push(txn.try_into().expect("user txn"));
@@ -117,6 +116,41 @@ impl OpenedBlock {
             discarded_txns,
             untouched_txns,
         })
+    }
+
+    pub fn finalize_block_epilogue(&mut self) -> anyhow::Result<()> {
+        let (_state, state) = &self.state;
+        // Directly use VM2 BlockEpilogue
+        let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone());
+        let block_epilogue_txn_hash = block_epilogue_txn.id();
+        let mut results = do_execute_block_transactions(
+            state,
+            vec![block_epilogue_txn],
+            Some(self.gas_limit()),
+            self.vm_metrics.clone(),
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let output = results.pop().expect("execute txn has output");
+
+        match output.status() {
+            TransactionStatus2::Discard(status) => {
+                bail!(
+                    "block_epilogue txn {:?} is discarded, vm status: {:?}",
+                    self.block_meta,
+                    status
+                );
+            }
+            TransactionStatus2::Keep(_) => {
+                self.push_txn_and_state2(block_epilogue_txn_hash, output, true)?;
+            }
+            TransactionStatus2::Retry => {
+                bail!(
+                    "block_epilogue txn {:?} is retry impossible",
+                    self.block_meta
+                );
+            }
+        };
+        Ok(())
     }
 
     fn push_txn_and_state2(
