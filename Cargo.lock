@@ -1814,13 +1814,21 @@ checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "colored"
-version = "2.0.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
- "atty",
  "lazy_static 1.5.0",
- "winapi 0.3.9",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "colored"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
+dependencies = [
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6107,7 +6115,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.47",
  "codespan-reporting",
- "colored",
+ "colored 2.2.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-viewer 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6138,7 +6146,7 @@ dependencies = [
  "bcs 0.1.5",
  "clap 3.2.23",
  "codespan-reporting",
- "colored",
+ "colored 2.2.0",
  "difference",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6355,7 +6363,7 @@ dependencies = [
  "bcs 0.1.4",
  "clap 4.5.47",
  "codespan",
- "colored",
+ "colored 2.2.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6374,7 +6382,7 @@ dependencies = [
  "bcs 0.1.5",
  "clap 3.2.23",
  "codespan",
- "colored",
+ "colored 2.2.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6393,7 +6401,7 @@ dependencies = [
  "bcs 0.1.5",
  "clap 4.5.47",
  "codespan",
- "colored",
+ "colored 3.0.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6409,7 +6417,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "clap 4.5.47",
- "colored",
+ "colored 2.2.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6426,7 +6434,7 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "clap 3.2.23",
- "colored",
+ "colored 2.2.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6684,7 +6692,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "clap 4.5.47",
- "colored",
+ "colored 2.2.0",
  "itertools 0.12.1",
  "move-abigen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6719,7 +6727,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "colored",
+ "colored 2.2.0",
  "dirs-next",
  "itertools 0.10.5",
  "move-abigen 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7170,7 +7178,7 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "clap 3.2.23",
- "colored",
+ "colored 2.2.0",
  "hex",
  "jpst",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7207,7 +7215,7 @@ dependencies = [
  "better_any",
  "clap 4.5.47",
  "codespan-reporting",
- "colored",
+ "colored 2.2.0",
  "itertools 0.12.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7235,7 +7243,7 @@ dependencies = [
  "better_any",
  "clap 3.2.23",
  "codespan-reporting",
- "colored",
+ "colored 2.2.0",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
