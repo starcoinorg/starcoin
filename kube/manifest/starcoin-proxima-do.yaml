@@ -34,7 +34,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-2ed810c
+        image: ghcr.io/starcoinorg/starcoin:sha-05398a5
         imagePullPolicy: Always
         command:
           - bash
@@ -59,11 +59,11 @@ spec:
             fi;
         resources:
           requests:
-            cpu: "800m"
+            cpu: "1000m"
             memory: "800Mi"
           limits:
             cpu: "2500m"
-            memory: "2Gi"
+            memory: "4Gi"
         ports:
           - containerPort: 9840
         volumeMounts:

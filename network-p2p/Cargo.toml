@@ -17,7 +17,6 @@ ip_network = { workspace = true }
 linked-hash-map = { workspace = true }
 linked_hash_set = { workspace = true }
 log = { workspace = true }
-lru = { workspace = true }
 network-p2p-types = { workspace = true }
 parking_lot = { workspace = true }
 pin-project = { workspace = true }

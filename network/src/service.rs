@@ -12,7 +12,6 @@ use futures::{
     stream::{self, StreamExt},
     FutureExt,
 };
-use lru::LruCache;
 use network_api::messages::{
     AnnouncementType, BanPeer, GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage,
     PeerEvent, PeerMessage, PeerReputations, ReportReputation, TransactionsMessage,
@@ -21,6 +20,7 @@ use network_api::{
     BroadcastProtocolFilter, NetworkActor, PeerId, PeerInfo, PeerMessageHandler, RpcInfo,
 };
 use network_p2p::{Event, NetworkWorker};
+use quick_cache::unsync::Cache;
 use rand::prelude::SliceRandom;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -415,17 +415,17 @@ const LRU_CACHE_SIZE: usize = 10240;
 #[derive(Debug)]
 pub struct Peer {
     peer_info: PeerInfo,
-    known_transactions: LruCache<HashValue, ()>,
+    known_transactions: Cache<HashValue, ()>,
     /// Holds a set of blocks known to this peer.
-    known_blocks: LruCache<HashValue, ()>,
+    known_blocks: Cache<HashValue, ()>,
 }
 
 impl Peer {
     fn new(peer_info: PeerInfo) -> Self {
         Self {
             peer_info,
-            known_blocks: LruCache::new(LRU_CACHE_SIZE),
-            known_transactions: LruCache::new(LRU_CACHE_SIZE),
+            known_blocks: Cache::new(LRU_CACHE_SIZE),
+            known_transactions: Cache::new(LRU_CACHE_SIZE),
         }
     }
 
@@ -511,15 +511,15 @@ impl Inner {
                 NotificationMessage::Transactions(peer_transactions) => {
                     for txn in &peer_transactions.txns {
                         let id = txn.id();
-                        peer_info.known_transactions.put(id, ());
+                        peer_info.known_transactions.insert(id, ());
                     }
                     let txns_after_filter = peer_transactions
                         .txns
                         .iter()
                         .filter(|txn| {
                             let txn_id = txn.id();
-                            if !self.self_peer.known_transactions.contains(&txn_id) {
-                                self.self_peer.known_transactions.put(txn_id, ());
+                            if !self.self_peer.known_transactions.contains_key(&txn_id) {
+                                self.self_peer.known_transactions.insert(txn_id, ());
                                 true
                             } else {
                                 false
@@ -549,16 +549,16 @@ impl Inner {
                         "total_difficulty is {},peer_info is {:?}",
                         total_difficulty, peer_info
                     );
-                    peer_info.known_blocks.put(block_id, ());
+                    peer_info.known_blocks.insert(block_id, ());
                     peer_info.peer_info.update_chain_status(ChainStatus::new(
                         block_header,
                         compact_block_message.block_info.clone(),
                     ));
 
-                    if self.self_peer.known_blocks.contains(&block_id) {
+                    if self.self_peer.known_blocks.contains_key(&block_id) {
                         None
                     } else {
-                        self.self_peer.known_blocks.put(block_id, ());
+                        self.self_peer.known_blocks.insert(block_id, ());
                         Some(notification)
                     }
                 }
@@ -567,10 +567,10 @@ impl Inner {
                     if announcement.is_txn() {
                         let mut fresh_ids = Vec::new();
                         for txn_id in announcement.clone().ids() {
-                            peer_info.known_transactions.put(txn_id, ());
+                            peer_info.known_transactions.insert(txn_id, ());
 
-                            if !self.self_peer.known_transactions.contains(&txn_id) {
-                                self.self_peer.known_transactions.put(txn_id, ());
+                            if !self.self_peer.known_transactions.contains_key(&txn_id) {
+                                self.self_peer.known_transactions.insert(txn_id, ());
                                 fresh_ids.push(txn_id);
                             };
                         }
@@ -674,18 +674,18 @@ impl Inner {
         match notification {
             NotificationMessage::Transactions(txn_message) => {
                 txn_message.txns.iter().for_each(|txn| {
-                    self.self_peer.known_transactions.put(txn.id(), ());
+                    self.self_peer.known_transactions.insert(txn.id(), ());
                 })
             }
             NotificationMessage::CompactBlock(block) => {
                 self.self_peer
                     .known_blocks
-                    .put(block.compact_block.header.id(), ());
+                    .insert(block.compact_block.header.id(), ());
             }
             NotificationMessage::Announcement(announcement) => {
                 if announcement.is_txn() {
                     announcement.ids().into_iter().for_each(|txn_id| {
-                        self.self_peer.known_transactions.put(txn_id, ());
+                        self.self_peer.known_transactions.insert(txn_id, ());
                     })
                 }
             }
@@ -718,7 +718,7 @@ impl Inner {
                         ),
                 );
 
-                self.self_peer.known_blocks.put(id, ());
+                self.self_peer.known_blocks.insert(id, ());
                 let (protocol_name, message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
@@ -727,7 +727,7 @@ impl Inner {
                     .peers
                     .values()
                     .filter(|peer| {
-                        if peer.known_blocks.contains(&id) {
+                        if peer.known_blocks.contains_key(&id) {
                             trace!(
                                 "peer({:?}) know this block({:?}), so do not broadcast. ",
                                 peer.peer_info.peer_id(),
@@ -756,7 +756,7 @@ impl Inner {
                 let peers_send_message = selected_peers.len();
                 for peer_id in &selected_peers {
                     let peer = self.peers.get_mut(peer_id).expect("peer should exists");
-                    peer.known_blocks.put(id, ());
+                    peer.known_blocks.insert(id, ());
                     prepare_to_broadcast.push((
                         protocol_name.clone(),
                         peer_id.clone(),
@@ -773,7 +773,7 @@ impl Inner {
                     .encode_notification()
                     .expect("Encode notification message should ok");
                 msg.txns.iter().for_each(|txn| {
-                    self.self_peer.known_transactions.put(txn.id(), ());
+                    self.self_peer.known_transactions.insert(txn.id(), ());
                 });
                 let origin_txn_len = msg.txns.len();
                 let mut send_peer_count: usize = 0;
@@ -796,8 +796,8 @@ impl Inner {
                         .iter()
                         .filter(|txn| {
                             let id = txn.id();
-                            if !peer.known_transactions.contains(&id) {
-                                peer.known_transactions.put(id, ());
+                            if !peer.known_transactions.contains_key(&id) {
+                                peer.known_transactions.insert(id, ());
                                 true
                             } else {
                                 false

@@ -307,7 +307,7 @@ async fn account_worker(
                     }
                 }
             }
-            AccountState::Submitted((txn_hash, ref mut rx)) => match rx.try_recv() {
+            AccountState::Submitted((txn_hash, rx)) => match rx.try_recv() {
                 Ok(_) => {
                     info!("txn {txn_hash} confirmed for {}", entry.address);
                     state = AccountState::Finished;
@@ -371,12 +371,12 @@ async fn txn_confirmer(client: Arc<AsyncRpcClient>, mut rx: mpsc::Receiver<TxnRe
                         Ok(Some(event)) => {
                             let mut txns = event.body.txn_hashes();
                             txns.retain(|hash| {
-                                if let Some(receipt) = unconfirmed_txns.remove(hash) {
+                                match unconfirmed_txns.remove(hash) { Some(receipt) => {
                                     receipt.response_tx.send(Ok(())).expect("Failed to send confirmation for txn");
                                     false
-                                } else {
+                                } _ => {
                                     true
-                                }
+                                }}
                             });
                             confirmed_txns.extend(txns);
                         }

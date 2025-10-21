@@ -4,7 +4,7 @@ use crate::{decrypt, encrypt};
 fn test_encryption() {
     let secret = "hello";
     let plain = "world";
-    let encrypted = encrypt(secret.as_bytes(), plain.as_bytes());
+    let encrypted = encrypt(secret.as_bytes(), plain.as_bytes()).unwrap();
     assert_ne!(encrypted.as_slice(), plain.as_bytes());
 
     let decrypted = decrypt(secret.as_bytes(), encrypted.as_slice()).unwrap();

@@ -8,8 +8,8 @@ use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAC_CACHE_SIZE};
 use anyhow::{bail, format_err, Result};
-use lru::LruCache;
 use mirai_annotations::*;
+use quick_cache::unsync::Cache;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -26,7 +26,7 @@ pub struct AccumulatorTree {
     /// The root hash of this accumulator.
     pub(crate) root_hash: HashValue,
     /// The index cache
-    index_cache: LruCache<NodeCacheKey, HashValue>,
+    index_cache: Cache<NodeCacheKey, HashValue>,
     /// The storage of accumulator.
     pub(crate) store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
@@ -56,7 +56,7 @@ impl AccumulatorTree {
         };
         let s = Self {
             frozen_subtree_roots,
-            index_cache: LruCache::new(MAC_CACHE_SIZE),
+            index_cache: Cache::new(MAC_CACHE_SIZE),
             num_leaves,
             num_nodes,
             root_hash,
@@ -370,9 +370,10 @@ impl AccumulatorTree {
         let id = format!("{:p}", self);
         let cache = &mut self.index_cache;
         for node in nodes {
-            if let Some(old) = cache.put(node.index(), node.hash()) {
+            if let Some(old) = cache.get(&node.index()) {
                 trace!("cache exist node hash: {}-{:?}-{:?}", id, node.index(), old);
             }
+            cache.insert(node.index(), node.hash());
         }
     }
 

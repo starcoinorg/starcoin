@@ -106,18 +106,19 @@ fn txn_transfer(
     let mut temp_index: Option<Index> = None;
     let expired = universe.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
-        .map(|(index, gen)| {
+        .map(|(index, r#gen)| {
             if temp_index.is_none() {
                 temp_index = Some(index);
             }
             Transaction::UserTransaction(
-                gen.materialize(
-                    temp_index.unwrap(),
-                    universe,
-                    expired,
-                    Some(gen_script_payload()),
-                )
-                .into_inner(),
+                r#gen
+                    .materialize(
+                        temp_index.unwrap(),
+                        universe,
+                        expired,
+                        Some(gen_script_payload()),
+                    )
+                    .into_inner(),
             )
         })
         .collect::<Vec<_>>()

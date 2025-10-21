@@ -19,7 +19,7 @@ macro_rules! verify_block {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!($msg)).into())
         }
     };
-    ($verify_field:expr, $cond:expr, $err:expr $(,)?) => {
+    ($verify_field:expr, $cond:expr, $err:expr$(,)?) => {
         if !$cond {
             return Err(ConnectBlockError::VerifyBlockFailed($verify_field, anyhow::anyhow!($err)).into())
         }

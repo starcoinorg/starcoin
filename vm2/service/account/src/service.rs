@@ -72,14 +72,17 @@ impl ActorService for AccountService {
         {
             let association_account = self.manager.account_info(association_address())?;
             if association_account.is_none() {
-                if let Err(e) = self.manager.import_account(
+                match self.manager.import_account(
                     association_address(),
                     association_private_key.to_bytes().to_vec(),
                     "",
                 ) {
-                    error!("Import association account error:{:?}", e)
-                } else {
-                    info!("Import association account to wallet.");
+                    Err(e) => {
+                        error!("Import association account error:{:?}", e)
+                    }
+                    _ => {
+                        info!("Import association account to wallet.");
+                    }
                 }
             }
         }

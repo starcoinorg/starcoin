@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::StateError::AccountNotExist;
-use anyhow::{bail, ensure, format_err, Result};
+use anyhow::{bail, ensure, format_err, Ok, Result};
 use bcs_ext::BCSCodec;
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
-use lru::LruCache;
 use parking_lot::{Mutex, RwLock};
+use quick_cache::sync::Cache;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -41,6 +41,7 @@ pub enum StateError {
     AccountNotExist(AccountAddress),
 }
 
+#[derive(Clone)]
 enum CacheItem {
     AccountObject(Arc<AccountStateObject>),
     AccountNotExist(),
@@ -215,10 +216,10 @@ pub struct ChainStateDB {
     store: Arc<dyn StateNodeStore>,
     ///global state tree.
     state_tree: StateTree<AccountAddress>,
-    cache: Mutex<LruCache<AccountAddress, CacheItem>>,
+    cache: Cache<AccountAddress, CacheItem>,
     updates: RwLock<HashSet<AccountAddress>>,
     updates_table_handle: RwLock<HashSet<TableHandle>>,
-    cache_table_handle: Mutex<LruCache<TableHandle, Arc<TableHandleStateObject>>>,
+    cache_table_handle: Cache<TableHandle, Arc<TableHandleStateObject>>,
     /// state_tree_table_handles_list root_hash Vec save in TABLE_PATH_LIST
     /// state_tree_table_handles is element of state_tree_table_handles_list
     /// state_tree_table_handles SMT save TableHandle -> TableHandleState.root_hash
@@ -237,10 +238,10 @@ impl ChainStateDB {
         let mut chain_statedb = ChainStateDB {
             store: store.clone(),
             state_tree: StateTree::new(store.clone(), root_hash),
-            cache: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
+            cache: Cache::new(G_DEFAULT_CACHE_SIZE),
             updates: RwLock::new(HashSet::new()),
             updates_table_handle: RwLock::new(HashSet::new()),
-            cache_table_handle: Mutex::new(LruCache::new(G_DEFAULT_CACHE_SIZE)),
+            cache_table_handle: Cache::new(G_DEFAULT_CACHE_SIZE),
             state_tree_table_handles_list: vec![],
             update_table_handle_idx_list: Mutex::new(HashSet::new()),
         };
@@ -295,8 +296,7 @@ impl ChainStateDB {
                 if create {
                     let account_state_object =
                         Arc::new(AccountStateObject::empty_account(self.store.clone()));
-                    let mut cache = self.cache.lock();
-                    cache.put(
+                    self.cache.insert(
                         *account_address,
                         CacheItem::new(account_state_object.clone()),
                     );
@@ -312,25 +312,28 @@ impl ChainStateDB {
         &self,
         account_address: &AccountAddress,
     ) -> Result<Option<Arc<AccountStateObject>>> {
-        let mut cache = self.cache.lock();
-        let item = cache.get(account_address);
-        let object = match item {
-            Some(item) => item.as_object(),
-            None => {
-                let object = self
-                    .get_account_state(account_address)?
-                    .map(|account_state| {
-                        Arc::new(AccountStateObject::new(account_state, self.store.clone()))
-                    });
-                let cache_item = match &object {
-                    Some(object) => CacheItem::new(object.clone()),
-                    None => CacheItem::AccountNotExist(),
-                };
-                cache.put(*account_address, cache_item);
-                object
-            }
+        if let Some(item) = self.cache.get(account_address) {
+            return Ok(item.as_object());
+        }
+
+        let object = self
+            .get_account_state(account_address)?
+            .map(|account_state| {
+                Arc::new(AccountStateObject::new(account_state, self.store.clone()))
+            });
+
+        let cache_item = match &object {
+            Some(obj) => CacheItem::new(obj.clone()),
+            None => CacheItem::AccountNotExist(),
         };
-        Ok(object)
+
+        let item = self
+            .cache
+            .get_or_insert_with(account_address, || -> Result<CacheItem, anyhow::Error> {
+                Ok(cache_item)
+            })?;
+
+        Ok(item.as_object())
     }
 
     fn get_account_state(&self, account_address: &AccountAddress) -> Result<Option<AccountState>> {
@@ -346,27 +349,29 @@ impl ChainStateDB {
         &self,
         handle: &TableHandle,
     ) -> Result<Arc<TableHandleStateObject>> {
+        if let Some(item) = self.cache_table_handle.get(handle) {
+            return Ok(item.clone());
+        }
+
         let idx = handle.get_idx()?;
-        let mut cache = self.cache_table_handle.lock();
-        let item = cache.get(handle);
-        let object = match item {
-            Some(item) => item.clone(),
-            None => {
-                let val = self.get_state_tree_table_handles(idx)?.get(handle)?;
-                let hash = match val {
-                    Some(val) => HashValue::from_slice(val)?,
-                    None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
-                };
-                let obj = Arc::new(TableHandleStateObject::new(
-                    *handle,
-                    self.store.clone(),
-                    hash,
-                ));
-                cache.put(*handle, obj.clone());
-                obj
-            }
+        let val = self.get_state_tree_table_handles(idx)?.get(handle)?;
+        let hash = match val {
+            Some(val) => HashValue::from_slice(val)?,
+            None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
         };
-        Ok(object)
+
+        let obj = Arc::new(TableHandleStateObject::new(
+            *handle,
+            self.store.clone(),
+            hash,
+        ));
+
+        let item = self.cache_table_handle.get_or_insert_with(
+            handle,
+            || -> Result<Arc<TableHandleStateObject>, anyhow::Error> { Ok(obj.clone()) },
+        )?;
+
+        Ok(item)
     }
 
     #[cfg(test)]
@@ -662,8 +667,7 @@ impl ChainStateWriter for ChainStateDB {
             locks.insert(*address);
 
             // Remove it from cache
-            let mut cache_lock = self.cache.lock();
-            cache_lock.pop(address);
+            self.cache.remove(address);
 
             let code_root = if let Some(state_set) = account_state_set.code_set() {
                 let state_tree = StateTree::<ModuleName>::new(self.store.clone(), None);
