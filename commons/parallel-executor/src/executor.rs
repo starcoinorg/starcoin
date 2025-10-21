@@ -11,6 +11,7 @@ use crate::{
 use num_cpus;
 use once_cell::sync::Lazy;
 use starcoin_infallible::Mutex;
+use starcoin_logger::prelude::error;
 use starcoin_mvhashmap::MVHashMap;
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
 
@@ -285,6 +286,60 @@ where
         }
     }
 
+    fn execute_block_meta_data_txn(
+        &self,
+        executor_arguments: &E::Argument,
+        block: &[T],
+        last_input_output: &TxnLastInputOutput<
+            <T as Transaction>::Key,
+            <E as ExecutorTask>::Output,
+            <E as ExecutorTask>::Error,
+        >,
+        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        scheduler: &Scheduler,
+    ) {
+        if block.is_empty() || !block[0].is_block_meta_data() {
+            return;
+        }
+
+        let executor = E::init(*executor_arguments);
+        match scheduler.next_task() {
+            SchedulerTask::ExecutionTask(version, None, guard) => {
+                let (idx_to_execute, incarnation) = version;
+                assert!(idx_to_execute == 0 && incarnation == 0);
+                self.execute(
+                    version,
+                    guard,
+                    block,
+                    last_input_output,
+                    versioned_data_cache,
+                    scheduler,
+                    &executor,
+                );
+            }
+            _ => {
+                unreachable!()
+            }
+        };
+
+        match scheduler.next_task() {
+            SchedulerTask::ValidationTask(version, guard) => {
+                let (idx_to_execute, incarnation) = version;
+                assert!(idx_to_execute == 0 && incarnation == 0);
+                self.validate(
+                    version,
+                    guard,
+                    last_input_output,
+                    versioned_data_cache,
+                    scheduler,
+                );
+            }
+            _ => {
+                error!("second task from scheduler should be validation of block metadata txn, maybe execute block meta txn failed?");
+            }
+        };
+    }
+
     pub fn execute_transactions_parallel(
         &self,
         executor_initial_arguments: E::Argument,
@@ -298,6 +353,16 @@ where
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns);
+
+        // BlockMetadata is always the first txn of block that modifies fundamental info of block
+        // other txns depends on this execution result, execute it first to avoid unnecessary contention
+        self.execute_block_meta_data_txn(
+            &executor_initial_arguments,
+            &signature_verified_block,
+            &last_input_output,
+            &versioned_data_cache,
+            &scheduler,
+        );
 
         RAYON_EXEC_POOL.scope(|s| {
             for _ in 0..self.concurrency_level {

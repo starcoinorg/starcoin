@@ -321,7 +321,7 @@ impl StarcoinVM {
         // The submitted gas price is greater than the maximum gas unit price set by the VM.
         if txn_data.gas_unit_price() > txn_gas_params.max_price_per_gas_unit {
             warn!(
-                "[VM] Gas unit error; min {}, submitted {}",
+                "[VM] Gas unit error; max {}, submitted {}",
                 txn_gas_params.max_price_per_gas_unit,
                 txn_data.gas_unit_price()
             );

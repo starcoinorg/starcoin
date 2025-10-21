@@ -506,6 +506,14 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn new_for_halley() -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Halley.into()),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
     pub fn customize_for_test() -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Test.into()),
