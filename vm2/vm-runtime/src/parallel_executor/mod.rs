@@ -29,10 +29,7 @@ impl PTransaction for PreprocessedTransaction {
     type Value = WriteOp;
 
     fn is_block_meta_data(&self) -> bool {
-        match self {
-            PreprocessedTransaction::BlockMetadata(_) => true,
-            _ => false,
-        }
+        matches!(self, PreprocessedTransaction::BlockMetadata(_))
     }
 }
 
