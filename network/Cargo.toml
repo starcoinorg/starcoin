@@ -16,7 +16,6 @@ starcoin-crypto = { workspace = true }
 bitflags = { workspace = true }
 fnv = { workspace = true }
 zeroize = { workspace = true }
-lru = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 tempfile = { workspace = true }
@@ -34,6 +33,7 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
 sc-peerset = { workspace = true }
+quick_cache = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }

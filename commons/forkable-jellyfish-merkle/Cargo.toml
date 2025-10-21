@@ -18,6 +18,7 @@ serde_bytes = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 thiserror = { workspace = true }
+parking_lot = { workspace = true }
 
 [dev-dependencies]
 bcs = { workspace = true }

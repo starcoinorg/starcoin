@@ -2,7 +2,6 @@
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
-lru = { workspace = true }
 parking_lot = { workspace = true }
 serde = { workspace = true }
 starcoin-crypto = { workspace = true }
@@ -13,6 +12,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 once_cell = "1.17.1"
+quick_cache = { workspace = true }
 
 [package]
 authors = { workspace = true }
