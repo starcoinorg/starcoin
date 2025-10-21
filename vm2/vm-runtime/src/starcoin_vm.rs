@@ -949,6 +949,36 @@ impl StarcoinVM {
         get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
+    fn process_block_epilogue<S: StarcoinMoveResolver>(
+        &self,
+        storage: &S,
+    ) -> Result<TransactionOutput, VMStatus> {
+        #[cfg(feature = "testing")]
+        info!("process_block_meta begin");
+        let txn_sender = account_config::genesis_address();
+        let mut gas_meter = UnmeteredGasMeter;
+        let session_id = SessionId::void();
+        let function_name = &account_config::G_BLOCK_EPILOGUE_NAME;
+        let args_vec = vec![MoveValue::Signer(txn_sender)];
+        let args = serialize_values(&args_vec);
+        let mut session = self.move_vm.new_session(storage, session_id);
+        let traverse_storage = TraversalStorage::new();
+        session
+            .execute_function_bypass_visibility(
+                &account_config::G_BLOCK_MODULE,
+                function_name,
+                vec![],
+                args,
+                &mut gas_meter,
+                &mut TraversalContext::new(&traverse_storage),
+            )
+            .map(|_return_vals| ())
+            .or_else(convert_prologue_runtime_error)?;
+        #[cfg(feature = "testing")]
+        info!("process_block_meta end");
+        get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
+    }
+
     fn execute_user_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         storage: &S,
@@ -1231,6 +1261,55 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
+                TransactionBlock::BlockEpilogue(_) => {
+                    #[cfg(feature = "metrics")]
+                    let timer = self.metrics.as_ref().map(|metrics| {
+                        metrics
+                            .vm_txn_exe_time
+                            .with_label_values(&[txn_type_name.as_str()])
+                            .start_timer()
+                    });
+
+                    let (status, output) =
+                        match self.process_block_epilogue(&data_cache.as_move_resolver()) {
+                            Ok(output) => (VMStatus::Executed, output),
+                            Err(vm_status) => discard_error_vm_status(vm_status),
+                        };
+
+                    debug_assert_eq!(
+                        output.gas_used(),
+                        0,
+                        "Block epilogue transaction gas_used must be zero."
+                    );
+                    if let TransactionStatus::Keep(status) = output.status() {
+                        debug_assert_eq!(
+                            status,
+                            &KeptVMStatus::Executed,
+                            "Block epilogue transaction keep status must been Executed."
+                        );
+                        // Push write set to write set
+                        data_cache
+                            .push_write_set(output.write_set())
+                            .map_err(|err| {
+                                VMStatus::error(StatusCode::STORAGE_ERROR, Some(err.to_string()))
+                            })?;
+                    }
+                    #[cfg(feature = "metrics")]
+                    if let Some(timer) = timer {
+                        timer.observe_duration();
+                    }
+                    #[cfg(feature = "metrics")]
+                    if let Some(metrics) = self.metrics.as_ref() {
+                        metrics
+                            .vm_txn_exe_total
+                            .with_label_values(&[
+                                txn_type_name.as_str(),
+                                status.status_type().to_string().as_str(),
+                            ])
+                            .inc();
+                    }
+                    result.push((status, output));
+                }
             }
         }
         Ok(result)
@@ -1438,6 +1517,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
+    BlockEpilogue(BlockMetadata),
 }
 
 impl TransactionBlock {
@@ -1445,6 +1525,7 @@ impl TransactionBlock {
         match self {
             Self::UserTransaction(_) => "UserTransaction",
             Self::BlockPrologue(_) => "BlockMetadata",
+            Self::BlockEpilogue(_) => "BlockEpilogue",
         }
     }
 }
@@ -1464,6 +1545,13 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
             }
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
+            }
+            Transaction::BlockEpilogue(data) => {
+                if !buf.is_empty() {
+                    blocks.push(TransactionBlock::UserTransaction(buf));
+                    buf = vec![];
+                }
+                blocks.push(TransactionBlock::BlockEpilogue(data));
             }
         }
     }
@@ -1633,6 +1721,13 @@ impl StarcoinVM {
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
                 (vm_status, output, Some("block_meta".to_string()))
+            }
+            PreprocessedTransaction::BlockEpilogue(_) => {
+                let (vm_status, output) = match self.process_block_epilogue(data_cache) {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
+                (vm_status, output, Some("block_epilogue".to_string()))
             }
         })
     }

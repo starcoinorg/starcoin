@@ -84,17 +84,18 @@ impl Meta {
     }
 }
 
-fn derive_key(derivation_param: &KeyDerivationParams, secret: &[u8]) -> [u8; 32] {
+fn derive_key(derivation_param: &KeyDerivationParams, secret: &[u8]) -> Result<[u8; 32]> {
     // 256-bit derived key
     let mut dk = [0u8; 32];
     // use secret to derive a key to encrypt plaintext
+    // This should never fail if the secret provided correctly.
     pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha256>>(
         secret,
         &derivation_param.pbkdf2_salt,
         derivation_param.pbkdf2_iterations,
         &mut dk,
-    );
-    dk
+    )?;
+    Ok(dk)
 }
 
 fn aes_encrypt(encryption_param: &EncryptionParams, key: [u8; 32], plain: &[u8]) -> Vec<u8> {
@@ -119,14 +120,14 @@ fn aes_decrypt(
     }
 }
 
-pub fn encrypt(secret: &[u8], plain: &[u8]) -> Vec<u8> {
+pub fn encrypt(secret: &[u8], plain: &[u8]) -> Result<Vec<u8>> {
     let meta = Meta::generate();
     // 256-bit derived key
-    let dk = derive_key(&meta.key_derive_params, secret);
+    let dk = derive_key(&meta.key_derive_params, secret)?;
     let mut ciphertext = aes_encrypt(&meta.encryption_params, dk, plain);
     let mut result = meta.encode();
     result.append(&mut ciphertext);
-    result
+    Ok(result)
 }
 
 pub fn decrypt(secret: &[u8], encrypted: &[u8]) -> Result<Vec<u8>> {
@@ -136,7 +137,7 @@ pub fn decrypt(secret: &[u8], encrypted: &[u8]) -> Result<Vec<u8>> {
     let meta = Meta::decode(&encrypted[0..META_LEN])?;
     let crypted = &encrypted[META_LEN..];
 
-    let dk = derive_key(&meta.key_derive_params, secret);
+    let dk = derive_key(&meta.key_derive_params, secret)?;
     aes_decrypt(&meta.encryption_params, dk, crypted)
 }
 

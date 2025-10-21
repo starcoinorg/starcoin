@@ -180,7 +180,7 @@ fn test_cache_multi_get_with_evict() -> Result<()> {
     let mut write_batch = CodecWriteBatch::new();
     let transaction_info1 = random_txn_info(0);
     let id1 = transaction_info1.id();
-    write_batch.put(id1, transaction_info1)?;
+    write_batch.put(id1, transaction_info1.clone())?;
     let transaction_info2 = random_txn_info(1);
     let id2 = transaction_info2.id();
     write_batch.put(id2, transaction_info2.clone())?;
@@ -194,15 +194,20 @@ fn test_cache_multi_get_with_evict() -> Result<()> {
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
 
-    assert!(&infos.first().unwrap().is_none(), "id1 has evicted");
-    assert_eq!(
-        StcRichTransactionInfo::decode_value(&infos.get(1).unwrap().clone().unwrap())?,
-        transaction_info2
-    );
-    assert_eq!(
-        StcRichTransactionInfo::decode_value(&infos.get(2).unwrap().clone().unwrap())?,
-        transaction_info3
-    );
+    let transaction_infos = vec![transaction_info1, transaction_info2, transaction_info3];
+    let mut retained_count = 0;
+    for (idx, info) in infos.iter().enumerate() {
+        if info.is_some() {
+            retained_count += 1;
+            assert_eq!(
+                StcRichTransactionInfo::decode_value(&infos.get(idx).unwrap().clone().unwrap())?,
+                transaction_infos[idx]
+            );
+        }
+    }
+
+    // quick-cache uses sharding/segmentation or an approximate LRU (not a single global, exact LRU)
+    assert!(retained_count == 2, "only two items should be retained");
     Ok(())
 }
 

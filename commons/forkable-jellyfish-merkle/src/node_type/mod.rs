@@ -21,13 +21,13 @@ use anyhow::{ensure, Context, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::cast::FromPrimitive;
+use parking_lot::RwLock;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::hash_map, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::*;
-use std::cell::Cell;
 use std::{
     collections::hash_map::HashMap,
     io::{prelude::*, Cursor, Read, SeekFrom},
@@ -62,12 +62,12 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// Though we choose the same internal node structure as that of Patricia Merkle tree, the root hash
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct InternalNode {
     // Up to 16 children.
     children: Children,
     //Node's hash cache
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: RwLock<Option<HashValue>>,
 }
 
 /// Computes the hash of internal node according to [`JellyfishTree`](crate::JellyfishTree)
@@ -126,6 +126,37 @@ impl PlainCryptoHash for InternalNode {
     }
 }
 
+impl Clone for InternalNode {
+    fn clone(&self) -> Self {
+        let children = self.children.clone();
+
+        let cached_hash = {
+            let read_guard = self.cached_hash.read();
+            RwLock::new(*read_guard)
+        };
+
+        Self {
+            children,
+            cached_hash,
+        }
+    }
+}
+
+impl PartialEq for InternalNode {
+    fn eq(&self, other: &Self) -> bool {
+        if self.children != other.children {
+            return false;
+        }
+
+        let self_cache = self.cached_hash.read();
+        let other_cache = other.cached_hash.read();
+
+        *self_cache == *other_cache
+    }
+}
+
+impl Eq for InternalNode {}
+
 #[cfg(any(test, feature = "fuzzing"))]
 impl Arbitrary for InternalNode {
     type Parameters = ();
@@ -161,19 +192,21 @@ impl InternalNode {
         }
         Self {
             children,
-            cached_hash: Cell::new(None),
+            cached_hash: RwLock::new(None),
         }
     }
 
     pub fn cached_hash(&self) -> HashValue {
-        match self.cached_hash.get() {
-            Some(hash) => hash,
-            None => {
-                let hash = self.crypto_hash();
-                self.cached_hash.set(Some(hash));
-                hash
+        {
+            let read_guard = self.cached_hash.read();
+            if let Some(hash) = *read_guard {
+                return hash;
             }
         }
+
+        let hash = self.crypto_hash();
+        *self.cached_hash.write() = Some(hash);
+        hash
     }
 
     pub fn serialize(&self, binary: &mut Vec<u8>) -> Result<()> {
@@ -428,7 +461,7 @@ where
     K::decode_key(bytes.as_ref()).map_err(D::Error::custom)
 }
 /// Represents an account.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LeafNode<K: RawKey> {
     /// The origin key associated with this leaf node's Blob.
     #[serde(
@@ -441,7 +474,7 @@ pub struct LeafNode<K: RawKey> {
     /// The blob associated with `raw_key`.
     blob: Blob,
     #[serde(skip)]
-    cached_hash: Cell<Option<HashValue>>,
+    cached_hash: RwLock<Option<HashValue>>,
 }
 
 impl<K> LeafNode<K>
@@ -455,19 +488,21 @@ where
             raw_key,
             blob_hash,
             blob,
-            cached_hash: Cell::new(None),
+            cached_hash: RwLock::new(None),
         }
     }
 
     pub fn cached_hash(&self) -> HashValue {
-        match self.cached_hash.get() {
-            Some(hash) => hash,
-            None => {
-                let hash = self.crypto_hash();
-                self.cached_hash.set(Some(hash));
-                hash
+        {
+            let read_guard = self.cached_hash.read();
+            if let Some(hash) = *read_guard {
+                return hash;
             }
         }
+
+        let hash = self.crypto_hash();
+        *self.cached_hash.write() = Some(hash);
+        hash
     }
 
     /// Gets the raw key
@@ -504,6 +539,44 @@ where
         SparseMerkleLeafNode::new(self.raw_key.key_hash(), self.blob_hash).crypto_hash()
     }
 }
+
+impl<K: RawKey + Clone> Clone for LeafNode<K> {
+    fn clone(&self) -> Self {
+        let raw_key = self.raw_key.clone();
+        let blob_hash = self.blob_hash;
+        let blob = self.blob.clone();
+
+        let cached_hash = {
+            let read_guard = self.cached_hash.read();
+            RwLock::new(*read_guard)
+        };
+
+        Self {
+            raw_key,
+            blob_hash,
+            blob,
+            cached_hash,
+        }
+    }
+}
+
+impl<K: RawKey + PartialEq> PartialEq for LeafNode<K> {
+    fn eq(&self, other: &Self) -> bool {
+        if !(self.raw_key == other.raw_key
+            && self.blob_hash == other.blob_hash
+            && self.blob == other.blob)
+        {
+            return false;
+        }
+
+        let self_cache = self.cached_hash.read();
+        let other_cache = other.cached_hash.read();
+
+        *self_cache == *other_cache
+    }
+}
+
+impl<K: RawKey + Eq> Eq for LeafNode<K> {}
 
 #[repr(u8)]
 #[derive(FromPrimitive, ToPrimitive)]

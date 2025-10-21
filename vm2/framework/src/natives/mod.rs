@@ -16,6 +16,7 @@ pub mod object;
 pub mod object_code_deployment;
 pub mod randomness;
 pub mod state_storage;
+pub mod stc_transaction_fee;
 pub mod string_utils;
 pub mod transaction_context;
 pub mod type_info;
@@ -87,6 +88,10 @@ pub fn all_natives(
     add_natives_from_module!(
         "dispatchable_fungible_asset",
         dispatchable_fungible_asset::make_all(builder)
+    );
+    add_natives_from_module!(
+        "stc_transaction_fee",
+        stc_transaction_fee::make_all(builder)
     );
 
     make_table_from_iter(framework_addr, natives)
