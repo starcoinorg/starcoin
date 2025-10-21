@@ -31,7 +31,7 @@ impl PTransaction for PreprocessedTransaction {
     fn is_block_meta_data(&self) -> bool {
         match self {
             PreprocessedTransaction::BlockMetadata(_) => true,
-            PreprocessedTransaction::UserTransaction(_) => false,
+            _ => false,
         }
     }
 }
