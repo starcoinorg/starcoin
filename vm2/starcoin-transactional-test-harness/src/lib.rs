@@ -37,6 +37,7 @@ use starcoin_vm2_vm_types::account_config::{
 use move_core_types::vm_status::KeptVMStatus;
 use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 
+use log::{info, warn};
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
@@ -54,7 +55,6 @@ use std::{
     str::FromStr,
     sync::Mutex,
 };
-use log::{info, warn};
 use tempfile::{NamedTempFile, TempDir};
 
 use starcoin_config::BuiltinNetworkID;
@@ -1134,7 +1134,6 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             )
         };
 
-        
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps_v1 {
             let mut writes = WriteSetMut::default();
@@ -1163,9 +1162,11 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 .collect();
 
             for c in &compiled_filtered {
-                info!("MoveTestAdapter::init | pre_compiled_deps_v1, compiled unit: {:?}", c);
+                info!(
+                    "MoveTestAdapter::init | pre_compiled_deps_v1, compiled unit: {:?}",
+                    c
+                );
                 if let CompiledUnitEnum::Module(m) = c {
-
                     // update named_address_mapping
                     if let Some(named_address) = &m.address_name {
                         let name = named_address.value.to_string();
@@ -1186,7 +1187,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     }
 
                     let state_key = StateKey::module_id(&m.named_module.module.self_id());
-                    info!("MoveAdapter::init | write pre_compiled_lib, write: {:?}", state_key);
+                    info!(
+                        "MoveAdapter::init | write pre_compiled_lib, write: {:?}",
+                        state_key
+                    );
                     writes.insert((
                         state_key,
                         WriteOp::legacy_modification({
