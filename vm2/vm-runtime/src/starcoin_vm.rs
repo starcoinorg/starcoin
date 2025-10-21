@@ -738,10 +738,10 @@ impl StarcoinVM {
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
-        info!(
-            "StarcoinVM::run_prologue | Gas token data: {:?}",
-            gas_token_ty
-        );
+        // info!(
+        //     "StarcoinVM::run_prologue | Gas token data: {:?}",
+        //     gas_token_ty
+        // );
 
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
