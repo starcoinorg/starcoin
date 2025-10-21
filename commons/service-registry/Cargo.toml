@@ -2,7 +2,6 @@
 actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 log = { workspace = true }

@@ -10,7 +10,6 @@ use crate::{
 };
 use anyhow::Result;
 use bytes::Bytes;
-use fxhash;
 use hashbrown::HashMap;
 use move_core_types::{
     account_address::AccountAddress,
@@ -213,7 +212,7 @@ pub struct StateKeyRegistry {
 
 impl StateKeyRegistry {
     pub fn hash_address_and_name(address: &AccountAddress, name: &[u8]) -> usize {
-        let mut hasher = fxhash::FxHasher::default();
+        let mut hasher = rustc_hash::FxHasher::default();
         hasher.write_u8(address.as_ref()[AccountAddress::LENGTH - 1]);
         if !name.is_empty() {
             hasher.write_u8(name[0]);
