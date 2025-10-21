@@ -1809,7 +1809,7 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3362992a0d9f1dd7c3d0e89e0ab2bb540b7a95fea8cd798090e758fda2899b5e"
 dependencies = [
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "serde 1.0.205",
 ]
 
@@ -1822,6 +1822,17 @@ dependencies = [
  "serde 1.0.205",
  "termcolor",
  "unicode-width 0.1.10",
+]
+
+[[package]]
+name = "codespan-reporting"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba7a06c0b31fff5ff2e1e7d37dbf940864e2a974b336e1a2938d10af6e8fb283"
+dependencies = [
+ "serde 1.0.205",
+ "termcolor",
+ "unicode-width 0.2.2",
 ]
 
 [[package]]
@@ -2490,7 +2501,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48fcaf066a053a41a81dfb14d57d99738b767febb8b735c3016e469fac5da690"
 dependencies = [
  "cc",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "once_cell",
  "proc-macro2 1.0.101",
  "quote 1.0.36",
@@ -6145,7 +6156,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "colored 2.0.0",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-viewer 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6176,7 +6187,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "colored 2.0.0",
  "difference",
  "itertools 0.10.5",
@@ -6256,7 +6267,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-borrow-graph 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6282,7 +6293,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "clap 3.2.23",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "difference",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6312,7 +6323,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "ethnum",
  "flexi_logger",
  "im",
@@ -6484,7 +6495,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.47",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6502,7 +6513,7 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "itertools 0.10.5",
  "log 0.4.27",
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6580,7 +6591,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "anyhow",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6598,7 +6609,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "anyhow",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -6671,7 +6682,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "anyhow",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "internment",
  "itertools 0.12.1",
  "log 0.4.27",
@@ -6697,7 +6708,7 @@ source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992
 dependencies = [
  "anyhow",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "internment",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -6794,7 +6805,7 @@ dependencies = [
  "bcs-ext",
  "clap 3.2.23",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.13.0",
  "datatest-stable 0.1.1",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6833,7 +6844,7 @@ dependencies = [
  "anyhow",
  "atty",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-abigen 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -6862,7 +6873,7 @@ dependencies = [
  "atty",
  "clap 3.2.23",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "futures 0.3.31",
  "hex",
  "itertools 0.10.5",
@@ -6897,7 +6908,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "futures 0.3.31",
  "itertools 0.12.1",
  "log 0.4.27",
@@ -6926,7 +6937,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "futures 0.3.31",
  "itertools 0.10.5",
  "log 0.4.27",
@@ -6953,7 +6964,7 @@ source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c8
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "itertools 0.12.1",
  "log 0.4.27",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7019,7 +7030,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "abstract-domain-derive",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "ethnum",
  "im",
  "itertools 0.12.1",
@@ -7038,7 +7049,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0#babf994a38cda17b84186c7992f92fb3554347f0"
 dependencies = [
  "codespan",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "ethnum",
  "im",
  "itertools 0.10.5",
@@ -7067,7 +7078,7 @@ dependencies = [
  "anyhow",
  "bytecode-interpreter-crypto",
  "clap 3.2.23",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -7245,7 +7256,7 @@ dependencies = [
  "anyhow",
  "better_any",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "colored 2.0.0",
  "itertools 0.12.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
@@ -7273,7 +7284,7 @@ dependencies = [
  "anyhow",
  "better_any",
  "clap 3.2.23",
- "codespan-reporting",
+ "codespan-reporting 0.11.1",
  "colored 2.0.0",
  "itertools 0.10.5",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -11907,7 +11918,7 @@ dependencies = [
  "byteorder",
  "claims",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.13.0",
  "curve25519-dalek-ng",
  "either",
  "flate2",
@@ -12325,7 +12336,7 @@ dependencies = [
  "anyhow",
  "atty",
  "clap 4.5.47",
- "codespan-reporting",
+ "codespan-reporting 0.13.0",
  "datatest-stable 0.1.3",
  "hex",
  "itertools 0.10.5",
