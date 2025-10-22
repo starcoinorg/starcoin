@@ -10,7 +10,6 @@ module starcoin_framework::stc_block {
     use starcoin_framework::chain_id;
     use starcoin_framework::epoch;
     use starcoin_framework::event;
-    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
     use starcoin_std::debug;
