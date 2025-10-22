@@ -185,7 +185,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let storage1 = node.storage();
     let storage2 = node.storage2();
 
-    let account_count: u32 = 20;
+    let account_count: u32 = 2000;
     let initial_balance: u128 = 10000000000;
     let initial_gas_fee: u128 = 4000000000;
 
