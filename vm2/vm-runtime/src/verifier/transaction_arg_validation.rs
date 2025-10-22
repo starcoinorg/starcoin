@@ -17,6 +17,7 @@ use move_vm_runtime::LoadedFunction;
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
+use starcoin_logger::prelude::info;
 use starcoin_vm_types::language_storage::FunctionId;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
@@ -375,6 +376,7 @@ fn validate_and_construct(
             // function calls. We know the feature is active when more structs then just strings are
             // allowed.
             let are_struct_constructors_enabled = allowed_structs.len() > 1;
+            info!("jacktest: are_struct_constructors_enabled: {}", are_struct_constructors_enabled);
             if are_struct_constructors_enabled {
                 PartialVMError::new(StatusCode::ABORTED)
                     .with_sub_status(1)
