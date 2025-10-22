@@ -29,16 +29,17 @@ Block module provide metadata for generated blocks.
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
+<b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
-<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
+<b>use</b> <a href="transaction_fee.md#0x1_transaction_fee">0x1::transaction_fee</a>;
 </code></pre>
 
 
@@ -418,16 +419,11 @@ The runtime always runs this before executing the transactions in a block.
     );
 
     // deal <b>with</b> previous block first.
-    <b>let</b> txn_fee = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">stc_transaction_fee::distribute_transaction_fees</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
-    // clear cache
-    <b>let</b> _stale_cache = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">stc_transaction_fee::read_and_clear_payer_address</a>();
+    <b>let</b> txn_fee = <a href="transaction_fee.md#0x1_transaction_fee_withdraw_account_transaction_fees">transaction_fee::withdraw_account_transaction_fees</a>(
+        &<a href="account.md#0x1_account">account</a>,
+        <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>()
+    );
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | txn_fee"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&txn_fee));
-
-    // then deal <b>with</b> current block.
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
     <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="timestamp.md#0x1_timestamp">timestamp</a> * 1000);
 
     <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
@@ -460,7 +456,7 @@ The runtime always runs this before executing the transactions in a block.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
 </code></pre>
 
 
@@ -469,10 +465,10 @@ The runtime always runs this before executing the transactions in a block.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Entered"));
-    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">stc_transaction_fee::merge_fee_to_framework_account</a>(&<a href="account.md#0x1_account">account</a>);
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
+    <a href="transaction_fee.md#0x1_transaction_fee_merge_fee_to_framework_account">transaction_fee::merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>, txn_sender_addresses);
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Exited"));
 }
 </code></pre>

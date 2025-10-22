@@ -2,7 +2,7 @@
 module starcoin_framework::stc_block {
     use std::error;
     use std::vector;
-    use starcoin_framework::fungible_asset;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::transaction_fee;
 
     use starcoin_framework::account;
@@ -144,14 +144,11 @@ module starcoin_framework::stc_block {
         );
 
         // deal with previous block first.
-        let txn_fee = transaction_fee::distribute_transaction_fees<STC>(&account);
-        let _stale_cache = transaction_fee::read_and_clear_payer_address();
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
-        debug::print(&fungible_asset::amount(&txn_fee));
+        let txn_fee = transaction_fee::withdraw_account_transaction_fees(
+            &account,
+            starcoin_coin::get_stc_fa_metadata()
+        );
 
-        // then deal with current block.
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
-        debug::print(&timestamp);
         timestamp::update_global_time(&account, timestamp * 1000);
 
         process_block_metadata(
@@ -173,10 +170,11 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
-    public fun block_epilogue(account: signer) {
+    // Todo(bobong): to pass transaction sender addresses
+    public fun block_epilogue(account: &signer, txn_sender_addresses: vector<address>) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
-        system_addresses::assert_starcoin_framework(&account);
-        transaction_fee::merge_fee_to_framework_account(&account);
+        system_addresses::assert_starcoin_framework(account);
+        transaction_fee::merge_fee_to_framework_account(account, txn_sender_addresses);
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }
 

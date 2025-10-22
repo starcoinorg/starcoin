@@ -4,13 +4,13 @@ module starcoin_framework::transaction_fee {
     use std::error;
     use std::option::{Self, Option};
     use std::signer;
+    use std::string;
     use std::vector;
 
-    use starcoin_framework::coin;
     use starcoin_framework::create_signer::create_signer;
-    use starcoin_framework::fungible_asset::{Self, create_store, FungibleAsset, FungibleStore, Metadata};
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata};
     use starcoin_framework::object::{Self, Object};
-    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::system_addresses::{Self, get_starcoin_framework};
     use starcoin_std::debug;
 
@@ -30,97 +30,95 @@ module starcoin_framework::transaction_fee {
     /// fiat `TokenType` that can be collected as a transaction fee.
     struct TransactionFeePod has key {
         fee_stores: vector<Object<FungibleStore>>,
-        owner_address: address,
     }
 
-    /// Called in genesis. Sets up the needed resources to collect transaction fees from the
-    /// `TransactionFee` resource with the TreasuryCompliance account.
-    public fun initialize(framework: &signer) {
-        debug::print(&std::string::utf8(b"transaction_fee::initialize | Entered"));
-
-        system_addresses::assert_starcoin_framework(framework);
-
-        let constructor_ref = object::create_named_object(framework, b"txn_fee");
-        let stc_metadata_opt = coin::paired_metadata<STC>();
-        assert!(option::is_some(&stc_metadata_opt), error::invalid_state(ETXN_FEE_STC_METADATA_NOT_INITIALIZED));
-
-        let stc_metadata = option::destroy_some(stc_metadata_opt);
-        let fee_fa_store = create_store(&constructor_ref, stc_metadata);
-        assert!(
-            fungible_asset::store_exists(object::address_from_constructor_ref(&constructor_ref)),
-            error::invalid_state(ETXN_FEE_STC_METADATA_NOT_INITIALIZED)
-        );
-
-        debug::print(&constructor_ref);
-        debug::print(&fee_fa_store);
+    fun create_account_transaction_fee_pod(account: &signer, metadata: Object<Metadata>): Object<FungibleStore> {
+        let fa_store_seed = Self::get_fa_store_seed(metadata);
+        let construct_addr = object::create_object_address(&signer::address_of(account), fa_store_seed);
+        let fa_store = if (object::object_exists<FungibleStore>(construct_addr)) {
+            object::address_to_object<FungibleStore>(construct_addr)
+        } else {
+            let construct_ref = object::create_named_object(account, fa_store_seed);
+            fungible_asset::create_store(&construct_ref, metadata)
+        };
 
         let fee_stores = vector::empty<Object<FungibleStore>>();
-        vector::push_back(&mut fee_stores, fee_fa_store);
+        vector::push_back(&mut fee_stores, fa_store);
 
-        let owner_address = object::address_from_constructor_ref(&constructor_ref);
-        move_to(
-            framework,
-            TransactionFeePod { fee_stores, owner_address }
-        );
-        debug::print(&std::string::utf8(b"transaction_fee::initialize | Exited"));
-    }
-
-    spec initialize {
-        pragma verify = false;
+        move_to(account, TransactionFeePod { fee_stores });
+        fa_store
     }
 
     /// Deposit `token` into the transaction fees bucket
-    public fun pay_fee(fa: FungibleAsset) acquires TransactionFeePod {
-        assert!(exists<TransactionFeePod>(get_starcoin_framework()), error::invalid_state(
-            ETXN_FEE_POD_NOT_INITIALIZED
-        ));
-
-        let fee_pod = borrow_global_mut<TransactionFeePod>(get_starcoin_framework());
-        let store_opt = find_asset_store_with_metadata(
-            &fee_pod.fee_stores,
-            fungible_asset::metadata_from_asset(&fa)
-        );
-        assert!(option::is_some(&store_opt), error::invalid_state(ETXN_FEE_POD_NOT_INITIALIZED));
-
-        let store = option::destroy_some(store_opt);
-        fungible_asset::deposit(store, fa);
+    public fun pay_fee(account: &signer, fa: FungibleAsset) acquires TransactionFeePod {
+        let account_addr = signer::address_of(account);
+        let fa_store = if (exists<TransactionFeePod>(account_addr)) {
+            let fee_pod = borrow_global_mut<TransactionFeePod>(get_starcoin_framework());
+            let store_opt = find_asset_store_with_metadata(
+                &fee_pod.fee_stores,
+                fungible_asset::metadata_from_asset(&fa)
+            );
+            assert!(option::is_some(&store_opt), error::invalid_state(ETXN_FEE_POD_NOT_INITIALIZED));
+            option::destroy_some(store_opt)
+        } else {
+            create_account_transaction_fee_pod(account, fungible_asset::metadata_from_asset(&fa))
+        };
+        fungible_asset::deposit(fa_store, fa);
     }
 
     spec pay_fee {
         pragma verify = false;
     }
 
+    public fun merge_fee_to_framework_account(
+        framework: &signer,
+        payer_addresses: vector<address>
+    ) acquires TransactionFeePod {
+        system_addresses::assert_starcoin_framework(framework);
+
+        let framework_address = system_addresses::get_starcoin_framework();
+        let len = vector::length(&payer_addresses);
+        for (i in 0 .. len) {
+            let addr = *vector::borrow(&payer_addresses, i);
+            if (addr != framework_address && exists<TransactionFeePod>(addr)) {
+                let transaction_fee_pod = borrow_global<TransactionFeePod>(addr);
+                let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+                let fa_store = Self::find_asset_store_with_metadata(
+                    &transaction_fee_pod.fee_stores,
+                    stc_metadata
+                );
+                assert!(option::is_some(&fa_store), error::not_found(ETXN_FEE_FA_STORE_NOT_FOUND));
+                let fa = Self::withdraw_account_transaction_fees(&create_signer(addr), stc_metadata);
+                pay_fee(framework, fa);
+            }
+        }
+    }
+
     /// Distribute the transaction fees collected in the `TokenType` token.
     /// If the `TokenType` is STC, it unpacks the token and preburns the
     /// underlying fiat.
-    public fun distribute_transaction_fees<TokenType>(
-        framework: &signer,
+    public fun withdraw_account_transaction_fees(
+        account: &signer,
+        metadata: Object<Metadata>
     ): FungibleAsset acquires TransactionFeePod {
         debug::print(&std::string::utf8(b"transaction_fee::distribute_transaction_fees | Entered"));
 
-        system_addresses::assert_starcoin_framework(framework);
-        let framework_addr = signer::address_of(framework);
-        assert!(exists<TransactionFeePod>(framework_addr), error::not_found(ETXN_FEE_POD_NOT_INITIALIZED));
+        let account_addr = signer::address_of(account);
+        assert!(exists<TransactionFeePod>(account_addr), error::not_found(ETXN_FEE_POD_NOT_INITIALIZED));
 
-        let fee_pod = borrow_global_mut<TransactionFeePod>(framework_addr);
-        let coin_metadata_opt = coin::paired_metadata<TokenType>();
-        assert!(option::is_some(&coin_metadata_opt), error::invalid_state(ETXN_FEE_FA_METADATA_NOT_FOUND));
-
-        let coin_metatdata = option::destroy_some(coin_metadata_opt);
-        let fa_store_opt = find_asset_store_with_metadata(&fee_pod.fee_stores, coin_metatdata);
+        let fee_pod = borrow_global_mut<TransactionFeePod>(account_addr);
+        let fa_store_opt = find_asset_store_with_metadata(&fee_pod.fee_stores, metadata);
         assert!(option::is_some(&fa_store_opt), error::invalid_state(ETXN_FEE_FA_STORE_NOT_FOUND));
 
         let fa_store = option::destroy_some(fa_store_opt);
         let all_asset_balance = fungible_asset::balance(fa_store);
 
-        let txn_fee_signer = create_signer(fee_pod.owner_address);
-        let ret = fungible_asset::withdraw(&txn_fee_signer, fa_store, all_asset_balance);
+        let ret = fungible_asset::withdraw(account, fa_store, all_asset_balance);
 
         debug::print(&std::string::utf8(b"transaction_fee::distribute_transaction_fees | Exited"));
 
         ret
     }
-
 
     fun find_asset_store_with_metadata(
         fee_stores: &vector<Object<FungibleStore>>,
@@ -146,8 +144,16 @@ module starcoin_framework::transaction_fee {
         option::none()
     }
 
-    spec distribute_transaction_fees {
+    spec withdraw_account_transaction_fees {
         pragma verify = false;
+    }
+
+    fun get_fa_store_seed(metadata: Object<Metadata>): vector<u8> {
+        let seed = vector::empty<u8>();
+        vector::append(&mut seed, b"transaction_fee");
+        vector::push_back(&mut seed, 0xFE);
+        vector::append(&mut seed, *string::bytes(&fungible_asset::name(metadata)));
+        seed
     }
 
     #[test(framework = @0x1, alice = @0x123)]
@@ -160,13 +166,13 @@ module starcoin_framework::transaction_fee {
         use std::signer;
 
         starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
-        Self::initialize(framework);
 
         let minted_fa = starcoin_coin::mint_stc_fa_for_test(100000000);
         let minted_fa_aount = fungible_asset::amount(&minted_fa);
-        Self::pay_fee(minted_fa);
+        Self::pay_fee(alice, minted_fa);
 
-        let distributed_fa = Self::distribute_transaction_fees<STC>(framework);
+        let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+        let distributed_fa = Self::withdraw_account_transaction_fees(framework, stc_metadata);
         assert!(fungible_asset::amount(&distributed_fa) == minted_fa_aount, 1);
 
         let alice_addr = signer::address_of(alice);

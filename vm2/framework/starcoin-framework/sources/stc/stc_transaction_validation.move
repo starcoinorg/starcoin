@@ -5,9 +5,9 @@ module starcoin_framework::stc_transaction_validation {
 
     use std::error;
     use std::hash;
-    use std::option;
     use std::signer;
     use std::vector;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::transaction_fee;
     use starcoin_framework::primary_fungible_store;
     use starcoin_std::debug;
@@ -17,7 +17,6 @@ module starcoin_framework::stc_transaction_validation {
     use starcoin_framework::coin;
     use starcoin_framework::create_signer;
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout;
     use starcoin_framework::stc_util;
@@ -264,14 +263,13 @@ module starcoin_framework::stc_transaction_validation {
         };
 
         if (transaction_fee_amount > 0) {
-            let metadata = option::destroy_some(coin::paired_metadata<STC>());
             let sender_signer = &create_signer::create_signer(txn_sender);
             let transaction_fee = primary_fungible_store::withdraw(
                 sender_signer,
-                metadata,
+                starcoin_coin::get_stc_fa_metadata(),
                 (transaction_fee_amount as u64)
             );
-            transaction_fee::pay_fee(transaction_fee);
+            transaction_fee::pay_fee(sender_signer, transaction_fee);
         };
     }
 }
