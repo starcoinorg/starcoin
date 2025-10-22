@@ -82,14 +82,11 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
                 if StarcoinVM::should_restart_execution(&output) {
                     ExecutionStatus::SkipRest(StarcoinTransactionOutput::new(output))
                 } else {
-                    match txn {
-                        PreprocessedTransaction::UserTransaction(t) => {
-                            self.senders
-                                .lock()
-                                .unwrap()
-                                .insert(PeerId::from(*t.sender()));
-                        }
-                        _ => {}
+                    if let PreprocessedTransaction::UserTransaction(t) = txn {
+                        self.senders
+                            .lock()
+                            .unwrap()
+                            .insert(PeerId::from(*t.sender()));
                     }
                     ExecutionStatus::Success(StarcoinTransactionOutput::new(output))
                 }
