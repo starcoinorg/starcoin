@@ -97,8 +97,8 @@ async fn build_transaction_to_send_token_to_account(
             vec![receiver.get(index).unwrap().address],
             next_seq,
             amount,
-            2,
-            40_000_00,
+            1,
+            400_000_00,
             expire_time,
             header_block.chain_id().id().into(),
         );
@@ -186,8 +186,8 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let storage2 = node.storage2();
 
     let account_count: u32 = 20;
-    let initial_balance: u128 = 10;
-    let initial_gas_fee: u128 = 9000000000000000000000;
+    let initial_balance: u128 = 10000000000;
+    let initial_gas_fee: u128 = 4000000000;
 
     let fut = async move {
         // let generate_block = registry.service_ref::<GenerateBlockEventPacemaker>().await?;
