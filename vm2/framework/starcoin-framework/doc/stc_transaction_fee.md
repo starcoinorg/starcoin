@@ -8,8 +8,6 @@ Then they are distributed in <code>TransactionManager</code>.
 
 
 -  [Resource `TransactionFee`](#0x1_stc_transaction_fee_TransactionFee)
--  [Function `record_payer_address`](#0x1_stc_transaction_fee_record_payer_address)
--  [Function `read_and_clear_payer_address`](#0x1_stc_transaction_fee_read_and_clear_payer_address)
 -  [Function `initialize`](#0x1_stc_transaction_fee_initialize)
 -  [Function `add_txn_fee_token`](#0x1_stc_transaction_fee_add_txn_fee_token)
 -  [Function `pay_fee`](#0x1_stc_transaction_fee_pay_fee)
@@ -57,50 +55,6 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 </dd>
 </dl>
-
-
-</details>
-
-<a id="0x1_stc_transaction_fee_record_payer_address"></a>
-
-## Function `record_payer_address`
-
-
-
-<pre><code><b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_record_payer_address">record_payer_address</a>(addr: <b>address</b>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_record_payer_address">record_payer_address</a>(addr: <b>address</b>);
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_stc_transaction_fee_read_and_clear_payer_address"></a>
-
-## Function `read_and_clear_payer_address`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;;
-</code></pre>
-
 
 
 </details>
@@ -193,7 +147,6 @@ Deposit <code>token</code> into the transaction fees bucket
     <b>let</b> txn_fees = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(
         addr
     );
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_record_payer_address">record_payer_address</a>(addr);
     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> txn_fees.fee, token)
 }
 </code></pre>
@@ -247,7 +200,7 @@ Deposit <code>token</code> into the transaction fees bucket
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, senders: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
 </code></pre>
 
 
@@ -256,14 +209,13 @@ Deposit <code>token</code> into the transaction fees bucket
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, senders: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;) <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
-    <b>let</b> collected_addresses = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_read_and_clear_payer_address">read_and_clear_payer_address</a>();
     <b>let</b> framework_address = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
-    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&collected_addresses);
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&senders);
     for (i in 0..len) {
-        <b>let</b> addr = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&collected_addresses, i);
+        <b>let</b> addr = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&senders, i);
         <b>if</b> (addr != framework_address && <b>exists</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;STC&gt;&gt;(addr)) {
             <b>let</b> token = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_inner_distribute_transaction_fees">inner_distribute_transaction_fees</a>&lt;STC&gt;(addr);
             <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">pay_fee</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, token);

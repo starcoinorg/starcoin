@@ -58,6 +58,7 @@ use starcoin_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
+use std::collections::HashSet;
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
 use crate::{verifier, VMExecutor};
@@ -951,6 +952,7 @@ impl StarcoinVM {
     fn process_block_epilogue<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
+        senders: Vec<AccountAddress>,
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(feature = "testing")]
         info!("process_block_meta begin");
@@ -958,7 +960,10 @@ impl StarcoinVM {
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::void();
         let function_name = &account_config::G_BLOCK_EPILOGUE_NAME;
-        let args_vec = vec![MoveValue::Signer(txn_sender)];
+        let args_vec = vec![
+            MoveValue::Signer(txn_sender),
+            MoveValue::vector_address(senders),
+        ];
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);
         let traverse_storage = TraversalStorage::new();
@@ -1141,6 +1146,7 @@ impl StarcoinVM {
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
         let blocks = chunk_block_transactions(transactions);
+        let mut senders = HashSet::new();
 
         'outer: for block in blocks {
             #[cfg(feature = "metrics")]
@@ -1148,6 +1154,7 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        let sender = transaction.sender();
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
@@ -1168,6 +1175,7 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
+                            senders.insert(sender);
                             if gas_unit_price > 0 {
                                 debug_assert_ne!(
                                     output.gas_used(),
@@ -1269,11 +1277,14 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
-                    let (status, output) =
-                        match self.process_block_epilogue(&data_cache.as_move_resolver()) {
-                            Ok(output) => (VMStatus::Executed, output),
-                            Err(vm_status) => discard_error_vm_status(vm_status),
-                        };
+                    let (status, output) = match self.process_block_epilogue(
+                        &data_cache.as_move_resolver(),
+                        senders.drain().collect::<Vec<_>>(),
+                    ) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
+                    senders = HashSet::new();
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1706,6 +1717,7 @@ impl StarcoinVM {
         &self,
         txn: &PreprocessedTransaction,
         data_cache: &S,
+        senders: Option<Vec<AccountAddress>>,
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
@@ -1724,10 +1736,11 @@ impl StarcoinVM {
                 (vm_status, output, Some("block_meta".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_) => {
-                let (vm_status, output) = match self.process_block_epilogue(data_cache) {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_epilogue(data_cache, senders.unwrap()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })
