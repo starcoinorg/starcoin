@@ -28,7 +28,6 @@
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
-<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
@@ -509,14 +508,13 @@ It collects gas and bumps the sequence number
     };
 
     <b>if</b> (transaction_fee_amount &gt; 0) {
-        <b>let</b> metadata = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;STC&gt;());
         <b>let</b> sender_signer = &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender);
         <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a> = <a href="primary_fungible_store.md#0x1_primary_fungible_store_withdraw">primary_fungible_store::withdraw</a>(
             sender_signer,
-            metadata,
+            <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
             (transaction_fee_amount <b>as</b> u64)
         );
-        <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a>(<a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
+        <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a>(sender_signer, <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
     };
 }
 </code></pre>
