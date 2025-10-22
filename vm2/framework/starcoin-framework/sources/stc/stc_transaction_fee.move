@@ -10,9 +10,6 @@ module starcoin_framework::stc_transaction_fee {
 
     friend starcoin_framework::stc_block;
 
-    native fun record_payer_address(addr: address);
-    native public(friend) fun read_and_clear_payer_address(): vector<address>;
-
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -70,7 +67,6 @@ module starcoin_framework::stc_transaction_fee {
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
             addr
         );
-        record_payer_address(addr);
         coin::merge(&mut txn_fees.fee, token)
     }
 
@@ -93,14 +89,13 @@ module starcoin_framework::stc_transaction_fee {
         }
     }
 
-    public fun merge_fee_to_framework_account(account: &signer) acquires TransactionFee {
+    public fun merge_fee_to_framework_account(account: &signer, senders: vector<address>) acquires TransactionFee {
         system_addresses::assert_starcoin_framework(account);
 
-        let collected_addresses = read_and_clear_payer_address();
         let framework_address = system_addresses::get_starcoin_framework();
-        let len = vector::length(&collected_addresses);
+        let len = vector::length(&senders);
         for (i in 0..len) {
-            let addr = *vector::borrow(&collected_addresses, i);
+            let addr = *vector::borrow(&senders, i);
             if (addr != framework_address && exists<TransactionFee<STC>>(addr)) {
                 let token = inner_distribute_transaction_fees<STC>(addr);
                 pay_fee<STC>(account, token);
