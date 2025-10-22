@@ -6,6 +6,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{
     genesis_config::CustomNetworkID, BaseConfig, ChainNetworkID, NodeConfig, StarcoinOpt,
 };
+use starcoin_crypto::HashValue;
 use starcoin_logger::{
     prelude::{info, LevelFilter},
     LoggerHandle,
@@ -22,8 +23,9 @@ use starcoin_vm2_account_api::{
 };
 use starcoin_vm2_account_service::AccountService as AccountService2;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_types::transaction::SignedUserTransaction;
-use starcoin_vm2_vm_types::state_view::StateReaderExt;
+use starcoin_vm2_types::{account_config::G_STC_TOKEN_CODE, transaction::SignedUserTransaction};
+use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm2_vm_types::{state_view::StateReaderExt, PeerId, account_address::AccountAddress};
 use test_helper::run_node_with_all_service;
 
 async fn create_account(
@@ -60,8 +62,8 @@ async fn default_account(account_service: ServiceRef<AccountService2>) -> Result
 }
 
 async fn build_transaction_to_send_token_to_account(
-    sender: Vec<AccountInfo>,
-    receiver: Vec<AccountInfo>,
+    sender: &[AccountInfo],
+    receiver: &[AccountInfo],
     amount: u128,
     account_service: ServiceRef<AccountService2>,
     config: Arc<NodeConfig>,
@@ -76,7 +78,7 @@ async fn build_transaction_to_send_token_to_account(
     let multi_state = storage1.get_vm_multi_state(header_block.id())?;
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let mut next_seq_map = HashMap::new();
-    for s in &sender {
+    for s in sender {
         let next_seq = statedb2
             .get_account_resource(*s.address())?
             .sequence_number();
@@ -95,8 +97,8 @@ async fn build_transaction_to_send_token_to_account(
             vec![receiver.get(index).unwrap().address],
             next_seq,
             amount,
-            1,
-            40_000_000,
+            2,
+            40_000_00,
             expire_time,
             header_block.chain_id().id().into(),
         );
@@ -140,7 +142,14 @@ async fn get_current_header(
     Ok(current_header)
 }
 
-#[ignore = "This is a benchmark test, not a unit test"]
+async fn get_balance(address: AccountAddress, storage1: Arc<Storage>, storage2: Arc<Storage2>, header_id: HashValue) -> Result<u128> {
+    let multi_state = storage1.get_vm_multi_state(header_id)?;
+    let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
+    let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
+    Ok(balance)
+}
+
+// #[ignore = "This is a benchmark test, not a unit test"]
 #[test]
 fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let mut opt = StarcoinOpt {
@@ -153,6 +162,8 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let path = temp_dir();
     opt.base_data_dir = Some(path.clone());
     opt.genesis_config = Some("halley".to_string());
+
+    // will create genesis config files in path
     let _ = BaseConfig::load_with_opt(&opt)?;
 
     let global_opt = StarcoinOpt {
@@ -164,12 +175,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
         ..Default::default()
     };
 
-    opt.genesis_config = Some(
-        path.join("my_chain/genesis_config2.json")
-            .to_str()
-            .unwrap()
-            .to_string(),
-    );
+    // will load genesis config files in path
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
 
     // let node_config = Arc::new(NodeConfig::random_for_test());
@@ -179,34 +185,48 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let storage1 = node.storage();
     let storage2 = node.storage2();
 
+    let account_count: u32 = 20;
+    let initial_balance: u128 = 10;
+    let initial_gas_fee: u128 = 9000000000000000000000;
+
     let fut = async move {
         // let generate_block = registry.service_ref::<GenerateBlockEventPacemaker>().await?;
         let log_handler = registry.get_shared::<Arc<LoggerHandle>>().await?;
         log_handler.update_level(LevelFilter::Info);
 
+        let account_service = registry.service_ref::<AccountService2>().await?;
+        let default_account = default_account(account_service.clone()).await?;
+
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
         loop {
             // generate_block.notify(DeterminedDagBlock)?;
             let current_header = get_current_header(chain_reader_service.clone()).await?;
-            info!("jacktest: current_header: {}", current_header.number());
-            if current_header.number() > 300 {
+            let default_account_balance = match get_balance(default_account.address, storage1.clone(), storage2.clone(), current_header.id()).await {
+                std::result::Result::Ok(balance) => balance,
+                Err(e) => {
+                    info!("get balance error: {} and waiting for the token initialization", e);
+                    tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+                    continue;
+                }
+            };
+            if default_account_balance > account_count as u128 * initial_balance + initial_gas_fee { // get enough token to pay for gas
                 break;
             }
-            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
         }
 
         let txpool = registry
             .get_shared::<starcoin_txpool::TxPoolService>()
             .await?;
-        let account_service = registry.service_ref::<AccountService2>().await?;
         let config = registry.get_shared::<Arc<NodeConfig>>().await?;
 
-        let default_account = default_account(account_service.clone()).await?;
-        let receivers = create_account(2000, account_service.clone()).await?;
+        let receivers = create_account(account_count, account_service.clone()).await?;
+
+        // transfer token from default account to receivers
         let signed_transactions = build_transaction_to_send_token_to_account(
-            vec![default_account; receivers.len()],
-            receivers,
-            100,
+            &vec![default_account; receivers.len()],
+            &receivers,
+            initial_balance,
             account_service.clone(),
             config.clone(),
             &get_current_header(chain_reader_service.clone()).await?,
@@ -231,13 +251,49 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
             if transactions.is_empty() {
                 break;
             }
+            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
         }
 
-        // StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        StarcoinVM::set_concurrency_level_once(num_cpus::get());
+
+        // transfer token from default account to receivers
+        let mid = receivers.len() / 2;
+        let signed_transactions = build_transaction_to_send_token_to_account(
+            &receivers[..mid],
+            &receivers[mid..],
+            1,
+            account_service.clone(),
+            config.clone(),
+            &get_current_header(chain_reader_service.clone()).await?,
+            storage1.clone(),
+            storage2.clone(),
+        )
+        .await?;
+
+        txpool.inner.import_txns(
+            signed_transactions
+                .into_iter()
+                .map(MultiSignedUserTransaction::VM2)
+                .collect(),
+            false,
+            None,
+        )?;
+
+        loop {
+            let transactions = txpool
+                .inner
+                .get_pending(100, config.net().time_service().now_secs())?;
+            if transactions.is_empty() {
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+        }
 
         Ok(())
     };
     tokio::runtime::Runtime::new().unwrap().block_on(fut)?;
+
+    // std::fs::remove_dir_all(path)?;
 
     Ok(())
 }

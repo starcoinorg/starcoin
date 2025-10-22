@@ -59,7 +59,7 @@ impl TxPoolConfig {
         self.max_count = Some(max_count);
     }
     pub fn max_count(&self) -> u64 {
-        self.max_count.unwrap_or(4096)
+        self.max_count.unwrap_or(40960000)
     }
     pub fn max_per_sender(&self) -> u64 {
         self.max_per_sender.unwrap_or(128)
