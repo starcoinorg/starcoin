@@ -19,11 +19,10 @@ module starcoin_framework::transaction_fee {
         pragma aborts_if_is_strict;
     }
 
-    const ETXN_FEE_STC_METADATA_NOT_INITIALIZED: u64 = 1;
-    const ETXN_FEE_POD_NOT_INITIALIZED: u64 = 2;
-    const ETXN_FEE_FA_METADATA_NOT_FOUND: u64 = 3;
-    const ETXN_FEE_FA_STORE_NOT_FOUND: u64 = 4;
-    const ETXN_FEE_STORES_IS_EMPTY: u64 = 5;
+    const ETXN_FEE_POD_NOT_INITIALIZED: u64 = 1;
+    const ETXN_FEE_FA_METADATA_NOT_FOUND: u64 = 2;
+    const ETXN_FEE_FA_STORE_NOT_FOUND: u64 = 3;
+    const ETXN_FEE_STORES_IS_EMPTY: u64 = 4;
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The `TransactionFee` resource holds a preburn resource for each

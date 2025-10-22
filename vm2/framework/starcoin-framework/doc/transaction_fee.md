@@ -74,7 +74,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>: u64 = 3;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>: u64 = 2;
 </code></pre>
 
 
@@ -83,7 +83,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_FOUND">ETXN_FEE_FA_STORE_NOT_FOUND</a>: u64 = 4;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_FOUND">ETXN_FEE_FA_STORE_NOT_FOUND</a>: u64 = 3;
 </code></pre>
 
 
@@ -92,16 +92,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>: u64 = 2;
-</code></pre>
-
-
-
-<a id="0x1_transaction_fee_ETXN_FEE_STC_METADATA_NOT_INITIALIZED"></a>
-
-
-
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STC_METADATA_NOT_INITIALIZED">ETXN_FEE_STC_METADATA_NOT_INITIALIZED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>: u64 = 1;
 </code></pre>
 
 
@@ -110,7 +101,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>: u64 = 5;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>: u64 = 4;
 </code></pre>
 
 
