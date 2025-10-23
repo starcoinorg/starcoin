@@ -1284,7 +1284,6 @@ impl StarcoinVM {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
-                    senders = HashSet::new();
 
                     debug_assert_eq!(
                         output.gas_used(),
