@@ -1,6 +1,7 @@
 use std::{collections::HashMap, env::temp_dir, sync::Arc};
 
 use anyhow::{bail, format_err, Ok, Result};
+use chrono::Local;
 use futures::channel::mpsc;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
@@ -10,17 +11,22 @@ use starcoin_config::{
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
+use starcoin_genesis::Genesis;
 use starcoin_logger::{
     prelude::{error, info, LevelFilter},
     LoggerHandle,
 };
-use starcoin_genesis::Genesis;
-use starcoin_service_registry::{ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef};
+use starcoin_service_registry::{
+    ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
+};
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
 use starcoin_types::{
-    block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction, system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock},
+    block::BlockHeader,
+    genesis_config::ChainId,
+    multi_transaction::MultiSignedUserTransaction,
+    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock},
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -30,11 +36,12 @@ use starcoin_vm2_account_service::AccountService as AccountService2;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::{account_config::G_STC_TOKEN_CODE, transaction::SignedUserTransaction};
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm2_vm_types::{account_address::AccountAddress, state_view::StateReaderExt, transaction, PeerId};
-use test_helper::run_node_with_all_service;
-use chrono::Local;
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress, state_view::StateReaderExt, transaction, PeerId,
+};
 use std::fs::OpenOptions;
 use std::io::{self, Write};
+use test_helper::run_node_with_all_service;
 
 async fn create_account(
     accoun_number: u32,
@@ -150,7 +157,12 @@ async fn get_current_header(
     Ok(current_header)
 }
 
-async fn get_balance(address: AccountAddress, storage1: Arc<Storage>, storage2: Arc<Storage2>, header_id: HashValue) -> Result<u128> {
+async fn get_balance(
+    address: AccountAddress,
+    storage1: Arc<Storage>,
+    storage2: Arc<Storage2>,
+    header_id: HashValue,
+) -> Result<u128> {
     let multi_state = storage1.get_vm_multi_state(header_id)?;
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
@@ -211,15 +223,26 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
         loop {
             // generate_block.notify(DeterminedDagBlock)?;
             let current_header = get_current_header(chain_reader_service.clone()).await?;
-            let default_account_balance = match get_balance(default_account.address, storage1.clone(), storage2.clone(), current_header.id()).await {
+            let default_account_balance = match get_balance(
+                default_account.address,
+                storage1.clone(),
+                storage2.clone(),
+                current_header.id(),
+            )
+            .await
+            {
                 std::result::Result::Ok(balance) => balance,
                 Err(e) => {
-                    info!("get balance error: {} and waiting for the token initialization", e);
+                    info!(
+                        "get balance error: {} and waiting for the token initialization",
+                        e
+                    );
                     tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
                     continue;
                 }
             };
-            if default_account_balance > account_count as u128 * initial_balance + initial_gas_fee { // get enough token to pay for gas
+            if default_account_balance > account_count as u128 * initial_balance + initial_gas_fee {
+                // get enough token to pay for gas
                 break;
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
@@ -317,23 +340,37 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
 }
 
 enum TransactionExecutionResult {
-   Added(String),
-   Rejected(String),
-   Culled(String),
-   Executed(String), 
-   ExecutedNotInMain(String), 
-   Other(String), 
+    Added(String),
+    Rejected(String),
+    Culled(String),
+    Executed(String),
+    ExecutedNotInMain(String),
+    Other(String),
 }
 
 impl std::fmt::Debug for TransactionExecutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransactionExecutionResult::Added(op_time) => write!(f, "TransactionExecutionResult::Added({})", op_time),
-            TransactionExecutionResult::Rejected(op_time) => write!(f, "TransactionExecutionResult::Rejected({})", op_time),
-            TransactionExecutionResult::Culled(op_time) => write!(f, "TransactionExecutionResult::Culled({})", op_time),
-            TransactionExecutionResult::Executed(op_time) => write!(f, "TransactionExecutionResult::Executed({})", op_time),
-            TransactionExecutionResult::ExecutedNotInMain(op_time) => write!(f, "TransactionExecutionResult::ExecutedNotInMain({})", op_time),
-            TransactionExecutionResult::Other(op_time) => write!(f, "TransactionExecutionResult::Other({})", op_time),
+            TransactionExecutionResult::Added(op_time) => {
+                write!(f, "TransactionExecutionResult::Added({})", op_time)
+            }
+            TransactionExecutionResult::Rejected(op_time) => {
+                write!(f, "TransactionExecutionResult::Rejected({})", op_time)
+            }
+            TransactionExecutionResult::Culled(op_time) => {
+                write!(f, "TransactionExecutionResult::Culled({})", op_time)
+            }
+            TransactionExecutionResult::Executed(op_time) => {
+                write!(f, "TransactionExecutionResult::Executed({})", op_time)
+            }
+            TransactionExecutionResult::ExecutedNotInMain(op_time) => write!(
+                f,
+                "TransactionExecutionResult::ExecutedNotInMain({})",
+                op_time
+            ),
+            TransactionExecutionResult::Other(op_time) => {
+                write!(f, "TransactionExecutionResult::Other({})", op_time)
+            }
         }
     }
 }
@@ -356,10 +393,16 @@ impl ObserverService {
     }
 
     fn update_transaction_status(&mut self, new_header: HashValue) -> Result<()> {
-        let block = self.storage1.get_block_by_hash(new_header)?.ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
+        let block = self
+            .storage1
+            .get_block_by_hash(new_header)?
+            .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
         let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         for transaction in block.body.transactions2 {
-            self.transaction_data.entry(transaction.id()).or_insert_with(Vec::new).push(TransactionExecutionResult::Executed(now.clone()));
+            self.transaction_data
+                .entry(transaction.id())
+                .or_insert_with(Vec::new)
+                .push(TransactionExecutionResult::Executed(now.clone()));
         }
         Ok(())
     }
@@ -367,7 +410,11 @@ impl ObserverService {
     fn dump_results(&mut self) -> Result<()> {
         let mut file = OpenOptions::new().write(true).create(true).truncate(true).open("/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/sync/transaction_results.txt")?;
         for (transaction, results) in &self.transaction_data {
-            writeln!(file, "transaction id: {}, results: {:?}", *transaction, results)?;
+            writeln!(
+                file,
+                "transaction id: {}, results: {:?}",
+                *transaction, results
+            )?;
         }
         Ok(())
     }
@@ -376,12 +423,11 @@ impl ObserverService {
 impl ServiceFactory<Self> for ObserverService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let genesis = ctx.get_shared::<Genesis>()?;
-        let storage1  = ctx.get_shared::<Arc<Storage>>()?;
+        let storage1 = ctx.get_shared::<Arc<Storage>>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
         Self::new(genesis.block().id(), dag, storage1)
     }
 }
-
 
 impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
@@ -406,7 +452,7 @@ impl ActorService for ObserverService {
 // impl EventHandler<Self, NewHeadBlock> for ObserverService {
 //     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
 //     }
-// } 
+// }
 
 impl EventHandler<Self, NewDagBlock> for ObserverService {
     fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
@@ -415,7 +461,7 @@ impl EventHandler<Self, NewDagBlock> for ObserverService {
             Err(e) => error!("failed to update transactions status for: {:?}", e),
         }
     }
-} 
+}
 
 impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
     fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
@@ -424,18 +470,38 @@ impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
             Err(e) => error!("failed to update transactions status for: {:?}", e),
         }
     }
-} 
+}
 
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
     fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, ctx: &mut ServiceContext<Self>) {
         let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         for transaction_event in msg.as_ref() {
             match transaction_event.1 {
-                starcoin_types::transaction::TxStatus::Added => self.transaction_data.entry(transaction_event.0).or_insert_with(Vec::new).push(TransactionExecutionResult::Added(now.clone())),
-                starcoin_types::transaction::TxStatus::Rejected => self.transaction_data.entry(transaction_event.0).or_insert_with(Vec::new).push(TransactionExecutionResult::Rejected(now.clone())),
-                starcoin_types::transaction::TxStatus::Culled => self.transaction_data.entry(transaction_event.0).or_insert_with(Vec::new).push(TransactionExecutionResult::Culled(now.clone())),
-                _ => self.transaction_data.entry(transaction_event.0).or_insert_with(Vec::new).push(TransactionExecutionResult::Other(format!("{}({})", transaction_event.1, now.clone()))),
+                starcoin_types::transaction::TxStatus::Added => self
+                    .transaction_data
+                    .entry(transaction_event.0)
+                    .or_insert_with(Vec::new)
+                    .push(TransactionExecutionResult::Added(now.clone())),
+                starcoin_types::transaction::TxStatus::Rejected => self
+                    .transaction_data
+                    .entry(transaction_event.0)
+                    .or_insert_with(Vec::new)
+                    .push(TransactionExecutionResult::Rejected(now.clone())),
+                starcoin_types::transaction::TxStatus::Culled => self
+                    .transaction_data
+                    .entry(transaction_event.0)
+                    .or_insert_with(Vec::new)
+                    .push(TransactionExecutionResult::Culled(now.clone())),
+                _ => self
+                    .transaction_data
+                    .entry(transaction_event.0)
+                    .or_insert_with(Vec::new)
+                    .push(TransactionExecutionResult::Other(format!(
+                        "{}({})",
+                        transaction_event.1,
+                        now.clone()
+                    ))),
             }
         }
     }
-} 
+}

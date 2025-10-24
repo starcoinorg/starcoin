@@ -767,7 +767,10 @@ impl StarcoinVM {
 
         let traversal_storage = TraversalStorage::new();
         // Run prologue by genesis account
-        info!("StarcoinVM::run_prologue | jacktest: 2, txn_gas_price: {}, txn_max_gas_amount: {}", txn_gas_price, txn_max_gas_amount);
+        info!(
+            "StarcoinVM::run_prologue | jacktest: 2, txn_gas_price: {}, txn_max_gas_amount: {}",
+            txn_gas_price, txn_max_gas_amount
+        );
         session
             .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_VALIDATION_MODULE,
