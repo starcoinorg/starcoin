@@ -376,7 +376,10 @@ fn validate_and_construct(
             // function calls. We know the feature is active when more structs then just strings are
             // allowed.
             let are_struct_constructors_enabled = allowed_structs.len() > 1;
-            info!("jacktest: are_struct_constructors_enabled: {}", are_struct_constructors_enabled);
+            info!(
+                "jacktest: are_struct_constructors_enabled: {}",
+                are_struct_constructors_enabled
+            );
             if are_struct_constructors_enabled {
                 PartialVMError::new(StatusCode::ABORTED)
                     .with_sub_status(1)
