@@ -362,7 +362,7 @@ impl std::fmt::Debug for Inner {
 }
 
 impl Inner {
-    pub(crate) fn queue(&self) -> Arc<TxnQueue> {
+    pub fn queue(&self) -> Arc<TxnQueue> {
         self.queue.clone()
     }
     pub(crate) fn pool_status(&self) -> Status {
