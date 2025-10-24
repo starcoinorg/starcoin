@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_system::get_free_mem_size;
 use std::sync::Arc;
 
-pub const DEFAULT_MEM_SIZE: u64 = 1 * 1024 * 1024 * 1024; // 1G 
+pub const DEFAULT_MEM_SIZE: u64 = 1 * 1024 * 1024 * 1024; // 1G
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
