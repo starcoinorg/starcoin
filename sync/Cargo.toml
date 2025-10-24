@@ -75,7 +75,8 @@ starcoin-account-service = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-vm-runtime = { workspace = true }
-
+starcoin-rpc-client = { workspace = true }
+chrono = { workspace = true }
 
 [package]
 authors = { workspace = true }
