@@ -59,8 +59,13 @@ module starcoin_framework::transaction_fee {
                 &fee_pod.fee_stores,
                 fungible_asset::metadata_from_asset(&fa)
             );
-            assert!(option::is_some(&store_opt), error::invalid_state(ETXN_FEE_POD_NOT_INITIALIZED));
-            option::destroy_some(store_opt)
+            if (option::is_some(&store_opt)) {
+                option::destroy_some(store_opt)
+            } else {
+                let fa_store = Self::inner_create_fa_store(account, fungible_asset::metadata_from_asset(&fa));
+                vector::push_back(&mut fee_pod.fee_stores, fa_store);
+                fa_store
+            }
         } else {
             let fa_store = Self::inner_create_fa_store(account, starcoin_coin::get_stc_fa_metadata());
             let fee_stores = vector::empty();

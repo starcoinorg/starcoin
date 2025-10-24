@@ -20,7 +20,6 @@ module starcoin_framework::stc_block {
     use std::hash;
     #[test_only]
     use starcoin_framework::bcs_util;
-    use starcoin_framework::stc_transaction_fee;
 
     const BLOCK_INTERVAL_NUMBER: u64 = 5;
     const CHECKPOINT_LENGTH: u64 = 60;
@@ -170,12 +169,10 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
-    // Todo(bobong): to pass transaction sender addresses
-    public fun block_epilogue(account: &signer, txn_sender_addresses: vector<address>) {
+    public fun block_epilogue(framework: &signer, txn_sender_addresses: vector<address>) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
-        system_addresses::assert_starcoin_framework(account);
-        transaction_fee::merge_fee_to_framework_account(account, txn_sender_addresses);
-        stc_transaction_fee::merge_fee_to_framework_account(account, txn_sender_addresses);
+        system_addresses::assert_starcoin_framework(framework);
+        transaction_fee::merge_fee_to_framework_account(framework, txn_sender_addresses);
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }
 

@@ -48,7 +48,7 @@ script {
     fun distribute_fees(genesis: &signer) {
         let fa = transaction_fee::withdraw_account_transaction_fees(genesis, starcoin_coin::get_stc_fa_metadata());
         assert!(fungible_asset::amount(&fa) >= 200, 10000);
-        primary_fungible_store::deposit(signer::address_of(genesis), fa)
+        primary_fungible_store::deposit(signer::address_of(genesis), fa);
     }
 }
 // check: EXECUTED
@@ -61,11 +61,10 @@ script {
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::transaction_fee;
 
-    fun main(alice: &signer) {
+    fun alice_withdraw_transaction_fee(alice: &signer) {
         let fa = transaction_fee::withdraw_account_transaction_fees(alice, starcoin_coin::get_stc_fa_metadata());
         primary_fungible_store::deposit(signer::address_of(alice), fa);
     }
 }
-
 // check: ABORTED
 

@@ -36,7 +36,6 @@ Block module provide metadata for generated blocks.
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
-<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
@@ -457,7 +456,7 @@ The runtime always runs this before executing the transactions in a block.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
 </code></pre>
 
 
@@ -466,11 +465,10 @@ The runtime always runs this before executing the transactions in a block.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_epilogue">block_epilogue</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Entered"));
-    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
-    <a href="transaction_fee.md#0x1_transaction_fee_merge_fee_to_framework_account">transaction_fee::merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>, txn_sender_addresses);
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_merge_fee_to_framework_account">stc_transaction_fee::merge_fee_to_framework_account</a>(<a href="account.md#0x1_account">account</a>, txn_sender_addresses);
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
+    <a href="transaction_fee.md#0x1_transaction_fee_merge_fee_to_framework_account">transaction_fee::merge_fee_to_framework_account</a>(framework, txn_sender_addresses);
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_epilogue">stc_block::block_epilogue</a> | Exited"));
 }
 </code></pre>

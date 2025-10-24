@@ -178,8 +178,13 @@ Deposit <code>token</code> into the transaction fees bucket
             &fee_pod.fee_stores,
             <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">fungible_asset::metadata_from_asset</a>(&fa)
         );
-        <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&store_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>));
-        <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(store_opt)
+        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&store_opt)) {
+            <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(store_opt)
+        } <b>else</b> {
+            <b>let</b> fa_store = <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>, <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">fungible_asset::metadata_from_asset</a>(&fa));
+            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> fee_pod.fee_stores, fa_store);
+            fa_store
+        }
     } <b>else</b> {
         <b>let</b> fa_store = <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>, <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>());
         <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();

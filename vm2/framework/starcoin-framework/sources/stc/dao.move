@@ -4,7 +4,6 @@ module starcoin_framework::dao {
     use std::option;
     use std::signer;
     use std::vector;
-    use starcoin_std::type_info;
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
@@ -17,8 +16,8 @@ module starcoin_framework::dao {
     use starcoin_framework::system_addresses::get_starcoin_framework;
     use starcoin_framework::timestamp;
     use starcoin_framework::treasury;
-
     use starcoin_std::debug;
+    use starcoin_std::type_info;
 
     /// Proposal state
     const PENDING: u8 = 1;
