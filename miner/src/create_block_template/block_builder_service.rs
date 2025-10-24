@@ -414,7 +414,7 @@ where
                 ghostdata,
                 max_transaction_per_block,
             },
-            main,
+            _main,
         ))
     }
 
@@ -497,7 +497,6 @@ where
 
         let storage = self.storage.clone();
         let storage2 = self.storage2.clone();
-        let vm_metrics = self.vm_metrics.clone();
         let tx_provider = self.tx_provider.clone();
 
         let vm1_offline = previous_header.number().saturating_add(1)
@@ -514,12 +513,10 @@ where
                 uncles,
                 difficulty,
                 strategy,
-                vm_metrics.clone(),
                 selected_parents,
                 version,
                 pruning_point,
                 ghostdata.mergeset_reds.len() as u64,
-                main.into_state_dbs(),
             ) {
                 Ok(opened_block) => opened_block,
                 Err(e) => {
@@ -528,52 +525,21 @@ where
                 }
             };
 
-            // Process VM1 transactions
-            if !vm1_offline {
-                let excluded_txns = match opened_block.process_vm1_transactions(txns) {
-                    Ok(excluded_txns) => excluded_txns,
-                    Err(e) => {
-                        error!("[BlockProcess] process vm1 transactions error: {}", e);
-                        return;
-                    }
-                };
+            let vm1_txns_local = txns;
+            if vm1_offline {
+                for txn in &vm1_txns_local {
+                    tx_provider.remove_invalid_txn(txn.id());
+                }
+            } else {
+                let excluded_txns = opened_block.add_transactions(vm1_txns_local, vec![]);
                 for invalid_txn in &excluded_txns.discarded_txns {
                     tx_provider.remove_invalid_txn(invalid_txn.id());
                 }
-                info!(
-                    "[BlockProcess] VM1 discarded: {}, VM1 untouched: {}",
-                    excluded_txns.discarded_txns.len(),
-                    excluded_txns.untouched_txns.len(),
-                );
             }
 
-            // Process VM2 transactions
-            let vm2_contains_user_transaction = !txns2.is_empty();
-            let excluded_txns2 = match opened_block.push_txns2(txns2) {
-                Ok(excluded_txns) => excluded_txns,
-                Err(e) => {
-                    error!("[BlockProcess] push txns2 error: {}", e);
-                    return;
-                }
-            };
+            let excluded_txns2 = opened_block.add_transactions(vec![], txns2);
             for invalid_txn in &excluded_txns2.discarded_txns {
                 tx_provider.remove_invalid_txn(invalid_txn.id());
-            }
-
-            info!(
-                "[BlockProcess] VM2 discarded: {}, VM2 untouched: {}",
-                excluded_txns2.discarded_txns.len(),
-                excluded_txns2.untouched_txns.len()
-            );
-
-            if vm2_contains_user_transaction {
-                match opened_block.finalize_block_epilogue() {
-                    Ok(()) => {}
-                    Err(e) => {
-                        error!("[BlockProcess] finalize block epilogue error: {}", e);
-                        return;
-                    }
-                }
             }
 
             let template = match opened_block.finalize() {
