@@ -186,6 +186,7 @@ module starcoin_framework::stc_genesis {
             time_mint_stc_period,
         );
 
+        transaction_fee::initialize(&starcoin_framework_account);
 
         // Only test/dev network set genesis auth key.
         if (!vector::is_empty(&genesis_auth_key) && (stc_util::is_net_dev() || stc_util::is_net_test())) {

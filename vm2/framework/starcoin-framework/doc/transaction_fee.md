@@ -9,10 +9,11 @@ Then they are distributed in <code>TransactionManager</code>.
 
 -  [Resource `TransactionFeePod`](#0x1_transaction_fee_TransactionFeePod)
 -  [Constants](#@Constants_0)
--  [Function `create_account_transaction_fee_pod`](#0x1_transaction_fee_create_account_transaction_fee_pod)
+-  [Function `initialize`](#0x1_transaction_fee_initialize)
 -  [Function `pay_fee`](#0x1_transaction_fee_pay_fee)
 -  [Function `merge_fee_to_framework_account`](#0x1_transaction_fee_merge_fee_to_framework_account)
 -  [Function `withdraw_account_transaction_fees`](#0x1_transaction_fee_withdraw_account_transaction_fees)
+-  [Function `inner_create_fa_store`](#0x1_transaction_fee_inner_create_fa_store)
 -  [Function `find_asset_store_with_metadata`](#0x1_transaction_fee_find_asset_store_with_metadata)
 -  [Function `get_fa_store_seed`](#0x1_transaction_fee_get_fa_store_seed)
 -  [Specification](#@Specification_1)
@@ -74,7 +75,7 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>: u64 = 2;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND">ETXN_FEE_FA_METADATA_NOT_FOUND</a>: u64 = 3;
 </code></pre>
 
 
@@ -83,7 +84,16 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_FOUND">ETXN_FEE_FA_STORE_NOT_FOUND</a>: u64 = 3;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_FA_STORE_NOT_FOUND">ETXN_FEE_FA_STORE_NOT_FOUND</a>: u64 = 4;
+</code></pre>
+
+
+
+<a id="0x1_transaction_fee_ETXN_FEE_POD_HAS_INITIALIZED"></a>
+
+
+
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_HAS_INITIALIZED">ETXN_FEE_POD_HAS_INITIALIZED</a>: u64 = 2;
 </code></pre>
 
 
@@ -101,18 +111,18 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 
-<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>: u64 = 4;
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_STORES_IS_EMPTY">ETXN_FEE_STORES_IS_EMPTY</a>: u64 = 5;
 </code></pre>
 
 
 
-<a id="0x1_transaction_fee_create_account_transaction_fee_pod"></a>
+<a id="0x1_transaction_fee_initialize"></a>
 
-## Function `create_account_transaction_fee_pod`
+## Function `initialize`
 
 
 
-<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_create_account_transaction_fee_pod">create_account_transaction_fee_pod</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, metadata: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;): <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">fungible_asset::FungibleStore</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -121,21 +131,20 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_create_account_transaction_fee_pod">create_account_transaction_fee_pod</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, metadata: Object&lt;Metadata&gt;): Object&lt;FungibleStore&gt; {
-    <b>let</b> fa_store_seed = <a href="transaction_fee.md#0x1_transaction_fee_get_fa_store_seed">Self::get_fa_store_seed</a>(metadata);
-    <b>let</b> construct_addr = <a href="object.md#0x1_object_create_object_address">object::create_object_address</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>), fa_store_seed);
-    <b>let</b> fa_store = <b>if</b> (<a href="object.md#0x1_object_object_exists">object::object_exists</a>&lt;FungibleStore&gt;(construct_addr)) {
-        <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;FungibleStore&gt;(construct_addr)
-    } <b>else</b> {
-        <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(<a href="account.md#0x1_account">account</a>, fa_store_seed);
-        <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, metadata)
-    };
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <b>assert</b>!(
+        !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework)),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>)
+    );
 
-    <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;Object&lt;FungibleStore&gt;&gt;();
-    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> fee_stores, fa_store);
-
-    <b>move_to</b>(<a href="account.md#0x1_account">account</a>, <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> { fee_stores });
-    fa_store
+    <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(
+        &<b>mut</b> fee_stores,
+        <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(framework, <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>())
+    );
+    <b>move_to</b>(framework, <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
+        fee_stores
+    });
 }
 </code></pre>
 
@@ -160,6 +169,8 @@ Deposit <code>token</code> into the transaction fees bucket
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">pay_fee</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Entered"));
+
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     <b>let</b> fa_store = <b>if</b> (<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(account_addr)) {
         <b>let</b> fee_pod = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(get_starcoin_framework());
@@ -170,9 +181,17 @@ Deposit <code>token</code> into the transaction fees bucket
         <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&store_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>));
         <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(store_opt)
     } <b>else</b> {
-        <a href="transaction_fee.md#0x1_transaction_fee_create_account_transaction_fee_pod">create_account_transaction_fee_pod</a>(<a href="account.md#0x1_account">account</a>, <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">fungible_asset::metadata_from_asset</a>(&fa))
+        <b>let</b> fa_store = <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>, <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>());
+        <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> fee_stores, fa_store);
+        <b>move_to</b>(<a href="account.md#0x1_account">account</a>, <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
+            fee_stores
+        });
+        fa_store
     };
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fa_store, fa);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Exited"));
 }
 </code></pre>
 
@@ -246,7 +265,7 @@ underlying fiat.
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     metadata: Object&lt;Metadata&gt;
 ): FungibleAsset <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"transaction_fee::distribute_transaction_fees | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_withdraw_account_transaction_fees">transaction_fee::withdraw_account_transaction_fees</a> | Entered"));
 
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     <b>assert</b>!(<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(account_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_POD_NOT_INITIALIZED">ETXN_FEE_POD_NOT_INITIALIZED</a>));
@@ -260,9 +279,41 @@ underlying fiat.
 
     <b>let</b> ret = <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(<a href="account.md#0x1_account">account</a>, fa_store, all_asset_balance);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"transaction_fee::distribute_transaction_fees | Exited"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_withdraw_account_transaction_fees">transaction_fee::withdraw_account_transaction_fees</a> | Exited"));
 
     ret
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_transaction_fee_inner_create_fa_store"></a>
+
+## Function `inner_create_fa_store`
+
+
+
+<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, metadata: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;): <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">fungible_asset::FungibleStore</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, metadata: Object&lt;Metadata&gt;): Object&lt;FungibleStore&gt; {
+    <b>let</b> fa_store_seed = <a href="transaction_fee.md#0x1_transaction_fee_get_fa_store_seed">Self::get_fa_store_seed</a>(metadata);
+    <b>let</b> construct_addr = <a href="object.md#0x1_object_create_object_address">object::create_object_address</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>), fa_store_seed);
+    <b>let</b> fa_store = <b>if</b> (<a href="object.md#0x1_object_object_exists">object::object_exists</a>&lt;FungibleStore&gt;(construct_addr)) {
+        <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;FungibleStore&gt;(construct_addr)
+    } <b>else</b> {
+        <b>let</b> construct_ref = <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(<a href="account.md#0x1_account">account</a>, fa_store_seed);
+        <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, metadata)
+    };
+    fa_store
 }
 </code></pre>
 

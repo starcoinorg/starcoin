@@ -11,7 +11,7 @@ module starcoin_framework::dao {
     use starcoin_framework::create_signer::{Self, create_signer};
     use starcoin_framework::event;
     use starcoin_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata};
-    use starcoin_framework::object::{Self, DeleteRef, Object};
+    use starcoin_framework::object::{Self, Object};
     use starcoin_framework::on_chain_config;
     use starcoin_framework::stc_util;
     use starcoin_framework::system_addresses::get_starcoin_framework;

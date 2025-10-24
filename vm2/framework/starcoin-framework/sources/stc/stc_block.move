@@ -119,7 +119,7 @@ module starcoin_framework::stc_block {
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
     public fun block_prologue(
-        account: signer,
+        framework: signer,
         parent_hash: vector<u8>,
         timestamp: u64,
         author: address,
@@ -134,7 +134,7 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
 
         // Can only be invoked by genesis account
-        system_addresses::assert_starcoin_framework(&account);
+        system_addresses::assert_starcoin_framework(&framework);
 
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
@@ -145,14 +145,14 @@ module starcoin_framework::stc_block {
 
         // deal with previous block first.
         let txn_fee = transaction_fee::withdraw_account_transaction_fees(
-            &account,
+            &framework,
             starcoin_coin::get_stc_fa_metadata()
         );
 
-        timestamp::update_global_time(&account, timestamp * 1000);
+        timestamp::update_global_time(&framework, timestamp * 1000);
 
         process_block_metadata(
-            &account,
+            &framework,
             parent_hash,
             author,
             timestamp,
@@ -162,10 +162,10 @@ module starcoin_framework::stc_block {
             red_blocks,
         );
 
-        let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used, red_blocks);
+        let reward = epoch::adjust_epoch(&framework, number, timestamp, uncles, parent_gas_used, red_blocks);
 
         // pass in previous block gas fees.
-        block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
+        block_reward::process_block_reward(&framework, number, reward, author, auth_key_vec, txn_fee);
 
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
