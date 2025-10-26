@@ -44,67 +44,79 @@ pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
     path_list
 });
 
-#[async_trait::async_trait]
 pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
-    async fn get(self, state_key: StateKey) -> Result<Option<Bytes>>;
+    fn get(
+        self,
+        state_key: StateKey,
+    ) -> impl std::future::Future<Output = Result<Option<Bytes>>> + Send;
 
-    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof>;
+    fn get_with_proof(
+        self,
+        state_key: StateKey,
+    ) -> impl std::future::Future<Output = Result<StateWithProof>> + Send;
 
-    async fn get_resource<R>(self, address: AccountAddress) -> Result<R>
+    fn get_resource<R>(
+        self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<R>> + Send
     where
         R: MoveResource,
     {
-        let rsrc_bytes = self
-            .get(StateKey::resource_typed::<R>(&address)?)
-            .await?
-            .ok_or_else(|| {
-                format_err!(
-                    "Resource {:?} not exists at address:{}",
-                    R::module_identifier(),
-                    address
-                )
-            })?;
-        let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
-        Ok(rsrc)
+        async move {
+            let rsrc_bytes = self
+                .get(StateKey::resource_typed::<R>(&address)?)
+                .await?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Resource {:?} not exists at address:{}",
+                        R::module_identifier(),
+                        address
+                    )
+                })?;
+            let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
+            Ok(rsrc)
+        }
     }
 
-    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState>;
+    fn get_account_state(
+        self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<AccountState>> + Send;
 
     /// get account stateset on state_root(if empty, use current state root).
-    async fn get_account_state_set(
+    fn get_account_state_set(
         self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> Result<AccountStateSet>;
+    ) -> impl std::future::Future<Output = Result<AccountStateSet>> + Send;
 
-    async fn state_root(self) -> Result<HashValue>;
+    fn state_root(self) -> impl std::future::Future<Output = Result<HashValue>> + Send;
 
-    async fn get_with_proof_by_root(
+    fn get_with_proof_by_root(
         self,
         state_key: StateKey,
         state_root: HashValue,
-    ) -> Result<StateWithProof>;
+    ) -> impl std::future::Future<Output = Result<StateWithProof>> + Send;
 
-    async fn get_account_state_by_root(
+    fn get_account_state_by_root(
         self,
         address: AccountAddress,
         state_root: HashValue,
-    ) -> Result<AccountState>;
+    ) -> impl std::future::Future<Output = Result<AccountState>> + Send;
 
-    async fn get_with_table_item_proof(
+    fn get_with_table_item_proof(
         self,
         handle: TableHandle,
         key: Vec<u8>,
-    ) -> Result<StateWithTableItemProof>;
-    async fn get_with_table_item_proof_by_root(
+    ) -> impl std::future::Future<Output = Result<StateWithTableItemProof>> + Send;
+    fn get_with_table_item_proof_by_root(
         self,
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
-    ) -> Result<StateWithTableItemProof>;
+    ) -> impl std::future::Future<Output = Result<StateWithTableItemProof>> + Send;
 }
 
-#[async_trait::async_trait]
 impl<S> ChainStateAsyncService for ServiceRef<S>
 where
     S: ActorService + ServiceHandler<S, StateRequest>,

@@ -137,22 +137,26 @@ where
     type Response = ();
 }
 
-#[async_trait::async_trait]
 pub trait Bus {
-    async fn subscribe<M>(&self, notifier: EventNotifier<M>) -> Result<()>
+    fn subscribe<M>(
+        &self,
+        notifier: EventNotifier<M>,
+    ) -> impl std::future::Future<Output = Result<()>> + Send
     where
         M: Send + Clone + Debug + 'static;
 
-    async fn unsubscribe<S, M>(&self) -> Result<()>
+    fn unsubscribe<S, M>(&self) -> impl std::future::Future<Output = Result<()>> + Send
     where
         S: ActorService + EventHandler<S, M>,
         M: Send + Clone + Debug + 'static;
 
-    async fn channel<M>(&self) -> Result<mpsc::UnboundedReceiver<M>>
+    fn channel<M>(
+        &self,
+    ) -> impl std::future::Future<Output = Result<mpsc::UnboundedReceiver<M>>> + Send
     where
         M: Send + Clone + Debug + 'static;
 
-    async fn oneshot<M>(&self) -> Result<oneshot::Receiver<M>>
+    fn oneshot<M>(&self) -> impl std::future::Future<Output = Result<oneshot::Receiver<M>>> + Send
     where
         M: Send + Clone + Debug + 'static;
 
@@ -161,7 +165,6 @@ pub trait Bus {
         M: Send + Clone + Debug + 'static;
 }
 
-#[async_trait::async_trait]
 impl Bus for ServiceRef<BusService> {
     async fn subscribe<M>(&self, notifier: EventNotifier<M>) -> Result<()>
     where

@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 futures = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }

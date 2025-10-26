@@ -7,12 +7,10 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 
-#[async_trait::async_trait]
 pub trait BroadcastProcessAsyncService {
-    async fn get_msg_count(&self) -> Result<MsgCountResult>;
+    fn get_msg_count(&self) -> impl std::future::Future<Output = Result<MsgCountResult>> + Send;
 }
 
-#[async_trait::async_trait]
 impl BroadcastProcessAsyncService for ServiceRef<BroadcastProcessService> {
     async fn get_msg_count(&self) -> Result<MsgCountResult> {
         self.send(GetMsgCount).await

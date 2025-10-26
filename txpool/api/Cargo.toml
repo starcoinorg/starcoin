@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 futures-channel = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }

@@ -4,7 +4,6 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 elasticsearch = { workspace = true }
 futures-retry = { workspace = true }

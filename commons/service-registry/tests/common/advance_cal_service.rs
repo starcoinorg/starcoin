@@ -7,12 +7,10 @@ use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef, ServiceRequest,
 };
 
-#[async_trait::async_trait]
 pub trait AdvanceCalAsyncService {
-    async fn batch_add(&self, values: Vec<u64>) -> Result<u64>;
+    fn batch_add(&self, values: Vec<u64>) -> impl std::future::Future<Output = Result<u64>> + Send;
 }
 
-#[async_trait::async_trait]
 impl AdvanceCalAsyncService for ServiceRef<AdvanceCalService> {
     async fn batch_add(&self, values: Vec<u64>) -> Result<u64> {
         self.send(BatchAddRequest { values }).await

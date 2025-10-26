@@ -1,7 +1,6 @@
 use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSealRequest};
 use crate::{ConsensusStrategy, JobClient, SealEvent};
 use anyhow::Result;
-use async_trait::async_trait;
 use byteorder::{LittleEndian, WriteBytesExt};
 use futures::future;
 use futures::stream::{BoxStream, StreamExt};
@@ -34,7 +33,6 @@ impl StratumJobClient {
     }
 }
 
-#[async_trait]
 impl JobClient for StratumJobClient {
     async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let srv = self.stratum_cli_srv.clone();
