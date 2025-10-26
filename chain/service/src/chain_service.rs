@@ -443,7 +443,7 @@ impl ReadableChainService for ChainReaderServiceInner {
                 }
             }
         }
-        return Ok(None);
+        Ok(None)
     }
 
     fn get_block_txn_infos(
