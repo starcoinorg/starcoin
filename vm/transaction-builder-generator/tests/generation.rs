@@ -17,7 +17,10 @@ fn get_starcoin_registry() -> Registry {
 }
 
 fn get_stdlib_script_abis() -> Vec<ScriptABI> {
-    let path = Path::new("../stdlib/compiled/latest/transaction_scripts/abi");
+    let path = Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../networks/stdlib/latest/transaction_scripts/abi"
+    ));
     buildgen::read_abis(path)
         .expect("reading ABI files should not fail")
         .into_iter()
