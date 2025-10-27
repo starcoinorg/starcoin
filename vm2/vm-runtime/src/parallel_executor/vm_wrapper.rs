@@ -52,20 +52,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
-        let senders = match txn {
-            PreprocessedTransaction::BlockEpilogue(_) => {
-                // since this function is provided for parallel execution
-                // epilogue might be execute multi times if previous user transaction validate fails
-                // so we do not drain element in senders, just copy them
-                Some(self.senders.lock().unwrap().iter().cloned().collect())
-            }
-            _ => None,
-        };
-
-        match self
-            .vm
-            .execute_single_transaction(txn, &versioned_view, senders)
-        {
+        match self.vm.execute_single_transaction(txn, &versioned_view) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
                     match sender {
