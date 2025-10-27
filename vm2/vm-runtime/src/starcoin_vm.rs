@@ -1153,7 +1153,6 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
-                        let sender = transaction.sender();
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
