@@ -36,7 +36,7 @@ fi
 
 # Define paths
 FRAMEWORK_DIR="vm2/framework"
-TARGET_DIR="vm/stdlib/compiled/$VERSION"
+TARGET_DIR="networks/stdlib/$VERSION"
 TARGET_FILE="$TARGET_DIR/${NETWORK}.mrb"
 
 echo "=== Generating MRB File ==="
@@ -46,8 +46,8 @@ echo "Target file: $TARGET_FILE"
 echo
 
 # Create target directory (if it doesn't exist)
-if [ ! -d "vm/stdlib/compiled" ]; then
-    echo "Error: vm/stdlib/compiled base directory does not exist"
+if [ ! -d "networks/stdlib" ]; then
+    echo "Error: networks/stdlib base directory does not exist"
     exit 1
 fi
 
