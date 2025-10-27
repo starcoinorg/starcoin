@@ -182,31 +182,37 @@ module starcoin_framework::transaction_fee {
         seed
     }
 
-    #[test(framework = @0x1, alice = @0x123)]
-    fun test_txn_fee_basic_flow(framework: &signer, alice: &signer) acquires TransactionFeePod {
+    #[test(framework = @0x1, alice = @0x123, bob = @0x456)]
+    fun test_txn_fee_basic_flow(framework: &signer, alice: &signer, bob: &signer) acquires TransactionFeePod {
         use starcoin_framework::starcoin_account;
         use starcoin_framework::starcoin_coin;
         use starcoin_framework::primary_fungible_store;
-        use starcoin_std::debug;
-        use std::string::utf8;
         use std::signer;
 
         starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
-
-        let minted_fa = starcoin_coin::mint_stc_fa_for_test(100000000);
-        let minted_fa_aount = fungible_asset::amount(&minted_fa);
-        Self::pay_fee(alice, minted_fa);
+        Self::initialize(framework);
 
         let stc_metadata = starcoin_coin::get_stc_fa_metadata();
-        let distributed_fa = Self::withdraw_account_transaction_fees(framework, stc_metadata);
-        assert!(fungible_asset::amount(&distributed_fa) == minted_fa_aount, 1);
+        let amount: u64 = 100000000;
+        let pay_addresses = vector::empty();
 
+        // Pay fee for alice
         let alice_addr = signer::address_of(alice);
         starcoin_account::create_account(alice_addr);
+        Self::pay_fee(alice, starcoin_coin::mint_stc_fa_for_test(amount));
+        vector::push_back(&mut pay_addresses, alice_addr);
 
-        debug::print(&utf8(b"transaction_fee::test_txn_fee_basic_flow | after starcoin_account::create_account"));
-        primary_fungible_store::deposit(alice_addr, distributed_fa);
+        // Pay fee for bob
+        let bob_addr = signer::address_of(bob);
+        starcoin_account::create_account(bob_addr);
+        Self::pay_fee(alice, starcoin_coin::mint_stc_fa_for_test(amount));
+        vector::push_back(&mut pay_addresses, bob_addr);
 
-        debug::print(&utf8(b"transaction_fee::test_txn_fee_basic_flow | exited"));
+        Self::merge_fee_to_framework_account(framework, pay_addresses);
+
+        let distributed_fa = Self::withdraw_account_transaction_fees(framework, stc_metadata);
+        assert!(fungible_asset::amount(&distributed_fa) == amount * 2, 1);
+
+        primary_fungible_store::deposit(signer::address_of(framework), distributed_fa);
     }
 }
