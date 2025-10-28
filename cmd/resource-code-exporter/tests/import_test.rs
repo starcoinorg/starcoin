@@ -23,7 +23,7 @@ mod import_test {
         token::token_code::TokenCode,
         transaction::{Package, ScriptFunction, Transaction, TransactionPayload},
     };
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     use tempfile::TempDir;
     use test_helper::{
