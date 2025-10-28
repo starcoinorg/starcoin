@@ -1469,7 +1469,7 @@ impl ChainReader for BlockChain {
                 )
             })?;
         let transaction_info = storage
-            .get_transaction_info_by_block_id(txn_info_hash, block_id)?
+            .get_transaction_info(txn_info_hash)?
             .and_then(|i| i.to_v1())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
