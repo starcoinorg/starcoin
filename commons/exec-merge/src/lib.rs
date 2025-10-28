@@ -1,3 +1,4 @@
+#[cfg(any(feature = "statedb", test))]
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use quick_cache::sync::Cache;
@@ -8,7 +9,9 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 #[cfg(any(feature = "statedb", test))]
 use starcoin_vm2_statedb::{ChainStateReader, ChainStateWriter};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
+use starcoin_vm2_vm_types::write_set::WriteOp;
+#[cfg(any(feature = "statedb", test))]
+use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -179,20 +182,35 @@ impl MergeEngine {
     }
 
     #[cfg(any(feature = "statedb", test))]
-    pub fn apply_diff(&self, state_db: &ChainStateDB2, diff: &MergeDiff) -> Result<ApplyResult> {
+    fn materialize_write_set(&self, diff: &MergeDiff) -> Result<Option<WriteSet>> {
         if diff.writes.is_empty() {
+            return Ok(None);
+        }
+        let ws = WriteSetMut::new(diff.writes.clone()).freeze()?;
+        Ok(Some(ws))
+    }
+
+    #[cfg(any(feature = "statedb", test))]
+    /// Build a frozen write set without touching storage.
+    /// This is the staging hook for the upcoming no-commit reuse flow,
+    /// allowing callers to aggregate writes before deciding when to apply them.
+    pub fn build_write_set(&self, diff: &MergeDiff) -> Result<Option<WriteSet>> {
+        self.materialize_write_set(diff)
+    }
+
+    #[cfg(any(feature = "statedb", test))]
+    pub fn apply_diff(&self, state_db: &ChainStateDB2, diff: &MergeDiff) -> Result<ApplyResult> {
+        if let Some(ws) = self.materialize_write_set(diff)? {
+            state_db.apply_write_set(ws)?;
+            let root = state_db.commit()?;
             return Ok(ApplyResult {
-                state_root2: state_db.state_root(),
-                applied: 0,
+                state_root2: root,
+                applied: diff.writes.len(),
             });
         }
-        // Build a WriteSet and apply.
-        let ws = WriteSetMut::new(diff.writes.clone()).freeze()?;
-        state_db.apply_write_set(ws)?;
-        let root = state_db.commit()?;
         Ok(ApplyResult {
-            state_root2: root,
-            applied: diff.writes.len(),
+            state_root2: state_db.state_root(),
+            applied: 0,
         })
     }
 }

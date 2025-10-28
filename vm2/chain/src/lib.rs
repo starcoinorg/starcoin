@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm2_crypto::hash::PlainCryptoHash;
+use starcoin_logger::prelude::*;
+use starcoin_vm2_crypto::hash::{CryptoHash, PlainCryptoHash};
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
@@ -9,13 +10,43 @@ use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::block_metadata::BlockMetadata as BlockMetadata2;
 use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
+use starcoin_vm2_vm_types::state_store::TStateView;
 // reuse imports
 use starcoin_exec_merge as exec_merge;
-use starcoin_exec_merge::{ExecRecord, ReuseOpts};
-use starcoin_vm2_types::vm_error::KeptVMStatus;
+use starcoin_exec_merge::{ExecKey, ExecRecord, ReuseOpts, StateViewExt};
 use starcoin_vm_runtime::reuse_recorder;
+use std::time::Instant;
+
+struct ChainStateValueView<'a> {
+    state: &'a ChainStateDB,
+}
+
+impl<'a> StateViewExt for ChainStateValueView<'a> {
+    fn get_value_hash(
+        &self,
+        key: &starcoin_vm2_vm_types::state_store::state_key::StateKey,
+    ) -> Option<starcoin_vm2_crypto::HashValue> {
+        self.state
+            .get_state_value(key)
+            .ok()
+            .and_then(|maybe_value| maybe_value.map(|state_value| state_value.hash()))
+    }
+}
+
+#[derive(Debug)]
+struct PlanStats {
+    total: usize,
+    witness_hits: usize,
+    witness_hits_with_reads: usize,
+    witness_missing: usize,
+    reused: usize,
+    reexec: usize,
+    read_checked: u64,
+    plan_time_ms: u128,
+}
 
 pub fn execute_transactions(
     statedb: &ChainStateDB,
@@ -51,6 +82,63 @@ pub fn execute_transactions_with_reuse(
     vm_metrics: Option<VMMetrics>,
     opts: ReuseOpts,
 ) -> ExecutorResult<BlockExecutedData> {
+    let pre_fp = opts.pre_state_fingerprint;
+    let store = opts.witness_store.clone();
+    let merge_engine = opts.merge_engine.clone();
+
+    let plan_stats = if opts.enabled {
+        let plan_start = Instant::now();
+        let mut plan_execs = Vec::with_capacity(transactions.len());
+        let mut witness_hits = 0usize;
+        let mut witness_hits_with_reads = 0usize;
+
+        for tx in transactions.iter() {
+            let key = ExecKey {
+                tx_hash: tx.id(),
+                pre_state_fingerprint: pre_fp,
+            };
+            if let Some(rec) = store.get(&key) {
+                if rec.read_set.is_some() {
+                    witness_hits_with_reads += 1;
+                }
+                witness_hits += 1;
+                plan_execs.push(rec);
+            } else {
+                plan_execs.push(ExecRecord {
+                    tx_hash: tx.id(),
+                    pre_state_fingerprint: pre_fp,
+                    read_set: None,
+                    write_set: Vec::new(),
+                    event_root: starcoin_vm2_crypto::HashValue::zero(),
+                    gas: 0,
+                    status_ok: false,
+                    meta_fingerprint: None,
+                });
+            }
+        }
+
+        let mut prefix = exec_merge::PrefixWrites::default();
+        let diff = merge_engine.plan_merge(
+            &ChainStateValueView { state: statedb },
+            &mut prefix,
+            &plan_execs,
+        );
+        let elapsed_ms = plan_start.elapsed().as_millis();
+        let read_checked = *diff.stats.get("read_checked").unwrap_or(&0);
+        Some(PlanStats {
+            total: plan_execs.len(),
+            witness_hits,
+            witness_hits_with_reads,
+            witness_missing: plan_execs.len().saturating_sub(witness_hits),
+            reused: diff.reused.len(),
+            reexec: diff.reexec.len(),
+            read_checked,
+            plan_time_ms: elapsed_ms,
+        })
+    } else {
+        None
+    };
+
     let recording = opts.enabled;
     let (executed, recorded_reads) = if recording {
         reuse_recorder::start();
@@ -71,8 +159,6 @@ pub fn execute_transactions_with_reuse(
     };
 
     // Phase 2: 写入 Witness 记录
-    let pre_fp = opts.pre_state_fingerprint;
-    let store = opts.witness_store.clone();
     for (idx, (tx, info)) in transactions
         .iter()
         .take(executed.txn_infos.len())
@@ -97,6 +183,20 @@ pub fn execute_transactions_with_reuse(
             meta_fingerprint: None,
         };
         store.put(rec);
+    }
+
+    if let Some(stats) = plan_stats.as_ref() {
+        debug!(
+            "vm2 reuse plan summary: total={}, witness_hits={}, witness_hits_with_reads={}, reused={}, reexec={}, missing={}, read_checked={}, plan_time_ms={}",
+            stats.total,
+            stats.witness_hits,
+            stats.witness_hits_with_reads,
+            stats.reused,
+            stats.reexec,
+            stats.witness_missing,
+            stats.read_checked,
+            stats.plan_time_ms,
+        );
     }
 
     Ok(executed)
