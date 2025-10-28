@@ -82,7 +82,7 @@ impl MigrationDataSet {
                 "0xfe67714c2de318b48bf11a153b166110ba80f1b8524df01030a1084a99ae963f",
             )
             .unwrap(),
-            include_bytes!("../snapshot/24674819.tar.gz"),
+            include_bytes!("../../../networks/snapshot/24674819.tar.gz"),
         )
     }
 
@@ -96,7 +96,7 @@ impl MigrationDataSet {
                 "0x9576de4c29396937abe057d36681362840fbd10e9eb4ccec774c98e9569edef8",
             )
             .unwrap(),
-            include_bytes!("../snapshot/24674819-0x1.tar.gz"),
+            include_bytes!("../../../networks/snapshot/24674819-0x1.tar.gz"),
         )
     }
 
