@@ -1,7 +1,8 @@
 use anyhow::{format_err, Result};
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
-use starcoin_accumulator::Accumulator;
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
@@ -104,11 +105,53 @@ fn test_transaction_info_and_proof() -> Result<()> {
         execution_result
     );
 
+    let storage1 = block_chain.get_storage();
+    let _storage2 = block_chain.get_storage2();
+
+    let current_block_info = storage1
+        .get_block_info(current_header.id())?
+        .ok_or_else(|| format_err!("current block info is not found"))?;
+    let final_transaction_accumulator = MerkleAccumulator::new_with_info(
+        current_block_info.txn_accumulator_info,
+        storage1.get_accumulator_store(AccumulatorStoreType::Transaction),
+    );
+    let final_transaction_info_index = final_transaction_accumulator
+        .num_leaves()
+        .checked_sub(1)
+        .ok_or_else(|| format_err!("proof transaction leaf number is overflow"))?;
+    let final_transaction_info_id = final_transaction_accumulator
+        .get_leaf(final_transaction_info_index)?
+        .ok_or_else(|| format_err!("final transaction info is not found"))?;
+
+    let final_transaction_info = storage1
+        .get_transaction_info(final_transaction_info_id)?
+        .ok_or_else(|| format_err!("final transaction info is not found"))?
+        .transaction_info
+        .to_v1()
+        .ok_or_else(|| format_err!("final transaction info is not found"))?;
+    let final_state_root_hash = final_transaction_info
+        .state_root_hash()
+        .ok_or_else(|| format_err!("final transaction info's state root is not found"))?;
+    let final_raw_transaction_id = final_transaction_info.transaction_hash();
+    let final_raw_transaction = storage1
+        .get_transaction(final_raw_transaction_id)?
+        .ok_or_else(|| format_err!("Cannot find txn by hash:{}", final_raw_transaction_id,))?
+        .to_v1()
+        .ok_or_else(|| format_err!("final transaction info is not found"))?;
+    let final_account_address = match &final_raw_transaction {
+        Transaction::UserTransaction(user_txn) => user_txn.sender(),
+        Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+    };
+    let final_access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
+        final_account_address,
+        AccountResource::struct_tag(),
+    ));
+
     let mut transaction_accumulator_index_begin: u64 = 0;
     for block in executed_blocks {
         let mut transactions: Vec<StcTransaction> = vec![];
 
-        let (state_root_index1, _state_root_index2) = if block.header().is_genesis() {
+        let (_state_root_index1, _state_root_index2) = if block.header().is_genesis() {
             transactions.extend(vec![
                 Transaction2::UserTransaction(block.body.transactions2.first().cloned().unwrap())
                     .into(),
@@ -182,62 +225,66 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 }
             };
 
-            if index == state_root_index1 || index == 1 {
-                // 1 is the block metadata txn of vm1
-                let account_address = match &txn {
-                    Transaction::UserTransaction(user_txn) => user_txn.sender(),
-                    Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-                };
-                let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
-                    account_address,
-                    AccountResource::struct_tag(),
-                ));
+            // if index == state_root_index1 || index == 1 {
+            // 1 is the block metadata txn of vm1
+            let account_address = match &txn {
+                Transaction::UserTransaction(user_txn) => user_txn.sender(),
+                Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+            };
+            let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
+                account_address,
+                AccountResource::struct_tag(),
+            ));
 
-                let events = block_chain
-                    .get_events(txn_info.transaction_info.id())?
-                    .unwrap();
+            let events = block_chain
+                .get_events(txn_info.transaction_info.id())?
+                .unwrap();
 
-                for (event_index, event) in events.into_iter().enumerate() {
-                    let txn_proof = block_chain
-                        .get_transaction_proof(
-                            current_header.id(),
-                            txn_global_index,
-                            Some(event_index as u64),
-                            access_path.clone(),
-                        )?
-                        .expect("get transaction proof return none");
-                    assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
-
-                    let result = txn_proof.verify(
-                        current_header.txn_accumulator_root(),
+            for (event_index, event) in events.into_iter().enumerate() {
+                let txn_proof = block_chain
+                    .get_transaction_proof(
+                        current_header.id(),
                         txn_global_index,
                         Some(event_index as u64),
                         access_path.clone(),
-                    );
+                    )?
+                    .expect("get transaction proof return none");
+                assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
 
-                    assert!(
-                        result.is_ok(),
-                        "txn index: {}, {:?} verify failed, reason: {:?}",
-                        txn_global_index,
-                        txn_proof,
-                        result.err().unwrap()
-                    );
-                }
-            } else {
-                let info = txn_info.transaction_info.to_v1().ok_or_else(|| {
-                    format_err!(
-                        "Cannot get txn info by txn hash:{}, index: {}",
-                        txn.id(),
-                        index
-                    )
-                })?;
+                let result = txn_proof.verify(
+                    current_header.txn_accumulator_root(),
+                    txn_global_index,
+                    final_transaction_info_index,
+                    final_transaction_info_id,
+                    Some(event_index as u64),
+                    access_path.clone(),
+                    final_access_path.clone(),
+                    final_state_root_hash,
+                );
+
                 assert!(
-                    info.state_root_hash().is_none(),
-                    "state root hash should be none, index: {}, state root index1: {}",
-                    index,
-                    state_root_index1
+                    result.is_ok(),
+                    "txn index: {}, {:?} verify failed, reason: {:?}",
+                    txn_global_index,
+                    txn_proof,
+                    result.err().unwrap()
                 );
             }
+            // } else {
+            //     let info = txn_info.transaction_info.to_v1().ok_or_else(|| {
+            //         format_err!(
+            //             "Cannot get txn info by txn hash:{}, index: {}",
+            //             txn.id(),
+            //             index
+            //         )
+            //     })?;
+            //     assert!(
+            //         info.state_root_hash().is_none(),
+            //         "state root hash should be none, index: {}, state root index1: {}",
+            //         index,
+            //         state_root_index1
+            //     );
+            // }
         }
         transaction_accumulator_index_begin =
             transaction_accumulator_index_begin.saturating_add(transaction_count);

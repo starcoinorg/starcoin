@@ -66,8 +66,10 @@ impl EventWithProof {
 pub struct TransactionInfoWithProof {
     pub transaction_info: RichTransactionInfo,
     pub proof: AccumulatorProof,
+    pub final_proof: AccumulatorProof,
     pub event_proof: Option<EventWithProof>,
     pub state_proof: Option<StateWithProof>,
+    pub final_state_proof: Option<StateWithProof>,
 }
 
 impl TransactionInfoWithProof {
@@ -75,12 +77,24 @@ impl TransactionInfoWithProof {
         &self,
         expect_root: HashValue,
         transaction_index: u64,
+        final_transaction_index: u64,
+        final_transaction_info_id: HashValue,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
+        final_access_path: Option<AccessPath>,
+        final_state_root: HashValue,
     ) -> Result<()> {
         self.proof
             .verify(expect_root, self.transaction_info.id(), transaction_index)
             .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
+        self.final_proof
+            .verify(
+                expect_root,
+                final_transaction_info_id,
+                final_transaction_index,
+            )
+            .map_err(|e| format_err!("final transaction info proof verify failed: {}", e))?;
+
         match (self.event_proof.as_ref(), event_index) {
             (Some(event_proof), Some(event_index)) => {
                 event_proof
@@ -112,11 +126,16 @@ impl TransactionInfoWithProof {
             (None, None) => {
                 // skip
             }
-            (None, Some(access_path)) => {
-                bail!(
-                    "TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}",
-                    access_path
-                );
+            (None, Some(_access_path)) => {
+                match (self.final_state_proof.as_ref(), final_access_path) {
+                    (Some(state_proof), Some(access_path)) => {
+                        state_proof.verify(final_state_root, access_path).map_err(|e| format_err!("state proof verify failed: {}", e))?;
+                    }
+                    (None, None) | (Some(_), None)  => {
+                        // skip
+                    }
+                    (None, Some(access_path)) => bail!("TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}", access_path),
+                }
             }
         };
         Ok(())

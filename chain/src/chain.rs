@@ -33,7 +33,6 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
-use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -47,6 +46,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_types::{account_config::AccountResource, filter::Filter};
 use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
@@ -58,8 +58,8 @@ use starcoin_vm2_vm_types::{
     access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
     on_chain_resource::Epoch,
 };
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::{access_path::AccessPath, move_resource::MoveResource};
 use std::cmp::min;
 use std::collections::BTreeMap;
 use std::iter::Extend;
@@ -1457,35 +1457,101 @@ impl ChainReader for BlockChain {
     ) -> Result<Option<TransactionInfoWithProof>> {
         let (storage, _storage2) = &self.storage;
         let (statedb, _statedb2) = &self.statedb;
-        let block_info = match self.get_block_info(Some(block_id))? {
+
+        let block_info = match storage.get_block_info(block_id)? {
             Some(block_info) => block_info,
             None => return Ok(None),
         };
-        let accumulator = self
-            .txn_accumulator
-            .fork(Some(block_info.txn_accumulator_info));
-        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
-            Some(proof) => proof,
-            None => return Ok(None),
-        };
 
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
-        let txn_info_hash = accumulator
-            .get_leaf(transaction_global_index)?
+        let transaction_accumulator = MerkleAccumulator::new_with_info(
+            block_info.txn_accumulator_info,
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
+
+        let final_transaction_global_index = transaction_accumulator
+            .num_leaves()
+            .checked_sub(1)
+            .ok_or_else(|| format_err!("accumulator is empty"))?;
+        let final_proof = transaction_accumulator
+            .get_proof(final_transaction_global_index)?
             .ok_or_else(|| {
                 format_err!(
-                    "Can not find txn info hash by index {}",
+                    "final transaction proof is not found using the accumulator leaf index: {:?}",
+                    final_transaction_global_index
+                )
+            })?;
+
+        let proof = transaction_accumulator
+            .get_proof(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "transaction proof is not found using the accumulator leaf index: {:?}",
                     transaction_global_index
                 )
             })?;
-        let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
+
+        let proof_transaction_info_id = transaction_accumulator
+            .get_leaf(final_transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "proof transaction info is not found using the accumulator leaf index: {}",
+                    final_transaction_global_index
+                )
+            })?;
+        let transaction_info_id = transaction_accumulator
+            .get_leaf(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "transaction info is not found using the accumulator leaf index: {}",
+                    transaction_global_index
+                )
+            })?;
+
+        let proof_transaction_info = storage
+            .get_transaction_info(proof_transaction_info_id)?
             .and_then(|i| i.to_v1())
-            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find proof txn info by hash:{}",
+                    proof_transaction_info_id
+                )
+            })?;
+
+        let final_raw_transaction = storage
+            .get_transaction(proof_transaction_info.transaction_hash)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find txn by hash:{}",
+                    proof_transaction_info.transaction_hash
+                )
+            })?
+            .to_v1()
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot convert to v1 for txn by hash:{}",
+                    proof_transaction_info.transaction_hash
+                )
+            })?;
+        let final_state_root_hash = proof_transaction_info
+            .state_root_hash()
+            .ok_or_else(|| format_err!("Cannot get state root hash"))?;
+        let final_account_address = match &final_raw_transaction {
+            Transaction::UserTransaction(user_txn) => user_txn.sender(),
+            Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+        };
+        let final_access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
+            final_account_address,
+            AccountResource::struct_tag(),
+        ));
+
+        let transaction_info = storage
+            .get_transaction_info(transaction_info_id)?
+            .and_then(|i: StcRichTransactionInfo| i.to_v1())
+            .ok_or_else(|| format_err!("Cannot find txn info by hash:{}", transaction_info_id))?;
 
         let event_proof = if let Some(event_index) = event_index {
-            let events = storage
-                .get_contract_events(txn_info_hash)?
+            let events: Vec<ContractEvent> = storage
+                .get_contract_events(transaction_info_id)?
                 .unwrap_or_default();
             let event = events.get(event_index as usize).cloned().ok_or_else(|| {
                 format_err!("event index out of range, events len:{}", events.len())
@@ -1501,17 +1567,31 @@ impl ChainReader for BlockChain {
         } else {
             None
         };
+
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
+            if let Some(state_root) = transaction_info.txn_info().state_root_hash() {
+                let statedb = statedb.fork_at(state_root);
+                Some(statedb.get_with_proof(&access_path)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let final_state_proof = if let Some(access_path) = final_access_path {
+            let statedb = statedb.fork_at(final_state_root_hash);
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None
         };
+
         Ok(Some(TransactionInfoWithProof {
             transaction_info,
-            proof: txn_proof,
+            proof,
+            final_proof,
             event_proof,
             state_proof,
+            final_state_proof,
         }))
     }
 
@@ -2087,7 +2167,7 @@ impl ChainWriter for BlockChain {
         self.apply_with_verifier::<FullVerifier>(block)
     }
 
-    fn chain_state(&mut self) -> &ChainStateDB {
+    fn chain_state(&self) -> &ChainStateDB {
         &self.statedb.0
     }
 
