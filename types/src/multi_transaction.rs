@@ -1,10 +1,13 @@
-use crate::account_address::AccountAddress;
 use crate::transaction::StcTransaction;
+use crate::{account_address::AccountAddress, multi_access_path::MultiAccessPath};
 use anyhow::{format_err, Error};
 use bcs_ext::Sample;
+use move_vm2_core_types::move_resource::MoveStructType;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_vm2_types::access_path::AccessPath as AccessPath2;
+use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2,
     transaction::{
@@ -13,9 +16,53 @@ use starcoin_vm2_vm_types::{
         TransactionError as TransactionError2,
     },
 };
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::AccountResource;
+use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::transaction::{SignatureCheckedTransaction, Transaction, TransactionError};
 use std::fmt::Display;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MultiAddress {
+    VM1(AccountAddress),
+    VM2(AccountAddress2),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MultiTransaction {
+    VM1(Transaction),
+    VM2(Transaction2),
+}
+
+impl MultiTransaction {
+    pub fn sender_address(&self) -> MultiAddress {
+        match self {
+            MultiTransaction::VM1(txn) => match txn {
+                Transaction::UserTransaction(txn) => MultiAddress::VM1(txn.sender()),
+                Transaction::BlockMetadata(txn) => MultiAddress::VM1(txn.author()),
+            },
+            MultiTransaction::VM2(txn) => match txn {
+                Transaction2::UserTransaction(txn) => MultiAddress::VM2(txn.sender()),
+                Transaction2::BlockMetadata(txn) => MultiAddress::VM2(txn.author()),
+                Transaction2::BlockEpilogue(txn) => MultiAddress::VM2(txn.author()),
+            },
+        }
+    }
+
+    pub fn access_path(&self) -> MultiAccessPath {
+        match self.sender_address() {
+            MultiAddress::VM1(addr) => MultiAccessPath::VM1(AccessPath::resource_access_path(
+                addr,
+                AccountResource::struct_tag(),
+            )),
+            MultiAddress::VM2(addr) => MultiAccessPath::VM2(AccessPath2::resource_access_path(
+                addr,
+                AccountResource2::struct_tag(),
+            )),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiSignedUserTransaction {

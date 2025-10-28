@@ -28,7 +28,7 @@ use starcoin_abi_decoder::{
 use starcoin_abi_types::ModuleABI;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::proof::AccumulatorProof;
-use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
+use starcoin_chain_api::{EventWithProof, MultiStateProof, TransactionInfoWithProof};
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
@@ -1473,25 +1473,41 @@ pub struct StateWithProofView {
     pub account_state_proof: SparseMerkleProofView,
 }
 
+
 impl StateWithProofView {
     pub fn into_state_proof(self) -> StateWithProof {
         self.into()
     }
 }
 
-impl From<StateWithProof> for StateWithProofView {
-    fn from(state_proof: StateWithProof) -> Self {
-        let state = state_proof.state.map(StrView);
-        Self {
-            state,
-            account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
-            account_proof: state_proof.proof.account_proof.into(),
-            account_state_proof: state_proof.proof.account_state_proof.into(),
+
+impl From<MultiStateProof> for StateWithProofView {
+    fn from(state_proof: MultiStateProof) -> Self {
+        match state_proof {
+            MultiStateProof::VM1(state_with_proof) => {
+                let state = state_with_proof.state.map(StrView);
+                Self {
+                    state,
+                    account_state: state_with_proof.proof.account_state.map(|b| StrView(b.into())),
+                    account_proof: state_with_proof.proof.account_proof.into(),
+                    account_state_proof: statestate_with_proof_proof.proof.account_state_proof.into(),
+                }
+            }
+            MultiStateProof::VM2(state_with_proof) => {
+                let state = state_with_proof.state.map(StrView);
+                Self {
+                    state,
+                    account_state: state_with_proof.proof.account_state.map(|b| StrView(b.into())),
+                    account_proof: state_with_proof.proof.account_proof.into(),
+                    account_state_proof: state_with_proof.proof.account_state_proof.into(),
+                }
+            }
         }
+
     }
 }
 
-impl From<StateWithProofView> for StateWithProof {
+impl From<StateWithProofView> for MultiStateProof {
     fn from(view: StateWithProofView) -> Self {
         let state = view.state.map(|v| v.0);
         let proof = StateProof::new(
@@ -1609,8 +1625,12 @@ pub struct TransactionInfoWithProofView {
     pub final_proof: AccumulatorProofView,
     pub event_proof: Option<EventWithProofView>,
     pub state_proof: Option<StateWithProofView>,
-    pub final_state_proof: Option<StateWithProofView>,
+    pub final_state_proof: StateWithProofView,
 }
+
+
+
+
 
 impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
     fn from(origin: TransactionInfoWithProof) -> Self {
@@ -1620,7 +1640,7 @@ impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
             final_proof: origin.final_proof.into(),
             event_proof: origin.event_proof.map(Into::into),
             state_proof: origin.state_proof.map(Into::into),
-            final_state_proof: origin.final_state_proof.map(Into::into),
+            final_state_proof: origin.final_state_proof.into(),
         }
     }
 }
@@ -1635,7 +1655,7 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
             final_proof: view.final_proof.into(),
             event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
             state_proof: view.state_proof.map(Into::into),
-            final_state_proof: view.final_state_proof.map(Into::into),
+            final_state_proof: view.final_state_proof.into(),
         })
     }
 }

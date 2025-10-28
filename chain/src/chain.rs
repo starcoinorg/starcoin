@@ -14,8 +14,8 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, EventWithProof2,
-    ExcludedTxns, ExecutedBlock, TransactionInfoWithProof, TransactionInfoWithProof2,
-    VerifiedBlock, VerifyBlockField,
+    ExcludedTxns, ExecutedBlock, MultiStateProof, TransactionInfoWithProof,
+    TransactionInfoWithProof2, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
@@ -33,7 +33,6 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
-use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
@@ -48,6 +47,7 @@ use starcoin_types::{
 };
 use starcoin_types::{account_config::AccountResource, filter::Filter};
 use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
+use starcoin_types::{multi_access_path::MultiAccessPath, multi_state::MultiState};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
@@ -1453,10 +1453,10 @@ impl ChainReader for BlockChain {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         let (storage, _storage2) = &self.storage;
-        let (statedb, _statedb2) = &self.statedb;
+        let (statedb, statedb2) = &self.statedb;
 
         let block_info = match storage.get_block_info(block_id)? {
             Some(block_info) => block_info,
@@ -1507,47 +1507,43 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        let proof_transaction_info = storage
+        let proof_rich_transaction_info = storage
             .get_transaction_info(proof_transaction_info_id)?
-            .and_then(|i| i.to_v1())
             .ok_or_else(|| {
                 format_err!(
-                    "Cannot find proof txn info by hash:{}",
+                    "failed to get proof txn info by hash:{}",
                     proof_transaction_info_id
                 )
             })?;
 
+        let proof_transaction_info = proof_rich_transaction_info.transaction_info;
+        // .and_then(|i| i.to_v1())
+        // .ok_or_else(|| {
+        //     format_err!(
+        //         "Cannot find proof txn info by hash:{}",
+        //         proof_transaction_info_id
+        //     )
+        // })?;
+
         let final_raw_transaction = storage
-            .get_transaction(proof_transaction_info.transaction_hash)?
+            .get_transaction(proof_transaction_info.transaction_hash())?
             .ok_or_else(|| {
                 format_err!(
                     "Cannot find txn by hash:{}",
-                    proof_transaction_info.transaction_hash
+                    proof_transaction_info.transaction_hash()
                 )
             })?
-            .to_v1()
-            .ok_or_else(|| {
-                format_err!(
-                    "Cannot convert to v1 for txn by hash:{}",
-                    proof_transaction_info.transaction_hash
-                )
-            })?;
+            .to_transaction();
+
         let final_state_root_hash = proof_transaction_info
-            .state_root_hash()
+            .state_root()
             .ok_or_else(|| format_err!("Cannot get state root hash"))?;
-        let final_account_address = match &final_raw_transaction {
-            Transaction::UserTransaction(user_txn) => user_txn.sender(),
-            Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-        };
-        let final_access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
-            final_account_address,
-            AccountResource::struct_tag(),
-        ));
+        let final_account_address = final_raw_transaction.sender_address();
+        let final_access_path = final_raw_transaction.access_path();
 
         let transaction_info = storage
             .get_transaction_info(transaction_info_id)?
-            .and_then(|i: StcRichTransactionInfo| i.to_v1())
-            .ok_or_else(|| format_err!("Cannot find txn info by hash:{}", transaction_info_id))?;
+            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
 
         let event_proof = if let Some(event_index) = event_index {
             let events: Vec<ContractEvent> = storage
@@ -1569,20 +1565,33 @@ impl ChainReader for BlockChain {
         };
 
         let state_proof = if let Some(access_path) = access_path {
-            if let Some(state_root) = transaction_info.txn_info().state_root_hash() {
-                let statedb = statedb.fork_at(state_root);
-                Some(statedb.get_with_proof(&access_path)?)
+            if let Some(state_root) = transaction_info.state_root() {
+                match transaction_info.txn_info() {
+                    StcTransactionInfo::V1(transaction_info) => {
+                        let statedb = statedb.fork_at(state_root);
+                        Some(MultiStateProof::VM1(statedb.get_with_proof(&access_path.to_v1().ok_or_else(|| format_err!("the transaction to be verified is vm version 1 but the access path is not"))?)?))
+                    }
+                    StcTransactionInfo::V2(transaction_info) => {
+                        let statedb2 = statedb2.fork_at(state_root);
+                        Some(MultiStateProof::VM2(statedb2.get_with_proof(&access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)?))
+                    }
+                }
             } else {
                 None
             }
         } else {
             None
         };
-        let final_state_proof = if let Some(access_path) = final_access_path {
-            let statedb = statedb.fork_at(final_state_root_hash);
-            Some(statedb.get_with_proof(&access_path)?)
-        } else {
-            None
+
+        let final_state_proof = match &final_access_path {
+            MultiAccessPath::VM1(access_path) => {
+                let statedb = statedb.fork_at(final_state_root_hash);
+                MultiStateProof::VM1(statedb.get_with_proof(&access_path)?)
+            }
+            MultiAccessPath::VM2(access_path) => {
+                let statedb2 = statedb2.fork_at(final_state_root_hash);
+                MultiStateProof::VM2(statedb2.get_with_proof(&final_access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)?)
+            }
         };
 
         Ok(Some(TransactionInfoWithProof {

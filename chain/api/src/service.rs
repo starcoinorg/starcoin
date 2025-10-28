@@ -8,6 +8,7 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
@@ -76,7 +77,7 @@ pub trait ReadableChainService {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
@@ -208,7 +209,7 @@ pub trait ChainAsyncService:
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof>>> + Send;
 
     fn get_block_infos(
@@ -542,7 +543,7 @@ where
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         let response = self
             .send(ChainRequest::GetTransactionProof {

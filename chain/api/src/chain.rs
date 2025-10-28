@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
-use anyhow::Result;
+use anyhow::{format_err, Result};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
-use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::{ChainStateDB, StateWithProof};
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 pub use starcoin_types::block::ExecutedBlock;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
@@ -16,7 +18,8 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, StateWithProof as StateWithProof2};
+use starcoin_rpc_api::types::StateWithProofView;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::access_path::AccessPath;
@@ -30,6 +33,31 @@ pub struct VerifiedBlock {
     pub ghostdata: GhostdagData,
 }
 pub type MintedUncleNumber = u64;
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum MultiStateProof {
+    VM1(StateWithProof),
+    VM2(StateWithProof2),
+}
+
+impl MultiStateProof {
+    pub(crate) fn verify(&self, state_root: HashValue, access_path: MultiAccessPath) -> Result<()> {
+        match self {
+            Self::VM1(state_with_proof) => state_with_proof.verify(
+                state_root,
+                access_path.to_v1().ok_or_else(|| {
+                    format_err!("invalid access_path, the proof is v1 but access_path is v2")
+                })?,
+            ),
+            Self::VM2(state_with_proof) => state_with_proof.verify(
+                state_root,
+                access_path.to_v2().ok_or_else(|| {
+                    format_err!("invalid access_path, the proof is v2 but access_path is v1")
+                })?,
+            ),
+        }
+    }
+}
 
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
@@ -109,7 +137,7 @@ pub trait ChainReader {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
     /// Get transaction info proof by `transaction_global_index` using VM2 types.
     ///

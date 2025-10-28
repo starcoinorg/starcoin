@@ -24,6 +24,7 @@ use starcoin_storage::{BlockStore, Storage, Storage2, Store, Store2};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::system_events::{NewDagBlock, NewHeadBlock};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
@@ -520,7 +521,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         self.main.get_transaction_proof(
             block_id,

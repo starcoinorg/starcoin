@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{
-    multi_transaction::MultiSignedUserTransaction, transaction::legacy::RichTransactionInfo,
+    multi_access_path::MultiAccessPath,
+    multi_transaction::MultiSignedUserTransaction,
+    transaction::{legacy::RichTransactionInfo, StcRichTransactionInfo, StcTransactionInfo},
 };
 use starcoin_vm2_state_api::StateWithProof as StateWithProof2;
 use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
@@ -22,7 +24,10 @@ pub mod message;
 pub mod range_locate;
 mod service;
 
-pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};
+pub use chain::{
+    Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, MultiStateProof,
+    VerifiedBlock,
+};
 pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -64,15 +69,28 @@ impl EventWithProof {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof {
-    pub transaction_info: RichTransactionInfo,
+    pub transaction_info: StcRichTransactionInfo,
     pub proof: AccumulatorProof,
     pub final_proof: AccumulatorProof,
     pub event_proof: Option<EventWithProof>,
-    pub state_proof: Option<StateWithProof>,
-    pub final_state_proof: Option<StateWithProof>,
+    pub state_proof: Option<MultiStateProof>,
+    pub final_state_proof: MultiStateProof,
 }
 
 impl TransactionInfoWithProof {
+    pub fn event_root_hash(&self) -> HashValue {
+        match &self.transaction_info.transaction_info {
+            StcTransactionInfo::V1(transaction_info) => transaction_info.event_root_hash(),
+            StcTransactionInfo::V2(transaction_info) => transaction_info.event_root_hash(),
+        }
+    }
+
+    pub fn state_root_hash(&self) -> Option<HashValue> {
+        match &self.transaction_info.transaction_info {
+            StcTransactionInfo::V1(transaction_info) => transaction_info.state_root_hash(),
+            StcTransactionInfo::V2(transaction_info) => transaction_info.state_root_hash(),
+        }
+    }
     pub fn verify(
         &self,
         expect_root: HashValue,
@@ -80,8 +98,8 @@ impl TransactionInfoWithProof {
         final_transaction_index: u64,
         final_transaction_info_id: HashValue,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
-        final_access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
+        final_access_path: MultiAccessPath,
         final_state_root: HashValue,
     ) -> Result<()> {
         self.proof
@@ -98,7 +116,7 @@ impl TransactionInfoWithProof {
         match (self.event_proof.as_ref(), event_index) {
             (Some(event_proof), Some(event_index)) => {
                 event_proof
-                    .verify(self.transaction_info.event_root_hash(), event_index)
+                    .verify(self.event_root_hash(), event_index)
                     .map_err(|e| format_err!("event proof verify failed: {}", e))?;
             }
             (Some(_), None) => {
@@ -117,7 +135,7 @@ impl TransactionInfoWithProof {
         match (self.state_proof.as_ref(), access_path) {
             (Some(state_proof), Some(access_path)) => {
                 state_proof
-                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
+                    .verify(self.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
                     .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
             (Some(_), None) => {
@@ -127,15 +145,9 @@ impl TransactionInfoWithProof {
                 // skip
             }
             (None, Some(_access_path)) => {
-                match (self.final_state_proof.as_ref(), final_access_path) {
-                    (Some(state_proof), Some(access_path)) => {
-                        state_proof.verify(final_state_root, access_path).map_err(|e| format_err!("state proof verify failed: {}", e))?;
-                    }
-                    (None, None) | (Some(_), None)  => {
-                        // skip
-                    }
-                    (None, Some(access_path)) => bail!("TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}", access_path),
-                }
+                self.final_state_proof
+                    .verify(final_state_root, final_access_path)
+                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
         };
         Ok(())

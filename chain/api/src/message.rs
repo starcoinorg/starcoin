@@ -9,6 +9,7 @@ use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView}
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::contract_event::StcContractEventInfo;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
@@ -65,7 +66,7 @@ pub enum ChainRequest {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
     GetDagBlockChildren {

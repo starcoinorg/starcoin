@@ -13533,6 +13533,7 @@ dependencies = [
  "bytes 1.6.1",
  "forkable-jellyfish-merkle",
  "hex",
+ "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "num_enum",
  "proptest",
  "proptest-derive 0.6.0",

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 pub use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 
+use crate::multi_transaction::MultiTransaction;
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StcTransaction {
     V1(super::Transaction),
@@ -30,6 +32,13 @@ impl StcTransaction {
         match self {
             StcTransaction::V1(_) => None,
             StcTransaction::V2(txn) => Some(txn),
+        }
+    }
+
+    pub fn to_transaction(self) -> MultiTransaction {
+        match self {
+            StcTransaction::V1(txn) => MultiTransaction::VM1(txn),
+            StcTransaction::V2(txn) => MultiTransaction::VM2(txn),
         }
     }
 }
