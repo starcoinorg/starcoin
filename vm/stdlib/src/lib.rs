@@ -40,10 +40,8 @@ pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 pub const COMPILED_OUTPUT_PATH: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib");
 /// The latest output path under which compiled files will be put
-pub const LATEST_COMPILED_OUTPUT_PATH: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../../networks/stdlib/latest"
-);
+pub const LATEST_COMPILED_OUTPUT_PATH: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/latest");
 /// The output path for the compiled stdlib
 pub const STDLIB_DIR_NAME: &str = "stdlib";
 /// The extension for compiled files

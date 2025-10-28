@@ -140,8 +140,8 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
         env!("CARGO_MANIFEST_DIR"),
         "/../networks/stdlib/2/1-2/stdlib.blob"
     ))
-        .canonicalize()
-        .unwrap();
+    .canonicalize()
+    .unwrap();
     let mut bytes = vec![];
     File::open(path)?.read_to_end(&mut bytes)?;
     let package: Package = bcs_ext::from_bytes(&bytes)?;
