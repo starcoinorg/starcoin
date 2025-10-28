@@ -696,13 +696,10 @@ Ensure that STC Primary FungibleStore exists (and create if it doesn't)
 
 
 <pre><code>inline <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">ensure_primary_fungible_store_exists</a>(owner: <b>address</b>): <b>address</b> {
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">starcoin_account::ensure_primary_fungible_store_exists</a> | entered"));
     <b>let</b> store_addr = <a href="starcoin_account.md#0x1_starcoin_account_primary_fungible_store_address">primary_fungible_store_address</a>(owner);
     <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(store_addr)) {
-        // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">starcoin_account::ensure_primary_fungible_store_exists</a> | store <b>exists</b>"));
         store_addr
     } <b>else</b> {
-        // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">starcoin_account::ensure_primary_fungible_store_exists</a> | not <b>exists</b>"));
         <a href="object.md#0x1_object_object_address">object::object_address</a>(
             &<a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store">primary_fungible_store::create_primary_store</a>(
                 owner,
