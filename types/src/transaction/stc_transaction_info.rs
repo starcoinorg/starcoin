@@ -4,6 +4,7 @@
 use crate::transaction::legacy::RichTransactionInfo;
 use crate::transaction::TransactionInfo;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
 use starcoin_crypto::HashValue;
 use starcoin_vm2_types::transaction::{
     RichTransactionInfo as RichTransactionInfoV2, TransactionInfo as TransactionInfoV2,
@@ -53,7 +54,7 @@ impl From<TransactionInfoV2> for StcTransactionInfo {
 /// `StcRichTransactionInfo` is a wrapper of `StcTransactionInfo` with more info,
 /// such as `block_id`, `block_number` which is the block that include the txn producing the txn info.
 /// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct StcRichTransactionInfo {
     pub block_id: HashValue,
     pub block_number: u64,
@@ -106,7 +107,7 @@ impl StcRichTransactionInfo {
     pub fn id(&self) -> HashValue {
         match &self.transaction_info {
             StcTransactionInfo::V1(info) => info.id(),
-            StcTransactionInfo::V2(info) => info.id(),
+            StcTransactionInfo::V2(_) => self.crypto_hash(),
         }
     }
     pub fn transaction_hash(&self) -> HashValue {

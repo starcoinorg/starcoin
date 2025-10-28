@@ -765,6 +765,7 @@ mod tests {
                 .get_transaction_info_by_txn_hash(genesis_txn.id())?
                 .pop()
                 .unwrap()
+                .transaction_info
                 .id(),
             "block metadata txn hash"
         );
@@ -781,6 +782,7 @@ mod tests {
                 .get_transaction_info_by_txn_hash(genesis_txn.id())?
                 .pop()
                 .unwrap()
+                .transaction_info
                 .id(),
             "block metadata txn hash"
         );

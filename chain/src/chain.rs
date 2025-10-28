@@ -1268,17 +1268,6 @@ impl ChainReader for BlockChain {
         Ok(None)
     }
 
-    fn get_transaction_info_by_global_index(
-        &self,
-        transaction_global_index: u64,
-    ) -> Result<Option<StcRichTransactionInfo>> {
-        let (storage, _storage2) = &self.storage;
-        match self.txn_accumulator.get_leaf(transaction_global_index)? {
-            None => Ok(None),
-            Some(hash) => storage.get_transaction_info(hash),
-        }
-    }
-
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
         &self.statedb.0
     }
@@ -1429,7 +1418,8 @@ impl ChainReader for BlockChain {
             .txn_accumulator
             .get_leaves(start_index, reverse, max_size)?;
         let mut infos = vec![];
-        let txn_infos = storage.get_transaction_infos(hashes.clone())?;
+        let txn_infos =
+            storage.get_transaction_infos_by_block_id(hashes.clone(), chain_header.id())?;
         for (i, info) in txn_infos.into_iter().enumerate() {
             match info {
                 Some(info) => infos.push(info),
@@ -1479,7 +1469,7 @@ impl ChainReader for BlockChain {
                 )
             })?;
         let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
+            .get_transaction_info_by_block_id(txn_info_hash, block_id)?
             .and_then(|i| i.to_v1())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
@@ -1546,7 +1536,7 @@ impl ChainReader for BlockChain {
                 )
             })?;
         let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
+            .get_transaction_info_by_block_id(txn_info_hash, block_id)?
             .and_then(|i| i.to_v2())
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
@@ -1777,13 +1767,15 @@ impl BlockChain {
                     continue;
                 }
 
-                let txn_info = storage.get_transaction_info(*id)?.ok_or_else(|| {
-                    anyhow::anyhow!(format!(
-                        "cannot find txn info with txn_info_id {} on main chain(head: {})",
-                        id,
-                        chain_header.id()
-                    ))
-                })?;
+                let txn_info = storage
+                    .get_transaction_info_by_block_id(*id, block_id)?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(format!(
+                            "cannot find txn info with txn_info_id {} on main chain(head: {})",
+                            id,
+                            chain_header.id()
+                        ))
+                    })?;
 
                 let filtered_event_with_info =
                     filtered_events.map(|(idx, evt)| StcContractEventInfo {
