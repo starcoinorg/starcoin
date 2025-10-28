@@ -486,13 +486,6 @@ impl BlockTransactionInfoStore for Storage {
         let rich_info_hashs = self
             .transaction_info_hash_storage
             .get_transaction_info_ids_by_hash(info_id)?;
-        println!(
-            "translate info_id:{} to rich_info_ids:{:?} {}:{}",
-            info_id,
-            rich_info_hashs,
-            file!(),
-            line!()
-        );
 
         for rich_info_hash in rich_info_hashs {
             match self

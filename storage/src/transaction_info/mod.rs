@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::HashMap;
-
 use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
 use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
 use crate::{define_storage, TRANSACTION_INFO_PREFIX_NAME_V3};
@@ -10,6 +8,7 @@ use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_types::transaction::StcRichTransactionInfo;
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 define_storage!(
