@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ "${STARCOIN_PRE_PUSH_REENTRY:-}" == "1" ]]; then
+    exit 0
+fi
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NETWORKS_DIR="${REPO_ROOT}/networks"
+REMOTE_NAME="${1:-origin}"
+REMOTE_URL="${2:-}"
+
+PUSH_REFS=()
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+    [[ -z "${local_ref}" ]] && continue
+    if [[ "${local_ref}" == "(delete)" ]]; then
+        continue
+    fi
+    if [[ -z "${remote_ref}" || "${remote_ref}" == "(null)" ]]; then
+        remote_ref="${local_ref}"
+    fi
+    PUSH_REFS+=("${local_ref}:${remote_ref}")
+done || true
+
+if [[ -z "${STARCOIN_PRE_PUSH_ORIGINAL_SSH:-}" ]]; then
+    STARCOIN_PRE_PUSH_ORIGINAL_SSH="${GIT_SSH_COMMAND:-ssh}"
+fi
+case "${STARCOIN_PRE_PUSH_ORIGINAL_SSH}" in
+    *ServerAliveInterval*)
+        ;;
+    *)
+        export GIT_SSH_COMMAND="${STARCOIN_PRE_PUSH_ORIGINAL_SSH} -o ServerAliveInterval=30 -o ServerAliveCountMax=20"
+        ;;
+esac
+
+log() {
+    printf '[pre-push] %s\n' "$*" >&2
+}
+
+ensure_networks_registered() {
+    if [[ ! -f "${REPO_ROOT}/.gitmodules" ]]; then
+        log "No .gitmodules file found; networks submodule not registered"
+        exit 1
+    fi
+
+    if ! git config --file "${REPO_ROOT}/.gitmodules" --get "submodule.networks.path" >/dev/null; then
+        log "Networks submodule is not registered in .gitmodules"
+        exit 1
+    fi
+}
+
+ensure_networks_initialized() {
+    local needs_update="false"
+
+    if [[ ! -d "${NETWORKS_DIR}" ]]; then
+        needs_update="true"
+    else
+        local submodule_status
+        submodule_status="$(git submodule status networks 2>/dev/null || true)"
+        if [[ -z "${submodule_status}" ]]; then
+            needs_update="true"
+        else
+            local prefix="${submodule_status:0:1}"
+            if [[ "${prefix}" == "-" || "${prefix}" == "+" ]]; then
+                needs_update="true"
+            fi
+        fi
+    fi
+
+    if [[ "${needs_update}" == "true" ]]; then
+        log "Initializing/updating networks submodule"
+        git submodule update --init --recursive networks
+    fi
+}
+
+derive_networks_remote() {
+    local main_remote="$1"
+
+    if [[ -z "${main_remote}" ]]; then
+        return 1
+    fi
+
+    if [[ "${main_remote}" =~ ^git@([^:]+):([^/]+)/([^/]+?)(\.git)?$ ]]; then
+        local host="${BASH_REMATCH[1]}"
+        local org="${BASH_REMATCH[2]}"
+        echo "git@${host}:${org}/starcoin-networks.git"
+        return 0
+    fi
+
+    if [[ "${main_remote}" =~ ^https://([^/]+)/([^/]+)/([^/]+?)(\.git)?$ ]]; then
+        local host="${BASH_REMATCH[1]}"
+        local org="${BASH_REMATCH[2]}"
+        echo "https://${host}/${org}/starcoin-networks.git"
+        return 0
+    fi
+
+    if [[ "${main_remote}" =~ ^ssh://([^/]+@)?([^/]+)/([^/]+)/([^/]+?)(\.git)?$ ]]; then
+        local user_part="${BASH_REMATCH[1]}"
+        local host="${BASH_REMATCH[2]}"
+        local org="${BASH_REMATCH[3]}"
+        if [[ -n "${user_part}" ]]; then
+            echo "ssh://${user_part}${host}/${org}/starcoin-networks.git"
+        else
+            echo "ssh://${host}/${org}/starcoin-networks.git"
+        fi
+        return 0
+    fi
+
+    return 1
+}
+
+cd "${REPO_ROOT}"
+
+ensure_networks_registered
+ensure_networks_initialized
+
+log "Regenerating stdlib artifacts"
+cargo run -p stdlib
+
+log "Regenerating genesis artifacts"
+cargo run -p starcoin-genesis
+
+if [[ ! -d "${NETWORKS_DIR}" ]]; then
+    log "Submodule networks directory is missing; attempting to initialize"
+    git submodule update --init networks
+fi
+
+if [[ ! -d "${NETWORKS_DIR}" ]]; then
+    log "Failed to locate networks submodule after initialization attempt"
+    exit 1
+fi
+
+if [[ ! -d "${NETWORKS_DIR}/.git" && ! -f "${NETWORKS_DIR}/.git" ]]; then
+    log "Networks submodule is not initialized; initializing now"
+    git submodule update --init networks
+fi
+
+if [[ -n "${REMOTE_URL}" ]]; then
+    main_remote="${REMOTE_URL}"
+else
+    main_remote="$(git config --get "remote.${REMOTE_NAME}.url" 2>/dev/null || git config --get remote.origin.url || true)"
+fi
+
+desired_networks_remote="$(derive_networks_remote "${main_remote}" || true)"
+
+if [[ -n "${desired_networks_remote}" ]]; then
+    current_networks_remote="$(git -C "${NETWORKS_DIR}" config --get remote.origin.url || true)"
+    if [[ "${current_networks_remote}" != "${desired_networks_remote}" ]]; then
+        log "Aligning networks submodule remote to ${desired_networks_remote}"
+        git -C "${NETWORKS_DIR}" remote set-url origin "${desired_networks_remote}"
+    fi
+fi
+
+log "Checking networks submodule for updates"
+git -C "${NETWORKS_DIR}" add -A
+
+if git -C "${NETWORKS_DIR}" diff --cached --quiet; then
+    log "No changes detected in networks submodule"
+else
+    commit_msg="chore: update generated stdlib/genesis $(date +%Y-%m-%dT%H:%M:%S%z)"
+    log "Committing networks submodule changes"
+    git -C "${NETWORKS_DIR}" commit -m "${commit_msg}"
+
+    log "Pushing networks submodule updates"
+    git -C "${NETWORKS_DIR}" push origin HEAD
+
+    log "Staging updated networks submodule pointer in superproject"
+    git add networks
+
+    super_commit_msg="chore: update networks submodule pointer $(date +%Y-%m-%dT%H:%M:%S%z)"
+    log "Committing updated networks submodule pointer in superproject"
+    git commit --no-verify -m "${super_commit_msg}" -- networks
+fi
+
+log "Pushing superproject updates to ${REMOTE_NAME}"
+if (( ${#PUSH_REFS[@]} > 0 )); then
+    exec env STARCOIN_PRE_PUSH_REENTRY=1 GIT_SSH_COMMAND="${GIT_SSH_COMMAND}" git push --no-verify "${REMOTE_NAME}" "${PUSH_REFS[@]}"
+else
+    exec env STARCOIN_PRE_PUSH_REENTRY=1 GIT_SSH_COMMAND="${GIT_SSH_COMMAND}" git push --no-verify "${REMOTE_NAME}"
+fi
