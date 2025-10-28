@@ -1,17 +1,17 @@
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
 #[cfg(any(feature = "statedb", test))]
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 #[cfg(any(feature = "statedb", test))]
 use starcoin_vm2_statedb::{ChainStateReader, ChainStateWriter};
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use once_cell::sync::Lazy;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReadEntry {
@@ -103,7 +103,10 @@ pub struct LruWitnessStore {
 
 impl LruWitnessStore {
     pub fn new(capacity: usize) -> Self {
-        Self { cap: capacity, cache: Cache::new(capacity) }
+        Self {
+            cap: capacity,
+            cache: Cache::new(capacity),
+        }
     }
 }
 
@@ -112,7 +115,10 @@ impl WitnessStore for LruWitnessStore {
         self.cache.get(key)
     }
     fn put(&self, rec: ExecRecord) {
-        let key = ExecKey { tx_hash: rec.tx_hash, pre_state_fingerprint: rec.pre_state_fingerprint };
+        let key = ExecKey {
+            tx_hash: rec.tx_hash,
+            pre_state_fingerprint: rec.pre_state_fingerprint,
+        };
         self.cache.insert(key, rec);
     }
 }
@@ -121,7 +127,9 @@ impl WitnessStore for LruWitnessStore {
 pub struct MergeEngine {}
 
 impl MergeEngine {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn plan_merge(
         &self,
@@ -173,13 +181,19 @@ impl MergeEngine {
     #[cfg(any(feature = "statedb", test))]
     pub fn apply_diff(&self, state_db: &ChainStateDB2, diff: &MergeDiff) -> Result<ApplyResult> {
         if diff.writes.is_empty() {
-            return Ok(ApplyResult { state_root2: state_db.state_root(), applied: 0 });
+            return Ok(ApplyResult {
+                state_root2: state_db.state_root(),
+                applied: 0,
+            });
         }
         // Build a WriteSet and apply.
         let ws = WriteSetMut::new(diff.writes.clone()).freeze()?;
         state_db.apply_write_set(ws)?;
         let root = state_db.commit()?;
-        Ok(ApplyResult { state_root2: root, applied: diff.writes.len() })
+        Ok(ApplyResult {
+            state_root2: root,
+            applied: diff.writes.len(),
+        })
     }
 }
 
@@ -246,12 +260,12 @@ pub fn build_prefix_from_writes(writes: &[(StateKey, WriteOp)]) -> PrefixWrites 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_vm2_vm_types::state_store::table::TableHandle;
     use starcoin_vm2_vm_types::account_address::AccountAddress;
+    use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
+    use starcoin_vm2_vm_types::language_storage::StructTag;
+    use starcoin_vm2_vm_types::state_store::table::TableHandle;
     use starcoin_vm2_vm_types::state_store::TStateView;
     use starcoin_vm2_vm_types::write_set::WriteOp as WSWriteOp;
-    use starcoin_vm2_vm_types::language_storage::StructTag;
-    use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 
     #[derive(Default)]
     struct MemState {
@@ -327,7 +341,12 @@ mod tests {
         let rec = ExecRecord {
             tx_hash,
             pre_state_fingerprint: pre_fp,
-            read_set: Some(vec![ReadEntry { key: kx.clone(), from_storage: true, existed: false, value_hash: HashValue::zero() }]),
+            read_set: Some(vec![ReadEntry {
+                key: kx.clone(),
+                from_storage: true,
+                existed: false,
+                value_hash: HashValue::zero(),
+            }]),
             write_set: vec![],
             event_root: HashValue::zero(),
             gas: 1,
@@ -357,7 +376,12 @@ mod tests {
         let rec = ExecRecord {
             tx_hash,
             pre_state_fingerprint: pre_fp,
-            read_set: Some(vec![ReadEntry { key: k1.clone(), from_storage: true, existed: true, value_hash: HashValue::sha3_256_of(&v1) }]),
+            read_set: Some(vec![ReadEntry {
+                key: k1.clone(),
+                from_storage: true,
+                existed: true,
+                value_hash: HashValue::sha3_256_of(&v1),
+            }]),
             write_set: vec![],
             event_root: HashValue::zero(),
             gas: 1,
@@ -392,7 +416,8 @@ mod tests {
 
         // 1) create
         let mut diff = MergeDiff::default();
-        diff.writes.push((k.clone(), WSWriteOp::legacy_creation(b"v1".to_vec().into())));
+        diff.writes
+            .push((k.clone(), WSWriteOp::legacy_creation(b"v1".to_vec().into())));
         let r1 = eng.apply_diff(&statedb, &diff).expect("apply create");
         assert!(r1.applied > 0);
         let v = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
@@ -400,7 +425,10 @@ mod tests {
 
         // 2) modify
         let mut diff2 = MergeDiff::default();
-        diff2.writes.push((k.clone(), WSWriteOp::legacy_modification(b"v2".to_vec().into())));
+        diff2.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"v2".to_vec().into()),
+        ));
         let r2 = eng.apply_diff(&statedb, &diff2).expect("apply modify");
         assert_ne!(r1.state_root2, r2.state_root2);
         let v2 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
@@ -425,8 +453,12 @@ mod tests {
 
         // Same key appears twice; last should win in WriteSetMut::new (BTreeMap collect).
         let mut diff = MergeDiff::default();
-        diff.writes.push((k.clone(), WSWriteOp::legacy_creation(b"v1".to_vec().into())));
-        diff.writes.push((k.clone(), WSWriteOp::legacy_modification(b"v2".to_vec().into())));
+        diff.writes
+            .push((k.clone(), WSWriteOp::legacy_creation(b"v1".to_vec().into())));
+        diff.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"v2".to_vec().into()),
+        ));
         let _ = eng.apply_diff(&statedb, &diff).expect("apply succeeds");
         let v = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
         assert_eq!(v.bytes().as_ref(), b"v2");
@@ -443,8 +475,10 @@ mod tests {
         let k2 = StateKey::table_item(&h2, b"b");
 
         let mut diff = MergeDiff::default();
-        diff.writes.push((k1.clone(), WSWriteOp::legacy_creation(b"1".to_vec().into())));
-        diff.writes.push((k2.clone(), WSWriteOp::legacy_creation(b"2".to_vec().into())));
+        diff.writes
+            .push((k1.clone(), WSWriteOp::legacy_creation(b"1".to_vec().into())));
+        diff.writes
+            .push((k2.clone(), WSWriteOp::legacy_creation(b"2".to_vec().into())));
         let _ = eng.apply_diff(&statedb, &diff).expect("apply multi");
 
         let v1 = TStateView::get_state_value(&statedb, &k1).unwrap().unwrap();
@@ -454,7 +488,10 @@ mod tests {
 
         // Follow-up update just to k2 shouldn't affect k1 value
         let mut diff2 = MergeDiff::default();
-        diff2.writes.push((k2.clone(), WSWriteOp::legacy_modification(b"22".to_vec().into())));
+        diff2.writes.push((
+            k2.clone(),
+            WSWriteOp::legacy_modification(b"22".to_vec().into()),
+        ));
         let _ = eng.apply_diff(&statedb, &diff2).expect("apply modify h2");
 
         let v1b = TStateView::get_state_value(&statedb, &k1).unwrap().unwrap();
@@ -479,14 +516,18 @@ mod tests {
 
         // create
         let mut d1 = MergeDiff::default();
-        d1.writes.push((k.clone(), WSWriteOp::legacy_creation(b"r1".to_vec().into())));
+        d1.writes
+            .push((k.clone(), WSWriteOp::legacy_creation(b"r1".to_vec().into())));
         let r1 = eng.apply_diff(&statedb, &d1).expect("create");
         let v1 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
         assert_eq!(v1.bytes().as_ref(), b"r1");
 
         // modify
         let mut d2 = MergeDiff::default();
-        d2.writes.push((k.clone(), WSWriteOp::legacy_modification(b"r2".to_vec().into())));
+        d2.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"r2".to_vec().into()),
+        ));
         let r2 = eng.apply_diff(&statedb, &d2).expect("modify");
         assert_ne!(r1.state_root2, r2.state_root2);
         let v2 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
@@ -516,14 +557,18 @@ mod tests {
 
         // create
         let mut d1 = MergeDiff::default();
-        d1.writes.push((k.clone(), WSWriteOp::legacy_creation(b"g1".to_vec().into())));
+        d1.writes
+            .push((k.clone(), WSWriteOp::legacy_creation(b"g1".to_vec().into())));
         let r1 = eng.apply_diff(&statedb, &d1).expect("create rg");
         let v1 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
         assert_eq!(v1.bytes().as_ref(), b"g1");
 
         // modify
         let mut d2 = MergeDiff::default();
-        d2.writes.push((k.clone(), WSWriteOp::legacy_modification(b"g2".to_vec().into())));
+        d2.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"g2".to_vec().into()),
+        ));
         let r2 = eng.apply_diff(&statedb, &d2).expect("modify rg");
         assert_ne!(r1.state_root2, r2.state_root2);
         let v2 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
@@ -548,14 +593,18 @@ mod tests {
 
         // create module
         let mut d1 = MergeDiff::default();
-        d1.writes.push((k.clone(), WSWriteOp::legacy_creation(b"m1".to_vec().into())));
+        d1.writes
+            .push((k.clone(), WSWriteOp::legacy_creation(b"m1".to_vec().into())));
         let _ = eng.apply_diff(&statedb, &d1).expect("module create");
         let m1 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
         assert_eq!(m1.bytes().as_ref(), b"m1");
 
         // modify module
         let mut d2 = MergeDiff::default();
-        d2.writes.push((k.clone(), WSWriteOp::legacy_modification(b"m2".to_vec().into())));
+        d2.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"m2".to_vec().into()),
+        ));
         let _ = eng.apply_diff(&statedb, &d2).expect("module modify");
         let m2 = TStateView::get_state_value(&statedb, &k).unwrap().unwrap();
         assert_eq!(m2.bytes().as_ref(), b"m2");
@@ -580,12 +629,18 @@ mod tests {
 
         // initial create
         let mut d1 = MergeDiff::default();
-        d1.writes.push((k.clone(), WSWriteOp::legacy_creation(b"same".to_vec().into())));
+        d1.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_creation(b"same".to_vec().into()),
+        ));
         let r1 = eng.apply_diff(&statedb, &d1).expect("create");
 
         // apply same value again
         let mut d2 = MergeDiff::default();
-        d2.writes.push((k.clone(), WSWriteOp::legacy_modification(b"same".to_vec().into())));
+        d2.writes.push((
+            k.clone(),
+            WSWriteOp::legacy_modification(b"same".to_vec().into()),
+        ));
         let r2 = eng.apply_diff(&statedb, &d2).expect("modify same");
 
         // root may remain unchanged if underlying tree detects no diff

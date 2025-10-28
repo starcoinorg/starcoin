@@ -18,3 +18,4 @@ starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-exec-merge = { workspace = true, features = ["statedb"] }
 starcoin-vm2-crypto = { workspace = true }
+starcoin_vm_runtime = { path = "../vm-runtime", package = "starcoin-vm-runtime" }

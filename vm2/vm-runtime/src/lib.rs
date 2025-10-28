@@ -3,6 +3,7 @@
 
 pub mod data_cache;
 pub mod natives;
+pub mod reuse_recorder;
 pub mod starcoin_vm;
 
 #[macro_use]

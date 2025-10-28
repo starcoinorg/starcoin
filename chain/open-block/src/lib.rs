@@ -7,6 +7,7 @@ use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
+use starcoin_exec_merge as exec_merge;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -26,14 +27,13 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
+use starcoin_vm2_crypto::hash::PlainCryptoHash;
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm2_crypto::hash::PlainCryptoHash;
-use starcoin_exec_merge as exec_merge;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
 

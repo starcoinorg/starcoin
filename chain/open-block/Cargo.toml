@@ -14,7 +14,7 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
+starcoin_vm_runtime = { path = "../../vm2/vm-runtime", package = "starcoin-vm-runtime" }
 
 # dependencies for move2
 starcoin-vm2-statedb = { workspace = true }

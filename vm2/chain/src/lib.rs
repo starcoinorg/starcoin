@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_vm2_crypto::hash::PlainCryptoHash;
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
@@ -8,13 +9,13 @@ use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::block_metadata::BlockMetadata as BlockMetadata2;
 use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
-use starcoin_vm2_crypto::hash::PlainCryptoHash;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 // reuse imports
 use starcoin_exec_merge as exec_merge;
 use starcoin_exec_merge::{ExecRecord, ReuseOpts};
 use starcoin_vm2_types::vm_error::KeptVMStatus;
+use starcoin_vm_runtime::reuse_recorder;
 
 pub fn execute_transactions(
     statedb: &ChainStateDB,
@@ -31,6 +32,18 @@ pub fn execute_transactions(
 }
 
 /// Execute with reuse fast-path (skeleton). When `opts.enabled` is false, falls back to execute_transactions.
+fn to_read_entries(reads: Vec<reuse_recorder::ReadDescriptor>) -> Vec<exec_merge::ReadEntry> {
+    reads
+        .into_iter()
+        .map(|desc| exec_merge::ReadEntry {
+            key: desc.key,
+            from_storage: desc.from_storage,
+            existed: desc.existed,
+            value_hash: desc.value_hash,
+        })
+        .collect()
+}
+
 pub fn execute_transactions_with_reuse(
     statedb: &ChainStateDB,
     transactions: Vec<Transaction>,
@@ -38,37 +51,55 @@ pub fn execute_transactions_with_reuse(
     vm_metrics: Option<VMMetrics>,
     opts: ReuseOpts,
 ) -> ExecutorResult<BlockExecutedData> {
-    // Phase 1: 完整执行（保持对外语义完全等价）
-    let executed = block_executor::block_execute(
-        statedb,
-        transactions.clone(),
-        gas_limit,
-        vm_metrics,
-    )?;
+    let recording = opts.enabled;
+    let (executed, recorded_reads) = if recording {
+        reuse_recorder::start();
+        let exec_res =
+            block_executor::block_execute(statedb, transactions.clone(), gas_limit, vm_metrics);
+        match exec_res {
+            Ok(data) => (data, reuse_recorder::finish()),
+            Err(err) => {
+                reuse_recorder::finish();
+                return Err(err);
+            }
+        }
+    } else {
+        (
+            block_executor::block_execute(statedb, transactions.clone(), gas_limit, vm_metrics)?,
+            Vec::<Vec<reuse_recorder::ReadDescriptor>>::new(),
+        )
+    };
 
-    // Phase 2: 写入轻量 Witness 记录（仅用于统计，不做复用）
+    // Phase 2: 写入 Witness 记录
     let pre_fp = opts.pre_state_fingerprint;
     let store = opts.witness_store.clone();
-    for (tx, info) in transactions
+    for (idx, (tx, info)) in transactions
         .iter()
         .take(executed.txn_infos.len())
         .zip(executed.txn_infos.iter())
-            {
-                let rec = ExecRecord {
-                    tx_hash: tx.id(),
-                    pre_state_fingerprint: pre_fp,
-                    read_set: None,
-                    write_set: vec![],
-                    event_root: info.event_root_hash(),
-                    gas: info.gas_used(),
-                    status_ok: matches!(info.status(), KeptVMStatus::Executed),
-                    meta_fingerprint: None,
-                };
-                store.put(rec);
-            }
+        .enumerate()
+    {
+        let write_set_entries = executed
+            .write_sets
+            .get(idx)
+            .map(|ws| ws.clone().into_iter().collect::<Vec<_>>())
+            .unwrap_or_default();
+        let read_set_entries = recorded_reads.get(idx).cloned().map(to_read_entries);
+
+        let rec = ExecRecord {
+            tx_hash: tx.id(),
+            pre_state_fingerprint: pre_fp,
+            read_set: read_set_entries,
+            write_set: write_set_entries,
+            event_root: info.event_root_hash(),
+            gas: info.gas_used(),
+            status_ok: matches!(info.status(), KeptVMStatus::Executed),
+            meta_fingerprint: None,
+        };
+        store.put(rec);
+    }
 
     Ok(executed)
-
 }
 
 pub fn build_block_transactions(

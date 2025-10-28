@@ -4,6 +4,7 @@
 
 use crate::default_gas_schedule;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
+use crate::reuse_recorder;
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -117,11 +118,22 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.bytes().map(|bytes| {
-                StateValue::new_with_metadata(bytes.clone(), opt_data.metadata().clone())
-            })),
+            Some(opt_data) => {
+                let value = opt_data.bytes().map(|bytes| {
+                    StateValue::new_with_metadata(bytes.clone(), opt_data.metadata().clone())
+                });
+                if reuse_recorder::is_active() {
+                    reuse_recorder::record_read(state_key, false, value.as_ref());
+                }
+                Ok(value)
+            }
             None => match self.data_view.get_state_value(state_key) {
-                Ok(remote_data) => Ok(remote_data),
+                Ok(remote_data) => {
+                    if reuse_recorder::is_active() {
+                        reuse_recorder::record_read(state_key, true, remote_data.as_ref());
+                    }
+                    Ok(remote_data)
+                }
                 // TODO: should we forward some error info?
                 Err(e) => {
                     error!("[VM] Error getting data from storage for {:?}", state_key);
