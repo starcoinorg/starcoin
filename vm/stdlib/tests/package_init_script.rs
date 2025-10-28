@@ -8,17 +8,50 @@ use stdlib::COMPILED_MOVE_CODE_DIR;
 #[test]
 fn test_package_init_function() -> Result<()> {
     let _path_list = [
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/2/1-2/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/3/2-3/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/4/3-4/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/5/4-5/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/6/5-6/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/7/6-7/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/8/7-8/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/9/8-9/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/10/9-10/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/11/10-11/stdlib.blob"),
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/12/11-12/stdlib.blob"),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/2/1-2/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/3/2-3/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/4/3-4/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/5/4-5/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/6/5-6/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/7/6-7/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/8/7-8/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/9/8-9/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/10/9-10/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/11/10-11/stdlib.blob"
+        ),
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/12/11-12/stdlib.blob"
+        ),
     ];
 
     let init_strs = [

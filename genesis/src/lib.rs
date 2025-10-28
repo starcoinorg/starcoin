@@ -48,8 +48,8 @@ use starcoin_vm_types::state_view::StateView;
 
 use starcoin_storage::{Storage2, Store2};
 
-pub static G_GENESIS_GENERATED_DIR: &str = "generated";
-pub const GENESIS_DIR: Dir = include_dir!("generated");
+pub static G_GENESIS_GENERATED_DIR: &str = "genesis";
+pub const GENESIS_DIR: Dir = include_dir!("../networks/genesis");
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
@@ -120,10 +120,10 @@ impl Genesis {
             .parent_hash;
 
         if let Some(GenesisBlockParameter {
-            parent_hash: parent_hash1,
-            timestamp,
-            difficulty,
-        }) = genesis_config.genesis_block_parameter()
+                        parent_hash: parent_hash1,
+                        timestamp,
+                        difficulty,
+                    }) = genesis_config.genesis_block_parameter()
         {
             // Merge the parent hashes of vm1 and vm2 into the final genesis parent hash
             let parent_hash = HashValue::sha3_256_of(
@@ -380,7 +380,7 @@ impl Genesis {
                         expect: expect_genesis.block.header.id(),
                         real: genesis.block.header.id(),
                     }
-                    .into());
+                        .into());
                 }
                 genesis
             }
@@ -421,7 +421,7 @@ impl Genesis {
                                 expect: genesis.block.header.id(),
                                 real: block.header.id(),
                             }
-                            .into());
+                                .into());
                         }
                     }
                     Ok(None) => {
