@@ -15,13 +15,12 @@ statedb = ["dep:starcoin-vm2-statedb"]
 anyhow.workspace = true
 once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
-starcoin-vm2-crypto = { workspace = true, package = "starcoin-crypto" }
-# Optional to allow building without state-db integration
+starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-statedb = { workspace = true, optional = true }
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 starcoin-types = { workspace = true }
 quick_cache.workspace = true
 
 [dev-dependencies]
-# Always available in tests; no feature flag needed
 starcoin-vm2-statedb = { workspace = true }

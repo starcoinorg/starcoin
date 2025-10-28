@@ -3,22 +3,29 @@
 
 use starcoin_logger::prelude::*;
 use starcoin_vm2_crypto::hash::{CryptoHash, PlainCryptoHash};
-use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
-use starcoin_vm2_state_api::AccountStateReader;
+use starcoin_vm2_executor::{
+    block_executor::{self, BlockExecutedData, VMMetrics},
+    do_execute_block_transactions,
+};
+use starcoin_vm2_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::block_metadata::BlockMetadata as BlockMetadata2;
-use starcoin_vm2_types::error::ExecutorResult;
-use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm2_types::contract_event::ContractEvent;
+use starcoin_vm2_types::error::{BlockExecutorError, ExecutorResult};
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction, Transaction, TransactionInfo, TransactionStatus,
+};
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm2_vm_types::state_store::TStateView;
-use starcoin_vm2_vm_types::write_set::WriteSetMut;
+use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
 // reuse imports
 use starcoin_exec_merge as exec_merge;
 use starcoin_exec_merge::{ExecKey, ExecRecord, ReuseOpts, StateViewExt};
 use starcoin_vm_runtime::reuse_recorder;
+use std::sync::Arc;
 use std::time::Instant;
 
 struct ChainStateValueView<'a> {
@@ -52,10 +59,9 @@ struct PlanStats {
 #[derive(Debug)]
 struct PlanOutcome {
     stats: PlanStats,
-    diff: exec_merge::MergeDiff,
     reused_indices: Vec<usize>,
     reexec_indices: Vec<usize>,
-    _planned_execs: Vec<ExecRecord>,
+    records: Vec<Option<ExecRecord>>,
 }
 
 pub fn execute_transactions(
@@ -99,6 +105,7 @@ pub fn execute_transactions_with_reuse(
     let plan_outcome = if opts.enabled {
         let plan_start = Instant::now();
         let mut plan_execs = Vec::with_capacity(transactions.len());
+        let mut planned_records = Vec::with_capacity(transactions.len());
         let mut witness_hits = 0usize;
         let mut witness_hits_with_reads = 0usize;
 
@@ -108,6 +115,7 @@ pub fn execute_transactions_with_reuse(
                 pre_state_fingerprint: pre_fp,
             };
             if let Some(rec) = store.get(&key) {
+                planned_records.push(Some(rec.clone()));
                 if rec.read_set.is_some() {
                     witness_hits_with_reads += 1;
                 }
@@ -123,7 +131,11 @@ pub fn execute_transactions_with_reuse(
                     gas: 0,
                     status_ok: false,
                     meta_fingerprint: None,
+                    status: None,
+                    events: Vec::new(),
+                    table_infos: Vec::new(),
                 });
+                planned_records.push(None);
             }
         }
 
@@ -162,27 +174,86 @@ pub fn execute_transactions_with_reuse(
         }
         let elapsed_ms = plan_start.elapsed().as_millis();
         let read_checked = *diff.stats.get("read_checked").unwrap_or(&0);
+        let reused_count = diff.reused.len();
+        let reexec_count = diff.reexec.len();
         Some(PlanOutcome {
             stats: PlanStats {
                 total: plan_execs.len(),
                 witness_hits,
                 witness_hits_with_reads,
                 witness_missing: plan_execs.len().saturating_sub(witness_hits),
-                reused: diff.reused.len(),
-                reexec: diff.reexec.len(),
+                reused: reused_count,
+                reexec: reexec_count,
                 read_checked,
                 plan_time_ms: elapsed_ms,
             },
-            diff,
             reused_indices,
             reexec_indices,
-            _planned_execs: plan_execs,
+            records: planned_records,
         })
     } else {
         None
     };
 
-    let recording = opts.enabled;
+    if let Some(plan) = plan_outcome {
+        let result = execute_with_plan(
+            statedb,
+            &transactions,
+            gas_limit,
+            vm_metrics.clone(),
+            pre_fp,
+            store.clone(),
+            &plan,
+        )?;
+        if plan.stats.reexec != plan.reexec_indices.len() {
+            warn!(
+                "vm2 reuse plan reexec count mismatch: stats={}, indices={}",
+                plan.stats.reexec,
+                plan.reexec_indices.len()
+            );
+        }
+        if plan.stats.reused != plan.reused_indices.len() {
+            warn!(
+                "vm2 reuse plan reuse count mismatch: stats={}, indices={}",
+                plan.stats.reused,
+                plan.reused_indices.len()
+            );
+        }
+        let stats = &plan.stats;
+        debug!(
+            "vm2 reuse plan summary: total={}, witness_hits={}, witness_hits_with_reads={}, reused={}, reexec={}, missing={}, read_checked={}, plan_time_ms={}",
+            stats.total,
+            stats.witness_hits,
+            stats.witness_hits_with_reads,
+            stats.reused,
+            stats.reexec,
+            stats.witness_missing,
+            stats.read_checked,
+            stats.plan_time_ms,
+        );
+        return Ok(result);
+    }
+
+    execute_full_execution(
+        statedb,
+        transactions,
+        gas_limit,
+        vm_metrics,
+        opts.enabled,
+        pre_fp,
+        store,
+    )
+}
+
+fn execute_full_execution(
+    statedb: &ChainStateDB,
+    transactions: Vec<Transaction>,
+    gas_limit: u64,
+    vm_metrics: Option<VMMetrics>,
+    recording: bool,
+    pre_fp: starcoin_vm2_crypto::HashValue,
+    store: Arc<dyn exec_merge::WitnessStore>,
+) -> ExecutorResult<BlockExecutedData> {
     let (executed, recorded_reads) = if recording {
         reuse_recorder::start();
         let exec_res =
@@ -201,7 +272,6 @@ pub fn execute_transactions_with_reuse(
         )
     };
 
-    // Phase 2: 写入 Witness 记录
     for (idx, (tx, info)) in transactions
         .iter()
         .take(executed.txn_infos.len())
@@ -214,6 +284,8 @@ pub fn execute_transactions_with_reuse(
             .map(|ws| ws.clone().into_iter().collect::<Vec<_>>())
             .unwrap_or_default();
         let read_set_entries = recorded_reads.get(idx).cloned().map(to_read_entries);
+        let events = executed.txn_events.get(idx).cloned().unwrap_or_default();
+        let status_clone = info.status().clone();
 
         let rec = ExecRecord {
             tx_hash: tx.id(),
@@ -224,97 +296,160 @@ pub fn execute_transactions_with_reuse(
             gas: info.gas_used(),
             status_ok: matches!(info.status(), KeptVMStatus::Executed),
             meta_fingerprint: None,
+            status: Some(status_clone),
+            events,
+            table_infos: Vec::new(),
         };
         store.put(rec);
     }
 
-    if let Some(plan) = plan_outcome.as_ref() {
-        if plan.stats.reexec != plan.reexec_indices.len() {
-            warn!(
-                "vm2 reuse plan reexec count mismatch: stats={}, indices={}",
-                plan.stats.reexec,
-                plan.reexec_indices.len()
-            );
-        }
+    Ok(executed)
+}
 
-        let mut frozen_write_set = None;
-        match merge_engine.apply_diff_no_commit(&plan.diff) {
-            Ok(Some(ws)) => {
-                frozen_write_set = Some(ws);
-                if plan.diff.writes.is_empty() {
-                    debug!(
-                        "vm2 reuse plan produced empty diff but apply_diff_no_commit returned data"
-                    );
-                }
-            }
-            Ok(None) => {
-                if !plan.diff.writes.is_empty() {
-                    warn!(
-                        "vm2 reuse plan diff has {} writes but apply_diff_no_commit returned None",
-                        plan.diff.writes.len()
-                    );
-                }
-            }
-            Err(err) => {
-                warn!("vm2 reuse plan apply_diff_no_commit error: {:?}", err);
-            }
-        }
+fn execute_with_plan(
+    statedb: &ChainStateDB,
+    transactions: &[Transaction],
+    gas_limit: u64,
+    vm_metrics: Option<VMMetrics>,
+    pre_fp: starcoin_vm2_crypto::HashValue,
+    store: Arc<dyn exec_merge::WitnessStore>,
+    plan: &PlanOutcome,
+) -> ExecutorResult<BlockExecutedData> {
+    let mut txn_infos = Vec::with_capacity(transactions.len());
+    let mut txn_events: Vec<Vec<ContractEvent>> = Vec::with_capacity(transactions.len());
+    let mut write_sets: Vec<WriteSet> = Vec::with_capacity(transactions.len());
+    let mut remaining_gas = gas_limit;
+    let last_index = transactions.len().saturating_sub(1);
 
-        if !plan.reused_indices.is_empty() {
-            // Validate that recomputed writes match recorded diff
-            let mut actual_flattened = Vec::with_capacity(plan.diff.writes.len());
-            for &idx in &plan.reused_indices {
-                if let Some(ws) = executed.write_sets.get(idx) {
-                    actual_flattened.extend(ws.clone().into_iter());
-                } else {
-                    warn!(
-                        "vm2 reuse plan: missing executed write_set for index {} (total {})",
-                        idx,
-                        executed.write_sets.len()
-                    );
-                    actual_flattened.clear();
-                    break;
-                }
-            }
+    for (idx, txn) in transactions.iter().enumerate() {
+        let tx_hash = txn.id();
+        let mut reused = false;
 
-            if !actual_flattened.is_empty() && actual_flattened != plan.diff.writes {
-                warn!(
-                    "vm2 reuse plan diff write mismatch: planned {} entries, actual {} entries",
-                    plan.diff.writes.len(),
-                    actual_flattened.len()
-                );
-            }
-
-            if let Some(frozen) = frozen_write_set.as_ref() {
-                match WriteSetMut::new(actual_flattened.clone()).freeze() {
-                    Ok(expected_ws) => {
-                        if &expected_ws != frozen {
-                            warn!("vm2 reuse plan frozen writes differ from executed writes");
+        if let Some(rec) = plan.records.get(idx).and_then(|r| r.as_ref()) {
+            if rec.status_ok {
+                if let Some(status) = rec.status.clone() {
+                    if matches!(status, KeptVMStatus::Executed) {
+                        if let Ok(ws) = WriteSetMut::new(rec.write_set.clone()).freeze() {
+                            let ws_clone = ws.clone();
+                            statedb
+                                .apply_write_set(ws)
+                                .map_err(BlockExecutorError::BlockChainStateErr)?;
+                            let txn_state_root =
+                                if transactions.len() > 0 && (idx == last_index || idx == 0) {
+                                    Some(
+                                        statedb
+                                            .commit()
+                                            .map_err(BlockExecutorError::BlockChainStateErr)?,
+                                    )
+                                } else {
+                                    None
+                                };
+                            let events = rec.events.clone();
+                            let txn_info = TransactionInfo::new(
+                                tx_hash,
+                                txn_state_root,
+                                events.as_slice(),
+                                rec.gas,
+                                status.clone(),
+                            );
+                            txn_infos.push(txn_info);
+                            txn_events.push(events);
+                            write_sets.push(ws_clone);
+                            remaining_gas = remaining_gas.saturating_sub(rec.gas);
+                            reused = true;
                         }
                     }
-                    Err(err) => {
-                        warn!(
-                            "vm2 reuse plan failed to freeze executed writes for comparison: {:?}",
-                            err
-                        );
-                    }
                 }
             }
         }
 
-        let stats = &plan.stats;
-        debug!(
-            "vm2 reuse plan summary: total={}, witness_hits={}, witness_hits_with_reads={}, reused={}, reexec={}, missing={}, read_checked={}, plan_time_ms={}",
-            stats.total,
-            stats.witness_hits,
-            stats.witness_hits_with_reads,
-            stats.reused,
-            stats.reexec,
-            stats.witness_missing,
-            stats.read_checked,
-            stats.plan_time_ms,
-        );
+        if reused {
+            continue;
+        }
+
+        reuse_recorder::start();
+        let vm_outputs = do_execute_block_transactions(
+            statedb,
+            vec![txn.clone()],
+            Some(remaining_gas),
+            vm_metrics.clone(),
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let mut read_sets = reuse_recorder::finish().into_iter();
+        let output = vm_outputs
+            .into_iter()
+            .next()
+            .ok_or(BlockExecutorError::BlockTransactionZero)?;
+
+        let (write_set, events, gas_used, status, _aux) = output.into_inner();
+        match status {
+            TransactionStatus::Discard(discard_status) => {
+                return Err(BlockExecutorError::BlockTransactionDiscard(
+                    discard_status,
+                    tx_hash,
+                ));
+            }
+            TransactionStatus::Retry => {
+                return Err(BlockExecutorError::BlockExecuteRetryErr);
+            }
+            TransactionStatus::Keep(keep_status) => {
+                let read_entries = read_sets.next().map(to_read_entries);
+                let write_set_clone = write_set.clone();
+                let write_entries_for_store =
+                    write_set_clone.clone().into_iter().collect::<Vec<_>>();
+
+                statedb
+                    .apply_write_set(write_set)
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                let txn_state_root = if transactions.len() > 0 && (idx == last_index || idx == 0) {
+                    Some(
+                        statedb
+                            .commit()
+                            .map_err(BlockExecutorError::BlockChainStateErr)?,
+                    )
+                } else {
+                    None
+                };
+
+                let events_clone = events.clone();
+                let txn_info = TransactionInfo::new(
+                    tx_hash,
+                    txn_state_root,
+                    events.as_slice(),
+                    gas_used,
+                    keep_status.clone(),
+                );
+                let event_root = txn_info.event_root_hash();
+
+                txn_infos.push(txn_info);
+                txn_events.push(events_clone.clone());
+                write_sets.push(write_set_clone.clone());
+
+                remaining_gas = remaining_gas.saturating_sub(gas_used);
+
+                let rec = ExecRecord {
+                    tx_hash,
+                    pre_state_fingerprint: pre_fp,
+                    read_set: read_entries,
+                    write_set: write_entries_for_store,
+                    event_root,
+                    gas: gas_used,
+                    status_ok: matches!(keep_status, KeptVMStatus::Executed),
+                    meta_fingerprint: None,
+                    status: Some(keep_status),
+                    events: events_clone,
+                    table_infos: Vec::new(),
+                };
+                store.put(rec);
+            }
+        }
     }
+
+    let mut executed = BlockExecutedData::default();
+    executed.txn_infos = txn_infos;
+    executed.txn_events = txn_events;
+    executed.write_sets = write_sets;
+    executed.state_root = statedb.state_root();
 
     Ok(executed)
 }

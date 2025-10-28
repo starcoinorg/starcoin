@@ -8,7 +8,10 @@ use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 #[cfg(any(feature = "statedb", test))]
 use starcoin_vm2_statedb::{ChainStateReader, ChainStateWriter};
+use starcoin_vm2_types::contract_event::ContractEvent;
+use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm2_vm_types::write_set::WriteOp;
 #[cfg(any(feature = "statedb", test))]
 use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
@@ -34,6 +37,12 @@ pub struct ExecRecord {
     pub gas: u64,
     pub status_ok: bool,
     pub meta_fingerprint: Option<HashValue>,
+    #[serde(default)]
+    pub status: Option<KeptVMStatus>,
+    #[serde(default)]
+    pub events: Vec<ContractEvent>,
+    #[serde(default)]
+    pub table_infos: Vec<(TableHandle, TableInfo)>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -100,14 +109,12 @@ pub trait WitnessStore: Send + Sync {
 }
 
 pub struct LruWitnessStore {
-    cap: usize,
     cache: Cache<ExecKey, ExecRecord>,
 }
 
 impl LruWitnessStore {
     pub fn new(capacity: usize) -> Self {
         Self {
-            cap: capacity,
             cache: Cache::new(capacity),
         }
     }
@@ -276,6 +283,7 @@ pub fn build_prefix_from_writes(writes: &[(StateKey, WriteOp)]) -> PrefixWrites 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_vm2_types::vm_error::KeptVMStatus;
     use starcoin_vm2_vm_types::account_address::AccountAddress;
     use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
     use starcoin_vm2_vm_types::language_storage::StructTag;
@@ -333,6 +341,9 @@ mod tests {
             gas: 1,
             status_ok: true,
             meta_fingerprint: None,
+            status: Some(KeptVMStatus::Executed),
+            events: Vec::new(),
+            table_infos: Vec::new(),
         };
 
         let eng = MergeEngine::new();
@@ -368,6 +379,9 @@ mod tests {
             gas: 1,
             status_ok: true,
             meta_fingerprint: None,
+            status: Some(KeptVMStatus::Executed),
+            events: Vec::new(),
+            table_infos: Vec::new(),
         };
         let eng = MergeEngine::new();
         let diff = eng.plan_merge(&state, &mut prefix, &[rec]);
@@ -403,6 +417,9 @@ mod tests {
             gas: 1,
             status_ok: true,
             meta_fingerprint: None,
+            status: Some(KeptVMStatus::Executed),
+            events: Vec::new(),
+            table_infos: Vec::new(),
         };
         let mut prefix = PrefixWrites::default();
         let eng = MergeEngine::new();
