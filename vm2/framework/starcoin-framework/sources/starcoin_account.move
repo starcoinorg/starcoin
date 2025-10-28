@@ -3,7 +3,6 @@ module starcoin_framework::starcoin_account {
     use std::features;
     use std::signer;
     use std::vector;
-    use starcoin_std::debug;
 
     use starcoin_framework::account::{Self, new_event_handle};
     use starcoin_framework::coin::{Self, Coin};
@@ -247,13 +246,10 @@ module starcoin_framework::starcoin_account {
 
     /// Ensure that STC Primary FungibleStore exists (and create if it doesn't)
     inline fun ensure_primary_fungible_store_exists(owner: address): address {
-        debug::print(&std::string::utf8(b"starcoin_account::ensure_primary_fungible_store_exists | entered"));
         let store_addr = primary_fungible_store_address(owner);
         if (fungible_asset::store_exists(store_addr)) {
-            debug::print(&std::string::utf8(b"starcoin_account::ensure_primary_fungible_store_exists | store exists"));
             store_addr
         } else {
-            debug::print(&std::string::utf8(b"starcoin_account::ensure_primary_fungible_store_exists | not exists"));
             object::object_address(
                 &primary_fungible_store::create_primary_store(
                     owner,

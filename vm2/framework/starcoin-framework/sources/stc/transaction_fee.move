@@ -50,10 +50,15 @@ module starcoin_framework::transaction_fee {
 
     /// Deposit `token` into the transaction fees bucket
     public fun pay_fee(account: &signer, fa: FungibleAsset) acquires TransactionFeePod {
-        debug::print(&utf8(b"transaction_fee::pay_fee | Entered"));
+        debug::print(&utf8(b"transaction_fee::pay_fee | Entered, fa amount:"));
+        debug::print(&fungible_asset::amount(&fa));
 
         let account_addr = signer::address_of(account);
+        debug::print(&account_addr);
+
         let fa_store = if (exists<TransactionFeePod>(account_addr)) {
+            debug::print(&utf8(b"transaction_fee::pay_fee | TransactionFeePod exists"));
+
             let fee_pod = borrow_global_mut<TransactionFeePod>(get_starcoin_framework());
             let store_opt = find_asset_store_with_metadata(
                 &fee_pod.fee_stores,
@@ -67,6 +72,8 @@ module starcoin_framework::transaction_fee {
                 fa_store
             }
         } else {
+            debug::print(&utf8(b"transaction_fee::pay_fee | TransactionFeePod not exists"));
+
             let fa_store = Self::inner_create_fa_store(account, starcoin_coin::get_stc_fa_metadata());
             let fee_stores = vector::empty();
             vector::push_back(&mut fee_stores, fa_store);
@@ -89,6 +96,8 @@ module starcoin_framework::transaction_fee {
         payer_addresses: vector<address>
     ) acquires TransactionFeePod {
         system_addresses::assert_starcoin_framework(framework);
+        debug::print(&utf8(b"transaction_fee::merge_fee_to_framework_account | Entered, payer addresses: "));
+        debug::print(&payer_addresses);
 
         let framework_address = system_addresses::get_starcoin_framework();
         let len = vector::length(&payer_addresses);
@@ -105,7 +114,9 @@ module starcoin_framework::transaction_fee {
                 let fa = Self::withdraw_account_transaction_fees(&create_signer(addr), stc_metadata);
                 pay_fee(framework, fa);
             }
-        }
+        };
+
+        debug::print(&utf8(b"transaction_fee::merge_fee_to_framework_account | Exited"));
     }
 
     /// Distribute the transaction fees collected in the `TokenType` token.
@@ -158,10 +169,6 @@ module starcoin_framework::transaction_fee {
             let store = vector::borrow(fee_stores, idx);
             debug::print(store);
             let store_metadata = fungible_asset::store_metadata(*store);
-
-            debug::print(&store_metadata);
-            debug::print(&target_metadata);
-
             if (store_metadata == target_metadata) {
                 return option::some(*store)
             };

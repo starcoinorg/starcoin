@@ -169,10 +169,15 @@ Deposit <code>token</code> into the transaction fees bucket
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">pay_fee</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Entered, fa amount:"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&fa));
 
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&account_addr);
+
     <b>let</b> fa_store = <b>if</b> (<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(account_addr)) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> <b>exists</b>"));
+
         <b>let</b> fee_pod = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(get_starcoin_framework());
         <b>let</b> store_opt = <a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">find_asset_store_with_metadata</a>(
             &fee_pod.fee_stores,
@@ -186,6 +191,8 @@ Deposit <code>token</code> into the transaction fees bucket
             fa_store
         }
     } <b>else</b> {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> not <b>exists</b>"));
+
         <b>let</b> fa_store = <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>, <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>());
         <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> fee_stores, fa_store);
@@ -224,6 +231,8 @@ Deposit <code>token</code> into the transaction fees bucket
     payer_addresses: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
 ) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_merge_fee_to_framework_account">transaction_fee::merge_fee_to_framework_account</a> | Entered, payer addresses: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&payer_addresses);
 
     <b>let</b> framework_address = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
     <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&payer_addresses);
@@ -240,7 +249,9 @@ Deposit <code>token</code> into the transaction fees bucket
             <b>let</b> fa = <a href="transaction_fee.md#0x1_transaction_fee_withdraw_account_transaction_fees">Self::withdraw_account_transaction_fees</a>(&<a href="create_signer.md#0x1_create_signer">create_signer</a>(addr), stc_metadata);
             <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">pay_fee</a>(framework, fa);
         }
-    }
+    };
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_merge_fee_to_framework_account">transaction_fee::merge_fee_to_framework_account</a> | Exited"));
 }
 </code></pre>
 
@@ -353,10 +364,6 @@ underlying fiat.
         <b>let</b> store = <a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(fee_stores, idx);
         <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(store);
         <b>let</b> store_metadata = <a href="fungible_asset.md#0x1_fungible_asset_store_metadata">fungible_asset::store_metadata</a>(*store);
-
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&store_metadata);
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&target_metadata);
-
         <b>if</b> (store_metadata == target_metadata) {
             <b>return</b> <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*store)
         };

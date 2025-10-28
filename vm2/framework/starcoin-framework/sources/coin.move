@@ -829,24 +829,15 @@ module starcoin_framework::coin {
     #[view]
     /// Returns `true` if `account_addr` is registered to receive `CoinType`.
     public fun is_account_registered<CoinType>(account_addr: address): bool acquires CoinConversionMap {
-        debug::print(&std::string::utf8(b"coin::is_account_registered | entered"));
         assert!(is_coin_initialized<CoinType>(), error::invalid_argument(ECOIN_INFO_NOT_PUBLISHED));
-        let ret = if (exists<CoinStore<CoinType>>(account_addr)) {
-            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore exist"));
+        if (exists<CoinStore<CoinType>>(account_addr)) {
             true
         } else {
-            debug::print(
-                &std::string::utf8(
-                    b"coin::is_account_registered | CoinStore not exist, convert to primary fungible store"
-                )
-            );
             let paired_metadata_opt = paired_metadata<CoinType>();
             (option::is_some(
                 &paired_metadata_opt
             ) && migrated_primary_fungible_store_exists(account_addr, option::destroy_some(paired_metadata_opt)))
-        };
-        debug::print(&std::string::utf8(b"coin::is_account_registered | exited"));
-        ret
+        }
     }
 
     #[view]
