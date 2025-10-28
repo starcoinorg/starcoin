@@ -78,6 +78,7 @@ members = [
     "vm/move-prover",
     "commons/mvhashmap",
     "commons/parallel-executor",
+    "commons/exec-merge",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -211,6 +212,7 @@ default-members = [
     "vm/move-prover",
     "commons/mvhashmap",
     "commons/parallel-executor",
+    "commons/exec-merge",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
@@ -603,6 +605,7 @@ starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", 
 starcoin-vm2-dev = { path = "vm2/dev" }
 starcoin-vm2-statedb = { path = "state/statedb-v2" }
 starcoin-vm2-state-api = { path = "state/api-v2" }
+starcoin-exec-merge = { path = "commons/exec-merge" }
 
 starcoin-vm2-move-compiler = { path = "vm2/compiler" }
 starcoin-vm2-abi-decoder = { path = "vm2/abi/decoder" }

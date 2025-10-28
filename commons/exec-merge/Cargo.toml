@@ -1,0 +1,27 @@
+[package]
+name = "starcoin-exec-merge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+# Enable integration with statedb (apply_diff). Keeps core logic portable by default.
+statedb = ["dep:starcoin-vm2-statedb"]
+
+[dependencies]
+anyhow.workspace = true
+once_cell.workspace = true
+serde = { workspace = true, features = ["derive"] }
+starcoin-vm2-crypto = { workspace = true, package = "starcoin-crypto" }
+# Optional to allow building without state-db integration
+starcoin-vm2-statedb = { workspace = true, optional = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-types = { workspace = true }
+quick_cache.workspace = true
+
+[dev-dependencies]
+# Always available in tests; no feature flag needed
+starcoin-vm2-statedb = { workspace = true }

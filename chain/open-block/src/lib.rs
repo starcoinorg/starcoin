@@ -26,11 +26,14 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
+use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
+use starcoin_vm2_crypto::hash::PlainCryptoHash;
+use starcoin_exec_merge as exec_merge;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
 
@@ -55,6 +58,8 @@ pub struct OpenedBlock {
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
+    // VM2: pre-state fingerprint used for ExecRecord keying
+    pre_state_fp2: HashValue,
 }
 
 impl OpenedBlock {
@@ -104,6 +109,17 @@ impl OpenedBlock {
             red_blocks,
         );
 
+        // Compute pre-state fingerprint for VM2 witness keying
+        let epoch_version = AccountStateReader2::new(chain_state_dbs.1.as_ref())
+            .get_epoch()
+            .map_err(|e| format_err!("read epoch failed: {}", e))?
+            .number();
+        let pre_state_fp2 = exec_merge::create_pre_state_fingerprint(
+            chain_state_dbs.1.state_root(),
+            block_meta.crypto_hash(),
+            epoch_version,
+        );
+
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
@@ -122,6 +138,7 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
+            pre_state_fp2,
         };
 
         opened_block.initialize()?;
