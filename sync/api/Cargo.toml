@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 network-api = { workspace = true }
 schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }

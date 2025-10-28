@@ -6,14 +6,12 @@ use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 
-#[async_trait::async_trait]
 pub trait CalAsyncService {
-    async fn add(&self, value: u64) -> Result<u64>;
-    async fn sub(&self, value: u64) -> Result<u64>;
-    async fn get(&self) -> Result<u64>;
+    fn add(&self, value: u64) -> impl std::future::Future<Output = Result<u64>> + Send;
+    fn sub(&self, value: u64) -> impl std::future::Future<Output = Result<u64>> + Send;
+    fn get(&self) -> impl std::future::Future<Output = Result<u64>> + Send;
 }
 
-#[async_trait::async_trait]
 impl CalAsyncService for ServiceRef<CalService> {
     async fn add(&self, value: u64) -> Result<u64> {
         self.send(CalAddRequest { value }).await

@@ -8,7 +8,6 @@ mod solver;
 pub mod stratum_client;
 pub mod stratum_client_service;
 use anyhow::Result;
-use async_trait::async_trait;
 use futures::stream::BoxStream;
 use starcoin_config::TimeService;
 use starcoin_types::system_events::SealEvent;
@@ -20,9 +19,10 @@ pub use starcoin_types::{
 };
 use std::sync::Arc;
 
-#[async_trait]
 pub trait JobClient: Send + Unpin + Sync + Clone {
-    async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;
-    async fn submit_seal(&self, seal: SealEvent) -> Result<()>;
+    fn subscribe(
+        &self,
+    ) -> impl std::future::Future<Output = Result<BoxStream<'static, MintBlockEvent>>> + Send;
+    fn submit_seal(&self, seal: SealEvent) -> impl std::future::Future<Output = Result<()>> + Send;
     fn time_service(&self) -> Arc<dyn TimeService>;
 }

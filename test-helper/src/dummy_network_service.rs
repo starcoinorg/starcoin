@@ -24,7 +24,6 @@ impl Default for DummyNetworkService {
     }
 }
 
-#[async_trait::async_trait]
 impl NetworkService for DummyNetworkService {
     fn send_peer_message(&self, _msg: PeerMessage) {}
 

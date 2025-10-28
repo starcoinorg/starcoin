@@ -6,7 +6,7 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use starcoin_crypto::hash::*;
 use starcoin_logger::prelude::debug;
 use starcoin_state_store_api::*;
@@ -82,7 +82,7 @@ pub struct StateTree<K: RawKey> {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
     updates: RwLock<BTreeMap<K, Option<Blob>>>,
-    cache: Mutex<StateCache<K>>,
+    cache: RwLock<StateCache<K>>,
 }
 
 impl<K> Clone for StateTree<K>
@@ -105,7 +105,7 @@ where
             storage: state_storage,
             storage_root_hash: RwLock::new(state_root_hash),
             updates: RwLock::new(BTreeMap::new()),
-            cache: Mutex::new(StateCache::new(state_root_hash)),
+            cache: RwLock::new(StateCache::new(state_root_hash)),
         }
     }
 
@@ -113,7 +113,7 @@ where
     /// if any modification is not committed into state tree, the root hash is not changed.
     /// You can use `commit` to make current modification committed into local state tree.
     pub fn root_hash(&self) -> HashValue {
-        self.cache.lock().root_hash
+        self.cache.read().root_hash
     }
 
     /// put a kv pair into tree.
@@ -150,12 +150,11 @@ where
     /// NOTICE: this will only read from state tree.
     /// Any un-committed modification will not visible to the method.
     pub fn get_with_proof(&self, key: &K) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        let mut cache_guard = self.cache.lock();
-        let cache = cache_guard.deref_mut();
-        let cur_root_hash = cache.root_hash;
+        let cache_guard = self.cache.read();
+        let cur_root_hash = cache_guard.root_hash;
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
-            cache,
+            cache: &*cache_guard,
         };
         let tree = JellyfishMerkleTree::new(&reader);
         let (data, proof) = tree.get_with_proof(cur_root_hash, key.key_hash())?;
@@ -199,7 +198,7 @@ where
     /// commit the state change into underline storage.
     pub fn flush(&self) -> Result<()> {
         let change_set_list = {
-            let mut cache_guard = self.cache.lock();
+            let mut cache_guard = self.cache.write();
             cache_guard.split_off_idx = Some(cache_guard.change_set_list.len());
             cache_guard.change_set_list.clone()
         };
@@ -221,14 +220,14 @@ where
         self.storage.write_nodes(node_map)?;
         // and then advance the storage root hash
         *self.storage_root_hash.write() = root_hash;
-        self.cache.lock().reset(root_hash);
+        self.cache.write().reset(root_hash);
         Ok(())
     }
 
     /// Dump tree to state set.
     pub fn dump(&self) -> Result<StateSet> {
         let cur_root_hash = self.root_hash();
-        let mut cache_guard = self.cache.lock();
+        let mut cache_guard = self.cache.write();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -246,7 +245,7 @@ where
     pub fn dump_iter(&self) -> Result<JellyfishMerkleIntoIterator<K, StorageTreeReader<K>>> {
         let cur_root_hash = self.root_hash();
         let cache = {
-            let cache_guard = self.cache.lock();
+            let cache_guard = self.cache.read();
             cache_guard.clone()
         };
         let iterator = JellyfishMerkleIntoIterator::new(
@@ -267,7 +266,7 @@ where
         if updates.is_empty() {
             return Ok(cur_root_hash);
         }
-        let mut cache_guard = self.cache.lock();
+        let mut cache_guard = self.cache.write();
         let cache = cache_guard.deref_mut();
         let reader = CachedTreeReader {
             store: self.storage.as_ref(),
@@ -316,7 +315,7 @@ where
     } */
     /// get last changes root_hash
     pub fn last_change_sets(&self) -> Option<(HashValue, TreeUpdateBatch<K>)> {
-        let cache_guard = self.cache.lock();
+        let cache_guard = self.cache.read();
         cache_guard.change_set_list.last().cloned()
     }
 

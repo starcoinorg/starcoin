@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
 futures-channel = { workspace = true }

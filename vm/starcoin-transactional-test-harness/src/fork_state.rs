@@ -91,7 +91,6 @@ impl MockChainStateAsyncService {
     }
 }
 
-#[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
     async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
         self.state_db()

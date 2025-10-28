@@ -10,79 +10,98 @@ use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
-#[async_trait::async_trait]
 pub trait AccountAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
-    async fn create_account(&self, password: String) -> Result<AccountInfo>;
+    fn create_account(
+        &self,
+        password: String,
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
 
-    async fn get_default_account(&self) -> Result<Option<AccountInfo>>;
-    async fn set_default_account(&self, address: AccountAddress) -> Result<AccountInfo>;
-    async fn get_accounts(&self) -> Result<Vec<AccountInfo>>;
+    fn get_default_account(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Option<AccountInfo>>> + Send;
+    fn set_default_account(
+        &self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
+    fn get_accounts(&self) -> impl std::future::Future<Output = Result<Vec<AccountInfo>>> + Send;
 
-    async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>>;
+    fn get_account(
+        &self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<Option<AccountInfo>>> + Send;
 
     /// Signs the hash of data with given address.
-    async fn sign_message(
+    fn sign_message(
         &self,
         address: AccountAddress,
         message: SigningMessage,
-    ) -> Result<SignedMessage>;
+    ) -> impl std::future::Future<Output = Result<SignedMessage>> + Send;
 
-    async fn sign_txn(
+    fn sign_txn(
         &self,
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
-    ) -> Result<SignedUserTransaction>;
-    async fn sign_txn_in_batch(
+    ) -> impl std::future::Future<Output = Result<SignedUserTransaction>> + Send;
+    fn sign_txn_in_batch(
         &self,
         raw_txn: Vec<RawUserTransaction>,
-    ) -> Result<Vec<SignedUserTransaction>>;
-    async fn unlock_account(
+    ) -> impl std::future::Future<Output = Result<Vec<SignedUserTransaction>>> + Send;
+    fn unlock_account(
         &self,
         address: AccountAddress,
         password: String,
         duration: std::time::Duration,
-    ) -> Result<AccountInfo>;
-    async fn unlock_account_in_batch(
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
+    fn unlock_account_in_batch(
         &self,
         batch: Vec<(AccountAddress, String)>,
         duration: std::time::Duration,
-    ) -> Result<Vec<AccountInfo>>;
-    async fn lock_account(&self, address: AccountAddress) -> Result<AccountInfo>;
-    async fn import_account(
+    ) -> impl std::future::Future<Output = Result<Vec<AccountInfo>>> + Send;
+    fn lock_account(
+        &self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
+    fn import_account(
         &self,
         address: AccountAddress,
         private_key: Vec<u8>,
         password: String,
-    ) -> Result<AccountInfo>;
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
 
-    async fn import_readonly_account(
+    fn import_readonly_account(
         &self,
         address: AccountAddress,
         public_key: Vec<u8>,
-    ) -> Result<AccountInfo>;
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
 
     /// Return the private key as bytes for `address`
-    async fn export_account(&self, address: AccountAddress, password: String) -> Result<Vec<u8>>;
+    fn export_account(
+        &self,
+        address: AccountAddress,
+        password: String,
+    ) -> impl std::future::Future<Output = Result<Vec<u8>>> + Send;
 
-    async fn accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>>;
+    fn accepted_tokens(
+        &self,
+        address: AccountAddress,
+    ) -> impl std::future::Future<Output = Result<Vec<TokenCode>>> + Send;
 
     /// change account password, user need to unlock account first.
-    async fn change_account_password(
+    fn change_account_password(
         &self,
         address: AccountAddress,
         new_password: String,
-    ) -> Result<AccountInfo>;
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
 
-    async fn remove_account(
+    fn remove_account(
         &self,
         address: AccountAddress,
         password: Option<String>,
-    ) -> Result<AccountInfo>;
+    ) -> impl std::future::Future<Output = Result<AccountInfo>> + Send;
 }
 
-#[async_trait::async_trait]
 impl<S> AccountAsyncService for ServiceRef<S>
 where
     S: ActorService,
@@ -180,9 +199,9 @@ where
         if let AccountResponse::SignedTxnList(txns) = response {
             Ok(txns)
         } else {
-            return Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(
                 "unexpected response type: expected SignedTxnList"
-            ));
+            ))
         }
     }
 
@@ -213,9 +232,9 @@ where
         if let AccountResponse::AccountList(account_info) = response {
             Ok(account_info)
         } else {
-            return Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(
                 "unexpected response type: expected AccountList"
-            ));
+            ))
         }
     }
 
