@@ -191,10 +191,8 @@ impl MergeEngine {
     }
 
     #[cfg(any(feature = "statedb", test))]
-    /// Build a frozen write set without touching storage.
-    /// This is the staging hook for the upcoming no-commit reuse flow,
-    /// allowing callers to aggregate writes before deciding when to apply them.
-    pub fn build_write_set(&self, diff: &MergeDiff) -> Result<Option<WriteSet>> {
+    /// Returns a frozen WriteSet ready for deferred application without mutating storage.
+    pub fn apply_diff_no_commit(&self, diff: &MergeDiff) -> Result<Option<WriteSet>> {
         self.materialize_write_set(diff)
     }
 
@@ -283,7 +281,7 @@ mod tests {
     use starcoin_vm2_vm_types::language_storage::StructTag;
     use starcoin_vm2_vm_types::state_store::table::TableHandle;
     use starcoin_vm2_vm_types::state_store::TStateView;
-    use starcoin_vm2_vm_types::write_set::WriteOp as WSWriteOp;
+    use starcoin_vm2_vm_types::write_set::{WriteOp as WSWriteOp, WriteSetMut};
 
     #[derive(Default)]
     struct MemState {
@@ -459,6 +457,43 @@ mod tests {
         assert_ne!(r2.state_root2, r3.state_root2);
         let v3 = TStateView::get_state_value(&statedb, &k).unwrap();
         assert!(v3.is_none());
+    }
+
+    #[test]
+    fn apply_diff_no_commit_returns_none_for_empty_diff() {
+        let eng = MergeEngine::new();
+        let diff = MergeDiff::default();
+        let res = eng
+            .apply_diff_no_commit(&diff)
+            .expect("no_commit should not fail");
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn apply_diff_no_commit_materializes_writes() {
+        let eng = MergeEngine::new();
+        let handle = TableHandle(AccountAddress::new([0xAA; 16]));
+        let k1 = StateKey::table_item(&handle, b"k1");
+        let k2 = StateKey::table_item(&handle, b"k2");
+
+        let mut diff = MergeDiff::default();
+        diff.writes.push((
+            k1.clone(),
+            WSWriteOp::legacy_creation(b"v1".to_vec().into()),
+        ));
+        diff.writes.push((
+            k2.clone(),
+            WSWriteOp::legacy_modification(b"v2".to_vec().into()),
+        ));
+
+        let frozen = eng
+            .apply_diff_no_commit(&diff)
+            .expect("no_commit succeeds")
+            .expect("writes should materialize");
+        let expected = WriteSetMut::new(diff.writes.clone())
+            .freeze()
+            .expect("freeze succeeds");
+        assert_eq!(frozen, expected);
     }
 
     #[test]

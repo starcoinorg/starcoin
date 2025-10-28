@@ -14,6 +14,7 @@ use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm2_vm_types::state_store::TStateView;
+use starcoin_vm2_vm_types::write_set::WriteSetMut;
 // reuse imports
 use starcoin_exec_merge as exec_merge;
 use starcoin_exec_merge::{ExecKey, ExecRecord, ReuseOpts, StateViewExt};
@@ -46,6 +47,15 @@ struct PlanStats {
     reexec: usize,
     read_checked: u64,
     plan_time_ms: u128,
+}
+
+#[derive(Debug)]
+struct PlanOutcome {
+    stats: PlanStats,
+    diff: exec_merge::MergeDiff,
+    reused_indices: Vec<usize>,
+    reexec_indices: Vec<usize>,
+    _planned_execs: Vec<ExecRecord>,
 }
 
 pub fn execute_transactions(
@@ -86,7 +96,7 @@ pub fn execute_transactions_with_reuse(
     let store = opts.witness_store.clone();
     let merge_engine = opts.merge_engine.clone();
 
-    let plan_stats = if opts.enabled {
+    let plan_outcome = if opts.enabled {
         let plan_start = Instant::now();
         let mut plan_execs = Vec::with_capacity(transactions.len());
         let mut witness_hits = 0usize;
@@ -123,17 +133,50 @@ pub fn execute_transactions_with_reuse(
             &mut prefix,
             &plan_execs,
         );
+        let mut reused_indices = Vec::with_capacity(diff.reused.len());
+        let mut reexec_indices = Vec::with_capacity(diff.reexec.len());
+        if !diff.reused.is_empty() || !diff.reexec.is_empty() {
+            let mut reused_hashes = diff.reused.iter();
+            let mut reexec_hashes = diff.reexec.iter();
+            let mut next_reused = reused_hashes.next();
+            let mut next_reexec = reexec_hashes.next();
+            for (idx, rec) in plan_execs.iter().enumerate() {
+                let tx_hash = &rec.tx_hash;
+                if let Some(expected) = next_reused {
+                    if tx_hash == expected {
+                        reused_indices.push(idx);
+                        next_reused = reused_hashes.next();
+                        continue;
+                    }
+                }
+                if let Some(expected) = next_reexec {
+                    if tx_hash == expected {
+                        reexec_indices.push(idx);
+                        next_reexec = reexec_hashes.next();
+                    }
+                }
+                if next_reused.is_none() && next_reexec.is_none() {
+                    break;
+                }
+            }
+        }
         let elapsed_ms = plan_start.elapsed().as_millis();
         let read_checked = *diff.stats.get("read_checked").unwrap_or(&0);
-        Some(PlanStats {
-            total: plan_execs.len(),
-            witness_hits,
-            witness_hits_with_reads,
-            witness_missing: plan_execs.len().saturating_sub(witness_hits),
-            reused: diff.reused.len(),
-            reexec: diff.reexec.len(),
-            read_checked,
-            plan_time_ms: elapsed_ms,
+        Some(PlanOutcome {
+            stats: PlanStats {
+                total: plan_execs.len(),
+                witness_hits,
+                witness_hits_with_reads,
+                witness_missing: plan_execs.len().saturating_sub(witness_hits),
+                reused: diff.reused.len(),
+                reexec: diff.reexec.len(),
+                read_checked,
+                plan_time_ms: elapsed_ms,
+            },
+            diff,
+            reused_indices,
+            reexec_indices,
+            _planned_execs: plan_execs,
         })
     } else {
         None
@@ -185,7 +228,81 @@ pub fn execute_transactions_with_reuse(
         store.put(rec);
     }
 
-    if let Some(stats) = plan_stats.as_ref() {
+    if let Some(plan) = plan_outcome.as_ref() {
+        if plan.stats.reexec != plan.reexec_indices.len() {
+            warn!(
+                "vm2 reuse plan reexec count mismatch: stats={}, indices={}",
+                plan.stats.reexec,
+                plan.reexec_indices.len()
+            );
+        }
+
+        let mut frozen_write_set = None;
+        match merge_engine.apply_diff_no_commit(&plan.diff) {
+            Ok(Some(ws)) => {
+                frozen_write_set = Some(ws);
+                if plan.diff.writes.is_empty() {
+                    debug!(
+                        "vm2 reuse plan produced empty diff but apply_diff_no_commit returned data"
+                    );
+                }
+            }
+            Ok(None) => {
+                if !plan.diff.writes.is_empty() {
+                    warn!(
+                        "vm2 reuse plan diff has {} writes but apply_diff_no_commit returned None",
+                        plan.diff.writes.len()
+                    );
+                }
+            }
+            Err(err) => {
+                warn!("vm2 reuse plan apply_diff_no_commit error: {:?}", err);
+            }
+        }
+
+        if !plan.reused_indices.is_empty() {
+            // Validate that recomputed writes match recorded diff
+            let mut actual_flattened = Vec::with_capacity(plan.diff.writes.len());
+            for &idx in &plan.reused_indices {
+                if let Some(ws) = executed.write_sets.get(idx) {
+                    actual_flattened.extend(ws.clone().into_iter());
+                } else {
+                    warn!(
+                        "vm2 reuse plan: missing executed write_set for index {} (total {})",
+                        idx,
+                        executed.write_sets.len()
+                    );
+                    actual_flattened.clear();
+                    break;
+                }
+            }
+
+            if !actual_flattened.is_empty() && actual_flattened != plan.diff.writes {
+                warn!(
+                    "vm2 reuse plan diff write mismatch: planned {} entries, actual {} entries",
+                    plan.diff.writes.len(),
+                    actual_flattened.len()
+                );
+            }
+
+            if let Some(frozen) = frozen_write_set.as_ref() {
+                match WriteSetMut::new(actual_flattened.clone()).freeze() {
+                    Ok(expected_ws) => {
+                        if &expected_ws != frozen {
+                            warn!("vm2 reuse plan frozen writes differ from executed writes");
+                        }
+                    }
+                    Err(err) => {
+                        warn!(
+                            "vm2 reuse plan failed to freeze executed writes for comparison: {:?}",
+                            err
+                        );
+                    }
+                }
+            }
+        }
+
+        let stats = &plan.stats;
         debug!(
             "vm2 reuse plan summary: total={}, witness_hits={}, witness_hits_with_reads={}, reused={}, reexec={}, missing={}, read_checked={}, plan_time_ms={}",
             stats.total,
