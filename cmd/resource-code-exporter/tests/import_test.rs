@@ -23,7 +23,7 @@ mod import_test {
         token::token_code::TokenCode,
         transaction::{Package, ScriptFunction, Transaction, TransactionPayload},
     };
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use tempfile::TempDir;
     use test_helper::{
@@ -42,6 +42,12 @@ mod import_test {
         gen_chain_for_test_and_return_statedb,
         gen_chain_for_test_and_return_statedb_with_temp_storage, vm1_testnet,
     };
+
+    fn networks_test_data_path(file_name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../networks/test-data")
+            .join(file_name)
+    }
 
     /// Test function to demonstrate the usage of both storage types
     #[stest::test]
@@ -391,14 +397,14 @@ mod import_test {
         // 1. vm_testnet
         let net = vm1_testnet()?;
 
-        // 2. unzip from ./test-data/24674819.tar.gz
+        // 2. unzip from networks/test-data/24674819.tar.gz
         let temp_dir = TempDir::new()?;
-        let tar_gz_path = Path::new("./test-data/24674819.tar.gz");
+        let tar_gz_path = networks_test_data_path("24674819.tar.gz");
 
         info!("Extracting tar.gz file from: {}", tar_gz_path.display());
 
         // Extract the tar.gz file
-        let tar_gz_file = std::fs::File::open(tar_gz_path)?;
+        let tar_gz_file = std::fs::File::open(&tar_gz_path)?;
         let tar_file = flate2::read::GzDecoder::new(tar_gz_file);
         let mut archive = tar::Archive::new(tar_file);
         archive.unpack(&temp_dir)?;
@@ -444,10 +450,10 @@ mod import_test {
         let net = vm1_testnet()?;
         let (chain, statedb) = gen_chain_for_test_and_return_statedb(&net, None)?;
 
-        let data_path = Path::new("./test-data/64925.bcs");
+        let data_path = networks_test_data_path("64925.bcs");
         info!("Importing BCS file: {}", data_path.display());
         let newst_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
-        import_from_statedb(&newst_statedb, data_path, None)?;
+        import_from_statedb(&newst_statedb, data_path.as_path(), None)?;
 
         // Check version on the same statedb instance that was imported to
         let version = newst_statedb
@@ -479,9 +485,9 @@ mod import_test {
         info!("Before import version: {}", version);
         assert_eq!(version, 12);
 
-        let data_path = Path::new("./test-data/1461026.bcs");
+        let data_path = networks_test_data_path("1461026.bcs");
         info!("Importing BCS file: {}", data_path.display());
-        import_from_statedb(&statedb, data_path, None)?;
+        import_from_statedb(&statedb, data_path.as_path(), None)?;
 
         let fork_statedb = statedb.fork_at(chain.chain_state_reader().state_root());
         let version = fork_statedb
@@ -770,14 +776,14 @@ mod import_test {
 
     #[stest::test]
     pub fn test_verify_account_code_state_count() -> anyhow::Result<()> {
-        // unzip from ./test-data/24674819.tar.gz
+        // unzip from networks/test-data/24674819.tar.gz
         let temp_dir = TempDir::new()?;
-        let tar_gz_path = Path::new("./test-data/24674819.tar.gz");
+        let tar_gz_path = networks_test_data_path("24674819.tar.gz");
 
         info!("Extracting tar.gz file from: {}", tar_gz_path.display());
 
         // Extract the tar.gz file
-        let tar_gz_file = std::fs::File::open(tar_gz_path)?;
+        let tar_gz_file = std::fs::File::open(&tar_gz_path)?;
         let tar_file = flate2::read::GzDecoder::new(tar_gz_file);
         let mut archive = tar::Archive::new(tar_file);
         archive.unpack(&temp_dir)?;
