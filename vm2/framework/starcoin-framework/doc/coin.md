@@ -35,6 +35,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `paired_metadata`](#0x1_coin_paired_metadata)
 -  [Function `create_coin_conversion_map`](#0x1_coin_create_coin_conversion_map)
 -  [Function `create_pairing`](#0x1_coin_create_pairing)
+-  [Function `make_pair_coin_type_with_metadata`](#0x1_coin_make_pair_coin_type_with_metadata)
 -  [Function `is_stc`](#0x1_coin_is_stc)
 -  [Function `create_and_return_paired_metadata_if_not_exist`](#0x1_coin_create_and_return_paired_metadata_if_not_exist)
 -  [Function `ensure_paired_metadata`](#0x1_coin_ensure_paired_metadata)
@@ -1061,6 +1062,16 @@ The BurnRefReceipt does not match the BurnRef to be returned.
 
 
 
+<a id="0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER"></a>
+
+No corresponding owner's rights
+
+
+<pre><code><b>const</b> <a href="coin.md#0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER">ECOIN_COIN_CREATE_PAIR_NOT_OWNER</a>: u64 = 29;
+</code></pre>
+
+
+
 <a id="0x1_coin_ECOIN_COIN_DECIMAL_TOO_LARGE"></a>
 
 The coin decimal too long
@@ -1326,8 +1337,9 @@ Get the paired fungible asset metadata object of a coin type. If not exist, retu
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;(): Option&lt;Object&lt;Metadata&gt;&gt; <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework) && <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>(
-    )) {
+    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(
+        @starcoin_framework
+    ) && <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>()) {
         <b>let</b> map = &<b>borrow_global</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework).coin_to_fungible_asset_map;
         <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
         <b>if</b> (<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(map, type)) {
@@ -1399,6 +1411,43 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 
 </details>
 
+<a id="0x1_coin_make_pair_coin_type_with_metadata"></a>
+
+## Function `make_pair_coin_type_with_metadata`
+
+Make type pair without initalize coin
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_make_pair_coin_type_with_metadata">make_pair_coin_type_with_metadata</a>&lt;CoinType&gt;(constrcut_ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>, metadata_obj: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_make_pair_coin_type_with_metadata">make_pair_coin_type_with_metadata</a>&lt;CoinType&gt;(
+    constrcut_ref: &ConstructorRef,
+    metadata_obj: Object&lt;Metadata&gt;
+) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin.md#0x1_coin_ECOIN_CONVERSION_MAP_NOT_FOUND">ECOIN_CONVERSION_MAP_NOT_FOUND</a>));
+    <b>assert</b>!(
+        <a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(constrcut_ref) == object_address(&metadata_obj),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="coin.md#0x1_coin_ECOIN_COIN_CREATE_PAIR_NOT_OWNER">ECOIN_COIN_CREATE_PAIR_NOT_OWNER</a>)
+    );
+
+    <b>let</b> map = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework);
+    <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
+
+    <a href="../../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> map.coin_to_fungible_asset_map, type, metadata_obj);
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_coin_is_stc"></a>
 
 ## Function `is_stc`
@@ -1461,7 +1510,6 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
                     *<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;())
                 )
             };
-
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store_enabled_fungible_asset">primary_fungible_store::create_primary_store_enabled_fungible_asset</a>(
             &metadata_object_cref,
             <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),
@@ -2268,10 +2316,16 @@ Collects a specified amount of coin form an account into aggregatable coin.
             account_addr,
             <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(metadata)
         )) {
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Exited <b>with</b> enough <a href="coin.md#0x1_coin">coin</a> balance"));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                &std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Exited <b>with</b> enough <a href="coin.md#0x1_coin">coin</a> balance")
+            );
             (coin_balance, amount - coin_balance)
         } <b>else</b> {
-            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Abort <b>with</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">primary_fungible_store</a> check not valid"));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                &std::string::utf8(
+                    b"<a href="coin.md#0x1_coin_calculate_amount_to_withdraw">coin::calculate_amount_to_withdraw</a> | Abort <b>with</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">primary_fungible_store</a> check not valid"
+                )
+            );
             <b>abort</b> <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
         }
     }
@@ -2579,20 +2633,15 @@ Returns <code><b>true</b></code> if <code>account_addr</code> is registered to r
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_is_account_registered">is_account_registered</a>&lt;CoinType&gt;(account_addr: <b>address</b>): bool <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | entered"));
     <b>assert</b>!(<a href="coin.md#0x1_coin_is_coin_initialized">is_coin_initialized</a>&lt;CoinType&gt;(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_ECOIN_INFO_NOT_PUBLISHED">ECOIN_INFO_NOT_PUBLISHED</a>));
-    <b>let</b> ret = <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr)) {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> exist"));
+    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr)) {
         <b>true</b>
     } <b>else</b> {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> not exist, convert <b>to</b> primary fungible store"));
         <b>let</b> paired_metadata_opt = <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;();
         (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(
             &paired_metadata_opt
         ) && <a href="coin.md#0x1_coin_migrated_primary_fungible_store_exists">migrated_primary_fungible_store_exists</a>(account_addr, <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(paired_metadata_opt)))
-    };
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | exited"));
-    ret
+    }
 }
 </code></pre>
 

@@ -1,5 +1,4 @@
 spec starcoin_framework::dao {
-
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -112,7 +111,7 @@ spec starcoin_framework::dao {
         let vote = global<Vote<TokenT>>(voter);
         aborts_if vote.id != proposal_id;
         aborts_if vote.agree != agree;
-        aborts_if vote.stake.value + stake_value > MAX_U128;
+        aborts_if fungible_asset::balance(vote.stake_store) + stake_value > MAX_U128;
     }
 
     spec cast_vote {
@@ -128,21 +127,24 @@ spec starcoin_framework::dao {
             voter: sender,
             proposal_id: proposal_id,
             agree: agree,
-            stake_value: stake.value,
+            stake_value: stake.amount,
         };
 
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
-        ensures !vote_exists ==> global<Vote<TokenT>>(sender).stake.value == stake.value;
+        ensures !vote_exists ==>
+            fungible_asset::balance(global<Vote<TokenT>>(sender).stake_store) == stake.amount;
     }
 
 
     spec do_cast_vote {
         pragma addition_overflow_unchecked = true;
-        aborts_if vote.stake.value + stake.value > MAX_U128;
-        ensures vote.stake.value == old(vote).stake.value + stake.value;
-        ensures vote.agree ==> old(proposal).for_votes + stake.value == proposal.for_votes;
+        aborts_if fungible_asset::balance(vote.stake_store) + stake.amount > MAX_U128;
+        ensures fungible_asset::balance(vote.stake_store) == fungible_asset::balance(
+            old(vote).stake_store
+        ) + stake.amount;
+        ensures vote.agree ==> old(proposal).for_votes + stake.amount == proposal.for_votes;
         ensures vote.agree ==> old(proposal).against_votes == proposal.against_votes;
-        ensures !vote.agree ==> old(proposal).against_votes + stake.value == proposal.against_votes;
+        ensures !vote.agree ==> old(proposal).against_votes + stake.amount == proposal.against_votes;
         ensures !vote.agree ==> old(proposal).for_votes == proposal.for_votes;
     }
 
@@ -179,10 +181,10 @@ spec starcoin_framework::dao {
     spec schema CheckFlipVote<TokenT, ActionT> {
         my_vote: Vote<TokenT>;
         proposal: Proposal<TokenT, ActionT>;
-        aborts_if my_vote.agree && proposal.for_votes < my_vote.stake.value;
-        aborts_if my_vote.agree && proposal.against_votes + my_vote.stake.value > MAX_U128;
-        aborts_if !my_vote.agree && proposal.against_votes < my_vote.stake.value;
-        aborts_if !my_vote.agree && proposal.for_votes + my_vote.stake.value > MAX_U128;
+        aborts_if my_vote.agree && proposal.for_votes < fungible_asset::balance(my_vote.stake_store);
+        aborts_if my_vote.agree && proposal.against_votes + fungible_asset::balance(my_vote.stake_store) > MAX_U128;
+        aborts_if !my_vote.agree && proposal.against_votes < fungible_asset::balance(my_vote.stake_store);
+        aborts_if !my_vote.agree && proposal.for_votes + fungible_asset::balance(my_vote.stake_store) > MAX_U128;
     }
 
     spec do_flip_vote {
@@ -211,17 +213,16 @@ spec starcoin_framework::dao {
         modifies global<Proposal<TokenT, ActionT>>(proposer_address);
         modifies global<DaoGlobalInfo<TokenT>>(@0x2);
 
-        ensures global<Vote<TokenT>>(sender).stake.value + result.value == old(
-            global<Vote<TokenT>>(sender)
-        ).stake.value;
-        ensures result.value == voting_power;
+        ensures fungible_asset::balance(global<Vote<TokenT>>(sender).stake_store) + result.amount ==
+            fungible_asset::balance(old(global<Vote<TokenT>>(sender)).stake_store);
+        ensures result.amount == voting_power;
     }
 
     spec schema CheckRevokeVote<TokenT, ActionT> {
         vote: Vote<TokenT>;
         proposal: Proposal<TokenT, ActionT>;
         to_revoke: u128;
-        aborts_if vote.stake.value < to_revoke;
+        aborts_if fungible_asset::balance(vote.stake_store) < to_revoke;
         aborts_if vote.agree && proposal.for_votes < to_revoke;
         aborts_if !vote.agree && proposal.against_votes < to_revoke;
     }
@@ -230,7 +231,7 @@ spec starcoin_framework::dao {
         include CheckRevokeVote<TokenT, ActionT>;
         ensures vote.agree ==> old(proposal).for_votes == proposal.for_votes + to_revoke;
         ensures !vote.agree ==> old(proposal).against_votes == proposal.against_votes + to_revoke;
-        ensures result.value == to_revoke;
+        ensures result.amount == to_revoke;
     }
 
     spec unstake_votes {
@@ -252,7 +253,7 @@ spec starcoin_framework::dao {
         let vote = global<Vote<TokenT>>(sender);
         include CheckVoteOnProposal<TokenT> { vote, proposer_address, proposal_id };
         ensures !exists<Vote<TokenT>>(sender);
-        ensures result.value == old(vote).stake.value;
+        ensures result.amount == fungible_asset::balance(old(vote).stake_store);
     }
 
 

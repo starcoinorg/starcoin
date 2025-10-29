@@ -46,6 +46,27 @@ script {
 }
 
 
+//# run --signers StarcoinAssociation
+script {
+    use starcoin_framework::starcoin_coin;
+    use starcoin_framework::primary_fungible_store;
+
+    fun transfer_stc_to_alice(association: &signer) {
+        primary_fungible_store::transfer(
+            association,
+            starcoin_coin::get_stc_fa_metadata(),
+            @alice,
+            10000000000
+        );
+        assert!(primary_fungible_store::balance(
+            @alice,
+            starcoin_coin::get_stc_fa_metadata()) >= 10000000000,
+            1
+        );
+    }
+}
+
+
 //# block --author alice
 
 

@@ -90,7 +90,7 @@ move-prover = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd7
 move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
 
 [features]
-default = []
+default = ["testing"]
 fuzzing = ["starcoin-types/fuzzing"]
 testing = ["starcoin-move-stdlib/testing", "starcoin-crypto/fuzzing"]
 

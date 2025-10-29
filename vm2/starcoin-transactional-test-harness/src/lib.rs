@@ -30,17 +30,17 @@ use starcoin_types::account_address::AccountAddress as AccountAddress1;
 
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
-use starcoin_vm2_vm_types::{
-    account_config::{association_address, core_code_address, STC_TOKEN_CODE_STR},
-    state_store::state_key::StateKey,
+use starcoin_vm2_vm_types::account_config::{
+    association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 
 use move_core_types::vm_status::KeptVMStatus;
 use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 
+use log::{info, warn};
 use move_command_line_common::values::ParsableValue;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_core_types::resolver::ResourceResolver;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_transactional_test_runner::tasks::{
     PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
@@ -91,12 +91,13 @@ use starcoin_vm2_vm_types::{
         authenticator::AccountPrivateKey, EntryFunction, Module, Package, Script, Transaction,
         TransactionStatus,
     },
-    write_set::{WriteOp, WriteSetMut},
 };
 
 use starcoin_gas_schedule::{FromOnChainGasSchedule, StarcoinGasParameters};
 use starcoin_vm2_resource_viewer::MoveValueAnnotator;
 use starcoin_vm2_statedb::ChainStateDB;
+use starcoin_vm2_vm_types::state_store::state_key::StateKey;
+use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::genesis_config::ChainId as ChainId1;
 
 pub mod context;
@@ -1093,7 +1094,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             named_address_mapping.insert(name, addr);
         }
         named_address_mapping.insert(
-            "Std".to_string(),
+            "std".to_string(),
             NumericalAddress::parse_str("0x1").unwrap(),
         );
 
@@ -1136,7 +1137,35 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps_v1 {
             let mut writes = WriteSetMut::default();
-            for c in &pre_compiled_lib.0.compiled {
+            // Filter out modules that already exist in context.storage
+            let compiled_filtered: Vec<_> = pre_compiled_lib.0.compiled.iter()
+                .filter(|c| {
+                    if let CompiledUnitEnum::Module(m) = c {
+                        let module_id = &m.named_module.module.self_id();
+                        // Check if module already exists in storage
+                        match context.storage.as_move_resolver().get_module(module_id) {
+                            Ok(Some(_)) => {
+                                false
+                            },
+                            Ok(None) => {
+                                true
+                            },
+                            Err(e) => {
+                                warn!("MoveTestAdapter::init | Error checking module {:?} in storage: {:?}, will be added", module_id, e);
+                                true
+                            }
+                        }
+                    } else {
+                        true // Include non-module compiled units
+                    }
+                })
+                .collect();
+
+            for c in &compiled_filtered {
+                info!(
+                    "MoveTestAdapter::init | pre_compiled_deps_v1, compiled unit: {:?}",
+                    c
+                );
                 if let CompiledUnitEnum::Module(m) = c {
                     // update named_address_mapping
                     if let Some(named_address) = &m.address_name {
@@ -1158,6 +1187,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     }
 
                     let state_key = StateKey::module_id(&m.named_module.module.self_id());
+                    info!(
+                        "MoveAdapter::init | write pre_compiled_lib, write: {:?}",
+                        state_key
+                    );
                     writes.insert((
                         state_key,
                         WriteOp::legacy_modification({
@@ -1168,7 +1201,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     ));
                 }
             }
-            context.apply_write_set(writes.freeze().unwrap()).unwrap();
+
+            if !writes.is_empty() {
+                context.apply_write_set(writes.freeze().unwrap()).unwrap();
+            }
         }
 
         let mut me = Self {

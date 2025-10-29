@@ -4,11 +4,12 @@ module starcoin_framework::dao_treasury_withdraw_proposal {
     use std::error;
     use std::signer;
 
-    use starcoin_framework::coin;
     use starcoin_framework::dao;
+    use starcoin_framework::fungible_asset::FungibleAsset;
     use starcoin_framework::stc_util;
     use starcoin_framework::system_addresses;
     use starcoin_framework::treasury;
+
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -127,7 +128,7 @@ module starcoin_framework::dao_treasury_withdraw_proposal {
     public fun withdraw_for_block_reward<TokenT>(
         signer: &signer,
         reward: u128
-    ): coin::Coin<TokenT> acquires WrappedWithdrawCapability {
+    ): FungibleAsset acquires WrappedWithdrawCapability {
         system_addresses::assert_starcoin_framework(signer);
         let cap = borrow_global_mut<WrappedWithdrawCapability<TokenT>>(signer::address_of(signer));
         treasury::withdraw_with_capability(&mut cap.cap, reward)
