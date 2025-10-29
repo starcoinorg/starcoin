@@ -110,106 +110,149 @@ pub trait WriteableChainService: Send + Sync {
     fn try_connect(&mut self, block: Block) -> Result<()>;
 }
 
-#[async_trait::async_trait]
 pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
-    async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
-    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
-    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
-    async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
-    async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
-    async fn get_block_info_by_number(&self, number: u64) -> Result<Option<BlockInfo>>;
-    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>>;
-    async fn get_transaction_info(
+    fn get_header_by_hash(
+        &self,
+        hash: &HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<BlockHeader>>> + Send;
+    fn get_block_by_hash(
+        &self,
+        hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<Block>>> + Send;
+    fn get_blocks(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> impl std::future::Future<Output = Result<Vec<Option<Block>>>> + Send;
+    fn get_headers(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> impl std::future::Future<Output = Result<Vec<Option<BlockHeader>>>> + Send;
+    fn get_block_info_by_hash(
+        &self,
+        hash: &HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<BlockInfo>>> + Send;
+    fn get_block_info_by_number(
+        &self,
+        number: u64,
+    ) -> impl std::future::Future<Output = Result<Option<BlockInfo>>> + Send;
+    fn get_transaction(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<StcRichTransactionInfo>>;
-    async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
-    async fn get_block_txn_infos(
+    ) -> impl std::future::Future<Output = Result<Option<StcTransaction>>> + Send;
+    fn get_transaction_info(
+        &self,
+        txn_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<StcRichTransactionInfo>>> + Send;
+    fn get_transaction_block(
+        &self,
+        txn_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<Block>>> + Send;
+    fn get_block_txn_infos(
         &self,
         block_hash: HashValue,
-    ) -> Result<Vec<StcRichTransactionInfo>>;
-    async fn get_txn_info_by_block_and_index(
+    ) -> impl std::future::Future<Output = Result<Vec<StcRichTransactionInfo>>> + Send;
+    fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> Result<Option<StcRichTransactionInfo>>;
-    async fn get_events_by_txn_hash(
+    ) -> impl std::future::Future<Output = Result<Option<StcRichTransactionInfo>>> + Send;
+    fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Vec<StcContractEventInfo>>;
-    async fn get_events_by_txn_hash2(
+    ) -> impl std::future::Future<Output = Result<Vec<StcContractEventInfo>>> + Send;
+    fn get_events_by_txn_hash2(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Vec<StcContractEventInfo>>;
+    ) -> impl std::future::Future<Output = Result<Vec<StcContractEventInfo>>> + Send;
 
     /// for main
-    async fn main_head_header(&self) -> Result<BlockHeader>;
-    async fn main_head_block(&self) -> Result<Block>;
-    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    async fn main_blocks_by_number(
+    fn main_head_header(&self) -> impl std::future::Future<Output = Result<BlockHeader>> + Send;
+    fn main_head_block(&self) -> impl std::future::Future<Output = Result<Block>> + Send;
+    fn main_block_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> impl std::future::Future<Output = Result<Option<Block>>> + Send;
+    fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         reverse: bool,
         count: u64,
-    ) -> Result<Vec<Block>>;
-    async fn main_block_header_by_number(&self, number: BlockNumber)
-        -> Result<Option<BlockHeader>>;
-    async fn main_startup_info(&self) -> Result<StartupInfo>;
-    async fn main_status(&self) -> Result<ChainStatus>;
-    async fn main_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>>;
-    async fn get_block_ids(
+    ) -> impl std::future::Future<Output = Result<Vec<Block>>> + Send;
+    fn main_block_header_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> impl std::future::Future<Output = Result<Option<BlockHeader>>> + Send;
+    fn main_startup_info(&self) -> impl std::future::Future<Output = Result<StartupInfo>> + Send;
+    fn main_status(&self) -> impl std::future::Future<Output = Result<ChainStatus>> + Send;
+    fn main_events(
+        &self,
+        filter: Filter,
+    ) -> impl std::future::Future<Output = Result<Vec<StcContractEventInfo>>> + Send;
+    fn get_block_ids(
         &self,
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<HashValue>>;
-    async fn get_transaction_infos(
+    ) -> impl std::future::Future<Output = Result<Vec<HashValue>>> + Send;
+    fn get_transaction_infos(
         &self,
         start_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> Result<Vec<StcRichTransactionInfo>>;
+    ) -> impl std::future::Future<Output = Result<Vec<StcRichTransactionInfo>>> + Send;
 
-    async fn get_transaction_proof(
+    fn get_transaction_proof(
         &self,
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
-    ) -> Result<Option<TransactionInfoWithProof>>;
+    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof>>> + Send;
 
-    async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
-    async fn get_multi_state_by_hash(&self, hash: HashValue) -> Result<Option<MultiState>>;
+    fn get_block_infos(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> impl std::future::Future<Output = Result<Vec<Option<BlockInfo>>>> + Send;
+    fn get_multi_state_by_hash(
+        &self,
+        hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<MultiState>>> + Send;
 
-    async fn get_transaction_proof2(
+    fn get_transaction_proof2(
         &self,
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>>;
+    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof2>>> + Send;
 
-    async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    fn get_dag_block_children(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> impl std::future::Future<Output = Result<Vec<HashValue>>> + Send;
 
-    async fn get_ghostdagdata(
+    fn get_ghostdagdata(
         &self,
         ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
+    ) -> impl std::future::Future<
+        Output = Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>,
+    > + Send;
 
-    async fn get_range_in_location(
+    fn get_range_in_location(
         &self,
         req: starcoin_network_rpc_api::GetRangeInLocationRequest,
-    ) -> Result<starcoin_network_rpc_api::GetRangeInLocationResponse>;
+    ) -> impl std::future::Future<
+        Output = Result<starcoin_network_rpc_api::GetRangeInLocationResponse>,
+    > + Send;
 
-    async fn get_absent_blocks(
+    fn get_absent_blocks(
         &self,
         req: starcoin_network_rpc_api::GetAbsentBlockRequest,
-    ) -> Result<starcoin_network_rpc_api::GetAbsentBlockResponse>;
+    ) -> impl std::future::Future<Output = Result<starcoin_network_rpc_api::GetAbsentBlockResponse>> + Send;
 }
 
-#[async_trait::async_trait]
 impl<S> ChainAsyncService for ServiceRef<S>
 where
     S: ActorService + ServiceHandler<S, ChainRequest>,

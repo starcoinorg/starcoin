@@ -11,22 +11,25 @@ use network_api::PeerStrategy;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::sync_status::SyncStatus;
 
-#[async_trait::async_trait]
 pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
-    async fn status(&self) -> Result<SyncStatus>;
-    async fn progress(&self) -> Result<Option<SyncProgressReport>>;
-    async fn cancel(&self) -> Result<()>;
+    fn status(&self) -> impl std::future::Future<Output = Result<SyncStatus>> + Send;
+    fn progress(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Option<SyncProgressReport>>> + Send;
+    fn cancel(&self) -> impl std::future::Future<Output = Result<()>> + Send;
     /// if `force` is true, will cancel current task and start a new task.
     /// if peers is not empty, will try sync with the special peers.
-    async fn start(
+    fn start(
         &self,
         force: bool,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
         strategy: Option<PeerStrategy>,
-    ) -> Result<()>;
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    async fn sync_peer_score(&self) -> Result<PeerScoreResponse>;
+    fn sync_peer_score(
+        &self,
+    ) -> impl std::future::Future<Output = Result<PeerScoreResponse>> + Send;
 }
 
 pub trait SyncServiceHandler:
@@ -39,7 +42,6 @@ pub trait SyncServiceHandler:
 {
 }
 
-#[async_trait::async_trait]
 impl<S> SyncAsyncService for ServiceRef<S>
 where
     S: SyncServiceHandler,

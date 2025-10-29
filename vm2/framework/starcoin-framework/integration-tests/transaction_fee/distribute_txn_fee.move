@@ -15,9 +15,19 @@ script {
     fun pay_fees(account: signer) {
         let coin = coin::withdraw<STC>(&account, 200);
         assert!(coin::value<STC>(&coin) == 200, 8001);
-        stc_transaction_fee::pay_fee<STC>(coin);
+        stc_transaction_fee::pay_fee<STC>(&account, coin);
     }
 }
+
+//# run --signers Genesis
+script {
+    use starcoin_framework::stc_block;
+
+    fun block_epilogue(account: signer) {
+        stc_block::block_epilogue(account);
+    }
+}
+// check: EXECUTED
 
 
 //# run --signers Genesis

@@ -10,7 +10,7 @@ libc = { workspace = true }
 
 [dev-dependencies]
 bencher = { workspace = true }
-rustc-serialize = { workspace = true }
+hex = { workspace = true }
 
 [lib]
 name = "cryptonight"

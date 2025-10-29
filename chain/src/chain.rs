@@ -448,7 +448,12 @@ impl BlockChain {
         } else {
             opened_block.process_vm1_transactions(vm1_txns)?
         };
+
+        let vm2_contains_user_transaction = !vm2_txns.is_empty();
         let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
+        if vm2_contains_user_transaction {
+            opened_block.finalize_block_epilogue()?;
+        }
         let template = opened_block.finalize()?;
 
         Ok((template, excluded_txns.absorb(excluded_txns2)))

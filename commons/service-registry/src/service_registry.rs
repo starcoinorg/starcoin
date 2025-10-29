@@ -736,18 +736,22 @@ impl EventHandler<Self, ServiceStatusChangeEvent> for RegistryService {
     }
 }
 
-#[async_trait::async_trait]
 pub trait RegistryAsyncService {
-    async fn register<S>(&self) -> Result<ServiceRef<S>>
+    fn register<S>(&self) -> impl std::future::Future<Output = Result<ServiceRef<S>>> + Send
     where
         S: ActorService + ServiceFactory<S> + 'static;
 
-    async fn register_by_factory<S, F>(&self) -> Result<ServiceRef<S>>
+    fn register_by_factory<S, F>(
+        &self,
+    ) -> impl std::future::Future<Output = Result<ServiceRef<S>>> + Send
     where
         S: ActorService + 'static,
         F: ServiceFactory<S> + 'static;
 
-    async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
+    fn register_mocker<S, Mocker>(
+        &self,
+        mocker: Mocker,
+    ) -> impl std::future::Future<Output = Result<ServiceRef<S>>> + Send
     where
         S: ActorService + 'static,
         Mocker: MockHandler<S> + 'static;
@@ -759,48 +763,65 @@ pub trait RegistryAsyncService {
         block_on(async { self.register::<S>().await })
     }
 
-    async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
+    fn service_ref<S>(&self) -> impl std::future::Future<Output = Result<ServiceRef<S>>> + Send
     where
         S: ActorService + 'static,
+        Self: Sync,
     {
-        self.service_ref_opt()
-            .await?
-            .ok_or_else(|| format_err!("Can not find service: {}", S::service_name()))
+        async move {
+            self.service_ref_opt()
+                .await?
+                .ok_or_else(|| format_err!("Can not find service: {}", S::service_name()))
+        }
     }
 
-    async fn service_ref_opt<S>(&self) -> Result<Option<ServiceRef<S>>>
+    fn service_ref_opt<S>(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Option<ServiceRef<S>>>> + Send
     where
         S: ActorService + 'static;
 
-    async fn list_service(&self) -> Result<Vec<ServiceInfo>>;
+    fn list_service(&self) -> impl std::future::Future<Output = Result<Vec<ServiceInfo>>> + Send;
 
     fn list_service_sync(&self) -> Result<Vec<ServiceInfo>> {
         block_on(async move { self.list_service().await })
     }
-    async fn stop_service(&self, service_name: &str) -> Result<()>;
+    fn stop_service(
+        &self,
+        service_name: &str,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
     fn stop_service_sync(&self, service_name: &str) -> Result<()> {
         block_on(async move { self.stop_service(service_name).await })
     }
 
-    async fn start_service(&self, service_name: &str) -> Result<()>;
+    fn start_service(
+        &self,
+        service_name: &str,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
     fn start_service_sync(&self, service_name: &str) -> Result<()> {
         block_on(async move { self.start_service(service_name).await })
     }
 
-    async fn restart_service(&self, service_name: &str) -> Result<()>;
+    fn restart_service(
+        &self,
+        service_name: &str,
+    ) -> impl std::future::Future<Output = Result<()>> + Send;
 
     fn restart_service_sync(&self, service_name: &str) -> Result<()> {
         block_on(async move { self.restart_service(service_name).await })
     }
-    async fn check_service_status(&self, service_name: &str) -> Result<ServiceStatus>;
+    fn check_service_status(
+        &self,
+        service_name: &str,
+    ) -> impl std::future::Future<Output = Result<ServiceStatus>> + Send;
 
     fn check_service_status_sync(&self, service_name: &str) -> Result<ServiceStatus> {
         block_on(async move { self.check_service_status(service_name).await })
     }
 
-    async fn put_shared<T>(&self, t: T) -> Result<()>
+    fn put_shared<T>(&self, t: T) -> impl std::future::Future<Output = Result<()>> + Send
     where
         T: Send + Sync + Clone + 'static;
 
@@ -811,17 +832,20 @@ pub trait RegistryAsyncService {
         block_on(async move { self.put_shared(t).await })
     }
 
-    async fn get_shared_opt<T>(&self) -> Result<Option<T>>
+    fn get_shared_opt<T>(&self) -> impl std::future::Future<Output = Result<Option<T>>> + Send
     where
         T: Send + Sync + Clone + 'static;
 
-    async fn get_shared<T>(&self) -> Result<T>
+    fn get_shared<T>(&self) -> impl std::future::Future<Output = Result<T>> + Send
     where
         T: Send + Sync + Clone + 'static,
+        Self: Sync,
     {
-        self.get_shared_opt()
-            .await?
-            .ok_or_else(|| format_err!("Can not find shared data by type: {}", type_name::<T>()))
+        async move {
+            self.get_shared_opt().await?.ok_or_else(|| {
+                format_err!("Can not find shared data by type: {}", type_name::<T>())
+            })
+        }
     }
 
     fn get_shared_sync<T>(&self) -> Result<T>
@@ -839,7 +863,7 @@ pub trait RegistryAsyncService {
         block_on(async { self.get_shared_opt().await })
     }
 
-    async fn remove_shared<T>(&self) -> Result<()>
+    fn remove_shared<T>(&self) -> impl std::future::Future<Output = Result<()>> + Send
     where
         T: Send + Sync + Clone + 'static;
 
@@ -850,13 +874,13 @@ pub trait RegistryAsyncService {
         block_on(async { self.remove_shared::<T>().await })
     }
 
-    async fn shutdown_system(&self) -> Result<()>;
+    fn shutdown_system(&self) -> impl std::future::Future<Output = Result<()>> + Send;
 
     fn shutdown_system_sync(&self) -> Result<()> {
         block_on(async { self.shutdown_system().await })
     }
 
-    async fn shutdown_service<S>(&self) -> Result<()>
+    fn shutdown_service<S>(&self) -> impl std::future::Future<Output = Result<()>> + Send
     where
         S: ActorService + 'static;
 
@@ -868,7 +892,6 @@ pub trait RegistryAsyncService {
     }
 }
 
-#[async_trait::async_trait]
 impl RegistryAsyncService for ServiceRef<RegistryService> {
     async fn register<S>(&self) -> Result<ServiceRef<S>>
     where

@@ -3,7 +3,6 @@
 
 use crate::{JobClient, SealEvent};
 use anyhow::Result;
-use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, Future, TryStreamExt};
 use futures_channel::mpsc::{unbounded, UnboundedSender};
@@ -96,7 +95,6 @@ impl JobRpcClient {
     }
 }
 
-#[async_trait]
 impl JobClient for JobRpcClient {
     async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         Ok(self.forward_mint_block_stream())

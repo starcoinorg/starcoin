@@ -1,6 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
 dyn-clone = { workspace = true }
 futures = { workspace = true }
 starcoin-types = { workspace = true }

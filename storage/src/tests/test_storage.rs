@@ -276,15 +276,27 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         TRANSACTION_INFO_PREFIX_NAME_V3,
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
-    assert!(&cache_infos.first().unwrap().is_none(), "id1 has evicted");
-    assert_eq!(
-        StcRichTransactionInfo::decode_value(&cache_infos.get(1).unwrap().clone().unwrap())?,
-        transaction_info2
-    );
-    assert_eq!(
-        StcRichTransactionInfo::decode_value(&cache_infos.get(2).unwrap().clone().unwrap())?,
-        transaction_info3
-    );
+    let mut retained_count = 0;
+    let transaction_infos = vec![
+        transaction_info1.clone(),
+        transaction_info2.clone(),
+        transaction_info3.clone(),
+    ];
+    for (idx, info) in cache_infos.iter().enumerate() {
+        if info.is_some() {
+            retained_count += 1;
+            assert_eq!(
+                StcRichTransactionInfo::decode_value(
+                    &cache_infos.get(idx).unwrap().clone().unwrap()
+                )?,
+                transaction_infos[idx]
+            );
+        }
+    }
+
+    // quick-cache uses sharding/segmentation or an approximate LRU (not a single global, exact LRU)
+    assert!(retained_count == 2, "only two items should be retained");
+
     let infos = storage
         .transaction_info_storage
         .multiple_get(vec![id1, id2, id3])?;

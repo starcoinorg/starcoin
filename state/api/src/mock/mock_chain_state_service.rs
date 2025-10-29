@@ -20,7 +20,6 @@ impl MockChainStateService {
     }
 }
 
-#[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateService {
     async fn get(self, _access_path: AccessPath) -> Result<Option<Vec<u8>>> {
         unimplemented!()

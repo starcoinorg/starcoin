@@ -23,7 +23,7 @@ bcs-ext = { workspace = true }
 starcoin-gas-algebra = { path = "../framework/gas-algebra" }
 starcoin-gas-schedule = { path = "../framework/gas-schedule" }
 starcoin-gas-meter = { path = "../framework/gas-meter" }
-fxhash = { workspace = true }
+rustc-hash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }

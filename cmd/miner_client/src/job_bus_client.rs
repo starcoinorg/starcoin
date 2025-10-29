@@ -1,6 +1,5 @@
 use crate::{BlockHeaderExtra, JobClient, MintBlockEvent, SealEvent};
 use anyhow::Result;
-use async_trait::async_trait;
 use futures::stream::BoxStream;
 use futures::stream::StreamExt;
 use starcoin_miner::{MinerService, SubmitSealRequest};
@@ -30,7 +29,6 @@ impl JobBusClient {
     }
 }
 
-#[async_trait]
 impl JobClient for JobBusClient {
     async fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let bus = self.bus.clone();

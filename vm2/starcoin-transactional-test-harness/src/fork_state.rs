@@ -110,7 +110,6 @@ impl MockChainStateAsyncService {
     }
 }
 
-#[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
     async fn get(self, state_key: StateKey) -> Result<Option<Bytes>> {
         self.state_db()
