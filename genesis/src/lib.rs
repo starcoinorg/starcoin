@@ -199,7 +199,7 @@ impl Genesis {
     pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
         let package = build_stdlib_package(
             net,
-            if net.is_test() {
+            if net.is_test() || net.is_dev() {
                 StdLibOptions::Fresh
             } else {
                 StdLibOptions::Compiled(net.stdlib_version())
