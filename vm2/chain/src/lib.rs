@@ -72,8 +72,15 @@ struct PlanOutcome {
 static TEST_REUSE_HITS: AtomicUsize = AtomicUsize::new(0);
 static TEST_REUSE_REEXEC: AtomicUsize = AtomicUsize::new(0);
 
-fn is_supported_state_key(key: &StateKey) -> bool {
+fn is_supported_write_key(key: &StateKey) -> bool {
     matches!(key.inner(), StateKeyInner::AccessPath(_))
+}
+
+fn is_supported_read_key(key: &StateKey) -> bool {
+    matches!(
+        key.inner(),
+        StateKeyInner::AccessPath(_) | StateKeyInner::TableItem { .. }
+    )
 }
 
 fn record_supported_for_reuse(rec: &ExecRecord) -> bool {
@@ -83,15 +90,12 @@ fn record_supported_for_reuse(rec: &ExecRecord) -> bool {
     if rec
         .write_set
         .iter()
-        .any(|(key, _)| !is_supported_state_key(key))
+        .any(|(key, _)| !is_supported_write_key(key))
     {
         return false;
     }
     if let Some(reads) = rec.read_set.as_ref() {
-        if reads
-            .iter()
-            .any(|entry| !is_supported_state_key(&entry.key))
-        {
+        if reads.iter().any(|entry| !is_supported_read_key(&entry.key)) {
             return false;
         }
     }

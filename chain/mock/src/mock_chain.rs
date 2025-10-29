@@ -15,6 +15,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_storage::{Storage2, Store2};
 use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
 use starcoin_types::blockhash::KType;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -322,6 +323,60 @@ impl MockChain {
             .consensus()
             .create_block(block_template, self.net.time_service().as_ref())?;
         Ok(new_block)
+    }
+
+    pub fn produce_block_by_tips_with_txns(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+        user_txns: Vec<MultiSignedUserTransaction>,
+    ) -> Result<Block> {
+        if self.head().current_header().id() != parent_header.id() {
+            self.head = self.head.fork(parent_header.id())?;
+        }
+
+        let tips_ghostdata = self.head.dag().ghost_dag_manager().ghostdag(&tips)?;
+        let consistent_parent_header = self
+            .head()
+            .get_storage()
+            .get_block_header_by_hash(tips_ghostdata.selected_parent)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash: {:?}",
+                    tips_ghostdata.selected_parent
+                )
+            })?;
+
+        let (block_template, excluded) = self.head.create_block_template(
+            *self.miner.address(),
+            Some(consistent_parent_header),
+            user_txns,
+            None,
+            None,
+            Some(tips),
+            HashValue::zero(),
+        )?;
+        debug_assert!(
+            excluded.discarded_txns.is_empty() && excluded.untouched_txns.is_empty(),
+            "unexpected excluded txns: {:?}",
+            excluded
+        );
+        let new_block = self
+            .head
+            .consensus()
+            .create_block(block_template, self.net.time_service().as_ref())?;
+        Ok(new_block)
+    }
+
+    pub fn produce_and_apply_by_tips_with_txns(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+        user_txns: Vec<MultiSignedUserTransaction>,
+    ) -> Result<Block> {
+        let block = self.produce_block_by_tips_with_txns(parent_header, tips, user_txns)?;
+        self.apply(block.clone())?;
+        Ok(block)
     }
 
     pub fn produce_fork_chain(&mut self, one_count: u64, two_count: u64) -> Result<()> {
