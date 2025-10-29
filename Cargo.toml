@@ -418,7 +418,7 @@ move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "babf994a38
 
 # Ark crypto libraries
 ark-bls12-381 = "0.4.0"
-ark-bn254 = "0.4.0"
+ark-bn254 = "0.5.0"
 ark-ec = "0.4.0"
 ark-ff = "0.4.0"
 ark-serialize = "0.4.0"
