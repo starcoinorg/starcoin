@@ -10,6 +10,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block_metadata;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm_types::access_path::AccessPath;
@@ -244,7 +245,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                         current_header.id(),
                         txn_global_index,
                         Some(event_index as u64),
-                        access_path.clone(),
+                        access_path.clone().map(|ap| MultiAccessPath::VM1(ap)),
                     )?
                     .expect("get transaction proof return none");
                 assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
@@ -255,8 +256,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     final_transaction_info_index,
                     final_transaction_info_id,
                     Some(event_index as u64),
-                    access_path.clone(),
-                    final_access_path.clone(),
+                    access_path.clone().map(|ap| MultiAccessPath::VM1(ap)),
+                    MultiAccessPath::VM1(final_access_path.clone().unwrap().clone()),
                     final_state_root_hash,
                 );
 

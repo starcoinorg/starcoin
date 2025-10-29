@@ -45,8 +45,8 @@ use starcoin_types::{
     transaction::{
         authenticator::{AccountPublicKey, AuthenticationKey, TransactionAuthenticator},
         legacy::RichTransactionInfo,
-        RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, Transaction,
-        TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload,
+        RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, StcRichTransactionInfo,
+        Transaction, TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload,
         TransactionStatus,
     },
     vm_error::AbortLocation,
@@ -75,6 +75,7 @@ use starcoin_vm_types::{
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
+    ops::Mul,
     str::FromStr,
 };
 pub use vm_status_translator::VmStatusExplainView;
@@ -1473,13 +1474,35 @@ pub struct StateWithProofView {
     pub account_state_proof: SparseMerkleProofView,
 }
 
-
 impl StateWithProofView {
-    pub fn into_state_proof(self) -> StateWithProof {
+    pub fn into_state_proof(self) -> MultiStateProof {
         self.into()
     }
 }
 
+impl From<StateWithProof> for StateWithProofView {
+    fn from(state_proof: StateWithProof) -> Self {
+        let state = state_proof.state.map(StrView);
+        Self {
+            state,
+            account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
+            account_proof: state_proof.proof.account_proof.into(),
+            account_state_proof: state_proof.proof.account_state_proof.into(),
+        }
+    }
+}
+
+impl From<StateWithProofView> for StateWithProof {
+    fn from(view: StateWithProofView) -> Self {
+        let state = view.state.map(|v| v.0);
+        let proof = StateProof::new(
+            view.account_state.map(|v| v.0),
+            view.account_proof.into(),
+            view.account_state_proof.into(),
+        );
+        Self::new(state, proof)
+    }
+}
 
 impl From<MultiStateProof> for StateWithProofView {
     fn from(state_proof: MultiStateProof) -> Self {
@@ -1488,22 +1511,27 @@ impl From<MultiStateProof> for StateWithProofView {
                 let state = state_with_proof.state.map(StrView);
                 Self {
                     state,
-                    account_state: state_with_proof.proof.account_state.map(|b| StrView(b.into())),
+                    account_state: state_with_proof
+                        .proof
+                        .account_state
+                        .map(|b| StrView(b.into())),
                     account_proof: state_with_proof.proof.account_proof.into(),
-                    account_state_proof: statestate_with_proof_proof.proof.account_state_proof.into(),
+                    account_state_proof: state_with_proof.proof.account_state_proof.into(),
                 }
             }
             MultiStateProof::VM2(state_with_proof) => {
                 let state = state_with_proof.state.map(StrView);
                 Self {
                     state,
-                    account_state: state_with_proof.proof.account_state.map(|b| StrView(b.into())),
+                    account_state: state_with_proof
+                        .proof
+                        .account_state
+                        .map(|b| StrView(b.into())),
                     account_proof: state_with_proof.proof.account_proof.into(),
                     account_state_proof: state_with_proof.proof.account_state_proof.into(),
                 }
             }
         }
-
     }
 }
 
@@ -1515,7 +1543,7 @@ impl From<StateWithProofView> for MultiStateProof {
             view.account_proof.into(),
             view.account_state_proof.into(),
         );
-        Self::new(state, proof)
+        Self::VM1(StateWithProof::new(state, proof))
     }
 }
 
@@ -1555,7 +1583,12 @@ impl From<StateWithTableItemProof> for StateWithTableItemProofView {
 
 impl From<StateWithTableItemProofView> for StateWithTableItemProof {
     fn from(view: StateWithTableItemProofView) -> Self {
-        let state_proof = (StateWithProof::from(view.state_proof.0), view.state_proof.1);
+        let state_proof = (
+            MultiStateProof::from(view.state_proof.0)
+                .to_v1()
+                .expect("this is muse be v1 state proof"),
+            view.state_proof.1,
+        );
         let table_handle_proof = (
             view.table_handle_proof.0.map(|v| v.0),
             SparseMerkleProof::from(view.table_handle_proof.1),
@@ -1628,14 +1661,14 @@ pub struct TransactionInfoWithProofView {
     pub final_state_proof: StateWithProofView,
 }
 
-
-
-
-
 impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
     fn from(origin: TransactionInfoWithProof) -> Self {
         Self {
-            transaction_info: origin.transaction_info.into(),
+            transaction_info: origin
+                .transaction_info
+                .to_v1()
+                .expect("this is must be v1 transaction info")
+                .into(),
             proof: origin.proof.into(),
             final_proof: origin.final_proof.into(),
             event_proof: origin.event_proof.map(Into::into),
@@ -1650,7 +1683,9 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
 
     fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
         Ok(Self {
-            transaction_info: view.transaction_info.try_into()?,
+            transaction_info: StcRichTransactionInfo::from(RichTransactionInfo::try_from(
+                view.transaction_info,
+            )?),
             proof: view.proof.into(),
             final_proof: view.final_proof.into(),
             event_proof: view.event_proof.map(TryInto::try_into).transpose()?,

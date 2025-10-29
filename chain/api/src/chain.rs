@@ -19,7 +19,6 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, StateWithProof as StateWithProof2};
-use starcoin_rpc_api::types::StateWithProofView;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::access_path::AccessPath;
@@ -55,6 +54,20 @@ impl MultiStateProof {
                     format_err!("invalid access_path, the proof is v2 but access_path is v1")
                 })?,
             ),
+        }
+    }
+
+    pub fn to_v1(self) -> Option<StateWithProof> {
+        match self {
+            Self::VM1(state_with_proof) => Some(state_with_proof),
+            _ => None,
+        }
+    }
+
+    pub fn to_v2(self) -> Option<StateWithProof2> {
+        match self {
+            Self::VM2(state_with_proof) => Some(state_with_proof),
+            _ => None,
         }
     }
 }

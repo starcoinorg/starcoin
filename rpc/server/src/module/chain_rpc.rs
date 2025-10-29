@@ -29,6 +29,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::{ContractEventInfo, StcContractEventInfo};
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator as MoveValueAnnotator2;
@@ -675,7 +676,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(Into::into),
+                    access_path.map(|access_path| MultiAccessPath::VM1(access_path.into())),
                 )
                 .await?
                 .map(Into::into))
@@ -699,7 +700,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(Into::into),
+                    access_path.map(|access_path| MultiAccessPath::VM1(access_path.into())),
                 )
                 .await?
                 .map(|proof| {
