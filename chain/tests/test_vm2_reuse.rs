@@ -4,11 +4,9 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_exec_merge::{global_witness_store, reset_global_witness_store_for_tests, ExecKey};
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_exec_merge::{
-    global_witness_store, reset_global_witness_store_for_tests, ExecKey,
-};
 use starcoin_vm2_chain::{reset_reuse_counters_for_test, reuse_counters_for_test};
 use starcoin_vm2_state_api::StateReaderExt;
 use starcoin_vm2_test_helper::build_transfer_from_association;
@@ -88,10 +86,8 @@ fn test_vm2_reuse_hits_and_reexec() -> Result<()> {
         "witness store should persist exec record for the first user transaction"
     );
 
-    let planned_txns = starcoin_vm2_chain::build_block_transactions(
-        block.transactions2(),
-        Some(metadata.clone()),
-    );
+    let planned_txns =
+        starcoin_vm2_chain::build_block_transactions(block.transactions2(), Some(metadata.clone()));
     for tx in planned_txns.iter() {
         let key = ExecKey {
             tx_hash: tx.id(),
@@ -229,11 +225,7 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
         .create_block(template, mock_chain.net().time_service().as_ref())?;
 
     mock_chain.apply(block.clone())?;
-    let first_state_root2 = mock_chain
-        .head()
-        .head_block()
-        .multi_state()
-        .state_root2();
+    let first_state_root2 = mock_chain.head().head_block().multi_state().state_root2();
 
     let red_blocks = mock_chain
         .head()
@@ -276,11 +268,7 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
         reexec_after_second
     );
 
-    let second_state_root2 = fork_chain
-        .head()
-        .head_block()
-        .multi_state()
-        .state_root2();
+    let second_state_root2 = fork_chain.head().head_block().multi_state().state_root2();
     assert_eq!(
         second_state_root2, first_state_root2,
         "state_root2 should be identical between full execution and selective reuse"

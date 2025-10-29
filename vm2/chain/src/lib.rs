@@ -19,7 +19,10 @@ use starcoin_vm2_types::transaction::{
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
-use starcoin_vm2_vm_types::state_store::TStateView;
+use starcoin_vm2_vm_types::state_store::{
+    state_key::{inner::StateKeyInner, StateKey},
+    TStateView,
+};
 use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
 // reuse imports
 use starcoin_exec_merge as exec_merge;
@@ -68,6 +71,32 @@ struct PlanOutcome {
 
 static TEST_REUSE_HITS: AtomicUsize = AtomicUsize::new(0);
 static TEST_REUSE_REEXEC: AtomicUsize = AtomicUsize::new(0);
+
+fn is_supported_state_key(key: &StateKey) -> bool {
+    matches!(key.inner(), StateKeyInner::AccessPath(_))
+}
+
+fn record_supported_for_reuse(rec: &ExecRecord) -> bool {
+    if !rec.table_infos.is_empty() {
+        return false;
+    }
+    if rec
+        .write_set
+        .iter()
+        .any(|(key, _)| !is_supported_state_key(key))
+    {
+        return false;
+    }
+    if let Some(reads) = rec.read_set.as_ref() {
+        if reads
+            .iter()
+            .any(|entry| !is_supported_state_key(&entry.key))
+        {
+            return false;
+        }
+    }
+    true
+}
 
 pub fn reset_reuse_counters_for_test() {
     TEST_REUSE_HITS.store(0, Ordering::Relaxed);
@@ -131,13 +160,16 @@ pub fn execute_transactions_with_reuse(
                 tx_hash: tx.id(),
                 pre_state_fingerprint: pre_fp,
             };
-            if let Some(rec) = store.get(&key) {
-                planned_records.push(Some(rec.clone()));
+            if let Some(mut rec) = store.get(&key) {
+                if !record_supported_for_reuse(&rec) {
+                    rec.read_set = None;
+                }
                 if rec.read_set.is_some() {
                     witness_hits_with_reads += 1;
                 }
                 witness_hits += 1;
-                plan_execs.push(rec);
+                plan_execs.push(rec.clone());
+                planned_records.push(Some(rec));
             } else {
                 plan_execs.push(ExecRecord {
                     tx_hash: tx.id(),
