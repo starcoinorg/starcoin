@@ -6,19 +6,20 @@
 
 //# block --author 0x1 --timestamp 86400000
 
-
 //# run --signers StarcoinAssociation
 script {
-    use starcoin_framework::coin;
-    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin::{get_stc_fa_metadata};
     use starcoin_framework::signer;
 
-    fun transfer_some_token_to_alice_and_bob(signer: signer) {
-        let balance = coin::balance<STC>(signer::address_of(&signer));
-        coin::transfer<STC>(&signer, @alice, balance / 4);
-        coin::transfer<STC>(&signer, @bob, balance / 4);
+    fun transfer_some_token_to_alice_and_bob(association: &signer) {
+        let stc_metadata = get_stc_fa_metadata();
+        let balance = primary_fungible_store::balance(signer::address_of(association), stc_metadata);
+        primary_fungible_store::transfer(association, stc_metadata, @alice, balance / 4);
+        primary_fungible_store::transfer(association, stc_metadata, @bob, balance / 4);
     }
 }
+
 //# run --signers alice
 script {
     use starcoin_framework::transaction_publish_option;
@@ -31,6 +32,7 @@ script {
         ); //ERR_NOT_AUTHORIZED
     }
 }
+
 //# run --signers alice
 script {
     use starcoin_framework::on_chain_config_dao;
@@ -53,21 +55,25 @@ script {
 
 //# run --signers bob
 script {
+    use std::signer;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::transaction_publish_option;
-    use starcoin_framework::coin;
     use starcoin_framework::on_chain_config_dao;
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::signer;
+    use starcoin_framework::starcoin_coin::{STC, get_stc_fa_metadata};
     use starcoin_framework::dao;
 
-    fun vote(signer: signer) {
-        let balance = coin::balance<STC>(signer::address_of(&signer));
-        let balance = coin::withdraw<STC>(&signer, balance / 2);
+    fun vote(bob: &signer) {
+        // let balance = coin::balance<STC>(signer::address_of(&signer));
+        // let balance = coin::withdraw<STC>(&signer, balance / 2);
+
+        let stc_metadata = get_stc_fa_metadata();
+        let balance = primary_fungible_store::balance(signer::address_of(bob), stc_metadata);
+
         dao::cast_vote<STC, on_chain_config_dao::OnChainConfigUpdate<transaction_publish_option::TransactionPublishOption>>(
-            &signer,
+            bob,
             @alice,
             0,
-            balance,
+            primary_fungible_store::withdraw(bob, stc_metadata, balance / 2),
             true
         );
     }
@@ -81,13 +87,13 @@ script {
 //# run --signers bob
 script {
     use std::signer;
-    use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::on_chain_config_dao;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
 
-    fun queue_proposal(signer: signer) {
+    fun queue_proposal(bob: &signer) {
         let state = dao::proposal_state<STC, on_chain_config_dao::OnChainConfigUpdate<transaction_publish_option::TransactionPublishOption>>(
             @alice,
             0
@@ -95,11 +101,12 @@ script {
         assert!(state == 4, (state as u64));
         {
             let token = dao::unstake_votes<STC, on_chain_config_dao::OnChainConfigUpdate<transaction_publish_option::TransactionPublishOption>>(
-                &signer,
+                bob,
                 @alice,
                 0
             );
-            coin::deposit(signer::address_of(&signer), token);
+            // coin::deposit(signer::address_of(&signer), token);
+            primary_fungible_store::deposit(signer::address_of(bob), token);
         };
         dao::queue_proposal_action<STC, on_chain_config_dao::OnChainConfigUpdate<transaction_publish_option::TransactionPublishOption>>(
             @alice,

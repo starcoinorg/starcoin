@@ -7,6 +7,10 @@
 //# run --signers Genesis
 
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -21,7 +25,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -32,6 +36,10 @@ script {
 
 
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -47,7 +55,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -56,6 +64,10 @@ script {
 
 //# run --signers Genesis
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -70,7 +82,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -79,6 +91,10 @@ script {
 
 //# run --signers Genesis
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -93,7 +109,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -103,7 +119,11 @@ script {
 //# run --signers Genesis
 // author account doesn't exist, process_block_reward() will create the account
 script {
+    use std::option::destroy_some;
     use std::vector;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
 
     fun process_block_reward(account: signer) {
@@ -122,7 +142,7 @@ script {
             current_reward,
             @0x1,
             vector::empty(),
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -132,6 +152,10 @@ script {
 //# run --signers Genesis
 // author account doesn't exist, process_block_reward() will create the account
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
 
     fun process_block_reward(account: signer) {
@@ -148,7 +172,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -157,6 +181,10 @@ script {
 
 //# run --signers Genesis
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -171,7 +199,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -181,6 +209,10 @@ script {
 //# run --signers Genesis
 
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -195,7 +227,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }
@@ -205,6 +237,10 @@ script {
 //# run --signers Genesis
 
 script {
+    use std::option::destroy_some;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::coin;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::block_reward;
     use starcoin_framework::vector;
 
@@ -219,7 +255,7 @@ script {
             current_reward,
             current_author,
             auth_key_vec,
-            starcoin_framework::coin::zero()
+            fungible_asset::zero(destroy_some(coin::paired_metadata<STC>()))
         );
     }
 }

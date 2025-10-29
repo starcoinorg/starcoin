@@ -19,9 +19,9 @@ dao_treasury_withdraw_proposal is a dao proposal for withdraw Token from Treasur
     -  [Function `execute_withdraw_proposal`](#@Specification_1_execute_withdraw_proposal)
 
 
-<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
+<pre><code><b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
@@ -244,7 +244,7 @@ The TreasuryWithdrawCapability is locked in TreasuryWithdrawDaoProposal, and onl
 This approach is not graceful, but restricts the operation to genesis accounts only, so there are no security issues either.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">withdraw_for_block_reward</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward: u128): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">withdraw_for_block_reward</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, reward: u128): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>
 </code></pre>
 
 
@@ -256,7 +256,7 @@ This approach is not graceful, but restricts the operation to genesis accounts o
 <pre><code><b>public</b> <b>fun</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">withdraw_for_block_reward</a>&lt;TokenT&gt;(
     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     reward: u128
-): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt; <b>acquires</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a> {
+): FungibleAsset <b>acquires</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>);
     <b>let</b> cap = <b>borrow_global_mut</b>&lt;<a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_WrappedWithdrawCapability">WrappedWithdrawCapability</a>&lt;TokenT&gt;&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>));
     <a href="treasury.md#0x1_treasury_withdraw_with_capability">treasury::withdraw_with_capability</a>(&<b>mut</b> cap.cap, reward)

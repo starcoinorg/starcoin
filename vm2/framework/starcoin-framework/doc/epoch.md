@@ -360,6 +360,8 @@ Initialization of the module.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a> | Entered "));
+
     // Timestamp::assert_genesis();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
@@ -385,6 +387,8 @@ Initialization of the module.
         },
     );
     <b>move_to</b>&lt;<a href="epoch.md#0x1_epoch_EpochData">EpochData</a>&gt;(<a href="account.md#0x1_account">account</a>, <a href="epoch.md#0x1_epoch_EpochData">EpochData</a> { uncles: 0, total_reward: 0, total_gas: 0, red_blocks: 0 });
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a> | Exited "));
 }
 </code></pre>
 
@@ -434,7 +438,7 @@ compute next block time_target using DAG-based algorithm
 
     <b>let</b> total_blue_count = blue_blocks + selected_count;
     <b>let</b> total_block_count = total_blue_count + red_blocks;
-	
+
     <b>let</b> expected_blue_count = (selected_count * (k - ratio)) / ratio;
     <b>let</b> average_time = duration / total_block_count;
 

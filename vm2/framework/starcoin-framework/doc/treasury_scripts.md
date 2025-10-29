@@ -16,8 +16,9 @@
     -  [Function `execute_withdraw_proposal`](#@Specification_0_execute_withdraw_proposal)
 
 
-<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal">0x1::dao_treasury_withdraw_proposal</a>;
+<pre><code><b>use</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal">0x1::dao_treasury_withdraw_proposal</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
+<b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_offer.md#0x1_stc_offer">0x1::stc_offer</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
@@ -54,7 +55,7 @@ Withdraw token from treasury and split the LinearWithdrawCapability.
     <b>let</b> (tokens, new_cap) = <a href="treasury.md#0x1_treasury_split_linear_withdraw_cap">treasury::split_linear_withdraw_cap</a>(&<b>mut</b> cap, amount);
 
     // 3. deposit
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), tokens);
+    <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit">primary_fungible_store::deposit</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), tokens);
 
     // 4. put or destroy key
     <b>if</b> (<a href="treasury.md#0x1_treasury_is_empty_linear_withdraw_capability">treasury::is_empty_linear_withdraw_capability</a>(&cap)) {
@@ -96,7 +97,7 @@ Withdraw token from treasury.
     <b>let</b> tokens = <a href="treasury.md#0x1_treasury_withdraw_with_linear_capability">treasury::withdraw_with_linear_capability</a>(&<b>mut</b> cap);
 
     // 3. deposit
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), tokens);
+    <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit">primary_fungible_store::deposit</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), tokens);
 
     // 4. put or destroy key
     <b>if</b> (<a href="treasury.md#0x1_treasury_is_empty_linear_withdraw_capability">treasury::is_empty_linear_withdraw_capability</a>(&cap)) {

@@ -1,10 +1,10 @@
 [dependencies]
 anyhow = { workspace = true }
-bech32 = { workspace = true }
 chrono = { default-features = false, features = ["clock"], workspace = true }
 hex = { workspace = true }
 log = { workspace = true }
-mirai-annotations = { workspace = true }
+sha3 = { workspace = true }
+
 num_enum = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
@@ -21,8 +21,7 @@ proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-gas-algebra = { path = "../framework/gas-algebra" }
-starcoin-gas-schedule = { path = "../framework/gas-schedule" }
-starcoin-gas-meter = { path = "../framework/gas-meter" }
+
 rustc-hash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
@@ -39,8 +38,8 @@ num-traits = { workspace = true }
 num-derive = { workspace = true }
 hashbrown = { workspace = true }
 arr_macro = { workspace = true }
-rayon = { workspace = true }
 starcoin-infallible = { workspace = true }
+
 
 [dev-dependencies]
 proptest = { workspace = true, features = ["std"] }

@@ -2,15 +2,14 @@
 module starcoin_framework::stc_block {
     use std::error;
     use std::vector;
+    use starcoin_framework::starcoin_coin;
+    use starcoin_framework::transaction_fee;
 
     use starcoin_framework::account;
     use starcoin_framework::block_reward;
     use starcoin_framework::chain_id;
-    use starcoin_framework::coin;
     use starcoin_framework::epoch;
     use starcoin_framework::event;
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
     use starcoin_std::debug;
@@ -28,9 +27,7 @@ module starcoin_framework::stc_block {
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 1006;
     const EBLOCK_NUMBER_MISMATCH: u64 = 1017;
-    //const ERROR_NO_HAVE_CHECKPOINT: u64 = 18;
-    //const ERROR_NOT_BLOCK_HEADER: u64 = 19;
-    //const ERROR_INTERVAL_TOO_LITTLE: u64 = 20;
+
 
     /// Block metadata struct.
     struct BlockMetadata has key {
@@ -121,7 +118,7 @@ module starcoin_framework::stc_block {
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
     public fun block_prologue(
-        account: signer,
+        framework: signer,
         parent_hash: vector<u8>,
         timestamp: u64,
         author: address,
@@ -136,7 +133,7 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
 
         // Can only be invoked by genesis account
-        system_addresses::assert_starcoin_framework(&account);
+        system_addresses::assert_starcoin_framework(&framework);
 
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
@@ -146,20 +143,15 @@ module starcoin_framework::stc_block {
         );
 
         // deal with previous block first.
-        let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
-        // clear cache
-        let _stale_cache = stc_transaction_fee::read_and_clear_payer_address();
+        let txn_fee = transaction_fee::withdraw_account_transaction_fees(
+            &framework,
+            starcoin_coin::get_stc_fa_metadata()
+        );
 
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
-        debug::print(&coin::value(&txn_fee));
-
-        // then deal with current block.
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
-        debug::print(&timestamp);
-        timestamp::update_global_time(&account, timestamp * 1000);
+        timestamp::update_global_time(&framework, timestamp * 1000);
 
         process_block_metadata(
-            &account,
+            &framework,
             parent_hash,
             author,
             timestamp,
@@ -169,18 +161,18 @@ module starcoin_framework::stc_block {
             red_blocks,
         );
 
-        let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used, red_blocks);
+        let reward = epoch::adjust_epoch(&framework, number, timestamp, uncles, parent_gas_used, red_blocks);
 
         // pass in previous block gas fees.
-        block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
+        block_reward::process_block_reward(&framework, number, reward, author, auth_key_vec, txn_fee);
 
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
-    public fun block_epilogue(account: signer) {
+    public fun block_epilogue(framework: &signer, txn_sender_addresses: vector<address>) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
-        system_addresses::assert_starcoin_framework(&account);
-        stc_transaction_fee::merge_fee_to_framework_account(&account);
+        system_addresses::assert_starcoin_framework(framework);
+        transaction_fee::merge_fee_to_framework_account(framework, txn_sender_addresses);
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }
 

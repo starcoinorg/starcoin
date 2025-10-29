@@ -39,7 +39,7 @@ fn native_print(
         let bytes = val.unpack()?.next().unwrap();
 
         debug!(
-            "{}",
+            "[framework] {}",
             std::str::from_utf8(&bytes.value_as::<Vec<u8>>()?).unwrap()
         );
     }

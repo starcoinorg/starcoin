@@ -13,7 +13,7 @@ module starcoin_framework::coin {
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, Metadata, MintRef, TransferRef};
     use starcoin_framework::guid;
-    use starcoin_framework::object::{Self, Object, object_address};
+    use starcoin_framework::object::{Self, Object, object_address, ConstructorRef};
     use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::system_addresses;
@@ -107,6 +107,9 @@ module starcoin_framework::coin {
 
     /// The coin decimal too long
     const ECOIN_COIN_DECIMAL_TOO_LARGE: u64 = 29;
+
+    /// No corresponding owner's rights
+    const ECOIN_COIN_CREATE_PAIR_NOT_OWNER: u64 = 29;
 
     //
     // Constants
@@ -276,8 +279,9 @@ module starcoin_framework::coin {
     #[view]
     /// Get the paired fungible asset metadata object of a coin type. If not exist, return option::none().
     public fun paired_metadata<CoinType>(): Option<Object<Metadata>> acquires CoinConversionMap {
-        if (exists<CoinConversionMap>(@starcoin_framework) && features::coin_to_fungible_asset_migration_feature_enabled(
-        )) {
+        if (exists<CoinConversionMap>(
+            @starcoin_framework
+        ) && features::coin_to_fungible_asset_migration_feature_enabled()) {
             let map = &borrow_global<CoinConversionMap>(@starcoin_framework).coin_to_fungible_asset_map;
             let type = type_info::type_of<CoinType>();
             if (table::contains(map, type)) {
@@ -302,6 +306,23 @@ module starcoin_framework::coin {
     ) acquires CoinConversionMap, CoinInfo {
         system_addresses::assert_starcoin_framework(starcoin_framework);
         create_and_return_paired_metadata_if_not_exist<CoinType>(true);
+    }
+
+    /// Make type pair without initalize coin
+    public fun make_pair_coin_type_with_metadata<CoinType>(
+        constrcut_ref: &ConstructorRef,
+        metadata_obj: Object<Metadata>
+    ) acquires CoinConversionMap {
+        assert!(exists<CoinConversionMap>(@starcoin_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
+        assert!(
+            object::address_from_constructor_ref(constrcut_ref) == object_address(&metadata_obj),
+            error::unauthenticated(ECOIN_COIN_CREATE_PAIR_NOT_OWNER)
+        );
+
+        let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
+        let type = type_info::type_of<CoinType>();
+
+        table::add(&mut map.coin_to_fungible_asset_map, type, metadata_obj);
     }
 
     inline fun is_stc<CoinType>(): bool {
@@ -331,7 +352,6 @@ module starcoin_framework::coin {
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
-
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,
                 option::none(),
@@ -668,10 +688,16 @@ module starcoin_framework::coin {
                 account_addr,
                 option::destroy_some(metadata)
             )) {
-                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance"));
+                debug::print(
+                    &std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance")
+                );
                 (coin_balance, amount - coin_balance)
             } else {
-                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Abort with primary_fungible_store check not valid"));
+                debug::print(
+                    &std::string::utf8(
+                        b"coin::calculate_amount_to_withdraw | Abort with primary_fungible_store check not valid"
+                    )
+                );
                 abort error::invalid_argument(EINSUFFICIENT_BALANCE)
             }
         }
@@ -803,20 +829,15 @@ module starcoin_framework::coin {
     #[view]
     /// Returns `true` if `account_addr` is registered to receive `CoinType`.
     public fun is_account_registered<CoinType>(account_addr: address): bool acquires CoinConversionMap {
-        debug::print(&std::string::utf8(b"coin::is_account_registered | entered"));
         assert!(is_coin_initialized<CoinType>(), error::invalid_argument(ECOIN_INFO_NOT_PUBLISHED));
-        let ret = if (exists<CoinStore<CoinType>>(account_addr)) {
-            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore exist"));
+        if (exists<CoinStore<CoinType>>(account_addr)) {
             true
         } else {
-            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore not exist, convert to primary fungible store"));
             let paired_metadata_opt = paired_metadata<CoinType>();
             (option::is_some(
                 &paired_metadata_opt
             ) && migrated_primary_fungible_store_exists(account_addr, option::destroy_some(paired_metadata_opt)))
-        };
-        debug::print(&std::string::utf8(b"coin::is_account_registered | exited"));
-        ret
+        }
     }
 
     #[view]
@@ -2208,6 +2229,8 @@ module starcoin_framework::coin {
         aaron: &signer,
         bob: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore {
+        use starcoin_framework::features;
+
         let account_addr = signer::address_of(account);
         let aaron_addr = signer::address_of(aaron);
         let bob_addr = signer::address_of(bob);
@@ -2233,25 +2256,20 @@ module starcoin_framework::coin {
         assert!(!coin_store_exists<FakeMoney>(account_addr), 0);
         assert!(is_account_registered<FakeMoney>(account_addr), 0);
 
-        debug::print(&std::string::utf8(b"test_is_account_registered | 1"));
-
         // Deposit FA to bob to created primary fungible store without `MigrationFlag`.
         primary_fungible_store::deposit(bob_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
         assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
 
-        debug::print(&std::string::utf8(b"test_is_account_registered | 2"));
+        if (!features::operations_default_to_fa_stc_store_enabled()) {
+            register<FakeMoney>(bob);
+            assert!(coin_store_exists<FakeMoney>(bob_addr), 0);
 
-        register<FakeMoney>(bob);
-        assert!(coin_store_exists<FakeMoney>(bob_addr), 0);
+            maybe_convert_to_fungible_store<FakeMoney>(bob_addr);
+            assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
 
-        debug::print(&std::string::utf8(b"test_is_account_registered | 3"));
-        maybe_convert_to_fungible_store<FakeMoney>(bob_addr);
-        assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
-        debug::print(&std::string::utf8(b"test_is_account_registered | 4"));
-
-        register<FakeMoney>(bob);
-        assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
-        debug::print(&std::string::utf8(b"test_is_account_registered | 5"));
+            register<FakeMoney>(bob);
+            assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
+        };
 
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
@@ -2273,13 +2291,18 @@ module starcoin_framework::coin {
         assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
         assert!(balance<FakeMoney>(account_addr) == 100, 0);
         let coin = withdraw<FakeMoney>(account, 50);
-        assert!(!migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
-        maybe_convert_to_fungible_store<FakeMoney>(account_addr);
-        assert!(migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
-        deposit(account_addr, coin);
-        assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
-        assert!(balance<FakeMoney>(account_addr) == 100, 0);
 
+        if (!features::operations_default_to_fa_stc_store_enabled()) {
+            assert!(!migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
+            maybe_convert_to_fungible_store<FakeMoney>(account_addr);
+            assert!(migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
+
+            deposit(account_addr, coin);
+            assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
+            assert!(balance<FakeMoney>(account_addr) == 100, 0);
+        } else {
+            deposit(account_addr, coin);
+        };
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
             freeze_cap,
