@@ -65,8 +65,8 @@ struct AccountStateObject {
     //TODO if use RefCell at here, compile error for ActorRef async interface
     // the trait `std::marker::Sync` is not implemented for AccountStateObject
     // refactor AccountStateObject to a readonly object.
-    code_tree: Mutex<Option<StateTree<ModuleName>>>,
-    resource_tree: Mutex<StateTree<StructTag>>,
+    code_tree: RwLock<Option<StateTree<ModuleName>>>,
+    resource_tree: RwLock<StateTree<StructTag>>,
     store: Arc<dyn StateNodeStore>,
 }
 
@@ -79,8 +79,8 @@ impl AccountStateObject {
             StateTree::<StructTag>::new(store.clone(), Some(account_state.resource_root()));
 
         Self {
-            code_tree: Mutex::new(code_tree),
-            resource_tree: Mutex::new(resource_tree),
+            code_tree: RwLock::new(code_tree),
+            resource_tree: RwLock::new(resource_tree),
             store,
         }
     }
@@ -88,8 +88,8 @@ impl AccountStateObject {
     pub fn empty_account(store: Arc<dyn StateNodeStore>) -> Self {
         let resource_tree = StateTree::<StructTag>::new(store.clone(), None);
         Self {
-            code_tree: Mutex::new(None),
-            resource_tree: Mutex::new(resource_tree),
+            code_tree: RwLock::new(None),
+            resource_tree: RwLock::new(resource_tree),
             store,
         }
     }
@@ -98,12 +98,12 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get(module_name))
                 .transpose()?
                 .flatten()),
-            DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
+            DataPath::Resource(struct_tag) => self.resource_tree.read().get(struct_tag),
         }
     }
 
@@ -116,30 +116,30 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .lock()
+                .read()
                 .as_ref()
                 .map(|tree| tree.get_with_proof(module_name))
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
-            DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
+            DataPath::Resource(struct_tag) => self.resource_tree.read().get_with_proof(struct_tag),
         }
     }
 
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
         match data_path {
             DataPath::Code(module_name) => {
-                if self.code_tree.lock().is_none() {
-                    *self.code_tree.lock() =
+                if self.code_tree.read().is_none() {
+                    *self.code_tree.write() =
                         Some(StateTree::<ModuleName>::new(self.store.clone(), None));
                 }
                 self.code_tree
-                    .lock()
+                    .write()
                     .as_ref()
                     .expect("state tree must exist after set.")
                     .put(module_name, value);
             }
             DataPath::Resource(struct_tag) => {
-                self.resource_tree.lock().put(struct_tag, value);
+                self.resource_tree.write().put(struct_tag, value);
             }
         }
     }
@@ -151,15 +151,15 @@ impl AccountStateObject {
         let struct_tag = data_path
             .as_struct_tag()
             .expect("DataPath must been struct tag at here.");
-        self.resource_tree.lock().remove(struct_tag);
+        self.resource_tree.write().remove(struct_tag);
         Ok(())
     }
 
     pub fn is_dirty(&self) -> bool {
-        if self.resource_tree.lock().is_dirty() {
+        if self.resource_tree.read().is_dirty() {
             return true;
         }
-        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+        if let Some(code_tree) = self.code_tree.read().as_ref() {
             if code_tree.is_dirty() {
                 return true;
             }
@@ -169,7 +169,7 @@ impl AccountStateObject {
 
     pub fn commit(&self) -> Result<AccountState> {
         {
-            let code_tree = self.code_tree.lock();
+            let code_tree = self.code_tree.write();
             if let Some(code_tree) = code_tree.as_ref() {
                 if code_tree.is_dirty() {
                     code_tree.commit()?;
@@ -177,7 +177,7 @@ impl AccountStateObject {
             }
         }
         {
-            let resource_tree = self.resource_tree.lock();
+            let resource_tree = self.resource_tree.write();
             if resource_tree.is_dirty() {
                 resource_tree.commit()?;
             }
@@ -186,8 +186,8 @@ impl AccountStateObject {
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.resource_tree.lock().flush()?;
-        if let Some(code_tree) = self.code_tree.lock().as_ref() {
+        self.resource_tree.write().flush()?;
+        if let Some(code_tree) = self.code_tree.write().as_ref() {
             code_tree.flush()?;
         }
 
@@ -197,16 +197,16 @@ impl AccountStateObject {
     fn to_state_set(&self) -> Result<AccountStateSet> {
         let code_root = self
             .code_tree
-            .lock()
+            .read()
             .as_ref()
             .map(|tree| tree.dump())
             .transpose()?;
-        let resource_root = self.resource_tree.lock().dump()?;
+        let resource_root = self.resource_tree.read().dump()?;
         Ok(AccountStateSet::new(vec![code_root, Some(resource_root)]))
     }
     fn to_state(&self) -> AccountState {
-        let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
-        let resource_root = self.resource_tree.lock().root_hash();
+        let code_root = self.code_tree.read().as_ref().map(|tree| tree.root_hash());
+        let resource_root = self.resource_tree.read().root_hash();
         AccountState::new(code_root, resource_root)
     }
 }
@@ -770,7 +770,7 @@ impl ChainStateWriter for ChainStateDB {
 /// TableHandle's SMT Save (table.key, table.value)
 struct TableHandleStateObject {
     _handle: TableHandle,
-    state_tree: Mutex<StateTree<Vec<u8>>>,
+    state_tree: RwLock<StateTree<Vec<u8>>>,
 }
 
 impl TableHandleStateObject {
@@ -778,20 +778,20 @@ impl TableHandleStateObject {
         let state_tree = StateTree::<Vec<u8>>::new(store.clone(), Some(root));
         Self {
             _handle,
-            state_tree: Mutex::new(state_tree),
+            state_tree: RwLock::new(state_tree),
         }
     }
 
     pub fn set(&self, key: Vec<u8>, value: Vec<u8>) {
-        self.state_tree.lock().put(key, value)
+        self.state_tree.write().put(key, value)
     }
 
     pub fn remove(&self, key: &Vec<u8>) {
-        self.state_tree.lock().remove(key)
+        self.state_tree.write().remove(key)
     }
 
     pub fn commit(&self) -> Result<()> {
-        let state_tree = self.state_tree.lock();
+        let state_tree = self.state_tree.write();
         if state_tree.is_dirty() {
             state_tree.commit()?;
         }
@@ -799,20 +799,20 @@ impl TableHandleStateObject {
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.state_tree.lock().flush()?;
+        self.state_tree.write().flush()?;
         Ok(())
     }
 
     pub fn root_hash(&self) -> HashValue {
-        self.state_tree.lock().root_hash()
+        self.state_tree.read().root_hash()
     }
 
     pub fn get(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
-        self.state_tree.lock().get(key)
+        self.state_tree.read().get(key)
     }
 
     pub fn get_with_proof(&self, key: &Vec<u8>) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
-        self.state_tree.lock().get_with_proof(key)
+        self.state_tree.read().get_with_proof(key)
     }
 }
 
