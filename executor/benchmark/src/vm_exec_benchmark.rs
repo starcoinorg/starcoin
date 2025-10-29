@@ -77,10 +77,10 @@ impl TransactionGenerator {
 
             let txn = transaction_builder2::create_signed_txn_with_association_account(
                 payload,
-                sequence_number, // The first transaction from the association account should have sequence number 0
+                sequence_number as u64, // The first transaction from the association account should have sequence number 0
                 DEFAULT_MAX_GAS_AMOUNT,
                 1,
-                self.net.time_service().now_secs() + sequence_number,
+                self.net.time_service().now_secs() + sequence_number as u64,
                 self.net.chain_id().id().into(),
                 self.net.genesis_config2(),
             );
