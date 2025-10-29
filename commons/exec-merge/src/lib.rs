@@ -118,6 +118,10 @@ impl LruWitnessStore {
             cache: Cache::new(capacity),
         }
     }
+
+    pub fn clear(&self) {
+        self.cache.clear();
+    }
 }
 
 impl WitnessStore for LruWitnessStore {
@@ -270,6 +274,11 @@ static GLOBAL_WITNESS_STORE: Lazy<Arc<LruWitnessStore>> = Lazy::new(|| {
 
 pub fn global_witness_store() -> Arc<dyn WitnessStore> {
     GLOBAL_WITNESS_STORE.clone() as Arc<dyn WitnessStore>
+}
+
+/// Clears the global witness cache. Intended for test environments.
+pub fn reset_global_witness_store_for_tests() {
+    GLOBAL_WITNESS_STORE.clear();
 }
 
 pub fn build_prefix_from_writes(writes: &[(StateKey, WriteOp)]) -> PrefixWrites {

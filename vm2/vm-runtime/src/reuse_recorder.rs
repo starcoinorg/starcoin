@@ -1,3 +1,4 @@
+use starcoin_crypto::hash::CryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
@@ -70,7 +71,7 @@ pub fn record_read(state_key: &StateKey, from_storage: bool, value: Option<&Stat
     RECORDER.with(|cell| {
         if let Some(rec) = cell.borrow_mut().as_mut() {
             let (existed, value_hash) = match value {
-                Some(val) => (true, HashValue::sha3_256_of(val.bytes().as_ref())),
+                Some(val) => (true, val.hash()),
                 None => (false, HashValue::zero()),
             };
 

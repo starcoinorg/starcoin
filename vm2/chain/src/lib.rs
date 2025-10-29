@@ -25,6 +25,8 @@ use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
 use starcoin_exec_merge as exec_merge;
 use starcoin_exec_merge::{ExecKey, ExecRecord, ReuseOpts, StateViewExt};
 use starcoin_vm_runtime::reuse_recorder;
+use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -62,6 +64,21 @@ struct PlanOutcome {
     reused_indices: Vec<usize>,
     reexec_indices: Vec<usize>,
     records: Vec<Option<ExecRecord>>,
+}
+
+static TEST_REUSE_HITS: AtomicUsize = AtomicUsize::new(0);
+static TEST_REUSE_REEXEC: AtomicUsize = AtomicUsize::new(0);
+
+pub fn reset_reuse_counters_for_test() {
+    TEST_REUSE_HITS.store(0, Ordering::Relaxed);
+    TEST_REUSE_REEXEC.store(0, Ordering::Relaxed);
+}
+
+pub fn reuse_counters_for_test() -> (usize, usize) {
+    (
+        TEST_REUSE_HITS.load(Ordering::Relaxed),
+        TEST_REUSE_REEXEC.load(Ordering::Relaxed),
+    )
 }
 
 pub fn execute_transactions(
@@ -196,6 +213,8 @@ pub fn execute_transactions_with_reuse(
     };
 
     if let Some(plan) = plan_outcome {
+        TEST_REUSE_HITS.fetch_add(plan.stats.reused, Ordering::Relaxed);
+        TEST_REUSE_REEXEC.fetch_add(plan.stats.reexec, Ordering::Relaxed);
         let result = execute_with_plan(
             statedb,
             &transactions,
@@ -303,7 +322,28 @@ fn execute_full_execution(
         store.put(rec);
     }
 
+    TEST_REUSE_REEXEC.fetch_add(executed.txn_infos.len(), Ordering::Relaxed);
+
     Ok(executed)
+}
+
+fn apply_pending_reuse_writes(
+    statedb: &ChainStateDB,
+    pending: &mut WriteSetMut,
+) -> Result<(), BlockExecutorError> {
+    if pending.is_empty() {
+        return Ok(());
+    }
+
+    let mut to_apply = WriteSetMut::default();
+    std::mem::swap(&mut to_apply, pending);
+    let frozen = to_apply
+        .freeze()
+        .map_err(BlockExecutorError::BlockChainStateErr)?;
+    statedb
+        .apply_write_set(frozen)
+        .map_err(BlockExecutorError::BlockChainStateErr)?;
+    Ok(())
 }
 
 fn execute_with_plan(
@@ -320,30 +360,43 @@ fn execute_with_plan(
     let mut write_sets: Vec<WriteSet> = Vec::with_capacity(transactions.len());
     let mut remaining_gas = gas_limit;
     let last_index = transactions.len().saturating_sub(1);
+    let reused_indices: HashSet<usize> = plan.reused_indices.iter().copied().collect();
+    let mut pending_reuse_writes = WriteSetMut::default();
 
     for (idx, txn) in transactions.iter().enumerate() {
         let tx_hash = txn.id();
+        let should_commit = !transactions.is_empty() && (idx == 0 || idx == last_index);
         let mut reused = false;
 
-        if let Some(rec) = plan.records.get(idx).and_then(|r| r.as_ref()) {
-            if rec.status_ok {
-                if let Some(status) = rec.status.clone() {
-                    if matches!(status, KeptVMStatus::Executed) {
-                        if let Ok(ws) = WriteSetMut::new(rec.write_set.clone()).freeze() {
-                            let ws_clone = ws.clone();
-                            statedb
-                                .apply_write_set(ws)
+        if reused_indices.contains(&idx) {
+            if let Some(rec) = plan.records.get(idx).and_then(|r| r.as_ref()) {
+                if rec.status_ok {
+                    if let Some(status) = rec.status.clone() {
+                        if matches!(status, KeptVMStatus::Executed) {
+                            let write_entries = rec.write_set.clone();
+                            let ws_for_result = WriteSetMut::new(write_entries.clone())
+                                .freeze()
                                 .map_err(BlockExecutorError::BlockChainStateErr)?;
-                            let txn_state_root =
-                                if transactions.len() > 0 && (idx == last_index || idx == 0) {
-                                    Some(
-                                        statedb
-                                            .commit()
-                                            .map_err(BlockExecutorError::BlockChainStateErr)?,
-                                    )
-                                } else {
-                                    None
-                                };
+
+                            pending_reuse_writes.extend(write_entries);
+
+                            let next_idx = idx + 1;
+                            let need_apply_before_next = next_idx < transactions.len()
+                                && !reused_indices.contains(&next_idx);
+                            if need_apply_before_next || should_commit {
+                                apply_pending_reuse_writes(statedb, &mut pending_reuse_writes)?;
+                            }
+
+                            let txn_state_root = if should_commit {
+                                Some(
+                                    statedb
+                                        .commit()
+                                        .map_err(BlockExecutorError::BlockChainStateErr)?,
+                                )
+                            } else {
+                                None
+                            };
+
                             let events = rec.events.clone();
                             let txn_info = TransactionInfo::new(
                                 tx_hash,
@@ -352,9 +405,10 @@ fn execute_with_plan(
                                 rec.gas,
                                 status.clone(),
                             );
+
                             txn_infos.push(txn_info);
                             txn_events.push(events);
-                            write_sets.push(ws_clone);
+                            write_sets.push(ws_for_result);
                             remaining_gas = remaining_gas.saturating_sub(rec.gas);
                             reused = true;
                         }
@@ -365,6 +419,10 @@ fn execute_with_plan(
 
         if reused {
             continue;
+        }
+
+        if !pending_reuse_writes.is_empty() {
+            apply_pending_reuse_writes(statedb, &mut pending_reuse_writes)?;
         }
 
         reuse_recorder::start();
@@ -401,7 +459,7 @@ fn execute_with_plan(
                 statedb
                     .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
-                let txn_state_root = if transactions.len() > 0 && (idx == last_index || idx == 0) {
+                let txn_state_root = if should_commit {
                     Some(
                         statedb
                             .commit()
@@ -449,6 +507,9 @@ fn execute_with_plan(
     executed.txn_infos = txn_infos;
     executed.txn_events = txn_events;
     executed.write_sets = write_sets;
+    if !pending_reuse_writes.is_empty() {
+        apply_pending_reuse_writes(statedb, &mut pending_reuse_writes)?;
+    }
     executed.state_root = statedb.state_root();
 
     Ok(executed)
