@@ -59,7 +59,7 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
         ("std", "0x1"),
         ("starcoin_std", "0x1"),
         ("starcoin_framework", "0x1"),
-        ("starcoin_fungible_asset", "0x1"),
+        ("starcoin_fungible_asset", "0xA"),
         ("starcoin_token", "0x1"),
         ("starcoin_token_objects", "0x1"),
         ("core_resources", "0xA550C18"),

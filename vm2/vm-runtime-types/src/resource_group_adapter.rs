@@ -240,6 +240,7 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
         if let Some(group_view) = self.maybe_resource_group_view {
             return group_view.get_resource_from_group(group_key, resource_tag, maybe_layout);
         }
+        // info!("get resource {:?} from group {:?}", resource_tag, group_key);
         self.load_to_cache(group_key)?;
         Ok(self
             .group_cache

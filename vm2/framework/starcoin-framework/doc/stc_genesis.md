@@ -6,12 +6,13 @@
 The module for init Genesis
 
 
+-  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_stc_genesis_initialize)
 -  [Function `initialize_versions`](#0x1_stc_genesis_initialize_versions)
 -  [Function `initialize_stc`](#0x1_stc_genesis_initialize_stc)
+-  [Function `initialize_dao`](#0x1_stc_genesis_initialize_dao)
 -  [Function `initialize_stc_governance_allocation`](#0x1_stc_genesis_initialize_stc_governance_allocation)
--  [Function `initialize_for_unit_tests`](#0x1_stc_genesis_initialize_for_unit_tests)
--  [Specification](#@Specification_0)
+-  [Specification](#@Specification_1)
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
@@ -28,15 +29,17 @@ The module for init Genesis
 <b>use</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal">0x1::dao_upgrade_module_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
+<b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="oracle_stc_usd.md#0x1_oracle_stc_usd">0x1::oracle_stc_usd</a>;
+<b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="stc_block.md#0x1_stc_block">0x1::stc_block</a>;
 <b>use</b> <a href="stc_language_version.md#0x1_stc_language_version">0x1::stc_language_version</a>;
-<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
 <b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
 <b>use</b> <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config">0x1::stc_transaction_timeout_config</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
@@ -44,10 +47,25 @@ The module for init Genesis
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
+<b>use</b> <a href="transaction_fee.md#0x1_transaction_fee">0x1::transaction_fee</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 <b>use</b> <a href="vm_config.md#0x1_vm_config">0x1::vm_config</a>;
+</code></pre>
+
+
+
+<a id="@Constants_0"></a>
+
+## Constants
+
+
+<a id="0x1_stc_genesis_ERR_INITIALIZE_STC_AMOUNT_ERROR"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_genesis.md#0x1_stc_genesis_ERR_INITIALIZE_STC_AMOUNT_ERROR">ERR_INITIALIZE_STC_AMOUNT_ERROR</a>: u64 = 1;
 </code></pre>
 
 
@@ -130,12 +148,10 @@ The module for init Genesis
     // Init <b>global</b> time
     <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account, genesis_timestamp * 1000);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="chain_id.md#0x1_chain_id">chain_id</a>: "));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="chain_id.md#0x1_chain_id">chain_id</a>);
     <a href="chain_id.md#0x1_chain_id_initialize">chain_id::initialize</a>(&starcoin_framework_account, <a href="chain_id.md#0x1_chain_id">chain_id</a>);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a> "));
     <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a>(&starcoin_framework_account, strategy);
+
     <a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a>(&starcoin_framework_account, parent_hash);
 
     <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option_initialize">transaction_publish_option::initialize</a>(
@@ -170,7 +186,6 @@ The module for init Genesis
     );
 
     <a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a>(&starcoin_framework_account);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="epoch.md#0x1_epoch">epoch</a> initialized "));
 
     // stdlib <b>use</b> two phase upgrade strategy.
     <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a>(
@@ -179,20 +194,22 @@ The module for init Genesis
         <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(0u64),
     );
 
-    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="block_reward.md#0x1_block_reward">block_reward</a> initialized "));
-
-    // Initliaze STC
+    // Initliaze STC registration
     <b>let</b> total_supply_coin = <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a>(
         &starcoin_framework_account,
-        total_stc_amount,
+        total_stc_amount
+    );
+
+    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
+
+    // Init DAO configuration
+    <a href="stc_genesis.md#0x1_stc_genesis_initialize_dao">Self::initialize_dao</a>(
+        &starcoin_framework_account,
         voting_delay,
         voting_period,
         voting_quorum_rate,
-        min_action_delay
+        min_action_delay,
     );
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
 
     // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
@@ -206,9 +223,7 @@ The module for init Genesis
         time_mint_stc_period,
     );
 
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a>(&starcoin_framework_account);
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">stc_transaction_fee</a> initialized "));
+    <a href="transaction_fee.md#0x1_transaction_fee_initialize">transaction_fee::initialize</a>(&starcoin_framework_account);
 
     // Only test/dev network set genesis auth key.
     <b>if</b> (!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&genesis_auth_key) && (<a href="stc_util.md#0x1_stc_util_is_net_dev">stc_util::is_net_dev</a>() || <a href="stc_util.md#0x1_stc_util_is_net_test">stc_util::is_net_test</a>())) {
@@ -290,7 +305,7 @@ Then we can initialize the treasury.
 The treasury will mint the total_stc_amount to the treasury.
 
 
-<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">initialize_stc</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, total_stc_amount: u128, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">initialize_stc</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, total_stc_amount: u128): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>
 </code></pre>
 
 
@@ -302,26 +317,57 @@ The treasury will mint the total_stc_amount to the treasury.
 <pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">initialize_stc</a>(
     starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     total_stc_amount: u128,
+): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">stc_genesis::initialize_stc</a> | Entered"));
+
+    <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
+    <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
+    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
+
+    <b>let</b> (mint_ref, mint_ref_receipt) = <a href="coin.md#0x1_coin_get_paired_mint_ref">coin::get_paired_mint_ref</a>(&mint_cap);
+    <b>let</b> fa_stc = <a href="fungible_asset.md#0x1_fungible_asset_mint">fungible_asset::mint</a>(&mint_ref, (total_stc_amount <b>as</b> u64));
+    <a href="coin.md#0x1_coin_return_paired_mint_ref">coin::return_paired_mint_ref</a>(mint_ref, mint_ref_receipt);
+
+    <a href="coin.md#0x1_coin_destroy_mint_cap">coin::destroy_mint_cap</a>(mint_cap);
+    <a href="coin.md#0x1_coin_destroy_burn_cap">coin::destroy_burn_cap</a>(burn_cap);
+
+    <b>assert</b>!(
+        (<a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&fa_stc) <b>as</b> u128) == total_stc_amount,
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="stc_genesis.md#0x1_stc_genesis_ERR_INITIALIZE_STC_AMOUNT_ERROR">ERR_INITIALIZE_STC_AMOUNT_ERROR</a>)
+    );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">stc_genesis::initialize_stc</a> | Exited"));
+    fa_stc
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_stc_genesis_initialize_dao"></a>
+
+## Function `initialize_dao`
+
+
+
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_dao">initialize_dao</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_dao">initialize_dao</a>(
+    starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     voting_delay: u64,
     voting_period: u64,
     voting_quorum_rate: u8,
     min_action_delay: u64
-): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt; {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
-
-    <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
-    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
-
-    <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
-    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
-
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>"));
-
-    <b>let</b> total_stc_coin = <a href="coin.md#0x1_coin_mint">coin::mint</a>((total_stc_amount <b>as</b> u64), &mint_cap);
-
-    // Destroy mint capability and burn cap <b>to</b> ensure constant supply for STC
-    <a href="coin.md#0x1_coin_destroy_mint_cap">coin::destroy_mint_cap</a>(mint_cap);
-    <a href="coin.md#0x1_coin_destroy_burn_cap">coin::destroy_burn_cap</a>(burn_cap);
+) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_dao">stc_genesis::initialize_dao</a> | Entered "));
 
     <a href="dao.md#0x1_dao_plugin">dao::plugin</a>&lt;STC&gt;(
         starcoin_framework,
@@ -330,15 +376,11 @@ The treasury will mint the total_stc_amount to the treasury.
         voting_quorum_rate,
         min_action_delay,
     );
-
     <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">dao_modify_config_proposal::plugin</a>&lt;STC&gt;(starcoin_framework);
 
-    <b>let</b> upgrade_plan_cap =
-        <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_extract_submit_upgrade_plan_cap">stc_transaction_package_validation::extract_submit_upgrade_plan_cap</a>(starcoin_framework);
+
+    <b>let</b> upgrade_plan_cap = <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_extract_submit_upgrade_plan_cap">stc_transaction_package_validation::extract_submit_upgrade_plan_cap</a>(starcoin_framework);
     <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_plugin">dao_upgrade_module_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, upgrade_plan_cap);
-
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">stc_genesis::initialize_stc</a> | plugin upgrade cap "));
 
     // the following configurations are gov-ed by Dao.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option_TransactionPublishOption">transaction_publish_option::TransactionPublishOption</a>&gt;(starcoin_framework);
@@ -347,10 +389,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_TransactionTimeoutConfig">stc_transaction_timeout_config::TransactionTimeoutConfig</a>&gt;(starcoin_framework);
 
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
-
-    total_stc_coin
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_dao">stc_genesis::initialize_dao</a> | Exited"));
 }
 </code></pre>
 
@@ -367,7 +406,7 @@ Overall governance allocation strategy:
 2. <code>time_mint_stc_amount</code> of the total supply is allocated to the Association linearly over <code>time_mint_stc_period</code> blocks.
 
 
-<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">initialize_stc_governance_allocation</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resource_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, total_supply_stc: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64)
+<pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">initialize_stc_governance_allocation</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resource_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, total_supply_stc: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64)
 </code></pre>
 
 
@@ -379,12 +418,14 @@ Overall governance allocation strategy:
 <pre><code><b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">initialize_stc_governance_allocation</a>(
     starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     core_resource_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    total_supply_stc: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;,
+    total_supply_stc: FungibleAsset,
     pre_mine_stc_amount: u128,
     time_mint_stc_amount: u128,
     time_mint_stc_period: u64,
 ) {
-    <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">stc_genesis::initialize_stc_governance_allocation</a> | Entered"));
+
+    <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>&lt;STC&gt;(starcoin_framework, total_supply_stc);
 
     <b>if</b> (pre_mine_stc_amount &gt; 0) {
         <b>let</b> core_resource_address = <a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">system_addresses::get_core_resource_address</a>();
@@ -392,7 +433,7 @@ Overall governance allocation strategy:
             &<b>mut</b> treasury_withdraw_cap,
             pre_mine_stc_amount
         );
-        <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(core_resource_address, stc);
+        <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit">primary_fungible_store::deposit</a>(core_resource_address, stc);
     };
     <b>if</b> (time_mint_stc_amount &gt; 0) {
         <b>let</b> liner_withdraw_cap = <a href="treasury.md#0x1_treasury_issue_linear_withdraw_capability">treasury::issue_linear_withdraw_capability</a>&lt;STC&gt;(
@@ -403,6 +444,8 @@ Overall governance allocation strategy:
         <a href="treasury.md#0x1_treasury_add_linear_withdraw_capability">treasury::add_linear_withdraw_capability</a>(core_resource_account, liner_withdraw_cap);
     };
     <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_plugin">dao_treasury_withdraw_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, treasury_withdraw_cap);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">stc_genesis::initialize_stc_governance_allocation</a> | Exited"));
 }
 </code></pre>
 
@@ -410,111 +453,7 @@ Overall governance allocation strategy:
 
 </details>
 
-<a id="0x1_stc_genesis_initialize_for_unit_tests"></a>
-
-## Function `initialize_for_unit_tests`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_for_unit_tests">initialize_for_unit_tests</a>()
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_for_unit_tests">initialize_for_unit_tests</a>() {
-    <b>let</b> stdlib_version: u64 = 6;
-    <b>let</b> reward_delay: u64 = 7;
-    <b>let</b> total_stc_amount: u128 = 3185136000000000000u128;
-    <b>let</b> pre_mine_stc_amount: u128 = 159256800000000000u128;
-    <b>let</b> time_mint_stc_amount: u128 = (85043130u128 * 3u128 + 74213670u128 * 3u128) * 1000000000u128;
-    <b>let</b> time_mint_stc_period: u64 = 1000000000;
-
-    <b>let</b> parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8 = 255;
-    <b>let</b> genesis_timestamp: u64 = 0;
-
-    //consensus config
-    <b>let</b> uncle_rate_target: u64 = 1;  // DAG mode: expect few uncles
-    <b>let</b> epoch_block_count: u64 = 240;
-    <b>let</b> base_block_time_target: u64 = 10000;
-    <b>let</b> base_block_difficulty_window: u64 = 24;
-    <b>let</b> base_reward_per_block: u128 = 1000000000;
-    <b>let</b> base_reward_per_uncle_percent: u64 = 10;
-    <b>let</b> min_block_time_target: u64 = 1000;
-    <b>let</b> max_block_time_target: u64 = 20000;
-    <b>let</b> base_max_uncles_per_block: u64 = 2;
-    <b>let</b> base_block_gas_limit: u64 = 500000000;
-    <b>let</b> strategy: u8 = 0;
-    <b>let</b> max_transaction_per_block: u64 = 3000;  // DAG: limit transactions per block
-    <b>let</b> pruning_depth: u64 = 185798;  // DAG pruning parameters
-    <b>let</b> pruning_finality: u64 = 86400;
-
-    //vm config
-    <b>let</b> script_allowed: bool = <b>true</b>;
-    <b>let</b> module_publishing_allowed: bool = <b>true</b>;
-
-    // todo: initialize gas_schedule_blob properly
-    <b>let</b> gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
-
-    // <a href="dao.md#0x1_dao">dao</a> config
-    <b>let</b> voting_delay: u64 = 1000;
-    <b>let</b> voting_period: u64 = 6000;
-    <b>let</b> voting_quorum_rate: u8 = 4;
-    <b>let</b> min_action_delay: u64 = 1000;
-
-    // transaction timeout config
-    <b>let</b> transaction_timeout: u64 = 10000;
-
-    <a href="stc_genesis.md#0x1_stc_genesis_initialize">Self::initialize</a>(
-        stdlib_version,
-        reward_delay,
-        total_stc_amount,
-        pre_mine_stc_amount,
-        time_mint_stc_amount,
-        time_mint_stc_period,
-        parent_hash,
-        association_auth_key,
-        genesis_auth_key,
-        <a href="chain_id.md#0x1_chain_id">chain_id</a>,
-        genesis_timestamp,
-        uncle_rate_target,
-        epoch_block_count,
-        base_block_time_target,
-        base_block_difficulty_window,
-        base_reward_per_block,
-        base_reward_per_uncle_percent,
-        min_block_time_target,
-        max_block_time_target,
-        base_max_uncles_per_block,
-        base_block_gas_limit,
-        strategy,
-        max_transaction_per_block,
-        pruning_depth,
-        pruning_finality,
-        script_allowed,
-        module_publishing_allowed,
-        gas_schedule_blob,
-        voting_delay,
-        voting_period,
-        voting_quorum_rate,
-        min_action_delay,
-        transaction_timeout,
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
-    );
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="@Specification_0"></a>
+<a id="@Specification_1"></a>
 
 ## Specification
 

@@ -113,17 +113,17 @@ return true.
 -  [Function `transaction_context_extension_enabled`](#0x1_features_transaction_context_extension_enabled)
 -  [Function `get_coin_to_fungible_asset_migration_feature`](#0x1_features_get_coin_to_fungible_asset_migration_feature)
 -  [Function `coin_to_fungible_asset_migration_feature_enabled`](#0x1_features_coin_to_fungible_asset_migration_feature_enabled)
--  [Function `get_primary_apt_fungible_store_at_user_address_feature`](#0x1_features_get_primary_apt_fungible_store_at_user_address_feature)
--  [Function `primary_apt_fungible_store_at_user_address_enabled`](#0x1_features_primary_apt_fungible_store_at_user_address_enabled)
+-  [Function `get_primary_stc_fungible_store_at_user_address_feature`](#0x1_features_get_primary_stc_fungible_store_at_user_address_feature)
+-  [Function `primary_stc_fungible_store_at_user_address_enabled`](#0x1_features_primary_stc_fungible_store_at_user_address_enabled)
 -  [Function `aggregator_v2_is_at_least_api_enabled`](#0x1_features_aggregator_v2_is_at_least_api_enabled)
 -  [Function `get_object_native_derived_address_feature`](#0x1_features_get_object_native_derived_address_feature)
 -  [Function `object_native_derived_address_enabled`](#0x1_features_object_native_derived_address_enabled)
 -  [Function `get_dispatchable_fungible_asset_feature`](#0x1_features_get_dispatchable_fungible_asset_feature)
 -  [Function `dispatchable_fungible_asset_enabled`](#0x1_features_dispatchable_fungible_asset_enabled)
--  [Function `get_new_accounts_default_to_fa_apt_store_feature`](#0x1_features_get_new_accounts_default_to_fa_apt_store_feature)
+-  [Function `get_new_accounts_default_to_fa_stc_store_feature`](#0x1_features_get_new_accounts_default_to_fa_stc_store_feature)
 -  [Function `new_accounts_default_to_fa_stc_store_enabled`](#0x1_features_new_accounts_default_to_fa_stc_store_enabled)
--  [Function `get_operations_default_to_fa_apt_store_feature`](#0x1_features_get_operations_default_to_fa_apt_store_feature)
--  [Function `operations_default_to_fa_apt_store_enabled`](#0x1_features_operations_default_to_fa_apt_store_enabled)
+-  [Function `get_operations_default_to_fa_stc_store_feature`](#0x1_features_get_operations_default_to_fa_stc_store_feature)
+-  [Function `operations_default_to_fa_stc_store_enabled`](#0x1_features_operations_default_to_fa_stc_store_enabled)
 -  [Function `get_concurrent_fungible_balance_feature`](#0x1_features_get_concurrent_fungible_balance_feature)
 -  [Function `concurrent_fungible_balance_enabled`](#0x1_features_concurrent_fungible_balance_enabled)
 -  [Function `get_default_to_concurrent_fungible_balance_feature`](#0x1_features_get_default_to_concurrent_fungible_balance_feature)
@@ -679,12 +679,12 @@ Whether we use more efficient native implementation of computing object derived 
 
 
 
-<a id="0x1_features_OPERATIONS_DEFAULT_TO_FA_APT_STORE"></a>
+<a id="0x1_features_OPERATIONS_DEFAULT_TO_FA_STC_STORE"></a>
 
 Lifetime: transient
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_APT_STORE">OPERATIONS_DEFAULT_TO_FA_APT_STORE</a>: u64 = 65;
+<pre><code><b>const</b> <a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_STC_STORE">OPERATIONS_DEFAULT_TO_FA_STC_STORE</a>: u64 = 65;
 </code></pre>
 
 
@@ -722,11 +722,11 @@ Lifetime: transient
 
 
 
-<a id="0x1_features_PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS"></a>
+<a id="0x1_features_PRIMARY_STC_FUNGIBLE_STORE_AT_USER_ADDRESS"></a>
 
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS">PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS</a>: u64 = 61;
+<pre><code><b>const</b> <a href="features.md#0x1_features_PRIMARY_STC_FUNGIBLE_STORE_AT_USER_ADDRESS">PRIMARY_STC_FUNGIBLE_STORE_AT_USER_ADDRESS</a>: u64 = 61;
 </code></pre>
 
 
@@ -945,7 +945,9 @@ Initialized from parameters
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_initialize">initialize</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, <a href="features.md#0x1_features">features</a>: <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
     <b>assert</b>!(<a href="signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == @std, <a href="error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>));
-    <b>move_to</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(framework, <a href="features.md#0x1_features_Features">Features</a> { <a href="features.md#0x1_features">features</a> })
+    <b>if</b> (!<b>exists</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(<a href="signer.md#0x1_signer_address_of">signer::address_of</a>(framework))) {
+        <b>move_to</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(framework, <a href="features.md#0x1_features_Features">Features</a> { <a href="features.md#0x1_features">features</a> })
+    }
 }
 </code></pre>
 
@@ -2813,14 +2815,14 @@ Initialized from parameters
 
 </details>
 
-<a id="0x1_features_get_primary_apt_fungible_store_at_user_address_feature"></a>
+<a id="0x1_features_get_primary_stc_fungible_store_at_user_address_feature"></a>
 
-## Function `get_primary_apt_fungible_store_at_user_address_feature`
+## Function `get_primary_stc_fungible_store_at_user_address_feature`
 
 
 
 <pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_primary_apt_fungible_store_at_user_address_feature">get_primary_apt_fungible_store_at_user_address_feature</a>(): u64
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_primary_stc_fungible_store_at_user_address_feature">get_primary_stc_fungible_store_at_user_address_feature</a>(): u64
 </code></pre>
 
 
@@ -2829,7 +2831,7 @@ Initialized from parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_primary_apt_fungible_store_at_user_address_feature">get_primary_apt_fungible_store_at_user_address_feature</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_primary_stc_fungible_store_at_user_address_feature">get_primary_stc_fungible_store_at_user_address_feature</a>(
 ): u64 {
     <b>abort</b> <a href="error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="features.md#0x1_features_EINVALID_FEATURE">EINVALID_FEATURE</a>)
 }
@@ -2839,14 +2841,14 @@ Initialized from parameters
 
 </details>
 
-<a id="0x1_features_primary_apt_fungible_store_at_user_address_enabled"></a>
+<a id="0x1_features_primary_stc_fungible_store_at_user_address_enabled"></a>
 
-## Function `primary_apt_fungible_store_at_user_address_enabled`
+## Function `primary_stc_fungible_store_at_user_address_enabled`
 
 
 
 <pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="features.md#0x1_features_primary_apt_fungible_store_at_user_address_enabled">primary_apt_fungible_store_at_user_address_enabled</a>(): bool
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_primary_stc_fungible_store_at_user_address_enabled">primary_stc_fungible_store_at_user_address_enabled</a>(): bool
 </code></pre>
 
 
@@ -2855,8 +2857,8 @@ Initialized from parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_primary_apt_fungible_store_at_user_address_enabled">primary_apt_fungible_store_at_user_address_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS">PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_primary_stc_fungible_store_at_user_address_enabled">primary_stc_fungible_store_at_user_address_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_PRIMARY_STC_FUNGIBLE_STORE_AT_USER_ADDRESS">PRIMARY_STC_FUNGIBLE_STORE_AT_USER_ADDRESS</a>)
 }
 </code></pre>
 
@@ -2980,13 +2982,13 @@ Initialized from parameters
 
 </details>
 
-<a id="0x1_features_get_new_accounts_default_to_fa_apt_store_feature"></a>
+<a id="0x1_features_get_new_accounts_default_to_fa_stc_store_feature"></a>
 
-## Function `get_new_accounts_default_to_fa_apt_store_feature`
+## Function `get_new_accounts_default_to_fa_stc_store_feature`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_apt_store_feature">get_new_accounts_default_to_fa_apt_store_feature</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_stc_store_feature">get_new_accounts_default_to_fa_stc_store_feature</a>(): u64
 </code></pre>
 
 
@@ -2995,7 +2997,7 @@ Initialized from parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_apt_store_feature">get_new_accounts_default_to_fa_apt_store_feature</a>(): u64 { <a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_stc_store_feature">get_new_accounts_default_to_fa_stc_store_feature</a>(): u64 { <a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE</a> }
 </code></pre>
 
 
@@ -3026,13 +3028,13 @@ Initialized from parameters
 
 </details>
 
-<a id="0x1_features_get_operations_default_to_fa_apt_store_feature"></a>
+<a id="0x1_features_get_operations_default_to_fa_stc_store_feature"></a>
 
-## Function `get_operations_default_to_fa_apt_store_feature`
+## Function `get_operations_default_to_fa_stc_store_feature`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_operations_default_to_fa_apt_store_feature">get_operations_default_to_fa_apt_store_feature</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_operations_default_to_fa_stc_store_feature">get_operations_default_to_fa_stc_store_feature</a>(): u64
 </code></pre>
 
 
@@ -3041,20 +3043,20 @@ Initialized from parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_operations_default_to_fa_apt_store_feature">get_operations_default_to_fa_apt_store_feature</a>(): u64 { <a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_APT_STORE">OPERATIONS_DEFAULT_TO_FA_APT_STORE</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_operations_default_to_fa_stc_store_feature">get_operations_default_to_fa_stc_store_feature</a>(): u64 { <a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_STC_STORE">OPERATIONS_DEFAULT_TO_FA_STC_STORE</a> }
 </code></pre>
 
 
 
 </details>
 
-<a id="0x1_features_operations_default_to_fa_apt_store_enabled"></a>
+<a id="0x1_features_operations_default_to_fa_stc_store_enabled"></a>
 
-## Function `operations_default_to_fa_apt_store_enabled`
+## Function `operations_default_to_fa_stc_store_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_operations_default_to_fa_apt_store_enabled">operations_default_to_fa_apt_store_enabled</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_operations_default_to_fa_stc_store_enabled">operations_default_to_fa_stc_store_enabled</a>(): bool
 </code></pre>
 
 
@@ -3063,8 +3065,8 @@ Initialized from parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_operations_default_to_fa_apt_store_enabled">operations_default_to_fa_apt_store_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_APT_STORE">OPERATIONS_DEFAULT_TO_FA_APT_STORE</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_operations_default_to_fa_stc_store_enabled">operations_default_to_fa_stc_store_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_OPERATIONS_DEFAULT_TO_FA_STC_STORE">OPERATIONS_DEFAULT_TO_FA_STC_STORE</a>)
 }
 </code></pre>
 

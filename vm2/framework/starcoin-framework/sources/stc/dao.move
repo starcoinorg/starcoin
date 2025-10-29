@@ -3,15 +3,21 @@ module starcoin_framework::dao {
     use std::error;
     use std::option;
     use std::signer;
-    use starcoin_std::debug;
+    use std::vector;
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
+    use starcoin_framework::create_signer::{Self, create_signer};
     use starcoin_framework::event;
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata};
+    use starcoin_framework::object::{Self, Object};
     use starcoin_framework::on_chain_config;
     use starcoin_framework::stc_util;
+    use starcoin_framework::system_addresses::get_starcoin_framework;
     use starcoin_framework::timestamp;
     use starcoin_framework::treasury;
+    use starcoin_std::debug;
+    use starcoin_std::type_info;
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -99,7 +105,7 @@ module starcoin_framework::dao {
         /// proposal id.
         id: u64,
         /// how many tokens to stake.
-        stake: coin::Coin<TokenT>,
+        stake_store: object::Object<FungibleStore>,
         /// vote for or vote against.
         agree: bool,
     }
@@ -115,6 +121,11 @@ module starcoin_framework::dao {
     const ERR_ACTION_MUST_EXIST: u64 = 1409;
     const ERR_VOTED_OTHERS_ALREADY: u64 = 1410;
     const ERR_TOKEN_NOT_REGISTER: u64 = 1411;
+    const ERR_COIN_NOT_FOUND: u64 = 1412;
+    const ERR_FUNGIBLE_ASSET_NOT_MATCH: u64 = 1413;
+    const ERR_REVOKE_INSUFFICIENT_BALANCE: u64 = 1414;
+    const ERR_REVOKE_WITHDRAW_WRONG_FA: u64 = 1415;
+    const ERR_COIN_PAIR_META_DATA_NOT_FOUND: u64 = 1416;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to have gov functionality
@@ -126,8 +137,21 @@ module starcoin_framework::dao {
         voting_quorum_rate: u8,
         min_action_delay: u64,
     ) {
-        let token_issuer = stc_util::token_issuer<TokenT>();
-        assert!(signer::address_of(signer) == token_issuer, error::not_found(ERR_NOT_AUTHORIZED));
+        let token_metadata = coin::paired_metadata<TokenT>();
+        let signer_addr = signer::address_of(signer);
+        if (option::is_some(&token_metadata)) {
+            assert!(
+                signer::address_of(signer) == object::owner(option::destroy_some(token_metadata)),
+                error::unauthenticated(ERR_NOT_AUTHORIZED)
+            );
+        } else {
+            assert!(
+                signer_addr == type_info::account_address(&type_info::type_of<TokenT>()),
+                error::unauthenticated(ERR_NOT_AUTHORIZED)
+            );
+        };
+
+
         // let proposal_id = ProposalId {next: 0};
         let gov_info = DaoGlobalInfo<TokenT> {
             next_proposal_id: 0,
@@ -222,7 +246,7 @@ module starcoin_framework::dao {
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
-        stake: coin::Coin<TokenT>,
+        stake: FungibleAsset,
         agree: bool,
     ) acquires Proposal, DaoGlobalInfo, Vote {
         {
@@ -230,6 +254,16 @@ module starcoin_framework::dao {
             // only when proposal is active, use can cast vote.
             assert!(state == ACTIVE, error::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
+
+        let fa_metadata = fungible_asset::metadata_from_asset(&stake);
+        let coin_metadata = coin::paired_metadata<TokenT>();
+        assert!(option::is_some(&coin_metadata), error::not_found(ERR_COIN_NOT_FOUND));
+
+        let coin_metadata = option::destroy_some(coin_metadata);
+        assert!(fa_metadata == coin_metadata, error::invalid_argument(
+            ERR_FUNGIBLE_ASSET_NOT_MATCH
+        ));
+
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         assert!(proposal.id == proposal_id, error::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let sender = signer::address_of(signer);
@@ -239,16 +273,28 @@ module starcoin_framework::dao {
             assert!(my_vote.agree == agree, error::invalid_state(ERR_VOTE_STATE_MISMATCH));
 
             do_cast_vote(proposal, my_vote, stake);
-            coin::value(&my_vote.stake)
+            fungible_asset::balance(my_vote.stake_store)
         } else {
+            let vote_store_seed = Self::get_vote_fa_store_address_seed<TokenT>();
+            let construct_addr = object::create_object_address(&sender, vote_store_seed);
+            let stake_store = if (object::object_exists<FungibleStore>(construct_addr)) {
+                object::address_to_object<FungibleStore>(construct_addr)
+            } else {
+                let construct_ref = object::create_named_object(
+                    signer,
+                    vote_store_seed
+                );
+                fungible_asset::create_store(&construct_ref, coin_metadata)
+            };
+
             let my_vote = Vote<TokenT> {
                 proposer: proposer_address,
                 id: proposal_id,
-                stake: coin::zero(),
+                stake_store,
                 agree,
             };
             do_cast_vote(proposal, &mut my_vote, stake);
-            let total_voted = coin::value(&my_vote.stake);
+            let total_voted = fungible_asset::balance(my_vote.stake_store);
             move_to(signer, my_vote);
             total_voted
         };
@@ -267,14 +313,13 @@ module starcoin_framework::dao {
         );
     }
 
-
     fun do_cast_vote<TokenT, ActionT: copy + drop + store>(
         proposal: &mut Proposal<TokenT, ActionT>,
         vote: &mut Vote<TokenT>,
-        stake: coin::Coin<TokenT>
+        stake: fungible_asset::FungibleAsset,
     ) {
-        let stake_value = coin::value(&stake);
-        coin::merge(&mut vote.stake, stake);
+        let stake_value = fungible_asset::amount(&stake);
+        fungible_asset::deposit(vote.stake_store, stake);
         if (vote.agree) {
             proposal.for_votes = proposal.for_votes + (stake_value as u128);
         } else {
@@ -327,7 +372,7 @@ module starcoin_framework::dao {
         proposal: &mut Proposal<TokenT, ActionT>
     ): u128 {
         my_vote.agree = !my_vote.agree;
-        let total_voted = (coin::value(&my_vote.stake) as u128);
+        let total_voted = (fungible_asset::balance(my_vote.stake_store) as u128);
         if (my_vote.agree) {
             proposal.for_votes = proposal.for_votes + total_voted;
             proposal.against_votes = proposal.against_votes - total_voted;
@@ -345,7 +390,7 @@ module starcoin_framework::dao {
         proposer_address: address,
         proposal_id: u64,
         voting_power: u128,
-    ): coin::Coin<TokenT> acquires Proposal, Vote, DaoGlobalInfo {
+    ): FungibleAsset acquires Proposal, Vote, DaoGlobalInfo {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, user can revoke vote.
@@ -363,7 +408,7 @@ module starcoin_framework::dao {
         // revoke vote on proposal
         let reverted_stake = do_revoke_vote(proposal, &mut my_vote, voting_power);
         // emit vote changed event
-        let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(stc_util::token_issuer<TokenT>());
+        let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(object::owner(coin_to_fa_metadata<TokenT>()));
         event::emit_event(
             &mut gov_info.vote_changed_event,
             VoteChangedEvent {
@@ -371,14 +416,13 @@ module starcoin_framework::dao {
                 proposer: proposer_address,
                 voter: signer::address_of(signer),
                 agree: my_vote.agree,
-                vote: (coin::value(&my_vote.stake) as u128),
+                vote: (fungible_asset::balance(my_vote.stake_store) as u128),
             },
         );
 
         // if user has no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
-        if (coin::value(&my_vote.stake) == 0) {
-            let Vote { stake, proposer: _, id: _, agree: _ } = my_vote;
-            coin::destroy_zero(stake);
+        if (fungible_asset::balance(my_vote.stake_store) == 0) {
+            let Vote { stake_store: _, proposer: _, id: _, agree: _ } = my_vote;
         } else {
             move_to(signer, my_vote);
         };
@@ -390,19 +434,21 @@ module starcoin_framework::dao {
         proposal: &mut Proposal<TokenT, ActionT>,
         vote: &mut Vote<TokenT>,
         to_revoke: u128
-    ): coin::Coin<TokenT> {
-        spec {
-            assume vote.stake.value >= to_revoke;
-        };
-        let reverted_stake = coin::extract(&mut vote.stake, (to_revoke as u64));
+    ): FungibleAsset {
+        let stake_amount = fungible_asset::balance(vote.stake_store);
+        assert!((stake_amount as u128) <= to_revoke, error::invalid_argument(ERR_REVOKE_INSUFFICIENT_BALANCE));
+
+        let signer = create_signer(object::owner(vote.stake_store));
+        let reverted_stake = fungible_asset::withdraw(&signer, vote.stake_store, (to_revoke as u64));
         if (vote.agree) {
             proposal.for_votes = proposal.for_votes - to_revoke;
         } else {
             proposal.against_votes = proposal.against_votes - to_revoke;
         };
-        spec {
-            assert coin::value(reverted_stake) == to_revoke;
-        };
+        assert!(
+            to_revoke == (fungible_asset::amount(&reverted_stake) as u128),
+            error::unavailable(ERR_REVOKE_WITHDRAW_WRONG_FA)
+        );
         reverted_stake
     }
 
@@ -411,7 +457,7 @@ module starcoin_framework::dao {
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
-    ): coin::Coin<TokenT> acquires Proposal, Vote {
+    ): FungibleAsset acquires Proposal, Vote {
         // only check state when proposal exists.
         // because proposal can be destroyed after it ends in DEFEATED or EXTRACTED state.
         if (proposal_exists<TokenT, ActionT>(proposer_address, proposal_id)) {
@@ -419,13 +465,25 @@ module starcoin_framework::dao {
             // Only after vote period end, user can unstake his votes.
             assert!(state > ACTIVE, error::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
-        let Vote { proposer, id, stake, agree: _ } = move_from<Vote<TokenT>>(
+        let Vote {
+            proposer,
+            id,
+            stake_store,
+            agree: _
+        } = move_from<Vote<TokenT>>(
             signer::address_of(signer),
         );
         // these checks are still required.
         assert!(proposer == proposer_address, error::not_found(ERR_PROPOSER_MISMATCH));
         assert!(id == proposal_id, error::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
-        stake
+
+        let staking_amount = fungible_asset::balance(stake_store);
+        let asset = fungible_asset::withdraw(
+            &create_signer::create_signer(object::owner(stake_store)),
+            stake_store,
+            staking_amount
+        );
+        asset
     }
 
 
@@ -560,7 +618,7 @@ module starcoin_framework::dao {
         let vote = borrow_global<Vote<TokenT>>(voter);
         assert!(vote.proposer == proposer_address, error::not_found(ERR_PROPOSER_MISMATCH));
         assert!(vote.id == proposal_id, error::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
-        (vote.agree, (coin::value(&vote.stake) as u128))
+        (vote.agree, (fungible_asset::balance(vote.stake_store) as u128))
     }
 
 
@@ -600,23 +658,23 @@ module starcoin_framework::dao {
         get_config<TokenT>().voting_period
     }
 
+    fun coin_to_fa_metadata<TokenT>(): Object<Metadata> {
+        let coin_metadata = coin::paired_metadata<TokenT>();
+        assert!(option::is_some(&coin_metadata), error::not_found(ERR_COIN_NOT_FOUND));
+        option::destroy_some(coin_metadata)
+    }
 
     /// Quorum votes to make proposal pass.
     public fun quorum_votes<TokenT>(): u128 {
-        debug::print(&std::string::utf8(b"dao::quorum_votes | entered "));
-
-        let supply = coin::supply<TokenT>();
-        debug::print(&std::string::utf8(b"dao::quorum_votes | supply "));
-        debug::print(&supply);
-
+        let supply = fungible_asset::supply(Self::coin_to_fa_metadata<TokenT>());
         assert!(option::is_some(&supply), error::invalid_state(ERR_TOKEN_NOT_REGISTER));
 
         let market_cap = option::destroy_some(supply);
-        let balance_in_treasury = treasury::balance<TokenT>();
+        let balance_in_treasury = treasury::balance<TokenT>(get_starcoin_framework());
         let supply = market_cap - balance_in_treasury;
         let rate = voting_quorum_rate<TokenT>();
         let rate = (rate as u128);
-        debug::print(&std::string::utf8(b"dao::quorum_votes | exited "));
+
         supply * rate / 100
     }
 
@@ -726,5 +784,12 @@ module starcoin_framework::dao {
         let config = get_config<TokenT>();
         config.min_action_delay = value;
         on_chain_config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    fun get_vote_fa_store_address_seed<TokenT>(): vector<u8> {
+        let seed = vector::empty<u8>();
+        vector::append(&mut seed, b"dao::vote");
+        vector::append(&mut seed, type_info::struct_name(&type_info::type_of<TokenT>()));
+        seed
     }
 }

@@ -7,7 +7,9 @@
 use crate::account_config::{genesis_address, STC_TOKEN_CODE_STR};
 use crate::block_metadata::BlockMetadata;
 use crate::on_chain_resource::ChainId;
+use crate::state_store::state_key::StateKey;
 use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
+use crate::write_set::WriteOp;
 use crate::{
     account_address::AccountAddress,
     contract_event::ContractEvent,
@@ -17,6 +19,14 @@ use crate::{
 };
 use anyhow::{format_err, Error, Result};
 use bcs_ext::Sample;
+pub use change_set::ChangeSet;
+pub use error::CallError;
+pub use error::Error as TransactionError;
+pub use module::{Module, ModuleBundle};
+pub use package::Package;
+pub use pending_transaction::{Condition, PendingTransaction};
+use schemars::{self, JsonSchema};
+pub use script::Script;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
@@ -26,19 +36,9 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
-
-use crate::state_store::state_key::StateKey;
-use crate::write_set::WriteOp;
-pub use change_set::ChangeSet;
-pub use error::CallError;
-pub use error::Error as TransactionError;
-pub use module::{Module, ModuleBundle};
-pub use package::Package;
-pub use pending_transaction::{Condition, PendingTransaction};
-use schemars::{self, JsonSchema};
-pub use script::Script;
 
 use move_core_types::vm_status::StatusType;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -981,7 +981,8 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
-    BlockEpilogue(BlockMetadata),
+    /// Block Epilogue, gathering all sender address to process transaction fee
+    BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
 }
 
 // Legacy BlockMetadata for database upgrade compatibility
@@ -1062,7 +1063,7 @@ impl Transaction {
         match self {
             Self::UserTransaction(signed) => signed.id(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
-            Self::BlockEpilogue(block_metadata) => {
+            Self::BlockEpilogue(block_metadata, _) => {
                 let meta_id: HashValue = block_metadata.id();
                 HashValue::sha3_256_of(meta_id.as_ref())
             }

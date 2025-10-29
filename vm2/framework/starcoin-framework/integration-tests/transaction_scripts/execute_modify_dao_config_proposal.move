@@ -14,7 +14,7 @@ script {
     use starcoin_framework::starcoin_coin::STC;
 
     fun create_proposal_by_alice(
-        signer: signer,
+        alice: signer,
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -22,7 +22,7 @@ script {
         exec_delay: u64
     ) {
         dao_modify_config_proposal::propose<STC>(
-            signer,
+            alice,
             voting_delay,
             voting_period,
             voting_quorum_rate,
@@ -36,24 +36,28 @@ script {
 
 //# run --signers bob --args @alice --args 0 --args true --args 39814200010000000u128
 script {
-    use starcoin_framework::coin;
+    use std::option::destroy_some;
+    use starcoin_framework::coin::paired_metadata;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::dao;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao_modify_config_proposal::DaoConfigUpdate;
 
     fun do_cast_vote_by_bob(
-        account: signer,
+        bob: signer,
         proposer_address: address,
         proposal_id: u64,
         agree: bool,
         votes: u128
     ) {
-        let coin = coin::withdraw<STC>(&account, (votes as u64));
+        // let coin = coin::withdraw<STC>(&account, (votes as u64));
+        let stc_metadata = destroy_some(paired_metadata<STC>());
+        let fa = primary_fungible_store::withdraw(&bob, stc_metadata, (votes as u64));
         dao::cast_vote<STC, DaoConfigUpdate>(
-            &account,
+            &bob,
             proposer_address,
             proposal_id,
-            coin,
+            fa,
             agree
         );
     }
@@ -92,7 +96,7 @@ script {
 //# run --signers bob --args @alice --args 0
 script {
     use std::signer;
-    use starcoin_framework::starcoin_account::deposit_coins;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::dao;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao_modify_config_proposal::DaoConfigUpdate;
@@ -102,12 +106,12 @@ script {
         proposer_address: address,
         proposal_id: u64,
     ) {
-        let coin = dao::unstake_votes<STC, DaoConfigUpdate>(
+        let fa = dao::unstake_votes<STC, DaoConfigUpdate>(
             &account,
             proposer_address,
             proposal_id
         );
-        deposit_coins(signer::address_of(&account), coin);
+        primary_fungible_store::deposit(signer::address_of(&account), fa);
     }
 }
 

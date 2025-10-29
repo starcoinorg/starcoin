@@ -8,14 +8,18 @@
 
 //# run --signers StarcoinAssociation
 script {
-    use starcoin_framework::coin;
-    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::starcoin_coin;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::signer;
 
-    fun transfer_some_token_to_alice_and_bob(signer: signer) {
-        let balance = coin::balance<STC>(signer::address_of(&signer));
-        coin::transfer<STC>(&signer, @alice, balance / 4);
-        coin::transfer<STC>(&signer, @bob, balance / 4);
+    fun transfer_some_token_to_alice_and_bob(association: &signer) {
+        let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+        let balance = primary_fungible_store::balance(
+            signer::address_of(association),
+            starcoin_coin::get_stc_fa_metadata(),
+        );
+        primary_fungible_store::transfer(association, stc_metadata, @alice, balance / 4);
+        primary_fungible_store::transfer(association, stc_metadata, @bob, balance / 4);
     }
 }
 // check: EXECUTED
@@ -27,7 +31,14 @@ script {
     use starcoin_framework::starcoin_coin::STC;
 
     fun propose(account: signer) {
-        dao_modify_config_proposal::propose<STC>(account, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+        dao_modify_config_proposal::propose<STC>(
+            account,
+            60 * 60 * 24 * 1000,
+            0,
+            50,
+            0,
+            0
+        );
     }
 }
 // check: EXECUTED
@@ -63,20 +74,32 @@ script {
 
 //# run --signers bob
 // call cast_vote to stake some token
-
-
 script {
     use std::signer;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::dao;
-    use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun vote(signer: signer) {
-        let balance = coin::balance<STC>(signer::address_of(&signer));
-        let balance = coin::withdraw<STC>(&signer, balance / 2);
+    fun vote(bob: &signer) {
+        // let balance = coin::balance<STC>(signer::address_of(&signer));
+        // let balance = coin::withdraw<STC>(&signer, balance / 2);
+
+        let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+        let balance = primary_fungible_store::balance(
+            signer::address_of(bob),
+            starcoin_coin::get_stc_fa_metadata(),
+        );
+        let fa = primary_fungible_store::withdraw(bob, stc_metadata, balance / 2);
+
         dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
-            &signer, @alice, 0, balance, true);
+            bob,
+            @alice,
+            0,
+            fa,
+            true
+        );
     }
 }
 // check: EXECUTED
@@ -87,62 +110,83 @@ script {
 
 
 script {
-    use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::signer;
     use starcoin_framework::dao;
 
-    fun vote(signer: signer) {
-        let balance = coin::balance<STC>(signer::address_of(&signer));
-        let balance = coin::withdraw<STC>(&signer, balance / 2);
-        dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&signer, @alice, 0, balance, true);
+    fun vote(bob: &signer) {
+        let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+        let balance = primary_fungible_store::balance(
+            signer::address_of(bob),
+            starcoin_coin::get_stc_fa_metadata(),
+        );
+        let fa = primary_fungible_store::withdraw(bob, stc_metadata, balance / 2);
+        dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
+            bob,
+            @alice,
+            0,
+            fa,
+            true
+        );
     }
 }
 // check: EXECUTED
 
 //# block --author 0x1 --timestamp 88000000
 
-
 //# run --signers bob
 // test revoke_vote
-
-
 script {
-    use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
     use starcoin_framework::signer;
 
-    fun check_state_and_revoke(account: signer) {
+    fun check_state_and_revoke(bob: &signer) {
         let state = dao::proposal_state<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 2, (state as u64));
-        let (_, pow) = dao::vote_of<STC>(signer::address_of(&account), @alice, 0);
-        let token = dao::revoke_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, pow / 2);
-        coin::deposit(signer::address_of(&account), token);
+        let (_, pow) = dao::vote_of<STC>(signer::address_of(bob), @alice, 0);
+
+        let fa = dao::revoke_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
+            bob,
+            @alice,
+            0,
+            pow
+        );
+        primary_fungible_store::deposit(signer::address_of(bob), fa)
     }
 }
 // check: EXECUTED
 
 
 //# run --signers bob
-
-
 script {
-    use starcoin_framework::coin;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
     use starcoin_framework::signer;
 
-    fun recast_vote(signer: signer) {
+    fun recast_vote(bob: &signer) {
         let state = dao::proposal_state<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 2, (state as u64));
         {
-            let balance = coin::balance<STC>(signer::address_of(&signer));
-            let balance = coin::withdraw<STC>(&signer, balance / 2);
-            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&signer, @alice, 0, balance, true);
+            // let balance = coin::balance<STC>(signer::address_of(bob));
+            // let balance = coin::withdraw<STC>(bob, balance / 2);
+
+            let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+            let balance = primary_fungible_store::balance(
+                signer::address_of(bob),
+                starcoin_coin::get_stc_fa_metadata(),
+            );
+            let fa = primary_fungible_store::withdraw(bob, stc_metadata, balance / 2);
+
+            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(bob, @alice, 0, fa, true);
         }
     }
 }
@@ -151,40 +195,66 @@ script {
 
 //# run --signers bob
 // test flip_vote
-
-
 script {
     use std::signer;
+    use starcoin_framework::starcoin_coin;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::dao;
-    use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun flip_vote(account: signer) {
+    fun flip_vote(bob: &signer) {
+        let stc_metadata = starcoin_coin::get_stc_fa_metadata();
+
         // flip
-        dao::change_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, false);
+        dao::change_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(bob, @alice, 0, false);
         {
-            let balance = coin::balance<STC>(signer::address_of(&account));
-            let balance = coin::withdraw<STC>(&account, balance / 2);
-            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, balance, false);
+            // let balance = coin::balance<STC>(signer::address_of(&account));
+            // let balance = coin::withdraw<STC>(&account, balance / 2);
+
+            let fa = primary_fungible_store::withdraw(
+                bob,
+                stc_metadata,
+                primary_fungible_store::balance(
+                    signer::address_of(bob),
+                    starcoin_coin::get_stc_fa_metadata()
+                ) / 2
+            );
+
+            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(bob, @alice, 0, fa, false);
         };
         // revoke while 'against'
         {
-            let (_, pow) = dao::vote_of<STC>(signer::address_of(&account), @alice, 0);
-            let token = dao::revoke_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
-                &account,
+            let (_, pow) = dao::vote_of<STC>(signer::address_of(bob), @alice, 0);
+            let fa = dao::revoke_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
+                bob,
                 @alice,
                 0,
                 pow / 10
             );
-            coin::deposit(signer::address_of(&account), token);
+            primary_fungible_store::deposit(signer::address_of(bob), fa);
         };
+
         // flip back
-        dao::change_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, true);
+        dao::change_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(bob, @alice, 0, true);
         {
-            let balance = coin::balance<STC>(signer::address_of(&account));
-            let balance = coin::withdraw<STC>(&account, balance / 2);
-            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, balance, true);
+            // let balance = coin::balance<STC>(signer::address_of(bob));
+            // let balance = coin::withdraw<STC>(bob, balance / 2);
+            let fa = primary_fungible_store::withdraw(
+                bob,
+                stc_metadata,
+                primary_fungible_store::balance(
+                    signer::address_of(bob),
+                    starcoin_coin::get_stc_fa_metadata()
+                ) / 2
+            );
+            dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
+                bob,
+                @alice,
+                0,
+                fa,
+                true
+            );
         };
     }
 }
@@ -198,17 +268,17 @@ script {
 
 script {
     use std::signer;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::dao;
-    use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun queue_proposal(account: signer) {
+    fun queue_proposal(bob: &signer) {
         let state = dao::proposal_state<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
         {
-            let token = dao::unstake_votes<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0);
-            coin::deposit(signer::address_of(&account), token);
+            let fa = dao::unstake_votes<STC, dao_modify_config_proposal::DaoConfigUpdate>(bob, @alice, 0);
+            primary_fungible_store::deposit(signer::address_of(bob), fa)
         };
         dao::queue_proposal_action<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         // ModifyDaoConfigProposal::execute<STC>(@alice, 0);

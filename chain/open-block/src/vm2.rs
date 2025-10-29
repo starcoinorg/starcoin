@@ -6,16 +6,18 @@ use anyhow::{bail, format_err};
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::debug;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
+use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::{
     SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
     TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
     TransactionStatus as TransactionStatus2,
 };
+use std::collections::HashSet;
 
 impl OpenedBlock {
     pub fn initialize(&mut self) -> anyhow::Result<()> {
@@ -121,7 +123,12 @@ impl OpenedBlock {
     pub fn finalize_block_epilogue(&mut self) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         // Directly use VM2 BlockEpilogue
-        let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone());
+        let senders: HashSet<AccountAddress> = self
+            .included_user_txns2
+            .iter()
+            .map(|txn| txn.sender())
+            .collect();
+        let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone(), senders);
         let block_epilogue_txn_hash = block_epilogue_txn.id();
         let mut results = do_execute_block_transactions(
             state,
@@ -186,6 +193,11 @@ impl OpenedBlock {
             status,
         );
         self.txn_accumulator.append(&[txn_info.id()])?;
+
+        info!(
+            "OpenedBlock::push_txn_and_state2 | root_hash : {:?}",
+            txn_state_root
+        );
         Ok(())
     }
 }

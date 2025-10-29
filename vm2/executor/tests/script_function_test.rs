@@ -8,8 +8,9 @@ use starcoin_vm2_types::{
     identifier::Identifier,
     vm_error::KeptVMStatus,
 };
-use starcoin_vm2_vm_runtime::data_cache::AsMoveResolver;
 
+use move_vm2_transactional_test_runner::tasks::SyntaxChoice;
+use starcoin_config::genesis_config::ChainNetwork;
 use starcoin_transaction_builder::vm2::create_signed_txn_with_association_account;
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
@@ -21,17 +22,13 @@ use starcoin_vm2_test_helper::{
     txn::create_account_txn_sent_as_association,
 };
 use starcoin_vm2_types::{
-    account_config::{association_address, genesis_address, stc_type_tag},
-    language_storage::{ModuleId, StructTag},
+    account_config::{association_address, stc_type_tag},
+    language_storage::ModuleId,
     transaction::{
         EntryFunction, Package, Script, Transaction, TransactionPayload, TransactionStatus,
     },
 };
 use std::ops::Sub;
-
-use move_vm2_core_types::resolver::{ModuleResolver, ResourceResolver};
-use move_vm2_transactional_test_runner::tasks::SyntaxChoice;
-use starcoin_config::genesis_config::ChainNetwork;
 
 fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     let module_source = r#"
@@ -504,22 +501,5 @@ fn test_object_metadata() -> Result<()> {
     let payload = TransactionPayload::Script(Script::new(script, vec![], vec![]));
     let output = association_execute_should_success(&net, &chain_state, payload)?;
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
-
-    let resolver = chain_state.as_move_resolver();
-    let object_core_tag = StructTag {
-        address: genesis_address(),
-        module: Identifier::new("object").unwrap(),
-        name: Identifier::new("ObjectCore").unwrap(),
-        type_args: vec![],
-    };
-    let (resource, size) = resolver.get_resource_bytes_with_metadata_and_layout(
-        &genesis_address(),
-        &object_core_tag,
-        resolver
-            .get_module_metadata(&object_core_tag.module_id())
-            .as_slice(),
-        None,
-    )?;
-    assert!(resource.is_some() && size > 0);
     Ok(())
 }

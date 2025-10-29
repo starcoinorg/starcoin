@@ -316,6 +316,10 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                     });
 
                 if let Some(resource_group_tag) = resource_group_tag {
+                    // info!(
+                    //     "Merging resource: {:?} to group: {:?}",
+                    //     struct_tag, resource_group_tag
+                    // );
                     if resource_groups
                         .entry(resource_group_tag)
                         .or_default()

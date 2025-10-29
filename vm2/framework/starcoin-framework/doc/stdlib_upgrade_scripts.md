@@ -49,7 +49,7 @@ The module for stdlib upgrade init scripts
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stdlib_upgrade_scripts.md#0x1_stdlib_upgrade_scripts_do_dummy_upgrade">do_dummy_upgrade</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="stdlib_upgrade_scripts.md#0x1_stdlib_upgrade_scripts_do_dummy_upgrade">do_dummy_upgrade</a>(_sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -59,7 +59,7 @@ The module for stdlib upgrade init scripts
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stdlib_upgrade_scripts.md#0x1_stdlib_upgrade_scripts_do_dummy_upgrade">do_dummy_upgrade</a>(
-    sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    _sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
 ) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"do_dummy_upgrade"));
 }

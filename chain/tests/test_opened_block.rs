@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -10,6 +10,7 @@ use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
+use starcoin_vm2_types::account::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
@@ -74,7 +75,7 @@ pub fn test_open_block() -> Result<()> {
         let state_reader = opened_block.state_reader2();
         let account_reader = AccountStateReader::new(state_reader.as_ref());
         let account_balance = account_reader.get_balance(&receiver)?;
-        assert_eq!(account_balance, 50_000_000);
+        ensure!(account_balance == 50_000_000, "receiver balance not match");
 
         let account_resource = account_reader.get_account_resource(&receiver)?;
         assert_eq!(account_resource.sequence_number(), 0);
@@ -92,7 +93,7 @@ pub fn test_open_block() -> Result<()> {
             seq_number,
             10_000,
             1,
-            1_000_000,
+            DEFAULT_MAX_GAS_AMOUNT,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id().id(),
         )

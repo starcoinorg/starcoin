@@ -1,8 +1,8 @@
 module starcoin_framework::treasury_scripts {
 
     use std::signer;
+    use starcoin_framework::primary_fungible_store;
 
-    use starcoin_framework::coin;
     use starcoin_framework::dao_treasury_withdraw_proposal;
     use starcoin_framework::stc_offer;
     use starcoin_framework::treasury;
@@ -21,7 +21,7 @@ module starcoin_framework::treasury_scripts {
         let (tokens, new_cap) = treasury::split_linear_withdraw_cap(&mut cap, amount);
 
         // 3. deposit
-        coin::deposit(signer::address_of(&account), tokens);
+        primary_fungible_store::deposit(signer::address_of(&account), tokens);
 
         // 4. put or destroy key
         if (treasury::is_empty_linear_withdraw_capability(&cap)) {
@@ -47,7 +47,7 @@ module starcoin_framework::treasury_scripts {
         let tokens = treasury::withdraw_with_linear_capability(&mut cap);
 
         // 3. deposit
-        coin::deposit(signer::address_of(&account), tokens);
+        primary_fungible_store::deposit(signer::address_of(&account), tokens);
 
         // 4. put or destroy key
         if (treasury::is_empty_linear_withdraw_capability(&cap)) {

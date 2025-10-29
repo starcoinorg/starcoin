@@ -25,16 +25,17 @@ script {
 //# run --signers StarcoinAssociation
 script {
     use std::signer;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::stc_offer;
-    use starcoin_framework::coin;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::treasury;
 
     fun bob_take_linear_key_from_offer(account: signer) {
         let cap = treasury::remove_linear_withdraw_capability<STC>(&account);
-        let (token, cap2) = treasury::split_linear_withdraw_cap(&mut cap, 47777040000000000 / 2);
+        let (fa, cap2) = treasury::split_linear_withdraw_cap(&mut cap, 47777040000000000 / 2);
         stc_offer::create(&account, cap2, @alice, 0);
-        coin::deposit(signer::address_of(&account), token);
+        // coin::deposit(signer::address_of(&account), token);
+        primary_fungible_store::deposit(signer::address_of(&account), fa);
         treasury::add_linear_withdraw_capability(&account, cap);
     }
 }

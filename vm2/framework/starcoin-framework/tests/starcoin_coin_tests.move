@@ -7,14 +7,14 @@ module starcoin_framework::starcoin_coin_tests {
     use starcoin_framework::object::{Self, Object};
 
     public fun mint_apt_fa_to_for_test<T: key>(store: Object<T>, amount: u64) {
-        fungible_asset::deposit(store, starcoin_coin::mint_apt_fa_for_test(amount));
+        fungible_asset::deposit(store, starcoin_coin::mint_stc_fa_for_test(amount));
     }
 
     public fun mint_apt_fa_to_primary_fungible_store_for_test(
         owner: address,
         amount: u64,
     ) {
-        primary_fungible_store::deposit(owner, starcoin_coin::mint_apt_fa_for_test(amount));
+        primary_fungible_store::deposit(owner, starcoin_coin::mint_stc_fa_for_test(amount));
     }
 
     #[test(starcoin_framework = @starcoin_framework)]
@@ -37,7 +37,7 @@ module starcoin_framework::starcoin_coin_tests {
     #[test]
     fun test_fa_helpers_for_test() {
         assert!(!object::object_exists<Metadata>(@starcoin_fungible_asset), 0);
-        starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
+        starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
         assert!(object::object_exists<Metadata>(@starcoin_fungible_asset), 0);
         mint_apt_fa_to_primary_fungible_store_for_test(@starcoin_framework, 100);
         let metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
