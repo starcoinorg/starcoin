@@ -423,7 +423,7 @@ ark-ec = "0.4.0"
 ark-ff = "0.4.0"
 ark-serialize = "0.4.0"
 ark-std = "0.4.0"
-better_any = "0.1.1"
+better_any = "0.2.0"
 blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
