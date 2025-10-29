@@ -302,7 +302,7 @@ claims = "0.8"
 clap = { version = "4.5.47", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
-codespan = { version = "0.11.1", features = ["serialization"] }
+codespan = { version = "0.13.1", features = ["serialization"] }
 codespan-reporting = "0.11.1"
 colored = "3.0.0"
 criterion = "0.3"
