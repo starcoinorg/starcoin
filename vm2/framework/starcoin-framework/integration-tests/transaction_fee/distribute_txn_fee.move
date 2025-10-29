@@ -57,11 +57,13 @@ script {
 //# run --signers alice
 script {
     use std::signer;
+    use starcoin_framework::transaction_fee::pay_fee;
     use starcoin_framework::starcoin_coin;
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::transaction_fee;
 
     fun alice_withdraw_transaction_fee(alice: &signer) {
+        pay_fee(alice, primary_fungible_store::withdraw(alice, starcoin_coin::get_stc_fa_metadata(), 100));
         let fa = transaction_fee::withdraw_account_transaction_fees(alice, starcoin_coin::get_stc_fa_metadata());
         primary_fungible_store::deposit(signer::address_of(alice), fa);
     }
