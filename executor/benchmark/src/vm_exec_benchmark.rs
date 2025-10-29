@@ -68,8 +68,7 @@ impl TransactionGenerator {
     fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction> {
         self.net.time_service().sleep(1000);
         let mut txns = vec![];
-        let mut sequence_number = 0;
-        for receiver in self.accounts.iter() {
+        for (sequence_number, receiver) in self.accounts.iter().enumerate() {
             let payload = transfer_scripts_batch_peer_to_peer_v2(
                 stc_type_tag(),
                 vec![receiver.address],
@@ -86,7 +85,6 @@ impl TransactionGenerator {
                 self.net.genesis_config2(),
             );
 
-            sequence_number += 1;
             txns.push(txn);
         }
 
@@ -289,5 +287,11 @@ impl BenchmarkManager {
         }
 
         println!("└─────────────┴──────────┴─────────────┴─────────────┘");
+    }
+}
+
+impl Default for BenchmarkManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
