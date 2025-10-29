@@ -1,3 +1,4 @@
 [submodule "networks"]
 	path = networks
 	url = ../../starcoinorg/starcoin-networks.git
+	branch = latest
