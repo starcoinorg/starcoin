@@ -57,7 +57,7 @@ impl MultiTransaction {
             MultiTransaction::VM2(txn) => match txn {
                 Transaction2::UserTransaction(txn) => MultiAddress::VM2(txn.sender()),
                 Transaction2::BlockMetadata(txn) => MultiAddress::VM2(txn.author()),
-                Transaction2::BlockEpilogue(txn) => MultiAddress::VM2(txn.author()),
+                Transaction2::BlockEpilogue(txn, _) => MultiAddress::VM2(txn.author()),
             },
         }
     }

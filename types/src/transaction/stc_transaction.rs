@@ -51,7 +51,7 @@ impl StcTransaction {
             StcTransaction::V2(txn) => match txn {
                 Transaction2::UserTransaction(txn) => MultiAccountAddress::VM2(txn.sender()),
                 Transaction2::BlockMetadata(txn) => MultiAccountAddress::VM2(txn.author()),
-                Transaction2::BlockEpilogue(txn) => MultiAccountAddress::VM2(txn.author()),
+                Transaction2::BlockEpilogue(txn, _) => MultiAccountAddress::VM2(txn.author()),
             },
         }
     }

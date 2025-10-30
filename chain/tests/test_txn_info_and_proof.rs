@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{format_err, Result};
 use move_vm2_core_types::move_resource::MoveStructType;
 use rand::Rng;
@@ -21,6 +23,7 @@ use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm2_vm_types::account_config::association_address as association_address2;
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
@@ -123,7 +126,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let contain_vm2_transactions = !txns2.is_empty();
         all_txns.extend(txns2.into_iter().map(|txn| Transaction2::from(txn).into()));
         if contain_vm2_transactions {
-            let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata);
+            let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata, HashSet::from_iter([association_address2()]));
             all_txns.push(block_epilogue_txn.into());
         }
         current_header = block.header().clone();
@@ -172,7 +175,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
     let final_account_address = match &final_raw_transaction {
         Transaction2::UserTransaction(user_txn) => user_txn.sender(),
         Transaction2::BlockMetadata(metadata_txn) => metadata_txn.author(),
-        Transaction2::BlockEpilogue(metadata_txn) => metadata_txn.author(),
+        Transaction2::BlockEpilogue(metadata_txn, _) => metadata_txn.author(),
     };
     let final_access_path: Option<AccessPath2> = Some(AccessPath2::resource_access_path(
         final_account_address,
