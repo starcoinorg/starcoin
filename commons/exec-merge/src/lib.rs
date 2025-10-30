@@ -2,7 +2,7 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
-use starcoin_vm2_crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_statedb::{ChainStateReader, ChainStateWriter};
 use starcoin_vm2_types::contract_event::ContractEvent;
@@ -26,7 +26,7 @@ pub struct ReadEntry {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExecRecord {
     pub tx_hash: HashValue,
-    pub pre_state_fingerprint: HashValue,
+    pub epoch_id: u64,
     pub read_set: Option<Vec<ReadEntry>>, // None means unknown -> force reexec
     pub write_set: Vec<(StateKey, WriteOp)>,
     pub event_root: HashValue,
@@ -84,18 +84,18 @@ pub trait StateViewExt {
 #[derive(Clone, Debug, Eq)]
 pub struct ExecKey {
     pub tx_hash: HashValue,
-    pub pre_state_fingerprint: HashValue,
+    pub epoch_id: u64,
 }
 
 impl PartialEq for ExecKey {
     fn eq(&self, other: &Self) -> bool {
-        self.tx_hash == other.tx_hash && self.pre_state_fingerprint == other.pre_state_fingerprint
+        self.tx_hash == other.tx_hash && self.epoch_id == other.epoch_id
     }
 }
 impl Hash for ExecKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.tx_hash.hash(state);
-        self.pre_state_fingerprint.hash(state);
+        self.epoch_id.hash(state);
     }
 }
 
@@ -127,7 +127,7 @@ impl WitnessStore for LruWitnessStore {
     fn put(&self, rec: ExecRecord) {
         let key = ExecKey {
             tx_hash: rec.tx_hash,
-            pre_state_fingerprint: rec.pre_state_fingerprint,
+            epoch_id: rec.epoch_id,
         };
         self.cache.insert(key, rec);
     }
@@ -224,32 +224,15 @@ impl MergeEngine {
 #[derive(Clone)]
 pub struct ReuseOpts {
     pub enabled: bool,
-    pub pre_state_fingerprint: HashValue,
+    pub epoch_id: u64,
     pub witness_store: Arc<dyn WitnessStore>,
     pub merge_engine: Arc<MergeEngine>,
 }
 
-pub fn create_pre_state_fingerprint(
-    parent_state_root2: HashValue,
-    metadata_hash: HashValue,
-    epoch_version: u64,
-) -> HashValue {
-    // simple mixing: sha3(parent || meta || epoch_u64_le)
-    let mut buf = Vec::with_capacity(32 + 32 + 8);
-    buf.extend_from_slice(parent_state_root2.as_ref());
-    buf.extend_from_slice(metadata_hash.as_ref());
-    buf.extend_from_slice(&epoch_version.to_le_bytes());
-    HashValue::sha3_256_of(&buf)
-}
-
-pub fn create_default_reuse(
-    enabled: bool,
-    pre_state_fingerprint: HashValue,
-    capacity: usize,
-) -> ReuseOpts {
+pub fn create_default_reuse(enabled: bool, epoch_id: u64, capacity: usize) -> ReuseOpts {
     ReuseOpts {
         enabled,
-        pre_state_fingerprint,
+        epoch_id,
         witness_store: Arc::new(LruWitnessStore::new(capacity)),
         merge_engine: Arc::new(MergeEngine::new()),
     }

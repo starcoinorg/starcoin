@@ -7,7 +7,6 @@ use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
-use starcoin_exec_merge as exec_merge;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
@@ -27,7 +26,6 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
-use starcoin_vm2_crypto::hash::PlainCryptoHash;
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
@@ -59,7 +57,7 @@ pub struct OpenedBlock {
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
     // VM2: pre-state fingerprint used for ExecRecord keying
-    pre_state_fp2: HashValue,
+    epoch_id2: u64,
 }
 
 impl OpenedBlock {
@@ -114,11 +112,6 @@ impl OpenedBlock {
             .get_epoch()
             .map_err(|e| format_err!("read epoch failed: {}", e))?
             .number();
-        let pre_state_fp2 = exec_merge::create_pre_state_fingerprint(
-            chain_state_dbs.1.state_root(),
-            block_meta.crypto_hash(),
-            epoch_version,
-        );
 
         let mut opened_block = Self {
             previous_block_info: block_info,
@@ -138,7 +131,7 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
-            pre_state_fp2,
+            epoch_id2: epoch_version,
         };
 
         opened_block.initialize()?;

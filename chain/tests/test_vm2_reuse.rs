@@ -5,9 +5,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_exec_merge::{global_witness_store, reset_global_witness_store_for_tests, ExecKey};
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_vm2_chain::{
-    create_pre_state_fingerprint, reset_reuse_counters_for_test, reuse_counters_for_test,
-};
+use starcoin_vm2_chain::{reset_reuse_counters_for_test, reuse_counters_for_test};
 use starcoin_vm2_state_api::StateReaderExt;
 use starcoin_vm2_test_helper::build_transfer_from_association;
 use starcoin_vm2_types::transaction::Transaction;
@@ -58,19 +56,7 @@ fn test_vm2_reuse_hits() -> Result<()> {
         vec![MultiSignedUserTransaction::from(txn)],
     )?;
 
-    let red_blocks = chain
-        .head()
-        .dag()
-        .ghost_dag_manager()
-        .ghostdag(block.header().parents_hash())?
-        .mergeset_reds
-        .len() as u64;
-    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
-    let pre_state_fp = create_pre_state_fingerprint(
-        parent_block.multi_state().state_root2(),
-        &metadata,
-        parent_epoch,
-    );
+    let epoch_id = parent_epoch;
     let user_hashes = block
         .transactions2()
         .iter()
@@ -83,7 +69,7 @@ fn test_vm2_reuse_hits() -> Result<()> {
     for hash in &user_hashes {
         let key = ExecKey {
             tx_hash: *hash,
-            pre_state_fingerprint: pre_state_fp,
+            epoch_id,
         };
         if let Some(mut rec) = store.get(&key) {
             let had_reads = rec.read_set.is_some();
@@ -173,19 +159,7 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
         ],
     )?;
 
-    let red_blocks = chain
-        .head()
-        .dag()
-        .ghost_dag_manager()
-        .ghostdag(block.header().parents_hash())?
-        .mergeset_reds
-        .len() as u64;
-    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
-    let pre_state_fp = create_pre_state_fingerprint(
-        parent_block.multi_state().state_root2(),
-        &metadata,
-        parent_epoch,
-    );
+    let epoch_id = parent_epoch;
     let user_hashes = block
         .transactions2()
         .iter()
@@ -197,7 +171,7 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
     // Preserve first witness, force second to re-execute.
     if let Some(mut rec) = store.get(&ExecKey {
         tx_hash: user_hashes[0],
-        pre_state_fingerprint: pre_state_fp,
+        epoch_id,
     }) {
         rec.write_set
             .retain(|(k, _)| matches!(k.inner(), StateKeyInner::AccessPath(_)));
@@ -208,7 +182,7 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
     }
     if let Some(mut rec) = store.get(&ExecKey {
         tx_hash: user_hashes[1],
-        pre_state_fingerprint: pre_state_fp,
+        epoch_id,
     }) {
         rec.read_set = None;
         store.put(rec);
@@ -277,19 +251,7 @@ fn test_vm2_table_txn_triggers_reexec() -> Result<()> {
         vec![MultiSignedUserTransaction::from(txn)],
     )?;
 
-    let red_blocks = chain
-        .head()
-        .dag()
-        .ghost_dag_manager()
-        .ghostdag(block.header().parents_hash())?
-        .mergeset_reds
-        .len() as u64;
-    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
-    let pre_state_fp = create_pre_state_fingerprint(
-        parent_block.multi_state().state_root2(),
-        &metadata,
-        parent_epoch,
-    );
+    let epoch_id = parent_epoch;
     let user_hashes = block
         .transactions2()
         .iter()
@@ -301,7 +263,7 @@ fn test_vm2_table_txn_triggers_reexec() -> Result<()> {
     let store = global_witness_store();
     let key = ExecKey {
         tx_hash: user_hashes[0],
-        pre_state_fingerprint: pre_state_fp,
+        epoch_id,
     };
     if let Some(mut rec) = store.get(&key) {
         let handle = TableHandle(AccountAddress2::new([0u8; 16]));

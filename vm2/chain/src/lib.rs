@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_logger::prelude::*;
-use starcoin_vm2_crypto::hash::{CryptoHash, PlainCryptoHash};
+use starcoin_vm2_crypto::hash::CryptoHash;
 use starcoin_vm2_executor::{
     block_executor::{self, BlockExecutedData, VMMetrics},
     do_execute_block_transactions,
@@ -10,7 +10,6 @@ use starcoin_vm2_executor::{
 use starcoin_vm2_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
-use starcoin_vm2_types::block_metadata::BlockMetadata as BlockMetadata2;
 use starcoin_vm2_types::contract_event::ContractEvent;
 use starcoin_vm2_types::error::{BlockExecutorError, ExecutorResult};
 use starcoin_vm2_types::transaction::{
@@ -139,7 +138,7 @@ pub fn execute_transactions_with_reuse(
     vm_metrics: Option<VMMetrics>,
     opts: ReuseOpts,
 ) -> ExecutorResult<BlockExecutedData> {
-    let pre_fp = opts.pre_state_fingerprint;
+    let epoch_id = opts.epoch_id;
     let store = opts.witness_store.clone();
     let merge_engine = opts.merge_engine.clone();
 
@@ -153,7 +152,7 @@ pub fn execute_transactions_with_reuse(
         for tx in transactions.iter() {
             let key = ExecKey {
                 tx_hash: tx.id(),
-                pre_state_fingerprint: pre_fp,
+                epoch_id,
             };
             if let Some(mut rec) = store.get(&key) {
                 if !record_supported_for_reuse(&rec) {
@@ -168,7 +167,7 @@ pub fn execute_transactions_with_reuse(
             } else {
                 plan_execs.push(ExecRecord {
                     tx_hash: tx.id(),
-                    pre_state_fingerprint: pre_fp,
+                    epoch_id,
                     read_set: None,
                     write_set: Vec::new(),
                     event_root: starcoin_vm2_crypto::HashValue::zero(),
@@ -239,7 +238,7 @@ pub fn execute_transactions_with_reuse(
             &transactions,
             gas_limit,
             vm_metrics.clone(),
-            pre_fp,
+            epoch_id,
             store.clone(),
             &plan,
         )?;
@@ -267,7 +266,7 @@ pub fn execute_transactions_with_reuse(
         gas_limit,
         vm_metrics,
         opts.enabled,
-        pre_fp,
+        epoch_id,
         store,
     )
 }
@@ -278,7 +277,7 @@ fn execute_full_execution(
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
     recording: bool,
-    pre_fp: starcoin_vm2_crypto::HashValue,
+    epoch_id: u64,
     store: Arc<dyn exec_merge::WitnessStore>,
 ) -> ExecutorResult<BlockExecutedData> {
     let (executed, recorded_reads) = if recording {
@@ -316,7 +315,7 @@ fn execute_full_execution(
 
         let rec = ExecRecord {
             tx_hash: tx.id(),
-            pre_state_fingerprint: pre_fp,
+            epoch_id,
             read_set: read_set_entries,
             write_set: write_set_entries,
             event_root: info.event_root_hash(),
@@ -359,7 +358,7 @@ fn execute_with_plan(
     transactions: &[Transaction],
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
-    pre_fp: starcoin_vm2_crypto::HashValue,
+    epoch_id: u64,
     store: Arc<dyn exec_merge::WitnessStore>,
     plan: &PlanOutcome,
 ) -> ExecutorResult<BlockExecutedData> {
@@ -495,7 +494,7 @@ fn execute_with_plan(
 
                 let rec = ExecRecord {
                     tx_hash,
-                    pre_state_fingerprint: pre_fp,
+                    epoch_id,
                     read_set: read_entries,
                     write_set: write_entries_for_store,
                     event_root,
@@ -547,16 +546,6 @@ pub fn build_block_transactions(
         );
     }
     txns
-}
-
-/// Helper to compute pre-state fingerprint from parent root and BlockMetadata.
-pub fn create_pre_state_fingerprint(
-    parent_state_root2: starcoin_vm2_crypto::HashValue,
-    metadata: &BlockMetadata2,
-    epoch_version: u64,
-) -> starcoin_vm2_crypto::HashValue {
-    let meta_hash = metadata.crypto_hash();
-    exec_merge::create_pre_state_fingerprint(parent_state_root2, meta_hash, epoch_version)
 }
 
 pub fn get_epoch_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<Epoch> {

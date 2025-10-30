@@ -43,13 +43,12 @@ fn plan_merge_reuse_and_apply() {
         .unwrap();
     let stored_hash = stored.hash();
 
-    let pre_fp = HashValue::sha3_256_of(b"pre");
     let tx_hash = HashValue::sha3_256_of(b"tx1");
 
     // ExecRecord: read K1==v1
     let rec = ExecRecord {
         tx_hash,
-        pre_state_fingerprint: pre_fp,
+        epoch_id: 0,
         read_set: Some(vec![ReadEntry {
             key: k1.clone(),
             from_storage: true,
@@ -82,11 +81,10 @@ fn plan_merge_detect_prefix_conflict() {
     let mut prefix = PrefixWrites::default();
     prefix.0.insert(kx.clone());
 
-    let pre_fp = HashValue::sha3_256_of(b"pre2");
     let tx_hash = HashValue::sha3_256_of(b"tx2");
     let rec = ExecRecord {
         tx_hash,
-        pre_state_fingerprint: pre_fp,
+        epoch_id: 0,
         read_set: Some(vec![ReadEntry {
             key: kx.clone(),
             from_storage: true,
@@ -125,11 +123,10 @@ fn plan_merge_detect_value_change() {
         WSWriteOp::legacy_modification(b"v1b".to_vec().into()),
     );
 
-    let pre_fp = HashValue::sha3_256_of(b"pre3");
     let tx_hash = HashValue::sha3_256_of(b"tx3");
     let rec = ExecRecord {
         tx_hash,
-        pre_state_fingerprint: pre_fp,
+        epoch_id: 0,
         read_set: Some(vec![ReadEntry {
             key: k1.clone(),
             from_storage: true,
