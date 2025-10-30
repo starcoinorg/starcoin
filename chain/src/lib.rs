@@ -72,7 +72,19 @@ pub struct Vm2ReuseGuard {
 }
 
 pub fn enable_vm2_reuse_for_test() -> Vm2ReuseGuard {
-    let previous = crate::chain::TEST_VM2_REUSE_ENABLED.swap(true, Ordering::Relaxed);
+    set_vm2_reuse_for_test(true)
+}
+
+pub fn disable_vm2_reuse_for_test() -> Vm2ReuseGuard {
+    set_vm2_reuse_for_test(false)
+}
+
+pub fn set_vm2_reuse(enabled: bool) {
+    crate::chain::TEST_VM2_REUSE_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+pub fn set_vm2_reuse_for_test(enabled: bool) -> Vm2ReuseGuard {
+    let previous = crate::chain::TEST_VM2_REUSE_ENABLED.swap(enabled, Ordering::Relaxed);
     Vm2ReuseGuard { previous }
 }
 

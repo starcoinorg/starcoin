@@ -52,6 +52,12 @@ move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "2a1550807
 [dev-dependencies]
 #stdlib = { workspace = true }
 claims = { workspace = true }
+starcoin-config = { path = "../../config" }
+starcoin-genesis = { path = "../../genesis" }
+starcoin-transaction-builder = { path = "../../vm/transaction-builder" }
+starcoin-vm2-executor = { path = "../executor" }
+starcoin-vm2-statedb = { path = "../../state/statedb-v2" }
+starcoin-exec-merge = { path = "../../commons/exec-merge" }
 starcoin-cached-packages = { path = "../framework/cached-packages" }
 
 

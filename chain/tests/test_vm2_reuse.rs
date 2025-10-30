@@ -218,6 +218,100 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
 }
 
 #[test]
+fn test_vm2_reuse_conflicting_state_triggers_reexec() -> Result<()> {
+    let _guard = enable_vm2_reuse_for_test();
+    reset_reuse_counters_for_test();
+    reset_global_witness_store_for_tests();
+
+    let mut chain = MockChain::new(ChainNetwork::new_test())?;
+    let seq = chain
+        .head()
+        .chain_state_reader2()
+        .get_sequence_number(association_address())?;
+    let txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        3_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
+
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_epoch = chain.head().epoch().number();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(txn)],
+    )?;
+
+    let epoch_id = parent_epoch;
+
+    // Ensure witnesses exist.
+    let store = global_witness_store();
+    for txn in block.transactions2().iter() {
+        let hash = txn.id();
+        let key = ExecKey {
+            tx_hash: hash,
+            epoch_id,
+        };
+        assert!(
+            store.get(&key).is_some(),
+            "missing witness for vm2 txn {:?}",
+            hash
+        );
+    }
+
+    // Clean branch: reuse should succeed.
+    reset_reuse_counters_for_test();
+    let mut clean_branch = chain.fork(Some(parent_header_id))?;
+    clean_branch.apply(block.clone())?;
+    let (clean_hits, clean_reexec) = reuse_counters_for_test();
+    assert!(
+        clean_hits >= 1 && clean_reexec <= 2,
+        "expected reuse on clean branch (hits={}, reexec={})",
+        clean_hits,
+        clean_reexec
+    );
+
+    // Conflicting branch: execute another txn with the same sequence number first.
+    let mut conflicting_branch = chain.fork(Some(parent_header_id))?;
+    let conflicting_txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        7_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME + 1,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
+    conflicting_branch.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(conflicting_txn)],
+    )?;
+
+    reset_reuse_counters_for_test();
+    let err = conflicting_branch
+        .apply(block.clone())
+        .expect_err("stale transaction should be rejected after conflicting state change");
+    let err_msg = format!("{err:?}");
+    assert!(
+        err_msg.contains("SEQUENCE_NUMBER_TOO_OLD"),
+        "unexpected error when applying stale block: {err_msg}"
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_vm2_table_txn_triggers_reexec() -> Result<()> {
     let _guard = enable_vm2_reuse_for_test();
     reset_reuse_counters_for_test();

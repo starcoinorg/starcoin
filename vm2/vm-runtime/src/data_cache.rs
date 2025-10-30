@@ -16,9 +16,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
-use starcoin_vm_runtime_types::resolver::{
-    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
-};
+use starcoin_vm_runtime_types::resolver::{ExecutorView, ResourceGroupSize, TResourceGroupView};
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
@@ -195,6 +193,12 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn get(&self, key: &StateKey) -> Result<Option<StateValue>, PartialVMError> {
         self.executor_view
             .get_state_value(key)
+            .map(|value| {
+                if reuse_recorder::is_active() {
+                    reuse_recorder::record_read(key, true, value.as_ref());
+                }
+                value
+            })
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 }
@@ -222,7 +226,8 @@ impl<S: StateView> ModuleResolver for StorageAdapter<'_, S> {
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
         // REVIEW: cache this?
         let key = StateKey::module_id(module_id);
-        self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
+        self.get(&key)
+            .map(|maybe_value| maybe_value.map(|state_value| state_value.bytes().clone()))
     }
 }
 impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
@@ -254,8 +259,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
         } else {
             let state_key = resource_state_key(address, struct_tag)?;
             let buf = self
-                .executor_view
-                .get_resource_bytes(&state_key, maybe_layout)?;
+                .get(&state_key)?
+                .map(|state_value| state_value.bytes().clone());
             let buf_size = resource_size(&buf);
             Ok((buf, buf_size))
         }
@@ -308,9 +313,9 @@ impl<S: StateView> TableResolver for StorageAdapter<'_, S> {
         key: &[u8],
         _maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<Option<Bytes>, PartialVMError> {
-        self.executor_view
-            .get_state_value(&StateKey::table_item(&(*handle).into(), key))
-            .map(|r| r.map(|v| v.bytes().clone()))
+        let state_key = StateKey::table_item(&(*handle).into(), key);
+        self.get(&state_key)
+            .map(|maybe_value| maybe_value.map(|state_value| state_value.bytes().clone()))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
             })

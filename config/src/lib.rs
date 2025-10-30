@@ -75,6 +75,12 @@ pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
+pub const DEFAULT_VM2_REUSE_ENABLED: bool = true;
+
+fn default_vm2_reuse_enabled() -> bool {
+    DEFAULT_VM2_REUSE_ENABLED
+}
+
 pub static G_CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static G_GIT_VERSION: &str = git_version!(
     args = ["--tags", "--dirty", "--always"],
@@ -458,7 +464,7 @@ pub trait ConfigModule: Sized {
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
     #[serde(skip)]
@@ -485,6 +491,8 @@ pub struct NodeConfig {
     pub stratum: StratumConfig,
     #[serde(default)]
     pub account_provider: AccountProviderConfig,
+    #[serde(default = "default_vm2_reuse_enabled")]
+    pub vm2_reuse_enabled: bool,
 }
 
 impl std::fmt::Display for NodeConfig {
@@ -494,6 +502,26 @@ impl std::fmt::Display for NodeConfig {
             "{}",
             serde_json::to_string(self).map_err(|_e| std::fmt::Error)?
         )
+    }
+}
+
+impl Default for NodeConfig {
+    fn default() -> Self {
+        Self {
+            base: None,
+            network: Default::default(),
+            rpc: Default::default(),
+            miner: Default::default(),
+            storage: Default::default(),
+            tx_pool: Default::default(),
+            sync: Default::default(),
+            vault: Default::default(),
+            metrics: Default::default(),
+            logger: Default::default(),
+            stratum: Default::default(),
+            account_provider: Default::default(),
+            vm2_reuse_enabled: DEFAULT_VM2_REUSE_ENABLED,
+        }
     }
 }
 
@@ -557,6 +585,10 @@ impl NodeConfig {
 
     pub fn node_name(&self) -> String {
         self.network.node_name()
+    }
+
+    pub fn vm2_reuse_enabled(&self) -> bool {
+        self.vm2_reuse_enabled
     }
 }
 

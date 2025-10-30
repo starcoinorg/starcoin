@@ -7,6 +7,7 @@ use starcoin_crypto::HashValue;
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_types::contract_event::ContractEvent;
 use starcoin_vm2_types::vm_error::KeptVMStatus;
+use starcoin_vm2_vm_types::state_store::errors::StateviewError;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm2_vm_types::state_store::TStateView;
@@ -68,6 +69,54 @@ pub struct ApplyResult {
     pub applied: usize,
 }
 
+pub fn hydrate_read_set_for_writes<S>(
+    state: &S,
+    read_set: &mut Option<Vec<ReadEntry>>,
+    writes: &[(StateKey, WriteOp)],
+) -> std::result::Result<(), StateviewError>
+where
+    S: TStateView<Key = StateKey>,
+{
+    if writes.is_empty() {
+        return Ok(());
+    }
+
+    let entries = read_set.get_or_insert_with(Vec::new);
+    let mut seen: HashSet<StateKey> = entries.iter().map(|entry| entry.key.clone()).collect();
+
+    for (key, op) in writes.iter() {
+        if !seen.insert(key.clone()) {
+            continue;
+        }
+
+        match op {
+            WriteOp::Creation { .. } => {
+                entries.push(ReadEntry {
+                    key: key.clone(),
+                    from_storage: true,
+                    existed: false,
+                    value_hash: HashValue::zero(),
+                });
+            }
+            WriteOp::Modification { .. } | WriteOp::Deletion { .. } => {
+                let maybe_value = state.get_state_value(key)?;
+                let (existed, value_hash) = match maybe_value {
+                    Some(state_value) => (true, state_value.hash()),
+                    None => (false, HashValue::zero()),
+                };
+                entries.push(ReadEntry {
+                    key: key.clone(),
+                    from_storage: true,
+                    existed,
+                    value_hash,
+                });
+            }
+        }
+    }
+
+    Ok(())
+}
+
 // ------------------------------
 // State view for value-hash reads
 // ------------------------------
@@ -109,6 +158,7 @@ impl Hash for ExecKey {
 pub trait WitnessStore: Send + Sync {
     fn get(&self, key: &ExecKey) -> Option<ExecRecord>;
     fn put(&self, rec: ExecRecord);
+    fn remove(&self, key: &ExecKey);
 }
 
 pub struct LruWitnessStore {
@@ -138,6 +188,9 @@ impl WitnessStore for LruWitnessStore {
         };
         self.cache.insert(key, rec);
     }
+    fn remove(&self, key: &ExecKey) {
+        self.cache.remove(key);
+    }
 }
 
 #[derive(Clone, Default)]
@@ -162,6 +215,12 @@ impl MergeEngine {
                 for r in rs.iter() {
                     read_checked += 1;
                     if prefix.contains(&r.key) {
+                        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                            println!(
+                                "plan_merge prefix_conflict tx={} key={:?}",
+                                rec.tx_hash, r.key
+                            );
+                        }
                         need_reexec = true;
                         break;
                     }
@@ -173,6 +232,16 @@ impl MergeEngine {
                         cur.is_none()
                     };
                     if !ok {
+                        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                            println!(
+                                "plan_merge hash_mismatch tx={} key={:?} expected_exists={} expected_hash={} actual={:?}",
+                                rec.tx_hash,
+                                r.key,
+                                r.existed,
+                                r.value_hash,
+                                cur
+                            );
+                        }
                         need_reexec = true;
                         break;
                     }

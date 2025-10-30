@@ -1,4 +1,5 @@
 use crate::{ExecKey, ExecRecord, MergeDiff, MergeEngine, PrefixWrites, ReuseOpts, WitnessStore};
+use starcoin_crypto::hash::CryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_vm2_executor::{
@@ -12,8 +13,9 @@ use starcoin_vm2_types::error::{BlockExecutorError, ExecutorResult};
 use starcoin_vm2_types::transaction::{Transaction, TransactionInfo, TransactionStatus};
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::state_store::state_key::{inner::StateKeyInner, StateKey};
-use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use starcoin_vm2_vm_types::state_store::state_value::StateValue;
 use starcoin_vm2_vm_types::state_store::TStateView;
+use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_runtime::reuse_recorder;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -40,6 +42,7 @@ pub struct PlanEntry {
     pub sanitized: ExecRecord,
     pub witness: Option<ExecRecord>,
     pub decision: PlanDecision,
+    pub forced_reexec: bool,
 }
 
 #[derive(Debug)]
@@ -106,6 +109,10 @@ pub fn execute_transactions_with_reuse(
         if let Some(plan) = planner.plan(&transactions) {
             let reused = plan.reused_count();
             let reexec = plan.reexec_count();
+            println!(
+                "execute_transactions_with_reuse reused={} reexec={}",
+                reused, reexec
+            );
             let stats = &plan.stats;
 
             TEST_REUSE_HITS.fetch_add(reused, Ordering::Relaxed);
@@ -138,9 +145,34 @@ struct ReusePlanner<'a> {
     epoch_id: u64,
 }
 
+#[derive(Clone, Debug)]
+struct CachedState {
+    exists: bool,
+    value_hash: Option<HashValue>,
+}
+
+impl CachedState {
+    fn absent() -> Self {
+        Self {
+            exists: false,
+            value_hash: None,
+        }
+    }
+
+    fn from_state_value(value: Option<StateValue>) -> Self {
+        match value {
+            Some(state_value) => Self {
+                exists: true,
+                value_hash: Some(state_value.hash()),
+            },
+            None => Self::absent(),
+        }
+    }
+}
+
 struct PrefixEffects<'a> {
     state: &'a ChainStateDB,
-    cache: HashMap<StateKey, bool>,
+    cache: HashMap<StateKey, CachedState>,
 }
 
 impl<'a> PrefixEffects<'a> {
@@ -151,15 +183,15 @@ impl<'a> PrefixEffects<'a> {
         }
     }
 
-    fn exists(&mut self, key: &StateKey) -> Option<bool> {
-        if let Some(exists) = self.cache.get(key) {
-            return Some(*exists);
+    fn get(&mut self, key: &StateKey) -> Option<CachedState> {
+        if let Some(entry) = self.cache.get(key) {
+            return Some(entry.clone());
         }
         match self.state.get_state_value(key) {
             Ok(opt) => {
-                let exists = opt.is_some();
-                self.cache.insert(key.clone(), exists);
-                Some(exists)
+                let entry = CachedState::from_state_value(opt);
+                self.cache.insert(key.clone(), entry.clone());
+                Some(entry)
             }
             Err(err) => {
                 warn!(
@@ -171,8 +203,27 @@ impl<'a> PrefixEffects<'a> {
         }
     }
 
-    fn set(&mut self, key: &StateKey, exists: bool) {
-        self.cache.insert(key.clone(), exists);
+    fn set(&mut self, key: &StateKey, entry: CachedState) {
+        self.cache.insert(key.clone(), entry);
+    }
+
+    fn apply_write(&mut self, key: &StateKey, op: &WriteOp) {
+        use WriteOp::*;
+        match op {
+            Creation { data, metadata } | Modification { data, metadata } => {
+                let state_value = StateValue::new_with_metadata(data.clone(), metadata.clone());
+                self.set(
+                    key,
+                    CachedState {
+                        exists: true,
+                        value_hash: Some(state_value.hash()),
+                    },
+                );
+            }
+            Deletion { .. } => {
+                self.set(key, CachedState::absent());
+            }
+        }
     }
 }
 
@@ -238,10 +289,35 @@ impl<'a> ReusePlanner<'a> {
 
         let mut effects = PrefixEffects::new(self.statedb);
         for entry in entries.iter_mut() {
-            if entry.decision == PlanDecision::Reuse
-                && !self.validate_and_apply_reuse(entry, &mut effects)
-            {
-                entry.decision = PlanDecision::Reexec;
+            match entry.decision {
+                PlanDecision::Reuse => {
+                    if !self.validate_and_apply_reuse(entry, &mut effects) {
+                        entry.decision = PlanDecision::Reexec;
+                        if entry.forced_reexec {
+                            if let Some(witness) = entry.witness.as_ref() {
+                                for (key, op) in witness.write_set.iter() {
+                                    effects.apply_write(key, op);
+                                }
+                            }
+                        }
+                    }
+                }
+                PlanDecision::Reexec => {
+                    if !entry.forced_reexec
+                        && entry.witness.is_some()
+                        && self.validate_and_apply_reuse(entry, &mut effects)
+                    {
+                        entry.decision = PlanDecision::Reuse;
+                        continue;
+                    }
+                    if entry.forced_reexec {
+                        if let Some(witness) = entry.witness.as_ref() {
+                            for (key, op) in witness.write_set.iter() {
+                                effects.apply_write(key, op);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -265,9 +341,17 @@ impl<'a> ReusePlanner<'a> {
             tx_hash: txn.id(),
             epoch_id: self.epoch_id,
         };
+        let force_reexec = matches!(
+            txn,
+            Transaction::BlockMetadata(_) | Transaction::BlockEpilogue(_)
+        );
         if let Some(rec) = self.store.get(&key) {
+            println!(
+                "prepare_entry hit tx={} force_reexec={}",
+                key.tx_hash, force_reexec
+            );
             let mut sanitized = rec.clone();
-            let supported = Self::record_supported_for_reuse(&rec);
+            let supported = !force_reexec && Self::record_supported_for_reuse(&rec);
             let mut hit_with_reads = false;
 
             if !supported {
@@ -281,6 +365,7 @@ impl<'a> ReusePlanner<'a> {
                     sanitized,
                     witness: Some(rec),
                     decision: PlanDecision::Reexec,
+                    forced_reexec: force_reexec,
                 },
                 true,
                 hit_with_reads,
@@ -291,6 +376,7 @@ impl<'a> ReusePlanner<'a> {
                     sanitized: Self::placeholder_exec_record(txn.id(), self.epoch_id),
                     witness: None,
                     decision: PlanDecision::Reexec,
+                    forced_reexec: false,
                 },
                 false,
                 false,
@@ -325,11 +411,16 @@ impl<'a> ReusePlanner<'a> {
         sanitized
             .iter()
             .map(|rec| {
-                if reused.contains(&rec.tx_hash) {
+                let decision = if reused.contains(&rec.tx_hash) {
                     PlanDecision::Reuse
                 } else {
                     PlanDecision::Reexec
-                }
+                };
+                println!(
+                    "classify_decision tx={} decision={:?}",
+                    rec.tx_hash, decision
+                );
+                decision
             })
             .collect()
     }
@@ -361,64 +452,196 @@ impl<'a> ReusePlanner<'a> {
         )
     }
 
-    fn validate_and_apply_reuse(
-        &self,
-        entry: &PlanEntry,
-        effects: &mut PrefixEffects,
-    ) -> bool {
+    fn validate_and_apply_reuse(&self, entry: &PlanEntry, effects: &mut PrefixEffects) -> bool {
         use starcoin_vm2_vm_types::write_set::WriteOp::{Creation, Deletion, Modification};
 
         let rec = match entry.witness.as_ref() {
             Some(rec) => rec,
             None => return false,
         };
+        let debug = std::env::var("STARCOIN_REUSE_DEBUG").is_ok();
 
         let read_map = match rec.read_set.as_ref() {
             Some(reads) => {
                 let mut map = HashMap::with_capacity(reads.len());
                 for read in reads {
-                    map.insert(read.key.clone(), read.existed);
+                    map.entry(read.key.clone())
+                        .or_insert((read.existed, read.value_hash));
                 }
                 map
             }
             None => return false,
         };
 
+        // Verify that every recorded read matches the current (or prefixed) state.
+        for (key, (expected_exists, expected_hash)) in read_map.iter() {
+            let entry = match effects.get(key) {
+                Some(entry) => entry,
+                None => {
+                    if debug {
+                        println!("reuse_lookup_miss tx={} key={:?}", rec.tx_hash, key);
+                    }
+                    return false;
+                }
+            };
+
+            if entry.exists != *expected_exists {
+                if debug {
+                    println!(
+                        "reuse_exists_mismatch tx={} key={:?} expected={} actual={}",
+                        rec.tx_hash, key, expected_exists, entry.exists
+                    );
+                }
+                return false;
+            }
+
+            if *expected_exists && entry.value_hash.as_ref() != Some(expected_hash) {
+                if debug {
+                    println!(
+                        "reuse_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
+                        rec.tx_hash, key, expected_hash, entry.value_hash
+                    );
+                }
+                return false;
+            }
+        }
+
         for (key, op) in rec.write_set.iter() {
             match op {
                 Creation { .. } => {
-                    if read_map.get(key).copied() != Some(false) {
+                    let before = match effects.get(key) {
+                        Some(entry) => entry,
+                        None => {
+                            if debug {
+                                println!(
+                                    "reuse_creation_lookup_miss tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
+                    };
+                    if before.exists {
+                        if debug {
+                            println!("reuse_creation_exists tx={} key={:?}", rec.tx_hash, key);
+                        }
                         return false;
                     }
-                    match effects.exists(key) {
-                        Some(false) => effects.set(key, true),
-                        Some(true) => return false,
-                        None => return false,
+                    if let Some((expected_exists, _)) = read_map.get(key) {
+                        if *expected_exists {
+                            if debug {
+                                println!(
+                                    "reuse_creation_expected_exists tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
                     }
+                    effects.apply_write(key, op);
                 }
                 Modification { .. } => {
-                    if read_map.get(key).copied() != Some(true) {
+                    let before = match effects.get(key) {
+                        Some(entry) => entry,
+                        None => {
+                            if debug {
+                                println!(
+                                    "reuse_modify_lookup_miss tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
+                    };
+                    let (expected_exists, expected_hash) = match read_map.get(key) {
+                        Some((exists, hash)) => (*exists, hash),
+                        None => {
+                            if debug {
+                                println!(
+                                    "reuse_modify_missing_read tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
+                    };
+                    if !expected_exists || !before.exists {
+                        if debug {
+                            println!(
+                                "reuse_modify_exists_mismatch tx={} key={:?} expected_exists={} before.exists={}",
+                                rec.tx_hash,
+                                key,
+                                expected_exists,
+                                before.exists
+                            );
+                        }
                         return false;
                     }
-                    match effects.exists(key) {
-                        Some(true) => effects.set(key, true),
-                        Some(false) => return false,
-                        None => return false,
+                    if before.value_hash.as_ref() != Some(expected_hash) {
+                        if debug {
+                            println!(
+                                "reuse_modify_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
+                                rec.tx_hash, key, expected_hash, before.value_hash
+                            );
+                        }
+                        return false;
                     }
+                    effects.apply_write(key, op);
                 }
                 Deletion { .. } => {
-                    if read_map.get(key).copied() != Some(true) {
+                    let before = match effects.get(key) {
+                        Some(entry) => entry,
+                        None => {
+                            if debug {
+                                println!(
+                                    "reuse_delete_lookup_miss tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
+                    };
+                    let (expected_exists, expected_hash) = match read_map.get(key) {
+                        Some((exists, hash)) => (*exists, hash),
+                        None => {
+                            if debug {
+                                println!(
+                                    "reuse_delete_missing_read tx={} key={:?}",
+                                    rec.tx_hash, key
+                                );
+                            }
+                            return false;
+                        }
+                    };
+                    if !expected_exists || !before.exists {
+                        if debug {
+                            println!(
+                                "reuse_delete_exists_mismatch tx={} key={:?} expected_exists={} before.exists={}",
+                                rec.tx_hash,
+                                key,
+                                expected_exists,
+                                before.exists
+                            );
+                        }
                         return false;
                     }
-                    match effects.exists(key) {
-                        Some(true) => effects.set(key, false),
-                        Some(false) => return false,
-                        None => return false,
+                    if before.value_hash.as_ref() != Some(expected_hash) {
+                        if debug {
+                            println!(
+                                "reuse_delete_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
+                                rec.tx_hash, key, expected_hash, before.value_hash
+                            );
+                        }
+                        return false;
                     }
+                    effects.apply_write(key, op);
                 }
             }
         }
 
+        if debug {
+            println!("reuse_validate_success tx={}", rec.tx_hash);
+        }
         true
     }
 }
@@ -471,6 +694,13 @@ impl<'a> ReuseExecutor<'a> {
                                 let ws_for_result = write_set_mut
                                     .freeze()
                                     .map_err(BlockExecutorError::BlockChainStateErr)?;
+                                if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                                    println!(
+                                        "reuse_plan_execute apply witness tx={} writes={}",
+                                        tx_hash,
+                                        write_entries.len()
+                                    );
+                                }
 
                                 pending_reuse_writes.extend(write_entries);
 
@@ -544,19 +774,40 @@ impl<'a> ReuseExecutor<'a> {
             let (write_set, events, gas_used, status, _aux) = output.into_inner();
             match status {
                 TransactionStatus::Discard(discard_status) => {
+                    println!(
+                        "reuse reexec discard tx={} status={:?}",
+                        tx_hash, discard_status
+                    );
+                    self.remove_witness(tx_hash);
                     return Err(BlockExecutorError::BlockTransactionDiscard(
                         discard_status,
                         tx_hash,
                     ));
                 }
                 TransactionStatus::Retry => {
+                    println!("reuse reexec retry tx={}", tx_hash);
+                    self.remove_witness(tx_hash);
                     return Err(BlockExecutorError::BlockExecuteRetryErr);
                 }
                 TransactionStatus::Keep(keep_status) => {
-                    let read_entries = read_sets_iter.next().map(Self::to_read_entries);
+                    println!("reuse reexec keep tx={} status={:?}", tx_hash, keep_status);
                     let write_set_clone = write_set.clone();
                     let write_entries_for_store =
                         write_set_clone.clone().into_iter().collect::<Vec<_>>();
+                    if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                        println!(
+                            "reuse_plan_reexec tx={} write_entries={}",
+                            tx_hash,
+                            write_entries_for_store.len()
+                        );
+                    }
+                    let mut read_entries = read_sets_iter.next().map(Self::to_read_entries);
+                    crate::hydrate_read_set_for_writes(
+                        self.statedb,
+                        &mut read_entries,
+                        &write_entries_for_store,
+                    )
+                    .map_err(|e| BlockExecutorError::BlockChainStateErr(e.into()))?;
 
                     self.statedb
                         .apply_write_set(write_set)
@@ -603,8 +854,12 @@ impl<'a> ReuseExecutor<'a> {
             self.apply_pending_reuse_writes(&mut pending_reuse_writes)?;
         }
 
+        let final_root = self.statedb.state_root();
+        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+            println!("reuse_execute_plan final_root={:?}", final_root);
+        }
         Ok(BlockExecutedData {
-            state_root: self.statedb.state_root(),
+            state_root: final_root,
             txn_infos,
             txn_events,
             txn_table_infos: Default::default(),
@@ -673,6 +928,9 @@ impl<'a> ReuseExecutor<'a> {
         }
 
         TEST_REUSE_REEXEC.fetch_add(executed.txn_infos.len(), Ordering::Relaxed);
+        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+            println!("reuse_execute_full final_root={:?}", executed.state_root);
+        }
         Ok(executed)
     }
 
@@ -693,6 +951,14 @@ impl<'a> ReuseExecutor<'a> {
             .apply_write_set(frozen)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         Ok(())
+    }
+
+    fn remove_witness(&self, tx_hash: HashValue) {
+        let key = ExecKey {
+            tx_hash,
+            epoch_id: self.epoch_id,
+        };
+        self.store.remove(&key);
     }
 
     fn store_exec_record(
