@@ -94,6 +94,9 @@ impl TransactionGenerator {
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction> {
         self.net.time_service().sleep(1000);
         let mut txns = Vec::with_capacity(txns_num);
+        self.accounts.iter_mut().for_each(|account| {
+            account.sequence_number = 0;
+        });
         loop {
             // max accounts size is 200, it's ok to generate 100 txns that seperate from each other
             // testing machine didn't have so much cores
@@ -252,13 +255,10 @@ impl BenchmarkManager {
         let mut executor = TransactionExecutor::new(&self.chain_state);
         let _ = executor.run(txns, true);
 
-        // do not persist the execution result to storage to save benchmark time
-        let do_not_persist_result = (serialize_bench_txns.len() + parallel_bench_txns.len()) <= 1;
-
         // run serialize txns
         for txns_num in serialize_bench_txns.iter() {
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns, do_not_persist_result));
+            reports.push(executor.run(txns, false));
         }
 
         // this variable could only be set once, default is serialize, so we run serialize first.
@@ -268,7 +268,7 @@ impl BenchmarkManager {
         // run parallel txns
         for txns_num in parallel_bench_txns.iter() {
             let txns = generator.gen_transfer_transactions(*txns_num);
-            reports.push(executor.run(txns, do_not_persist_result));
+            reports.push(executor.run(txns, false));
         }
 
         reports
