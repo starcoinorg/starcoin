@@ -13,8 +13,9 @@ use starcoin_vm2_types::transaction::{Transaction, TransactionInfo, TransactionS
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::state_store::state_key::{inner::StateKeyInner, StateKey};
 use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use starcoin_vm2_vm_types::state_store::TStateView;
 use starcoin_vm_runtime::reuse_recorder;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -137,6 +138,44 @@ struct ReusePlanner<'a> {
     epoch_id: u64,
 }
 
+struct PrefixEffects<'a> {
+    state: &'a ChainStateDB,
+    cache: HashMap<StateKey, bool>,
+}
+
+impl<'a> PrefixEffects<'a> {
+    fn new(state: &'a ChainStateDB) -> Self {
+        Self {
+            state,
+            cache: HashMap::new(),
+        }
+    }
+
+    fn exists(&mut self, key: &StateKey) -> Option<bool> {
+        if let Some(exists) = self.cache.get(key) {
+            return Some(*exists);
+        }
+        match self.state.get_state_value(key) {
+            Ok(opt) => {
+                let exists = opt.is_some();
+                self.cache.insert(key.clone(), exists);
+                Some(exists)
+            }
+            Err(err) => {
+                warn!(
+                    "reuse planner failed to query state for key {:?}: {:?}",
+                    key, err
+                );
+                None
+            }
+        }
+    }
+
+    fn set(&mut self, key: &StateKey, exists: bool) {
+        self.cache.insert(key.clone(), exists);
+    }
+}
+
 impl<'a> ReusePlanner<'a> {
     fn new(
         statedb: &'a ChainStateDB,
@@ -195,6 +234,15 @@ impl<'a> ReusePlanner<'a> {
 
         for (entry, decision) in entries.iter_mut().zip(decisions.into_iter()) {
             entry.decision = decision;
+        }
+
+        let mut effects = PrefixEffects::new(self.statedb);
+        for entry in entries.iter_mut() {
+            if entry.decision == PlanDecision::Reuse
+                && !self.validate_and_apply_reuse(entry, &mut effects)
+            {
+                entry.decision = PlanDecision::Reexec;
+            }
         }
 
         let elapsed_ms = plan_start.elapsed().as_millis();
@@ -311,6 +359,67 @@ impl<'a> ReusePlanner<'a> {
             key.inner(),
             StateKeyInner::AccessPath(_) | StateKeyInner::TableItem { .. }
         )
+    }
+
+    fn validate_and_apply_reuse(
+        &self,
+        entry: &PlanEntry,
+        effects: &mut PrefixEffects,
+    ) -> bool {
+        use starcoin_vm2_vm_types::write_set::WriteOp::{Creation, Deletion, Modification};
+
+        let rec = match entry.witness.as_ref() {
+            Some(rec) => rec,
+            None => return false,
+        };
+
+        let read_map = match rec.read_set.as_ref() {
+            Some(reads) => {
+                let mut map = HashMap::with_capacity(reads.len());
+                for read in reads {
+                    map.insert(read.key.clone(), read.existed);
+                }
+                map
+            }
+            None => return false,
+        };
+
+        for (key, op) in rec.write_set.iter() {
+            match op {
+                Creation { .. } => {
+                    if read_map.get(key).copied() != Some(false) {
+                        return false;
+                    }
+                    match effects.exists(key) {
+                        Some(false) => effects.set(key, true),
+                        Some(true) => return false,
+                        None => return false,
+                    }
+                }
+                Modification { .. } => {
+                    if read_map.get(key).copied() != Some(true) {
+                        return false;
+                    }
+                    match effects.exists(key) {
+                        Some(true) => effects.set(key, true),
+                        Some(false) => return false,
+                        None => return false,
+                    }
+                }
+                Deletion { .. } => {
+                    if read_map.get(key).copied() != Some(true) {
+                        return false;
+                    }
+                    match effects.exists(key) {
+                        Some(true) => effects.set(key, false),
+                        Some(false) => return false,
+                        None => return false,
+                    }
+                }
+            }
+        }
+
+        true
     }
 }
 
