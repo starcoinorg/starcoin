@@ -175,7 +175,7 @@ impl fmt::Debug for AccessPath {
 
 impl fmt::Display for AccessPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "vm1/{}/{}", self.address, self.path)
+        write!(f, "{}/{}", self.address, self.path)
     }
 }
 
