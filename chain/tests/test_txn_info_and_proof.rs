@@ -9,6 +9,7 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
+use starcoin_storage::transaction_info::StcTransactionInfoStorage;
 use starcoin_transaction_builder::{
     peer_to_peer_txn_sent_as_association,
     vm2::peer_to_peer_txn_sent_as_association as vm2_peer_to_peer_txn_sent_as_association,
@@ -241,14 +242,25 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 .get_txn_accumulator()
                 .get_leaf(txn_global_index)?
                 .ok_or_else(|| format_err!("Cannot get txn info by index: {}", txn_global_index))?;
-            let txn_info = block_chain.get_transaction_info(txn.id())?.ok_or_else(|| {
-                format_err!(
-                    "Cannot get txn info by txn hash:{}, index: {}",
-                    txn.id(),
-                    index
-                )
-            })?;
-            println!("jacktest: txn id:{}, txn_info_leaf:{}", txn.id(), txn_info.transaction_info.transaction_hash());
+            let txn_info = storage1.get_transaction_info(txn_info_leaf)?.ok_or_else(|| format_err!(
+                "Cannot get txn info by txn hash:{}, index: {}",
+                txn.id(),
+                index
+            ))?;
+            // let txn_info = block_chain.get_transaction_info(txn.id())?.ok_or_else(|| {
+            //     format_err!(
+            //         "Cannot get txn info by txn hash:{}, index: {}",
+            //         txn.id(),
+            //         index
+            //     )
+            // })?;
+            // println!("jacktest: txn id:{}, txn_info_leaf:{}", txn.id(), txn_info.transaction_info.transaction_hash());
+            // assert!(txn_infos.iter().any(|txn_info| {
+            //     txn_info.transaction_global_index == txn_global_index
+            // }), "txn info global index do not match, txn info index: {:?}, txn_global_index:{}", txn_infos.iter().map(|info| info.transaction_global_index).collect::<Vec<_>>(), txn_global_index);
+            // assert!(txn_infos.iter().any(|txn_info| {
+            //     txn_info.transaction_info.id() == txn_info_leaf 
+            // }), "txn info global index do not match, txn info id: {:?}, txn_info_leaf:{}", txn_infos.iter().map(|info| info.transaction_info.id()).collect::<Vec<_>>(), txn_info_leaf);
             assert_eq!(
                 txn_info.transaction_global_index, txn_global_index,
                 "txn info global index do not match, txn info index: {}, txn_global_index:{}",
@@ -261,21 +273,20 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txn_global_index
             );
 
-            let txn = match txn.to_v1() {
-                Some(txn) => txn,
-                None => {
-                    continue;
-                }
-            };
+            // let txn = match txn.to_v1() {
+            //     Some(txn) => txn,
+            //     None => {
+            //         continue;
+            //     }
+            // };
 
-            let account_address = match &txn {
-                Transaction::UserTransaction(user_txn) => user_txn.sender(),
-                Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-            };
-            let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
-                account_address,
-                AccountResource::struct_tag(),
-            ));
+            let account_address = txn.address(); 
+                
+            // let account_address = match &txn {
+            //     Transaction::UserTransaction(user_txn) => user_txn.sender(),
+            //     Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+            // };
+            let access_path: Option<MultiAccessPath> = Some(MultiAccessPath::from(account_address));
 
             let events = block_chain
                 .get_events(txn_info.transaction_info.id())?
@@ -287,7 +298,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                         current_header.id(),
                         txn_global_index,
                         Some(event_index as u64),
-                        access_path.clone().map(MultiAccessPath::VM1),
+                        access_path.clone(),
                     )?
                     .expect("get transaction proof return none");
                 assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
@@ -298,7 +309,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     final_transaction_info_index,
                     final_transaction_info_id,
                     Some(event_index as u64),
-                    access_path.clone().map(MultiAccessPath::VM1),
+                    access_path.clone(),
                     MultiAccessPath::VM2(final_access_path.clone().unwrap().clone()),
                     final_state_root_hash,
                 );

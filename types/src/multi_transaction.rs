@@ -35,6 +35,18 @@ pub enum MultiTransaction {
     VM2(Transaction2),
 }
 
+impl From<AccountAddress> for MultiAddress {
+    fn from(value: AccountAddress) -> Self {
+        Self::VM1(value)
+    }
+}
+
+impl From<AccountAddress2> for MultiAddress {
+    fn from(value: AccountAddress2) -> Self {
+        Self::VM2(value)
+    }
+}
+
 impl MultiTransaction {
     pub fn sender_address(&self) -> MultiAddress {
         match self {

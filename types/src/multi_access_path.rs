@@ -1,11 +1,17 @@
 use anyhow::{bail, Result};
+use move_vm2_core_types::move_resource::MoveStructType;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_vm2_types::access_path::{AccessPath as AccessPath2, DataPath as DataPath2};
+use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::AccountResource;
 use std::{fmt, str::FromStr};
+
+use crate::multi_transaction::MultiAccountAddress;
+use starcoin_vm_types::move_resource::MoveResource;
 
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd, JsonSchema)]
 #[schemars(with = "String")]
@@ -135,6 +141,28 @@ impl fmt::Display for MultiAccessPath {
             MultiAccessPath::VM2(access_path) => {
                 write!(f, "{}/{}", access_path.address, access_path.path)
             }
+        }
+    }
+}
+
+impl From<AccessPath> for MultiAccessPath {
+    fn from(access_path: AccessPath) -> Self {
+        MultiAccessPath::VM1(access_path)
+    }
+}
+
+impl From<AccessPath2> for MultiAccessPath {
+    fn from(access_path: AccessPath2) -> Self {
+        MultiAccessPath::VM2(access_path)
+    }
+}
+
+
+impl From<MultiAccountAddress> for MultiAccessPath {
+    fn from(addr: MultiAccountAddress) -> Self {
+        match addr {
+            MultiAccountAddress::VM1(addr) => MultiAccessPath::VM1(AccessPath::resource_access_path(addr, AccountResource::struct_tag())),
+            MultiAccountAddress::VM2(addr) => MultiAccessPath::VM2(AccessPath2::resource_access_path(addr, AccountResource2::struct_tag())),
         }
     }
 }
