@@ -245,7 +245,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                         current_header.id(),
                         txn_global_index,
                         Some(event_index as u64),
-                        access_path.clone().map(|ap| MultiAccessPath::VM1(ap)),
+                        access_path.clone().map(MultiAccessPath::VM1),
                     )?
                     .expect("get transaction proof return none");
                 assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
@@ -256,7 +256,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     final_transaction_info_index,
                     final_transaction_info_id,
                     Some(event_index as u64),
-                    access_path.clone().map(|ap| MultiAccessPath::VM1(ap)),
+                    access_path.clone().map(MultiAccessPath::VM1),
                     MultiAccessPath::VM1(final_access_path.clone().unwrap().clone()),
                     final_state_root_hash,
                 );

@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,

@@ -21,7 +21,6 @@ use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, StateWithProof as StateWithProof2};
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_dag::types::ghostdata::GhostdagData;

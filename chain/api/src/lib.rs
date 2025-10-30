@@ -6,11 +6,10 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
-use starcoin_state_api::StateWithProof;
 use starcoin_types::{
     multi_access_path::MultiAccessPath,
     multi_transaction::MultiSignedUserTransaction,
-    transaction::{legacy::RichTransactionInfo, StcRichTransactionInfo, StcTransactionInfo},
+    transaction::{StcRichTransactionInfo, StcTransactionInfo},
 };
 use starcoin_vm2_state_api::StateWithProof as StateWithProof2;
 use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
@@ -32,7 +31,6 @@ pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_vm2_types::view::{

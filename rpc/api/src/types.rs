@@ -75,7 +75,6 @@ use starcoin_vm_types::{
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
-    ops::Mul,
     str::FromStr,
 };
 pub use vm_status_translator::VmStatusExplainView;

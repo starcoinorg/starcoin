@@ -21,8 +21,8 @@ impl Serialize for MultiAccessPath {
     {
         if serializer.is_human_readable() {
             let s = match self {
-                MultiAccessPath::VM1(ap) => format!("vm1/{}", ap.to_string()),
-                MultiAccessPath::VM2(ap2) => format!("vm2/{}", ap2.to_string()),
+                MultiAccessPath::VM1(ap) => format!("vm1/{}", ap),
+                MultiAccessPath::VM2(ap2) => format!("vm2/{}", ap2),
             };
             serializer.serialize_str(&s)
         } else {

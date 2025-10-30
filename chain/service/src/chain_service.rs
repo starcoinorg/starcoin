@@ -33,7 +33,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.

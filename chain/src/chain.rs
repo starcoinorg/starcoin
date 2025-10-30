@@ -33,6 +33,7 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
+use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
@@ -45,7 +46,6 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_types::{account_config::AccountResource, filter::Filter};
 use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
 use starcoin_types::{multi_access_path::MultiAccessPath, multi_state::MultiState};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
@@ -59,7 +59,6 @@ use starcoin_vm2_vm_types::{
     on_chain_resource::Epoch,
 };
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::{access_path::AccessPath, move_resource::MoveResource};
 use std::cmp::min;
 use std::collections::BTreeMap;
 use std::iter::Extend;
@@ -1538,7 +1537,6 @@ impl ChainReader for BlockChain {
         let final_state_root_hash = proof_transaction_info
             .state_root()
             .ok_or_else(|| format_err!("Cannot get state root hash"))?;
-        let final_account_address = final_raw_transaction.sender_address();
         let final_access_path = final_raw_transaction.access_path();
 
         let transaction_info = storage
@@ -1567,11 +1565,11 @@ impl ChainReader for BlockChain {
         let state_proof = if let Some(access_path) = access_path {
             if let Some(state_root) = transaction_info.state_root() {
                 match transaction_info.txn_info() {
-                    StcTransactionInfo::V1(transaction_info) => {
+                    StcTransactionInfo::V1(_) => {
                         let statedb = statedb.fork_at(state_root);
                         Some(MultiStateProof::VM1(statedb.get_with_proof(&access_path.to_v1().ok_or_else(|| format_err!("the transaction to be verified is vm version 1 but the access path is not"))?)?))
                     }
-                    StcTransactionInfo::V2(transaction_info) => {
+                    StcTransactionInfo::V2(_) => {
                         let statedb2 = statedb2.fork_at(state_root);
                         Some(MultiStateProof::VM2(statedb2.get_with_proof(&access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)?))
                     }
@@ -1586,9 +1584,9 @@ impl ChainReader for BlockChain {
         let final_state_proof = match &final_access_path {
             MultiAccessPath::VM1(access_path) => {
                 let statedb = statedb.fork_at(final_state_root_hash);
-                MultiStateProof::VM1(statedb.get_with_proof(&access_path)?)
+                MultiStateProof::VM1(statedb.get_with_proof(access_path)?)
             }
-            MultiAccessPath::VM2(access_path) => {
+            MultiAccessPath::VM2(_) => {
                 let statedb2 = statedb2.fork_at(final_state_root_hash);
                 MultiStateProof::VM2(statedb2.get_with_proof(&final_access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)?)
             }
