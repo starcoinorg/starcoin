@@ -27,6 +27,10 @@ use starcoin_vm_types::{
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
+
+    fn is_block_meta_data(&self) -> bool {
+        matches!(self, PreprocessedTransaction::BlockMetadata(_))
+    }
 }
 
 // Wrapper to avoid orphan rule
