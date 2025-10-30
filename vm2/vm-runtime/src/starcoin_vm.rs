@@ -1721,19 +1721,21 @@ impl StarcoinVM {
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let (vm_status, output) =
-                    match self.process_block_metadata(data_cache, block_meta.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
+                let (vm_status, output) = match self
+                    .process_block_metadata(&data_cache.as_move_resolver(), block_meta.clone())
+                {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
                 (vm_status, output, Some("block_meta".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_, senders) => {
-                let (vm_status, output) =
-                    match self.process_block_epilogue(data_cache, senders.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
+                let (vm_status, output) = match self
+                    .process_block_epilogue(&data_cache.as_move_resolver(), senders.clone())
+                {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })
