@@ -65,8 +65,10 @@ use crate::{verifier, VMExecutor};
 #[cfg(feature = "metrics")]
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm1_types::stdlib::StdlibVersion;
+use std::sync::LazyLock;
 
-static EXECUTION_CONCURRENCY_LEVEL: AtomicUsize = AtomicUsize::new(1);
+static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> =
+    LazyLock::new(|| AtomicUsize::new(num_cpus::get()));
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
