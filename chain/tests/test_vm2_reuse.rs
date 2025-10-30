@@ -296,7 +296,7 @@ fn test_vm2_table_txn_triggers_reexec() -> Result<()> {
         "table write should force at least one re-execution"
     );
     assert!(
-        hits <= total_vm2 - 1,
+        hits < total_vm2,
         "table write should prevent full reuse (hits={}, total={})",
         hits,
         total_vm2

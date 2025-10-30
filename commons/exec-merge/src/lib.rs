@@ -2,13 +2,14 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::CryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_statedb::{ChainStateReader, ChainStateWriter};
+use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_types::contract_event::ContractEvent;
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm2_vm_types::state_store::TStateView;
 use starcoin_vm2_vm_types::write_set::WriteOp;
 use starcoin_vm2_vm_types::write_set::{WriteSet, WriteSetMut};
 use std::collections::{HashMap, HashSet};
@@ -75,7 +76,13 @@ pub trait StateViewExt {
     fn get_value_hash(&self, key: &StateKey) -> Option<HashValue>;
 }
 
-// Default impls for production are provided elsewhere when integrating.
+impl StateViewExt for ChainStateDB {
+    fn get_value_hash(&self, key: &StateKey) -> Option<HashValue> {
+        self.get_state_value(key)
+            .ok()
+            .and_then(|maybe_value| maybe_value.map(|state_value| state_value.hash()))
+    }
+}
 
 // ------------------------------
 // Witness Store (LRU)
@@ -201,7 +208,7 @@ impl MergeEngine {
         self.materialize_write_set(diff)
     }
 
-    pub fn apply_diff(&self, state_db: &ChainStateDB2, diff: &MergeDiff) -> Result<ApplyResult> {
+    pub fn apply_diff(&self, state_db: &ChainStateDB, diff: &MergeDiff) -> Result<ApplyResult> {
         if let Some(ws) = self.materialize_write_set(diff)? {
             state_db.apply_write_set(ws)?;
             let root = state_db.commit()?;
@@ -264,6 +271,12 @@ pub fn build_prefix_from_writes(writes: &[(StateKey, WriteOp)]) -> PrefixWrites 
     }
     PrefixWrites(set)
 }
+
+mod reuse;
+pub use reuse::{
+    execute_transactions_with_reuse, reset_reuse_counters_for_test, reuse_counters_for_test,
+    PlanDecision, PlanEntry, PlanStats, ReusePlan,
+};
 
 #[cfg(test)]
 mod tests;

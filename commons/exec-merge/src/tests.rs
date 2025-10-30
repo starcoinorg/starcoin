@@ -1,6 +1,6 @@
 use super::*;
-use starcoin_vm2_crypto::hash::CryptoHash;
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_crypto::HashValue;
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::vm_error::KeptVMStatus;
 use starcoin_vm2_vm_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
@@ -9,18 +9,7 @@ use starcoin_vm2_vm_types::state_store::table::TableHandle;
 use starcoin_vm2_vm_types::state_store::TStateView;
 use starcoin_vm2_vm_types::write_set::{WriteOp as WSWriteOp, WriteSetMut};
 
-struct DbView<'a>(&'a ChainStateDB2);
-
-impl<'a> StateViewExt for DbView<'a> {
-    fn get_value_hash(&self, key: &StateKey) -> Option<HashValue> {
-        self.0
-            .get_state_value(key)
-            .ok()
-            .and_then(|maybe_value| maybe_value.map(|state_value| state_value.hash()))
-    }
-}
-
-fn apply_op(db: &ChainStateDB2, key: StateKey, op: WSWriteOp) {
+fn apply_op(db: &ChainStateDB, key: StateKey, op: WSWriteOp) {
     let ws = WriteSetMut::new(vec![(key, op)]);
     let frozen = ws.freeze().expect("freeze write set");
     db.apply_write_set(frozen).expect("apply write set");
@@ -29,7 +18,7 @@ fn apply_op(db: &ChainStateDB2, key: StateKey, op: WSWriteOp) {
 
 #[test]
 fn plan_merge_reuse_and_apply() {
-    let state_db = ChainStateDB2::mock();
+    let state_db = ChainStateDB::mock();
     let handle = TableHandle(AccountAddress::new([1u8; 16]));
     let k1 = StateKey::table_item(&handle, b"k1");
     let v1 = b"v1".to_vec();
@@ -67,7 +56,7 @@ fn plan_merge_reuse_and_apply() {
 
     let eng = MergeEngine::new();
     let mut prefix = PrefixWrites::default();
-    let diff = eng.plan_merge(&DbView(&state_db), &mut prefix, &[rec.clone()]);
+    let diff = eng.plan_merge(&state_db, &mut prefix, &[rec.clone()]);
     assert_eq!(diff.reexec.len(), 0);
     assert_eq!(diff.reused, vec![tx_hash]);
     assert_eq!(diff.writes.len(), 0);
@@ -101,14 +90,14 @@ fn plan_merge_detect_prefix_conflict() {
         table_infos: Vec::new(),
     };
     let eng = MergeEngine::new();
-    let diff = eng.plan_merge(&DbView(&ChainStateDB2::mock()), &mut prefix, &[rec]);
+    let diff = eng.plan_merge(&ChainStateDB::mock(), &mut prefix, &[rec]);
     assert_eq!(diff.reexec, vec![tx_hash]);
     assert_eq!(diff.reused.len(), 0);
 }
 
 #[test]
 fn plan_merge_detect_value_change() {
-    let state_db = ChainStateDB2::mock();
+    let state_db = ChainStateDB::mock();
     let handle = TableHandle(AccountAddress::new([4u8; 16]));
     let k1 = StateKey::table_item(&handle, b"k1");
     let v1 = b"v1".to_vec();
@@ -144,14 +133,14 @@ fn plan_merge_detect_value_change() {
     };
     let mut prefix = PrefixWrites::default();
     let eng = MergeEngine::new();
-    let diff = eng.plan_merge(&DbView(&state_db), &mut prefix, &[rec]);
+    let diff = eng.plan_merge(&state_db, &mut prefix, &[rec]);
     assert_eq!(diff.reexec, vec![tx_hash]);
 }
 
 // -------- apply_diff complex scenarios (with real statedb-v2) --------
 #[test]
 fn apply_diff_empty_is_noop() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
     let diff = MergeDiff::default();
     let pre_root = statedb.state_root();
@@ -162,7 +151,7 @@ fn apply_diff_empty_is_noop() {
 
 #[test]
 fn apply_diff_create_modify_delete_table_item() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let handle = TableHandle(AccountAddress::new([7u8; 16]));
@@ -236,7 +225,7 @@ fn apply_diff_no_commit_materializes_writes() {
 
 #[test]
 fn apply_diff_duplicate_key_last_wins() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let handle = TableHandle(AccountAddress::new([9u8; 16]));
@@ -257,7 +246,7 @@ fn apply_diff_duplicate_key_last_wins() {
 
 #[test]
 fn apply_diff_multi_handles_independent_updates() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let h1 = TableHandle(AccountAddress::new([0x11; 16]));
@@ -293,7 +282,7 @@ fn apply_diff_multi_handles_independent_updates() {
 
 #[test]
 fn apply_diff_resource_crud() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let addr = AccountAddress::new([0xAB; 16]);
@@ -334,7 +323,7 @@ fn apply_diff_resource_crud() {
 
 #[test]
 fn apply_diff_resource_group_crud() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let addr = AccountAddress::new([0xCD; 16]);
@@ -375,7 +364,7 @@ fn apply_diff_resource_group_crud() {
 
 #[test]
 fn apply_diff_module_create_modify_delete_fails() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let addr = AccountAddress::new([0xEF; 16]);
@@ -412,7 +401,7 @@ fn apply_diff_module_create_modify_delete_fails() {
 
 #[test]
 fn apply_diff_idempotent_same_value_no_root_change() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let handle = TableHandle(AccountAddress::new([0x44; 16]));
@@ -442,7 +431,7 @@ fn apply_diff_idempotent_same_value_no_root_change() {
 
 #[test]
 fn apply_diff_delete_nonexistent_resource_no_root_change() {
-    let statedb = ChainStateDB2::mock();
+    let statedb = ChainStateDB::mock();
     let eng = MergeEngine::new();
 
     let addr = AccountAddress::new([0x33; 16]);

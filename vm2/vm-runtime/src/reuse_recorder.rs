@@ -19,7 +19,7 @@ struct Recorder {
 }
 
 thread_local! {
-    static RECORDER: RefCell<Option<Recorder>> = RefCell::new(None);
+    static RECORDER: RefCell<Option<Recorder>> = const { RefCell::new(None) };
 }
 
 pub fn start() {
