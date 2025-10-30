@@ -110,6 +110,7 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
 impl<T, E> ParallelTransactionExecutor<T, E>
 where
     T: Transaction,
+    T::Key: std::fmt::Debug, // Add Debug trait bound for Key
     E: ExecutorTask<T = T>,
 {
     /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
@@ -214,11 +215,17 @@ where
             .expect("Prior read-set must be recorded");
 
         let valid = read_set.iter().all(|r| {
-            match versioned_data_cache.read(r.path(), idx_to_validate) {
+       let result =      match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
                 Err(None) => r.validate_storage(),
+            };
+
+            if !result {
+                println!("read validation conflict: {:?}", r.path());
             }
+
+            result
         });
 
         let aborted = !valid && scheduler.try_abort(idx_to_validate, incarnation);
