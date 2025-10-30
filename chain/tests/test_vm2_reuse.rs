@@ -2,19 +2,15 @@ use anyhow::{anyhow, Result};
 use starcoin_chain::{enable_vm2_reuse_for_test, ChainReader};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::Consensus;
-use starcoin_crypto::HashValue;
 use starcoin_exec_merge::{global_witness_store, reset_global_witness_store_for_tests, ExecKey};
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_chain::{
     create_pre_state_fingerprint, reset_reuse_counters_for_test, reuse_counters_for_test,
 };
-use starcoin_vm2_crypto::HashValue as Vm2HashValue;
 use starcoin_vm2_state_api::StateReaderExt;
 use starcoin_vm2_test_helper::build_transfer_from_association;
-use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm2_types::transaction::Transaction;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2,
     account_config::association_address,
@@ -28,80 +24,6 @@ use starcoin_vm2_vm_types::{
 
 const TABLE_MARKER_KEY: &[u8] = b"reuse-table-marker";
 
-fn build_user_txn(chain: &MockChain, seq: u64, amount: u128) -> Result<SignedUserTransaction> {
-    let txn = build_transfer_from_association(
-        association_address(),
-        seq,
-        amount,
-        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        chain.net(),
-    );
-    match txn {
-        Transaction::UserTransaction(txn) => Ok(txn),
-        _ => Err(anyhow!("expected VM2 user transaction")),
-    }
-}
-
-fn into_multi(txn: SignedUserTransaction) -> MultiSignedUserTransaction {
-    MultiSignedUserTransaction::from(txn)
-}
-
-fn ghostdag_red_count(chain: &MockChain, block: &Block) -> Result<u64> {
-    Ok(chain
-        .head()
-        .dag()
-        .ghost_dag_manager()
-        .ghostdag(block.header().parents_hash())?
-        .mergeset_reds
-        .len() as u64)
-}
-
-fn exec_key(tx_hash: Vm2HashValue, pre_state: Vm2HashValue) -> ExecKey {
-    ExecKey {
-        tx_hash,
-        pre_state_fingerprint: pre_state,
-    }
-}
-
-fn prepare_vm2_block(
-    chain: &mut MockChain,
-    txs: Vec<MultiSignedUserTransaction>,
-) -> Result<(Block, HashValue, Vm2HashValue, Vec<Vm2HashValue>)> {
-    let parent_block = chain.head().head_block();
-    let parent_multi = parent_block.multi_state().clone();
-    let parent_header = parent_block.header().clone();
-    let parent_epoch = chain.head().epoch().number();
-    let parent_header_id = parent_header.id();
-
-    chain.net().time_service().sleep(1);
-    let (template, excluded) = chain
-        .head()
-        .create_block_template_simple_with_txns(*chain.miner().address(), txs)?;
-    assert!(
-        excluded.discarded_txns.is_empty() && excluded.untouched_txns.is_empty(),
-        "unexpected excluded txns: {:?}",
-        excluded
-    );
-
-    let block = chain
-        .head()
-        .consensus()
-        .create_block(template, chain.net().time_service().as_ref())?;
-    let red_blocks = ghostdag_red_count(chain, &block)?;
-    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
-    let pre_state =
-        create_pre_state_fingerprint(parent_multi.state_root2(), &metadata, parent_epoch);
-    let user_hashes = block
-        .transactions2()
-        .iter()
-        .map(|txn| txn.id())
-        .collect::<Vec<_>>();
-
-    chain.apply(block.clone())?;
-
-    Ok((block, parent_header_id, pre_state, user_hashes))
-}
-
 #[test]
 fn test_vm2_reuse_hits() -> Result<()> {
     let _guard = enable_vm2_reuse_for_test();
@@ -113,16 +35,56 @@ fn test_vm2_reuse_hits() -> Result<()> {
         .head()
         .chain_state_reader2()
         .get_sequence_number(association_address())?;
-    let tx = into_multi(build_user_txn(&chain, seq, 1_000)?);
+    let txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        1_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
 
-    let (block, parent_header_id, pre_state_fp, user_hashes) =
-        prepare_vm2_block(&mut chain, vec![tx])?;
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_epoch = chain.head().epoch().number();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(txn)],
+    )?;
+
+    let red_blocks = chain
+        .head()
+        .dag()
+        .ghost_dag_manager()
+        .ghostdag(block.header().parents_hash())?
+        .mergeset_reds
+        .len() as u64;
+    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
+    let pre_state_fp = create_pre_state_fingerprint(
+        parent_block.multi_state().state_root2(),
+        &metadata,
+        parent_epoch,
+    );
+    let user_hashes = block
+        .transactions2()
+        .iter()
+        .map(|txn| txn.id())
+        .collect::<Vec<_>>();
     assert!(!user_hashes.is_empty(), "expected at least one VM2 txn");
 
     // Ensure witness exists for the user transaction.
     let store = global_witness_store();
     for hash in &user_hashes {
-        let key = exec_key(*hash, pre_state_fp);
+        let key = ExecKey {
+            tx_hash: *hash,
+            pre_state_fingerprint: pre_state_fp,
+        };
         if let Some(mut rec) = store.get(&key) {
             let had_reads = rec.read_set.is_some();
             rec.write_set
@@ -175,16 +137,68 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
         .head()
         .chain_state_reader2()
         .get_sequence_number(association_address())?;
-    let tx0 = into_multi(build_user_txn(&chain, seq, 1_000)?);
-    let tx1 = into_multi(build_user_txn(&chain, seq + 1, 2_000)?);
+    let txn0 = match build_transfer_from_association(
+        association_address(),
+        seq,
+        1_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
+    let txn1 = match build_transfer_from_association(
+        association_address(),
+        seq + 1,
+        2_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
 
-    let (block, parent_header_id, pre_state_fp, user_hashes) =
-        prepare_vm2_block(&mut chain, vec![tx0, tx1])?;
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_epoch = chain.head().epoch().number();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![
+            MultiSignedUserTransaction::from(txn0),
+            MultiSignedUserTransaction::from(txn1),
+        ],
+    )?;
+
+    let red_blocks = chain
+        .head()
+        .dag()
+        .ghost_dag_manager()
+        .ghostdag(block.header().parents_hash())?
+        .mergeset_reds
+        .len() as u64;
+    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
+    let pre_state_fp = create_pre_state_fingerprint(
+        parent_block.multi_state().state_root2(),
+        &metadata,
+        parent_epoch,
+    );
+    let user_hashes = block
+        .transactions2()
+        .iter()
+        .map(|txn| txn.id())
+        .collect::<Vec<_>>();
     assert_eq!(user_hashes.len(), 2);
 
     let store = global_witness_store();
     // Preserve first witness, force second to re-execute.
-    if let Some(mut rec) = store.get(&exec_key(user_hashes[0], pre_state_fp)) {
+    if let Some(mut rec) = store.get(&ExecKey {
+        tx_hash: user_hashes[0],
+        pre_state_fingerprint: pre_state_fp,
+    }) {
         rec.write_set
             .retain(|(k, _)| matches!(k.inner(), StateKeyInner::AccessPath(_)));
         assert!(rec.read_set.is_some(), "first txn witness missing read set");
@@ -192,7 +206,10 @@ fn test_vm2_reuse_mixed_hit_and_reexec() -> Result<()> {
     } else {
         return Err(anyhow!("missing witness for first transaction"));
     }
-    if let Some(mut rec) = store.get(&exec_key(user_hashes[1], pre_state_fp)) {
+    if let Some(mut rec) = store.get(&ExecKey {
+        tx_hash: user_hashes[1],
+        pre_state_fingerprint: pre_state_fp,
+    }) {
         rec.read_set = None;
         store.put(rec);
     } else {
@@ -237,15 +254,55 @@ fn test_vm2_table_txn_triggers_reexec() -> Result<()> {
         .head()
         .chain_state_reader2()
         .get_sequence_number(association_address())?;
-    let tx = into_multi(build_user_txn(&chain, seq, 5_000)?);
+    let txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        5_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
 
-    let (block, parent_header_id, pre_state_fp, user_hashes) =
-        prepare_vm2_block(&mut chain, vec![tx])?;
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_epoch = chain.head().epoch().number();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(txn)],
+    )?;
+
+    let red_blocks = chain
+        .head()
+        .dag()
+        .ghost_dag_manager()
+        .ghostdag(block.header().parents_hash())?
+        .mergeset_reds
+        .len() as u64;
+    let metadata = block.to_metadata(parent_header.gas_used(), red_blocks);
+    let pre_state_fp = create_pre_state_fingerprint(
+        parent_block.multi_state().state_root2(),
+        &metadata,
+        parent_epoch,
+    );
+    let user_hashes = block
+        .transactions2()
+        .iter()
+        .map(|txn| txn.id())
+        .collect::<Vec<_>>();
     assert_eq!(user_hashes.len(), 1);
 
     // Inject table write to disable reuse.
     let store = global_witness_store();
-    let key = exec_key(user_hashes[0], pre_state_fp);
+    let key = ExecKey {
+        tx_hash: user_hashes[0],
+        pre_state_fingerprint: pre_state_fp,
+    };
     if let Some(mut rec) = store.get(&key) {
         let handle = TableHandle(AccountAddress2::new([0u8; 16]));
         let table_key = StateKey::table_item(&handle, TABLE_MARKER_KEY);

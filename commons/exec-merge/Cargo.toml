@@ -6,21 +6,13 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-[features]
-default = []
-# Enable integration with statedb (apply_diff). Keeps core logic portable by default.
-statedb = ["dep:starcoin-vm2-statedb"]
-
 [dependencies]
 anyhow.workspace = true
 once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
 starcoin-vm2-crypto = { workspace = true }
-starcoin-vm2-statedb = { workspace = true, optional = true }
+starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-types = { workspace = true }
 quick_cache.workspace = true
-
-[dev-dependencies]
-starcoin-vm2-statedb = { workspace = true }

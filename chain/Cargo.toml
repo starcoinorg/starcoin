@@ -34,7 +34,7 @@ starcoin-vm2-types = { workspace = true }
 starcoin-vm2-chain = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
-starcoin-exec-merge = { workspace = true, features = ["statedb"] }
+starcoin-exec-merge = { workspace = true }
 log = "0.4.27"
 move-vm2-core-types = { workspace = true }
 

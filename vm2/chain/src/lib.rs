@@ -50,23 +50,14 @@ impl<'a> StateViewExt for ChainStateValueView<'a> {
 }
 
 #[derive(Debug)]
-struct PlanStats {
-    total: usize,
-    witness_hits: usize,
-    witness_hits_with_reads: usize,
-    witness_missing: usize,
-    reused: usize,
-    reexec: usize,
-    read_checked: u64,
-    plan_time_ms: u128,
-}
-
-#[derive(Debug)]
 struct PlanOutcome {
-    stats: PlanStats,
     reused_indices: Vec<usize>,
     reexec_indices: Vec<usize>,
     records: Vec<Option<ExecRecord>>,
+    witness_hits: usize,
+    witness_hits_with_reads: usize,
+    read_checked: u64,
+    plan_time_ms: u128,
 }
 
 static TEST_REUSE_HITS: AtomicUsize = AtomicUsize::new(0);
@@ -227,30 +218,22 @@ pub fn execute_transactions_with_reuse(
         }
         let elapsed_ms = plan_start.elapsed().as_millis();
         let read_checked = *diff.stats.get("read_checked").unwrap_or(&0);
-        let reused_count = diff.reused.len();
-        let reexec_count = diff.reexec.len();
         Some(PlanOutcome {
-            stats: PlanStats {
-                total: plan_execs.len(),
-                witness_hits,
-                witness_hits_with_reads,
-                witness_missing: plan_execs.len().saturating_sub(witness_hits),
-                reused: reused_count,
-                reexec: reexec_count,
-                read_checked,
-                plan_time_ms: elapsed_ms,
-            },
             reused_indices,
             reexec_indices,
             records: planned_records,
+            witness_hits,
+            witness_hits_with_reads,
+            read_checked,
+            plan_time_ms: elapsed_ms,
         })
     } else {
         None
     };
 
     if let Some(plan) = plan_outcome {
-        TEST_REUSE_HITS.fetch_add(plan.stats.reused, Ordering::Relaxed);
-        TEST_REUSE_REEXEC.fetch_add(plan.stats.reexec, Ordering::Relaxed);
+        TEST_REUSE_HITS.fetch_add(plan.reused_indices.len(), Ordering::Relaxed);
+        TEST_REUSE_REEXEC.fetch_add(plan.reexec_indices.len(), Ordering::Relaxed);
         let result = execute_with_plan(
             statedb,
             &transactions,
@@ -260,31 +243,20 @@ pub fn execute_transactions_with_reuse(
             store.clone(),
             &plan,
         )?;
-        if plan.stats.reexec != plan.reexec_indices.len() {
-            warn!(
-                "vm2 reuse plan reexec count mismatch: stats={}, indices={}",
-                plan.stats.reexec,
-                plan.reexec_indices.len()
-            );
-        }
-        if plan.stats.reused != plan.reused_indices.len() {
-            warn!(
-                "vm2 reuse plan reuse count mismatch: stats={}, indices={}",
-                plan.stats.reused,
-                plan.reused_indices.len()
-            );
-        }
-        let stats = &plan.stats;
+        let total = plan.records.len();
+        let reused_count = plan.reused_indices.len();
+        let reexec_count = plan.reexec_indices.len();
+        let witness_missing = total.saturating_sub(plan.witness_hits);
         debug!(
             "vm2 reuse plan summary: total={}, witness_hits={}, witness_hits_with_reads={}, reused={}, reexec={}, missing={}, read_checked={}, plan_time_ms={}",
-            stats.total,
-            stats.witness_hits,
-            stats.witness_hits_with_reads,
-            stats.reused,
-            stats.reexec,
-            stats.witness_missing,
-            stats.read_checked,
-            stats.plan_time_ms,
+            total,
+            plan.witness_hits,
+            plan.witness_hits_with_reads,
+            reused_count,
+            reexec_count,
+            witness_missing,
+            plan.read_checked,
+            plan.plan_time_ms,
         );
         return Ok(result);
     }
