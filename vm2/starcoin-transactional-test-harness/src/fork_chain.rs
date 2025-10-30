@@ -20,7 +20,7 @@ use starcoin_rpc_api::{
     multi_types::MultiSignedUserTransactionView,
     types::{
         BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, MultiStateView,
-        StrView, TransactionInfoView, TransactionView,
+        StrView, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
     },
     FutureResult,
 };
@@ -41,7 +41,6 @@ use starcoin_vm2_types::{
     view::{
         StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
         TransactionInfoView as TransactionInfoView2,
-        TransactionInfoWithProofView as TransactionInfoWithProofView2,
     },
 };
 use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView};
@@ -606,7 +605,7 @@ impl ChainApi for MockChainApi {
         _transaction_global_index: u64,
         _event_index: Option<u64>,
         _access_path: Option<StrView2<AccessPath2>>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
+    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let fut = async move {
             bail!("not implemented.");
         };

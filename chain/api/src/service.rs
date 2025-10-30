@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
+use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -87,14 +87,6 @@ pub trait ReadableChainService {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
-
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>>;
 
     fn get_range_in_location(
         &self,
@@ -226,7 +218,7 @@ pub trait ChainAsyncService:
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
-    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof2>>> + Send;
+    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof>>> + Send;
 
     fn get_dag_block_children(
         &self,
@@ -583,16 +575,16 @@ where
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>> {
+    ) -> Result<Option<TransactionInfoWithProof>> {
         let response = self
-            .send(ChainRequest::GetTransactionProof2 {
+            .send(ChainRequest::GetTransactionProof {
                 block_id,
                 transaction_global_index,
                 event_index,
-                access_path,
+                access_path: access_path.map(MultiAccessPath::VM2),
             })
             .await??;
-        if let ChainResponse::TransactionProof2(proof) = response {
+        if let ChainResponse::TransactionProof(proof) = response {
             Ok(*proof)
         } else {
             bail!("get transaction proof2 error")

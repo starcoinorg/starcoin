@@ -8,8 +8,6 @@ use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
-use starcoin_crypto::HashValue;
-use starcoin_storage::transaction_info::StcTransactionInfoStorage;
 use starcoin_transaction_builder::{
     peer_to_peer_txn_sent_as_association,
     vm2::peer_to_peer_txn_sent_as_association as vm2_peer_to_peer_txn_sent_as_association,
@@ -22,11 +20,7 @@ use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::move_resource::MoveResource;
-use std::collections::HashMap;
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
@@ -65,9 +59,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
     executed_blocks.push(genesis_block);
     let execution_result: Result<()> = (0..block_count).try_for_each(|_block_idx| {
-        println!("jacktest: 1");
         let txn_count: u64 = rng.random_range(1..10);
-        println!("jacktest: 2");
         let txns: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
                 let account_address = AccountAddress::random();
@@ -84,7 +76,6 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txn.into()
             })
             .collect();
-        println!("jacktest: 3");
 
         let txns2: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
@@ -104,28 +95,24 @@ fn test_transaction_info_and_proof() -> Result<()> {
             })
             .collect();
 
-        println!("jacktest: 4, vm1_offline_number: {}", vm1_offline_number);
         let (template, _) = block_chain
-            .create_block_template_simple_with_txns(*miner_account.address(), txns.iter().chain(txns2.iter()).cloned().collect())
+            .create_block_template_simple_with_txns(
+                *miner_account.address(),
+                txns.iter().chain(txns2.iter()).cloned().collect(),
+            )
             .unwrap();
 
         let block = block_chain
             .consensus()
             .create_block(template, net.time_service().as_ref())
             .unwrap();
-        println!("jacktest: 5, block number: {}", block.header().number());
         let executed_block = block_chain.apply(block.clone())?;
-        println!("jacktest: 6");
         let vm2_block_metadata = block.to_metadata(current_header.gas_used(), 0);
-        all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
-            vm2_block_metadata.clone()
-        )
-        .into()]);
-        println!("jacktest: 7");
+        all_txns
+            .extend_from_slice(&[Transaction2::BlockMetadata(vm2_block_metadata.clone()).into()]);
 
         executed_blocks.push(executed_block.block().clone());
 
-        println!("jacktest: test_transaction_info_and_proof executed block number: {}, vm1_offline_number: {}", block.header().number(), vm1_offline_number);
         if vm1_offline_number > block.header().number() {
             all_txns.extend_from_slice(&[Transaction::BlockMetadata(block_metadata::from(
                 block.to_metadata(current_header.gas_used(), 0),
@@ -136,9 +123,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let contain_vm2_transactions = !txns2.is_empty();
         all_txns.extend(txns2.into_iter().map(|txn| Transaction2::from(txn).into()));
         if contain_vm2_transactions {
-        let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata);
-        all_txns.push(block_epilogue_txn.into());
-    }
+            let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata);
+            all_txns.push(block_epilogue_txn.into());
+        }
         current_header = block.header().clone();
 
         Ok(())
@@ -210,7 +197,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 .ok_or_else(|| {
                     format_err!("Cannot get block by hash: {}", block.header().parent_hash())
                 })?;
-            let vm2_block_metadata = Transaction2::BlockMetadata(block.to_metadata(parent.header().gas_used(), 0));
+            let vm2_block_metadata =
+                Transaction2::BlockMetadata(block.to_metadata(parent.header().gas_used(), 0));
             transactions.push(vm2_block_metadata.clone().into());
             let state_root_index1 = if vm1_offline_number > block.header().number() {
                 transactions.push(
@@ -229,7 +217,6 @@ fn test_transaction_info_and_proof() -> Result<()> {
             transactions.extend(block.body.transactions2.iter().map(|txn| {
                 Transaction2::from(MultiSignedUserTransaction::VM2(txn.clone())).into()
             }));
-            println!("jacktest: vm2_block_metadata:{:?}", vm2_block_metadata.id());
             transactions.push(vm2_block_metadata.into());
             let state_root_index2 = transactions.len().saturating_sub(1);
             (state_root_index1, state_root_index2)
@@ -242,25 +229,16 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 .get_txn_accumulator()
                 .get_leaf(txn_global_index)?
                 .ok_or_else(|| format_err!("Cannot get txn info by index: {}", txn_global_index))?;
-            let txn_info = storage1.get_transaction_info(txn_info_leaf)?.ok_or_else(|| format_err!(
-                "Cannot get txn info by txn hash:{}, index: {}",
-                txn.id(),
-                index
-            ))?;
-            // let txn_info = block_chain.get_transaction_info(txn.id())?.ok_or_else(|| {
-            //     format_err!(
-            //         "Cannot get txn info by txn hash:{}, index: {}",
-            //         txn.id(),
-            //         index
-            //     )
-            // })?;
-            // println!("jacktest: txn id:{}, txn_info_leaf:{}", txn.id(), txn_info.transaction_info.transaction_hash());
-            // assert!(txn_infos.iter().any(|txn_info| {
-            //     txn_info.transaction_global_index == txn_global_index
-            // }), "txn info global index do not match, txn info index: {:?}, txn_global_index:{}", txn_infos.iter().map(|info| info.transaction_global_index).collect::<Vec<_>>(), txn_global_index);
-            // assert!(txn_infos.iter().any(|txn_info| {
-            //     txn_info.transaction_info.id() == txn_info_leaf 
-            // }), "txn info global index do not match, txn info id: {:?}, txn_info_leaf:{}", txn_infos.iter().map(|info| info.transaction_info.id()).collect::<Vec<_>>(), txn_info_leaf);
+            let txn_info = storage1
+                .get_transaction_info(txn_info_leaf)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot get txn info by txn hash:{}, index: {}",
+                        txn.id(),
+                        index
+                    )
+                })?;
+
             assert_eq!(
                 txn_info.transaction_global_index, txn_global_index,
                 "txn info global index do not match, txn info index: {}, txn_global_index:{}",
@@ -273,19 +251,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 txn_global_index
             );
 
-            // let txn = match txn.to_v1() {
-            //     Some(txn) => txn,
-            //     None => {
-            //         continue;
-            //     }
-            // };
+            let account_address = txn.address();
 
-            let account_address = txn.address(); 
-                
-            // let account_address = match &txn {
-            //     Transaction::UserTransaction(user_txn) => user_txn.sender(),
-            //     Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-            // };
             let access_path: Option<MultiAccessPath> = Some(MultiAccessPath::from(account_address));
 
             let events = block_chain

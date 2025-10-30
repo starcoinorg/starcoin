@@ -157,12 +157,15 @@ impl From<AccessPath2> for MultiAccessPath {
     }
 }
 
-
 impl From<MultiAccountAddress> for MultiAccessPath {
     fn from(addr: MultiAccountAddress) -> Self {
         match addr {
-            MultiAccountAddress::VM1(addr) => MultiAccessPath::VM1(AccessPath::resource_access_path(addr, AccountResource::struct_tag())),
-            MultiAccountAddress::VM2(addr) => MultiAccessPath::VM2(AccessPath2::resource_access_path(addr, AccountResource2::struct_tag())),
+            MultiAccountAddress::VM1(addr) => MultiAccessPath::VM1(
+                AccessPath::resource_access_path(addr, AccountResource::struct_tag()),
+            ),
+            MultiAccountAddress::VM2(addr) => MultiAccessPath::VM2(
+                AccessPath2::resource_access_path(addr, AccountResource2::struct_tag()),
+            ),
         }
     }
 }

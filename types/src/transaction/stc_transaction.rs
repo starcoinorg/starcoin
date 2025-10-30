@@ -44,19 +44,15 @@ impl StcTransaction {
 
     pub fn address(&self) -> MultiAccountAddress {
         match self {
-            StcTransaction::V1(txn) => {
-                match txn {
-                    super::Transaction::UserTransaction(txn) => MultiAccountAddress::VM1(txn.sender()),
-                    super::Transaction::BlockMetadata(txn) => MultiAccountAddress::VM1(txn.author()),
-                }
-            }
-            StcTransaction::V2(txn) => {
-                match txn {
-                    Transaction2::UserTransaction(txn) => MultiAccountAddress::VM2(txn.sender()),
-                    Transaction2::BlockMetadata(txn) => MultiAccountAddress::VM2(txn.author()),
-                    Transaction2::BlockEpilogue(txn) => MultiAccountAddress::VM2(txn.author()),
-                }
-            }
+            StcTransaction::V1(txn) => match txn {
+                super::Transaction::UserTransaction(txn) => MultiAccountAddress::VM1(txn.sender()),
+                super::Transaction::BlockMetadata(txn) => MultiAccountAddress::VM1(txn.author()),
+            },
+            StcTransaction::V2(txn) => match txn {
+                Transaction2::UserTransaction(txn) => MultiAccountAddress::VM2(txn.sender()),
+                Transaction2::BlockMetadata(txn) => MultiAccountAddress::VM2(txn.author()),
+                Transaction2::BlockEpilogue(txn) => MultiAccountAddress::VM2(txn.author()),
+            },
         }
     }
 }

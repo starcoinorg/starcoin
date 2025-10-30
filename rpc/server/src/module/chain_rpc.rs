@@ -40,7 +40,6 @@ use starcoin_vm2_types::contract_event::ContractEventInfo as ContractEventInfo2;
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
-    TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView as StateView2};
 use std::convert::TryInto;
@@ -722,15 +721,15 @@ where
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView2<AccessPath2>>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView2>> {
+    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
-                .get_transaction_proof2(
+                .get_transaction_proof(
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(Into::into),
+                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
                 )
                 .await?
                 .map(Into::into))

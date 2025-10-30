@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::range_locate::RangeInLocation;
-use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
+use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
@@ -18,7 +18,6 @@ use starcoin_types::{
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -78,12 +77,6 @@ pub enum ChainRequest {
         descendants: Vec<HashValue>,
     },
     GetMultiStateByHash(HashValue),
-    GetTransactionProof2 {
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    },
     GetRangeInLocation {
         start_id: HashValue,
         end_id: Option<HashValue>,
@@ -124,7 +117,6 @@ pub enum ChainResponse {
     GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     MultiStateResp(Option<MultiState>),
-    TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
     GetRangeInLocation { range: RangeInLocation },
     GetAbsentBlocks { absent_blocks: Vec<Block> },
 }
