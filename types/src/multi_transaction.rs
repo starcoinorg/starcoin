@@ -241,6 +241,15 @@ impl From<MultiSignedUserTransaction> for Transaction {
     }
 }
 
+impl From<MultiSignedUserTransaction> for Transaction2 {
+    fn from(txn: MultiSignedUserTransaction) -> Self {
+        match txn {
+            MultiSignedUserTransaction::VM2(txn) => Transaction2::UserTransaction(txn),
+            _ => panic!("Not a vm2 transaction."),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct APIInterruptedError(pub String);
 

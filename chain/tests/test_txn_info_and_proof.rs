@@ -1,4 +1,5 @@
 use anyhow::{format_err, Result};
+use move_vm2_core_types::move_resource::MoveStructType;
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -8,11 +9,18 @@ use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_transaction_builder::{
+    peer_to_peer_txn_sent_as_association,
+    vm2::peer_to_peer_txn_sent_as_association as vm2_peer_to_peer_txn_sent_as_association,
+    DEFAULT_EXPIRATION_TIME,
+};
 use starcoin_types::block_metadata;
 use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
+use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
+use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
@@ -36,9 +44,10 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
     let block_count: u64 = rng.random_range(2..10);
     let mut seq_number = 0;
+    let mut seq_number2 = 0;
     let mut all_txns: Vec<StcTransaction> = vec![];
     let mut executed_blocks = vec![];
-    let mut all_address = HashMap::<HashValue, AccountAddress>::new();
+    // let mut all_address = HashMap::<HashValue, AccountAddress>::new();
 
     let genesis_block = block_chain.get_block_by_number(0).unwrap().unwrap();
     let vm1_offline_number =
@@ -55,7 +64,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
     executed_blocks.push(genesis_block);
     let execution_result: Result<()> = (0..block_count).try_for_each(|_block_idx| {
+        println!("jacktest: 1");
         let txn_count: u64 = rng.random_range(1..10);
+        println!("jacktest: 2");
         let txns: Vec<MultiSignedUserTransaction> = (0..txn_count)
             .map(|_txn_idx| {
                 let account_address = AccountAddress::random();
@@ -67,28 +78,53 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                     &net,
                 );
-                all_address.insert(txn.id(), account_address);
+                // all_address.insert(txn.id(), account_address);
                 seq_number += 1;
                 txn.into()
             })
             .collect();
+        println!("jacktest: 3");
 
+        let txns2: Vec<MultiSignedUserTransaction> = (0..txn_count)
+            .map(|_txn_idx| {
+                let account_address = AccountAddress2::random();
+
+                let txn = vm2_peer_to_peer_txn_sent_as_association(
+                    account_address,
+                    seq_number2,
+                    10000,
+                    net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                    net.chain_id().id().into(),
+                    net.genesis_config2(),
+                );
+                // all_address.insert(txn.id(), account_address);
+                seq_number2 += 1;
+                txn.into()
+            })
+            .collect();
+
+        println!("jacktest: 4, vm1_offline_number: {}", vm1_offline_number);
         let (template, _) = block_chain
-            .create_block_template_simple_with_txns(*miner_account.address(), txns.clone())
+            .create_block_template_simple_with_txns(*miner_account.address(), txns.iter().chain(txns2.iter()).cloned().collect())
             .unwrap();
 
         let block = block_chain
             .consensus()
             .create_block(template, net.time_service().as_ref())
             .unwrap();
+        println!("jacktest: 5, block number: {}", block.header().number());
         let executed_block = block_chain.apply(block.clone())?;
+        println!("jacktest: 6");
+        let vm2_block_metadata = block.to_metadata(current_header.gas_used(), 0);
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
-            block.to_metadata(current_header.gas_used(), 0),
+            vm2_block_metadata.clone()
         )
         .into()]);
+        println!("jacktest: 7");
 
         executed_blocks.push(executed_block.block().clone());
 
+        println!("jacktest: test_transaction_info_and_proof executed block number: {}, vm1_offline_number: {}", block.header().number(), vm1_offline_number);
         if vm1_offline_number > block.header().number() {
             all_txns.extend_from_slice(&[Transaction::BlockMetadata(block_metadata::from(
                 block.to_metadata(current_header.gas_used(), 0),
@@ -96,6 +132,12 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .into()]);
             all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         }
+        let contain_vm2_transactions = !txns2.is_empty();
+        all_txns.extend(txns2.into_iter().map(|txn| Transaction2::from(txn).into()));
+        if contain_vm2_transactions {
+        let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata);
+        all_txns.push(block_epilogue_txn.into());
+    }
         current_header = block.header().clone();
 
         Ok(())
@@ -128,7 +170,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         .get_transaction_info(final_transaction_info_id)?
         .ok_or_else(|| format_err!("final transaction info is not found"))?
         .transaction_info
-        .to_v1()
+        .to_v2()
         .ok_or_else(|| format_err!("final transaction info is not found"))?;
     let final_state_root_hash = final_transaction_info
         .state_root_hash()
@@ -137,15 +179,16 @@ fn test_transaction_info_and_proof() -> Result<()> {
     let final_raw_transaction = storage1
         .get_transaction(final_raw_transaction_id)?
         .ok_or_else(|| format_err!("Cannot find txn by hash:{}", final_raw_transaction_id,))?
-        .to_v1()
+        .to_v2()
         .ok_or_else(|| format_err!("final transaction info is not found"))?;
     let final_account_address = match &final_raw_transaction {
-        Transaction::UserTransaction(user_txn) => user_txn.sender(),
-        Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+        Transaction2::UserTransaction(user_txn) => user_txn.sender(),
+        Transaction2::BlockMetadata(metadata_txn) => metadata_txn.author(),
+        Transaction2::BlockEpilogue(metadata_txn) => metadata_txn.author(),
     };
-    let final_access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
+    let final_access_path: Option<AccessPath2> = Some(AccessPath2::resource_access_path(
         final_account_address,
-        AccountResource::struct_tag(),
+        AccountResource2::struct_tag(),
     ));
 
     let mut transaction_accumulator_index_begin: u64 = 0;
@@ -166,10 +209,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 .ok_or_else(|| {
                     format_err!("Cannot get block by hash: {}", block.header().parent_hash())
                 })?;
-            transactions.push(
-                Transaction2::BlockMetadata(block.to_metadata(parent.header().gas_used(), 0))
-                    .into(),
-            );
+            let vm2_block_metadata = Transaction2::BlockMetadata(block.to_metadata(parent.header().gas_used(), 0));
+            transactions.push(vm2_block_metadata.clone().into());
             let state_root_index1 = if vm1_offline_number > block.header().number() {
                 transactions.push(
                     Transaction::BlockMetadata(block_metadata::from(
@@ -184,11 +225,11 @@ fn test_transaction_info_and_proof() -> Result<()> {
             } else {
                 usize::MAX
             };
-            transactions.extend(
-                block.body.transactions2.iter().map(|txn| {
-                    Transaction::from(MultiSignedUserTransaction::VM2(txn.clone())).into()
-                }),
-            );
+            transactions.extend(block.body.transactions2.iter().map(|txn| {
+                Transaction2::from(MultiSignedUserTransaction::VM2(txn.clone())).into()
+            }));
+            println!("jacktest: vm2_block_metadata:{:?}", vm2_block_metadata.id());
+            transactions.push(vm2_block_metadata.into());
             let state_root_index2 = transactions.len().saturating_sub(1);
             (state_root_index1, state_root_index2)
         };
@@ -207,6 +248,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     index
                 )
             })?;
+            println!("jacktest: txn id:{}, txn_info_leaf:{}", txn.id(), txn_info.transaction_info.transaction_hash());
             assert_eq!(
                 txn_info.transaction_global_index, txn_global_index,
                 "txn info global index do not match, txn info index: {}, txn_global_index:{}",
@@ -257,7 +299,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     final_transaction_info_id,
                     Some(event_index as u64),
                     access_path.clone().map(MultiAccessPath::VM1),
-                    MultiAccessPath::VM1(final_access_path.clone().unwrap().clone()),
+                    MultiAccessPath::VM2(final_access_path.clone().unwrap().clone()),
                     final_state_root_hash,
                 );
 
