@@ -128,12 +128,11 @@ impl AccountStateObject {
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
         match data_path {
             DataPath::Code(module_name) => {
-                if self.code_tree.read().is_none() {
-                    *self.code_tree.write() =
-                        Some(StateTree::<ModuleName>::new(self.store.clone(), None));
+                let mut code_tree = self.code_tree.write();
+                if code_tree.is_none() {
+                    *code_tree = Some(StateTree::<ModuleName>::new(self.store.clone(), None));
                 }
-                self.code_tree
-                    .write()
+                code_tree
                     .as_ref()
                     .expect("state tree must exist after set.")
                     .put(module_name, value);
