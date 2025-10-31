@@ -6,7 +6,7 @@ extern crate proc_macro2;
 use anyhow::Error;
 use syn::punctuated::Punctuated;
 
-pub fn compute_returns(method: &syn::TraitItemMethod) -> anyhow::Result<syn::Type> {
+pub fn compute_returns(method: &syn::TraitItemFn) -> anyhow::Result<syn::Type> {
     if let Some(returns) = try_infer_returns(&method.sig.output) {
         return Ok(returns);
     }
@@ -63,14 +63,14 @@ fn get_first_type_argument(args: &syn::PathArguments) -> Option<syn::Type> {
     }
 }
 
-pub fn compute_args(method: &syn::TraitItemMethod) -> Punctuated<syn::FnArg, syn::token::Comma> {
+pub fn compute_args(method: &syn::TraitItemFn) -> Punctuated<syn::FnArg, syn::token::Comma> {
     let mut args = Punctuated::new();
     for arg in &method.sig.inputs {
         let ty = match arg {
-            syn::FnArg::Typed(syn::PatType { ty, .. }) => ty,
+            syn::FnArg::Typed(pat_type) => &pat_type.ty,
             _ => continue,
         };
-        let segments = match &**ty {
+        let segments = match ty.as_ref() {
             syn::Type::Path(syn::TypePath {
                 path: syn::Path { segments, .. },
                 ..
@@ -81,7 +81,7 @@ pub fn compute_args(method: &syn::TraitItemMethod) -> Punctuated<syn::FnArg, syn
         if *ident == "Self" {
             continue;
         }
-        args.push(arg.to_owned());
+        args.push(arg.clone());
     }
     args
 }
