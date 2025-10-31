@@ -460,7 +460,7 @@ mod tests {
         // test resolve module function index overflow
         {
             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-            assert!(r.resolve_module_function_index(&m, 31).is_err())
+            assert!(r.resolve_module_function_index(&m, 33).is_err())
         }
     }
 
