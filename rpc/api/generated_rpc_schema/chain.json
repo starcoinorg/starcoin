@@ -6338,12 +6338,20 @@
               ],
               "required": [
                 "event",
+                "event_type",
                 "proof"
               ],
               "properties": {
                 "event": {
                   "description": "event is serialized bytes in bcs format.",
                   "type": "string"
+                },
+                "event_type": {
+                  "type": "string",
+                  "enum": [
+                    "VM1",
+                    "VM2"
+                  ]
                 },
                 "proof": {
                   "type": "object",
@@ -6860,12 +6868,20 @@
               ],
               "required": [
                 "event",
+                "event_type",
                 "proof"
               ],
               "properties": {
                 "event": {
                   "description": "event is serialized bytes in bcs format.",
                   "type": "string"
+                },
+                "event_type": {
+                  "type": "string",
+                  "enum": [
+                    "VM1",
+                    "VM2"
+                  ]
                 },
                 "proof": {
                   "type": "object",

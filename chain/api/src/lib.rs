@@ -11,11 +11,7 @@ use starcoin_types::{
     multi_transaction::MultiSignedUserTransaction,
     transaction::{StcRichTransactionInfo, StcTransactionInfo},
 };
-use starcoin_vm2_state_api::StateWithProof as StateWithProof2;
-use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
-use starcoin_vm2_vm_types::{
-    access_path::AccessPath as AccessPath2, contract_event::ContractEvent as ContractEvent2,
-};
+use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 mod chain;
 mod errors;

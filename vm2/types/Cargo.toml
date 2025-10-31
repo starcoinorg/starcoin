@@ -29,7 +29,6 @@ once_cell = { workspace = true }
 serde_bytes = { workspace = true }
 vm-status-translator = { path = "../vm-status-translator", package = "starcoin-status-translator" }
 
-
 [dev-dependencies]
 claims = { workspace = true }
 

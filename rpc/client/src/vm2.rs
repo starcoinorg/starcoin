@@ -485,7 +485,6 @@ impl RpcClient {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> anyhow::Result<Option<TransactionInfoWithProofView>> {
-        println!("jacktest: chain_get_transaction_proof2");
         self.call_rpc_blocking(|inner| {
             inner.chain_client.get_transaction_proof2(
                 block_hash,

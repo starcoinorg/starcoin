@@ -16,7 +16,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 
 /// Readable block chain service trait
 pub trait ReadableChainService {

@@ -84,6 +84,8 @@ pub use vm_status_translator::VmStatusExplainView;
 pub type ByteCode = Vec<u8>;
 mod node_api_types;
 pub mod pubsub;
+use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
+use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
 use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -1722,7 +1724,7 @@ impl From<EventWithProofView> for MultiEventWithProof {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoWithProofView {
-    pub transaction_info: TransactionInfoView,
+    pub transaction_info: TransactionInfoView2,
     pub proof: AccumulatorProofView,
     pub final_proof: AccumulatorProofView,
     pub event_proof: Option<EventWithProofView>,
@@ -1735,7 +1737,7 @@ impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
         Self {
             transaction_info: origin
                 .transaction_info
-                .to_v1()
+                .to_v2()
                 .expect("this is must be v1 transaction info")
                 .into(),
             proof: origin.proof.into(),
@@ -1752,7 +1754,7 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
 
     fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
         Ok(Self {
-            transaction_info: StcRichTransactionInfo::from(RichTransactionInfo::try_from(
+            transaction_info: StcRichTransactionInfo::from(RichTransactionInfo2::try_from(
                 view.transaction_info,
             )?),
             proof: view.proof.into(),

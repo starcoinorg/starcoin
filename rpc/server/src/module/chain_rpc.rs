@@ -722,10 +722,8 @@ where
         event_index: Option<u64>,
         access_path: Option<StrView2<AccessPath2>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
-        println!("jacktest rpc get_transaction_proof2");
         let service = self.service.clone();
         let fut = async move {
-            println!("jacktest rpc get_transaction_proof2, 1");
             Ok(service
                 .get_transaction_proof(
                     block_hash,

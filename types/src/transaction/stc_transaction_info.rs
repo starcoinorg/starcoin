@@ -5,6 +5,7 @@ use crate::transaction::legacy::RichTransactionInfo;
 use crate::transaction::TransactionInfo;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
 use starcoin_vm2_types::transaction::{
     RichTransactionInfo as RichTransactionInfoV2, TransactionInfo as TransactionInfoV2,
 };
@@ -105,6 +106,18 @@ impl StcRichTransactionInfo {
 
     pub fn state_root(&self) -> Option<HashValue> {
         self.transaction_info.state_root()
+    }
+}
+
+impl From<RichTransactionInfo2> for StcRichTransactionInfo {
+    fn from(info: RichTransactionInfo2) -> Self {
+        Self {
+            block_id: info.block_id,
+            block_number: info.block_number,
+            transaction_info: info.transaction_info.into(),
+            transaction_index: info.transaction_index,
+            transaction_global_index: info.transaction_global_index,
+        }
     }
 }
 

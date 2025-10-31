@@ -53,11 +53,7 @@ use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::{
-    access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
-    on_chain_resource::Epoch,
-};
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::collections::BTreeMap;
@@ -1454,7 +1450,6 @@ impl ChainReader for BlockChain {
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
-        println!("jacktest: get_transaction_proof");
         let (storage, _storage2) = &self.storage;
         let (statedb, statedb2) = &self.statedb;
 
@@ -1481,7 +1476,6 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        println!("jacktest: get_transaction_proof1");
         let proof = transaction_accumulator
             .get_proof(transaction_global_index)?
             .ok_or_else(|| {
@@ -1509,7 +1503,6 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        println!("jacktest: get_transaction_proof2");
         let proof_rich_transaction_info = storage
             .get_transaction_info(proof_transaction_info_id)?
             .ok_or_else(|| {
@@ -1535,7 +1528,6 @@ impl ChainReader for BlockChain {
             })?
             .to_transaction();
 
-        println!("jacktest: get_transaction_proof3");
         let final_state_root_hash = proof_transaction_info
             .state_root()
             .ok_or_else(|| format_err!("Cannot get state root hash"))?;
@@ -1596,7 +1588,6 @@ impl ChainReader for BlockChain {
             }
         };
 
-        println!("jacktest: get_transaction_proof4");
         let state_proof = if let Some(access_path) = access_path {
             if let Some(state_root) = transaction_info.state_root() {
                 match transaction_info.txn_info() {
@@ -1616,12 +1607,9 @@ impl ChainReader for BlockChain {
             None
         };
 
-        println!("jacktest: get_transaction_proof4: final_access_path: {:#?}, final_state_root_hash: {:#?}", final_access_path, final_state_root_hash);
         let final_state_proof = match &final_access_path {
             MultiAccessPath::VM1(access_path) => {
-                println!("jacktest: get_transaction_proof4.1");
                 let statedb = statedb.fork_at(final_state_root_hash);
-                println!("jacktest: get_transaction_proof4.2");
                 if let Ok(proof) = statedb.get_with_proof(access_path) {
                     Some(MultiStateProof::VM1(proof))
                 } else {
@@ -1629,9 +1617,7 @@ impl ChainReader for BlockChain {
                 }
             }
             MultiAccessPath::VM2(_) => {
-                println!("jacktest: get_transaction_proof4.3");
                 let statedb2 = statedb2.fork_at(final_state_root_hash);
-                println!("jacktest: get_transaction_proof4.4");
                 if let Ok(proof) = statedb2.get_with_proof(&final_access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)  {
                     Some(MultiStateProof::VM2(proof))
                 } else {
@@ -1640,7 +1626,6 @@ impl ChainReader for BlockChain {
             }
         };
 
-        println!("jacktest: get_transaction_proof5");
         Ok(Some(TransactionInfoWithProof {
             transaction_info,
             proof,

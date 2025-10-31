@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::{EventWithProof, EventWithProof2, TransactionInfoWithProof};
+use crate::TransactionInfoWithProof;
 use anyhow::{format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -19,7 +19,6 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, StateWithProof as StateWithProof2};
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::contract_event::ContractEvent;
 

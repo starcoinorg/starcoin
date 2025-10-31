@@ -437,21 +437,18 @@ impl StateView for ChainStateDB {
 
 impl ChainStateReader for ChainStateDB {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        println!("jacktest: get_with_proof1");
         let account_address = &access_path.address;
         let data_path = &access_path.path;
         let (account_state, account_proof) = self.state_tree.get_with_proof(account_address)?;
         let account_state = account_state
             .map(|v| AccountState::decode(v.as_slice()))
             .transpose()?;
-        println!("jacktest: get_with_proof2");
         let state_with_proof = match account_state {
             None => StateWithProof::new(
                 None,
                 StateProof::new(None, account_proof, SparseMerkleProof::default()),
             ),
             Some(account_state) => {
-                println!("jacktest: get_with_proof2.1");
                 let account_state_object = self.get_account_state_object(account_address, false)?;
                 ensure!(
                     !account_state_object.is_dirty(),
@@ -459,14 +456,12 @@ impl ChainStateReader for ChainStateDB {
                     &account_address
                 );
 
-                println!("jacktest: get_with_proof2.2");
                 ensure!(
                     account_state == account_state_object.to_state(),
                     "global state tree is not synced with account {} state",
                     &account_address,
                 );
 
-                println!("jacktest: get_with_proof2.3");
                 let (resource_value, resource_proof) =
                     account_state_object.get_with_proof(data_path)?;
                 StateWithProof::new(
@@ -475,7 +470,6 @@ impl ChainStateReader for ChainStateDB {
                 )
             }
         };
-        println!("jacktest: get_with_proof3");
         Ok(state_with_proof)
     }
 
