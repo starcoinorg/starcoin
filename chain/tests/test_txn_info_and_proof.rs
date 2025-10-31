@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use move_vm2_core_types::move_resource::MoveStructType;
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
@@ -261,46 +261,112 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
             let access_path: Option<MultiAccessPath> = Some(MultiAccessPath::from(account_address));
 
-            let events = block_chain
-                .get_events(txn_info.transaction_info.id())?
-                .unwrap();
+            match &txn_info.transaction_info {
+                starcoin_types::transaction::StcTransactionInfo::V1(_) => {
+                    let events = block_chain
+                        .get_events(txn_info.transaction_info.id())?
+                        .unwrap();
 
-            for (event_index, event) in events.into_iter().enumerate() {
-                let txn_proof = block_chain
-                    .get_transaction_proof(
-                        current_header.id(),
-                        txn_global_index,
-                        Some(event_index as u64),
-                        access_path.clone(),
-                    )?
-                    .expect("get transaction proof return none");
-                assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
+                    for (event_index, event) in events.into_iter().enumerate() {
+                        let txn_proof = block_chain
+                            .get_transaction_proof(
+                                current_header.id(),
+                                txn_global_index,
+                                Some(event_index as u64),
+                                access_path.clone(),
+                            )?
+                            .expect("get transaction proof return none");
 
-                let input_access_path = if txn_proof.state_root_hash().is_none() {
-                    None
-                } else {
-                    access_path.clone()
-                };
-                let result = txn_proof.verify(
-                    current_header.txn_accumulator_root(),
-                    txn_global_index,
-                    final_transaction_info_index,
-                    final_transaction_info_id,
-                    Some(event_index as u64),
-                    input_access_path,
-                    Some(MultiAccessPath::VM2(
-                        final_access_path.clone().unwrap().clone(),
-                    )),
-                    Some(final_state_root_hash),
-                );
+                        match txn_proof.event_proof.as_ref().unwrap() {
+                            starcoin_chain_api::MultiEventWithProof::VM1(event_with_proof) => {
+                                assert_eq!(&event, &event_with_proof.event)
+                            }
+                            starcoin_chain_api::MultiEventWithProof::VM2(_) => {
+                                bail!("event should be vm1")
+                            }
+                        }
+                        let input_access_path = if txn_proof.state_root_hash().is_none() {
+                            None
+                        } else {
+                            access_path.clone()
+                        };
+                        let result = txn_proof.verify(
+                            current_header.txn_accumulator_root(),
+                            txn_global_index,
+                            final_transaction_info_index,
+                            final_transaction_info_id,
+                            Some(event_index as u64),
+                            input_access_path,
+                            Some(MultiAccessPath::VM2(
+                                final_access_path.clone().unwrap().clone(),
+                            )),
+                            Some(final_state_root_hash),
+                        );
 
-                assert!(
-                    result.is_ok(),
-                    "txn index: {}, {:?} verify failed, reason: {:?}",
-                    txn_global_index,
-                    txn_proof,
-                    result.err().unwrap()
-                );
+                        assert!(
+                            result.is_ok(),
+                            "txn index: {}, {:?} verify failed, reason: {:?}",
+                            txn_global_index,
+                            txn_proof,
+                            result.err().unwrap()
+                        );
+                    }
+                }
+                starcoin_types::transaction::StcTransactionInfo::V2(_) => {
+                    let events = storage1
+                        .get_contract_events_v2(txn_info.transaction_info.id())?
+                        .unwrap_or_default();
+
+                    for (event_index, event) in events.into_iter().enumerate() {
+                        let txn_proof = block_chain
+                            .get_transaction_proof(
+                                current_header.id(),
+                                txn_global_index,
+                                Some(event_index as u64),
+                                access_path.clone(),
+                            )?
+                            .expect("get transaction proof return none");
+
+                        match txn_proof.event_proof.as_ref().unwrap() {
+                            starcoin_chain_api::MultiEventWithProof::VM1(_) => {
+                                bail!("event should be vm2")
+                            }
+                            starcoin_chain_api::MultiEventWithProof::VM2(event_with_proof) => {
+                                assert_eq!(
+                                    &event
+                                        .to_v2()
+                                        .ok_or_else(|| format_err!("event should be vm2"))?,
+                                    &event_with_proof.event
+                                )
+                            }
+                        }
+                        let input_access_path = if txn_proof.state_root_hash().is_none() {
+                            None
+                        } else {
+                            access_path.clone()
+                        };
+                        let result = txn_proof.verify(
+                            current_header.txn_accumulator_root(),
+                            txn_global_index,
+                            final_transaction_info_index,
+                            final_transaction_info_id,
+                            Some(event_index as u64),
+                            input_access_path,
+                            Some(MultiAccessPath::VM2(
+                                final_access_path.clone().unwrap().clone(),
+                            )),
+                            Some(final_state_root_hash),
+                        );
+
+                        assert!(
+                            result.is_ok(),
+                            "txn index: {}, {:?} verify failed, reason: {:?}",
+                            txn_global_index,
+                            txn_proof,
+                            result.err().unwrap()
+                        );
+                    }
+                }
             }
         }
         transaction_accumulator_index_begin =

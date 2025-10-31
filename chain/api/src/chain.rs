@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::TransactionInfoWithProof;
+use crate::{EventWithProof, EventWithProof2, TransactionInfoWithProof};
 use anyhow::{format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;

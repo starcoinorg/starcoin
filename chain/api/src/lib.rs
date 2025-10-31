@@ -70,7 +70,7 @@ pub struct TransactionInfoWithProof {
     pub transaction_info: StcRichTransactionInfo,
     pub proof: AccumulatorProof,
     pub final_proof: AccumulatorProof,
-    pub event_proof: Option<EventWithProof>,
+    pub event_proof: Option<MultiEventWithProof>,
     pub state_proof: Option<MultiStateProof>,
     pub final_state_proof: Option<MultiStateProof>,
 }
@@ -206,5 +206,20 @@ impl TryFrom<EventWithProofView2> for EventWithProof2 {
             event: ContractEvent2::decode(value.event.0.as_slice())?,
             proof: AccumulatorProof::new(value.proof.siblings),
         })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum MultiEventWithProof {
+    VM1(EventWithProof),
+    VM2(EventWithProof2),
+}
+
+impl MultiEventWithProof {
+    pub(crate) fn verify(&self, event_root_hash: HashValue, event_index: u64) -> Result<()> {
+        match self {
+            Self::VM1(event_with_proof) => event_with_proof.verify(event_root_hash, event_index),
+            Self::VM2(event_with_proof) => event_with_proof.verify(event_root_hash, event_index),
+        }
     }
 }

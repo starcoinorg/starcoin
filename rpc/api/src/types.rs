@@ -28,7 +28,9 @@ use starcoin_abi_decoder::{
 use starcoin_abi_types::ModuleABI;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::proof::AccumulatorProof;
-use starcoin_chain_api::{EventWithProof, MultiStateProof, TransactionInfoWithProof};
+use starcoin_chain_api::{
+    EventWithProof, EventWithProof2, MultiEventWithProof, MultiStateProof, TransactionInfoWithProof,
+};
 use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_service_registry::ServiceRequest;
@@ -82,6 +84,7 @@ pub use vm_status_translator::VmStatusExplainView;
 pub type ByteCode = Vec<u8>;
 mod node_api_types;
 pub mod pubsub;
+use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct MintedBlockView {
@@ -1624,7 +1627,14 @@ impl From<AccumulatorProofView> for AccumulatorProof {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum EventType {
+    VM1,
+    VM2,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EventWithProofView {
+    pub event_type: EventType,
     /// event is serialized bytes in bcs format.
     pub event: StrView<Vec<u8>>,
     pub proof: AccumulatorProofView,
@@ -1633,6 +1643,7 @@ pub struct EventWithProofView {
 impl From<EventWithProof> for EventWithProofView {
     fn from(origin: EventWithProof) -> Self {
         Self {
+            event_type: EventType::VM1,
             event: StrView(origin.event.encode().expect("encode event should success")),
             proof: origin.proof.into(),
         }
@@ -1647,6 +1658,65 @@ impl TryFrom<EventWithProofView> for EventWithProof {
             event: ContractEvent::decode(value.event.0.as_slice())?,
             proof: value.proof.into(),
         })
+    }
+}
+
+impl TryFrom<EventWithProofView> for EventWithProof2 {
+    type Error = anyhow::Error;
+
+    fn try_from(value: EventWithProofView) -> Result<Self, Self::Error> {
+        Ok(EventWithProof2 {
+            event: ContractEvent2::decode(value.event.0.as_slice())?,
+            proof: AccumulatorProof::new(value.proof.siblings),
+        })
+    }
+}
+
+impl From<EventWithProof2> for EventWithProofView {
+    fn from(origin: EventWithProof2) -> Self {
+        Self {
+            event_type: EventType::VM2,
+            event: StrView(origin.event.encode().expect("encode event should succeed")),
+            proof: AccumulatorProofView {
+                siblings: origin.proof.siblings().to_vec(),
+            },
+        }
+    }
+}
+
+// impl TryFrom<MultiEventWithProof> for EventWithProofView {
+//     type Error = anyhow::Error;
+//     fn try_from(value: MultiEventWithProof) -> Result<Self, Self::Error> {
+//         match value {
+//             MultiEventWithProof::VM1(event_with_proof) => Ok(event_with_proof.into()),
+//             MultiEventWithProof::VM2(event_with_proof) => event_with_proof.try_into(),
+//         }
+//     }
+// }
+
+impl From<MultiEventWithProof> for EventWithProofView {
+    fn from(value: MultiEventWithProof) -> Self {
+        match value {
+            MultiEventWithProof::VM1(event_with_proof) => event_with_proof.into(),
+            MultiEventWithProof::VM2(event_with_proof) => event_with_proof.into(),
+        }
+    }
+}
+
+impl From<EventWithProofView> for MultiEventWithProof {
+    fn from(value: EventWithProofView) -> Self {
+        match value.event_type {
+            EventType::VM1 => Self::VM1(
+                value
+                    .try_into()
+                    .expect("failed to convert from event_with_proof view to event_with_proof"),
+            ),
+            EventType::VM2 => Self::VM2(
+                value
+                    .try_into()
+                    .expect("failed to convert from event_with_proof view to event_with_proof2"),
+            ),
+        }
     }
 }
 

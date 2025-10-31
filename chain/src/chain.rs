@@ -14,8 +14,8 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, EventWithProof2,
-    ExcludedTxns, ExecutedBlock, MultiStateProof, TransactionInfoWithProof, VerifiedBlock,
-    VerifyBlockField,
+    ExcludedTxns, ExecutedBlock, MultiEventWithProof, MultiStateProof, TransactionInfoWithProof,
+    VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
@@ -1491,20 +1491,21 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        let proof_transaction_info_id = transaction_accumulator
-            .get_leaf(final_transaction_global_index)?
-            .ok_or_else(|| {
-                format_err!(
-                    "proof transaction info is not found using the accumulator leaf index: {}",
-                    final_transaction_global_index
-                )
-            })?;
         let transaction_info_id = transaction_accumulator
             .get_leaf(transaction_global_index)?
             .ok_or_else(|| {
                 format_err!(
                     "transaction info is not found using the accumulator leaf index: {}",
                     transaction_global_index
+                )
+            })?;
+
+        let proof_transaction_info_id = transaction_accumulator
+            .get_leaf(final_transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "proof transaction info is not found using the accumulator leaf index: {}",
+                    final_transaction_global_index
                 )
             })?;
 
@@ -1519,13 +1520,10 @@ impl ChainReader for BlockChain {
             })?;
 
         let proof_transaction_info = proof_rich_transaction_info.transaction_info;
-        // .and_then(|i| i.to_v1())
-        // .ok_or_else(|| {
-        //     format_err!(
-        //         "Cannot find proof txn info by hash:{}",
-        //         proof_transaction_info_id
-        //     )
-        // })?;
+
+        let input_rich_transaction_info = storage
+            .get_transaction_info(transaction_info_id)?
+            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
 
         let final_raw_transaction = storage
             .get_transaction(proof_transaction_info.transaction_hash())?
@@ -1547,23 +1545,55 @@ impl ChainReader for BlockChain {
             .get_transaction_info(transaction_info_id)?
             .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
 
-        let event_proof = if let Some(event_index) = event_index {
-            let events: Vec<ContractEvent> = storage
-                .get_contract_events(transaction_info_id)?
-                .unwrap_or_default();
-            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
-                format_err!("event index out of range, events len:{}", events.len())
-            })?;
-            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+        let event_proof = match input_rich_transaction_info.transaction_info {
+            StcTransactionInfo::V1(_) => {
+                if let Some(event_index) = event_index {
+                    let events: Vec<ContractEvent> = storage
+                        .get_contract_events(transaction_info_id)?
+                        .unwrap_or_default();
+                    let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                        format_err!("event index out of range, events len:{}", events.len())
+                    })?;
+                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
 
-            let event_proof =
-                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
-            Some(EventWithProof {
-                event,
-                proof: event_proof,
-            })
-        } else {
-            None
+                    let event_proof = InMemoryAccumulator::get_proof_from_leaves(
+                        event_hashes.as_slice(),
+                        event_index,
+                    )?;
+                    Some(MultiEventWithProof::VM1(EventWithProof {
+                        event,
+                        proof: event_proof,
+                    }))
+                } else {
+                    None
+                }
+            }
+            StcTransactionInfo::V2(_) => {
+                if let Some(event_index) = event_index {
+                    let events = storage
+                        .get_contract_events_v2(transaction_info_id)?
+                        .unwrap_or_default();
+                    let events = events
+                        .into_iter()
+                        .filter_map(|e| e.to_v2())
+                        .collect::<Vec<_>>();
+                    let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                        format_err!("event index out of range, events len:{}", events.len())
+                    })?;
+                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+                    let event_proof = InMemoryAccumulator::get_proof_from_leaves(
+                        event_hashes.as_slice(),
+                        event_index,
+                    )?;
+                    Some(MultiEventWithProof::VM2(EventWithProof2 {
+                        event,
+                        proof: event_proof,
+                    }))
+                } else {
+                    None
+                }
+            }
         };
 
         println!("jacktest: get_transaction_proof4");
