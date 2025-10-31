@@ -302,8 +302,8 @@ claims = "0.8"
 clap = { version = "4.5.47", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
-codespan = { version = "0.11.1", features = ["serialization"] }
-codespan-reporting = "0.11.1"
+codespan = { version = "0.13.1", features = ["serialization"] }
+codespan-reporting = "0.13.1"
 colored = "3.0.0"
 criterion = "0.3"
 curve25519-dalek = { package = "curve25519-dalek-ng", version = "4" }
@@ -614,8 +614,8 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243", package = "move-transactional-test-runner" }
 
 strum = "0.27"
 strum_macros = "0.27.2"
