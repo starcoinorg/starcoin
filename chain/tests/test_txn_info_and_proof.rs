@@ -288,7 +288,9 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     final_transaction_info_id,
                     Some(event_index as u64),
                     input_access_path,
-                    Some(MultiAccessPath::VM2(final_access_path.clone().unwrap().clone())),
+                    Some(MultiAccessPath::VM2(
+                        final_access_path.clone().unwrap().clone(),
+                    )),
                     Some(final_state_root_hash),
                 );
 

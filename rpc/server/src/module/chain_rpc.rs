@@ -749,11 +749,11 @@ where
         let service = self.service.clone();
         let fut = async move {
             let proof = service
-                .get_transaction_proof2(
+                .get_transaction_proof(
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(Into::into),
+                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
                 )
                 .await?
                 .map(|proof| {

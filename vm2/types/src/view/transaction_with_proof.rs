@@ -9,8 +9,10 @@ use serde::{Deserialize, Serialize};
 pub struct TransactionInfoWithProofView {
     pub transaction_info: TransactionInfoView,
     pub proof: AccumulatorProofView,
+    pub final_proof: AccumulatorProofView,
     pub event_proof: Option<EventWithProofView>,
     pub state_proof: Option<StateWithProofView>,
+    pub final_state_proof: Option<StateWithProofView>,
 }
 
 // impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {

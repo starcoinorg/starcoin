@@ -75,7 +75,9 @@ impl CommandAction for GetTransactionProofCommand {
         let block = client
             .chain_get_block_by_hash(opt.block_hash, None)?
             .ok_or_else(|| format_err!("Can not find block by hash: {}", opt.block_hash))?;
+        println!("jacktest: 1");
         let (txn_proof, result) = if opt.raw {
+            println!("jacktest: 2");
             let txn_proof_hex = client
                 .chain_get_transaction_proof2_raw(
                     opt.block_hash,
@@ -94,6 +96,7 @@ impl CommandAction for GetTransactionProofCommand {
 
             (txn_proof, ViewOrRaw::Raw(txn_proof_hex))
         } else {
+            println!("jacktest: 3");
             let txn_proof_view = client
                 .chain_get_transaction_proof2(
                     opt.block_hash,
@@ -107,9 +110,11 @@ impl CommandAction for GetTransactionProofCommand {
                         opt.transaction_global_index
                     )
                 })?;
+            println!("jacktest: 3.1");
             let txn_proof: TransactionInfoWithProof = txn_proof_view.clone().try_into()?;
             (txn_proof, ViewOrRaw::View(txn_proof_view))
         };
+        println!("jacktest: 4");
         ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
             "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
             opt.transaction_global_index, txn_proof.transaction_info.transaction_global_index);
@@ -123,6 +128,7 @@ impl CommandAction for GetTransactionProofCommand {
             opt.final_access_path.clone().map(MultiAccessPath::VM2),
             opt.final_state_root,
         )?;
+        println!("jacktest: 5");
         Ok(result)
     }
 }

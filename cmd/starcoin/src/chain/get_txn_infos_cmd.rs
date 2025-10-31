@@ -32,7 +32,7 @@ impl CommandAction for GetTxnInfosCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let vec_transaction_info = client.chain_get_block_txn_infos2(opt.block_hash)?;
-
+        println!("jacktest: transaction infos: {:#?}", vec_transaction_info);
         Ok(vec_transaction_info)
     }
 }

@@ -72,7 +72,7 @@ pub struct TransactionInfoWithProof {
     pub final_proof: AccumulatorProof,
     pub event_proof: Option<EventWithProof>,
     pub state_proof: Option<MultiStateProof>,
-    pub final_state_proof: MultiStateProof,
+    pub final_state_proof: Option<MultiStateProof>,
 }
 
 impl TransactionInfoWithProof {
@@ -147,21 +147,30 @@ impl TransactionInfoWithProof {
         Ok(())
     }
 
-    fn verify_final_state_root(&self, final_state_root: Option<HashValue>, final_access_path: Option<MultiAccessPath>) -> Result<()> {
-                match (final_state_root, final_access_path) {
-                    (Some(final_state_root), Some(final_access_path)) => {
-                        self.final_state_proof
-                            .verify(final_state_root, final_access_path)
-                            .map_err(|e| format_err!("state proof verify failed: {}", e))?;
-                    }
-                    (Some(_), None) | (None, None) => {
-                        // skip
-                    }
-                    (None, Some(_)) => {
-                        bail!("TransactionInfoWithProof's final_state_proof is None, cannot verify final_access_path");
-                    }
-                }
-                Ok(())
+    fn verify_final_state_root(
+        &self,
+        final_state_root: Option<HashValue>,
+        final_access_path: Option<MultiAccessPath>,
+    ) -> Result<()> {
+        let final_state_proof = if let Some(final_state_proof) = &self.final_state_proof {
+            final_state_proof
+        } else {
+            return Ok(());
+        };
+        match (final_state_root, final_access_path) {
+            (Some(final_state_root), Some(final_access_path)) => {
+                final_state_proof
+                    .verify(final_state_root, final_access_path)
+                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
+            }
+            (Some(_), None) | (None, None) => {
+                // skip
+            }
+            (None, Some(_)) => {
+                bail!("TransactionInfoWithProof's final_state_proof is None, cannot verify final_access_path");
+            }
+        }
+        Ok(())
     }
 }
 
