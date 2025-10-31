@@ -212,14 +212,6 @@ pub trait ChainAsyncService:
         hash: HashValue,
     ) -> impl std::future::Future<Output = Result<Option<MultiState>>> + Send;
 
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof>>> + Send;
-
     fn get_dag_block_children(
         &self,
         hashes: Vec<HashValue>,
@@ -566,28 +558,6 @@ where
             Ok(multi_state)
         } else {
             bail!("get multi state error")
-        }
-    }
-
-    async fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof>> {
-        let response = self
-            .send(ChainRequest::GetTransactionProof {
-                block_id,
-                transaction_global_index,
-                event_index,
-                access_path: access_path.map(MultiAccessPath::VM2),
-            })
-            .await??;
-        if let ChainResponse::TransactionProof(proof) = response {
-            Ok(*proof)
-        } else {
-            bail!("get transaction proof2 error")
         }
     }
 

@@ -14,8 +14,8 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, EventWithProof2,
-    ExcludedTxns, ExecutedBlock, MultiStateProof, TransactionInfoWithProof,
-    TransactionInfoWithProof2, VerifiedBlock, VerifyBlockField,
+    ExcludedTxns, ExecutedBlock, MultiStateProof, TransactionInfoWithProof, VerifiedBlock,
+    VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
@@ -1618,88 +1618,6 @@ impl ChainReader for BlockChain {
             event_proof,
             state_proof,
             final_state_proof,
-        }))
-    }
-
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>> {
-        let (storage, _) = &self.storage;
-        let (_, statedb2) = &self.statedb;
-        let block_info = match self.get_block_info(Some(block_id))? {
-            Some(block_info) => block_info,
-            None => return Ok(None),
-        };
-        let accumulator = self
-            .txn_accumulator
-            .fork(Some(block_info.txn_accumulator_info));
-        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
-            Some(proof) => proof,
-            None => return Ok(None),
-        };
-
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
-        let txn_info_hash = accumulator
-            .get_leaf(transaction_global_index)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Can not find txn info hash by index {}",
-                    transaction_global_index
-                )
-            })?;
-        let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
-            .and_then(|i| i.to_v2())
-            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
-
-        let event_proof = if let Some(event_index) = event_index {
-            let events = storage
-                .get_contract_events_v2(txn_info_hash)?
-                .unwrap_or_default();
-            let events = events
-                .into_iter()
-                .filter_map(|e| e.to_v2())
-                .collect::<Vec<_>>();
-            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
-                format_err!("event index out of range, events len:{}", events.len())
-            })?;
-            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-
-            let event_proof =
-                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
-            Some(EventWithProof2 {
-                event,
-                proof: event_proof,
-            })
-        } else {
-            None
-        };
-        let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
-            let state_key = match access_path.path {
-                DataPath2::Code(module_name) => {
-                    StateKey::module(&access_path.address, &module_name)
-                }
-                DataPath2::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, &struct_tag)?
-                }
-                DataPath2::ResourceGroup(struct_tag) => {
-                    StateKey::resource_group(&access_path.address, &struct_tag)
-                }
-            };
-            Some(statedb.get_with_proof(&state_key)?)
-        } else {
-            None
-        };
-        Ok(Some(TransactionInfoWithProof2 {
-            transaction_info,
-            proof: txn_proof,
-            event_proof,
-            state_proof,
         }))
     }
 

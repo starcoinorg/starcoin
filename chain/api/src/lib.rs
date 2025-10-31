@@ -35,7 +35,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_vm2_types::view::{
     AccumulatorProofView as AccumulatorProofView2, EventWithProofView as EventWithProofView2,
-    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    StrView as StrView2,
 };
 
 #[derive(Clone, Debug)]
@@ -187,67 +187,6 @@ impl EventWithProof2 {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TransactionInfoWithProof2 {
-    pub transaction_info: RichTransactionInfo2,
-    pub proof: AccumulatorProof,
-    pub event_proof: Option<EventWithProof2>,
-    pub state_proof: Option<StateWithProof2>,
-}
-
-impl TransactionInfoWithProof2 {
-    pub fn verify(
-        &self,
-        expect_root: HashValue,
-        transaction_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<()> {
-        self.proof
-            .verify(expect_root, self.transaction_info.id(), transaction_index)
-            .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
-        match (self.event_proof.as_ref(), event_index) {
-            (Some(event_proof), Some(event_index)) => {
-                event_proof
-                    .verify(self.transaction_info.event_root_hash(), event_index)
-                    .map_err(|e| format_err!("event proof verify failed: {}", e))?;
-            }
-            (Some(_), None) => {
-                // skip
-            }
-            (None, None) => {
-                // skip
-            }
-            (None, Some(event_index)) => {
-                bail!(
-                    "TransactionInfoWithProof2's event_proof is None, cannot verify event_index: {}",
-                    event_index
-                );
-            }
-        };
-        match (self.state_proof.as_ref(), access_path) {
-            (Some(state_proof), Some(access_path)) => {
-                state_proof
-                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
-                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
-            }
-            (Some(_), None) => {
-                // skip
-            }
-            (None, None) => {
-                // skip
-            }
-            (None, Some(access_path)) => {
-                bail!(
-                    "TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}",
-                    access_path
-                );
-            }
-        };
-        Ok(())
-    }
-}
-
 impl From<EventWithProof2> for EventWithProofView2 {
     fn from(origin: EventWithProof2) -> Self {
         Self {
@@ -266,32 +205,6 @@ impl TryFrom<EventWithProofView2> for EventWithProof2 {
         Ok(EventWithProof2 {
             event: ContractEvent2::decode(value.event.0.as_slice())?,
             proof: AccumulatorProof::new(value.proof.siblings),
-        })
-    }
-}
-
-impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
-    fn from(origin: TransactionInfoWithProof2) -> Self {
-        Self {
-            transaction_info: origin.transaction_info.into(),
-            proof: AccumulatorProofView2 {
-                siblings: origin.proof.siblings().to_vec(),
-            },
-            event_proof: origin.event_proof.map(Into::into),
-            state_proof: origin.state_proof.map(Into::into),
-        }
-    }
-}
-
-impl TryFrom<TransactionInfoWithProofView2> for TransactionInfoWithProof2 {
-    type Error = anyhow::Error;
-
-    fn try_from(view: TransactionInfoWithProofView2) -> Result<Self, Self::Error> {
-        Ok(Self {
-            transaction_info: view.transaction_info.try_into()?,
-            proof: AccumulatorProof::new(view.proof.siblings),
-            event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
-            state_proof: view.state_proof.map(Into::into),
         })
     }
 }

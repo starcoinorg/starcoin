@@ -5,15 +5,15 @@ use crate::view::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionInfoWithProofView {
-    pub transaction_info: TransactionInfoView,
-    pub proof: AccumulatorProofView,
-    pub final_proof: AccumulatorProofView,
-    pub event_proof: Option<EventWithProofView>,
-    pub state_proof: Option<StateWithProofView>,
-    pub final_state_proof: Option<StateWithProofView>,
-}
+// #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
+// pub struct TransactionInfoWithProofView {
+//     pub transaction_info: TransactionInfoView,
+//     pub proof: AccumulatorProofView,
+//     pub final_proof: AccumulatorProofView,
+//     pub event_proof: Option<EventWithProofView>,
+//     pub state_proof: Option<StateWithProofView>,
+//     pub final_state_proof: Option<StateWithProofView>,
+// }
 
 // impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
 //     fn from(origin: TransactionInfoWithProof) -> Self {
