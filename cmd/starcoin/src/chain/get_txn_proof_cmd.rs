@@ -34,9 +34,9 @@ pub struct GetTransactionProofOpt {
     #[clap(name = "final-transaction-info-index", long, short = 'i')]
     final_transaction_info_index: u64,
     #[clap(name = "final-access-path", long, short = 'c')]
-    final_access_path: AccessPath,
+    final_access_path: Option<AccessPath>,
     #[clap(name = "final-state-root", long, short = 'n')]
-    final_state_root: HashValue,
+    final_state_root: Option<HashValue>,
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -120,7 +120,7 @@ impl CommandAction for GetTransactionProofCommand {
             opt.final_transaction_info_id,
             opt.event_index,
             opt.access_path.clone().map(MultiAccessPath::VM2), // only vm2 transaction
-            opt.final_access_path.clone().into(),
+            opt.final_access_path.clone().map(MultiAccessPath::VM2),
             opt.final_state_root,
         )?;
         Ok(result)

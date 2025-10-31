@@ -97,8 +97,8 @@ impl TransactionInfoWithProof {
         final_transaction_info_id: HashValue,
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
-        final_access_path: MultiAccessPath,
-        final_state_root: HashValue,
+        final_access_path: Option<MultiAccessPath>,
+        final_state_root: Option<HashValue>,
     ) -> Result<()> {
         self.proof
             .verify(expect_root, self.transaction_info.id(), transaction_index)
@@ -136,19 +136,32 @@ impl TransactionInfoWithProof {
                     .verify(self.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
                     .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
-            (Some(_), None) => {
-                // skip
-            }
-            (None, None) => {
+            (Some(_), None) | (None, None) => {
                 // skip
             }
             (None, Some(_access_path)) => {
-                self.final_state_proof
-                    .verify(final_state_root, final_access_path)
-                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
+                bail!("TransactionInfoWithProof's state_proof is None, cannot verify access_path");
             }
         };
+        self.verify_final_state_root(final_state_root, final_access_path)?;
         Ok(())
+    }
+
+    fn verify_final_state_root(&self, final_state_root: Option<HashValue>, final_access_path: Option<MultiAccessPath>) -> Result<()> {
+                match (final_state_root, final_access_path) {
+                    (Some(final_state_root), Some(final_access_path)) => {
+                        self.final_state_proof
+                            .verify(final_state_root, final_access_path)
+                            .map_err(|e| format_err!("state proof verify failed: {}", e))?;
+                    }
+                    (Some(_), None) | (None, None) => {
+                        // skip
+                    }
+                    (None, Some(_)) => {
+                        bail!("TransactionInfoWithProof's final_state_proof is None, cannot verify final_access_path");
+                    }
+                }
+                Ok(())
     }
 }
 

@@ -22,8 +22,8 @@ use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::account_config::association_address as association_address2;
+use starcoin_vm_types::account_address::AccountAddress;
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
@@ -126,7 +126,10 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let contain_vm2_transactions = !txns2.is_empty();
         all_txns.extend(txns2.into_iter().map(|txn| Transaction2::from(txn).into()));
         if contain_vm2_transactions {
-            let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata, HashSet::from_iter([association_address2()]));
+            let block_epilogue_txn = Transaction2::BlockEpilogue(
+                vm2_block_metadata,
+                HashSet::from_iter([association_address2()]),
+            );
             all_txns.push(block_epilogue_txn.into());
         }
         current_header = block.header().clone();
@@ -273,15 +276,20 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     .expect("get transaction proof return none");
                 assert_eq!(&event, &txn_proof.event_proof.as_ref().unwrap().event);
 
+                let input_access_path = if txn_proof.state_root_hash().is_none() {
+                    None
+                } else {
+                    access_path.clone()
+                };
                 let result = txn_proof.verify(
                     current_header.txn_accumulator_root(),
                     txn_global_index,
                     final_transaction_info_index,
                     final_transaction_info_id,
                     Some(event_index as u64),
-                    access_path.clone(),
-                    MultiAccessPath::VM2(final_access_path.clone().unwrap().clone()),
-                    final_state_root_hash,
+                    input_access_path,
+                    Some(MultiAccessPath::VM2(final_access_path.clone().unwrap().clone())),
+                    Some(final_state_root_hash),
                 );
 
                 assert!(
