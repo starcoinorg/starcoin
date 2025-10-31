@@ -10,14 +10,14 @@ itertools = { workspace = true }
 once_cell = { workspace = true }
 bcs-ext = { workspace = true }
 datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-cli = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-package = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-cli = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62" }
 
 starcoin-account-provider = { workspace = true }
 starcoin-cmd = { workspace = true }

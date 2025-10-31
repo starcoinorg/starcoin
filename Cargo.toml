@@ -423,7 +423,7 @@ ark-ec = "0.4.0"
 ark-ff = "0.4.0"
 ark-serialize = "0.4.0"
 ark-std = "0.4.0"
-better_any = "0.1.1"
+better_any = "0.2.0"
 blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
@@ -614,8 +614,8 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "bd872458e2a08f0428aa6f6e17c07da61a49bd62", package = "move-transactional-test-runner" }
 
 strum = "0.27"
 strum_macros = "0.27.2"
