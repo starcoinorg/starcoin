@@ -10,9 +10,9 @@ use crate::{
     structure_from_ty_arg,
 };
 #[cfg(feature = "testing")]
-use ark_ff::Field;
+use ark_ff::{Field, UniformRand};
 #[cfg(feature = "testing")]
-use ark_std::{test_rng, UniformRand};
+use ark_std::test_rng;
 #[cfg(feature = "testing")]
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 #[cfg(feature = "testing")]

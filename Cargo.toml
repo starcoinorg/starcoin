@@ -417,12 +417,12 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "babf994a
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 
 # Ark crypto libraries
-ark-bls12-381 = "0.4.0"
-ark-bn254 = "0.4.0"
-ark-ec = "0.4.0"
-ark-ff = "0.4.0"
-ark-serialize = "0.4.0"
-ark-std = "0.4.0"
+ark-bls12-381 = "0.5.0"
+ark-bn254 = "0.5.0"
+ark-ec = "0.5.0"
+ark-ff = "0.5.0"
+ark-serialize = "0.5.0"
+ark-std = "0.5.0"
 better_any = "0.2.0"
 blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }

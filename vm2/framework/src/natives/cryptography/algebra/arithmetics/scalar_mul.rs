@@ -13,7 +13,7 @@ use crate::{
     },
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
-use ark_ec::{CurveGroup, Group};
+use ark_ec::{CurveGroup, PrimeGroup};
 use ark_ff::Field;
 use move_core_types::gas_algebra::NumArgs;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
