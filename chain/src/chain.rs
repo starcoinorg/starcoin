@@ -1610,19 +1610,16 @@ impl ChainReader for BlockChain {
         let final_state_proof = match &final_access_path {
             MultiAccessPath::VM1(access_path) => {
                 let statedb = statedb.fork_at(final_state_root_hash);
-                if let Ok(proof) = statedb.get_with_proof(access_path) {
-                    Some(MultiStateProof::VM1(proof))
-                } else {
-                    None
-                }
+                MultiStateProof::VM1(statedb.get_with_proof(access_path)?)
             }
             MultiAccessPath::VM2(_) => {
                 let statedb2 = statedb2.fork_at(final_state_root_hash);
-                if let Ok(proof) = statedb2.get_with_proof(&final_access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)  {
-                    Some(MultiStateProof::VM2(proof))
-                } else {
-                    None
-                }
+                let state_key = final_access_path.to_state_key()?.ok_or_else(|| {
+                    format_err!(
+                        "the transaction to be verified is vm version 2 but the access path is not"
+                    )
+                })?;
+                MultiStateProof::VM2(statedb2.get_with_proof(&state_key)?)
             }
         };
 
