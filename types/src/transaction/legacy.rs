@@ -30,7 +30,7 @@ impl From<StcRichTransactionInfo> for RichTransactionInfo {
             transaction_info: info
                 .transaction_info
                 .to_v1()
-                .expect("this is must be v1 transaction info"),
+                .expect("this must be v1 transaction info"),
             transaction_index: info.transaction_index,
             transaction_global_index: info.transaction_global_index,
         }
