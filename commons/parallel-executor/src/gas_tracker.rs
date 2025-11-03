@@ -28,12 +28,34 @@ impl GasTracker {
 
     pub fn update(&self, idx: usize, gas_used: u64) -> bool {
         let mut state = self.state.lock().unwrap();
-        state.cache[idx] = gas_used as i64;
-        assert!(idx >= state.next_calc_idx);
-        while state.next_calc_idx < state.cache.len() && state.cache[state.next_calc_idx] >= 0 {
-            state.gas_used += state.cache[state.next_calc_idx] as u64;
-            state.next_calc_idx += 1;
+
+        // If idx < next_calc_idx, it means this transaction is being re-validated
+        // after a decrease_validation_idx call. We need to update the cache and
+        // recalculate gas_used from this index.
+        if idx < state.next_calc_idx {
+            // Update the cache
+            state.cache[idx] = gas_used as i64;
+
+            // Recalculate gas_used from index 0
+            state.gas_used = 0;
+            state.next_calc_idx = 0;
+
+            // Recalculate up to the first unvalidated transaction
+            while state.next_calc_idx < state.cache.len() && state.cache[state.next_calc_idx] >= 0 {
+                state.gas_used += state.cache[state.next_calc_idx] as u64;
+                state.next_calc_idx += 1;
+            }
+        } else {
+            // Normal case: idx >= next_calc_idx
+            state.cache[idx] = gas_used as i64;
+
+            // Advance next_calc_idx if possible
+            while state.next_calc_idx < state.cache.len() && state.cache[state.next_calc_idx] >= 0 {
+                state.gas_used += state.cache[state.next_calc_idx] as u64;
+                state.next_calc_idx += 1;
+            }
         }
+
         state.gas_used >= self.gas_limit
     }
 

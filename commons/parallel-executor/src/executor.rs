@@ -104,7 +104,7 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     // threads that may be concurrently participating in parallel execution.
     concurrency_level: usize,
     phantom: PhantomData<(T, E)>,
-    gas_limit: Option<u64>
+    gas_limit: Option<u64>,
 }
 
 impl<T, E> ParallelTransactionExecutor<T, E>
@@ -229,7 +229,6 @@ where
             for k in &last_input_output.write_set(idx_to_validate) {
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
             }
-
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
             // Get gas_used from the transaction output
@@ -344,25 +343,6 @@ where
         };
     }
 
-    fn assert_precondition(&self, txns: &[T]) {
-        if txns.is_empty() {
-            return;
-        }
-
-        if txns[0].is_block_prologue() {
-            assert!(
-                txns[txns.len() - 1].is_block_epilogue(),
-                "If block prologue exists, block epilogue must also exist at the end."
-            );
-            return;
-        }
-
-        assert!(txns
-            .iter()
-            .all(|txn| !txn.is_block_prologue() && !txn.is_block_epilogue()), 
-            "block prologue or block epilogue must in front and tail or not coexist in test scenarios");
-    }
-
     fn execute_block_epilogue(
         &self,
         executor_arguments: &E::Argument,
@@ -380,11 +360,10 @@ where
             return;
         }
 
-        
         // Get the first index that exceeds gas limit
         let first_exceeding = scheduler.first_exceeding_index();
         let epilogue_idx = block.len() - 1;
-        
+
         // Collect senders from the first n valid transactions (excluding prologue and epilogue)
         let senders = block[..first_exceeding]
             .iter()
@@ -400,12 +379,12 @@ where
         // Clone and update the epilogue transaction with senders
         let mut epilogue_txn = block[epilogue_idx].clone();
         epilogue_txn.update_senders_for_epilogue(&senders);
-        
+
         // Create a snapshot view that only sees transactions up to first_exceeding
         // This view will read from versioned_data_cache as if it's at index first_exceeding
         let state_view = MVHashMapView {
             versioned_map: versioned_data_cache,
-            txn_idx: first_exceeding,  // This makes it see state after first_exceeding-1
+            txn_idx: first_exceeding, // This makes it see state after first_exceeding-1
             scheduler,
             captured_reads: Mutex::new(Vec::new()),
         };
@@ -426,7 +405,7 @@ where
             ExecutionStatus::Success(output) => {
                 apply_writes(&output);
                 ExecutionStatus::Success(output)
-            },
+            }
             _ => unreachable!("block epilogue execution should not fail"),
         };
 
@@ -442,8 +421,6 @@ where
         if signature_verified_block.is_empty() {
             return Ok(vec![]);
         }
-        
-        self.assert_precondition(signature_verified_block.as_slice());
 
         let num_txns = signature_verified_block.len();
         let versioned_data_cache = MVHashMap::new();
@@ -488,14 +465,19 @@ where
         let num_txns_to_collect = first_exceeding.min(scheduler.num_txn_to_execute());
 
         // Check if there's a block epilogue
-        let has_epilogue = !signature_verified_block.is_empty() 
+        let has_epilogue = !signature_verified_block.is_empty()
             && signature_verified_block[signature_verified_block.len() - 1].is_block_epilogue();
 
         // TODO: for large block sizes and many cores, extract outputs in parallel.
         let mut maybe_err = None;
         let mut final_results = Vec::with_capacity(num_txns_to_collect);
-        
-        for idx in 0..num_txns_to_collect {
+
+        let index = if has_epilogue {
+            num_txns_to_collect - 1
+        } else {
+            num_txns_to_collect
+        };
+        for idx in 0..index {
             match last_input_output.take_output(idx) {
                 ExecutionStatus::Success(t) => final_results.push(t),
                 ExecutionStatus::SkipRest(_t) => {
@@ -681,7 +663,7 @@ mod tests {
 
         let initial_value = 0;
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
-            ParallelTransactionExecutor::new(num_cpus::get().max(2),None);
+            ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
         let result = executor.execute_transactions_parallel(initial_value, transactions);
         assert!(

@@ -136,6 +136,11 @@ where
 {
     type Key = K;
     type Value = V;
+    type Sender = String;
+
+    fn sender(&self) -> Option<Self::Sender> {
+        None
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -211,6 +216,10 @@ where
 
     fn skip_output() -> Self {
         Self(vec![], vec![])
+    }
+
+    fn gas_used(&self) -> u64 {
+        0
     }
 }
 
