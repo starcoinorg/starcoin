@@ -351,8 +351,8 @@ where
 
         if txns[0].is_block_prologue() {
             assert!(
-                !txns[txns.len() - 1].is_block_epilogue(),
-                "If block prologue exists, block prologue and block epilogue must coexist."
+                txns[txns.len() - 1].is_block_epilogue(),
+                "If block prologue exists, block epilogue must also exist at the end."
             );
             return;
         }
@@ -363,7 +363,66 @@ where
             "block prologue or block epilogue must in front and tail or not coexist in test scenarios");
     }
 
-    fn execute_block_epilogue(&self) {}
+    fn execute_block_epilogue(
+        &self,
+        executor_arguments: &E::Argument,
+        block: &[T],
+        last_input_output: &TxnLastInputOutput<
+            <T as Transaction>::Key,
+            <E as ExecutorTask>::Output,
+            <E as ExecutorTask>::Error,
+        >,
+        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        scheduler: &Scheduler,
+    ) {
+        // Check if block has epilogue
+        if block.is_empty() || !block[block.len() - 1].is_block_epilogue() {
+            return;
+        }
+
+        // Get the first index that exceeds gas limit
+        let first_exceeding = scheduler.first_exceeding_index();
+        let epilogue_idx = block.len() - 1;
+        
+        // Create a snapshot view that only sees transactions up to first_exceeding
+        // This view will read from versioned_data_cache as if it's at index first_exceeding
+        let state_view = MVHashMapView {
+            versioned_map: versioned_data_cache,
+            txn_idx: first_exceeding,  // This makes it see state after first_exceeding-1
+            scheduler,
+            captured_reads: Mutex::new(Vec::new()),
+        };
+
+        // Execute block epilogue with the snapshot view
+        let executor = E::init(*executor_arguments);
+        let epilogue_txn = &block[epilogue_idx];
+        let execute_result = executor.execute_transaction(&state_view, epilogue_txn);
+
+        // Apply the writes from epilogue execution
+        let apply_writes = |output: &<E as ExecutorTask>::Output| {
+            let write_version = (epilogue_idx, 0);
+            for (k, v) in output.get_writes().into_iter() {
+                versioned_data_cache.write(&k, write_version, v);
+            }
+        };
+
+        let result = match execute_result {
+            ExecutionStatus::Success(output) => {
+                apply_writes(&output);
+                ExecutionStatus::Success(output)
+            }
+            ExecutionStatus::SkipRest(output) => {
+                apply_writes(&output);
+                ExecutionStatus::SkipRest(output)
+            }
+            ExecutionStatus::Abort(err) => {
+                ExecutionStatus::Abort(Error::UserError(err))
+            }
+        };
+
+        // Record the epilogue execution result
+        last_input_output.record(epilogue_idx, state_view.take_reads(), result);
+    }
 
     pub fn execute_transactions_parallel(
         &self,
@@ -406,13 +465,27 @@ where
         });
 
         // scheduler may skip txns, block epilogue must be explictly executed
-        self.execute_block_epilogue();
+        self.execute_block_epilogue(
+            &executor_initial_arguments,
+            &signature_verified_block,
+            &last_input_output,
+            &versioned_data_cache,
+            &scheduler,
+        );
+
+        // Get the actual number of transactions to execute (considering gas limit)
+        let first_exceeding = scheduler.first_exceeding_index();
+        let num_txns_to_collect = first_exceeding.min(scheduler.num_txn_to_execute());
+
+        // Check if there's a block epilogue
+        let has_epilogue = !signature_verified_block.is_empty() 
+            && signature_verified_block[signature_verified_block.len() - 1].is_block_epilogue();
 
         // TODO: for large block sizes and many cores, extract outputs in parallel.
         let mut maybe_err = None;
-        let mut final_results = Vec::with_capacity(num_txns);
-        let num_txns = scheduler.num_txn_to_execute();
-        for idx in 0..num_txns {
+        let mut final_results = Vec::with_capacity(num_txns_to_collect);
+        
+        for idx in 0..num_txns_to_collect {
             match last_input_output.take_output(idx) {
                 ExecutionStatus::Success(t) => final_results.push(t),
                 ExecutionStatus::SkipRest(_t) => {
@@ -422,6 +495,20 @@ where
                 ExecutionStatus::Abort(err) => {
                     maybe_err = Some(err);
                     break;
+                }
+            };
+        }
+
+        // Collect epilogue output if it exists and no error occurred
+        if has_epilogue && maybe_err.is_none() {
+            let epilogue_idx = signature_verified_block.len() - 1;
+            match last_input_output.take_output(epilogue_idx) {
+                ExecutionStatus::Success(t) => final_results.push(t),
+                ExecutionStatus::SkipRest(_t) => {
+                    maybe_err = Some(BlockRestart);
+                }
+                ExecutionStatus::Abort(err) => {
+                    maybe_err = Some(err);
                 }
             };
         }
@@ -437,7 +524,7 @@ where
         match maybe_err {
             Some(err) => Err(err),
             None => {
-                final_results.resize_with(num_txns, E::Output::skip_output);
+                final_results.resize_with(num_txns_to_collect, E::Output::skip_output);
                 Ok(final_results)
             }
         }

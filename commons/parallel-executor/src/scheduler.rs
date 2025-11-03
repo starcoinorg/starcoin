@@ -165,6 +165,15 @@ impl Scheduler {
         self.num_txns
     }
 
+    /// Get the first index that exceeds the gas limit.
+    /// Returns the total number of transactions if no transaction exceeds the limit.
+    pub fn first_exceeding_index(&self) -> usize {
+        self.gas_tracker
+            .as_ref()
+            .map(|tracker| tracker.first_exceeding_index())
+            .unwrap_or(self.num_txns)
+    }
+
     /// Try to abort version = (txn_idx, incarnation), called upon validation failure.
     /// When the invocation manages to update the status of the transaction, it changes
     /// Executed(incarnation) => Aborting(incarnation), it returns true. Otherwise,
