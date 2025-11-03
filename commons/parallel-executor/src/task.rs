@@ -19,9 +19,19 @@ pub enum ExecutionStatus<T, E> {
 
 /// Trait that defines a transaction that could be parallel executed by the scheduler. Each
 /// transaction will write to a key value storage as their side effect.
-pub trait Transaction: Sync + Send + 'static {
+pub trait Transaction: Sync + Send + Clone + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
+    type Sender: Send + Sync + Clone + Hash + Eq;
+
+    /// Returns the sender of this transaction, if applicable.
+    /// Returns None for system transactions like block prologue/epilogue.
+    fn sender(&self) -> Option<Self::Sender>;
+
+    /// Updates the transaction with senders from block epilogue context.
+    /// Only applicable for block epilogue transactions.
+    /// Default implementation does nothing for backward compatibility.
+    fn update_senders_for_epilogue(&mut self, _senders: &std::collections::HashSet<Self::Sender>) {}
 
     /// Returns true if this transaction is block metadata.
     /// Default false to preserve backward compatibility for existing implementors.

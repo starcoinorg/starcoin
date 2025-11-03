@@ -1729,7 +1729,7 @@ impl StarcoinVM {
                     Ok(output) => (VMStatus::Executed, output),
                     Err(vm_status) => discard_error_vm_status(vm_status),
                 };
-                (vm_status, output, Some("block_meta".to_string()))
+                (vm_status, output, Some("block_mepupta".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_, senders) => {
                 let (vm_status, output) = match self

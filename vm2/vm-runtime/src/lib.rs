@@ -52,12 +52,13 @@ pub trait VMExecutor: Send + Sync {
     ) -> Result<Vec<TransactionOutput>, VMStatus>;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
     BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
 }
+
 
 #[inline]
 pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {

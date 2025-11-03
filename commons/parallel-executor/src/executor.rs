@@ -380,9 +380,26 @@ where
             return;
         }
 
+        
         // Get the first index that exceeds gas limit
         let first_exceeding = scheduler.first_exceeding_index();
         let epilogue_idx = block.len() - 1;
+        
+        // Collect senders from the first n valid transactions (excluding prologue and epilogue)
+        let senders = block[..first_exceeding]
+            .iter()
+            .filter_map(|txn| {
+                if txn.is_block_prologue() || txn.is_block_epilogue() {
+                    None
+                } else {
+                    txn.sender()
+                }
+            })
+            .collect::<HashSet<_>>();
+
+        // Clone and update the epilogue transaction with senders
+        let mut epilogue_txn = block[epilogue_idx].clone();
+        epilogue_txn.update_senders_for_epilogue(&senders);
         
         // Create a snapshot view that only sees transactions up to first_exceeding
         // This view will read from versioned_data_cache as if it's at index first_exceeding
@@ -395,8 +412,7 @@ where
 
         // Execute block epilogue with the snapshot view
         let executor = E::init(*executor_arguments);
-        let epilogue_txn = &block[epilogue_idx];
-        let execute_result = executor.execute_transaction(&state_view, epilogue_txn);
+        let execute_result = executor.execute_transaction(&state_view, &epilogue_txn);
 
         // Apply the writes from epilogue execution
         let apply_writes = |output: &<E as ExecutorTask>::Output| {
@@ -410,14 +426,8 @@ where
             ExecutionStatus::Success(output) => {
                 apply_writes(&output);
                 ExecutionStatus::Success(output)
-            }
-            ExecutionStatus::SkipRest(output) => {
-                apply_writes(&output);
-                ExecutionStatus::SkipRest(output)
-            }
-            ExecutionStatus::Abort(err) => {
-                ExecutionStatus::Abort(Error::UserError(err))
-            }
+            },
+            _ => unreachable!("block epilogue execution should not fail"),
         };
 
         // Record the epilogue execution result
@@ -570,6 +580,11 @@ mod tests {
     impl Transaction for TestTransaction {
         type Key = String;
         type Value = u64;
+        type Sender = String;
+
+        fn sender(&self) -> Option<Self::Sender> {
+            Some("test_sender".to_string())
+        }
     }
 
     // Minimal executor implementation for testing
