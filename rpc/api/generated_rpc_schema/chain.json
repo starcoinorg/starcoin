@@ -6598,7 +6598,8 @@
                 "status",
                 "transaction_global_index",
                 "transaction_hash",
-                "transaction_index"
+                "transaction_index",
+                "transaction_info_id"
               ],
               "properties": {
                 "block_hash": {
@@ -6733,6 +6734,10 @@
                   "type": "integer",
                   "format": "uint32",
                   "minimum": 0.0
+                },
+                "transaction_info_id": {
+                  "type": "string",
+                  "format": "HashValue"
                 }
               }
             }
@@ -7128,7 +7133,8 @@
                 "status",
                 "transaction_global_index",
                 "transaction_hash",
-                "transaction_index"
+                "transaction_index",
+                "transaction_info_id"
               ],
               "properties": {
                 "block_hash": {
@@ -7263,6 +7269,10 @@
                   "type": "integer",
                   "format": "uint32",
                   "minimum": 0.0
+                },
+                "transaction_info_id": {
+                  "type": "string",
+                  "format": "HashValue"
                 }
               }
             }
