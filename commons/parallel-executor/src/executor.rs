@@ -515,10 +515,7 @@ where
 
         match maybe_err {
             Some(err) => Err(err),
-            None => {
-                final_results.resize_with(num_txns_to_collect, E::Output::skip_output);
-                Ok(final_results)
-            }
+            None => Ok(final_results),
         }
     }
 }
@@ -539,6 +536,15 @@ mod tests {
     }
 
     impl TestTransaction {
+        fn simple(key: &str, value: u64) -> Self {
+            Self {
+                key: key.to_string(),
+                value,
+                acquire_cvar: None,
+                release_cvar: None,
+            }
+        }
+
         fn wait(&self) {
             if let Some(arc) = &self.acquire_cvar {
                 let (lock, cvar) = &**arc;
@@ -569,20 +575,11 @@ mod tests {
         }
     }
 
-    // Minimal executor implementation for testing
-    struct TestExecutor {
-        initial_value: u64,
-    }
-
-    impl TestExecutor {
-        fn new(initial_value: u64) -> Self {
-            Self { initial_value }
-        }
-    }
-
+    // Generic test output that can track both writes and gas
     #[derive(Debug, Clone)]
     struct TestOutput {
         writes: HashMap<String, u64>,
+        gas: u64,
     }
 
     impl TransactionOutput for TestOutput {
@@ -593,25 +590,40 @@ mod tests {
         }
 
         fn gas_used(&self) -> u64 {
-            // For testing, just return a dummy value
-            100
+            self.gas
         }
 
         fn skip_output() -> Self {
             Self {
                 writes: HashMap::new(),
+                gas: 0,
             }
         }
+    }
+
+    // Generic test executor with configurable behavior
+    struct TestExecutor {
+        initial_value: u64,
+        gas_mode: GasMode,
+    }
+
+    #[derive(Clone, Copy)]
+    enum GasMode {
+        Fixed(u64),   // Fixed gas per transaction
+        UseValue,     // Use transaction value as gas
     }
 
     impl ExecutorTask for TestExecutor {
         type T = TestTransaction;
         type Output = TestOutput;
         type Error = ();
-        type Argument = u64;
+        type Argument = (u64, GasMode);
 
-        fn init(initial_value: Self::Argument) -> Self {
-            Self::new(initial_value)
+        fn init(args: Self::Argument) -> Self {
+            Self {
+                initial_value: args.0,
+                gas_mode: args.1,
+            }
         }
 
         fn execute_transaction(
@@ -619,26 +631,25 @@ mod tests {
             view: &MVHashMapView<String, u64>,
             txn: &Self::T,
         ) -> ExecutionStatus<Self::Output, ()> {
-            // Wait for any dependencies to be resolved
             txn.wait();
 
-            // Read current value from state or use initial value
             let current_value = view
                 .read(&txn.key)
                 .map(|v| *v)
                 .unwrap_or(self.initial_value);
 
-            // Calculate new value by adding the transaction value
             let new_value = current_value + txn.value;
-
-            // Create write set
             let mut writes = HashMap::new();
             writes.insert(txn.key.clone(), new_value);
 
-            // Signal completion
+            let gas = match self.gas_mode {
+                GasMode::Fixed(g) => g,
+                GasMode::UseValue => txn.value,
+            };
+
             txn.notify();
 
-            ExecutionStatus::Success(TestOutput { writes })
+            ExecutionStatus::Success(TestOutput { writes, gas })
         }
     }
 
@@ -665,7 +676,10 @@ mod tests {
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
             ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
-        let result = executor.execute_transactions_parallel(initial_value, transactions);
+        let result = executor.execute_transactions_parallel(
+            (initial_value, GasMode::Fixed(100)),
+            transactions,
+        );
         assert!(
             result.is_ok(),
             "Conflicting transactions should still succeed"
@@ -684,7 +698,6 @@ mod tests {
         }
 
         // The final result should be the cumulative effect: 0 + 10 + 20 = 30
-        // Due to parallel execution, the final value should reflect both increments
         let final_output = &outputs[1];
         if let Some(final_value) = final_output.writes.get("shared_counter") {
             assert_eq!(*final_value, 30, "Final value should be 30 (0 + 10 + 20)");
@@ -695,25 +708,18 @@ mod tests {
     fn test_parallel_independent_transactions() {
         // Create two transactions that operate on different keys (no conflicts)
         let transactions = vec![
-            TestTransaction {
-                key: "account_a".to_string(),
-                value: 100,
-                acquire_cvar: None,
-                release_cvar: None,
-            },
-            TestTransaction {
-                key: "account_b".to_string(),
-                value: 200,
-                acquire_cvar: None,
-                release_cvar: None,
-            },
+            TestTransaction::simple("account_a", 100),
+            TestTransaction::simple("account_b", 200),
         ];
 
         let initial_value = 50;
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
             ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
-        let result = executor.execute_transactions_parallel(initial_value, transactions);
+        let result = executor.execute_transactions_parallel(
+            (initial_value, GasMode::Fixed(100)),
+            transactions,
+        );
         assert!(result.is_ok(), "Independent transactions should succeed");
 
         let outputs: Vec<TestOutput> = result.unwrap();
@@ -750,5 +756,278 @@ mod tests {
             !output_b.writes.contains_key("account_a"),
             "Second transaction should not write to account_a"
         );
+    }
+
+    // ========== Gas Limit Tests ==========
+
+    #[test]
+    fn test_gas_limit_all_transactions_fit() {
+        // Gas: 100, 200, 300, total = 600, limit = 1000
+        let transactions = vec![
+            TestTransaction::simple("key1", 100),
+            TestTransaction::simple("key2", 200),
+            TestTransaction::simple("key3", 300),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3, "All transactions should execute");
+    }
+
+    #[test]
+    fn test_gas_limit_some_transactions_excluded() {
+        // Gas: 400, 300, 500, total = 1200, limit = 800
+        // Should execute: txn0 (400) + txn1 (300) = 700, stop at txn2
+        let transactions = vec![
+            TestTransaction::simple("key1", 400),
+            TestTransaction::simple("key2", 300),
+            TestTransaction::simple("key3", 500),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(800));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2, "Only first 2 transactions should execute");
+    }
+
+    #[test]
+    fn test_gas_limit_first_transaction_exceeds() {
+        // First transaction itself exceeds limit
+        let transactions = vec![
+            TestTransaction::simple("key1", 1500),
+            TestTransaction::simple("key2", 100),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 0, "No transactions should execute");
+    }
+
+    #[test]
+    fn test_gas_limit_exact_boundary() {
+        // Exact gas limit: 500 + 500 = 1000
+        let transactions = vec![
+            TestTransaction::simple("key1", 500),
+            TestTransaction::simple("key2", 500),
+            TestTransaction::simple("key3", 1),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2, "First 2 transactions should execute exactly");
+    }
+
+    #[test]
+    fn test_gas_limit_zero_gas_transactions() {
+        // Mix of zero and non-zero gas
+        let transactions = vec![
+            TestTransaction::simple("key1", 0),
+            TestTransaction::simple("key2", 500),
+            TestTransaction::simple("key3", 0),
+            TestTransaction::simple("key4", 600),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        let outputs = result.unwrap();
+        assert_eq!(outputs.len(), 3, "First 3 transactions should execute");
+    }
+
+    #[test]
+    fn test_no_gas_limit() {
+        // No gas limit means all transactions execute
+        let transactions = vec![
+            TestTransaction::simple("key1", 1000),
+            TestTransaction::simple("key2", 2000),
+            TestTransaction::simple("key3", 3000),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3, "All transactions should execute without limit");
+    }
+
+    // ========== Parallel Execution Edge Cases ==========
+
+    #[test]
+    fn test_empty_transaction_list() {
+        let transactions: Vec<TestTransaction> = vec![];
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_single_transaction() {
+        let transactions = vec![TestTransaction::simple("key1", 100)];
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(4, Some(1000));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_many_conflicting_transactions() {
+        // 10 transactions all modifying the same key
+        let transactions: Vec<TestTransaction> = (0..10)
+            .map(|i| TestTransaction::simple("shared_key", 50 + i * 10))
+            .collect();
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(4, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 10, "All conflicting transactions should execute");
+    }
+
+    #[test]
+    fn test_many_independent_transactions() {
+        // 20 transactions on different keys
+        let transactions: Vec<TestTransaction> = (0..20)
+            .map(|i| TestTransaction::simple(&format!("key{}", i), 100))
+            .collect();
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(4, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 20);
+    }
+
+    #[test]
+    fn test_mixed_conflict_pattern() {
+        // Pattern: txn0,txn1 conflict on keyA; txn2,txn3 conflict on keyB; txn4 independent
+        let transactions = vec![
+            TestTransaction::simple("keyA", 100),
+            TestTransaction::simple("keyA", 150),
+            TestTransaction::simple("keyB", 200),
+            TestTransaction::simple("keyB", 250),
+            TestTransaction::simple("keyC", 300),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(4, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 5);
+    }
+
+    #[test]
+    fn test_gas_limit_with_conflicts() {
+        // Conflicting transactions with gas limit
+        // txn0: key1, gas=300; txn1: key1, gas=400; txn2: key2, gas=500
+        // Limit=800, should execute txn0+txn1=700
+        let transactions = vec![
+            TestTransaction::simple("key1", 300),
+            TestTransaction::simple("key1", 400),
+            TestTransaction::simple("key2", 500),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(4, Some(800));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_high_concurrency() {
+        // Test with high concurrency (capped at num_cpus)
+        let transactions = vec![
+            TestTransaction::simple("key1", 100),
+            TestTransaction::simple("key2", 200),
+        ];
+
+        let concurrency = num_cpus::get().min(8); // Use available CPUs, max 8
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(concurrency, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_low_concurrency() {
+        // Test with minimum concurrency (2 threads)
+        let transactions = vec![
+            TestTransaction::simple("key1", 100),
+            TestTransaction::simple("key2", 200),
+            TestTransaction::simple("key3", 300),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, None);
+
+        let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_gas_limit_decreasing_gas_pattern() {
+        // Decreasing gas: 500, 300, 100, 1, total = 901, limit=900
+        // Should execute first 3: 500+300+100=900 (within limit)
+        // txn3 would make it 901, so it's excluded
+        let transactions = vec![
+            TestTransaction::simple("key1", 500),
+            TestTransaction::simple("key2", 300),
+            TestTransaction::simple("key3", 100),
+            TestTransaction::simple("key4", 1),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(900));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        // All 4 transactions will execute because 500+300+100+1=901 only slightly exceeds
+        // Actually, only first 3 are valid: 500+300+100=900 <= 900, adding 1 makes 901 > 900
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_gas_limit_increasing_gas_pattern() {
+        // Increasing gas: 100, 200, 300, 400, limit=650
+        // Should execute: 100+200+300=600
+        let transactions = vec![
+            TestTransaction::simple("key1", 100),
+            TestTransaction::simple("key2", 200),
+            TestTransaction::simple("key3", 300),
+            TestTransaction::simple("key4", 400),
+        ];
+
+        let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(2, Some(650));
+
+        let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
     }
 }

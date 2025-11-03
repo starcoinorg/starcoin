@@ -56,7 +56,8 @@ impl GasTracker {
             }
         }
 
-        state.gas_used >= self.gas_limit
+        // Return true if gas limit is exceeded (> not >=, to allow exact limit)
+        state.gas_used > self.gas_limit
     }
 
     pub fn decrease_validation_idx(&self, idx: usize) {
@@ -71,11 +72,13 @@ impl GasTracker {
 
     pub fn first_exceeding_index(&self) -> usize {
         let state = self.state.lock().unwrap();
+        
+        // If total gas used is within or equal to limit, all validated transactions can execute
         if state.gas_used <= self.gas_limit {
             return state.cache.len();
         }
 
-        // Only consider validated transactions (< next_calc_idx)
+        // gas_used > limit: find the first transaction that causes exceeding
         let mut cumulative_gas = 0u64;
         for i in 0..state.next_calc_idx {
             cumulative_gas += state.cache[i] as u64;
