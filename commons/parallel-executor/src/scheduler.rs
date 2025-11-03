@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas_tracker::GasTracker;
 use crossbeam::utils::CachePadded;
 use starcoin_infallible::Mutex;
 use std::{
@@ -135,11 +136,13 @@ pub struct Scheduler {
     txn_dependency: Vec<CachePadded<Mutex<Vec<TxnIndex>>>>,
     /// An index i maps to the most up-to-date status of transaction i.
     txn_status: Vec<CachePadded<Mutex<TransactionStatus>>>,
+
+    gas_tracker: Option<GasTracker>,
 }
 
 /// Public Interfaces for the Scheduler
 impl Scheduler {
-    pub fn new(num_txns: usize) -> Self {
+    pub fn new(num_txns: usize, gas_limit: Option<u64>) -> Self {
         Self {
             num_txns,
             execution_idx: AtomicUsize::new(0),
@@ -153,6 +156,7 @@ impl Scheduler {
             txn_status: (0..num_txns)
                 .map(|_| CachePadded::new(Mutex::new(TransactionStatus::ReadyToExecute(0, None))))
                 .collect(),
+            gas_tracker: gas_limit.map(|limit| GasTracker::new(num_txns, limit)),
         }
     }
 
@@ -331,6 +335,14 @@ impl Scheduler {
 
         SchedulerTask::NoTask
     }
+
+    pub fn finish_validation(&self, txn_idx: TxnIndex, gas_used: u64) {
+        if let Some(tracker) = &self.gas_tracker {
+            if tracker.update(txn_idx, gas_used) {
+                self.done_marker.store(true, Ordering::Release);
+            }
+        }
+    }
 }
 
 /// Public functions of the Scheduler
@@ -340,6 +352,9 @@ impl Scheduler {
         if self.validation_idx.fetch_min(target_idx, Ordering::SeqCst) > target_idx {
             self.decrease_cnt.fetch_add(1, Ordering::SeqCst);
         }
+        self.gas_tracker
+            .as_ref()
+            .map(|tracker| tracker.decrease_validation_idx(target_idx));
     }
 
     /// Decreases the execution index, increases the decrease counter if it actually decreased.

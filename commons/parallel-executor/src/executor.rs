@@ -99,12 +99,12 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
         self.txn_idx
     }
 }
-
 pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     // number of active concurrent tasks, corresponding to the maximum number of rayon
     // threads that may be concurrently participating in parallel execution.
     concurrency_level: usize,
     phantom: PhantomData<(T, E)>,
+    gas_limit: Option<u64>
 }
 
 impl<T, E> ParallelTransactionExecutor<T, E>
@@ -114,7 +114,7 @@ where
 {
     /// The caller needs to ensure that concurrency_level > 1 (0 is illegal and 1 should
     /// be handled by sequential execution) and that concurrency_level <= num_cpus.
-    pub fn new(concurrency_level: usize) -> Self {
+    pub fn new(concurrency_level: usize, gas_limit: Option<u64>) -> Self {
         assert!(
             concurrency_level > 1 && concurrency_level <= num_cpus::get(),
             "Parallel execution concurrency level {} should be between 2 and number of CPUs",
@@ -123,6 +123,7 @@ where
         Self {
             concurrency_level,
             phantom: PhantomData,
+            gas_limit,
         }
     }
 
@@ -231,6 +232,9 @@ where
 
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
+            // Get gas_used from the transaction output
+            let gas_used = last_input_output.gas_used(idx_to_validate);
+            scheduler.finish_validation(idx_to_validate, gas_used);
             SchedulerTask::NoTask
         }
     }
@@ -286,7 +290,7 @@ where
         }
     }
 
-    fn execute_block_meta_data_txn(
+    fn execute_block_prologue(
         &self,
         executor_arguments: &E::Argument,
         block: &[T],
@@ -298,7 +302,7 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &Scheduler,
     ) {
-        if block.is_empty() || !block[0].is_block_meta_data() {
+        if block.is_empty() || !block[0].is_block_prologue() {
             return;
         }
 
@@ -340,6 +344,27 @@ where
         };
     }
 
+    fn assert_precondition(&self, txns: &[T]) {
+        if txns.is_empty() {
+            return;
+        }
+
+        if txns[0].is_block_prologue() {
+            assert!(
+                !txns[txns.len() - 1].is_block_epilogue(),
+                "If block prologue exists, block prologue and block epilogue must coexist."
+            );
+            return;
+        }
+
+        assert!(txns
+            .iter()
+            .all(|txn| !txn.is_block_prologue() && !txn.is_block_epilogue()), 
+            "block prologue or block epilogue must in front and tail or not coexist in test scenarios");
+    }
+
+    fn execute_block_epilogue(&self) {}
+
     pub fn execute_transactions_parallel(
         &self,
         executor_initial_arguments: E::Argument,
@@ -348,15 +373,17 @@ where
         if signature_verified_block.is_empty() {
             return Ok(vec![]);
         }
+        
+        self.assert_precondition(signature_verified_block.as_slice());
 
         let num_txns = signature_verified_block.len();
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
-        let scheduler = Scheduler::new(num_txns);
+        let scheduler = Scheduler::new(num_txns, self.gas_limit);
 
         // BlockMetadata is always the first txn of block that modifies fundamental info of block
         // other txns depends on this execution result, execute it first to avoid unnecessary contention
-        self.execute_block_meta_data_txn(
+        self.execute_block_prologue(
             &executor_initial_arguments,
             &signature_verified_block,
             &last_input_output,
@@ -377,6 +404,9 @@ where
                 });
             }
         });
+
+        // scheduler may skip txns, block epilogue must be explictly executed
+        self.execute_block_epilogue();
 
         // TODO: for large block sizes and many cores, extract outputs in parallel.
         let mut maybe_err = None;
@@ -478,6 +508,11 @@ mod tests {
             self.writes.iter().map(|(k, v)| (k.clone(), *v)).collect()
         }
 
+        fn gas_used(&self) -> u64 {
+            // For testing, just return a dummy value
+            100
+        }
+
         fn skip_output() -> Self {
             Self {
                 writes: HashMap::new(),
@@ -544,7 +579,7 @@ mod tests {
 
         let initial_value = 0;
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
-            ParallelTransactionExecutor::new(num_cpus::get().max(2));
+            ParallelTransactionExecutor::new(num_cpus::get().max(2),None);
 
         let result = executor.execute_transactions_parallel(initial_value, transactions);
         assert!(
@@ -592,7 +627,7 @@ mod tests {
 
         let initial_value = 50;
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
-            ParallelTransactionExecutor::new(num_cpus::get().max(2));
+            ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
         let result = executor.execute_transactions_parallel(initial_value, transactions);
         assert!(result.is_ok(), "Independent transactions should succeed");

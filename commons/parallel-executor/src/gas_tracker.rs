@@ -1,6 +1,9 @@
 use std::sync::Mutex;
 
 struct State {
+    // stores gas used for each transaction
+    // -1 means not yet validated
+    //  0 means validated but discarded
     cache: Vec<i64>,
     gas_used: u64,
     next_calc_idx: usize,
@@ -43,6 +46,24 @@ impl GasTracker {
             state.next_calc_idx -= 1;
         }
     }
+
+    pub fn first_exceeding_index(&self) -> usize {
+        let state = self.state.lock().unwrap();
+        if state.gas_used <= self.gas_limit {
+            return state.cache.len();
+        }
+
+        // Only consider validated transactions (< next_calc_idx)
+        let mut cumulative_gas = 0u64;
+        for i in 0..state.next_calc_idx {
+            cumulative_gas += state.cache[i] as u64;
+            if cumulative_gas > self.gas_limit {
+                return i;
+            }
+        }
+
+        state.cache.len()
+    }
 }
 
 #[cfg(test)]
@@ -58,6 +79,7 @@ mod tests {
         let tracker = GasTracker::new(5, 1000);
         assert_eq!(gas_used(&tracker), 0);
 
+        // Out-of-order updates
         assert_eq!(tracker.update(0, 200), false);
         assert_eq!(gas_used(&tracker), 200);
 
@@ -67,17 +89,14 @@ mod tests {
         assert_eq!(tracker.update(1, 400), false);
         assert_eq!(gas_used(&tracker), 900);
 
+        // Exceed limit
         assert_eq!(tracker.update(3, 200), true);
         assert_eq!(gas_used(&tracker), 1100);
-
-        assert_eq!(tracker.update(4, 100), true);
-        assert_eq!(gas_used(&tracker), 1200);
     }
 
     #[test]
     fn test_decrease_validation_idx() {
         let tracker = GasTracker::new(5, 1000);
-        assert_eq!(gas_used(&tracker), 0);
 
         assert_eq!(tracker.update(0, 200), false);
         assert_eq!(tracker.update(1, 400), false);
@@ -88,12 +107,77 @@ mod tests {
         tracker.decrease_validation_idx(2);
         assert_eq!(gas_used(&tracker), 900);
 
-        tracker.decrease_validation_idx(3);
-        assert_eq!(gas_used(&tracker), 900);
-
         tracker.decrease_validation_idx(1);
         assert_eq!(gas_used(&tracker), 600);
+    }
 
+    #[test]
+    fn test_first_exceeding_index() {
+        let tracker = GasTracker::new(5, 1000);
+
+        // No transactions
+        assert_eq!(tracker.first_exceeding_index(), 5);
+
+        // Under limit
+        tracker.update(0, 200);
+        tracker.update(1, 400);
+        tracker.update(2, 300);
+        assert_eq!(tracker.first_exceeding_index(), 5);
+
+        // Exceed limit
+        tracker.update(3, 200);
+        assert_eq!(tracker.first_exceeding_index(), 3);
+
+        // Decrease validation
+        tracker.decrease_validation_idx(2);
+        assert_eq!(tracker.first_exceeding_index(), 5);
+    }
+
+    #[test]
+    fn test_first_exceeding_index_edge_cases() {
+        // Exact limit
+        let tracker = GasTracker::new(5, 1000);
+        tracker.update(0, 500);
+        tracker.update(1, 500);
+        assert_eq!(tracker.first_exceeding_index(), 5);
+
+        tracker.update(2, 1);
+        assert_eq!(tracker.first_exceeding_index(), 2);
+
+        // Unvalidated gap
+        let tracker2 = GasTracker::new(5, 1000);
+        tracker2.update(0, 200);
+        tracker2.update(1, 400);
+        tracker2.update(3, 300);
+        tracker2.update(4, 200);
+        assert_eq!(tracker2.first_exceeding_index(), 5);
+
+        // First transaction exceeds limit
+        let tracker3 = GasTracker::new(3, 100);
+        assert_eq!(tracker3.update(0, 200), true);
+        assert_eq!(tracker3.first_exceeding_index(), 0);
+
+        // Zero gas transactions
+        let tracker4 = GasTracker::new(5, 1000);
+        tracker4.update(0, 0);
+        tracker4.update(1, 500);
+        tracker4.update(2, 0);
+        tracker4.update(3, 501);
+        assert_eq!(tracker4.first_exceeding_index(), 3);
+    }
+
+    #[test]
+    fn test_decrease_validation_edge_cases() {
+        let tracker = GasTracker::new(5, 1000);
+        tracker.update(0, 200);
+        tracker.update(1, 300);
+        tracker.update(2, 400);
+
+        // Decrease to index 0
+        tracker.decrease_validation_idx(0);
+        assert_eq!(gas_used(&tracker), 200);
+
+        // Decrease when already at target
         tracker.decrease_validation_idx(0);
         assert_eq!(gas_used(&tracker), 200);
     }

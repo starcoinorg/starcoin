@@ -25,7 +25,11 @@ pub trait Transaction: Sync + Send + 'static {
 
     /// Returns true if this transaction is block metadata.
     /// Default false to preserve backward compatibility for existing implementors.
-    fn is_block_meta_data(&self) -> bool {
+    fn is_block_prologue(&self) -> bool {
+        false
+    }
+
+    fn is_block_epilogue(&self) -> bool {
         false
     }
 }
@@ -75,6 +79,9 @@ pub trait TransactionOutput: Send + Sync {
         <Self::T as Transaction>::Key,
         <Self::T as Transaction>::Value,
     )>;
+
+    /// Get the gas used by this transaction.
+    fn gas_used(&self) -> u64;
 
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self;
