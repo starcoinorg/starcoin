@@ -59,7 +59,6 @@ pub enum PreprocessedTransaction {
     BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
 }
 
-
 #[inline]
 pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
     match txn {

@@ -3,11 +3,11 @@
 
 pub mod errors;
 pub mod executor;
+mod gas_tracker;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;
 mod scheduler;
 pub mod task;
 mod txn_last_input_output;
-mod gas_tracker;
 //#[cfg(test)]
 //mod unit_tests;

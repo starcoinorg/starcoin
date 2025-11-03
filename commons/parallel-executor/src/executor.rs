@@ -609,8 +609,8 @@ mod tests {
 
     #[derive(Clone, Copy)]
     enum GasMode {
-        Fixed(u64),   // Fixed gas per transaction
-        UseValue,     // Use transaction value as gas
+        Fixed(u64), // Fixed gas per transaction
+        UseValue,   // Use transaction value as gas
     }
 
     impl ExecutorTask for TestExecutor {
@@ -676,10 +676,8 @@ mod tests {
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
             ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
-        let result = executor.execute_transactions_parallel(
-            (initial_value, GasMode::Fixed(100)),
-            transactions,
-        );
+        let result = executor
+            .execute_transactions_parallel((initial_value, GasMode::Fixed(100)), transactions);
         assert!(
             result.is_ok(),
             "Conflicting transactions should still succeed"
@@ -716,10 +714,8 @@ mod tests {
         let executor: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
             ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
-        let result = executor.execute_transactions_parallel(
-            (initial_value, GasMode::Fixed(100)),
-            transactions,
-        );
+        let result = executor
+            .execute_transactions_parallel((initial_value, GasMode::Fixed(100)), transactions);
         assert!(result.is_ok(), "Independent transactions should succeed");
 
         let outputs: Vec<TestOutput> = result.unwrap();
@@ -792,7 +788,11 @@ mod tests {
 
         let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 2, "Only first 2 transactions should execute");
+        assert_eq!(
+            result.unwrap().len(),
+            2,
+            "Only first 2 transactions should execute"
+        );
     }
 
     #[test]
@@ -825,7 +825,11 @@ mod tests {
 
         let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 2, "First 2 transactions should execute exactly");
+        assert_eq!(
+            result.unwrap().len(),
+            2,
+            "First 2 transactions should execute exactly"
+        );
     }
 
     #[test]
@@ -861,7 +865,11 @@ mod tests {
 
         let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 3, "All transactions should execute without limit");
+        assert_eq!(
+            result.unwrap().len(),
+            3,
+            "All transactions should execute without limit"
+        );
     }
 
     // ========== Parallel Execution Edge Cases ==========
@@ -900,7 +908,11 @@ mod tests {
 
         let result = executor.execute_transactions_parallel((0, GasMode::Fixed(100)), transactions);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().len(), 10, "All conflicting transactions should execute");
+        assert_eq!(
+            result.unwrap().len(),
+            10,
+            "All conflicting transactions should execute"
+        );
     }
 
     #[test]

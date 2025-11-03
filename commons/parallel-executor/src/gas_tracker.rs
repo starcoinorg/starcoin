@@ -72,7 +72,7 @@ impl GasTracker {
 
     pub fn first_exceeding_index(&self) -> usize {
         let state = self.state.lock().unwrap();
-        
+
         // If total gas used is within or equal to limit, all validated transactions can execute
         if state.gas_used <= self.gas_limit {
             return state.cache.len();
