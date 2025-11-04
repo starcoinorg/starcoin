@@ -6327,6 +6327,7 @@
           ],
           "required": [
             "final_proof",
+            "final_state_proof",
             "proof",
             "transaction_info"
           ],
@@ -6386,10 +6387,7 @@
               }
             },
             "final_state_proof": {
-              "type": [
-                "object",
-                "null"
-              ],
+              "type": "object",
               "required": [
                 "account_proof",
                 "account_state_proof"
@@ -6862,6 +6860,7 @@
           ],
           "required": [
             "final_proof",
+            "final_state_proof",
             "proof",
             "transaction_info"
           ],
@@ -6921,10 +6920,7 @@
               }
             },
             "final_state_proof": {
-              "type": [
-                "object",
-                "null"
-              ],
+              "type": "object",
               "required": [
                 "account_proof",
                 "account_state_proof"

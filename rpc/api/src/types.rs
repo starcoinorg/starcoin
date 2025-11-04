@@ -1686,16 +1686,6 @@ impl From<EventWithProof2> for EventWithProofView {
     }
 }
 
-// impl TryFrom<MultiEventWithProof> for EventWithProofView {
-//     type Error = anyhow::Error;
-//     fn try_from(value: MultiEventWithProof) -> Result<Self, Self::Error> {
-//         match value {
-//             MultiEventWithProof::VM1(event_with_proof) => Ok(event_with_proof.into()),
-//             MultiEventWithProof::VM2(event_with_proof) => event_with_proof.try_into(),
-//         }
-//     }
-// }
-
 impl From<MultiEventWithProof> for EventWithProofView {
     fn from(value: MultiEventWithProof) -> Self {
         match value {
@@ -1738,7 +1728,7 @@ impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
             transaction_info: origin
                 .transaction_info
                 .to_v2()
-                .expect("this is must be v1 transaction info")
+                .expect("this must be v1 transaction info")
                 .into(),
             proof: origin.proof.into(),
             final_proof: origin.final_proof.into(),
