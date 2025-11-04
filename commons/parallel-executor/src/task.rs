@@ -28,11 +28,6 @@ pub trait Transaction: Sync + Send + Clone + 'static {
     /// Returns None for system transactions like block prologue/epilogue.
     fn sender(&self) -> Option<Self::Sender>;
 
-    /// Updates the transaction with senders from block epilogue context.
-    /// Only applicable for block epilogue transactions.
-    /// Default implementation does nothing for backward compatibility.
-    fn update_senders_for_epilogue(&mut self, _senders: &std::collections::HashSet<Self::Sender>) {}
-
     /// Returns true if this transaction is block metadata.
     /// Default false to preserve backward compatibility for existing implementors.
     fn is_block_prologue(&self) -> bool {

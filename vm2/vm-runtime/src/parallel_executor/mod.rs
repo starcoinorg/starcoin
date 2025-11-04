@@ -24,7 +24,6 @@ use starcoin_vm_types::{
     transaction::{Transaction, TransactionOutput, TransactionStatus},
     write_set::{WriteOp, WriteSet},
 };
-use std::collections::HashSet;
 
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
@@ -36,12 +35,6 @@ impl PTransaction for PreprocessedTransaction {
             PreprocessedTransaction::UserTransaction(txn) => Some(txn.sender()),
             PreprocessedTransaction::BlockMetadata(_) => None,
             PreprocessedTransaction::BlockEpilogue(_, _) => None,
-        }
-    }
-
-    fn update_senders_for_epilogue(&mut self, senders: &HashSet<Self::Sender>) {
-        if let PreprocessedTransaction::BlockEpilogue(_metadata, old_senders) = self {
-            *old_senders = senders.clone();
         }
     }
 
