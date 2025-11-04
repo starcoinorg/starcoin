@@ -9,7 +9,6 @@ use crate::{
     parallel_executor::vm_wrapper::StarcoinVMWrapper,
     starcoin_vm::StarcoinVM,
 };
-use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
@@ -29,14 +28,6 @@ use std::collections::BTreeMap;
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
-    type Sender = AccountAddress;
-
-    fn sender(&self) -> Option<Self::Sender> {
-        match self {
-            PreprocessedTransaction::UserTransaction(txn) => Some(txn.sender()),
-            PreprocessedTransaction::BlockMetadata(_) => None,
-        }
-    }
 }
 
 // Wrapper to avoid orphan rule

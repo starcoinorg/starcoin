@@ -559,11 +559,6 @@ mod tests {
     impl Transaction for TestTransaction {
         type Key = String;
         type Value = u64;
-        type Sender = String;
-
-        fn sender(&self) -> Option<Self::Sender> {
-            Some("test_sender".to_string())
-        }
     }
 
     // Generic test output that can track both writes and gas
@@ -1082,11 +1077,6 @@ mod tests {
     impl Transaction for BlockTransaction {
         type Key = String;
         type Value = u64;
-        type Sender = String;
-
-        fn sender(&self) -> Option<Self::Sender> {
-            Some("block_sender".to_string())
-        }
 
         fn is_block_prologue(&self) -> bool {
             self.is_prologue

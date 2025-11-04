@@ -8,7 +8,6 @@ use crate::{
     parallel_executor::vm_wrapper::StarcoinVMWrapper, preprocess_transaction,
     starcoin_vm::StarcoinVM, PreprocessedTransaction,
 };
-use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
@@ -28,15 +27,6 @@ use starcoin_vm_types::{
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
-    type Sender = AccountAddress;
-
-    fn sender(&self) -> Option<Self::Sender> {
-        match self {
-            PreprocessedTransaction::UserTransaction(txn) => Some(txn.sender()),
-            PreprocessedTransaction::BlockMetadata(_) => None,
-            PreprocessedTransaction::BlockEpilogue(_, _) => None,
-        }
-    }
 
     fn is_block_prologue(&self) -> bool {
         matches!(self, PreprocessedTransaction::BlockMetadata(_))

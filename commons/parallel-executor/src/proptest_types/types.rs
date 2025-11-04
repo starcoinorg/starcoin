@@ -136,11 +136,6 @@ where
 {
     type Key = K;
     type Value = V;
-    type Sender = String;
-
-    fn sender(&self) -> Option<Self::Sender> {
-        None
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////
