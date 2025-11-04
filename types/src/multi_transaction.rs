@@ -64,20 +64,14 @@ impl MultiTransaction {
 
     pub fn access_path(&self) -> MultiAccessPath {
         match self.sender_address() {
-            MultiAddress::VM1(addr) => {
-                println!("jacktest: vm1,access_path: {}", addr);
-                MultiAccessPath::VM1(AccessPath::resource_access_path(
-                    addr,
-                    AccountResource::struct_tag(),
-                ))
-            }
-            MultiAddress::VM2(addr) => {
-                println!("jacktest: vm2,access_path: {}", addr);
-                MultiAccessPath::VM2(AccessPath2::resource_access_path(
-                    addr,
-                    AccountResource2::struct_tag(),
-                ))
-            }
+            MultiAddress::VM1(addr) => MultiAccessPath::VM1(AccessPath::resource_access_path(
+                addr,
+                AccountResource::struct_tag(),
+            )),
+            MultiAddress::VM2(addr) => MultiAccessPath::VM2(AccessPath2::resource_access_path(
+                addr,
+                AccountResource2::struct_tag(),
+            )),
         }
     }
 }
