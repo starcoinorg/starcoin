@@ -143,6 +143,9 @@ where
     ) -> SchedulerTask<'a> {
         let (idx_to_execute, incarnation) = version;
         let txn = &signature_verified_block[idx_to_execute];
+        if txn.is_block_epilogue() {
+            return scheduler.finish_execution(idx_to_execute, incarnation, false, guard);
+        }
 
         let state_view = MVHashMapView {
             versioned_map: versioned_data_cache,
@@ -201,6 +204,7 @@ where
         &self,
         version_to_validate: Version,
         guard: TaskGuard<'a>,
+        signature_verified_block: &[T],
         last_input_output: &TxnLastInputOutput<
             <T as Transaction>::Key,
             <E as ExecutorTask>::Output,
@@ -210,6 +214,9 @@ where
         scheduler: &'a Scheduler,
     ) -> SchedulerTask<'a> {
         let (idx_to_validate, incarnation) = version_to_validate;
+        if signature_verified_block[idx_to_validate].is_block_epilogue() {
+            return SchedulerTask::NoTask;
+        }
         let read_set = last_input_output
             .read_set(idx_to_validate)
             .expect("Prior read-set must be recorded");
@@ -259,6 +266,7 @@ where
                 SchedulerTask::ValidationTask(version_to_validate, guard) => self.validate(
                     version_to_validate,
                     guard,
+                    block,
                     last_input_output,
                     versioned_data_cache,
                     scheduler,
@@ -332,6 +340,7 @@ where
                 self.validate(
                     version,
                     guard,
+                    block,
                     last_input_output,
                     versioned_data_cache,
                     scheduler,
@@ -361,37 +370,18 @@ where
         }
 
         // Get the first index that exceeds gas limit
-        let first_exceeding = scheduler.first_exceeding_index();
         let epilogue_idx = block.len() - 1;
-
-        // Collect senders from the first n valid transactions (excluding prologue and epilogue)
-        let senders = block[..first_exceeding]
-            .iter()
-            .filter_map(|txn| {
-                if txn.is_block_prologue() || txn.is_block_epilogue() {
-                    None
-                } else {
-                    txn.sender()
-                }
-            })
-            .collect::<HashSet<_>>();
-
-        // Clone and update the epilogue transaction with senders
-        let mut epilogue_txn = block[epilogue_idx].clone();
-        epilogue_txn.update_senders_for_epilogue(&senders);
-
-        // Create a snapshot view that only sees transactions up to first_exceeding
-        // This view will read from versioned_data_cache as if it's at index first_exceeding
+        let view_index = scheduler.first_exceeding_index().min(epilogue_idx);
         let state_view = MVHashMapView {
             versioned_map: versioned_data_cache,
-            txn_idx: first_exceeding, // This makes it see state after first_exceeding-1
+            txn_idx: view_index, // This makes it see state after view_index-1
             scheduler,
             captured_reads: Mutex::new(Vec::new()),
         };
 
         // Execute block epilogue with the snapshot view
         let executor = E::init(*executor_arguments);
-        let execute_result = executor.execute_transaction(&state_view, &epilogue_txn);
+        let execute_result = executor.execute_transaction(&state_view, &block[epilogue_idx]);
 
         // Apply the writes from epilogue execution
         let apply_writes = |output: &<E as ExecutorTask>::Output| {
@@ -410,7 +400,8 @@ where
         };
 
         // Record the epilogue execution result
-        last_input_output.record(epilogue_idx, state_view.take_reads(), result);
+        let reads = state_view.take_reads();
+        last_input_output.record(epilogue_idx, reads, result);
     }
 
     pub fn execute_transactions_parallel(
@@ -472,12 +463,8 @@ where
         let mut maybe_err = None;
         let mut final_results = Vec::with_capacity(num_txns_to_collect);
 
-        let index = if has_epilogue {
-            num_txns_to_collect - 1
-        } else {
-            num_txns_to_collect
-        };
-        for idx in 0..index {
+        // Collect all outputs from transactions within gas limit (0..num_txns_to_collect)
+        for idx in 0..num_txns_to_collect {
             match last_input_output.take_output(idx) {
                 ExecutionStatus::Success(t) => final_results.push(t),
                 ExecutionStatus::SkipRest(_t) => {
@@ -492,17 +479,21 @@ where
         }
 
         // Collect epilogue output if it exists and no error occurred
+        // Epilogue is at the end of the block, so its index might be > num_txns_to_collect
         if has_epilogue && maybe_err.is_none() {
             let epilogue_idx = signature_verified_block.len() - 1;
-            match last_input_output.take_output(epilogue_idx) {
-                ExecutionStatus::Success(t) => final_results.push(t),
-                ExecutionStatus::SkipRest(_t) => {
-                    maybe_err = Some(BlockRestart);
-                }
-                ExecutionStatus::Abort(err) => {
-                    maybe_err = Some(err);
-                }
-            };
+            // Only collect epilogue if it's not already collected above
+            if epilogue_idx >= num_txns_to_collect {
+                match last_input_output.take_output(epilogue_idx) {
+                    ExecutionStatus::Success(t) => final_results.push(t),
+                    ExecutionStatus::SkipRest(_t) => {
+                        maybe_err = Some(BlockRestart);
+                    }
+                    ExecutionStatus::Abort(err) => {
+                        maybe_err = Some(err);
+                    }
+                };
+            }
         }
 
         spawn(move || {
@@ -1041,5 +1032,474 @@ mod tests {
         let result = executor.execute_transactions_parallel((0, GasMode::UseValue), transactions);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 3);
+    }
+
+    // ========== Block Prologue/Epilogue Tests ==========
+
+    
+    // Extended transaction type to support prologue/epilogue
+    #[derive(Debug, Clone)]
+    struct BlockTransaction {
+        key: String,
+        value: u64,
+        is_prologue: bool,
+        is_epilogue: bool,
+        // For epilogue: keys to read (simulating gas fee collection)
+        read_keys: Vec<String>,
+    }
+
+    impl BlockTransaction {
+        fn user_txn(key: &str, value: u64) -> Self {
+            Self {
+                key: key.to_string(),
+                value,
+                is_prologue: false,
+                is_epilogue: false,
+                read_keys: vec![],
+            }
+        }
+
+        fn prologue(value: u64) -> Self {
+            Self {
+                key: "prologue".to_string(),
+                value,
+                is_prologue: true,
+                is_epilogue: false,
+                read_keys: vec![],
+            }
+        }
+
+        fn epilogue(read_keys: Vec<String>) -> Self {
+            Self {
+                key: "epilogue".to_string(),
+                value: 0,
+                is_prologue: false,
+                is_epilogue: true,
+                read_keys,
+            }
+        }
+    }
+
+    impl Transaction for BlockTransaction {
+        type Key = String;
+        type Value = u64;
+        type Sender = String;
+
+        fn sender(&self) -> Option<Self::Sender> {
+            Some("block_sender".to_string())
+        }
+
+        fn is_block_prologue(&self) -> bool {
+            self.is_prologue
+        }
+
+        fn is_block_epilogue(&self) -> bool {
+            self.is_epilogue
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct BlockOutput {
+        writes: HashMap<String, u64>,
+        gas: u64,
+        // Track which keys were successfully read (for epilogue verification)
+        reads: Vec<String>,
+    }
+
+    impl TransactionOutput for BlockOutput {
+        type T = BlockTransaction;
+
+        fn get_writes(&self) -> Vec<(String, u64)> {
+            self.writes.iter().map(|(k, v)| (k.clone(), *v)).collect()
+        }
+
+        fn gas_used(&self) -> u64 {
+            self.gas
+        }
+
+        fn skip_output() -> Self {
+            Self {
+                writes: HashMap::new(),
+                gas: 0,
+                reads: vec![],
+            }
+        }
+    }
+
+    struct BlockExecutor {
+        initial_value: u64,
+    }
+
+    impl ExecutorTask for BlockExecutor {
+        type T = BlockTransaction;
+        type Output = BlockOutput;
+        type Error = ();
+        type Argument = u64;
+
+        fn init(initial_value: Self::Argument) -> Self {
+            Self { initial_value }
+        }
+
+        fn execute_transaction(
+            &self,
+            view: &MVHashMapView<String, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            let mut writes = HashMap::new();
+            let mut reads = vec![];
+
+            if txn.is_epilogue {
+                // Epilogue: try to read from specified keys
+                for key in &txn.read_keys {
+                    if let Some(_value) = view.read(key) {
+                        reads.push(key.clone());
+                        // Epilogue doesn't write, just reads
+                    }
+                }
+                ExecutionStatus::Success(BlockOutput {
+                    writes,
+                    gas: 0,
+                    reads,
+                })
+            } else {
+                // Regular transaction or prologue
+                let current_value = view
+                    .read(&txn.key)
+                    .map(|v| *v)
+                    .unwrap_or(self.initial_value);
+                let new_value = current_value + txn.value;
+                writes.insert(txn.key.clone(), new_value);
+
+                ExecutionStatus::Success(BlockOutput {
+                    writes,
+                    gas: txn.value,
+                    reads,
+                })
+            }
+        }
+    }
+
+    #[test]
+    fn test_epilogue_sees_only_within_gas_limit() {
+        // This test verifies epilogue only sees transactions within gas limit
+        
+        // Setup: prologue + 4 user txns + epilogue
+        // Gas limit: 1000
+        // Txn 0 (prologue): 100 gas
+        // Txn 1: 200 gas (total: 300)
+        // Txn 2: 300 gas (total: 600)
+        // Txn 3: 300 gas (total: 900) <- Last valid txn
+        // Txn 4: 200 gas (total: 1100) <- EXCEEDS LIMIT
+        // Txn 5 (epilogue): should only see txns 0-3
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 200),
+            BlockTransaction::user_txn("user2", 300),
+            BlockTransaction::user_txn("user3", 300),
+            BlockTransaction::user_txn("user4", 200), // This exceeds limit
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+                "user3".to_string(),
+                "user4".to_string(), // Should NOT be readable
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok(), "Execution should succeed");
+
+        let outputs = result.unwrap();
+        
+        // should have prologue + user1 + user2 + user3 + epilogue = 5
+        assert_eq!(outputs.len(), 5, "Should have 5 outputs (prologue + 3 user txns + epilogue)");
+
+        // Verify total gas (excluding epilogue's 0 gas)
+        let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
+        assert_eq!(total_gas, 900, "Total gas should be 900 (100+200+300+300)");
+
+        // Verify epilogue (last output)
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(epilogue_output.gas, 0, "Epilogue should have 0 gas");
+        
+        // Key assertion: Epilogue sees user3 (within limit) but not user4 (exceeds)
+        assert_eq!(
+            epilogue_output.reads.len(),
+            4,
+            "Epilogue reads 4 keys (prologue, user1, user2, user3)"
+        );
+        assert!(epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should see user3 (within gas limit)");
+        assert!(!epilogue_output.reads.contains(&"user4".to_string()),
+            "Epilogue should NOT see user4 (exceeds gas limit)");
+    }
+
+    #[test]
+    fn test_epilogue_all_transactions_within_limit() {
+        // All transactions fit within gas limit
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 100),
+            BlockTransaction::user_txn("user2", 100),
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(500));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        assert_eq!(outputs.len(), 4, "All transactions should execute");
+
+        let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
+        assert_eq!(total_gas, 300, "Total gas should be 300");
+
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(
+            epilogue_output.reads.len(),
+            3,
+            "Epilogue should see all 3 transactions"
+        );
+    }
+
+    #[test]
+    fn test_epilogue_first_user_txn_exceeds() {
+        // Test when first user transaction exceeds gas limit
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 1000), // Exceeds limit
+            BlockTransaction::epilogue(vec!["prologue".to_string(), "user1".to_string()]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(500));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        
+        // should have prologue + epilogue
+        assert_eq!(outputs.len(), 2, "Should have prologue and epilogue");
+        assert_eq!(outputs[0].gas, 100, "First should be prologue");
+        assert_eq!(outputs[1].gas, 0, "Second should be epilogue");
+        
+        // Epilogue should see prologue but not user1
+        let epilogue_output = &outputs[1];
+        assert!(epilogue_output.reads.contains(&"prologue".to_string()),
+            "Epilogue should see prologue");
+        assert!(!epilogue_output.reads.contains(&"user1".to_string()),
+            "Epilogue should NOT see user1 (exceeds gas limit)");
+    }
+
+    #[test]
+    fn test_epilogue_without_gas_limit() {
+        // No gas limit - epilogue should see all transactions
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 500),
+            BlockTransaction::user_txn("user2", 500),
+            BlockTransaction::user_txn("user3", 500),
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+                "user3".to_string(),
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, None);
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        assert_eq!(outputs.len(), 5, "All transactions should execute");
+
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(
+            epilogue_output.reads.len(),
+            4,
+            "Epilogue should see all transactions when no gas limit"
+        );
+    }
+
+    #[test]
+    fn test_epilogue_exact_gas_boundary() {
+        // Test exact gas boundary condition
+        // prologue(100) + user1(400) + user2(500) = 1000 (exact limit)
+        // user3(1) would make it 1001, so excluded
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 400),
+            BlockTransaction::user_txn("user2", 500),
+            BlockTransaction::user_txn("user3", 1), // Should be excluded
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+                "user3".to_string(),
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        // prologue + user1 + user2 + epilogue = 4
+        assert_eq!(outputs.len(), 4, "Should have 4 outputs");
+
+        let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
+        assert_eq!(total_gas, 1000, "Total gas should be exactly 1000");
+
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(epilogue_output.reads.len(), 3, "Epilogue should see 3 transactions");
+        // Key assertion: epilogue should see user2 (within limit) but not user3 (exceeds)
+        assert!(epilogue_output.reads.contains(&"user2".to_string()),
+            "Epilogue should see user2 (within gas limit)");
+        assert!(!epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should NOT see user3 (exceeds gas limit)");
+    }
+
+    #[test]
+    fn test_block_without_epilogue() {
+        // Test block without epilogue (normal case)
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 200),
+            BlockTransaction::user_txn("user2", 300),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        assert_eq!(outputs.len(), 3, "All transactions should execute");
+        
+        let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
+        assert_eq!(total_gas, 600);
+    }
+
+    #[test]
+    fn test_epilogue_with_zero_gas_transactions() {
+        // Test epilogue with mix of zero and non-zero gas transactions
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 0), // Zero gas
+            BlockTransaction::user_txn("user2", 400),
+            BlockTransaction::user_txn("user3", 0), // Zero gas
+            BlockTransaction::user_txn("user4", 600), // Exceeds limit
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+                "user3".to_string(),
+                "user4".to_string(),
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(1000));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok());
+
+        let outputs = result.unwrap();
+        // prologue(100) + user1(0) + user2(400) + user3(0) = 500 < 1000
+        // user4(600) would make it 1100 > 1000, excluded
+        // prologue + user1 + user2 + user3 + epilogue = 5
+        assert_eq!(outputs.len(), 5, "Should have 5 outputs");
+
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(epilogue_output.gas, 0, "Epilogue has 0 gas");
+        
+        // Key assertion: epilogue should see user1-3 but not user4
+        assert_eq!(epilogue_output.reads.len(), 4, "Epilogue should see 4 transactions");
+        assert!(epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should see user3 (within gas limit)");
+        assert!(!epilogue_output.reads.contains(&"user4".to_string()),
+            "Epilogue should NOT see user4 (exceeds gas limit)");
+    }
+
+    #[test]
+    fn test_result_only_contains_executed_and_epilogue() {
+        // This test verifies the critical behavior:
+        // 1. Only executed transactions (within gas limit) are returned
+        // 2. Epilogue is ALWAYS returned even when user txns are excluded
+        // 3. Out-of-gas transactions are completely excluded from results
+        
+        // Setup: prologue + 5 user txns + epilogue, gas limit = 700
+        // prologue: 100 gas (total: 100) ✓
+        // user1: 200 gas (total: 300) ✓
+        // user2: 300 gas (total: 600) ✓
+        // user3: 200 gas (total: 800) ✗ OUT OF GAS
+        // user4: 100 gas (total: 900) ✗ OUT OF GAS
+        // user5: 50 gas (total: 950) ✗ OUT OF GAS
+        // epilogue: always executes ✓
+        let transactions = vec![
+            BlockTransaction::prologue(100),
+            BlockTransaction::user_txn("user1", 200),
+            BlockTransaction::user_txn("user2", 300),
+            BlockTransaction::user_txn("user3", 200), // Out of gas
+            BlockTransaction::user_txn("user4", 100), // Out of gas
+            BlockTransaction::user_txn("user5", 50),  // Out of gas
+            BlockTransaction::epilogue(vec![
+                "prologue".to_string(),
+                "user1".to_string(),
+                "user2".to_string(),
+                "user3".to_string(),
+                "user4".to_string(),
+                "user5".to_string(),
+            ]),
+        ];
+
+        let executor: ParallelTransactionExecutor<BlockTransaction, BlockExecutor> =
+            ParallelTransactionExecutor::new(2, Some(700));
+
+        let result = executor.execute_transactions_parallel(0, transactions);
+        assert!(result.is_ok(), "Execution should succeed");
+
+        let outputs = result.unwrap();
+        
+        // KEY ASSERTION: Only executed txns + epilogue
+        // Expected: prologue + user1 + user2 + epilogue = 4 outputs
+        assert_eq!(outputs.len(), 4, 
+            "Should return 4 outputs: prologue, user1, user2, epilogue. Out-of-gas user3/4/5 excluded");
+
+        // Verify the returned transactions are correct
+        assert!(outputs[0].writes.contains_key("prologue"), "First should be prologue");
+        assert!(outputs[1].writes.contains_key("user1"), "Second should be user1");
+        assert!(outputs[2].writes.contains_key("user2"), "Third should be user2");
+        assert_eq!(outputs[3].gas, 0, "Last should be epilogue (0 gas)");
+        
+        // Verify total gas (excluding epilogue's 0 gas)
+        let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
+        assert_eq!(total_gas, 600, 
+            "Total gas should be 600 (100+200+300), not including out-of-gas txns");
+
+        // Verify epilogue behavior
+        let epilogue_output = outputs.last().unwrap();
+        assert_eq!(epilogue_output.reads.len(), 3, 
+            "Epilogue should only see 3 txns (prologue, user1, user2)");
+        assert!(epilogue_output.reads.contains(&"user2".to_string()),
+            "Epilogue should see user2 (last within gas limit)");
+        assert!(!epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should NOT see user3 (first to exceed gas limit)");
     }
 }
