@@ -1,0 +1,95 @@
+name: Update Networks Submodule
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          ref: move-network-assets-to-seperate-repo
+
+      - name: Configure Git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -d networks/.git ]; then
+            git -C networks config user.name "github-actions[bot]"
+            git -C networks config user.email "github-actions[bot]@users.noreply.github.com"
+          fi
+
+      - name: Install Rust (reads rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt,clippy
+
+      - name: run cargo clean
+        uses: actions-rs/cargo@v1
+        with:
+          command: clean
+
+      - name: Sync networks submodule
+        id: sync
+        run: |
+          set -eo pipefail
+          git submodule sync -- networks
+          git submodule update --init --remote networks
+          networks_commit=$(git -C networks rev-parse HEAD)
+          echo "networks_commit=$networks_commit" >> "$GITHUB_OUTPUT"
+
+      - name: Generate stdlib and genesis
+        run: |
+          cargo run -p stdlib
+          cargo run -p starcoin-genesis
+
+      - name: Commit and push networks changes
+        id: networks
+        run: |
+          set -eo pipefail
+          networks_updated=false
+          if [[ -n "$(git -C networks status --porcelain)" ]]; then
+            git -C networks add -A
+            git -C networks commit -m "chore: update stdlib and genesis"
+            git -C networks push origin HEAD
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+            networks_updated=true
+          else
+            echo "No new changes to commit in networks."
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          fi
+          networks_commit=$(git -C networks rev-parse HEAD)
+          echo "networks_commit=$networks_commit" >> "$GITHUB_OUTPUT"
+          if [[ "$networks_updated" == "true" ]]; then
+            echo "Pushed networks commit: $networks_commit" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Commit networks submodule update
+        id: commit
+        env:
+          NETWORKS_COMMIT: ${{ steps.networks.outputs.networks_commit }}
+        run: |
+          set -eo pipefail
+          if git diff --quiet HEAD -- networks; then
+            echo "No submodule update found."
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          else
+            git add networks
+            git commit -m "chore: update networks submodule ($NETWORKS_COMMIT)"
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Networks submodule commit: $NETWORKS_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push changes
+        if: steps.commit.outputs.updated == 'true'
+        run: |
+          git push origin HEAD
