@@ -1036,7 +1036,6 @@ mod tests {
 
     // ========== Block Prologue/Epilogue Tests ==========
 
-    
     // Extended transaction type to support prologue/epilogue
     #[derive(Debug, Clone)]
     struct BlockTransaction {
@@ -1182,7 +1181,7 @@ mod tests {
     #[test]
     fn test_epilogue_sees_only_within_gas_limit() {
         // This test verifies epilogue only sees transactions within gas limit
-        
+
         // Setup: prologue + 4 user txns + epilogue
         // Gas limit: 1000
         // Txn 0 (prologue): 100 gas
@@ -1213,9 +1212,13 @@ mod tests {
         assert!(result.is_ok(), "Execution should succeed");
 
         let outputs = result.unwrap();
-        
+
         // should have prologue + user1 + user2 + user3 + epilogue = 5
-        assert_eq!(outputs.len(), 5, "Should have 5 outputs (prologue + 3 user txns + epilogue)");
+        assert_eq!(
+            outputs.len(),
+            5,
+            "Should have 5 outputs (prologue + 3 user txns + epilogue)"
+        );
 
         // Verify total gas (excluding epilogue's 0 gas)
         let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
@@ -1224,17 +1227,21 @@ mod tests {
         // Verify epilogue (last output)
         let epilogue_output = outputs.last().unwrap();
         assert_eq!(epilogue_output.gas, 0, "Epilogue should have 0 gas");
-        
+
         // Key assertion: Epilogue sees user3 (within limit) but not user4 (exceeds)
         assert_eq!(
             epilogue_output.reads.len(),
             4,
             "Epilogue reads 4 keys (prologue, user1, user2, user3)"
         );
-        assert!(epilogue_output.reads.contains(&"user3".to_string()),
-            "Epilogue should see user3 (within gas limit)");
-        assert!(!epilogue_output.reads.contains(&"user4".to_string()),
-            "Epilogue should NOT see user4 (exceeds gas limit)");
+        assert!(
+            epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should see user3 (within gas limit)"
+        );
+        assert!(
+            !epilogue_output.reads.contains(&"user4".to_string()),
+            "Epilogue should NOT see user4 (exceeds gas limit)"
+        );
     }
 
     #[test]
@@ -1287,18 +1294,22 @@ mod tests {
         assert!(result.is_ok());
 
         let outputs = result.unwrap();
-        
+
         // should have prologue + epilogue
         assert_eq!(outputs.len(), 2, "Should have prologue and epilogue");
         assert_eq!(outputs[0].gas, 100, "First should be prologue");
         assert_eq!(outputs[1].gas, 0, "Second should be epilogue");
-        
+
         // Epilogue should see prologue but not user1
         let epilogue_output = &outputs[1];
-        assert!(epilogue_output.reads.contains(&"prologue".to_string()),
-            "Epilogue should see prologue");
-        assert!(!epilogue_output.reads.contains(&"user1".to_string()),
-            "Epilogue should NOT see user1 (exceeds gas limit)");
+        assert!(
+            epilogue_output.reads.contains(&"prologue".to_string()),
+            "Epilogue should see prologue"
+        );
+        assert!(
+            !epilogue_output.reads.contains(&"user1".to_string()),
+            "Epilogue should NOT see user1 (exceeds gas limit)"
+        );
     }
 
     #[test]
@@ -1366,12 +1377,20 @@ mod tests {
         assert_eq!(total_gas, 1000, "Total gas should be exactly 1000");
 
         let epilogue_output = outputs.last().unwrap();
-        assert_eq!(epilogue_output.reads.len(), 3, "Epilogue should see 3 transactions");
+        assert_eq!(
+            epilogue_output.reads.len(),
+            3,
+            "Epilogue should see 3 transactions"
+        );
         // Key assertion: epilogue should see user2 (within limit) but not user3 (exceeds)
-        assert!(epilogue_output.reads.contains(&"user2".to_string()),
-            "Epilogue should see user2 (within gas limit)");
-        assert!(!epilogue_output.reads.contains(&"user3".to_string()),
-            "Epilogue should NOT see user3 (exceeds gas limit)");
+        assert!(
+            epilogue_output.reads.contains(&"user2".to_string()),
+            "Epilogue should see user2 (within gas limit)"
+        );
+        assert!(
+            !epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should NOT see user3 (exceeds gas limit)"
+        );
     }
 
     #[test]
@@ -1391,7 +1410,7 @@ mod tests {
 
         let outputs = result.unwrap();
         assert_eq!(outputs.len(), 3, "All transactions should execute");
-        
+
         let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
         assert_eq!(total_gas, 600);
     }
@@ -1428,13 +1447,21 @@ mod tests {
 
         let epilogue_output = outputs.last().unwrap();
         assert_eq!(epilogue_output.gas, 0, "Epilogue has 0 gas");
-        
+
         // Key assertion: epilogue should see user1-3 but not user4
-        assert_eq!(epilogue_output.reads.len(), 4, "Epilogue should see 4 transactions");
-        assert!(epilogue_output.reads.contains(&"user3".to_string()),
-            "Epilogue should see user3 (within gas limit)");
-        assert!(!epilogue_output.reads.contains(&"user4".to_string()),
-            "Epilogue should NOT see user4 (exceeds gas limit)");
+        assert_eq!(
+            epilogue_output.reads.len(),
+            4,
+            "Epilogue should see 4 transactions"
+        );
+        assert!(
+            epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should see user3 (within gas limit)"
+        );
+        assert!(
+            !epilogue_output.reads.contains(&"user4".to_string()),
+            "Epilogue should NOT see user4 (exceeds gas limit)"
+        );
     }
 
     #[test]
@@ -1443,7 +1470,7 @@ mod tests {
         // 1. Only executed transactions (within gas limit) are returned
         // 2. Epilogue is ALWAYS returned even when user txns are excluded
         // 3. Out-of-gas transactions are completely excluded from results
-        
+
         // Setup: prologue + 5 user txns + epilogue, gas limit = 700
         // prologue: 100 gas (total: 100) ✓
         // user1: 200 gas (total: 300) ✓
@@ -1476,30 +1503,47 @@ mod tests {
         assert!(result.is_ok(), "Execution should succeed");
 
         let outputs = result.unwrap();
-        
+
         // KEY ASSERTION: Only executed txns + epilogue
         // Expected: prologue + user1 + user2 + epilogue = 4 outputs
-        assert_eq!(outputs.len(), 4, 
-            "Should return 4 outputs: prologue, user1, user2, epilogue. Out-of-gas user3/4/5 excluded");
+        assert_eq!(outputs.len(), 4, "Should return 4 outputs: prologue, user1, user2, epilogue. Out-of-gas user3/4/5 excluded");
 
         // Verify the returned transactions are correct
-        assert!(outputs[0].writes.contains_key("prologue"), "First should be prologue");
-        assert!(outputs[1].writes.contains_key("user1"), "Second should be user1");
-        assert!(outputs[2].writes.contains_key("user2"), "Third should be user2");
+        assert!(
+            outputs[0].writes.contains_key("prologue"),
+            "First should be prologue"
+        );
+        assert!(
+            outputs[1].writes.contains_key("user1"),
+            "Second should be user1"
+        );
+        assert!(
+            outputs[2].writes.contains_key("user2"),
+            "Third should be user2"
+        );
         assert_eq!(outputs[3].gas, 0, "Last should be epilogue (0 gas)");
-        
+
         // Verify total gas (excluding epilogue's 0 gas)
         let total_gas: u64 = outputs.iter().map(|o| o.gas).sum();
-        assert_eq!(total_gas, 600, 
-            "Total gas should be 600 (100+200+300), not including out-of-gas txns");
+        assert_eq!(
+            total_gas, 600,
+            "Total gas should be 600 (100+200+300), not including out-of-gas txns"
+        );
 
         // Verify epilogue behavior
         let epilogue_output = outputs.last().unwrap();
-        assert_eq!(epilogue_output.reads.len(), 3, 
-            "Epilogue should only see 3 txns (prologue, user1, user2)");
-        assert!(epilogue_output.reads.contains(&"user2".to_string()),
-            "Epilogue should see user2 (last within gas limit)");
-        assert!(!epilogue_output.reads.contains(&"user3".to_string()),
-            "Epilogue should NOT see user3 (first to exceed gas limit)");
+        assert_eq!(
+            epilogue_output.reads.len(),
+            3,
+            "Epilogue should only see 3 txns (prologue, user1, user2)"
+        );
+        assert!(
+            epilogue_output.reads.contains(&"user2".to_string()),
+            "Epilogue should see user2 (last within gas limit)"
+        );
+        assert!(
+            !epilogue_output.reads.contains(&"user3".to_string()),
+            "Epilogue should NOT see user3 (first to exceed gas limit)"
+        );
     }
 }
