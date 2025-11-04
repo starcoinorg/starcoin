@@ -1590,7 +1590,7 @@ impl From<StateWithTableItemProofView> for StateWithTableItemProof {
         let state_proof = (
             MultiStateProof::from(view.state_proof.0)
                 .to_v1()
-                .expect("this is muse be v1 state proof"),
+                .expect("this must be v1 state proof"),
             view.state_proof.1,
         );
         let table_handle_proof = (
