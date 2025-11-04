@@ -347,7 +347,7 @@ impl Scheduler {
 
     pub fn finish_validation(&self, txn_idx: TxnIndex, gas_used: u64) {
         if let Some(tracker) = &self.gas_tracker {
-            if tracker.update(txn_idx, gas_used) {
+            if tracker.update_and_check_reach_gas_limit(txn_idx, gas_used) {
                 self.done_marker.store(true, Ordering::Release);
             }
         }

@@ -26,7 +26,7 @@ impl GasTracker {
         }
     }
 
-    pub fn update(&self, idx: usize, gas_used: u64) -> bool {
+    pub fn update_and_check_reach_gas_limit(&self, idx: usize, gas_used: u64) -> bool {
         let mut state = self.state.lock().unwrap();
 
         // If idx < next_calc_idx, it means this transaction is being re-validated
@@ -105,17 +105,17 @@ mod tests {
         assert_eq!(gas_used(&tracker), 0);
 
         // Out-of-order updates
-        assert_eq!(tracker.update(0, 200), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(0, 200), false);
         assert_eq!(gas_used(&tracker), 200);
 
-        assert_eq!(tracker.update(2, 300), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(2, 300), false);
         assert_eq!(gas_used(&tracker), 200);
 
-        assert_eq!(tracker.update(1, 400), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(1, 400), false);
         assert_eq!(gas_used(&tracker), 900);
 
         // Exceed limit
-        assert_eq!(tracker.update(3, 200), true);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(3, 200), true);
         assert_eq!(gas_used(&tracker), 1100);
     }
 
@@ -123,10 +123,10 @@ mod tests {
     fn test_decrease_validation_idx() {
         let tracker = GasTracker::new(5, 1000);
 
-        assert_eq!(tracker.update(0, 200), false);
-        assert_eq!(tracker.update(1, 400), false);
-        assert_eq!(tracker.update(2, 300), false);
-        assert_eq!(tracker.update(3, 200), true);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(0, 200), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(1, 400), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(2, 300), false);
+        assert_eq!(tracker.update_and_check_reach_gas_limit(3, 200), true);
         assert_eq!(gas_used(&tracker), 1100);
 
         tracker.decrease_validation_idx(2);
@@ -144,13 +144,13 @@ mod tests {
         assert_eq!(tracker.first_exceeding_index(), 5);
 
         // Under limit
-        tracker.update(0, 200);
-        tracker.update(1, 400);
-        tracker.update(2, 300);
+        tracker.update_and_check_reach_gas_limit(0, 200);
+        tracker.update_and_check_reach_gas_limit(1, 400);
+        tracker.update_and_check_reach_gas_limit(2, 300);
         assert_eq!(tracker.first_exceeding_index(), 5);
 
         // Exceed limit
-        tracker.update(3, 200);
+        tracker.update_and_check_reach_gas_limit(3, 200);
         assert_eq!(tracker.first_exceeding_index(), 3);
 
         // Decrease validation
@@ -162,41 +162,41 @@ mod tests {
     fn test_first_exceeding_index_edge_cases() {
         // Exact limit
         let tracker = GasTracker::new(5, 1000);
-        tracker.update(0, 500);
-        tracker.update(1, 500);
+        tracker.update_and_check_reach_gas_limit(0, 500);
+        tracker.update_and_check_reach_gas_limit(1, 500);
         assert_eq!(tracker.first_exceeding_index(), 5);
 
-        tracker.update(2, 1);
+        tracker.update_and_check_reach_gas_limit(2, 1);
         assert_eq!(tracker.first_exceeding_index(), 2);
 
         // Unvalidated gap
         let tracker2 = GasTracker::new(5, 1000);
-        tracker2.update(0, 200);
-        tracker2.update(1, 400);
-        tracker2.update(3, 300);
-        tracker2.update(4, 200);
+        tracker2.update_and_check_reach_gas_limit(0, 200);
+        tracker2.update_and_check_reach_gas_limit(1, 400);
+        tracker2.update_and_check_reach_gas_limit(3, 300);
+        tracker2.update_and_check_reach_gas_limit(4, 200);
         assert_eq!(tracker2.first_exceeding_index(), 5);
 
         // First transaction exceeds limit
         let tracker3 = GasTracker::new(3, 100);
-        assert_eq!(tracker3.update(0, 200), true);
+        assert_eq!(tracker3.update_and_check_reach_gas_limit(0, 200), true);
         assert_eq!(tracker3.first_exceeding_index(), 0);
 
         // Zero gas transactions
         let tracker4 = GasTracker::new(5, 1000);
-        tracker4.update(0, 0);
-        tracker4.update(1, 500);
-        tracker4.update(2, 0);
-        tracker4.update(3, 501);
+        tracker4.update_and_check_reach_gas_limit(0, 0);
+        tracker4.update_and_check_reach_gas_limit(1, 500);
+        tracker4.update_and_check_reach_gas_limit(2, 0);
+        tracker4.update_and_check_reach_gas_limit(3, 501);
         assert_eq!(tracker4.first_exceeding_index(), 3);
     }
 
     #[test]
     fn test_decrease_validation_edge_cases() {
         let tracker = GasTracker::new(5, 1000);
-        tracker.update(0, 200);
-        tracker.update(1, 300);
-        tracker.update(2, 400);
+        tracker.update_and_check_reach_gas_limit(0, 200);
+        tracker.update_and_check_reach_gas_limit(1, 300);
+        tracker.update_and_check_reach_gas_limit(2, 400);
 
         // Decrease to index 0
         tracker.decrease_validation_idx(0);
