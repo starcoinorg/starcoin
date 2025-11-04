@@ -105,17 +105,17 @@ mod tests {
         assert_eq!(gas_used(&tracker), 0);
 
         // Out-of-order updates
-        assert_eq!(tracker.update_and_check_reach_gas_limit(0, 200), false);
+        assert!(!tracker.update_and_check_reach_gas_limit(0, 200));
         assert_eq!(gas_used(&tracker), 200);
 
-        assert_eq!(tracker.update_and_check_reach_gas_limit(2, 300), false);
+        assert!(!tracker.update_and_check_reach_gas_limit(2, 300));
         assert_eq!(gas_used(&tracker), 200);
 
-        assert_eq!(tracker.update_and_check_reach_gas_limit(1, 400), false);
+        assert!(!tracker.update_and_check_reach_gas_limit(1, 400));
         assert_eq!(gas_used(&tracker), 900);
 
         // Exceed limit
-        assert_eq!(tracker.update_and_check_reach_gas_limit(3, 200), true);
+        assert!(tracker.update_and_check_reach_gas_limit(3, 200));
         assert_eq!(gas_used(&tracker), 1100);
     }
 
@@ -123,10 +123,10 @@ mod tests {
     fn test_decrease_validation_idx() {
         let tracker = GasTracker::new(5, 1000);
 
-        assert_eq!(tracker.update_and_check_reach_gas_limit(0, 200), false);
-        assert_eq!(tracker.update_and_check_reach_gas_limit(1, 400), false);
-        assert_eq!(tracker.update_and_check_reach_gas_limit(2, 300), false);
-        assert_eq!(tracker.update_and_check_reach_gas_limit(3, 200), true);
+        assert!(!tracker.update_and_check_reach_gas_limit(0, 200));
+        assert!(!tracker.update_and_check_reach_gas_limit(1, 400));
+        assert!(!tracker.update_and_check_reach_gas_limit(2, 300));
+        assert!(tracker.update_and_check_reach_gas_limit(3, 200));
         assert_eq!(gas_used(&tracker), 1100);
 
         tracker.decrease_validation_idx(2);
@@ -179,7 +179,7 @@ mod tests {
 
         // First transaction exceeds limit
         let tracker3 = GasTracker::new(3, 100);
-        assert_eq!(tracker3.update_and_check_reach_gas_limit(0, 200), true);
+        assert!(tracker3.update_and_check_reach_gas_limit(0, 200));
         assert_eq!(tracker3.first_exceeding_index(), 0);
 
         // Zero gas transactions

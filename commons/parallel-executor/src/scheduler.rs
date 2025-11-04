@@ -361,9 +361,8 @@ impl Scheduler {
         if self.validation_idx.fetch_min(target_idx, Ordering::SeqCst) > target_idx {
             self.decrease_cnt.fetch_add(1, Ordering::SeqCst);
         }
-        self.gas_tracker
-            .as_ref()
-            .map(|tracker| tracker.decrease_validation_idx(target_idx));
+        if let Some(tracker) = self.gas_tracker
+            .as_ref() { tracker.decrease_validation_idx(target_idx) }
     }
 
     /// Decreases the execution index, increases the decrease counter if it actually decreased.
