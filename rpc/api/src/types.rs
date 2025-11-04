@@ -1719,7 +1719,7 @@ pub struct TransactionInfoWithProofView {
     pub final_proof: AccumulatorProofView,
     pub event_proof: Option<EventWithProofView>,
     pub state_proof: Option<StateWithProofView>,
-    pub final_state_proof: StateWithProofView,
+    pub final_state_proof: Option<StateWithProofView>,
 }
 
 impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
@@ -1734,7 +1734,7 @@ impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
             final_proof: origin.final_proof.into(),
             event_proof: origin.event_proof.map(Into::into),
             state_proof: origin.state_proof.map(Into::into),
-            final_state_proof: origin.final_state_proof.into(),
+            final_state_proof: origin.final_state_proof.map(Into::into),
         }
     }
 }
@@ -1751,7 +1751,7 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
             final_proof: view.final_proof.into(),
             event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
             state_proof: view.state_proof.map(Into::into),
-            final_state_proof: view.final_state_proof.into(),
+            final_state_proof: view.final_state_proof.map(Into::into),
         })
     }
 }

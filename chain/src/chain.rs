@@ -685,6 +685,11 @@ impl BlockChain {
             txn_accumulator.root_hash()
         };
 
+        println!(
+            "jacktest: execute transaction leaves: {:?}",
+            txn_accumulator.get_leaves(0, false, 100)?
+        );
+
         verify_block!(
             VerifyBlockField::Transaction,
             executed_accumulator_root == header.txn_accumulator_root(),
@@ -1588,6 +1593,29 @@ impl ChainReader for BlockChain {
             }
         };
 
+        let final_state_proof = if access_path.is_some() {
+            match &final_access_path {
+                MultiAccessPath::VM1(access_path) => {
+                    let statedb = statedb.fork_at(final_state_root_hash);
+                    println!("jacktest: 1");
+                    Some(MultiStateProof::VM1(statedb.get_with_proof(access_path)?))
+                }
+                MultiAccessPath::VM2(_) => {
+                    let statedb2 = statedb2.fork_at(final_state_root_hash);
+                    println!("jacktest: 2");
+                    let state_key = final_access_path.to_state_key()?.ok_or_else(|| {
+                                format_err!(
+                                    "the transaction to be verified is vm version 2 but the access path is not"
+                                )
+                            })?;
+                    println!("jacktest: 3");
+                    Some(MultiStateProof::VM2(statedb2.get_with_proof(&state_key)?))
+                }
+            }
+        } else {
+            None
+        };
+
         let state_proof = if let Some(access_path) = access_path {
             if let Some(state_root) = transaction_info.state_root() {
                 match transaction_info.txn_info() {
@@ -1605,22 +1633,6 @@ impl ChainReader for BlockChain {
             }
         } else {
             None
-        };
-
-        let final_state_proof = match &final_access_path {
-            MultiAccessPath::VM1(access_path) => {
-                let statedb = statedb.fork_at(final_state_root_hash);
-                MultiStateProof::VM1(statedb.get_with_proof(access_path)?)
-            }
-            MultiAccessPath::VM2(_) => {
-                let statedb2 = statedb2.fork_at(final_state_root_hash);
-                let state_key = final_access_path.to_state_key()?.ok_or_else(|| {
-                    format_err!(
-                        "the transaction to be verified is vm version 2 but the access path is not"
-                    )
-                })?;
-                MultiStateProof::VM2(statedb2.get_with_proof(&state_key)?)
-            }
         };
 
         Ok(Some(TransactionInfoWithProof {
@@ -2375,6 +2387,11 @@ impl BlockChain {
 
             txn_accumulator.root_hash()
         };
+
+        println!(
+            "jacktest: in execute dag block, execute transaction leaves: {:?}",
+            txn_accumulator.get_leaves(0, false, 100)?
+        );
 
         verify_block!(
             VerifyBlockField::Transaction,
