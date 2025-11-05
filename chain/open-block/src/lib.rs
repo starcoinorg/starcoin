@@ -326,7 +326,7 @@ impl OpenedBlock {
         Ok((txn_state_root, accumulator_root))
     }
 
-    pub fn included_user_txns2(&self) -> &Vec<SignedUserTransaction2> {
+    pub fn included_user_txns2(&self) -> &[SignedUserTransaction2] {
         &self.included_user_txns2
     }
 
