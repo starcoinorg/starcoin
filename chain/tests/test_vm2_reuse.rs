@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use starcoin_chain::{enable_vm2_reuse_for_test, ChainReader};
+use starcoin_chain::{disable_vm2_reuse_for_test, enable_vm2_reuse_for_test, ChainReader};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_exec_merge::{global_witness_store, reset_global_witness_store_for_tests, ExecKey};
@@ -107,6 +107,64 @@ fn test_vm2_reuse_hits() -> Result<()> {
     assert!(
         hits_again >= user_hashes.len(),
         "expected consistent reuse on repeated forks"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_vm2_reuse_disabled_state_root_matches() -> Result<()> {
+    let _guard = disable_vm2_reuse_for_test();
+    reset_reuse_counters_for_test();
+    reset_global_witness_store_for_tests();
+
+    let mut chain = MockChain::new(ChainNetwork::new_test())?;
+    let seq = chain
+        .head()
+        .chain_state_reader2()
+        .get_sequence_number(association_address())?;
+    let txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        1_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
+
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(txn)],
+    )?;
+
+    reset_reuse_counters_for_test();
+    let mut disabled_branch = chain.fork(Some(parent_header_id))?;
+    disabled_branch.apply(block.clone())?;
+    let (hits, reexec) = reuse_counters_for_test();
+    assert_eq!(hits, 0, "reuse should be disabled");
+    assert!(reexec > 0, "expected transactions to re-execute");
+    let reuse_disabled_root = disabled_branch
+        .head()
+        .head_block()
+        .multi_state()
+        .state_root2();
+
+    reset_reuse_counters_for_test();
+    let mut full_branch = chain.fork(Some(parent_header_id))?;
+    full_branch.apply(block)?;
+    let full_root = full_branch.head().head_block().multi_state().state_root2();
+
+    assert_eq!(
+        reuse_disabled_root, full_root,
+        "state roots must match when reuse is disabled"
     );
 
     Ok(())
