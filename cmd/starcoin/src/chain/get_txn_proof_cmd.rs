@@ -6,9 +6,11 @@ use anyhow::{ensure, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::Serialize;
-use starcoin_chain_api::TransactionInfoWithProof2;
+use starcoin_chain_api::TransactionInfoWithProof;
 use starcoin_crypto::HashValue;
-use starcoin_vm2_types::view::{StrView, TransactionInfoWithProofView};
+use starcoin_rpc_api::types::TransactionInfoWithProofView;
+use starcoin_types::multi_access_path::MultiAccessPath;
+use starcoin_vm2_types::view::StrView;
 use starcoin_vm2_vm_types::access_path::AccessPath;
 
 /// Get transaction proof
@@ -27,6 +29,14 @@ pub struct GetTransactionProofOpt {
     /// Return raw hex string of transaction info proof
     #[clap(name = "raw", long)]
     raw: bool,
+    #[clap(name = "final-transaction-id", long, short = 'f')]
+    final_transaction_info_id: HashValue,
+    #[clap(name = "final-transaction-info-index", long, short = 'i')]
+    final_transaction_info_index: u64,
+    #[clap(name = "final-access-path", long, short = 'c')]
+    final_access_path: Option<AccessPath>,
+    #[clap(name = "final-state-root", long, short = 'n')]
+    final_state_root: Option<HashValue>,
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -80,7 +90,7 @@ impl CommandAction for GetTransactionProofCommand {
                     )
                 })?;
             let txn_proof =
-                bcs_ext::from_bytes::<TransactionInfoWithProof2>(txn_proof_hex.0.as_slice())?;
+                bcs_ext::from_bytes::<TransactionInfoWithProof>(txn_proof_hex.0.as_slice())?;
 
             (txn_proof, ViewOrRaw::Raw(txn_proof_hex))
         } else {
@@ -97,7 +107,7 @@ impl CommandAction for GetTransactionProofCommand {
                         opt.transaction_global_index
                     )
                 })?;
-            let txn_proof: TransactionInfoWithProof2 = txn_proof_view.clone().try_into()?;
+            let txn_proof: TransactionInfoWithProof = txn_proof_view.clone().try_into()?;
             (txn_proof, ViewOrRaw::View(txn_proof_view))
         };
         ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
@@ -106,8 +116,12 @@ impl CommandAction for GetTransactionProofCommand {
         txn_proof.verify(
             block.header.txn_accumulator_root,
             opt.transaction_global_index,
+            opt.final_transaction_info_index,
+            opt.final_transaction_info_id,
             opt.event_index,
-            opt.access_path.clone(),
+            opt.access_path.clone().map(MultiAccessPath::VM2), // only vm2 transaction
+            opt.final_access_path.clone().map(MultiAccessPath::VM2),
+            opt.final_state_root,
         )?;
         Ok(result)
     }

@@ -16,8 +16,8 @@ Feature: cmd integration test
     Then cmd: "chain get-events {{$.chain[4].ok[0].transaction_hash}}"
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then cmd: "chain get-block-info {{$.chain[1].ok[0].number}}"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --final-transaction-id 0xd2dd960bffa976fc7f44552c8a1be415b82e0c0a608bfac7341c71a1d04639c6 --final-transaction-info-index 1"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw --final-transaction-id 0xd2dd960bffa976fc7f44552c8a1be415b82e0c0a608bfac7341c71a1d04639c6 --final-transaction-info-index 1"
     Then stop
 
     Examples:

@@ -80,13 +80,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                     None
                 };
 
-                executed_data.txn_infos.push(TransactionInfo::new(
+                let t = TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
                     events.as_slice(),
                     gas_used,
                     status,
-                ));
+                );
+                executed_data.txn_infos.push(t);
                 executed_data.txn_events.push(events);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
