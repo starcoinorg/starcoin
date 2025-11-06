@@ -39,13 +39,13 @@ impl TemplateTxProvider for MockTxPoolService {
         max: u64,
         _header: &starcoin_types::block::BlockHeader,
     ) -> Vec<starcoin_types::multi_transaction::MultiSignedUserTransaction> {
-                self.pool
-                .lock()
-                .unwrap()
-                .iter()
-                .take(max as usize)
-                .cloned()
-                .collect::<Vec<_>>()
+        self.pool
+            .lock()
+            .unwrap()
+            .iter()
+            .take(max as usize)
+            .cloned()
+            .collect::<Vec<_>>()
     }
 
     fn remove_invalid_txn(&self, txn_hash: starcoin_crypto::HashValue) {

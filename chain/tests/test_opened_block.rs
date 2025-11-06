@@ -1,19 +1,16 @@
 use anyhow::{ensure, Result};
-use starcoin_chain::verifier::VerifyWithoutConsensus;
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::U256;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
 use starcoin_vm2_types::account::DEFAULT_MAX_GAS_AMOUNT;
-use starcoin_vm2_types::transaction::SignedUserTransaction;
 use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
@@ -132,4 +129,3 @@ pub fn test_open_block() -> Result<()> {
 
     Ok(())
 }
-

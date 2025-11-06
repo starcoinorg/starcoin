@@ -413,7 +413,6 @@ impl BlockVerifier for NoneVerifier {
     }
 }
 
-
 pub struct VerifyWithoutConsensus;
 
 impl BlockVerifier for VerifyWithoutConsensus {
@@ -422,5 +421,5 @@ impl BlockVerifier for VerifyWithoutConsensus {
         R: ChainReader,
     {
         BasicVerifier::verify_header(current_chain, new_block_header)
-    }   
+    }
 }

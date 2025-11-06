@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -91,9 +91,6 @@ enum ReceiveHeader {
     Received,
     NotReceived,
 }
-
-
-
 
 impl BlockBuilderService {
     fn receive_header(&mut self) -> ReceiveHeader {
@@ -204,7 +201,11 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
 }
 
 pub trait BlockTemplateCallBack {
-    fn block_template_callback(&mut self, parent_header: BlockHeader, block_template: BlockTemplate) -> Result<()>;
+    fn block_template_callback(
+        &mut self,
+        parent_header: BlockHeader,
+        block_template: BlockTemplate,
+    ) -> Result<()>;
 }
 struct BlockBuilderTemplateNotify {
     miner_service: ServiceRef<MinerService>,
@@ -215,18 +216,24 @@ impl BlockBuilderTemplateNotify {
     pub fn new(miner_service: ServiceRef<MinerService>, event: GenerateBlockEvent) -> Self {
         Self {
             miner_service,
-            event
+            event,
         }
-    }    
+    }
 }
 
 impl BlockTemplateCallBack for BlockBuilderTemplateNotify {
-    fn block_template_callback(&mut self, parent: BlockHeader, block_template: BlockTemplate) -> Result<()> {
-                            self.miner_service.notify(BlockTemplateResponse {
-                        parent,
-                        template: block_template,
-                        event: self.event.clone(),
-                    }).map_err(|e| format_err!("failed to notify block template for: {:?}", e)) 
+    fn block_template_callback(
+        &mut self,
+        parent: BlockHeader,
+        block_template: BlockTemplate,
+    ) -> Result<()> {
+        self.miner_service
+            .notify(BlockTemplateResponse {
+                parent,
+                template: block_template,
+                event: self.event.clone(),
+            })
+            .map_err(|e| format_err!("failed to notify block template for: {:?}", e))
     }
 }
 
@@ -615,7 +622,9 @@ where
                 }
             };
 
-            if let Err(e) = block_template_call_back.block_template_callback(previous_header, template) {
+            if let Err(e) =
+                block_template_call_back.block_template_callback(previous_header, template)
+            {
                 error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
             }
             // match (miner_service, event) {
@@ -632,7 +641,6 @@ where
             //     (None, Some(_)) => error!("miner serive is none but event is some"),
             //     (Some(_), None) => error!("event is none but miner service is some"),
             // }
-
         });
         Ok(())
     }
