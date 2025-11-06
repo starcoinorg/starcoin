@@ -463,7 +463,7 @@ pin-utils = "0.1.0"
 pretty = "0.12.5"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"
-proptest = "1.8.0"
+proptest = "1.9.0"
 proptest-derive = "0.6.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
@@ -636,7 +636,7 @@ timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
 tokio = { version = "^1", features = ["full"] }
-tokio-util = "0.7.16"
+tokio-util = "0.7.17"
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 toml = "0.5.9"
 trace-time = "0.1"
