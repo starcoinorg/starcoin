@@ -627,20 +627,6 @@ where
             {
                 error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
             }
-            // match (miner_service, event) {
-            //     (Some(miner_service), Some(event)) => {
-            //         if let Err(e) = miner_service.notify(BlockTemplateResponse {
-            //             parent: previous_header,
-            //             template,
-            //             event,
-            //         }) {
-            //             error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
-            //         }
-            //     }
-            //     (None, None) => (),
-            //     (None, Some(_)) => error!("miner serive is none but event is some"),
-            //     (Some(_), None) => error!("event is none but miner service is some"),
-            // }
         });
         Ok(())
     }
