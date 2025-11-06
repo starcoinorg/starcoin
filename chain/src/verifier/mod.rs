@@ -412,3 +412,15 @@ impl BlockVerifier for NoneVerifier {
         Ok(ghostdata)
     }
 }
+
+
+pub struct VerifyWithoutConsensus;
+
+impl BlockVerifier for VerifyWithoutConsensus {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        BasicVerifier::verify_header(current_chain, new_block_header)
+    }   
+}

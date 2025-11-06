@@ -4,6 +4,7 @@
 use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
+use starcoin_miner::create_block_template::block_builder_service::TemplateTxProvider;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
@@ -28,6 +29,29 @@ impl MockTxPoolService {
     pub fn new_with_txns(txns: Vec<MultiSignedUserTransaction>) -> Self {
         MockTxPoolService {
             pool: Arc::new(Mutex::new(txns)),
+        }
+    }
+}
+
+impl TemplateTxProvider for MockTxPoolService {
+    fn get_txns_with_header(
+        &self,
+        max: u64,
+        _header: &starcoin_types::block::BlockHeader,
+    ) -> Vec<starcoin_types::multi_transaction::MultiSignedUserTransaction> {
+                self.pool
+                .lock()
+                .unwrap()
+                .iter()
+                .take(max as usize)
+                .cloned()
+                .collect::<Vec<_>>()
+    }
+
+    fn remove_invalid_txn(&self, txn_hash: starcoin_crypto::HashValue) {
+        let mut pool = self.pool.lock().unwrap();
+        if let Some(pos) = pool.iter().position(|t| t.id() == txn_hash) {
+            pool.remove(pos);
         }
     }
 }

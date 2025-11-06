@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::{cmp::min, sync::Arc};
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -91,6 +91,9 @@ enum ReceiveHeader {
     Received,
     NotReceived,
 }
+
+
+
 
 impl BlockBuilderService {
     fn receive_header(&mut self) -> ReceiveHeader {
@@ -200,18 +203,46 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
+pub trait BlockTemplateCallBack {
+    fn block_template_callback(&mut self, parent_header: BlockHeader, block_template: BlockTemplate) -> Result<()>;
+}
+struct BlockBuilderTemplateNotify {
+    miner_service: ServiceRef<MinerService>,
+    event: GenerateBlockEvent,
+}
+
+impl BlockBuilderTemplateNotify {
+    pub fn new(miner_service: ServiceRef<MinerService>, event: GenerateBlockEvent) -> Self {
+        Self {
+            miner_service,
+            event
+        }
+    }    
+}
+
+impl BlockTemplateCallBack for BlockBuilderTemplateNotify {
+    fn block_template_callback(&mut self, parent: BlockHeader, block_template: BlockTemplate) -> Result<()> {
+                            self.miner_service.notify(BlockTemplateResponse {
+                        parent,
+                        template: block_template,
+                        event: self.event.clone(),
+                    }).map_err(|e| format_err!("failed to notify block template for: {:?}", e)) 
+    }
+}
+
 impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle_event(&mut self, msg: BlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
         let header_version = 1u8; // Default block header version for now
-        let miner_serivce = ctx
+        let miner_service = ctx
             .service_ref::<MinerService>()
             .expect("MinerService should exist")
             .clone();
         let _ = self.receive_header();
+        let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
         if let Err(e) = self
             .inner
-            .create_block_template(header_version, miner_serivce, msg.event)
+            .create_block_template(header_version, Box::new(callback))
         {
             error!("Failed to create block template: {}", e);
         }
@@ -421,8 +452,9 @@ where
     pub fn create_block_template(
         &mut self,
         version: Version,
-        miner_service: ServiceRef<MinerService>,
-        event: GenerateBlockEvent,
+        mut block_template_call_back: Box<dyn BlockTemplateCallBack + Send + Sync>,
+        // miner_service: Option<ServiceRef<MinerService>>,
+        // event: Option<GenerateBlockEvent>,
     ) -> Result<()> {
         let (
             MinerResponse {
@@ -582,13 +614,25 @@ where
                     return;
                 }
             };
-            if let Err(e) = miner_service.notify(BlockTemplateResponse {
-                parent: previous_header,
-                template,
-                event,
-            }) {
+
+            if let Err(e) = block_template_call_back.block_template_callback(previous_header, template) {
                 error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
             }
+            // match (miner_service, event) {
+            //     (Some(miner_service), Some(event)) => {
+            //         if let Err(e) = miner_service.notify(BlockTemplateResponse {
+            //             parent: previous_header,
+            //             template,
+            //             event,
+            //         }) {
+            //             error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
+            //         }
+            //     }
+            //     (None, None) => (),
+            //     (None, Some(_)) => error!("miner serive is none but event is some"),
+            //     (Some(_), None) => error!("event is none but miner service is some"),
+            // }
+
         });
         Ok(())
     }
