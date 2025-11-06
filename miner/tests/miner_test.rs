@@ -239,10 +239,6 @@ impl BlockTemplateCallBack for TestTemplateNotify {
                     .iter()
                     .map(|t| t.id())
                     .collect::<Vec<_>>();
-                println!(
-                    "jacktest: transaction ids in executed block: {:?}",
-                    transaction_ids
-                );
                 assert!(transaction_ids.contains(
                     self.check_transaction_id
                         .first()
@@ -251,7 +247,7 @@ impl BlockTemplateCallBack for TestTemplateNotify {
                 assert!(!transaction_ids.contains(
                     self.check_transaction_id
                         .get(1)
-                        .expect("3 transactions lack index 2")
+                        .expect("3 transactions lack index 1")
                 ));
                 assert!(!transaction_ids.contains(
                     self.check_transaction_id
