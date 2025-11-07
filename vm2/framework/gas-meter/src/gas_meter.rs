@@ -144,6 +144,7 @@ impl StarcoinGasMeter {
         res?;
 
         self.execution_gas_used += actual;
+
         if self.execution_gas_used > self.max_execution_gas {
             return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
         }
