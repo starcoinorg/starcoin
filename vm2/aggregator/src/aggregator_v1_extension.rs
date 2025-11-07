@@ -10,7 +10,6 @@ use crate::{
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::StatusCode;
-use starcoin_logger::prelude::info;
 use starcoin_vm2_vm_types::state_store::{state_key::StateKey, table::TableHandle};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -369,7 +368,6 @@ pub(crate) fn subtraction_v1_error<T>(_err: T) -> PartialVMError {
 /// Error for delta application. Can be used by delta partial functions
 /// to return descriptive error messages and an appropriate error code.
 fn abort_error(message: impl ToString, code: u64) -> PartialVMError {
-    info!("jacktest: abort error: {:?}", message.to_string());
     PartialVMError::new(StatusCode::ABORTED)
         .with_message(message.to_string())
         .with_sub_status(code)

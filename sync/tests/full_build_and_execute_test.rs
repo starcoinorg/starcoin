@@ -1,7 +1,6 @@
 use std::{collections::HashMap, env::temp_dir, error::Error, sync::Arc};
 
 use anyhow::{bail, format_err, Ok, Result};
-use chrono::Duration;
 use chrono::{Local, NaiveDateTime};
 use futures::channel::mpsc;
 use plotters::prelude::*;
@@ -11,9 +10,6 @@ use starcoin_config::{
     genesis_config::CustomNetworkID, BaseConfig, ChainNetworkID, NodeConfig, StarcoinOpt,
 };
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
-use starcoin_executor::VMMetrics;
-use starcoin_genesis::Genesis;
 use starcoin_logger::{
     prelude::{error, info, LevelFilter},
     LoggerHandle,
@@ -28,7 +24,7 @@ use starcoin_types::{
     block::BlockHeader,
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock},
+    system_events::{NewDagBlock, NewDagBlockFromPeer},
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -38,11 +34,9 @@ use starcoin_vm2_account_service::AccountService as AccountService2;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::{account_config::G_STC_TOKEN_CODE, transaction::SignedUserTransaction};
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm2_vm_types::{
-    account_address::AccountAddress, state_view::StateReaderExt, transaction, PeerId,
-};
+use starcoin_vm2_vm_types::{account_address::AccountAddress, state_view::StateReaderExt};
 use std::fs::OpenOptions;
-use std::io::{self, Write};
+use std::io::Write;
 use test_helper::run_node_with_all_service;
 
 async fn create_account(
@@ -115,7 +109,7 @@ async fn build_transaction_to_send_token_to_account(
             next_seq,
             amount,
             1,
-            400_000_00,
+            40_000_000,
             expire_time,
             header_block.chain_id().id().into(),
         );
@@ -346,6 +340,7 @@ enum TransactionExecutionResult {
     Rejected(String),
     Culled(String),
     Executed(String),
+    #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
 }
@@ -379,17 +374,13 @@ impl std::fmt::Debug for TransactionExecutionResult {
 
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
-    header: HashValue,
-    dag: BlockDAG,
     storage1: Arc<Storage>,
 }
 
 impl ObserverService {
-    fn new(header: HashValue, dag: BlockDAG, storage1: Arc<Storage>) -> Result<Self> {
+    fn new(storage1: Arc<Storage>) -> Result<Self> {
         Ok(Self {
             transaction_data: HashMap::new(),
-            header,
-            dag,
             storage1,
         })
     }
@@ -403,14 +394,18 @@ impl ObserverService {
         for transaction in block.body.transactions2 {
             self.transaction_data
                 .entry(transaction.id())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(TransactionExecutionResult::Executed(now.clone()));
         }
         Ok(())
     }
 
     fn dump_results(&mut self) -> Result<()> {
-        let mut file = OpenOptions::new().write(true).create(true).truncate(true).open("./transaction_results.txt")?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("./transaction_results.txt")?;
         for (transaction, results) in &self.transaction_data {
             writeln!(
                 file,
@@ -432,11 +427,10 @@ impl ObserverService {
         let fmt = "%Y-%m-%d %H:%M:%S%.3f";
         let mut result = Vec::new();
 
-        for (_tx_hash, events) in &self.transaction_data {
+        for events in self.transaction_data.values() {
             let mut added_times = Vec::new();
             let mut executed_times = Vec::new();
 
-            // 收集 Added / Executed 时间
             for ev in events {
                 match ev {
                     TransactionExecutionResult::Added(ts) => {
@@ -458,13 +452,11 @@ impl ObserverService {
                 continue;
             }
 
-            // 无执行 → 视为∞延迟
             if executed_times.is_empty() {
                 result.push((None, f64::INFINITY));
                 continue;
             }
 
-            // 多对多计算 Add→Exec 延迟
             let first_add = added_times[0];
             for exec in executed_times {
                 let delay = exec - first_add;
@@ -477,7 +469,6 @@ impl ObserverService {
             }
         }
 
-        // 排序：按执行时间（未执行放最后）
         result.sort_by(|a, b| match (a.0, b.0) {
             (Some(t1), Some(t2)) => t1.partial_cmp(&t2).unwrap_or(std::cmp::Ordering::Equal),
             (Some(_), None) => std::cmp::Ordering::Less,
@@ -491,7 +482,6 @@ impl ObserverService {
     pub fn export_latency_timeline_svg(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         let data = self.collect_executions();
         if data.is_empty() {
-            println!("⚠ 没有可用数据");
             return std::result::Result::Ok(());
         }
 
@@ -516,7 +506,7 @@ impl ObserverService {
 
         let mut chart = ChartBuilder::on(&root)
             .caption(
-                "Add → Execute Latency Timeline (含未执行交易)",
+                "Add → Execute Latency Timeline (included unexecuted transactions)",
                 ("sans-serif", 28),
             )
             .margin(20)
@@ -558,17 +548,13 @@ impl ObserverService {
         }))?;
 
         root.present()?;
-        println!("✅ 输出 SVG: {}", file_path);
         std::result::Result::Ok(())
     }
 }
 
 impl ServiceFactory<Self> for ObserverService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
-        let genesis = ctx.get_shared::<Genesis>()?;
-        let storage1 = ctx.get_shared::<Arc<Storage>>()?;
-        let dag = ctx.get_shared::<BlockDAG>()?;
-        Self::new(genesis.block().id(), dag, storage1)
+        Self::new(ctx.get_shared::<Arc<Storage>>()?)
     }
 }
 
@@ -598,7 +584,7 @@ impl ActorService for ObserverService {
 // }
 
 impl EventHandler<Self, NewDagBlock> for ObserverService {
-    fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
         match self.update_transaction_status(msg.executed_block.block().id()) {
             std::result::Result::Ok(_) => (),
             Err(e) => error!("failed to update transactions status for: {:?}", e),
@@ -607,7 +593,7 @@ impl EventHandler<Self, NewDagBlock> for ObserverService {
 }
 
 impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
-    fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
         match self.update_transaction_status(msg.executed_block.id()) {
             std::result::Result::Ok(_) => (),
             Err(e) => error!("failed to update transactions status for: {:?}", e),
@@ -616,29 +602,29 @@ impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
 }
 
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
-    fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
         let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         for transaction_event in msg.as_ref() {
             match transaction_event.1 {
                 starcoin_types::transaction::TxStatus::Added => self
                     .transaction_data
                     .entry(transaction_event.0)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(TransactionExecutionResult::Added(now.clone())),
                 starcoin_types::transaction::TxStatus::Rejected => self
                     .transaction_data
                     .entry(transaction_event.0)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(TransactionExecutionResult::Rejected(now.clone())),
                 starcoin_types::transaction::TxStatus::Culled => self
                     .transaction_data
                     .entry(transaction_event.0)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(TransactionExecutionResult::Culled(now.clone())),
                 _ => self
                     .transaction_data
                     .entry(transaction_event.0)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(TransactionExecutionResult::Other(format!(
                         "{}({})",
                         transaction_event.1,
