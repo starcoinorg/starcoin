@@ -201,9 +201,9 @@ where
         if let AccountResponse::SignedTxnList(txns) = response {
             Ok(txns)
         } else {
-            return Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(
                 "unexpected response type: expected SignedTxnList"
-            ));
+            ))
         }
     }
 
