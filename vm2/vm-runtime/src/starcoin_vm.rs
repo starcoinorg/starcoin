@@ -749,7 +749,6 @@ impl StarcoinVM {
         let txn_max_gas_amount = u64::from(txn_data.max_gas_amount());
         let txn_expiration_time = txn_data.expiration_time_secs();
         let chain_id = txn_data.chain_id().id();
-        info!("StarcoinVM::run_prologue | jacktest: 0");
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
             TransactionPayloadMetadata::Script(hash) => {
                 (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
@@ -763,14 +762,9 @@ impl StarcoinVM {
                 AccountAddress::ZERO,
             ),
         };
-        info!("StarcoinVM::run_prologue | jacktest: 1");
 
         let traversal_storage = TraversalStorage::new();
         // Run prologue by genesis account
-        info!(
-            "StarcoinVM::run_prologue | jacktest: 2, txn_gas_price: {}, txn_max_gas_amount: {}",
-            txn_gas_price, txn_max_gas_amount
-        );
         session
             .execute_function_bypass_visibility(
                 &account_config::G_TRANSACTION_VALIDATION_MODULE,

@@ -21,13 +21,16 @@ pub static G_STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
 
 static G_STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAME).unwrap());
 
-pub fn stc_type_tag() -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
+pub fn stc_struct_tag() -> StructTag {
+    StructTag {
         address: CORE_CODE_ADDRESS,
         module: Identifier::new("starcoin_coin").unwrap(),
         name: G_STC_IDENTIFIER.clone(),
         type_args: vec![],
-    }))
+    }
+}
+pub fn stc_type_tag() -> TypeTag {
+    TypeTag::Struct(Box::new(stc_struct_tag()))
 }
 
 pub const SYMBOL_NANOSTC: &str = "nanoSTC";
