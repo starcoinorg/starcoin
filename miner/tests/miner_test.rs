@@ -301,10 +301,7 @@ pub fn test_open_block_and_execute() -> Result<()> {
         config.net().genesis_config2(),
     )
     .try_into()?;
-    let check_transaction_ids = vec![txn1.clone(), txn2.clone(), txn3.clone()]
-        .into_iter()
-        .map(|t| t.id())
-        .collect::<Vec<_>>();
+    let check_transaction_ids = vec![txn1.id(), txn2.id(), txn3.id()];
 
     let txpool = MockTxPoolService::new();
     txpool.add_txns_multi_signed(vec![txn1.into(), txn2.into(), txn3.into()], false, None)?;
