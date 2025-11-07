@@ -165,7 +165,7 @@ async fn get_balance(
     Ok(balance)
 }
 
-// #[ignore = "This is a benchmark test, not a unit test"]
+#[ignore = "This is a benchmark test, not a unit test"]
 #[test]
 fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let mut opt = StarcoinOpt {
