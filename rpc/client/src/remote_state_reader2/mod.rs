@@ -12,7 +12,6 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_types::{
     account_address::AccountAddress,
-    account_config::BalanceResource,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };

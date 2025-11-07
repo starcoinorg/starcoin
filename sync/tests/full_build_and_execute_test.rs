@@ -1,8 +1,10 @@
-use std::{collections::HashMap, env::temp_dir, sync::Arc};
+use std::{collections::HashMap, env::temp_dir, error::Error, sync::Arc};
 
 use anyhow::{bail, format_err, Ok, Result};
-use chrono::Local;
+use chrono::Duration;
+use chrono::{Local, NaiveDateTime};
 use futures::channel::mpsc;
+use plotters::prelude::*;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{
@@ -205,7 +207,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let storage1 = node.storage();
     let storage2 = node.storage2();
 
-    let account_count: u32 = 2000;
+    let account_count: u32 = 20;
     let initial_balance: u128 = 10000000000;
     let initial_gas_fee: u128 = 4000000000;
 
@@ -334,7 +336,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
 
     node.stop_service(ObserverService::service_name().to_string())?;
     node.stop()?;
-    // std::fs::remove_dir_all(path)?;
+    std::fs::remove_dir_all(path)?;
 
     Ok(())
 }
@@ -408,7 +410,7 @@ impl ObserverService {
     }
 
     fn dump_results(&mut self) -> Result<()> {
-        let mut file = OpenOptions::new().write(true).create(true).truncate(true).open("/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/sync/transaction_results.txt")?;
+        let mut file = OpenOptions::new().write(true).create(true).truncate(true).open("./transaction_results.txt")?;
         for (transaction, results) in &self.transaction_data {
             writeln!(
                 file,
@@ -416,7 +418,148 @@ impl ObserverService {
                 *transaction, results
             )?;
         }
+        match self.export_latency_timeline_svg("./latency_timeline.svg") {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!("failed to export latency timeline svg: {}", e);
+                return Err(format_err!("failed to export latency timeline svg: {}", e));
+            }
+        }
         Ok(())
+    }
+
+    fn collect_executions(&self) -> Vec<(Option<f64>, f64)> {
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+        let mut result = Vec::new();
+
+        for (_tx_hash, events) in &self.transaction_data {
+            let mut added_times = Vec::new();
+            let mut executed_times = Vec::new();
+
+            // 收集 Added / Executed 时间
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(ts) => {
+                        if let std::result::Result::Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                            added_times.push(t);
+                        }
+                    }
+                    TransactionExecutionResult::Executed(ts)
+                    | TransactionExecutionResult::ExecutedNotInMain(ts) => {
+                        if let std::result::Result::Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                            executed_times.push(t);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            if added_times.is_empty() {
+                continue;
+            }
+
+            // 无执行 → 视为∞延迟
+            if executed_times.is_empty() {
+                result.push((None, f64::INFINITY));
+                continue;
+            }
+
+            // 多对多计算 Add→Exec 延迟
+            let first_add = added_times[0];
+            for exec in executed_times {
+                let delay = exec - first_add;
+                if let Some(us) = delay.num_microseconds() {
+                    let ms = us as f64 / 1000.0;
+                    if ms >= 0.0 {
+                        result.push((Some(exec.and_utc().timestamp_millis() as f64), ms));
+                    }
+                }
+            }
+        }
+
+        // 排序：按执行时间（未执行放最后）
+        result.sort_by(|a, b| match (a.0, b.0) {
+            (Some(t1), Some(t2)) => t1.partial_cmp(&t2).unwrap_or(std::cmp::Ordering::Equal),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        });
+
+        result
+    }
+
+    pub fn export_latency_timeline_svg(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        let data = self.collect_executions();
+        if data.is_empty() {
+            println!("⚠ 没有可用数据");
+            return std::result::Result::Ok(());
+        }
+
+        let min_ts = data
+            .iter()
+            .filter_map(|(t, _)| *t)
+            .fold(f64::INFINITY, f64::min);
+        let max_ts = data
+            .iter()
+            .filter_map(|(t, _)| *t)
+            .fold(f64::NEG_INFINITY, f64::max);
+
+        let max_latency = data
+            .iter()
+            .filter(|(_, d)| d.is_finite())
+            .map(|(_, d)| *d)
+            .fold(0.0, f64::max)
+            .max(1.0);
+
+        let root = SVGBackend::new(file_path, (1600, 800)).into_drawing_area();
+        root.fill(&WHITE)?;
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption(
+                "Add → Execute Latency Timeline (含未执行交易)",
+                ("sans-serif", 28),
+            )
+            .margin(20)
+            .x_label_area_size(80)
+            .y_label_area_size(70)
+            .build_cartesian_2d(min_ts..(max_ts + 2000.0), 0f64..max_latency)?;
+
+        chart
+            .configure_mesh()
+            .x_desc("Execution Time (ms since start)")
+            .y_desc("Latency (ms)")
+            .axis_desc_style(("sans-serif", 20))
+            .label_style(("sans-serif", 14))
+            .draw()?;
+
+        let bar_width = 200.0;
+
+        chart.draw_series(data.iter().map(|(opt_t, delay)| {
+            let color = if delay.is_finite() {
+                RGBColor(50, 100, 220).filled()
+            } else {
+                RED.filled()
+            };
+
+            if let Some(ts) = opt_t {
+                Rectangle::new(
+                    [
+                        (ts - bar_width / 2.0, 0.0),
+                        (ts + bar_width / 2.0, delay.min(max_latency)),
+                    ],
+                    color,
+                )
+            } else {
+                Rectangle::new(
+                    [(max_ts + 1000.0, 0.0), (max_ts + 1500.0, max_latency * 0.9)],
+                    color,
+                )
+            }
+        }))?;
+
+        root.present()?;
+        println!("✅ 输出 SVG: {}", file_path);
+        std::result::Result::Ok(())
     }
 }
 
