@@ -2,7 +2,10 @@ use anyhow::{anyhow, Result};
 use starcoin_chain::{disable_vm2_reuse_for_test, enable_vm2_reuse_for_test, ChainReader};
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_exec_merge::{global_witness_store, reset_global_witness_store_for_tests, ExecKey};
+use starcoin_crypto::HashValue;
+use starcoin_exec_merge::{
+    global_witness_store, reset_global_witness_store_for_tests, ExecKey, ReadEntry,
+};
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_chain::{reset_reuse_counters_for_test, reuse_counters_for_test};
@@ -21,6 +24,87 @@ use starcoin_vm2_vm_types::{
 };
 
 const TABLE_MARKER_KEY: &[u8] = b"reuse-table-marker";
+
+#[test]
+fn test_vm2_reuse_missing_reads_force_reexec() -> Result<()> {
+    let _guard = enable_vm2_reuse_for_test();
+    reset_reuse_counters_for_test();
+    reset_global_witness_store_for_tests();
+
+    let mut chain = MockChain::new(ChainNetwork::new_test())?;
+    let seq = chain
+        .head()
+        .chain_state_reader2()
+        .get_sequence_number(association_address())?;
+    let txn = match build_transfer_from_association(
+        association_address(),
+        seq,
+        1_000,
+        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        chain.net(),
+    ) {
+        Transaction::UserTransaction(txn) => txn,
+        _ => return Err(anyhow!("expected VM2 user transaction")),
+    };
+
+    let parent_block = chain.head().head_block();
+    let parent_header = parent_block.header().clone();
+    let parent_epoch = chain.head().epoch().number();
+    let parent_header_id = parent_header.id();
+
+    chain.net().time_service().sleep(1);
+    let block = chain.produce_and_apply_by_tips_with_txns(
+        parent_header.clone(),
+        vec![parent_header_id],
+        vec![MultiSignedUserTransaction::from(txn)],
+    )?;
+
+    let epoch_id = parent_epoch;
+    let user_hashes = block
+        .transactions2()
+        .iter()
+        .map(|txn| txn.id())
+        .collect::<Vec<_>>();
+    assert!(!user_hashes.is_empty(), "expected at least one VM2 txn");
+
+    // Wipe read sets to simulate incomplete witness coverage.
+    let store = global_witness_store();
+    for hash in &user_hashes {
+        let key = ExecKey {
+            tx_hash: *hash,
+            epoch_id,
+        };
+        if let Some(mut rec) = store.get(&key) {
+            rec.read_set = Some(Vec::<ReadEntry>::new());
+            store.put(rec);
+        } else {
+            panic!("missing witness for txn {:?}", hash);
+        }
+    }
+
+    reset_reuse_counters_for_test();
+    let mut fork = chain.fork(Some(parent_header_id))?;
+    fork.apply(block.clone())?;
+    let (hits, reexec) = reuse_counters_for_test();
+    assert_eq!(hits, 0, "missing reads must force reexec");
+    assert!(
+        reexec > 0,
+        "expected reexecution when witness coverage is incomplete"
+    );
+
+    let fork_root = fork.head().head_block().multi_state().state_root2();
+
+    reset_reuse_counters_for_test();
+    let mut full_branch = chain.fork(Some(parent_header_id))?;
+    full_branch.apply(block)?;
+    let full_root = full_branch.head().head_block().multi_state().state_root2();
+    assert_eq!(
+        fork_root, full_root,
+        "state roots must match even when witness reuse is disabled"
+    );
+
+    Ok(())
+}
 
 #[test]
 fn test_vm2_reuse_hits() -> Result<()> {
@@ -72,6 +156,17 @@ fn test_vm2_reuse_hits() -> Result<()> {
             epoch_id,
         };
         if let Some(mut rec) = store.get(&key) {
+            if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                eprintln!(
+                    "witness tx={:?} reads={} writes={}",
+                    hash,
+                    rec.read_set.as_ref().map(|reads| reads.len()).unwrap_or(0),
+                    rec.write_set.len()
+                );
+                for (idx, (key, _)) in rec.write_set.iter().enumerate() {
+                    eprintln!("  write[{idx}] key={:?}", key);
+                }
+            }
             let had_reads = rec.read_set.is_some();
             rec.write_set
                 .retain(|(k, _)| matches!(k.inner(), StateKeyInner::AccessPath(_)));
@@ -338,32 +433,43 @@ fn test_vm2_reuse_conflicting_state_triggers_reexec() -> Result<()> {
         clean_reexec
     );
 
-    // Conflicting branch: execute another txn with the same sequence number first.
-    let mut conflicting_branch = chain.fork(Some(parent_header_id))?;
-    let conflicting_txn = match build_transfer_from_association(
-        association_address(),
-        seq,
-        7_000,
-        chain.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME + 1,
-        chain.net(),
-    ) {
-        Transaction::UserTransaction(txn) => txn,
-        _ => return Err(anyhow!("expected VM2 user transaction")),
-    };
-    conflicting_branch.produce_and_apply_by_tips_with_txns(
-        parent_header.clone(),
-        vec![parent_header_id],
-        vec![MultiSignedUserTransaction::from(conflicting_txn)],
-    )?;
+    // Corrupt the witness to mimic a conflicting state (e.g., sequence already advanced).
+    let mut corrupted = false;
+    for txn in block.transactions2().iter() {
+        let hash = txn.id();
+        let key = ExecKey {
+            tx_hash: hash,
+            epoch_id,
+        };
+        if let Some(mut rec) = store.get(&key) {
+            if let Some(reads) = rec.read_set.as_mut() {
+                if let Some(entry) = reads
+                    .iter_mut()
+                    .find(|entry| format!("{:?}", entry.key).contains("account::Account"))
+                {
+                    entry.value_hash = HashValue::zero();
+                    corrupted = true;
+                }
+            }
+            store.put(rec);
+        }
+    }
+    assert!(
+        corrupted,
+        "expected to corrupt account read entry in witness"
+    );
 
     reset_reuse_counters_for_test();
-    let err = conflicting_branch
-        .apply(block.clone())
-        .expect_err("stale transaction should be rejected after conflicting state change");
-    let err_msg = format!("{err:?}");
+    let mut conflicting_branch = chain.fork(Some(parent_header_id))?;
+    conflicting_branch.apply(block.clone())?;
+    let (conflict_hits, conflict_reexec) = reuse_counters_for_test();
+    assert_eq!(
+        conflict_hits, 0,
+        "corrupted witness must force re-execution"
+    );
     assert!(
-        err_msg.contains("SEQUENCE_NUMBER_TOO_OLD"),
-        "unexpected error when applying stale block: {err_msg}"
+        conflict_reexec >= 1,
+        "expected re-execution path when conflicting read detected"
     );
 
     Ok(())

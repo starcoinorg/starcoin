@@ -16,7 +16,7 @@ use starcoin_vm2_vm_types::state_store::state_key::{inner::StateKeyInner, StateK
 use starcoin_vm2_vm_types::state_store::state_value::StateValue;
 use starcoin_vm2_vm_types::state_store::TStateView;
 use starcoin_vm2_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use starcoin_vm_runtime::reuse_recorder;
+use starcoin_vm_runtime::{record_fee_payer_for_reuse, reuse_recorder};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -395,15 +395,18 @@ impl<'a> ReusePlanner<'a> {
         {
             return false;
         }
-        if let Some(reads) = rec.read_set.as_ref() {
-            if reads
-                .iter()
-                .any(|entry| !Self::is_supported_read_key(&entry.key))
-            {
-                return false;
+        match rec.read_set.as_ref() {
+            Some(reads) if !reads.is_empty() => {
+                if reads
+                    .iter()
+                    .any(|entry| !Self::is_supported_read_key(&entry.key))
+                {
+                    return false;
+                }
+                true
             }
+            _ => false,
         }
-        true
     }
 
     fn classify_decisions(sanitized: &[ExecRecord], diff: &MergeDiff) -> Vec<PlanDecision> {
@@ -472,6 +475,24 @@ impl<'a> ReusePlanner<'a> {
             }
             None => return false,
         };
+        if read_map.is_empty() {
+            if debug {
+                println!("reuse_missing_reads tx={}", rec.tx_hash);
+            }
+            return false;
+        }
+
+        for (key, _) in rec.write_set.iter() {
+            if !read_map.contains_key(key) {
+                if debug {
+                    println!(
+                        "reuse_missing_write_coverage tx={} key={:?}",
+                        rec.tx_hash, key
+                    );
+                }
+                return false;
+            }
+        }
 
         // Verify that every recorded read matches the current (or prefixed) state.
         for (key, (expected_exists, expected_hash)) in read_map.iter() {
@@ -683,6 +704,10 @@ impl<'a> ReuseExecutor<'a> {
             let entry = &entries[idx];
             let tx_hash = txn.id();
             let should_commit = total > 0 && (idx == 0 || idx == last_index);
+            let fee_payer = match txn {
+                Transaction::UserTransaction(user_txn) => Some(user_txn.sender()),
+                _ => None,
+            };
 
             match entry.decision {
                 PlanDecision::Reuse => {
@@ -700,9 +725,18 @@ impl<'a> ReuseExecutor<'a> {
                                         tx_hash,
                                         write_entries.len()
                                     );
+                                    for (idx, (key, op)) in write_entries.iter().enumerate() {
+                                        println!(
+                                            "reuse_plan_write tx={} idx={} key={:?} op={:?}",
+                                            tx_hash, idx, key, op
+                                        );
+                                    }
                                 }
 
                                 pending_reuse_writes.extend(write_entries);
+                                if let Some(payer) = fee_payer {
+                                    record_fee_payer_for_reuse(payer);
+                                }
 
                                 let next_decision = entries
                                     .get(idx + 1)

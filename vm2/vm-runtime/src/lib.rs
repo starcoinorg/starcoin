@@ -26,6 +26,7 @@ pub mod parallel_executor;
 mod verifier;
 
 use starcoin_metrics::metrics::VMMetrics;
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::on_chain_config::GasSchedule;
 use starcoin_vm_types::transaction::{
@@ -51,6 +52,10 @@ pub trait VMExecutor: Send + Sync {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus>;
+}
+
+pub fn record_fee_payer_for_reuse(addr: AccountAddress) {
+    starcoin_framework::natives::stc_transaction_fee::record_payer_address_for_reuse(addr);
 }
 
 #[derive(Debug)]

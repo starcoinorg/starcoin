@@ -37,6 +37,11 @@ fn native_read_and_clear_payer_address(
     Ok(smallvec![Value::vector_address(addresses)])
 }
 
+pub fn record_payer_address_for_reuse(addr: AccountAddress) {
+    let mut cache = PAYER_ADDRESS_CACHE.lock().unwrap();
+    cache.insert(addr);
+}
+
 pub fn make_all(
     builder: &SafeNativeBuilder,
 ) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
