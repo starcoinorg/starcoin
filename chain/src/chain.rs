@@ -2196,13 +2196,6 @@ impl BlockChain {
                     format_err!("Can not find block info for parent {:?}", selected_parent)
                 })?;
 
-        // let multi_state = self.storage.0.get_vm_multi_state(selected_parent)?;
-
-        // let statedb = self.statedb.0.fork_at(multi_state.state_root1());
-        // let statedb2 = self.statedb.1.fork_at(multi_state.state_root2());
-
-        // Get epoch from forked statedb (read from VM2's statedb)
-
         // Execute VM1 transactions
         let executed_data = if !transactions.is_empty() {
             starcoin_executor::block_execute(

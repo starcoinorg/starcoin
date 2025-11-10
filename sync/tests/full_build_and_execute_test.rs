@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env::temp_dir, error::Error, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc};
 
 use anyhow::{bail, format_err, Ok, Result};
 use chrono::{Local, NaiveDateTime};
@@ -175,7 +175,8 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
         ))),
         ..Default::default()
     };
-    let path = temp_dir();
+    let temp_dir = tempfile::tempdir()?;
+    let path = temp_dir.path().to_path_buf();
     opt.base_data_dir = Some(path.clone());
     opt.genesis_config = Some("halley".to_string());
 
@@ -330,7 +331,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
 
     node.stop_service(ObserverService::service_name().to_string())?;
     node.stop()?;
-    std::fs::remove_dir_all(path)?;
+    temp_dir.close()?;
 
     Ok(())
 }
