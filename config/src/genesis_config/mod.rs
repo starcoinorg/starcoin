@@ -4,6 +4,7 @@
 pub mod vm2;
 
 use anyhow::{bail, ensure, format_err, Result};
+use clap::ValueEnum;
 use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
