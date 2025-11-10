@@ -13580,6 +13580,7 @@ dependencies = [
  "stest",
  "stream-task",
  "sysinfo",
+ "tempfile",
  "test-helper",
  "thiserror",
  "timeout-join-handler",

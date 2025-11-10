@@ -60,7 +60,7 @@ pub trait AccountApi {
     ) -> FutureResult<AccountInfo>;
 
     /// unlock accounts for duration in seconds, default to u32::max.
-    #[rpc(name = "account.unlock_in_batch2")]
+    #[rpc(name = "account2.unlock_in_batch")]
     fn unlock_in_batch(
         &self,
         batch: Vec<(AccountAddress, String)>,
