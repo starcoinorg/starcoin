@@ -1,0 +1,23 @@
+[package]
+name = "simnet"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+rand = "0.8"
+rand_chacha = "0.3"
+starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
+starcoin-time-service = { workspace = true }
+starcoin-types = { workspace = true }
+tempfile.workspace = true
+
+[dev-dependencies]
+proptest = "1.4"

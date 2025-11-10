@@ -10886,6 +10886,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "simnet"
+version = "2.1.1"
+dependencies = [
+ "anyhow",
+ "proptest",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-dag",
+ "starcoin-time-service",
+ "starcoin-vm1-types",
+ "tempfile",
+]
+
+[[package]]
 name = "simple-stopwatch"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
