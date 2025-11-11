@@ -999,6 +999,7 @@ pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
 });
 
 pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    let stdlib_version = StdlibVersion::Version(12);
     // This is a test config,
     GenesisConfig {
         genesis_block_parameter: GenesisBlockParameterConfig::Static(GenesisBlockParameter {
@@ -1036,7 +1037,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             .expect("create multi public key must success.")),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Version(1),
+        stdlib_version,
         dao_config: DaoConfig {
             voting_delay: 60 * 60 * 1000,           // 1h
             voting_period: 60 * 60 * 24 * 1000, // 1d
