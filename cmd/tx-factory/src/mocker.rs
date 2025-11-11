@@ -568,8 +568,8 @@ impl TxnMocker {
                     self.next_sequence_number,
                     self.account_address2,
                     addr_vec.clone(),
-                    1,
-                    1,
+                    INITIAL_BALANCE,
+                    10000,
                     expiration_timestamp,
                 )?;
                 let result = self.submit_txn2(txn, self.account_address2, true);
@@ -592,7 +592,7 @@ impl TxnMocker {
                 self.next_sequence_number,
                 self.account_address2,
                 addr_vec.clone(),
-                1,
+                INITIAL_BALANCE,
                 10000,
                 expiration_timestamp,
             )?;
