@@ -1,16 +1,23 @@
 use std::{
-    collections::HashMap, error::Error, fs::OpenOptions, io::Write, path::{Path, PathBuf}, str::FromStr, sync::Arc
+    collections::HashMap,
+    error::Error,
+    fs::OpenOptions,
+    io::Write,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
 };
 
 use anyhow::{bail, format_err, Result};
 use chrono::{Local, NaiveDateTime};
-use clap::{Parser, ValueEnum, ValueHint};
+use clap::{Parser, ValueHint};
 use futures::channel::mpsc;
 use plotters::prelude::*;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{
-    genesis_config::CustomNetworkID, BaseConfig, BuiltinNetworkID, ChainNetworkID, NodeConfig, StarcoinOpt
+    genesis_config::CustomNetworkID, BaseConfig, BuiltinNetworkID, ChainNetworkID, NodeConfig,
+    StarcoinOpt,
 };
 use starcoin_crypto::HashValue;
 use starcoin_logger::{
@@ -56,6 +63,30 @@ struct Cli {
         help = "Network to run against (custom, test, dev, halley, proxima, barnard, main)."
     )]
     network: NetworkChoice,
+
+    #[arg(
+        short = 'c',
+        long = "account-count",
+        default_value = "20",
+        help = "Number of accounts to create for the benchmark."
+    )]
+    account_count: u32,
+
+    #[arg(
+        short = 'b',
+        long = "initial-balance",
+        default_value = "10000000000",
+        help = "Initial balance for each account."
+    )]
+    initial_balance: u128,
+
+    #[arg(
+        short = 'g',
+        long = "initial-gas-fee",
+        default_value = "4000000000",
+        help = "Initial gas fee for transactions."
+    )]
+    initial_gas_fee: u128,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -86,32 +117,28 @@ impl NetworkChoice {
                 "my_chain".to_owned(),
                 ChainId::new(121),
             )),
-            Self::Builtin(builtin_network_id) => {
-                match builtin_network_id {
-                    BuiltinNetworkID::Test => ChainNetworkID::Builtin(BuiltinNetworkID::Test),
-                    BuiltinNetworkID::Dev => ChainNetworkID::Builtin(BuiltinNetworkID::Dev),
-                    BuiltinNetworkID::Halley => ChainNetworkID::Builtin(BuiltinNetworkID::Halley),
-                    BuiltinNetworkID::Proxima => ChainNetworkID::Builtin(BuiltinNetworkID::Proxima),
-                    BuiltinNetworkID::Barnard => ChainNetworkID::Builtin(BuiltinNetworkID::Barnard),
-                    BuiltinNetworkID::Main => ChainNetworkID::Builtin(BuiltinNetworkID::Main),
-                }
-            }
+            Self::Builtin(builtin_network_id) => match builtin_network_id {
+                BuiltinNetworkID::Test => ChainNetworkID::Builtin(BuiltinNetworkID::Test),
+                BuiltinNetworkID::Dev => ChainNetworkID::Builtin(BuiltinNetworkID::Dev),
+                BuiltinNetworkID::Halley => ChainNetworkID::Builtin(BuiltinNetworkID::Halley),
+                BuiltinNetworkID::Proxima => ChainNetworkID::Builtin(BuiltinNetworkID::Proxima),
+                BuiltinNetworkID::Barnard => ChainNetworkID::Builtin(BuiltinNetworkID::Barnard),
+                BuiltinNetworkID::Main => ChainNetworkID::Builtin(BuiltinNetworkID::Main),
+            },
         }
     }
 
     fn genesis_name(self) -> &'static str {
         match self {
             Self::Custom | Self::Builtin(BuiltinNetworkID::Halley) => "halley",
-            Self::Builtin(builtin_network_id) => {
-                match builtin_network_id {
-                    BuiltinNetworkID::Test => "test",
-                    BuiltinNetworkID::Dev => "dev",
-                    BuiltinNetworkID::Halley => "halley",
-                    BuiltinNetworkID::Proxima => "proxima",
-                    BuiltinNetworkID::Barnard => "barnard",
-                    BuiltinNetworkID::Main => "main",
-                }
-            }
+            Self::Builtin(builtin_network_id) => match builtin_network_id {
+                BuiltinNetworkID::Test => "test",
+                BuiltinNetworkID::Dev => "dev",
+                BuiltinNetworkID::Halley => "halley",
+                BuiltinNetworkID::Proxima => "proxima",
+                BuiltinNetworkID::Barnard => "barnard",
+                BuiltinNetworkID::Main => "main",
+            },
         }
     }
 }
@@ -175,7 +202,13 @@ async fn main() -> Result<()> {
     global_opt.genesis_config = init_opt.genesis_config.clone();
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
-    let bench_result = run_benchmark(node_config).await;
+    let bench_result = run_benchmark(
+        node_config,
+        cli.account_count,
+        cli.initial_balance,
+        cli.initial_gas_fee,
+    )
+    .await;
     let close_result = data_dir.close();
     bench_result?;
     close_result?;
@@ -308,15 +341,16 @@ async fn get_balance(
     Ok(balance)
 }
 
-async fn run_benchmark(node_config: Arc<NodeConfig>) -> Result<()> {
+async fn run_benchmark(
+    node_config: Arc<NodeConfig>,
+    account_count: u32,
+    initial_balance: u128,
+    initial_gas_fee: u128,
+) -> Result<()> {
     let node = run_node_with_all_service(node_config.clone())?;
     let registry = node.registry();
     let storage1 = node.storage();
     let storage2 = node.storage2();
-
-    let account_count: u32 = 20;
-    let initial_balance: u128 = 10_000_000_000;
-    let initial_gas_fee: u128 = 4_000_000_000;
 
     let fut = async move {
         let log_handler = registry.get_shared::<Arc<LoggerHandle>>().await?;
