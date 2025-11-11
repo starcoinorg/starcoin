@@ -555,6 +555,7 @@ impl TxnMocker {
                 Ok(account) => account,
                 Err(e) => {
                     error!("create account error: {}", e);
+                    i = i.saturating_add(1);
                     continue;
                 }
             };
@@ -626,6 +627,7 @@ impl TxnMocker {
                 Ok(account) => account,
                 Err(e) => {
                     error!("create account error: {}", e);
+                    i = i.saturating_add(1);
                     continue;
                 }
             };

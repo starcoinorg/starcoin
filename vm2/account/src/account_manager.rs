@@ -104,18 +104,22 @@ impl AccountManager {
         batch: Vec<(AccountAddress, String)>,
         duration: Duration,
     ) -> AccountResult<Vec<AccountInfo>> {
-        let mut accounts = vec![];
+        let mut prepared = Vec::with_capacity(batch.len());
         for (address, password) in batch.into_iter() {
-            let account = Account::load(address, Some(password.to_string()), self.store.clone())?
+            let account = Account::load(address, Some(password.clone()), self.store.clone())?
                 .ok_or(AccountError::AccountNotExist(address))?;
-            let ttl = std::time::Instant::now().add(duration);
-            self.key_cache
-                .write()
-                .cache_pass(address, password.to_string(), ttl);
-            accounts.push(account.info());
+            prepared.push((address, password, account.info()));
         }
 
-        Ok(accounts)
+        {
+            let mut cache = self.key_cache.write();
+            for (address, password, _) in &prepared {
+                let ttl = std::time::Instant::now().add(duration);
+                cache.cache_pass(*address, password.clone(), ttl);
+            }
+        }
+
+        Ok(prepared.into_iter().map(|(_, _, info)| info).collect())
     }
 
     pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {

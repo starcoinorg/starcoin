@@ -77,7 +77,7 @@ starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-vm-runtime = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 chrono = { workspace = true }
-plotters = "0.3"
+plotters = { workspace = true }
 tempfile = { workspace = true }
 
 [package]

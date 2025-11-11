@@ -234,7 +234,9 @@ where
         if let AccountResponse::AccountList(accounts) = response {
             Ok(accounts)
         } else {
-            panic!("Unexpect response type.")
+            Err(anyhow::anyhow!(
+                "unexpected response type: expected AccountList"
+            ))
         }
     }
 

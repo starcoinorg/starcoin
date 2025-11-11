@@ -51,7 +51,6 @@ members = [
     "sync/api",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -89,7 +88,6 @@ members = [
     # "vm/move-package-manager",
     "vm/vm-status-translator",
     # "vm/starcoin-transactional-test-harness",
-    "commons/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
@@ -186,7 +184,6 @@ default-members = [
     "sync/api",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -460,6 +457,7 @@ pbkdf2 = "0.12"
 petgraph = "0.8.3"
 pin-project = "0.4.27"
 pin-utils = "0.1.0"
+plotters = "0.3"
 pretty = "0.12.5"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"

@@ -40,11 +40,11 @@ use std::io::Write;
 use test_helper::run_node_with_all_service;
 
 async fn create_account(
-    accoun_number: u32,
+    account_number: u32,
     account_service: ServiceRef<AccountService2>,
 ) -> Result<Vec<AccountInfo>> {
     let mut results = vec![];
-    for _ in 0..accoun_number {
+    for _ in 0..account_number {
         let receiver = match account_service
             .send(AccountRequest::CreateAccount("".to_string()))
             .await??
@@ -196,7 +196,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
 
     // let node_config = Arc::new(NodeConfig::random_for_test());
-    let node = run_node_with_all_service(node_config.clone()).unwrap();
+    let node = run_node_with_all_service(node_config.clone())?;
     // StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let registry = node.registry();
     let storage1 = node.storage();
@@ -327,7 +327,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
 
         Ok(())
     };
-    tokio::runtime::Runtime::new().unwrap().block_on(fut)?;
+    tokio::runtime::Runtime::new()?.block_on(fut)?;
 
     node.stop_service(ObserverService::service_name().to_string())?;
     node.stop()?;
@@ -573,7 +573,7 @@ impl ActorService for ObserverService {
         ctx.unsubscribe::<NewDagBlockFromPeer>();
 
         if let Err(e) = self.dump_results() {
-            error!("failed to dump the reuslts: {:?}", e);
+            error!("failed to dump the reults: {:?}", e);
         }
         Ok(())
     }
