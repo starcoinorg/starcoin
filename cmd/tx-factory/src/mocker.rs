@@ -447,7 +447,7 @@ impl TxnMocker {
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance2(self.account_address2)?;
-            while balance.unwrap() < start_balance {
+            while balance.unwrap_or(0) < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = state_reader.get_balance2(self.account_address2)?;
                 info!(
@@ -460,7 +460,7 @@ impl TxnMocker {
             let state_reader = self.client.state_reader2(StateRootOption::Latest)?;
             for account in lack {
                 match state_reader.get_account_resource(*account.address()) {
-                    Ok(_resournce) => {
+                    Ok(_resource) => {
                         available_list.push(account);
                         if available_list.len() == account_num as usize {
                             break;
@@ -513,7 +513,7 @@ impl TxnMocker {
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance(self.account_address)?;
-            while balance.unwrap() < start_balance {
+            while balance.unwrap_or(0) < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = state_reader.get_balance(self.account_address)?;
                 info!(
@@ -665,8 +665,8 @@ impl TxnMocker {
                 self.next_sequence_number,
                 self.account_address,
                 addr_vec.clone(),
+                INITIAL_BALANCE,
                 1,
-                10000,
                 expiration_timestamp,
             )?;
             let result = self.submit_txn(txn, self.account_address, true);

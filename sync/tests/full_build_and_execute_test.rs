@@ -141,9 +141,9 @@ async fn build_transaction_to_send_token_to_account(
 }
 
 async fn get_current_header(
-    chain_reader_serivice: ServiceRef<ChainReaderService>,
+    chain_reader_service: ServiceRef<ChainReaderService>,
 ) -> Result<BlockHeader> {
-    let current_header = match chain_reader_serivice
+    let current_header = match chain_reader_service
         .send(ChainRequest::CurrentHeader())
         .await??
     {
@@ -573,7 +573,7 @@ impl ActorService for ObserverService {
         ctx.unsubscribe::<NewDagBlockFromPeer>();
 
         if let Err(e) = self.dump_results() {
-            error!("failed to dump the reults: {:?}", e);
+            error!("failed to dump the results: {:?}", e);
         }
         Ok(())
     }
