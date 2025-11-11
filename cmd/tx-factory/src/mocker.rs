@@ -564,8 +564,6 @@ impl TxnMocker {
             addr_vec.push(account.address);
             sub_account_list.push(account);
             if addr_vec.len() >= batch_size as usize {
-                //submit create batch account transaction
-                //)?;
                 let txn = self.generator.generate_account_txn2(
                     self.next_sequence_number,
                     self.account_address2,
