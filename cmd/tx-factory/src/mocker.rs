@@ -30,7 +30,8 @@ pub struct TxnMocker {
     unlock_duration: Duration,
 
     next_sequence_number: u64,
-    account_unlock_time: Option<Instant>,
+    account_unlock_time1: Option<Instant>,
+    account_unlock_time2: Option<Instant>,
     watch_timeout: u32,
 }
 
@@ -65,7 +66,8 @@ impl TxnMocker {
             account_password,
             account_password2,
             unlock_duration,
-            account_unlock_time: None,
+            account_unlock_time1: None,
+            account_unlock_time2: None,
             next_sequence_number,
             watch_timeout,
         })
@@ -137,7 +139,7 @@ impl TxnMocker {
         let user_txn = match self.client.account_sign_txn2(raw_txn) {
             Err(e) => {
                 // sign txn fail, we should unlock again
-                self.account_unlock_time = None;
+                self.account_unlock_time2 = None;
                 return Err(e);
             }
             Ok(txn) => txn,
@@ -176,7 +178,7 @@ impl TxnMocker {
         let user_txn = match self.client.account_sign_txn(raw_txn) {
             Err(e) => {
                 // sign txn fail, we should unlock again
-                self.account_unlock_time = None;
+                self.account_unlock_time1 = None;
                 return Err(e);
             }
             Ok(txn) => txn,
@@ -204,12 +206,12 @@ impl TxnMocker {
     }
 
     fn unlock_account2(&mut self) -> Result<()> {
-        let unlock_time = self.account_unlock_time;
+        let unlock_time = self.account_unlock_time2;
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
             _ => {
                 // reset first just in case account_unlock fail
-                self.account_unlock_time = None;
+                self.account_unlock_time2 = None;
 
                 let new_unlock_time = Instant::now();
                 // try unlock account
@@ -219,19 +221,19 @@ impl TxnMocker {
                     self.unlock_duration,
                 )?;
 
-                self.account_unlock_time = Some(new_unlock_time);
+                self.account_unlock_time2 = Some(new_unlock_time);
             }
         }
         Ok(())
     }
 
     fn unlock_account(&mut self) -> Result<()> {
-        let unlock_time = self.account_unlock_time;
+        let unlock_time = self.account_unlock_time1;
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
             _ => {
                 // reset first just in case account_unlock fail
-                self.account_unlock_time = None;
+                self.account_unlock_time1 = None;
 
                 let new_unlock_time = Instant::now();
                 // try unlock account
@@ -241,7 +243,7 @@ impl TxnMocker {
                     self.unlock_duration,
                 )?;
 
-                self.account_unlock_time = Some(new_unlock_time);
+                self.account_unlock_time1 = Some(new_unlock_time);
             }
         }
         Ok(())

@@ -280,7 +280,7 @@ impl AccountManager {
     ) -> AccountResult<Vec<SignedUserTransaction>> {
         let mut signed_transactions = vec![];
         for raw_txn in raw_txns {
-            let signer_address = raw_txn.sender(); // TODO: check if the signer is the same as the one in the txi
+            let signer_address = raw_txn.sender();
             let pass = self.key_cache.write().get_pass(&signer_address);
             match pass {
                 None => return Err(AccountError::AccountLocked(signer_address)),
