@@ -641,7 +641,7 @@ impl TxnMocker {
                     self.next_sequence_number,
                     self.account_address,
                     addr_vec.clone(),
-                    1000000000,
+                    INITIAL_BALANCE,
                     1,
                     expiration_timestamp,
                 )?;
