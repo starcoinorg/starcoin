@@ -108,21 +108,31 @@ pub struct VerifiedRpcClient {
     peer_selector: PeerSelector,
     client: NetworkRpcClient,
     score_handler: InverseScore,
+    max_retry_times: u64,
 }
 
 impl VerifiedRpcClient {
-    pub fn new<C>(peer_selector: PeerSelector, raw_rpc_client: C) -> Self
+    pub fn new<C>(peer_selector: PeerSelector, raw_rpc_client: C, max_retry_times: u64) -> Self
     where
         C: RawRpcClient + Send + Sync + 'static,
     {
-        Self::new_with_client(peer_selector, NetworkRpcClient::new(raw_rpc_client))
+        Self::new_with_client(
+            peer_selector,
+            NetworkRpcClient::new(raw_rpc_client),
+            max_retry_times,
+        )
     }
 
-    pub fn new_with_client(peer_selector: PeerSelector, client: NetworkRpcClient) -> Self {
+    pub fn new_with_client(
+        peer_selector: PeerSelector,
+        client: NetworkRpcClient,
+        max_retry_times: u64,
+    ) -> Self {
         Self {
             peer_selector,
             client,
             score_handler: InverseScore::new(100, 60),
+            max_retry_times,
         }
     }
 
@@ -830,8 +840,8 @@ impl VerifiedRpcClient {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let mut peer_iter = self.peer_selector.peer_iterator();
-        let max_retries = 5;
-        let mut attempts: i32 = 0;
+        let max_retries = self.max_retry_times;
+        let mut attempts: u64 = 0;
         let mut last_error = None;
 
         while attempts < max_retries && peer_iter.remaining() > 0 {

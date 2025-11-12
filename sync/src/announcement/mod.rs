@@ -2,6 +2,7 @@ use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::Result;
 use network_api::messages::PeerAnnouncementMessage;
 use network_api::{PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
+use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -51,6 +52,10 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
             .expect("NetworkServiceRef not exist.");
         let peer_id = announcement_msg.peer_id.clone();
         debug!("[sync] receive announcement msg : {:?}", announcement_msg);
+        let config = ctx
+            .get_shared::<Arc<NodeConfig>>()
+            .expect("NodeConfig not exist.");
+        let max_retry_times = config.sync.max_retry_times();
 
         ctx.spawn(async move {
             if announcement_msg.message.is_txn() {
@@ -69,6 +74,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                     let rpc_client = VerifiedRpcClient::new(
                         peer_selector,
                         network.clone(),
+                        max_retry_times,
                     );
                     match rpc_client.get_txns_with_hash_from_pool(Some(peer_id.clone()), GetTxnsWithHash { ids:fresh_ids }).await {
                         Err(err) => error!(
