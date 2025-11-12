@@ -29,10 +29,6 @@ impl MockRpcClient {
             call_count: Arc::new(Mutex::new(0)),
         }
     }
-    
-    fn get_call_count(&self) -> usize {
-        *self.call_count.lock().unwrap()
-    }
 }
 
 impl RawRpcClient for MockRpcClient {
@@ -42,33 +38,25 @@ impl RawRpcClient for MockRpcClient {
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
-        // Increment call count
         *self.call_count.lock().unwrap() += 1;
         
-        // Fail for peer_id1, succeed for peer_id2
         if peer_id == self.peer_id1 {
-            // Simulate network error for first peer
             futures::future::ready(Err(format_err!("NotConnected"))).boxed()
         } else if peer_id == self.peer_id2 {
-            // Decode the request to get block IDs
             let blocks = self.blocks.lock().unwrap();
             let request_ids: Vec<HashValue> = bcs_ext::from_bytes(&message).unwrap();
             
-            // Find matching blocks
             let response_blocks: Vec<Option<Block>> = request_ids
                 .iter()
                 .map(|id| blocks.iter().find(|b| &b.id() == id).cloned())
                 .collect();
             
-            // First serialize the response data
             let data_bytes = bcs_ext::to_bytes(&response_blocks).unwrap();
             
-            // Then wrap in Result<Vec<u8>, NetRpcError> and serialize again
             let rpc_result: network_p2p_core::Result<Vec<u8>, NetRpcError> = Ok(data_bytes);
             let response_bytes = bcs_ext::to_bytes(&rpc_result).unwrap();
             futures::future::ready(Ok(response_bytes)).boxed()
         } else {
-            // Unknown peer
             futures::future::ready(Err(format_err!("Unknown peer"))).boxed()
         }
     }
