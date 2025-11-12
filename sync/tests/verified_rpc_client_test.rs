@@ -66,7 +66,6 @@ impl RawRpcClient for MockRpcClient {
 fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     let node = test_helper::run_test_node()?;
     let chain_service = node.chain_service()?;
-
     for _ in 0..3 {
         node.generate_block()?;
     }
@@ -91,13 +90,11 @@ fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     peer_info1.peer_id = peer_id1.clone();
     peer_selector.add_or_update_peer(peer_info1);
     peer_selector.peer_score(&peer_id1, 100);
-
     let peer_id2 = PeerId::random();
     let mut peer_info2 = PeerInfo::random();
     peer_info2.peer_id = peer_id2.clone();
     peer_selector.add_or_update_peer(peer_info2);
     peer_selector.peer_score(&peer_id2, 99);
-
     let mock_client = MockRpcClient::new(
         peer_id1.clone(),
         peer_id2.clone(),
