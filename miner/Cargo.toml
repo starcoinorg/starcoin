@@ -53,6 +53,10 @@ starcoin-time-service = { workspace = true }
 stest = { workspace = true }
 starcoin-sync = { workspace = true }
 test-helper = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-transaction-builder = { workspace = true}
+starcoin-txpool-mock-service = { workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::ops::Deref;
 
+use super::StcRichTransactionInfo;
+
 /// `RichTransactionInfo` is a wrapper of `TransactionInfo` with more info,
 /// such as `block_id`, `block_number` which is the block that include the txn producing the txn info.
 /// We cannot put the block_id into txn_info, because txn_info is accumulated into block header.
@@ -18,6 +20,21 @@ pub struct RichTransactionInfo {
     pub transaction_index: u32,
     /// Transaction global index in chain, equivalent to transaction accumulator's leaf index
     pub transaction_global_index: u64,
+}
+
+impl From<StcRichTransactionInfo> for RichTransactionInfo {
+    fn from(info: StcRichTransactionInfo) -> Self {
+        RichTransactionInfo {
+            block_id: info.block_id,
+            block_number: info.block_number,
+            transaction_info: info
+                .transaction_info
+                .to_v1()
+                .expect("this must be v1 transaction info"),
+            transaction_index: info.transaction_index,
+            transaction_global_index: info.transaction_global_index,
+        }
+    }
 }
 
 impl Deref for RichTransactionInfo {

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use proc_macro2::TokenStream;
-use syn::{parse_quote, ItemTrait, TraitItem, TraitItemMethod};
+use syn::{parse_quote, ItemTrait, TraitItem, TraitItemFn};
 
 pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<TokenStream> {
     let delegate_methods: Vec<TokenStream> = rpc_trait
         .items
         .iter()
         .filter_map(|trait_item| {
-            if let syn::TraitItem::Method(method) = trait_item {
+            if let syn::TraitItem::Fn(method) = trait_item {
                 Some(generate_to_delegate(method))
             } else {
                 None
@@ -23,7 +23,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
         #(#delegate_methods)*
         del
     };
-    let to_delegate_method: syn::TraitItemMethod = parse_quote! {
+    let to_delegate_method: syn::TraitItemFn = parse_quote! {
         /// Create an `IoDelegate`, wiring rpc calls to the trait methods.
         fn to_delegate(self) -> #io_delegate_type<Self> {
             #to_delegate_body
@@ -31,7 +31,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
     };
     rpc_server_trait
         .items
-        .push(TraitItem::Method(to_delegate_method));
+        .push(TraitItem::Fn(to_delegate_method));
 
     let rpc_server_module = quote! {
         /// The generated server module.
@@ -46,7 +46,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<Token
     Ok(rpc_server_module)
 }
 
-pub fn generate_to_delegate(method: &TraitItemMethod) -> TokenStream {
+pub fn generate_to_delegate(method: &TraitItemFn) -> TokenStream {
     let param_types: Vec<_> = method
         .sig
         .inputs

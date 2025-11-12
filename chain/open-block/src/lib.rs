@@ -326,6 +326,10 @@ impl OpenedBlock {
         Ok((txn_state_root, accumulator_root))
     }
 
+    pub fn included_user_txns2(&self) -> &[SignedUserTransaction2] {
+        &self.included_user_txns2
+    }
+
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();

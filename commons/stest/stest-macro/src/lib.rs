@@ -6,7 +6,7 @@
 #![allow(clippy::manual_unwrap_or_default)]
 extern crate proc_macro;
 
-use darling::FromMeta;
+use darling::{ast::NestedMeta, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
 
@@ -93,7 +93,12 @@ struct TestAttributeOpts {
 /// ```
 #[proc_macro_attribute]
 pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
-    let attr_args = syn::parse_macro_input!(args as syn::AttributeArgs);
+    let attr_args = match NestedMeta::parse_meta_list(args.into()) {
+        Ok(v) => v,
+        Err(e) => {
+            return e.into_compile_error().into();
+        }
+    };
     let args = match TestAttributeOpts::from_list(&attr_args) {
         Ok(v) => v,
         Err(e) => {
@@ -111,7 +116,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
     let mut has_test_attr = false;
 
     for attr in attrs {
-        if attr.path.is_ident("test") {
+        if attr.path().is_ident("test") {
             has_test_attr = true;
         }
     }

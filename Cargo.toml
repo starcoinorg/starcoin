@@ -133,7 +133,7 @@ members = [
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
-    "cmd/cmd-utils",
+    "cmd/cmd-utils", "simnet",
 ]
 
 default-members = [
@@ -302,8 +302,8 @@ claims = "0.8"
 clap = { version = "4.5.47", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
-codespan = { version = "0.11.1", features = ["serialization"] }
-codespan-reporting = "0.11.1"
+codespan = { version = "0.13.1", features = ["serialization"] }
+codespan-reporting = "0.13.1"
 colored = "3.0.0"
 criterion = "0.3"
 curve25519-dalek = { package = "curve25519-dalek-ng", version = "4" }
@@ -313,7 +313,7 @@ cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
 ctrlc = { version = "3.2.2", features = ["termination"] }
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
-darling = "0.14.4"
+darling = "0.21.3"
 dashmap = "~5"
 datatest-stable = "0.1.3"
 derive_more = "0.99.14"
@@ -385,7 +385,7 @@ libp2p = { version = "0.50.0", features = [
 libp2p-core = { version = "0.50.0" }
 libsecp256k1 = "0.7.2"
 linked-hash-map = "0.5.6"
-linked_hash_set = "0.1.5"
+linked_hash_set = "0.1.6"
 log = { version = "0.4.16" }
 log4rs = { version = "1.2.0", features = ["background_rotation", "gzip"] }
 merkletree = { version = "0.23.0" }
@@ -417,13 +417,13 @@ move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "babf994a
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "babf994a38cda17b84186c7992f92fb3554347f0" }
 
 # Ark crypto libraries
-ark-bls12-381 = "0.4.0"
-ark-bn254 = "0.4.0"
-ark-ec = "0.4.0"
-ark-ff = "0.4.0"
-ark-serialize = "0.4.0"
-ark-std = "0.4.0"
-better_any = "0.1.1"
+ark-bls12-381 = "0.5.0"
+ark-bn254 = "0.5.0"
+ark-ec = "0.5.0"
+ark-ff = "0.5.0"
+ark-serialize = "0.5.0"
+ark-std = "0.5.0"
+better_any = "0.2.0"
 blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
@@ -463,8 +463,8 @@ pin-utils = "0.1.0"
 pretty = "0.12.5"
 proc-macro2 = "1.0"
 prometheus = "0.13.0"
-proptest = "1.8.0"
-proptest-derive = "0.6.0"
+proptest = "1.9.0"
+proptest-derive = "0.7.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_0_8 = { package = "rand", version = "0.8.5" }
@@ -592,7 +592,7 @@ starcoin-vm2-rpc-server = { path = "vm2/rpc/server" }
 starcoin-vm2-vm-runtime = { path = "vm2/vm-runtime", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { path = "vm2/types", package = "starcoin-types" }
 starcoin-vm2-vm-types = { path = "vm2/vm-types", package = "starcoin-vm-types" }
-starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework", features = ["testing"]}
+starcoin-vm2-framework = { path = "vm2/framework", package = "starcoin-framework", features = ["testing"] }
 starcoin-vm2-transactional-test-harness = { path = "vm2/starcoin-transactional-test-harness" }
 starcoin-vm2-cached-packages = { path = "vm2/framework/cached-packages", package = "starcoin-cached-packages" }
 starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "starcoin-gas-algebra" }
@@ -614,12 +614,12 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243", package = "move-transactional-test-runner" }
 
 strum = "0.27"
 strum_macros = "0.27.2"
-syn = { version = "1.0.107", features = [
+syn = { version = "2.0.108", features = [
     "full",
     "extra-traits",
     "visit",
@@ -636,7 +636,7 @@ timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
 tokio = { version = "^1", features = ["full"] }
-tokio-util = "0.7.16"
+tokio-util = "0.7.17"
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 toml = "0.5.9"
 trace-time = "0.1"

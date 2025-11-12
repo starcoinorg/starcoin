@@ -26,7 +26,7 @@
 
           shellHook = ''
             # Set SCCACHE_DIR with proper home directory expansion
-            export SCCACHE_DIR="''${~/.cache}/sccache"
+            export SCCACHE_DIR="$HOME/.cache/sccache"
             export SCCACHE_CACHE_SIZE="100G"
 
             if [ -f rust-toolchain.toml ]; then
@@ -38,7 +38,6 @@
           '';
 
           RUSTFLAGS = "-C link-arg=-fuse-ld=mold";
-          RUSTC_WRAPPER = "sccache";
           CARGO_INCREMENTAL = "0";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           LD_LIBRARY_PATH = "${pkgs.zlib}/lib:${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.openssl.out}/lib";

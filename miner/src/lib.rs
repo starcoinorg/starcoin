@@ -13,7 +13,7 @@ use starcoin_types::block::BlockTemplate;
 use std::sync::Arc;
 use std::time::Duration;
 
-mod create_block_template;
+pub mod create_block_template;
 pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;

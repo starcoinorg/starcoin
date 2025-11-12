@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
+use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
@@ -15,8 +16,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
 pub trait ReadableChainService {
@@ -76,7 +75,7 @@ pub trait ReadableChainService {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
@@ -87,14 +86,6 @@ pub trait ReadableChainService {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
-
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>>;
 
     fn get_range_in_location(
         &self,
@@ -208,7 +199,7 @@ pub trait ChainAsyncService:
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof>>> + Send;
 
     fn get_block_infos(
@@ -219,14 +210,6 @@ pub trait ChainAsyncService:
         &self,
         hash: HashValue,
     ) -> impl std::future::Future<Output = Result<Option<MultiState>>> + Send;
-
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> impl std::future::Future<Output = Result<Option<TransactionInfoWithProof2>>> + Send;
 
     fn get_dag_block_children(
         &self,
@@ -542,7 +525,7 @@ where
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         let response = self
             .send(ChainRequest::GetTransactionProof {
@@ -574,28 +557,6 @@ where
             Ok(multi_state)
         } else {
             bail!("get multi state error")
-        }
-    }
-
-    async fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>> {
-        let response = self
-            .send(ChainRequest::GetTransactionProof2 {
-                block_id,
-                transaction_global_index,
-                event_index,
-                access_path,
-            })
-            .await??;
-        if let ChainResponse::TransactionProof2(proof) = response {
-            Ok(*proof)
-        } else {
-            bail!("get transaction proof2 error")
         }
     }
 
