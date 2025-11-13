@@ -11308,9 +11308,11 @@ dependencies = [
  "futures 0.3.31",
  "futures-core",
  "lazy_static 1.5.0",
+ "num_cpus",
  "once_cell",
  "parking_lot 0.12.1",
  "prometheus",
+ "rayon",
  "simple-stopwatch",
 ]
 
@@ -12443,6 +12445,7 @@ dependencies = [
  "rand 0.9.2",
  "rayon",
  "serde 1.0.205",
+ "sp-utils",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator",
@@ -13351,6 +13354,7 @@ dependencies = [
  "rand 0.9.2",
  "rayon",
  "serde 1.0.205",
+ "sp-utils",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",

@@ -2,9 +2,11 @@
 futures = { workspace = true }
 futures-core = { workspace = true }
 lazy_static = { workspace = true }
+num_cpus = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 prometheus = { workspace = true }
+rayon = { workspace = true }
 simple-stopwatch = { workspace = true }
 
 [features]
