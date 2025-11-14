@@ -9,7 +9,7 @@ use serde::de::DeserializeOwned;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::{
-    account_config::{AccountResource, BalanceResource},
+    account_config::{AccountResource, CoinStoreResource},
     move_resource::MoveResource,
     state_store::state_key::StateKey,
 };
@@ -72,9 +72,9 @@ impl<'a> AsyncRemoteStateReader<'a> {
     }
 
     pub async fn get_balance(&self, address: AccountAddress) -> anyhow::Result<Option<u128>> {
-        self.get_resource::<BalanceResource>(address)
+        self.get_resource::<CoinStoreResource>(address)
             .await
-            .map(|r| r.map(|resource| resource.token()))
+            .map(|r| r.map(|resource| resource.coin() as u128))
     }
 
     pub async fn get_account_resource(

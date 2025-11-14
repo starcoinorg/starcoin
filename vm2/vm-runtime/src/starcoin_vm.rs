@@ -58,7 +58,7 @@ use starcoin_vm_types::{
     value::{serialize_values, MoveValue},
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
-use std::{borrow::Borrow, cmp::min, sync::Arc};
+use std::{borrow::Borrow, cmp::min, collections::HashSet, sync::Arc};
 
 use crate::{verifier, VMExecutor};
 #[cfg(feature = "metrics")]
@@ -738,10 +738,10 @@ impl StarcoinVM {
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
-        info!(
-            "StarcoinVM::run_prologue | Gas token data: {:?}",
-            gas_token_ty
-        );
+        // info!(
+        //     "StarcoinVM::run_prologue | Gas token data: {:?}",
+        //     gas_token_ty
+        // );
 
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
@@ -951,14 +951,19 @@ impl StarcoinVM {
     fn process_block_epilogue<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
+        senders: HashSet<AccountAddress>,
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(feature = "testing")]
-        info!("process_block_meta begin");
+        info!("process_block_epilogue begin");
         let txn_sender = account_config::genesis_address();
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::void();
         let function_name = &account_config::G_BLOCK_EPILOGUE_NAME;
-        let args_vec = vec![MoveValue::Signer(txn_sender)];
+        let senders_vec: Vec<AccountAddress> = senders.clone().into_iter().collect();
+        let args_vec = vec![
+            MoveValue::Signer(txn_sender),
+            MoveValue::vector_address(senders_vec),
+        ];
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);
         let traverse_storage = TraversalStorage::new();
@@ -974,7 +979,7 @@ impl StarcoinVM {
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         #[cfg(feature = "testing")]
-        info!("process_block_meta end");
+        info!("process_block_epilogue end");
         get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
@@ -1260,7 +1265,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
-                TransactionBlock::BlockEpilogue(_) => {
+                TransactionBlock::BlockEpilogue(_, senders) => {
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1269,11 +1274,12 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
-                    let (status, output) =
-                        match self.process_block_epilogue(&data_cache.as_move_resolver()) {
-                            Ok(output) => (VMStatus::Executed, output),
-                            Err(vm_status) => discard_error_vm_status(vm_status),
-                        };
+                    let (status, output) = match self
+                        .process_block_epilogue(&data_cache.as_move_resolver(), senders)
+                    {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1519,7 +1525,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
-    BlockEpilogue(BlockMetadata),
+    BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
 }
 
 impl TransactionBlock {
@@ -1527,7 +1533,7 @@ impl TransactionBlock {
         match self {
             Self::UserTransaction(_) => "UserTransaction",
             Self::BlockPrologue(_) => "BlockMetadata",
-            Self::BlockEpilogue(_) => "BlockEpilogue",
+            Self::BlockEpilogue(_, _) => "BlockEpilogue",
         }
     }
 }
@@ -1548,12 +1554,12 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
-            Transaction::BlockEpilogue(data) => {
+            Transaction::BlockEpilogue(data, senders) => {
                 if !buf.is_empty() {
                     blocks.push(TransactionBlock::UserTransaction(buf));
                     buf = vec![];
                 }
-                blocks.push(TransactionBlock::BlockEpilogue(data));
+                blocks.push(TransactionBlock::BlockEpilogue(data, senders));
             }
         }
     }
@@ -1723,11 +1729,12 @@ impl StarcoinVM {
                     };
                 (vm_status, output, Some("block_meta".to_string()))
             }
-            PreprocessedTransaction::BlockEpilogue(_) => {
-                let (vm_status, output) = match self.process_block_epilogue(data_cache) {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+            PreprocessedTransaction::BlockEpilogue(_, senders) => {
+                let (vm_status, output) =
+                    match self.process_block_epilogue(data_cache, senders.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })

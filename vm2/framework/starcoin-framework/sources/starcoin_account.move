@@ -12,24 +12,21 @@ module starcoin_framework::starcoin_account {
     use starcoin_framework::object;
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::starcoin_coin::STC;
-    #[test_only]
-    use std::string;
 
     #[test_only]
     use std::string::utf8;
     #[test_only]
-    use starcoin_framework::account::create_account_for_test;
-    #[test_only]
-    use starcoin_std::debug;
+    use starcoin_framework::account::{create_account_for_test};
     #[test_only]
     use starcoin_std::from_bcs;
 
     friend starcoin_framework::resource_account;
+    friend starcoin_framework::stc_genesis;
 
     /// Account does not exist.
     const EACCOUNT_NOT_FOUND: u64 = 1;
-    /// Account is not registered to receive APT.
-    const EACCOUNT_NOT_REGISTERED_FOR_APT: u64 = 2;
+    /// Account is not registered to receive STC.
+    const EACCOUNT_NOT_REGISTERED_FOR_STC: u64 = 2;
     /// Account opted out of receiving coins that they did not register to receive.
     const EACCOUNT_DOES_NOT_ACCEPT_DIRECT_COIN_TRANSFERS: u64 = 3;
     /// Account opted out of directly receiving NFT tokens.
@@ -65,7 +62,7 @@ module starcoin_framework::starcoin_account {
         register_stc(&account_signer);
     }
 
-    /// Batch version of APT transfer.
+    /// Batch version of STC transfer.
     public entry fun batch_transfer(source: &signer, recipients: vector<address>, amounts: vector<u64>) {
         let recipients_len = vector::length(&recipients);
         assert!(
@@ -79,17 +76,17 @@ module starcoin_framework::starcoin_account {
         });
     }
 
-    /// Convenient function to transfer APT to a recipient account that might not exist.
-    /// This would create the recipient account first, which also registers it to receive APT, before transferring.
+    /// Convenient function to transfer STC to a recipient account that might not exist.
+    /// This would create the recipient account first, which also registers it to receive STC, before transferring.
     public entry fun transfer(source: &signer, to: address, amount: u64) {
         if (!account::exists_at(to)) {
             create_account(to)
         };
 
-        if (features::operations_default_to_fa_apt_store_enabled()) {
+        if (features::operations_default_to_fa_stc_store_enabled()) {
             fungible_transfer_only(source, to, amount)
         } else {
-            // Resource accounts can be created without registering them to receive APT.
+            // Resource accounts can be created without registering them to receive STC.
             // This conveniently does the registration if necessary.
             if (!coin::is_account_registered<STC>(to)) {
                 coin::register<STC>(&create_signer(to));
@@ -116,7 +113,15 @@ module starcoin_framework::starcoin_account {
     /// Convenient function to transfer a custom CoinType to a recipient account that might not exist.
     /// This would create the recipient account first and register it to receive the CoinType, before transferring.
     public entry fun transfer_coins<CoinType>(from: &signer, to: address, amount: u64) acquires DirectTransferConfig {
-        deposit_coins(to, coin::withdraw<CoinType>(from, amount));
+        if (!account::exists_at(to)) {
+            create_account(to)
+        };
+
+        if (features::operations_default_to_fa_stc_store_enabled()) {
+            fungible_transfer_only(from, to, amount)
+        } else {
+            deposit_coins(to, coin::withdraw<CoinType>(from, amount));
+        }
     }
 
     /// Convenient function to deposit a custom CoinType into a recipient account that might not exist.
@@ -146,7 +151,7 @@ module starcoin_framework::starcoin_account {
 
     public fun assert_account_is_registered_for_stc(addr: address) {
         assert_account_exists(addr);
-        assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
+        assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_STC));
     }
 
     /// Set whether `account` can receive direct transfers of coins that they have not explicitly registered to receive.
@@ -193,20 +198,19 @@ module starcoin_framework::starcoin_account {
     }
 
     public(friend) fun register_stc(account_signer: &signer) {
+        coin::register<STC>(account_signer);
         if (features::new_accounts_default_to_fa_stc_store_enabled()) {
             ensure_primary_fungible_store_exists(signer::address_of(account_signer));
-        } else {
-            coin::register<STC>(account_signer);
         }
     }
 
-    /// APT Primary Fungible Store specific specialized functions,
-    /// Utilized internally once migration of APT to FungibleAsset is complete.
+    /// STC Primary Fungible Store specific specialized functions,
+    /// Utilized internally once migration of STC to FungibleAsset is complete.
 
-    /// Convenient function to transfer APT to a recipient account that might not exist.
-    /// This would create the recipient APT PFS first, which also registers it to receive APT, before transferring.
+    /// Convenient function to transfer STC to a recipient account that might not exist.
+    /// This would create the recipient STC PFS first, which also registers it to receive STC, before transferring.
     /// TODO: once migration is complete, rename to just "transfer_only" and make it an entry function (for cheapest way
-    /// to transfer APT) - if we want to allow APT PFS without account itself
+    /// to transfer STC) - if we want to allow STC PFS without account itself
     public(friend) entry fun fungible_transfer_only(
         source: &signer, to: address, amount: u64
     ) {
@@ -215,19 +219,19 @@ module starcoin_framework::starcoin_account {
 
         // use internal APIs, as they skip:
         // - owner, frozen and dispatchable checks
-        // as APT cannot be frozen or have dispatch, and PFS cannot be transfered
+        // as STC cannot be frozen or have dispatch, and PFS cannot be transfered
         // (PFS could potentially be burned. regular transfer would permanently unburn the store.
         // Ignoring the check here has the equivalent of unburning, transfers, and then burning again)
         fungible_asset::deposit_internal(recipient_store, fungible_asset::withdraw_internal(sender_store, amount));
     }
 
-    /// Is balance from APT Primary FungibleStore at least the given amount
+    /// Is balance from STC Primary FungibleStore at least the given amount
     public(friend) fun is_fungible_balance_at_least(account: address, amount: u64): bool {
         let store_addr = primary_fungible_store_address(account);
         fungible_asset::is_address_balance_at_least(store_addr, amount)
     }
 
-    /// Burn from APT Primary FungibleStore
+    /// Burn from STC Primary FungibleStore
     public(friend) fun burn_from_fungible_store(
         ref: &BurnRef,
         account: address,
@@ -240,17 +244,22 @@ module starcoin_framework::starcoin_account {
         };
     }
 
-    /// Ensure that APT Primary FungibleStore exists (and create if it doesn't)
+    /// Ensure that STC Primary FungibleStore exists (and create if it doesn't)
     inline fun ensure_primary_fungible_store_exists(owner: address): address {
         let store_addr = primary_fungible_store_address(owner);
         if (fungible_asset::store_exists(store_addr)) {
             store_addr
         } else {
-            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@starcoin_fungible_asset)))
+            object::object_address(
+                &primary_fungible_store::create_primary_store(
+                    owner,
+                    object::address_to_object<Metadata>(@starcoin_fungible_asset)
+                )
+            )
         }
     }
 
-    /// Address of APT Primary Fungible Store
+    /// Address of STC Primary Fungible Store
     inline fun primary_fungible_store_address(account: address): address {
         object::create_user_derived_object_address(account, @starcoin_fungible_asset)
     }
@@ -262,6 +271,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer(alice: &signer, core: &signer) {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let bob = from_bcs::to_address(x"00000000000000000000000000000b0b");
         let carol = from_bcs::to_address(x"000000000000000000000000000ca501");
 
@@ -281,7 +297,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer_to_resource_account(alice: &signer, core: &signer) {
-        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | entered"));
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
 
@@ -290,18 +312,23 @@ module starcoin_framework::starcoin_account {
 
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
-        debug::print(&coin::balance<STC>(signer::address_of(alice)));
 
         transfer(alice, resource_acc_addr, 500);
         assert!(coin::balance<STC>(resource_acc_addr) == 500, 1);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
-        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | exited"));
     }
 
     #[test(from = @0x123, core = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer(from: &signer, core: &signer, recipient_1: &signer, recipient_2: &signer) {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            core,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         create_account(signer::address_of(from));
         let recipient_1_addr = signer::address_of(recipient_1);
@@ -322,6 +349,13 @@ module starcoin_framework::starcoin_account {
 
     #[test(from = @0x1, to = @0x12)]
     public fun test_direct_coin_transfers(from: &signer, to: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
@@ -345,6 +379,13 @@ module starcoin_framework::starcoin_account {
     #[test(from = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer_coins(
         from: &signer, recipient_1: &signer, recipient_2: &signer) acquires DirectTransferConfig {
+        // Only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
@@ -352,12 +393,16 @@ module starcoin_framework::starcoin_account {
             10,
             true,
         );
+
         create_account_for_test(signer::address_of(from));
+
         let recipient_1_addr = signer::address_of(recipient_1);
         let recipient_2_addr = signer::address_of(recipient_2);
         create_account_for_test(recipient_1_addr);
         create_account_for_test(recipient_2_addr);
+
         deposit_coins(signer::address_of(from), coin::mint(1000, &mint_cap));
+
         batch_transfer_coins<FakeCoin>(
             from,
             vector[recipient_1_addr, recipient_2_addr],
@@ -371,8 +416,15 @@ module starcoin_framework::starcoin_account {
         coin::destroy_freeze_cap(freeze_cap);
     }
 
-    #[test(user = @0x123)]
-    public fun test_set_allow_direct_coin_transfers(user: &signer) acquires DirectTransferConfig {
+    #[test(framework = @0x1, user = @0x123)]
+    public fun test_set_allow_direct_coin_transfers(framework: &signer, user: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            framework,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let addr = signer::address_of(user);
         create_account_for_test(addr);
         set_allow_direct_coin_transfers(user, true);
@@ -386,6 +438,13 @@ module starcoin_framework::starcoin_account {
     #[test(from = @0x1, to = @0x12)]
     public fun test_direct_coin_transfers_with_explicit_direct_coin_transfer_config(
         from: &signer, to: &signer) acquires DirectTransferConfig {
+        // This test only used for legecy coin
+        features::change_feature_flags_for_testing(
+            from,
+            vector[],
+            vector[features::get_operations_default_to_fa_stc_store_feature()]
+        );
+
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<FakeCoin>(
             from,
             utf8(b"FC"),
@@ -437,11 +496,17 @@ module starcoin_framework::starcoin_account {
         use starcoin_framework::fungible_asset::Metadata;
         use starcoin_framework::starcoin_coin;
 
-        starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
+        starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
 
         let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         let user_addr = signer::address_of(user);
-        assert!(primary_fungible_store_address(user_addr) == primary_fungible_store::primary_store_address(user_addr, apt_metadata), 1);
+        assert!(
+            primary_fungible_store_address(user_addr) == primary_fungible_store::primary_store_address(
+                user_addr,
+                apt_metadata
+            ),
+            1
+        );
 
         ensure_primary_fungible_store_exists(user_addr);
         assert!(primary_fungible_store::primary_store_exists(user_addr, apt_metadata), 2);

@@ -23,6 +23,7 @@ dao_upgrade_module_proposal is a proposal moudle used to upgrade contract codes 
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info">0x1::type_info</a>;
 </code></pre>
 
 
@@ -152,8 +153,9 @@ If this goverment can upgrade module, call this to register capability.
     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     cap: <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">stc_transaction_package_validation::UpgradePlanCapability</a>,
 ) {
-    <b>let</b> token_issuer = <a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;();
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) == token_issuer, <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
+    // <b>let</b> token_issuer = <a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;();
+    <b>let</b> type_owner = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_account_address">type_info::account_address</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;());
+    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) == type_owner, <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt; { cap })
 }
 </code></pre>
@@ -185,7 +187,8 @@ If this goverment can upgrade module, call this to register capability.
     exec_delay: u64,
     enforced: bool,
 ) <b>acquires</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
-    <b>let</b> cap = <b>borrow_global</b>&lt;<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(<a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;());
+    <b>let</b> type_owner = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_account_address">type_info::account_address</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;());
+    <b>let</b> cap = <b>borrow_global</b>&lt;<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(type_owner);
     <b>let</b> account_address = <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_account_address">stc_transaction_package_validation::account_address</a>(&cap.cap);
 
     <b>assert</b>!(account_address == module_address, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));

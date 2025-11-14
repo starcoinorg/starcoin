@@ -1,6 +1,7 @@
 /// The module for init Genesis
 module starcoin_framework::stc_genesis {
 
+    use std::error;
     use std::features;
     use std::option;
     use std::vector;
@@ -18,24 +19,28 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::dao_treasury_withdraw_proposal;
     use starcoin_framework::dao_upgrade_module_proposal;
     use starcoin_framework::epoch;
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset};
     use starcoin_framework::on_chain_config;
     use starcoin_framework::on_chain_config_dao;
     use starcoin_framework::oracle_stc_usd;
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::starcoin_coin;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_block;
     use starcoin_framework::stc_language_version;
-    use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout_config;
     use starcoin_framework::stc_util;
     use starcoin_framework::stc_version;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
+    use starcoin_framework::transaction_fee;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
     use starcoin_framework::vm_config;
     use starcoin_std::debug;
+
+    const ERR_INITIALIZE_STC_AMOUNT_ERROR: u64 = 1;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -106,12 +111,10 @@ module starcoin_framework::stc_genesis {
         // Init global time
         timestamp::set_time_has_started(&starcoin_framework_account, genesis_timestamp * 1000);
 
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | chain_id: "));
-        debug::print(&chain_id);
         chain_id::initialize(&starcoin_framework_account, chain_id);
 
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | consensus_strategy::initialize "));
         consensus_strategy::initialize(&starcoin_framework_account, strategy);
+
         stc_block::initialize(&starcoin_framework_account, parent_hash);
 
         transaction_publish_option::initialize(
@@ -146,7 +149,6 @@ module starcoin_framework::stc_genesis {
         );
 
         epoch::initialize(&starcoin_framework_account);
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | epoch initialized "));
 
         // stdlib use two phase upgrade strategy.
         stc_transaction_package_validation::update_module_upgrade_strategy(
@@ -155,20 +157,22 @@ module starcoin_framework::stc_genesis {
             option::some(0u64),
         );
 
-        block_reward::initialize(&starcoin_framework_account, reward_delay);
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | block_reward initialized "));
-
-        // Initliaze STC
+        // Initliaze STC registration
         let total_supply_coin = Self::initialize_stc(
             &starcoin_framework_account,
-            total_stc_amount,
+            total_stc_amount
+        );
+
+        block_reward::initialize(&starcoin_framework_account, reward_delay);
+
+        // Init DAO configuration
+        Self::initialize_dao(
+            &starcoin_framework_account,
             voting_delay,
             voting_period,
             voting_quorum_rate,
-            min_action_delay
+            min_action_delay,
         );
-
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
@@ -182,9 +186,7 @@ module starcoin_framework::stc_genesis {
             time_mint_stc_period,
         );
 
-        stc_transaction_fee::initialize(&starcoin_framework_account);
-
-        debug::print(&std::string::utf8(b"stc_genesis::initialize | stc_transaction_fee initialized "));
+        transaction_fee::initialize(&starcoin_framework_account);
 
         // Only test/dev network set genesis auth key.
         if (!vector::is_empty(&genesis_auth_key) && (stc_util::is_net_dev() || stc_util::is_net_test())) {
@@ -238,26 +240,37 @@ module starcoin_framework::stc_genesis {
     fun initialize_stc(
         starcoin_framework: &signer,
         total_stc_amount: u128,
+    ): fungible_asset::FungibleAsset {
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc | Entered"));
+
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
+        coin::register<STC>(starcoin_framework);
+        coin::create_coin_conversion_map(starcoin_framework);
+        coin::create_pairing<STC>(starcoin_framework);
+
+        let (mint_ref, mint_ref_receipt) = coin::get_paired_mint_ref(&mint_cap);
+        let fa_stc = fungible_asset::mint(&mint_ref, (total_stc_amount as u64));
+        coin::return_paired_mint_ref(mint_ref, mint_ref_receipt);
+
+        coin::destroy_mint_cap(mint_cap);
+        coin::destroy_burn_cap(burn_cap);
+
+        assert!(
+            (fungible_asset::amount(&fa_stc) as u128) == total_stc_amount,
+            error::invalid_state(ERR_INITIALIZE_STC_AMOUNT_ERROR)
+        );
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc | Exited"));
+        fa_stc
+    }
+
+    fun initialize_dao(
+        starcoin_framework: &signer,
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64
-    ): coin::Coin<STC> {
-        debug::print(&std::string::utf8(b"initialize_stc | Entered"));
-
-        let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
-        coin::register<STC>(starcoin_framework);
-
-        coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<STC>(starcoin_framework);
-
-        // debug::print(&std::string::utf8(b"initialize_stc | coin::create_coin_conversion_map"));
-
-        let total_stc_coin = coin::mint((total_stc_amount as u64), &mint_cap);
-
-        // Destroy mint capability and burn cap to ensure constant supply for STC
-        coin::destroy_mint_cap(mint_cap);
-        coin::destroy_burn_cap(burn_cap);
+    ) {
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | Entered "));
 
         dao::plugin<STC>(
             starcoin_framework,
@@ -266,15 +279,11 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
         );
-
         dao_modify_config_proposal::plugin<STC>(starcoin_framework);
 
-        let upgrade_plan_cap =
-            stc_transaction_package_validation::extract_submit_upgrade_plan_cap(starcoin_framework);
+
+        let upgrade_plan_cap = stc_transaction_package_validation::extract_submit_upgrade_plan_cap(starcoin_framework);
         dao_upgrade_module_proposal::plugin<STC>(starcoin_framework, upgrade_plan_cap);
-
-
-        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc | plugin upgrade cap "));
 
         // the following configurations are gov-ed by Dao.
         on_chain_config_dao::plugin<STC, transaction_publish_option::TransactionPublishOption>(starcoin_framework);
@@ -283,10 +292,7 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
 
-
-        debug::print(&std::string::utf8(b"initialize_stc | Exited"));
-
-        total_stc_coin
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_dao | Exited"));
     }
 
     /// Overall governance allocation strategy:
@@ -295,12 +301,14 @@ module starcoin_framework::stc_genesis {
     fun initialize_stc_governance_allocation(
         starcoin_framework: &signer,
         core_resource_account: &signer,
-        total_supply_stc: coin::Coin<STC>,
+        total_supply_stc: FungibleAsset,
         pre_mine_stc_amount: u128,
         time_mint_stc_amount: u128,
         time_mint_stc_period: u64,
     ) {
-        let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc_governance_allocation | Entered"));
+
+        let treasury_withdraw_cap = treasury::initialize<STC>(starcoin_framework, total_supply_stc);
 
         if (pre_mine_stc_amount > 0) {
             let core_resource_address = system_addresses::get_core_resource_address();
@@ -308,7 +316,7 @@ module starcoin_framework::stc_genesis {
                 &mut treasury_withdraw_cap,
                 pre_mine_stc_amount
             );
-            coin::deposit(core_resource_address, stc);
+            primary_fungible_store::deposit(core_resource_address, stc);
         };
         if (time_mint_stc_amount > 0) {
             let liner_withdraw_cap = treasury::issue_linear_withdraw_capability<STC>(
@@ -319,9 +327,11 @@ module starcoin_framework::stc_genesis {
             treasury::add_linear_withdraw_capability(core_resource_account, liner_withdraw_cap);
         };
         dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize_stc_governance_allocation | Exited"));
     }
 
-    // #[test]
+    #[test_only]
     public fun initialize_for_unit_tests() {
         let stdlib_version: u64 = 6;
         let reward_delay: u64 = 7;
@@ -337,14 +347,14 @@ module starcoin_framework::stc_genesis {
         let genesis_timestamp: u64 = 0;
 
         //consensus config
-        let uncle_rate_target: u64 = 1;  // DAG mode: expect few uncles
+        let uncle_rate_target: u64 = 240;  // DAG mode: expect few uncles
         let epoch_block_count: u64 = 240;
         let base_block_time_target: u64 = 10000;
         let base_block_difficulty_window: u64 = 24;
         let base_reward_per_block: u128 = 1000000000;
         let base_reward_per_uncle_percent: u64 = 10;
-        let min_block_time_target: u64 = 1000;
-        let max_block_time_target: u64 = 20000;
+        let min_block_time_target: u64 = 5000;
+        let max_block_time_target: u64 = 60000;
         let base_max_uncles_per_block: u64 = 2;
         let base_block_gas_limit: u64 = 500000000;
         let strategy: u8 = 0;
@@ -404,5 +414,33 @@ module starcoin_framework::stc_genesis {
             transaction_timeout,
             vector::empty(),
         );
+    }
+
+    #[test(framework = @0x1, root = @0xabcd)]
+    fun test_create_root_account(framework: &signer) {
+        use starcoin_framework::fungible_asset::Metadata;
+        use starcoin_framework::primary_fungible_store;
+        use starcoin_framework::object;
+        use starcoin_framework::starcoin_account;
+        use std::features;
+
+        let feature = features::get_new_accounts_default_to_fa_stc_store_feature();
+        features::change_feature_flags_for_testing(framework, vector[feature], vector[]);
+
+        aggregator_factory::initialize_aggregator_factory_for_test(framework);
+
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(framework);
+        starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
+
+        let core_resources = account::create_account(@core_resources);
+        starcoin_account::register_stc(&core_resources); // registers STC store
+
+        let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
+        assert!(primary_fungible_store::primary_store_exists(@core_resources, apt_metadata), 2);
+
+        starcoin_coin::configure_accounts_for_test(framework, &core_resources, mint_cap);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
     }
 }

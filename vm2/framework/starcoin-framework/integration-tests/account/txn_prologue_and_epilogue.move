@@ -14,7 +14,7 @@ script {
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::account;
 
-    fun main(account: signer) {
+    fun main(account: &signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let valid_public_key = ed25519::new_validated_public_key_from_bytes(txn_public_key);
         assert!(option::is_some(&valid_public_key), 1001);
@@ -104,7 +104,7 @@ script {
         );
     }
 }
-// check: "Keep(ABORTED { code: 1031"
+// check: "Keep(ABORTED { code: 66540"
 
 
 //# run --signers Genesis
@@ -142,7 +142,7 @@ script {
         );
     }
 }
-// check: "Keep(ABORTED { code: 263"
+// check: "Keep(ABORTED { code: 66537"
 
 
 //# run --signers Genesis

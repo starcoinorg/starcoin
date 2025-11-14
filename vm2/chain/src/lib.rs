@@ -40,9 +40,10 @@ pub fn build_block_transactions(
 
     // contains user transaction
     if txns.len() > 1 {
+        let senders = signed_txns.iter().map(|t| t.sender()).collect();
         txns.extend(
             block_meta
-                .map(|m| vec![Transaction::BlockEpilogue(m)])
+                .map(|m| vec![Transaction::BlockEpilogue(m, senders)])
                 .unwrap_or_default(),
         );
     }

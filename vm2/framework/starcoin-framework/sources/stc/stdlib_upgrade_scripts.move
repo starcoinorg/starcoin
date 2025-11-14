@@ -15,7 +15,7 @@ module starcoin_framework::stdlib_upgrade_scripts {
     }
 
     public fun do_dummy_upgrade(
-        sender: &signer,
+        _sender: &signer,
     ) {
         debug::print(&std::string::utf8(b"do_dummy_upgrade"));
     }

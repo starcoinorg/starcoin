@@ -14,6 +14,7 @@ modified from https://github.com/move-language/move/tree/main/language/documenta
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_starcoin_coin_initialize)
 -  [Function `has_mint_capability`](#0x1_starcoin_coin_has_mint_capability)
+-  [Function `get_stc_fa_metadata`](#0x1_starcoin_coin_get_stc_fa_metadata)
 -  [Function `destroy_mint_cap`](#0x1_starcoin_coin_destroy_mint_cap)
 -  [Function `configure_accounts_for_test`](#0x1_starcoin_coin_configure_accounts_for_test)
 -  [Function `mint`](#0x1_starcoin_coin_mint)
@@ -34,6 +35,8 @@ modified from https://github.com/move-language/move/tree/main/language/documenta
 
 <pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
+<b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
@@ -245,6 +248,30 @@ Can only called during genesis to initialize the Starcoin coin.
 
 <pre><code><b>public</b> <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_has_mint_capability">has_mint_capability</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): bool {
     <b>exists</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>))
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_starcoin_coin_get_stc_fa_metadata"></a>
+
+## Function `get_stc_fa_metadata`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">get_stc_fa_metadata</a>(): <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">get_stc_fa_metadata</a>(): Object&lt;Metadata&gt; {
+    destroy_some(<a href="coin.md#0x1_coin_paired_metadata">coin::paired_metadata</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;())
 }
 </code></pre>
 

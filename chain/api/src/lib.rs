@@ -6,15 +6,12 @@ use anyhow::{bail, format_err, Result};
 use bcs_ext::BCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
-use starcoin_state_api::StateWithProof;
 use starcoin_types::{
-    multi_transaction::MultiSignedUserTransaction, transaction::legacy::RichTransactionInfo,
+    multi_access_path::MultiAccessPath,
+    multi_transaction::MultiSignedUserTransaction,
+    transaction::{StcRichTransactionInfo, StcTransactionInfo},
 };
-use starcoin_vm2_state_api::StateWithProof as StateWithProof2;
-use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
-use starcoin_vm2_vm_types::{
-    access_path::AccessPath as AccessPath2, contract_event::ContractEvent as ContractEvent2,
-};
+use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 mod chain;
 mod errors;
@@ -22,17 +19,19 @@ pub mod message;
 pub mod range_locate;
 mod service;
 
-pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};
+pub use chain::{
+    Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, MultiStateProof,
+    VerifiedBlock,
+};
 pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_vm2_types::view::{
     AccumulatorProofView as AccumulatorProofView2, EventWithProofView as EventWithProofView2,
-    StrView as StrView2, TransactionInfoWithProofView as TransactionInfoWithProofView2,
+    StrView as StrView2,
 };
 
 #[derive(Clone, Debug)]
@@ -64,27 +63,54 @@ impl EventWithProof {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct TransactionInfoWithProof {
-    pub transaction_info: RichTransactionInfo,
+    pub transaction_info: StcRichTransactionInfo,
     pub proof: AccumulatorProof,
-    pub event_proof: Option<EventWithProof>,
-    pub state_proof: Option<StateWithProof>,
+    pub final_proof: AccumulatorProof,
+    pub event_proof: Option<MultiEventWithProof>,
+    pub state_proof: Option<MultiStateProof>,
+    pub final_state_proof: Option<MultiStateProof>,
 }
 
 impl TransactionInfoWithProof {
+    pub fn event_root_hash(&self) -> HashValue {
+        match &self.transaction_info.transaction_info {
+            StcTransactionInfo::V1(transaction_info) => transaction_info.event_root_hash(),
+            StcTransactionInfo::V2(transaction_info) => transaction_info.event_root_hash(),
+        }
+    }
+
+    pub fn state_root_hash(&self) -> Option<HashValue> {
+        match &self.transaction_info.transaction_info {
+            StcTransactionInfo::V1(transaction_info) => transaction_info.state_root_hash(),
+            StcTransactionInfo::V2(transaction_info) => transaction_info.state_root_hash(),
+        }
+    }
     pub fn verify(
         &self,
         expect_root: HashValue,
         transaction_index: u64,
+        final_transaction_index: u64,
+        final_transaction_info_id: HashValue,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
+        final_access_path: Option<MultiAccessPath>,
+        final_state_root: Option<HashValue>,
     ) -> Result<()> {
         self.proof
             .verify(expect_root, self.transaction_info.id(), transaction_index)
             .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
+        self.final_proof
+            .verify(
+                expect_root,
+                final_transaction_info_id,
+                final_transaction_index,
+            )
+            .map_err(|e| format_err!("final transaction info proof verify failed: {}", e))?;
+
         match (self.event_proof.as_ref(), event_index) {
             (Some(event_proof), Some(event_index)) => {
                 event_proof
-                    .verify(self.transaction_info.event_root_hash(), event_index)
+                    .verify(self.event_root_hash(), event_index)
                     .map_err(|e| format_err!("event proof verify failed: {}", e))?;
             }
             (Some(_), None) => {
@@ -103,22 +129,49 @@ impl TransactionInfoWithProof {
         match (self.state_proof.as_ref(), access_path) {
             (Some(state_proof), Some(access_path)) => {
                 state_proof
-                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
+                    .verify(self.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
                     .map_err(|e| format_err!("state proof verify failed: {}", e))?;
             }
-            (Some(_), None) => {
+            (Some(_), None) | (None, None) => {
                 // skip
             }
-            (None, None) => {
-                // skip
-            }
-            (None, Some(access_path)) => {
-                bail!(
-                    "TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}",
-                    access_path
-                );
+            (None, Some(_access_path)) => {
+                bail!("TransactionInfoWithProof's state_proof is None, cannot verify access_path");
             }
         };
+        self.verify_final_state_root(final_state_root, final_access_path)?;
+        Ok(())
+    }
+
+    fn verify_final_state_root(
+        &self,
+        final_state_root: Option<HashValue>,
+        final_access_path: Option<MultiAccessPath>,
+    ) -> Result<()> {
+        match (
+            self.final_state_proof.as_ref(),
+            final_state_root,
+            final_access_path,
+        ) {
+            (Some(final_state_proof), Some(final_state_root), Some(final_access_path)) => {
+                final_state_proof
+                    .verify(final_state_root, final_access_path)
+                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
+            }
+            (Some(_), Some(_), None) => {
+                bail!("final_access_path is None, cannot verify final_state_proof");
+            }
+            (Some(_), None, Some(_)) => {
+                bail!("final_state_root is None, cannot verify final_state_proof with provided final_access_path");
+            }
+            (None, Some(_), Some(_)) | (None, None, Some(_)) => {
+                bail!("TransactionInfoWithProof's final_state_proof is None, cannot verify final_access_path");
+            }
+            (None, Some(_), None) => {
+                bail!("TransactionInfoWithProof's final_state_proof is None, cannot verify final_state_root");
+            }
+            (Some(_), None, None) | (None, None, None) => {}
+        }
         Ok(())
     }
 }
@@ -133,67 +186,6 @@ impl EventWithProof2 {
     pub fn verify(&self, expect_root: HashValue, event_index: u64) -> Result<()> {
         self.proof
             .verify(expect_root, self.event.crypto_hash(), event_index)
-    }
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct TransactionInfoWithProof2 {
-    pub transaction_info: RichTransactionInfo2,
-    pub proof: AccumulatorProof,
-    pub event_proof: Option<EventWithProof2>,
-    pub state_proof: Option<StateWithProof2>,
-}
-
-impl TransactionInfoWithProof2 {
-    pub fn verify(
-        &self,
-        expect_root: HashValue,
-        transaction_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<()> {
-        self.proof
-            .verify(expect_root, self.transaction_info.id(), transaction_index)
-            .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
-        match (self.event_proof.as_ref(), event_index) {
-            (Some(event_proof), Some(event_index)) => {
-                event_proof
-                    .verify(self.transaction_info.event_root_hash(), event_index)
-                    .map_err(|e| format_err!("event proof verify failed: {}", e))?;
-            }
-            (Some(_), None) => {
-                // skip
-            }
-            (None, None) => {
-                // skip
-            }
-            (None, Some(event_index)) => {
-                bail!(
-                    "TransactionInfoWithProof2's event_proof is None, cannot verify event_index: {}",
-                    event_index
-                );
-            }
-        };
-        match (self.state_proof.as_ref(), access_path) {
-            (Some(state_proof), Some(access_path)) => {
-                state_proof
-                    .verify(self.transaction_info.state_root_hash().ok_or_else(|| format_err!("state root is none maybe it is not the last transaction of a block?, its id is {}", self.transaction_info.transaction_hash()))?, access_path)
-                    .map_err(|e| format_err!("state proof verify failed: {}", e))?;
-            }
-            (Some(_), None) => {
-                // skip
-            }
-            (None, None) => {
-                // skip
-            }
-            (None, Some(access_path)) => {
-                bail!(
-                    "TransactionInfoWithProof's state_proof is None, cannot verify access_path: {}",
-                    access_path
-                );
-            }
-        };
-        Ok(())
     }
 }
 
@@ -219,28 +211,17 @@ impl TryFrom<EventWithProofView2> for EventWithProof2 {
     }
 }
 
-impl From<TransactionInfoWithProof2> for TransactionInfoWithProofView2 {
-    fn from(origin: TransactionInfoWithProof2) -> Self {
-        Self {
-            transaction_info: origin.transaction_info.into(),
-            proof: AccumulatorProofView2 {
-                siblings: origin.proof.siblings().to_vec(),
-            },
-            event_proof: origin.event_proof.map(Into::into),
-            state_proof: origin.state_proof.map(Into::into),
-        }
-    }
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum MultiEventWithProof {
+    VM1(EventWithProof),
+    VM2(EventWithProof2),
 }
 
-impl TryFrom<TransactionInfoWithProofView2> for TransactionInfoWithProof2 {
-    type Error = anyhow::Error;
-
-    fn try_from(view: TransactionInfoWithProofView2) -> Result<Self, Self::Error> {
-        Ok(Self {
-            transaction_info: view.transaction_info.try_into()?,
-            proof: AccumulatorProof::new(view.proof.siblings),
-            event_proof: view.event_proof.map(TryInto::try_into).transpose()?,
-            state_proof: view.state_proof.map(Into::into),
-        })
+impl MultiEventWithProof {
+    pub(crate) fn verify(&self, event_root_hash: HashValue, event_index: u64) -> Result<()> {
+        match self {
+            Self::VM1(event_with_proof) => event_with_proof.verify(event_root_hash, event_index),
+            Self::VM2(event_with_proof) => event_with_proof.verify(event_root_hash, event_index),
+        }
     }
 }

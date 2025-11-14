@@ -1,18 +1,18 @@
 processed 18 tasks
 
-task 4 'run'. lines 52-65:
+task 4 'run'. lines 67-82:
 {
-  "gas_used": 1601404,
+  "gas_used": 1295587,
   "status": "Executed"
 }
 
-task 5 'run'. lines 68-89:
+task 5 'run'. lines 85-105:
 {
   "gas_used": 383048,
   "status": "Executed"
 }
 
-task 6 'run'. lines 92-107:
+task 6 'run'. lines 108-123:
 {
   "gas_used": 38039,
   "status": {
@@ -28,7 +28,7 @@ task 6 'run'. lines 92-107:
   }
 }
 
-task 7 'run'. lines 110-126:
+task 7 'run'. lines 126-142:
 {
   "gas_used": 38039,
   "status": {
@@ -44,7 +44,7 @@ task 7 'run'. lines 110-126:
   }
 }
 
-task 8 'run'. lines 129-144:
+task 8 'run'. lines 145-160:
 {
   "gas_used": 38144,
   "status": {
@@ -60,7 +60,7 @@ task 8 'run'. lines 129-144:
   }
 }
 
-task 9 'run'. lines 147-163:
+task 9 'run'. lines 163-178:
 {
   "gas_used": 38039,
   "status": {
@@ -76,7 +76,7 @@ task 9 'run'. lines 147-163:
   }
 }
 
-task 10 'run'. lines 166-176:
+task 10 'run'. lines 181-190:
 {
   "gas_used": 24344,
   "status": {
@@ -92,13 +92,13 @@ task 10 'run'. lines 166-176:
   }
 }
 
-task 11 'run'. lines 181-221:
+task 11 'run'. lines 193-232:
 {
   "gas_used": 213944,
   "status": "Executed"
 }
 
-task 12 'run'. lines 224-250:
+task 12 'run'. lines 235-261:
 {
   "gas_used": 54741,
   "status": {
@@ -114,7 +114,7 @@ task 12 'run'. lines 224-250:
   }
 }
 
-task 13 'run'. lines 253-273:
+task 13 'run'. lines 264-284:
 {
   "gas_used": 11224,
   "status": {
@@ -130,7 +130,7 @@ task 13 'run'. lines 253-273:
   }
 }
 
-task 14 'run'. lines 276-296:
+task 14 'run'. lines 287-307:
 {
   "gas_used": 11264,
   "status": {
@@ -146,7 +146,7 @@ task 14 'run'. lines 276-296:
   }
 }
 
-task 15 'run'. lines 299-319:
+task 15 'run'. lines 310-329:
 {
   "gas_used": 11372,
   "status": {
@@ -162,7 +162,7 @@ task 15 'run'. lines 299-319:
   }
 }
 
-task 16 'run'. lines 322-342:
+task 16 'run'. lines 332-352:
 {
   "gas_used": 11409,
   "status": {
@@ -178,7 +178,7 @@ task 16 'run'. lines 322-342:
   }
 }
 
-task 17 'run'. lines 345-365:
+task 17 'run'. lines 355-375:
 {
   "gas_used": 11449,
   "status": {

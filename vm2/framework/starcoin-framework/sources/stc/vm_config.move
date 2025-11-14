@@ -1,5 +1,6 @@
 /// `VMConfig` keep track of VM related configuration, like gas schedule.
 module starcoin_framework::vm_config {
+    use starcoin_std::debug;
     use starcoin_framework::system_addresses;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::util;
@@ -35,6 +36,8 @@ module starcoin_framework::vm_config {
         account: &signer,
         gas_schedule_blob: vector<u8>,
     ) {
+        debug::print(&std::string::utf8(b"vm_config::initialize | entered"));
+
         system_addresses::assert_starcoin_framework(account);
         let gas_schedule  = util::from_bytes<GasScheduleV2>(gas_schedule_blob);
         on_chain_config::publish_new_config<VMConfig>(
@@ -43,6 +46,8 @@ module starcoin_framework::vm_config {
                 gas_schedule,
             },
         );
+
+        debug::print(&std::string::utf8(b"vm_config::initialize | exited"));
     }
 
     public fun new_from_blob(gas_schedule_blob: vector<u8>): VMConfig {

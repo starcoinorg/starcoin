@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-move-model = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-model = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }

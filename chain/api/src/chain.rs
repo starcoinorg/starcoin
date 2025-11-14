@@ -1,14 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
-use anyhow::Result;
+use crate::TransactionInfoWithProof;
+use anyhow::{format_err, Result};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
-use starcoin_statedb::ChainStateDB;
+use starcoin_statedb::{ChainStateDB, StateWithProof};
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 pub use starcoin_types::block::ExecutedBlock;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
 use starcoin_types::{
@@ -16,10 +18,8 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
+use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, StateWithProof as StateWithProof2};
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
 use starcoin_dag::types::ghostdata::GhostdagData;
@@ -30,6 +30,45 @@ pub struct VerifiedBlock {
     pub ghostdata: GhostdagData,
 }
 pub type MintedUncleNumber = u64;
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum MultiStateProof {
+    VM1(StateWithProof),
+    VM2(StateWithProof2),
+}
+
+impl MultiStateProof {
+    pub(crate) fn verify(&self, state_root: HashValue, access_path: MultiAccessPath) -> Result<()> {
+        match self {
+            Self::VM1(state_with_proof) => state_with_proof.verify(
+                state_root,
+                access_path.to_v1().ok_or_else(|| {
+                    format_err!("invalid access_path, the proof is v1 but access_path is v2")
+                })?,
+            ),
+            Self::VM2(state_with_proof) => state_with_proof.verify(
+                state_root,
+                access_path.to_v2().ok_or_else(|| {
+                    format_err!("invalid access_path, the proof is v2 but access_path is v1")
+                })?,
+            ),
+        }
+    }
+
+    pub fn to_v1(self) -> Option<StateWithProof> {
+        match self {
+            Self::VM1(state_with_proof) => Some(state_with_proof),
+            _ => None,
+        }
+    }
+
+    pub fn to_v2(self) -> Option<StateWithProof2> {
+        match self {
+            Self::VM2(state_with_proof) => Some(state_with_proof),
+            _ => None,
+        }
+    }
+}
 
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
@@ -103,28 +142,8 @@ pub trait ChainReader {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
-    /// Get transaction info proof by `transaction_global_index` using VM2 types.
-    ///
-    /// # Parameters
-    /// - `block_id`: The ID of the block whose `txn_accumulator_root` is used to generate the proof.
-    /// - `transaction_global_index`: The global index of the transaction for which the proof is requested.
-    /// - `event_index`: (Optional) The index of the event within the transaction, if applicable.
-    /// - `access_path`: (Optional) The access path for the resource or data being queried, using VM2's `AccessPath2` type.
-    ///
-    /// # Returns
-    /// - `Result<Option<TransactionInfoWithProof2>>`:
-    ///   - `Ok(Some(TransactionInfoWithProof2))`: The proof for the specified transaction and optional event or access path.
-    ///   - `Ok(None)`: If no proof is available for the given parameters.
-    ///   - `Err`: If an error occurs while generating the proof.
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>>;
 
     // DAG methods
     fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
@@ -155,7 +174,7 @@ pub trait ChainWriter {
     /// Verify, Execute and Connect block to current chain.
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
-    fn chain_state(&mut self) -> &ChainStateDB;
+    fn chain_state(&self) -> &ChainStateDB;
 
     fn chain_state2(&mut self) -> &ChainStateDB2;
 

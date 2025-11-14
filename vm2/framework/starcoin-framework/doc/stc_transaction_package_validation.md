@@ -539,8 +539,9 @@ Update account's ModuleUpgradeStrategy
     strategy: u8,
     min_time: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 ) <b>acquires</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a> {
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | entered "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | entered ")
+    );
 
     <b>assert</b>!(
         strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_ARBITRARY">STRATEGY_ARBITRARY</a> || strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a> || strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a> || strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_FREEZE">STRATEGY_FREEZE</a>,
@@ -556,7 +557,11 @@ Update account's ModuleUpgradeStrategy
         <b>move_to</b>(<a href="account.md#0x1_account">account</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> { strategy: strategy });
     };
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> updated "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &std::string::utf8(
+            b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> updated "
+        )
+    );
 
     <b>if</b> (strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>) {
         <b>let</b> version_cap = <a href="on_chain_config.md#0x1_on_chain_config_extract_modify_config_capability">on_chain_config::extract_modify_config_capability</a>&lt;<a href="stc_version.md#0x1_stc_version_Version">stc_version::Version</a>&gt;(<a href="account.md#0x1_account">account</a>);
@@ -568,7 +573,11 @@ Update account's ModuleUpgradeStrategy
             version_cap,
             upgrade_event: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradeEvent">Self::UpgradeEvent</a>&gt;(<a href="account.md#0x1_account">account</a>)
         });
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a> && <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a> updated "));
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+            &std::string::utf8(
+                b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a> && <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a> updated "
+            )
+        );
     };
 
     //clean two phase upgrade resource
@@ -591,7 +600,9 @@ Update account's ModuleUpgradeStrategy
             <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_destroy_upgrade_plan_cap">destroy_upgrade_plan_cap</a>(cap);
         };
     };
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | exited "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &std::string::utf8(b"<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a> | exited ")
+    );
 }
 </code></pre>
 

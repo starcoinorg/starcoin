@@ -11,9 +11,9 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun main(account: signer, fresh_address: address, initial_amount: u128) {
+    fun main(alice: signer, fresh_address: address, initial_amount: u128) {
         account::create_account_if_does_not_exist(fresh_address);
         // coin::transfer<STC>(&account, fresh_address, (initial_amount as u64));
-        peer_to_peer_v2<STC>(account, fresh_address, initial_amount);
+        peer_to_peer_v2<STC>(&alice, fresh_address, initial_amount);
     }
 }

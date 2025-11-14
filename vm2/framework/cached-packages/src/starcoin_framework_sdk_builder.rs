@@ -433,7 +433,7 @@ pub enum EntryFunctionCall {
         fund_amount: u64,
     },
 
-    /// Batch version of APT transfer.
+    /// Batch version of STC transfer.
     StarcoinAccountBatchTransfer {
         recipients: Vec<AccountAddress>,
         amounts: Vec<u64>,
@@ -451,12 +451,12 @@ pub enum EntryFunctionCall {
         auth_key: AccountAddress,
     },
 
-    /// APT Primary Fungible Store specific specialized functions,
-    /// Utilized internally once migration of APT to FungibleAsset is complete.
-    /// Convenient function to transfer APT to a recipient account that might not exist.
-    /// This would create the recipient APT PFS first, which also registers it to receive APT, before transferring.
+    /// STC Primary Fungible Store specific specialized functions,
+    /// Utilized internally once migration of STC to FungibleAsset is complete.
+    /// Convenient function to transfer STC to a recipient account that might not exist.
+    /// This would create the recipient STC PFS first, which also registers it to receive STC, before transferring.
     /// TODO: once migration is complete, rename to just "transfer_only" and make it an entry function (for cheapest way
-    /// to transfer APT) - if we want to allow APT PFS without account itself
+    /// to transfer STC) - if we want to allow STC PFS without account itself
     StarcoinAccountFungibleTransferOnly {
         to: AccountAddress,
         amount: u64,
@@ -467,8 +467,8 @@ pub enum EntryFunctionCall {
         allow: bool,
     },
 
-    /// Convenient function to transfer APT to a recipient account that might not exist.
-    /// This would create the recipient account first, which also registers it to receive APT, before transferring.
+    /// Convenient function to transfer STC to a recipient account that might not exist.
+    /// This would create the recipient account first, which also registers it to receive STC, before transferring.
     StarcoinAccountTransfer {
         to: AccountAddress,
         amount: u64,
@@ -2076,7 +2076,7 @@ pub fn resource_account_create_resource_account_and_fund(
     ))
 }
 
-/// Batch version of APT transfer.
+/// Batch version of STC transfer.
 pub fn starcoin_account_batch_transfer(
     recipients: Vec<AccountAddress>,
     amounts: Vec<u64>,
@@ -2128,12 +2128,12 @@ pub fn starcoin_account_create_account(auth_key: AccountAddress) -> TransactionP
     ))
 }
 
-/// APT Primary Fungible Store specific specialized functions,
-/// Utilized internally once migration of APT to FungibleAsset is complete.
-/// Convenient function to transfer APT to a recipient account that might not exist.
-/// This would create the recipient APT PFS first, which also registers it to receive APT, before transferring.
+/// STC Primary Fungible Store specific specialized functions,
+/// Utilized internally once migration of STC to FungibleAsset is complete.
+/// Convenient function to transfer STC to a recipient account that might not exist.
+/// This would create the recipient STC PFS first, which also registers it to receive STC, before transferring.
 /// TODO: once migration is complete, rename to just "transfer_only" and make it an entry function (for cheapest way
-/// to transfer APT) - if we want to allow APT PFS without account itself
+/// to transfer STC) - if we want to allow STC PFS without account itself
 pub fn starcoin_account_fungible_transfer_only(
     to: AccountAddress,
     amount: u64,
@@ -2162,8 +2162,8 @@ pub fn starcoin_account_set_allow_direct_coin_transfers(allow: bool) -> Transact
     ))
 }
 
-/// Convenient function to transfer APT to a recipient account that might not exist.
-/// This would create the recipient account first, which also registers it to receive APT, before transferring.
+/// Convenient function to transfer STC to a recipient account that might not exist.
+/// This would create the recipient account first, which also registers it to receive STC, before transferring.
 pub fn starcoin_account_transfer(to: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
