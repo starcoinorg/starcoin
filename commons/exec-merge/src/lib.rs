@@ -29,6 +29,8 @@ pub struct ReadEntry {
 pub struct ExecRecord {
     pub tx_hash: HashValue,
     pub epoch_id: u64,
+    #[serde(default)]
+    pub base_state_root: Option<HashValue>,
     pub read_set: Option<Vec<ReadEntry>>, // None means unknown -> force reexec
     pub write_set: Vec<(StateKey, WriteOp)>,
     pub event_root: HashValue,
@@ -301,6 +303,7 @@ impl MergeEngine {
 pub struct ReuseOpts {
     pub enabled: bool,
     pub epoch_id: u64,
+    pub base_state_root: Option<HashValue>,
     pub witness_store: Arc<dyn WitnessStore>,
     pub merge_engine: Arc<MergeEngine>,
 }
@@ -309,6 +312,7 @@ pub fn create_default_reuse(enabled: bool, epoch_id: u64, capacity: usize) -> Re
     ReuseOpts {
         enabled,
         epoch_id,
+        base_state_root: None,
         witness_store: Arc::new(LruWitnessStore::new(capacity)),
         merge_engine: Arc::new(MergeEngine::new()),
     }

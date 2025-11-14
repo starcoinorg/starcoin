@@ -38,6 +38,7 @@ fn plan_merge_reuse_and_apply() {
     let rec = ExecRecord {
         tx_hash,
         epoch_id: 0,
+        base_state_root: Some(HashValue::zero()),
         read_set: Some(vec![ReadEntry {
             key: k1.clone(),
             from_storage: true,
@@ -74,6 +75,7 @@ fn plan_merge_detect_prefix_conflict() {
     let rec = ExecRecord {
         tx_hash,
         epoch_id: 0,
+        base_state_root: Some(HashValue::zero()),
         read_set: Some(vec![ReadEntry {
             key: kx.clone(),
             from_storage: true,
@@ -116,6 +118,7 @@ fn plan_merge_detect_value_change() {
     let rec = ExecRecord {
         tx_hash,
         epoch_id: 0,
+        base_state_root: Some(HashValue::zero()),
         read_set: Some(vec![ReadEntry {
             key: k1.clone(),
             from_storage: true,

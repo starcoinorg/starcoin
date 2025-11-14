@@ -43,6 +43,7 @@ pub struct PlanEntry {
     pub witness: Option<ExecRecord>,
     pub decision: PlanDecision,
     pub forced_reexec: bool,
+    pub reusable: bool,
 }
 
 #[derive(Debug)]
@@ -97,7 +98,17 @@ pub fn execute_transactions_with_reuse(
     vm_metrics: Option<VMMetrics>,
     opts: ReuseOpts,
 ) -> ExecutorResult<BlockExecutedData> {
-    let executor = ReuseExecutor::new(statedb, opts.epoch_id, opts.witness_store.clone());
+    let meta_fingerprint = extract_block_metadata_fingerprint(&transactions);
+    let base_state_root = opts
+        .base_state_root
+        .unwrap_or_else(|| statedb.state_root());
+    let executor = ReuseExecutor::new(
+        statedb,
+        opts.epoch_id,
+        opts.witness_store.clone(),
+        meta_fingerprint,
+        base_state_root,
+    );
 
     if opts.enabled {
         let planner = ReusePlanner::new(
@@ -105,6 +116,8 @@ pub fn execute_transactions_with_reuse(
             opts.witness_store.clone(),
             opts.merge_engine.clone(),
             opts.epoch_id,
+            meta_fingerprint,
+            base_state_root,
         );
         if let Some(plan) = planner.plan(&transactions) {
             let reused = plan.reused_count();
@@ -138,11 +151,20 @@ pub fn execute_transactions_with_reuse(
     executor.execute_full(transactions, gas_limit, vm_metrics, opts.enabled)
 }
 
+fn extract_block_metadata_fingerprint(transactions: &[Transaction]) -> Option<HashValue> {
+    transactions.iter().find_map(|txn| match txn {
+        Transaction::BlockMetadata(_) => Some(txn.id()),
+        _ => None,
+    })
+}
+
 struct ReusePlanner<'a> {
     statedb: &'a ChainStateDB,
     store: Arc<dyn WitnessStore>,
     merge_engine: Arc<MergeEngine>,
     epoch_id: u64,
+    meta_fingerprint: Option<HashValue>,
+    base_state_root: HashValue,
 }
 
 #[derive(Clone, Debug)]
@@ -233,12 +255,16 @@ impl<'a> ReusePlanner<'a> {
         store: Arc<dyn WitnessStore>,
         merge_engine: Arc<MergeEngine>,
         epoch_id: u64,
+        meta_fingerprint: Option<HashValue>,
+        base_state_root: HashValue,
     ) -> Self {
         Self {
             statedb,
             store,
             merge_engine,
             epoch_id,
+            meta_fingerprint,
+            base_state_root,
         }
     }
 
@@ -291,7 +317,7 @@ impl<'a> ReusePlanner<'a> {
         for entry in entries.iter_mut() {
             match entry.decision {
                 PlanDecision::Reuse => {
-                    if !self.validate_and_apply_reuse(entry, &mut effects) {
+                    if !entry.reusable || !self.validate_and_apply_reuse(entry, &mut effects) {
                         entry.decision = PlanDecision::Reexec;
                         if entry.forced_reexec {
                             if let Some(witness) = entry.witness.as_ref() {
@@ -303,7 +329,8 @@ impl<'a> ReusePlanner<'a> {
                     }
                 }
                 PlanDecision::Reexec => {
-                    if !entry.forced_reexec
+                    if entry.reusable
+                        && !entry.forced_reexec
                         && entry.witness.is_some()
                         && self.validate_and_apply_reuse(entry, &mut effects)
                     {
@@ -351,7 +378,17 @@ impl<'a> ReusePlanner<'a> {
                 key.tx_hash, force_reexec
             );
             let mut sanitized = rec.clone();
-            let supported = !force_reexec && Self::record_supported_for_reuse(&rec);
+            let meta_ok = match (rec.meta_fingerprint, self.meta_fingerprint) {
+                (Some(a), Some(b)) => a == b,
+                (Some(_), None) => false,
+                _ => true,
+            };
+            let base_ok = rec
+                .base_state_root
+                .map(|root| root == self.base_state_root)
+                .unwrap_or(false);
+            let supported =
+                !force_reexec && meta_ok && base_ok && Self::record_supported_for_reuse(&rec);
             let mut hit_with_reads = false;
 
             if !supported {
@@ -359,13 +396,13 @@ impl<'a> ReusePlanner<'a> {
             } else if sanitized.read_set.is_some() {
                 hit_with_reads = true;
             }
-
             (
                 PlanEntry {
                     sanitized,
                     witness: Some(rec),
                     decision: PlanDecision::Reexec,
                     forced_reexec: force_reexec,
+                    reusable: supported,
                 },
                 true,
                 hit_with_reads,
@@ -377,6 +414,7 @@ impl<'a> ReusePlanner<'a> {
                     witness: None,
                     decision: PlanDecision::Reexec,
                     forced_reexec: false,
+                    reusable: false,
                 },
                 false,
                 false,
@@ -385,6 +423,9 @@ impl<'a> ReusePlanner<'a> {
     }
 
     fn record_supported_for_reuse(rec: &ExecRecord) -> bool {
+        if rec.base_state_root.is_none() {
+            return false;
+        }
         if !rec.table_infos.is_empty() {
             return false;
         }
@@ -432,6 +473,7 @@ impl<'a> ReusePlanner<'a> {
         ExecRecord {
             tx_hash,
             epoch_id,
+            base_state_root: None,
             read_set: None,
             write_set: Vec::new(),
             event_root: HashValue::zero(),
@@ -671,14 +713,24 @@ struct ReuseExecutor<'a> {
     statedb: &'a ChainStateDB,
     store: Arc<dyn WitnessStore>,
     epoch_id: u64,
+    meta_fingerprint: Option<HashValue>,
+    base_state_root: HashValue,
 }
 
 impl<'a> ReuseExecutor<'a> {
-    fn new(statedb: &'a ChainStateDB, epoch_id: u64, store: Arc<dyn WitnessStore>) -> Self {
+    fn new(
+        statedb: &'a ChainStateDB,
+        epoch_id: u64,
+        store: Arc<dyn WitnessStore>,
+        meta_fingerprint: Option<HashValue>,
+        base_state_root: HashValue,
+    ) -> Self {
         Self {
             statedb,
             store,
             epoch_id,
+            meta_fingerprint,
+            base_state_root,
         }
     }
 
@@ -712,7 +764,17 @@ impl<'a> ReuseExecutor<'a> {
             match entry.decision {
                 PlanDecision::Reuse => {
                     if let Some(rec) = entry.witness.as_ref() {
-                        if let Some(status) = rec.status.clone() {
+                        if rec.base_state_root != Some(self.base_state_root) {
+                            if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
+                                println!(
+                                    "reuse_base_mismatch tx={} expected={:?} actual={:?}",
+                                    tx_hash,
+                                    self.base_state_root,
+                                    rec.base_state_root
+                                );
+                            }
+                            self.remove_witness(tx_hash);
+                        } else if let Some(status) = rec.status.clone() {
                             if matches!(status, KeptVMStatus::Executed) && rec.status_ok {
                                 let write_entries = rec.write_set.clone();
                                 let write_set_mut = WriteSetMut::new(write_entries.clone());
@@ -879,6 +941,7 @@ impl<'a> ReuseExecutor<'a> {
                         read_entries,
                         write_entries_for_store,
                         events,
+                        self.txn_meta_fingerprint(txn),
                     );
                 }
             }
@@ -958,6 +1021,7 @@ impl<'a> ReuseExecutor<'a> {
                 read_set_entries,
                 write_set_entries,
                 events,
+                self.txn_meta_fingerprint(txn),
             );
         }
 
@@ -966,6 +1030,15 @@ impl<'a> ReuseExecutor<'a> {
             println!("reuse_execute_full final_root={:?}", executed.state_root);
         }
         Ok(executed)
+    }
+
+    fn txn_meta_fingerprint(&self, txn: &Transaction) -> Option<HashValue> {
+        match txn {
+            Transaction::UserTransaction(_) | Transaction::BlockEpilogue(_) => {
+                self.meta_fingerprint
+            }
+            _ => None,
+        }
     }
 
     fn apply_pending_reuse_writes(
@@ -1004,16 +1077,18 @@ impl<'a> ReuseExecutor<'a> {
         read_set: Option<Vec<crate::ReadEntry>>,
         write_set: Vec<(StateKey, WriteOp)>,
         events: Vec<ContractEvent>,
+        meta_fingerprint: Option<HashValue>,
     ) {
         let rec = ExecRecord {
             tx_hash,
             epoch_id: self.epoch_id,
+            base_state_root: Some(self.base_state_root),
             read_set,
             write_set,
             event_root,
             gas: gas_used,
             status_ok: matches!(status, KeptVMStatus::Executed),
-            meta_fingerprint: None,
+            meta_fingerprint,
             status: Some(status),
             events,
             table_infos: Vec::new(),
