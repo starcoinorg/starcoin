@@ -161,7 +161,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         .ok_or_else(|| format_err!("final transaction info is not found"))?;
 
     let final_transaction_info = storage1
-        .get_transaction_info(final_transaction_info_id)?
+        .get_transaction_info_by_block_id(final_transaction_info_id, current_header.id())?
         .ok_or_else(|| format_err!("final transaction info is not found"))?
         .transaction_info
         .to_v2()
@@ -236,7 +236,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
                 .get_leaf(txn_global_index)?
                 .ok_or_else(|| format_err!("Cannot get txn info by index: {}", txn_global_index))?;
             let txn_info = storage1
-                .get_transaction_info(txn_info_leaf)?
+                .get_transaction_info_by_block_id(txn_info_leaf, block.header().id())?
                 .ok_or_else(|| {
                     format_err!(
                         "Cannot get txn info by txn hash:{}, index: {}",

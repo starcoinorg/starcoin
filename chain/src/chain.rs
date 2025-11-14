@@ -1493,20 +1493,36 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        let proof_rich_transaction_info = storage
-            .get_transaction_info(proof_transaction_info_id)?
+        let get_transaction_info = |id: HashValue| {
+            // try vm2 query style first
+            // vm2 stores StcRichTransactionInfo's id and (TransactionInfo's id with block id).
+            // vm1 stores TransactionInfo's id only.
+            if let Ok(info) = storage.get_transaction_info_by_block_id(id, block_id) {
+                return Ok(info);
+            } else {
+                return storage.get_transaction_info(id);
+            }
+        };
+
+        let proof_rich_transaction_info = get_transaction_info(proof_transaction_info_id)?
             .ok_or_else(|| {
                 format_err!(
-                    "failed to get proof txn info by hash:{}",
-                    proof_transaction_info_id
+                    "failed to get proof txn info by hash:{}, block id:{}",
+                    proof_transaction_info_id,
+                    block_id
                 )
             })?;
 
         let proof_transaction_info = proof_rich_transaction_info.transaction_info;
 
-        let input_rich_transaction_info = storage
-            .get_transaction_info(transaction_info_id)?
-            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
+        let input_rich_transaction_info =
+            get_transaction_info(transaction_info_id)?.ok_or_else(|| {
+                format_err!(
+                    "failed to get txn info by hash:{}, block id:{}",
+                    transaction_info_id,
+                    block_id
+                )
+            })?;
 
         let final_raw_transaction = storage
             .get_transaction(proof_transaction_info.transaction_hash())?
@@ -1523,9 +1539,13 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Cannot get state root hash"))?;
         let final_access_path = final_raw_transaction.access_path();
 
-        let transaction_info = storage
-            .get_transaction_info(transaction_info_id)?
-            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
+        let transaction_info = get_transaction_info(transaction_info_id)?.ok_or_else(|| {
+            format_err!(
+                "failed to get txn info by hash:{}, block id:{}",
+                transaction_info_id,
+                block_id
+            )
+        })?;
 
         let event_proof = match input_rich_transaction_info.transaction_info {
             StcTransactionInfo::V1(_) => {
