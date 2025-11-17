@@ -414,7 +414,11 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
         ),
         ("starcoin_natives.frombcs.base".to_string(), gas_total(4, 1)),
         (
-            "starcoin_natives.secp256k1.base".to_string(),
+            "starcoin_natives.secp256k1.ecdsa_recover_internal.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
+            "starcoin_natives.secp256k1.decompress_pubkey.base".to_string(),
             gas_total(4, 1),
         ),
         (
@@ -649,7 +653,8 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.string.is_char_boundary.base",
         "move_stdlib.string.index_of.per_byte_searched",
         "starcoin_natives.frombcs.base",
-        "starcoin_natives.secp256k1.base",
+        "starcoin_natives.secp256k1.ecdsa_recover_internal.base",
+        "starcoin_natives.secp256k1.decompress_pubkey.base",
         "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit",
     ]
 });

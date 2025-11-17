@@ -53,11 +53,12 @@ pub enum NativeCostIndex {
     FROMBCS_FROM_BYTES = 44,
     SECP256K1_ECDSA_RECOVER_INTERNAL = 45,
     VECTOR_SPAWN_FROM = 46,
+    SECP256K1_DECOMPRESS_PUBKEY = 47,
 }
 
 impl NativeCostIndex {
     //note: should change this value when add new native function.
-    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 47;
+    pub const NUMBER_OF_NATIVE_FUNCTIONS: usize = 48;
 }
 
 pub static G_MAX_TRANSACTION_SIZE_IN_BYTES_V1: u64 = 4096 * 10;
