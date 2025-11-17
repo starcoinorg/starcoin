@@ -13371,6 +13371,7 @@ dependencies = [
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node",
+ "starcoin-node-api",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",

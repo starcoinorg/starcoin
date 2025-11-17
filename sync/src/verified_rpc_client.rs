@@ -108,21 +108,31 @@ pub struct VerifiedRpcClient {
     peer_selector: PeerSelector,
     client: NetworkRpcClient,
     score_handler: InverseScore,
+    max_retry_times: u64,
 }
 
 impl VerifiedRpcClient {
-    pub fn new<C>(peer_selector: PeerSelector, raw_rpc_client: C) -> Self
+    pub fn new<C>(peer_selector: PeerSelector, raw_rpc_client: C, max_retry_times: u64) -> Self
     where
         C: RawRpcClient + Send + Sync + 'static,
     {
-        Self::new_with_client(peer_selector, NetworkRpcClient::new(raw_rpc_client))
+        Self::new_with_client(
+            peer_selector,
+            NetworkRpcClient::new(raw_rpc_client),
+            max_retry_times,
+        )
     }
 
-    pub fn new_with_client(peer_selector: PeerSelector, client: NetworkRpcClient) -> Self {
+    pub fn new_with_client(
+        peer_selector: PeerSelector,
+        client: NetworkRpcClient,
+        max_retry_times: u64,
+    ) -> Self {
         Self {
             peer_selector,
             client,
             score_handler: InverseScore::new(100, 60),
+            max_retry_times,
         }
     }
 
@@ -829,44 +839,77 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
-        let peer_id = self.select_a_peer()?;
-        let start_time = Instant::now();
-        let blocks = match self.get_blocks_inner(peer_id.clone(), ids.clone()).await {
-            Ok(blocks) => blocks,
-            Err(err) => {
-                warn!("get blocks failed:{}, call get blocks legacy", err);
-                self.get_blocks_inner(peer_id.clone(), ids.clone())
-                    .await?
-                    .into_iter()
-                    .collect()
-            }
-        };
+        let mut peer_iter = self.peer_selector.peer_iterator();
+        let max_retries = self.max_retry_times;
+        let mut attempts: u64 = 0;
+        let mut last_error = None;
 
-        let time = (Instant::now()
-            .saturating_duration_since(start_time)
-            .as_millis()) as u32;
-        let score = self.score(time);
-        self.record(&peer_id, score);
-        Ok(ids
-            .into_iter()
-            .zip(blocks)
-            .map(|(id, block)| {
-                if let Some(block) = block {
-                    let actual_id = block.id();
-                    if actual_id != id {
-                        warn!(
-                            "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
-                            id, peer_id, actual_id
+        while attempts < max_retries && peer_iter.remaining() > 0 {
+            if let Some(peer_id) = peer_iter.next() {
+                attempts = attempts.saturating_add(1);
+                debug!(
+                    "get_blocks: attempting peer {} (attempt {}/{}, {} peers remaining)",
+                    peer_id,
+                    attempts,
+                    max_retries,
+                    peer_iter.remaining()
+                );
+
+                let start_time = Instant::now();
+                match self.get_blocks_inner(peer_id.clone(), ids.clone()).await {
+                    Ok(blocks) => {
+                        let time = (Instant::now()
+                            .saturating_duration_since(start_time)
+                            .as_millis()) as u32;
+                        let score = self.score(time);
+                        self.record(&peer_id, score);
+
+                        info!(
+                            "Successfully got blocks from peer {} in {}ms (score: {}, attempt {}/{})",
+                            peer_id, time, score, attempts, max_retries
                         );
-                        None
-                    } else {
-                        Some((block, Some(peer_id.clone())))
+
+                        return Ok(ids
+                            .iter()
+                            .zip(blocks)
+                            .map(|(id, block)| {
+                                if let Some(block) = block {
+                                    let actual_id = block.id();
+                                    if actual_id != *id {
+                                        warn!(
+                                            "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
+                                            id, peer_id, actual_id
+                                        );
+                                        None
+                                    } else {
+                                        Some((block, Some(peer_id.clone())))
+                                    }
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect());
                     }
-                } else {
-                    None
+                    Err(err) => {
+                        warn!(
+                            "Failed to get blocks from peer {} (attempt {}/{}): {:?}, trying next peer",
+                            peer_id, attempts, max_retries, err
+                        );
+                        self.record(&peer_id, 0);
+                        last_error = Some(err);
+                    }
                 }
-            })
-            .collect())
+            } else {
+                break;
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| {
+            format_err!(
+                "Failed to get blocks after {} attempts, no peers available",
+                attempts
+            )
+        }))
     }
 
     pub async fn get_absent_blocks(

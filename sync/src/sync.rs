@@ -199,6 +199,7 @@ impl SyncService {
         Ok(Arc::new(VerifiedRpcClient::new(
             peer_selector,
             network.clone(),
+            config.sync.max_retry_times(),
         )))
     }
 
