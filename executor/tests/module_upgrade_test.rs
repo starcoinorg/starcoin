@@ -27,6 +27,7 @@ use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 use stdlib::{load_upgrade_package, StdlibCompat, G_STDLIB_VERSIONS};
 use test_helper::dao::{
     dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag, vote_language_version,
@@ -135,9 +136,12 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
         name: Identifier::new("UpgradeModule").unwrap(),
         type_params: vec![],
     }));
-    let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
-        .canonicalize()
-        .unwrap();
+    let path = PathBuf::from(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../networks/stdlib/2/1-2/stdlib.blob"
+    ))
+    .canonicalize()
+    .unwrap();
     let mut bytes = vec![];
     File::open(path)?.read_to_end(&mut bytes)?;
     let package: Package = bcs_ext::from_bytes(&bytes)?;
