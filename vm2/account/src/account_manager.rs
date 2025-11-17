@@ -99,6 +99,29 @@ impl AccountManager {
         Ok(account.info())
     }
 
+    pub fn unlock_account_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: Duration,
+    ) -> AccountResult<Vec<AccountInfo>> {
+        let mut prepared = Vec::with_capacity(batch.len());
+        for (address, password) in batch.into_iter() {
+            let account = Account::load(address, Some(password.clone()), self.store.clone())?
+                .ok_or(AccountError::AccountNotExist(address))?;
+            prepared.push((address, password, account.info()));
+        }
+
+        {
+            let mut cache = self.key_cache.write();
+            for (address, password, _) in &prepared {
+                let ttl = std::time::Instant::now().add(duration);
+                cache.cache_pass(*address, password.clone(), ttl);
+            }
+        }
+
+        Ok(prepared.into_iter().map(|(_, _, info)| info).collect())
+    }
+
     pub fn lock_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
         let account_info = self
             .account_info(address)?
@@ -350,6 +373,30 @@ impl AccountManager {
         self.store
             .get_accepted_tokens(address)
             .map_err(AccountError::StoreError)
+    }
+
+    pub fn sign_txn_in_batch(
+        &self,
+        raw_txns: Vec<RawUserTransaction>,
+    ) -> AccountResult<Vec<SignedUserTransaction>> {
+        let mut signed_transactions = vec![];
+        for raw_txn in raw_txns {
+            let signer_address = raw_txn.sender();
+            let pass = self.key_cache.write().get_pass(&signer_address);
+            match pass {
+                None => return Err(AccountError::AccountLocked(signer_address)),
+                Some(p) => {
+                    let account = Account::load(signer_address, Some(p), self.store.clone())?
+                        .ok_or(AccountError::AccountNotExist(signer_address))?;
+                    signed_transactions.push(
+                        account
+                            .sign_txn(raw_txn)
+                            .map_err(AccountError::TransactionSignError)?,
+                    );
+                }
+            }
+        }
+        Ok(signed_transactions)
     }
 }
 

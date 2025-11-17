@@ -44,6 +44,12 @@ pub trait AccountApi {
         signer: AccountAddress,
     ) -> FutureResult<SignedUserTransaction>;
 
+    #[rpc(name = "account2.sign_txn_in_batch")]
+    fn sign_txn_in_batch(
+        &self,
+        raw_txn: Vec<RawUserTransaction>,
+    ) -> FutureResult<Vec<SignedUserTransaction>>;
+
     /// unlock account for duration in seconds, default to u32::max.
     #[rpc(name = "account2.unlock")]
     fn unlock(
@@ -52,6 +58,14 @@ pub trait AccountApi {
         password: String,
         duration: Option<u32>,
     ) -> FutureResult<AccountInfo>;
+
+    /// unlock accounts for duration in seconds, default to u32::max.
+    #[rpc(name = "account2.unlock_in_batch")]
+    fn unlock_in_batch(
+        &self,
+        batch: Vec<(AccountAddress, String)>,
+        duration: Option<u32>,
+    ) -> FutureResult<Vec<AccountInfo>>;
 
     #[rpc(name = "account2.lock")]
     fn lock(&self, address: AccountAddress) -> FutureResult<AccountInfo>;
