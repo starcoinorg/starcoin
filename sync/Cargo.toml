@@ -70,6 +70,7 @@ starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-genesis = { workspace = true }
+starcoin-node-api = { workspace = true }
 
 [package]
 authors = { workspace = true }
