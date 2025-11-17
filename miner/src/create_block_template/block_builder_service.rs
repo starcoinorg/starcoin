@@ -39,10 +39,10 @@ use std::sync::RwLock;
 use crate::{MinerService, NewHeaderChannel};
 
 use super::metrics::BlockBuilderMetrics;
+use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use sp_utils::thread_pool::RAYON_EXEC_POOL;
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
