@@ -10,8 +10,9 @@ use crate::{
 };
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions,
-    WriteBatch as DBWriteBatch, WriteOptions, DB,
+    BlockBasedOptions, Cache, ColumnFamilyDescriptor, DBCompressionType, DBIterator,
+    DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
+    WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::{collections::HashSet, marker::PhantomData, path::Path};
@@ -91,11 +92,11 @@ impl DBStorage {
         let mut rocksdb_opts = Self::gen_rocksdb_options(&rocksdb_config);
 
         let db = if readonly {
-            Self::open_readonly(&rocksdb_opts, path, column_families.clone())?
+            Self::open_readonly(&rocksdb_opts, path, &column_families, &rocksdb_config)?
         } else {
             rocksdb_opts.create_if_missing(true);
             rocksdb_opts.create_missing_column_families(true);
-            Self::open_inner(&rocksdb_opts, path, column_families.clone())?
+            Self::open_inner(&rocksdb_opts, path, &column_families, &rocksdb_config)?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
 
@@ -109,14 +110,46 @@ impl DBStorage {
     fn open_inner(
         opts: &Options,
         path: impl AsRef<Path>,
-        column_families: Vec<ColumnFamilyName>,
+        column_families: &[ColumnFamilyName],
+        rocksdb_config: &RocksdbConfig,
     ) -> Result<DB> {
-        let inner = rocksdb::DB::open_cf_descriptors(
-            opts,
+        let cf_descriptors = Self::build_cf_descriptors(column_families, rocksdb_config);
+        let inner = rocksdb::DB::open_cf_descriptors(opts, path, cf_descriptors)?;
+        Ok(inner)
+    }
+
+    fn open_readonly(
+        db_opts: &Options,
+        path: impl AsRef<Path>,
+        column_families: &[ColumnFamilyName],
+        rocksdb_config: &RocksdbConfig,
+    ) -> Result<DB> {
+        let error_if_log_file_exists = false;
+        let cf_descriptors = Self::build_cf_descriptors(column_families, rocksdb_config);
+        let inner = rocksdb::DB::open_cf_descriptors_read_only(
+            db_opts,
             path,
-            column_families.iter().map(|cf_name| {
-                let mut cf_opts = rocksdb::Options::default();
-                cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+            cf_descriptors,
+            error_if_log_file_exists,
+        )?;
+        Ok(inner)
+    }
+
+    fn build_cf_descriptors(
+        column_families: &[ColumnFamilyName],
+        rocksdb_config: &RocksdbConfig,
+    ) -> Vec<ColumnFamilyDescriptor> {
+        let mut table_options = BlockBasedOptions::default();
+        table_options
+            .set_cache_index_and_filter_blocks(rocksdb_config.cache_index_and_filter_blocks);
+        table_options.set_block_size(rocksdb_config.block_size as usize);
+        let cache = Cache::new_lru_cache(rocksdb_config.block_cache_size as usize);
+        table_options.set_block_cache(&cache);
+        column_families
+            .iter()
+            .map(|cf_name| {
+                let mut cf_opts = Options::default();
+                cf_opts.set_compression_type(DBCompressionType::Lz4);
                 /*
                 cf_opts.set_compression_per_level(&[
                     rocksdb::DBCompressionType::None,
@@ -128,25 +161,10 @@ impl DBStorage {
                     rocksdb::DBCompressionType::Lz4,
                 ]);
                 */
-                rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
-            }),
-        )?;
-        Ok(inner)
-    }
-
-    fn open_readonly(
-        db_opts: &Options,
-        path: impl AsRef<Path>,
-        column_families: Vec<ColumnFamilyName>,
-    ) -> Result<DB> {
-        let error_if_log_file_exists = false;
-        let inner = rocksdb::DB::open_cf_for_read_only(
-            db_opts,
-            path,
-            column_families,
-            error_if_log_file_exists,
-        )?;
-        Ok(inner)
+                cf_opts.set_block_based_table_factory(&table_options);
+                ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
+            })
+            .collect()
     }
 
     pub fn drop_cf(&mut self) -> Result<(), Error> {

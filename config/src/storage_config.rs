@@ -36,6 +36,20 @@ pub struct RocksdbConfig {
     pub bytes_per_sync: u64,
     #[clap(name = "rocksdb-parallelism", long, help = "rocksdb parallelism")]
     pub parallelism: i32,
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: u64,
+    #[clap(name = "rocksdb-block-size", long, help = "rocksdb block size")]
+    pub block_size: u64,
+    #[clap(
+        name = "rocksdb-cache-index-and-filter-blocks",
+        long,
+        help = "cache index and filter blocks into block cache"
+    )]
+    pub cache_index_and_filter_blocks: bool,
 }
 
 impl RocksdbConfig {
@@ -65,6 +79,12 @@ impl Default for RocksdbConfig {
             wal_bytes_per_sync: 1u64 << 20,
             // Default parallelism
             parallelism: 1,
+            // Default block cache size is 8MB
+            block_cache_size: 8 * (1u64 << 20),
+            // Default block size is 4KB
+            block_size: 4 * (1u64 << 10),
+            // Whether to cache index and filter blocks
+            cache_index_and_filter_blocks: false,
         }
     }
 }
@@ -108,6 +128,26 @@ pub struct StorageConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "rocksdb-block-size", long, help = "rocksdb block size")]
+    pub block_size: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-cache-index-and-filter-blocks",
+        long,
+        help = "cache index and filter blocks into block cache"
+    )]
+    pub cache_index_and_filter_blocks: Option<bool>,
 }
 
 impl StorageConfig {
@@ -139,6 +179,11 @@ impl StorageConfig {
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
             parallelism: default.parallelism, // Use default for now, can add option later if needed
+            block_cache_size: self.block_cache_size.unwrap_or(default.block_cache_size),
+            block_size: self.block_size.unwrap_or(default.block_size),
+            cache_index_and_filter_blocks: self
+                .cache_index_and_filter_blocks
+                .unwrap_or(default.cache_index_and_filter_blocks),
         }
     }
     pub fn cache_size(&self) -> usize {
@@ -163,6 +208,15 @@ impl ConfigModule for StorageConfig {
         }
         if opt.storage.wal_bytes_per_sync.is_some() {
             self.wal_bytes_per_sync = opt.storage.wal_bytes_per_sync;
+        }
+        if opt.storage.block_cache_size.is_some() {
+            self.block_cache_size = opt.storage.block_cache_size;
+        }
+        if opt.storage.block_size.is_some() {
+            self.block_size = opt.storage.block_size;
+        }
+        if opt.storage.cache_index_and_filter_blocks.is_some() {
+            self.cache_index_and_filter_blocks = opt.storage.cache_index_and_filter_blocks;
         }
         Ok(())
     }
