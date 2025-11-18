@@ -26,7 +26,6 @@ pub mod parallel_executor;
 mod verifier;
 
 use starcoin_metrics::metrics::VMMetrics;
-use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::on_chain_config::GasSchedule;
 use starcoin_vm_types::transaction::{

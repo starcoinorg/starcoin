@@ -122,7 +122,7 @@ pub fn execute_transactions_with_reuse(
         if let Some(plan) = planner.plan(&transactions) {
             let reused = plan.reused_count();
             let reexec = plan.reexec_count();
-            println!(
+            info!(
                 "execute_transactions_with_reuse reused={} reexec={}",
                 reused, reexec
             );
@@ -370,10 +370,10 @@ impl<'a> ReusePlanner<'a> {
         };
         let force_reexec = matches!(
             txn,
-            Transaction::BlockMetadata(_) | Transaction::BlockEpilogue(_)
+            Transaction::BlockMetadata(_) | Transaction::BlockEpilogue(..)
         );
         if let Some(rec) = self.store.get(&key) {
-            println!(
+            info!(
                 "prepare_entry hit tx={} force_reexec={}",
                 key.tx_hash, force_reexec
             );
@@ -460,7 +460,7 @@ impl<'a> ReusePlanner<'a> {
                 } else {
                     PlanDecision::Reexec
                 };
-                println!(
+                info!(
                     "classify_decision tx={} decision={:?}",
                     rec.tx_hash, decision
                 );
@@ -504,7 +504,6 @@ impl<'a> ReusePlanner<'a> {
             Some(rec) => rec,
             None => return false,
         };
-        let debug = std::env::var("STARCOIN_REUSE_DEBUG").is_ok();
 
         let read_map = match rec.read_set.as_ref() {
             Some(reads) => {
@@ -518,20 +517,16 @@ impl<'a> ReusePlanner<'a> {
             None => return false,
         };
         if read_map.is_empty() {
-            if debug {
-                println!("reuse_missing_reads tx={}", rec.tx_hash);
-            }
+            info!("[VM2 reuse] missing reads for tx={} – fallback reexec", rec.tx_hash);
             return false;
         }
 
         for (key, _) in rec.write_set.iter() {
             if !read_map.contains_key(key) {
-                if debug {
-                    println!(
-                        "reuse_missing_write_coverage tx={} key={:?}",
-                        rec.tx_hash, key
-                    );
-                }
+                info!(
+                    "[VM2 reuse] missing write coverage tx={} key={:?}",
+                    rec.tx_hash, key
+                );
                 return false;
             }
         }
@@ -541,30 +536,27 @@ impl<'a> ReusePlanner<'a> {
             let entry = match effects.get(key) {
                 Some(entry) => entry,
                 None => {
-                    if debug {
-                        println!("reuse_lookup_miss tx={} key={:?}", rec.tx_hash, key);
-                    }
+                    info!(
+                        "[VM2 reuse] lookup miss tx={} key={:?}",
+                        rec.tx_hash, key
+                    );
                     return false;
                 }
             };
 
             if entry.exists != *expected_exists {
-                if debug {
-                    println!(
-                        "reuse_exists_mismatch tx={} key={:?} expected={} actual={}",
-                        rec.tx_hash, key, expected_exists, entry.exists
-                    );
-                }
+                info!(
+                    "[VM2 reuse] exists mismatch tx={} key={:?} expected={} actual={}",
+                    rec.tx_hash, key, expected_exists, entry.exists
+                );
                 return false;
             }
 
             if *expected_exists && entry.value_hash.as_ref() != Some(expected_hash) {
-                if debug {
-                    println!(
-                        "reuse_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
-                        rec.tx_hash, key, expected_hash, entry.value_hash
-                    );
-                }
+                info!(
+                    "[VM2 reuse] hash mismatch tx={} key={:?} expected={:?} actual={:?}",
+                    rec.tx_hash, key, expected_hash, entry.value_hash
+                );
                 return false;
             }
         }
@@ -575,29 +567,26 @@ impl<'a> ReusePlanner<'a> {
                     let before = match effects.get(key) {
                         Some(entry) => entry,
                         None => {
-                            if debug {
-                                println!(
-                                    "reuse_creation_lookup_miss tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "[VM2 reuse] creation lookup miss tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     };
                     if before.exists {
-                        if debug {
-                            println!("reuse_creation_exists tx={} key={:?}", rec.tx_hash, key);
-                        }
+                        info!(
+                            "[VM2 reuse] creation expected absent tx={} key={:?}",
+                            rec.tx_hash, key
+                        );
                         return false;
                     }
                     if let Some((expected_exists, _)) = read_map.get(key) {
                         if *expected_exists {
-                            if debug {
-                                println!(
-                                    "reuse_creation_expected_exists tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "[VM2 reuse] creation read-set mismatch tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     }
@@ -607,46 +596,35 @@ impl<'a> ReusePlanner<'a> {
                     let before = match effects.get(key) {
                         Some(entry) => entry,
                         None => {
-                            if debug {
-                                println!(
-                                    "reuse_modify_lookup_miss tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "[VM2 reuse] modify lookup miss tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     };
                     let (expected_exists, expected_hash) = match read_map.get(key) {
                         Some((exists, hash)) => (*exists, hash),
                         None => {
-                            if debug {
-                                println!(
-                                    "reuse_modify_missing_read tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "[VM2 reuse] modify missing read-set entry tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     };
                     if !expected_exists || !before.exists {
-                        if debug {
-                            println!(
-                                "reuse_modify_exists_mismatch tx={} key={:?} expected_exists={} before.exists={}",
-                                rec.tx_hash,
-                                key,
-                                expected_exists,
-                                before.exists
-                            );
-                        }
+                        info!(
+                            "[VM2 reuse] modify exists mismatch tx={} key={:?} expected_exists={} before.exists={}",
+                            rec.tx_hash, key, expected_exists, before.exists
+                        );
                         return false;
                     }
                     if before.value_hash.as_ref() != Some(expected_hash) {
-                        if debug {
-                            println!(
-                                "reuse_modify_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
-                                rec.tx_hash, key, expected_hash, before.value_hash
-                            );
-                        }
+                        info!(
+                            "[VM2 reuse] modify hash mismatch tx={} key={:?} expected={:?} actual={:?}",
+                            rec.tx_hash, key, expected_hash, before.value_hash
+                        );
                         return false;
                     }
                     effects.apply_write(key, op);
@@ -655,46 +633,35 @@ impl<'a> ReusePlanner<'a> {
                     let before = match effects.get(key) {
                         Some(entry) => entry,
                         None => {
-                            if debug {
-                                println!(
-                                    "reuse_delete_lookup_miss tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "reuse_delete_lookup_miss tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     };
                     let (expected_exists, expected_hash) = match read_map.get(key) {
                         Some((exists, hash)) => (*exists, hash),
                         None => {
-                            if debug {
-                                println!(
-                                    "reuse_delete_missing_read tx={} key={:?}",
-                                    rec.tx_hash, key
-                                );
-                            }
+                            info!(
+                                "[VM2 reuse] delete missing read-set entry tx={} key={:?}",
+                                rec.tx_hash, key
+                            );
                             return false;
                         }
                     };
                     if !expected_exists || !before.exists {
-                        if debug {
-                            println!(
-                                "reuse_delete_exists_mismatch tx={} key={:?} expected_exists={} before.exists={}",
-                                rec.tx_hash,
-                                key,
-                                expected_exists,
-                                before.exists
-                            );
-                        }
+                        info!(
+                            "[VM2 reuse] delete exists mismatch tx={} key={:?} expected_exists={} before.exists={}",
+                            rec.tx_hash, key, expected_exists, before.exists
+                        );
                         return false;
                     }
                     if before.value_hash.as_ref() != Some(expected_hash) {
-                        if debug {
-                            println!(
-                                "reuse_delete_hash_mismatch tx={} key={:?} expected={:?} actual={:?}",
-                                rec.tx_hash, key, expected_hash, before.value_hash
-                            );
-                        }
+                        info!(
+                            "[VM2 reuse] delete hash mismatch tx={} key={:?} expected={:?} actual={:?}",
+                            rec.tx_hash, key, expected_hash, before.value_hash
+                        );
                         return false;
                     }
                     effects.apply_write(key, op);
@@ -702,9 +669,7 @@ impl<'a> ReusePlanner<'a> {
             }
         }
 
-        if debug {
-            println!("reuse_validate_success tx={}", rec.tx_hash);
-        }
+        info!("reuse_validate_success tx={}", rec.tx_hash);
         true
     }
 }
@@ -765,14 +730,12 @@ impl<'a> ReuseExecutor<'a> {
                 PlanDecision::Reuse => {
                     if let Some(rec) = entry.witness.as_ref() {
                         if rec.base_state_root != Some(self.base_state_root) {
-                            if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                                println!(
-                                    "reuse_base_mismatch tx={} expected={:?} actual={:?}",
-                                    tx_hash,
-                                    self.base_state_root,
-                                    rec.base_state_root
-                                );
-                            }
+                            info!(
+                                "reuse_base_mismatch tx={} expected={:?} actual={:?}",
+                                tx_hash,
+                                self.base_state_root,
+                                rec.base_state_root
+                            );
                             self.remove_witness(tx_hash);
                         } else if let Some(status) = rec.status.clone() {
                             if matches!(status, KeptVMStatus::Executed) && rec.status_ok {
@@ -781,18 +744,16 @@ impl<'a> ReuseExecutor<'a> {
                                 let ws_for_result = write_set_mut
                                     .freeze()
                                     .map_err(BlockExecutorError::BlockChainStateErr)?;
-                                if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                                    println!(
-                                        "reuse_plan_execute apply witness tx={} writes={}",
-                                        tx_hash,
-                                        write_entries.len()
+                                info!(
+                                    "reuse_plan_execute apply witness tx={} writes={}",
+                                    tx_hash,
+                                    write_entries.len()
+                                );
+                                for (idx, (key, op)) in write_entries.iter().enumerate() {
+                                    info!(
+                                        "reuse_plan_write tx={} idx={} key={:?} op={:?}",
+                                        tx_hash, idx, key, op
                                     );
-                                    for (idx, (key, op)) in write_entries.iter().enumerate() {
-                                        println!(
-                                            "reuse_plan_write tx={} idx={} key={:?} op={:?}",
-                                            tx_hash, idx, key, op
-                                        );
-                                    }
                                 }
 
                                 pending_reuse_writes.extend(write_entries);
@@ -870,7 +831,7 @@ impl<'a> ReuseExecutor<'a> {
             let (write_set, events, gas_used, status, _aux) = output.into_inner();
             match status {
                 TransactionStatus::Discard(discard_status) => {
-                    println!(
+                    info!(
                         "reuse reexec discard tx={} status={:?}",
                         tx_hash, discard_status
                     );
@@ -881,22 +842,20 @@ impl<'a> ReuseExecutor<'a> {
                     ));
                 }
                 TransactionStatus::Retry => {
-                    println!("reuse reexec retry tx={}", tx_hash);
+                    info!("reuse reexec retry tx={}", tx_hash);
                     self.remove_witness(tx_hash);
                     return Err(BlockExecutorError::BlockExecuteRetryErr);
                 }
                 TransactionStatus::Keep(keep_status) => {
-                    println!("reuse reexec keep tx={} status={:?}", tx_hash, keep_status);
+                    info!("reuse reexec keep tx={} status={:?}", tx_hash, keep_status);
                     let write_set_clone = write_set.clone();
                     let write_entries_for_store =
                         write_set_clone.clone().into_iter().collect::<Vec<_>>();
-                    if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                        println!(
-                            "reuse_plan_reexec tx={} write_entries={}",
-                            tx_hash,
-                            write_entries_for_store.len()
-                        );
-                    }
+                    info!(
+                        "reuse_plan_reexec tx={} write_entries={}",
+                        tx_hash,
+                        write_entries_for_store.len()
+                    );
                     let mut read_entries = read_sets_iter.next().map(Self::to_read_entries);
                     crate::hydrate_read_set_for_writes(
                         self.statedb,
@@ -952,9 +911,7 @@ impl<'a> ReuseExecutor<'a> {
         }
 
         let final_root = self.statedb.state_root();
-        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-            println!("reuse_execute_plan final_root={:?}", final_root);
-        }
+        info!("reuse_execute_plan final_root={:?}", final_root);
         Ok(BlockExecutedData {
             state_root: final_root,
             txn_infos,
@@ -1026,15 +983,13 @@ impl<'a> ReuseExecutor<'a> {
         }
 
         TEST_REUSE_REEXEC.fetch_add(executed.txn_infos.len(), Ordering::Relaxed);
-        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-            println!("reuse_execute_full final_root={:?}", executed.state_root);
-        }
+        info!("reuse_execute_full final_root={:?}", executed.state_root);
         Ok(executed)
     }
 
     fn txn_meta_fingerprint(&self, txn: &Transaction) -> Option<HashValue> {
         match txn {
-            Transaction::UserTransaction(_) | Transaction::BlockEpilogue(_) => {
+            Transaction::UserTransaction(_) | Transaction::BlockEpilogue(..) => {
                 self.meta_fingerprint
             }
             _ => None,

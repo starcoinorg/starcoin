@@ -49,6 +49,7 @@ use starcoin_types::{
 use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
 use starcoin_types::{multi_access_path::MultiAccessPath, multi_state::MultiState};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
+use starcoin_exec_merge as exec_merge;
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
@@ -63,6 +64,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
+pub(crate) static TEST_VM2_REUSE_ENABLED: AtomicBool = AtomicBool::new(false);
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -597,11 +599,19 @@ impl BlockChain {
             vm_metrics.clone(),
         )?;
 
-        let executed_data2 = starcoin_vm2_chain::execute_transactions(
+        let reuse_opts = exec_merge::ReuseOpts {
+            enabled: crate::vm2_reuse_enabled_for_execution(),
+            epoch_id: epoch.number(),
+            base_state_root: Some(statedb2.state_root()),
+            witness_store: exec_merge::global_witness_store(),
+            merge_engine: std::sync::Arc::new(exec_merge::MergeEngine::new()),
+        };
+        let executed_data2 = starcoin_vm2_chain::execute_transactions_with_reuse(
             &statedb2,
             transactions2.clone(),
             epoch.block_gas_limit() - executed_data.gas_used(),
             vm_metrics,
+            reuse_opts,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
 
@@ -2236,11 +2246,19 @@ impl BlockChain {
             .iter()
             .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
 
-        let executed_data2 = starcoin_vm2_chain::execute_transactions(
+        let reuse_opts = exec_merge::ReuseOpts {
+            enabled: crate::vm2_reuse_enabled_for_execution(),
+            epoch_id: epoch.number(),
+            base_state_root: Some(statedb2.state_root()),
+            witness_store: exec_merge::global_witness_store(),
+            merge_engine: std::sync::Arc::new(exec_merge::MergeEngine::new()),
+        };
+        let executed_data2 = starcoin_vm2_chain::execute_transactions_with_reuse(
             &statedb2,
             transactions2.clone(),
             epoch.block_gas_limit() - vm1_gas_used,
             self.vm_metrics.clone(),
+            reuse_opts,
         )?;
 
         // Update state roots

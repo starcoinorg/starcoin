@@ -57,6 +57,7 @@ struct PlanOutcome {
     witness_hits_with_reads: usize,
     read_checked: u64,
     plan_time_ms: u128,
+    base_state_root: Option<starcoin_vm2_crypto::HashValue>,
 }
 
 static TEST_REUSE_HITS: AtomicUsize = AtomicUsize::new(0);
@@ -162,12 +163,14 @@ pub fn execute_transactions_with_reuse(
                     witness_hits_with_reads += 1;
                 }
                 witness_hits += 1;
+                rec.base_state_root = opts.base_state_root;
                 plan_execs.push(rec.clone());
                 planned_records.push(Some(rec));
             } else {
                 plan_execs.push(ExecRecord {
                     tx_hash: tx.id(),
                     epoch_id,
+                    base_state_root: opts.base_state_root,
                     read_set: None,
                     write_set: Vec::new(),
                     event_root: starcoin_vm2_crypto::HashValue::zero(),
@@ -225,6 +228,7 @@ pub fn execute_transactions_with_reuse(
             witness_hits_with_reads,
             read_checked,
             plan_time_ms: elapsed_ms,
+            base_state_root: opts.base_state_root,
         })
     } else {
         None
@@ -268,6 +272,7 @@ pub fn execute_transactions_with_reuse(
         opts.enabled,
         epoch_id,
         store,
+        opts.base_state_root,
     )
 }
 
@@ -279,6 +284,7 @@ fn execute_full_execution(
     recording: bool,
     epoch_id: u64,
     store: Arc<dyn exec_merge::WitnessStore>,
+    base_state_root: Option<starcoin_vm2_crypto::HashValue>,
 ) -> ExecutorResult<BlockExecutedData> {
     let (executed, recorded_reads) = if recording {
         reuse_recorder::start();
@@ -316,6 +322,7 @@ fn execute_full_execution(
         let rec = ExecRecord {
             tx_hash: tx.id(),
             epoch_id,
+            base_state_root,
             read_set: read_set_entries,
             write_set: write_set_entries,
             event_root: info.event_root_hash(),
@@ -495,6 +502,7 @@ fn execute_with_plan(
                 let rec = ExecRecord {
                     tx_hash,
                     epoch_id,
+                    base_state_root: plan.base_state_root,
                     read_set: read_entries,
                     write_set: write_entries_for_store,
                     event_root,

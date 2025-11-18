@@ -4,6 +4,7 @@ use quick_cache::sync::Cache;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::CryptoHash;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_types::contract_event::ContractEvent;
 use starcoin_vm2_types::vm_error::KeptVMStatus;
@@ -217,12 +218,10 @@ impl MergeEngine {
                 for r in rs.iter() {
                     read_checked += 1;
                     if prefix.contains(&r.key) {
-                        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                            println!(
-                                "plan_merge prefix_conflict tx={} key={:?}",
-                                rec.tx_hash, r.key
-                            );
-                        }
+                        info!(
+                            "plan_merge prefix_conflict tx={} key={:?}",
+                            rec.tx_hash, r.key
+                        );
                         need_reexec = true;
                         break;
                     }
@@ -234,16 +233,14 @@ impl MergeEngine {
                         cur.is_none()
                     };
                     if !ok {
-                        if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                            println!(
-                                "plan_merge hash_mismatch tx={} key={:?} expected_exists={} expected_hash={} actual={:?}",
-                                rec.tx_hash,
-                                r.key,
-                                r.existed,
-                                r.value_hash,
-                                cur
-                            );
-                        }
+                        info!(
+                            "plan_merge hash_mismatch tx={} key={:?} expected_exists={} expected_hash={} actual={:?}",
+                            rec.tx_hash,
+                            r.key,
+                            r.existed,
+                            r.value_hash,
+                            cur
+                        );
                         need_reexec = true;
                         break;
                     }

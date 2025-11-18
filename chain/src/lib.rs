@@ -83,6 +83,10 @@ pub fn set_vm2_reuse(enabled: bool) {
     crate::chain::TEST_VM2_REUSE_ENABLED.store(enabled, Ordering::Relaxed);
 }
 
+pub fn vm2_reuse_enabled_for_execution() -> bool {
+    crate::chain::TEST_VM2_REUSE_ENABLED.load(Ordering::Relaxed)
+}
+
 pub fn set_vm2_reuse_for_test(enabled: bool) -> Vm2ReuseGuard {
     let previous = crate::chain::TEST_VM2_REUSE_ENABLED.swap(enabled, Ordering::Relaxed);
     Vm2ReuseGuard { previous }

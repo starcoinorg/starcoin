@@ -6,6 +6,7 @@ use starcoin_crypto::HashValue;
 use starcoin_exec_merge::{
     global_witness_store, reset_global_witness_store_for_tests, ExecKey, ReadEntry,
 };
+use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_chain::{reset_reuse_counters_for_test, reuse_counters_for_test};
@@ -156,16 +157,14 @@ fn test_vm2_reuse_hits() -> Result<()> {
             epoch_id,
         };
         if let Some(mut rec) = store.get(&key) {
-            if std::env::var("STARCOIN_REUSE_DEBUG").is_ok() {
-                eprintln!(
-                    "witness tx={:?} reads={} writes={}",
-                    hash,
-                    rec.read_set.as_ref().map(|reads| reads.len()).unwrap_or(0),
-                    rec.write_set.len()
-                );
-                for (idx, (key, _)) in rec.write_set.iter().enumerate() {
-                    eprintln!("  write[{idx}] key={:?}", key);
-                }
+            info!(
+                "[VM2 reuse test] witness tx={:?} reads={} writes={}",
+                hash,
+                rec.read_set.as_ref().map(|reads| reads.len()).unwrap_or(0),
+                rec.write_set.len()
+            );
+            for (idx, (key, _)) in rec.write_set.iter().enumerate() {
+                info!("[VM2 reuse test]   write[{idx}] key={:?}", key);
             }
             let had_reads = rec.read_set.is_some();
             rec.write_set
