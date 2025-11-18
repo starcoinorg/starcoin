@@ -5,7 +5,8 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, MultiStateView, StrView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoViewEnum,
+    TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -102,6 +103,13 @@ pub trait ChainApi {
         &self,
         block_hash: HashValue,
     ) -> FutureResult<Vec<TransactionInfoView2>>;
+
+    /// Get chain transactions infos by block id in sequence (both VM1 and VM2)
+    #[rpc(name = "chain.get_block_txn_infos_in_seq")]
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionInfoViewEnum>>;
 
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]

@@ -41,7 +41,7 @@ use starcoin_rpc_api::types::{
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, MultiStateView, PeerInfoView, ResourceView, SignedMessageView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, SyncStatusView,
-    TransactionEventResponse, TransactionEventView, TransactionInfoView,
+    TransactionEventResponse, TransactionEventView, TransactionInfoView, TransactionInfoViewEnum,
     TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
@@ -920,6 +920,14 @@ impl RpcClient {
         block_id: HashValue,
     ) -> anyhow::Result<Vec<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_block_txn_infos(block_id))
+            .map_err(map_err)
+    }
+
+    pub fn chain_get_block_txn_infos_in_seq(
+        &self,
+        block_id: HashValue,
+    ) -> anyhow::Result<Vec<TransactionInfoViewEnum>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_block_txn_infos_in_seq(block_id))
             .map_err(map_err)
     }
 

@@ -481,6 +481,16 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_block_txn_infos_in_seq(
+        &self,
+        _block_hash: HashValue,
+    ) -> FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
     fn get_txn_info_by_block_and_index(
         &self,
         _block_hash: HashValue,

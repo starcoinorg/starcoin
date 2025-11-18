@@ -27,6 +27,10 @@ pub trait ReadableChainService {
     fn get_transaction(&self, hash: HashValue) -> Result<Option<StcTransaction>>;
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<StcRichTransactionInfo>>;
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Vec<crate::TransactionInfoInSeq>>;
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
@@ -144,6 +148,10 @@ pub trait ChainAsyncService:
         &self,
         block_hash: HashValue,
     ) -> impl std::future::Future<Output = Result<Vec<StcRichTransactionInfo>>> + Send;
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> impl std::future::Future<Output = Result<Vec<crate::TransactionInfoInSeq>>> + Send;
     fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
@@ -348,6 +356,20 @@ where
             Ok(txn_infos)
         } else {
             bail!("get block's transaction_info error.")
+        }
+    }
+
+    async fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> Result<Vec<crate::TransactionInfoInSeq>> {
+        let response = self
+            .send(ChainRequest::GetBlockTransactionInfosInSeq(block_hash))
+            .await??;
+        if let ChainResponse::TransactionInfosInSeq(txn_infos) = response {
+            Ok(txn_infos)
+        } else {
+            bail!("get block's transaction_info in sequence error.")
         }
     }
 

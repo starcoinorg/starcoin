@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_abi_decoder::decode_txn_payload;
+use starcoin_chain_api::TransactionInfoInSeq;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -394,6 +395,35 @@ where
                 .into_iter()
                 .filter_map(|i| i.to_v2())
                 .map(Into::into)
+                .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+        let service = self.service.clone();
+        let fut = async move {
+            use starcoin_rpc_api::types::TransactionInfoViewEnum;
+            
+            Ok(service
+                .get_block_txn_infos_in_seq(block_hash)
+                .await?
+                .into_iter()
+                .filter_map(|info| match info {
+                    TransactionInfoInSeq::VM1(stc_rich_info) => {
+                        stc_rich_info.to_v1().map(|vm1_info| {
+                            TransactionInfoViewEnum::Vm1(vm1_info.into())
+                        })
+                    }
+                    TransactionInfoInSeq::VM2(vm2_info) => {
+                        Some(TransactionInfoViewEnum::Vm2(vm2_info.into()))
+                    }
+                })
                 .collect::<Vec<_>>())
         }
         .map_err(map_err);

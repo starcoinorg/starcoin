@@ -1090,6 +1090,15 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "vm_type")]
+pub enum TransactionInfoViewEnum {
+    #[serde(rename = "vm1")]
+    Vm1(TransactionInfoView),
+    #[serde(rename = "vm2")]
+    Vm2(starcoin_vm2_types::view::TransactionInfoView),
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum TransactionStatusView {
     Executed,
