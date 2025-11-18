@@ -9798,7 +9798,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "12.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=70611aa73cc2eab8ffc2dfbd6fd04e64d17e5223#70611aa73cc2eab8ffc2dfbd6fd04e64d17e5223"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=70a7cc216ff922606cc9deca329a0749bc908a09#70a7cc216ff922606cc9deca329a0749bc908a09"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10153,6 +10153,7 @@ dependencies = [
 name = "starcoin-natives"
 version = "1.13.20"
 dependencies = [
+ "anyhow",
  "arrayref",
  "hex",
  "libsecp256k1",
