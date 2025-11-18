@@ -97,19 +97,15 @@ pub trait StateReaderExt: StateView {
 
     /// Get balance by address and coin type
     fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
-        let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource(
-                &address,
-                &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
-            )?)?
-            .ok_or_else(|| {
-                format_err!(
-                    "CoinStoreResource not exists at address:{} for type tag:{}",
-                    address,
-                    type_tag
-                )
-            })?;
-        let rsrc = bcs_ext::from_bytes::<CoinStoreResource>(&rsrc_bytes)?;
+        let coin_store_bytes = self.get_state_value_bytes(&StateKey::resource(
+            &address,
+            &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
+        )?)?;
+
+        let mut total_balance: u128 = match coin_store_bytes {
+            Some(bytes) => bcs_ext::from_bytes::<CoinStoreResource>(&bytes)?.coin() as u128,
+            None => 0,
+        };
 
         // Read primary fungible store from user
         let primary_fungible_store_address =
@@ -124,17 +120,17 @@ pub trait StateReaderExt: StateView {
             &FungibleStoreResource::struct_tag(),
         )?;
 
-        if tag_bytes.is_some() {
-            let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&tag_bytes.unwrap())?;
-            Ok(rsrc.coin() as u128 + fungible_store.balance() as u128)
-        } else {
-            Ok(rsrc.coin() as u128)
+        if let Some(bytes) = tag_bytes {
+            let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?;
+            total_balance += fungible_store.balance() as u128;
         }
+
+        Ok(total_balance)
     }
 
     fn get_resource_group_struct_tag_bytes(
         &self,
-        address: &AccountAddress,
+        _address: &AccountAddress,
         group_key: &StateKey,
         struct_tag: &StructTag,
     ) -> Result<Option<Bytes>> {
@@ -143,28 +139,17 @@ pub trait StateReaderExt: StateView {
             None => return Ok(None),
         };
 
-        let group_data_map =
-            bcs::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data).map_err(|e| {
-                PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
-                    format!(
-                        "Failed to deserialize the resource group at {:? }: {:?}",
-                        group_key, e
-                    ),
-                )
-            })?;
+        let group_data_map: BTreeMap<StructTag, Bytes> = bcs::from_bytes::<
+            BTreeMap<StructTag, Bytes>,
+        >(&group_data)
+        .map_err(|e| {
+            PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(format!(
+                "Failed to deserialize the resource group at {:? }: {:?}",
+                group_key, e
+            ))
+        })?;
 
-        Ok(Some(
-            group_data_map
-                .get(struct_tag)
-                .ok_or_else(|| {
-                    format_err!(
-                        "Group struct tag not exists at address:{} for type tag:{}",
-                        address,
-                        struct_tag
-                    )
-                })?
-                .clone(),
-        ))
+        Ok(group_data_map.get(struct_tag).cloned())
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
