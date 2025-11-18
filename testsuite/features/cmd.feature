@@ -101,6 +101,7 @@ Feature: cmd integration test
     Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
+    Then assert: "{{$.account[-1].ok.balances.'0x1::starcoin_coin::STC'}} != 0"
     Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account"
     Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account --raw"
     Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::account::Account"
@@ -321,4 +322,3 @@ Feature: cmd integration test
 #
 #    Examples:
 #      |  |
-
