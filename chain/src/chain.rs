@@ -844,7 +844,10 @@ impl BlockChain {
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(
             block_id,
-            vm2_txn_info_ids.into_iter().chain(txn_info_ids).collect(),
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect(),
         )?;
         storage.commit_block(block.clone())?;
 
@@ -2534,10 +2537,15 @@ impl BlockChain {
 
         // Save block's transaction ids and info ids
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-        storage.save_block_txn_info_ids(
-            block_id,
-            vm2_txn_info_ids.into_iter().chain(txn_info_ids).collect(),
-        )?;
+        let ordered_ids = if txn_info_ids.is_empty() {
+            vm2_txn_info_ids
+        } else {
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect()
+        };
+        storage.save_block_txn_info_ids(block_id, ordered_ids)?;
 
         // Save table infos
         storage.save_table_infos(txn_table_infos)?;
