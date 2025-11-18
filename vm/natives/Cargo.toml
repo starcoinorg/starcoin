@@ -18,10 +18,12 @@ starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 tiny-keccak = { features = ["keccak"], workspace = true }
 walkdir = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
 rand = { workspace = true }
+anyhow = { workspace = true }
 
 [features]
 testing = ["move-stdlib/testing"]

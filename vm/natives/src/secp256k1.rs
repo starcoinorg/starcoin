@@ -8,6 +8,7 @@
  *
  **************************************************************************************************/
 
+use crate::ecrecover::pubkey_to_address;
 use crate::util::make_native_from_func;
 use libsecp256k1::PublicKey;
 use move_binary_format::errors::PartialVMResult;
@@ -45,7 +46,7 @@ pub mod abort_codes {
     pub const NFE_DESERIALIZE: u64 = 0x01_0001;
 }
 
-fn native_ecdsa_recover(
+fn native_ecdsa_recover_internal(
     gas_params: &Secp256k1EcdsaRecoverGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -115,27 +116,24 @@ fn native_decompress_pubkey(
     debug_assert!(arguments.len() == 1);
 
     let cost = gas_params.base + gas_params.per_byte * NumBytes::one();
-
-    let compressed_key = pop_arg!(arguments, Vec<u8>);
-    if compressed_key.len() != 33 {
-        return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
-    }
-
-    let fixed_size_key: [u8; 33] = match compressed_key.try_into() {
-        Ok(arr) => arr,
+    let compressed_key_bytes = pop_arg!(arguments, Vec<u8>);
+    // Convert to fixed-size array
+    let fixed_size_key: [u8; 33] = match compressed_key_bytes.try_into() {
+        Ok(bytes) => bytes,
         Err(_) => return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE)),
     };
 
-    match PublicKey::parse_compressed(&fixed_size_key) {
-        Ok(pk) => Ok(NativeResult::ok(
-            cost,
-            smallvec![Value::vector_u8(pk.serialize()[1..].to_vec())],
-        )),
-        Err(_) => Ok(NativeResult::ok(
-            cost,
-            smallvec![Value::vector_u8([0u8; 0])],
-        )),
-    }
+    // Decompress the public key
+    let pubkey = match PublicKey::parse_compressed(&fixed_size_key) {
+        Ok(pubkey) => pubkey,
+        Err(_) => return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE)),
+    };
+
+    // Calculate address from public key (keccak256 hash of uncompressed public key, last 20 bytes)
+    let address = pubkey_to_address(&pubkey);
+
+    // Return decompressed public key (without first byte, same as original implementation)
+    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(address)]))
 }
 
 /***************************************************************************************************
@@ -147,7 +145,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     let natives = [
         (
             "ecdsa_recover_internal",
-            make_native_from_func(gas_params.ecdsa_recover_internal, native_ecdsa_recover),
+            make_native_from_func(
+                gas_params.ecdsa_recover_internal,
+                native_ecdsa_recover_internal,
+            ),
         ),
         (
             "decompress_pubkey",
@@ -156,4 +157,47 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     ];
 
     crate::helpers::make_module_natives(natives)
+}
+
+#[test]
+fn test_decomparess() -> anyhow::Result<()> {
+    use crate::ecrecover::pubkey_to_address;
+    use hex::FromHex;
+    use libsecp256k1::PublicKey;
+
+    let validator_pub_key = "029bef8d556d80e43ae7e0becb3a7e6838b95defe45896ed6075bb9035d06c9964";
+    let expected_address = "b14d3c4f5fbfbcfb98af2d330000d49c95b93aa7";
+
+    // Convert hex string to bytes
+    let compressed_key_bytes: Vec<u8> = FromHex::from_hex(validator_pub_key)?;
+    assert_eq!(
+        compressed_key_bytes.len(),
+        33,
+        "Compressed public key must be 33 bytes"
+    );
+
+    // Convert to fixed-size array
+    let fixed_size_key: [u8; 33] = compressed_key_bytes
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("Failed to convert to fixed-size array"))?;
+
+    // Decompress the public key
+    let pubkey = PublicKey::parse_compressed(&fixed_size_key)
+        .map_err(|e| anyhow::anyhow!("Failed to parse compressed public key: {:?}", e))?;
+
+    // Calculate address from public key (keccak256 hash of uncompressed public key, last 20 bytes)
+    let address = pubkey_to_address(&pubkey);
+
+    // Convert expected address from hex
+    let expected_address_bytes: Vec<u8> = FromHex::from_hex(expected_address)?;
+    assert_eq!(expected_address_bytes.len(), 20, "Address must be 20 bytes");
+
+    // Verify the address matches
+    assert_eq!(
+        address, expected_address_bytes,
+        "Address mismatch. Got: {:?}, Expected: {}",
+        address, expected_address
+    );
+
+    Ok(())
 }
