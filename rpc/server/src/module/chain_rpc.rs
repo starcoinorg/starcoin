@@ -409,19 +409,17 @@ where
         let service = self.service.clone();
         let fut = async move {
             use starcoin_rpc_api::types::TransactionInfoViewEnum;
-            
+
             Ok(service
                 .get_block_txn_infos_in_seq(block_hash)
                 .await?
                 .into_iter()
                 .filter_map(|info| match info {
-                    TransactionInfoInSeq::VM1(stc_rich_info) => {
-                        stc_rich_info.to_v1().map(|vm1_info| {
-                            TransactionInfoViewEnum::Vm1(vm1_info.into())
-                        })
-                    }
+                    TransactionInfoInSeq::VM1(stc_rich_info) => stc_rich_info
+                        .to_v1()
+                        .map(|vm1_info| TransactionInfoViewEnum::VM1(vm1_info.into())),
                     TransactionInfoInSeq::VM2(vm2_info) => {
-                        Some(TransactionInfoViewEnum::Vm2(vm2_info.into()))
+                        Some(TransactionInfoViewEnum::VM2(vm2_info.into()))
                     }
                 })
                 .collect::<Vec<_>>())

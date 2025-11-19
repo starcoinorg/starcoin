@@ -450,12 +450,12 @@ impl ReadableChainService for ChainReaderServiceInner {
         block_id: HashValue,
     ) -> Result<Vec<starcoin_chain_api::TransactionInfoInSeq>, Error> {
         use starcoin_chain_api::TransactionInfoInSeq;
-        
+
         let all_txn_infos = self.storage.get_block_transaction_infos(block_id)?;
-        
+
         let mut vm1_infos = Vec::new();
         let mut vm2_infos = Vec::new();
-        
+
         for rich_info in all_txn_infos {
             match &rich_info.transaction_info {
                 starcoin_types::transaction::StcTransactionInfo::V1(_) => {
@@ -466,11 +466,11 @@ impl ReadableChainService for ChainReaderServiceInner {
                 }
             }
         }
-        
+
         vm2_infos.sort_by_key(|(idx, _, _)| *idx);
-        
+
         let mut result = Vec::new();
-        
+
         if !vm2_infos.is_empty() {
             let (_, v2_info, rich_info) = &vm2_infos[0];
             let rich_info_v2 = starcoin_vm2_vm_types::transaction::RichTransactionInfo::new(
@@ -481,11 +481,11 @@ impl ReadableChainService for ChainReaderServiceInner {
                 rich_info.transaction_global_index,
             );
             result.push(TransactionInfoInSeq::VM2(rich_info_v2));
-            
+
             for vm1_info in vm1_infos {
                 result.push(TransactionInfoInSeq::VM1(vm1_info));
             }
-            
+
             for (_, v2_info, rich_info) in vm2_infos.into_iter().skip(1) {
                 let rich_info_v2 = starcoin_vm2_vm_types::transaction::RichTransactionInfo::new(
                     rich_info.block_id,
@@ -499,7 +499,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         } else {
             bail!("Why vm2 transction infos is empty?");
         }
-        
+
         Ok(result)
     }
 
