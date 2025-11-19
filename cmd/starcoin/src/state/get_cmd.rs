@@ -3,13 +3,17 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
+use starcoin_vm2_rpc_api::state_api::PrimaryFungibleStoreOption;
 use starcoin_vm2_types::view::{CodeView, ResourceView, StrView};
 use starcoin_vm2_vm_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm2_vm_types::{
+    account_config::resources::FungibleStoreResource, move_resource::MoveStructType,
+};
 
 /// Get state data command
 ///  Some examples:
@@ -35,6 +39,16 @@ pub enum GetOpt {
         #[clap(long, short = 'n')]
         /// Get state at a special block height.
         block_number: Option<u64>,
+        #[clap(
+            long = "primary-store",
+            help = "Fetch primary fungible store (VM2 only)"
+        )]
+        primary_store: bool,
+        #[clap(
+            long = "token-code",
+            help = "Token code for primary store, default STC"
+        )]
+        token_code: Option<String>,
     },
 }
 
@@ -91,6 +105,8 @@ impl CommandAction for GetCommand {
                 address,
                 resource_type,
                 block_number,
+                primary_store,
+                token_code,
             } => {
                 let state_root = match block_number {
                     Some(block_number) => ctx
@@ -100,11 +116,25 @@ impl CommandAction for GetCommand {
                         .map(|block_view| block_view.header.state_root),
                     None => None,
                 };
+                let primary_option = if *primary_store {
+                    if resource_type.0 != FungibleStoreResource::struct_tag() {
+                        return Err(format_err!(
+                            "--primary-store requires resource type {}",
+                            FungibleStoreResource::struct_tag()
+                        ));
+                    }
+                    Some(PrimaryFungibleStoreOption {
+                        token_code: token_code.clone(),
+                    })
+                } else {
+                    None
+                };
                 GetDataResult::Resource(ctx.state().client().state_get_resource2(
                     *address,
                     resource_type.0.clone(),
                     true,
                     state_root,
+                    primary_option,
                 )?)
             }
         };

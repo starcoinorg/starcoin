@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::map_err;
+use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::future::TryFutureExt;
@@ -10,12 +11,13 @@ use starcoin_vm2_abi_resolver::ABIResolver;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_dev::playground::view_resource;
 use starcoin_vm2_resource_viewer::MoveValueAnnotator;
+use starcoin_vm2_vm_types::move_resource::MoveStructType;
 
 use starcoin_vm2_rpc_api::state_api::{
     GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
 };
 use starcoin_vm2_rpc_api::{state_api::StateApi, FutureResult};
-use starcoin_vm2_state_api::{ChainStateAsyncService, StateNodeStore};
+use starcoin_vm2_state_api::{ChainStateAsyncService, StateNodeStore, StateReaderExt};
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_vm2_types::view::{
     AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
@@ -23,12 +25,13 @@ use starcoin_vm2_types::view::{
 };
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm2_vm_types::{
+    account_config::resources::{primary_store, FungibleStoreResource, ObjectGroupResource},
     identifier::Identifier,
     language_storage::{struct_tag_match, ModuleId, StructTag},
     state_store::{state_key::StateKey, table::TableHandle, TStateView},
+    token::{stc::G_STC_TOKEN_CODE, token_code::TokenCode},
 };
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 pub struct StateRpcImpl<S>
 where
@@ -262,8 +265,15 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let state_key = StateKey::resource(&addr, &resource_type.0)?;
-            let data = chain_state.get_state_value_bytes(&state_key)?;
+            let data = if let Some(primary_store) = option.primary_fungible_store {
+                ensure_fungible_store_struct(&resource_type.0)?;
+                resolve_primary_store_bytes(&chain_state, addr, primary_store.token_code)?
+            } else {
+                let state_key = StateKey::resource(&addr, &resource_type.0)?;
+                chain_state
+                    .get_state_value_bytes(&state_key)?
+                    .map(|bytes| bytes.to_vec())
+            };
             Ok(match data {
                 None => None,
                 Some(d) => {
@@ -305,8 +315,8 @@ where
                 return Err(anyhow::anyhow!("Query resources is limited by 10"));
             }
 
-            match state {
-                None => Ok(ListResourceView::default()),
+            let mut list = match state {
+                None => ListResourceView::default(),
                 Some(s) => {
                     let resources: Result<BTreeMap<StructTagView, ResourceView>, anyhow::Error> = s
                         .resource_set()
@@ -348,11 +358,37 @@ where
                             ))
                         })
                         .collect();
-                    Ok(ListResourceView {
+                    ListResourceView {
                         resources: resources?,
-                    })
+                    }
+                }
+            };
+
+            if let Some(primary_store) = option.primary_fungible_store {
+                if let Some(bytes) =
+                    resolve_primary_store_bytes(&statedb, addr, primary_store.token_code)?
+                {
+                    let decoded = if option.decode {
+                        view_resource(
+                            &statedb,
+                            FungibleStoreResource::struct_tag(),
+                            bytes.as_slice(),
+                        )
+                        .ok()
+                        .map(Into::into)
+                    } else {
+                        None
+                    };
+                    list.resources.insert(
+                        StrView(FungibleStoreResource::struct_tag()),
+                        ResourceView {
+                            raw: StrView(bytes),
+                            json: decoded,
+                        },
+                    );
                 }
             }
+            Ok(list)
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
@@ -404,4 +440,35 @@ where
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
+}
+
+fn ensure_fungible_store_struct(tag: &StructTag) -> Result<()> {
+    if tag == &FungibleStoreResource::struct_tag() {
+        Ok(())
+    } else {
+        bail!(
+            "Primary fungible store option requires struct tag {}",
+            FungibleStoreResource::struct_tag()
+        )
+    }
+}
+
+fn resolve_primary_store_bytes(
+    chain_state: &ChainStateDB,
+    owner: AccountAddress,
+    token_code: Option<String>,
+) -> Result<Option<Vec<u8>>> {
+    let token_code = match token_code {
+        Some(code) => TokenCode::from_str(&code)?,
+        None => G_STC_TOKEN_CODE.clone(),
+    };
+    let derived = primary_store(&owner, &token_code.to_canonical_string())?;
+    let group_key = StateKey::resource_group(&derived, &ObjectGroupResource::struct_tag());
+    Ok(chain_state
+        .get_resource_group_struct_tag_bytes(
+            &owner,
+            &group_key,
+            &FungibleStoreResource::struct_tag(),
+        )?
+        .map(|bytes| bytes.to_vec()))
 }

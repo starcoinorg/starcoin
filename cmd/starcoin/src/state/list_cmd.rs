@@ -9,6 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use serde::{Serialize, Serializer};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_vm2_abi_resolver::ABIResolver;
+use starcoin_vm2_rpc_api::state_api::PrimaryFungibleStoreOption;
 use starcoin_vm2_types::view::{ListCodeView, ListResourceView, StructTagView};
 use starcoin_vm2_vm_types::account_address::AccountAddress;
 use starcoin_vm2_vm_types::language_storage::ModuleId;
@@ -47,6 +48,13 @@ pub enum ListDataOpt {
 
         #[clap(long, short = 's')]
         max_size: Option<usize>,
+        #[clap(long = "primary-store", help = "Include primary fungible store (VM2)")]
+        primary_store: bool,
+        #[clap(
+            long = "token-code",
+            help = "Token code for primary store, default STC"
+        )]
+        token_code: Option<String>,
     },
 }
 
@@ -110,6 +118,8 @@ impl CommandAction for ListCmd {
                 resource_type,
                 start_index,
                 max_size,
+                primary_store,
+                token_code,
             } => {
                 let state_root = match block_number {
                     Some(block_number) => ctx
@@ -122,6 +132,13 @@ impl CommandAction for ListCmd {
                 let state_reader = ctx.state().client().state_reader2(
                     state_root.map_or(StateRootOption::Latest, StateRootOption::BlockHash),
                 )?;
+                let primary_option = if *primary_store {
+                    Some(PrimaryFungibleStoreOption {
+                        token_code: token_code.clone(),
+                    })
+                } else {
+                    None
+                };
 
                 ListDataResult::Resource(decode_resource(
                     &state_reader,
@@ -132,6 +149,7 @@ impl CommandAction for ListCmd {
                         start_index.unwrap_or_default(),
                         max_size.unwrap_or_else(|| usize::MAX),
                         resource_type.as_ref().map(|a| vec![a.clone()]),
+                        primary_option,
                     )?,
                 ))
             }

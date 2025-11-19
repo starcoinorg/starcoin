@@ -34,7 +34,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-05398a5
+        image: ghcr.io/starcoinorg/starcoin:sha-dded77d
         imagePullPolicy: Always
         command:
           - bash

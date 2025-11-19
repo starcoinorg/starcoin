@@ -42,6 +42,15 @@ impl TokenCode {
             name,
         }
     }
+
+    pub fn to_canonical_string(&self) -> String {
+        format!(
+            "{}::{}::{}",
+            self.address.to_canonical_string(),
+            self.module,
+            self.name
+        )
+    }
 }
 
 impl fmt::Display for TokenCode {

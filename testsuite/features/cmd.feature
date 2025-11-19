@@ -112,6 +112,14 @@ Feature: cmd integration test
     Then cmd: "state list resource -s 5 -i 0 {{$.account[0].ok.account.address}}"
     Then cmd: "account show"
     Then cmd: "state list code {{$.account[0].ok.account.address}}"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::fungible_asset::FungibleStore --primary-store"
+    Then assert: "{{$.state[-1].ok.json.balance}} != 0"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::fungible_asset::FungibleStore --primary-store --token-code 0x1::starcoin_coin::STC"
+    Then assert: "{{$.state[-1].ok}} != null"
+    Then cmd: "state list resource {{$.account[0].ok.account.address}} --primary-store"
+    Then assert: "{{$.state[-1].ok.resources.'0x1::fungible_asset::FungibleStore'.json.balance}} != 0"
+    Then cmd: "state list resource {{$.account[0].ok.account.address}} --primary-store --token-code 0x1::starcoin_coin::STC"
+    Then assert: "{{$.state[-1].ok.resources.'0x1::fungible_asset::FungibleStore'}} != null"
     Then stop
 
     Examples:
