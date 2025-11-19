@@ -101,7 +101,6 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
             "Transaction index should match position in array"
         );
     }
-    info!("✓ All transaction indices are sequential");
 
     let vm2_count = txn_infos_in_seq
         .iter()
