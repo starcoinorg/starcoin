@@ -1093,9 +1093,9 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
 #[serde(tag = "vm_type")]
 pub enum TransactionInfoViewEnum {
     #[serde(rename = "vm1")]
-    Vm1(TransactionInfoView),
+    VM1(TransactionInfoView),
     #[serde(rename = "vm2")]
-    Vm2(starcoin_vm2_types::view::TransactionInfoView),
+    VM2(starcoin_vm2_types::view::TransactionInfoView),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
