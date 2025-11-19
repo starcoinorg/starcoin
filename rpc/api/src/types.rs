@@ -84,8 +84,10 @@ pub use vm_status_translator::VmStatusExplainView;
 pub type ByteCode = Vec<u8>;
 mod node_api_types;
 pub mod pubsub;
-use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
-use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
+use starcoin_vm2_types::{
+    transaction::RichTransactionInfo as RichTransactionInfo2,
+    view::TransactionInfoView as TransactionInfoView2,
+};
 use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -1095,7 +1097,7 @@ pub enum TransactionInfoViewEnum {
     #[serde(rename = "vm1")]
     VM1(TransactionInfoView),
     #[serde(rename = "vm2")]
-    VM2(starcoin_vm2_types::view::TransactionInfoView),
+    VM2(TransactionInfoView2),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
