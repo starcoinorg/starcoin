@@ -39,20 +39,16 @@ impl RawRpcClient for MockRpcClient {
         message: Vec<u8>,
     ) -> BoxFuture<Result<Vec<u8>>> {
         *self.call_count.lock().unwrap() += 1;
-
         if peer_id == self.peer_id1 {
             futures::future::ready(Err(format_err!("NotConnected"))).boxed()
         } else if peer_id == self.peer_id2 {
             let blocks = self.blocks.lock().unwrap();
             let request_ids: Vec<HashValue> = bcs_ext::from_bytes(&message).unwrap();
-
             let response_blocks: Vec<Option<Block>> = request_ids
                 .iter()
                 .map(|id| blocks.iter().find(|b| &b.id() == id).cloned())
                 .collect();
-
             let data_bytes = bcs_ext::to_bytes(&response_blocks).unwrap();
-
             let rpc_result: network_p2p_core::Result<Vec<u8>, NetRpcError> = Ok(data_bytes);
             let response_bytes = bcs_ext::to_bytes(&rpc_result).unwrap();
             futures::future::ready(Ok(response_bytes)).boxed()
@@ -66,7 +62,6 @@ impl RawRpcClient for MockRpcClient {
 fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     let node = test_helper::run_test_node()?;
     let chain_service = node.chain_service()?;
-
     for _ in 0..3 {
         node.generate_block()?;
     }
@@ -91,13 +86,11 @@ fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     peer_info1.peer_id = peer_id1.clone();
     peer_selector.add_or_update_peer(peer_info1);
     peer_selector.peer_score(&peer_id1, 100);
-
     let peer_id2 = PeerId::random();
     let mut peer_info2 = PeerInfo::random();
     peer_info2.peer_id = peer_id2.clone();
     peer_selector.add_or_update_peer(peer_info2);
     peer_selector.peer_score(&peer_id2, 99);
-
     let mock_client = MockRpcClient::new(
         peer_id1.clone(),
         peer_id2.clone(),

@@ -26,6 +26,7 @@ starcoin-storage = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
+sp-utils = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
