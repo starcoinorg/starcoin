@@ -42,7 +42,7 @@ use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
 };
-use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView as StateView2};
+use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
 
@@ -689,6 +689,7 @@ where
         Box::pin(fut.boxed())
     }
 
+    #[allow(deprecated)]
     fn get_transaction_proof(
         &self,
         block_hash: HashValue,
@@ -713,6 +714,7 @@ where
         Box::pin(fut.boxed())
     }
 
+    #[allow(deprecated)]
     fn get_transaction_proof_raw(
         &self,
         block_hash: HashValue,
@@ -748,7 +750,7 @@ where
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
@@ -757,7 +759,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
+                    access_path,
                 )
                 .await?
                 .map(Into::into))
@@ -772,7 +774,7 @@ where
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
         let service = self.service.clone();
         let fut = async move {
@@ -781,7 +783,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
+                    access_path,
                 )
                 .await?
                 .map(|proof| {

@@ -4,6 +4,7 @@
 use crate::{map_err, remote_state_reader2::RemoteStateReader, RpcClient, StateRootOption};
 use bcs_ext::BCSCodec;
 use starcoin_rpc_api::{chain::GetEventOption, types::TransactionInfoWithProofView};
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
@@ -27,7 +28,6 @@ use starcoin_vm2_types::{
     },
 };
 use starcoin_vm2_vm_types::{
-    access_path::AccessPath,
     account_config::token_code::TokenCode,
     sign_message::SigningMessage,
     state_store::{state_key::StateKey, table::TableHandle},
@@ -493,14 +493,14 @@ impl RpcClient {
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> anyhow::Result<Option<TransactionInfoWithProofView>> {
         self.call_rpc_blocking(|inner| {
             inner.chain_client.get_transaction_proof2(
                 block_hash,
                 transaction_global_index,
                 event_index,
-                access_path.map(Into::into),
+                access_path,
             )
         })
         .map_err(map_err)
@@ -511,14 +511,14 @@ impl RpcClient {
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> anyhow::Result<Option<StrView<Vec<u8>>>> {
         self.call_rpc_blocking(|inner| {
             inner.chain_client.get_transaction_proof2_raw(
                 block_hash,
                 transaction_global_index,
                 event_index,
-                access_path.map(Into::into),
+                access_path,
             )
         })
         .map_err(map_err)

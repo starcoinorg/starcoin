@@ -74,69 +74,97 @@ impl CommandAction for GetTransactionProofCommand {
         let block = client
             .chain_get_block_by_hash(opt.block_hash, None)?
             .ok_or_else(|| format_err!("Can not find block by hash: {}", opt.block_hash))?;
-        
-        // Determine VM type from access_path (if provided)
+
+        // Get all transaction infos in sequence (both VM1 and VM2)
+        let txn_infos_in_seq = client.chain_get_block_txn_infos_in_seq(opt.block_hash)?;
+
+        // Verify transaction exists and matches VM type from access_path (if provided)
         if let Some(ref access_path) = opt.access_path {
-            let is_vm1 = matches!(access_path, MultiAccessPath::VM1(_));
-            
-            // Verify transaction exists in the correct VM type's transaction list
-            let txn_infos = if is_vm1 {
-                client.chain_get_block_txn_infos(opt.block_hash)?
-                    .into_iter()
-                    .map(|info| info.transaction_global_index.0)
-                    .collect::<Vec<_>>()
-            } else {
-                client.chain_get_block_txn_infos2(opt.block_hash)?
-                    .into_iter()
-                    .map(|info| info.transaction_global_index.0)
-                    .collect::<Vec<_>>()
-            };
-            
-            ensure!(
-                txn_infos.contains(&opt.transaction_global_index),
-                "Transaction with global index {} not found in block {} for VM type {}",
-                opt.transaction_global_index,
-                opt.block_hash,
-                if is_vm1 { "VM1" } else { "VM2" }
-            );
+            let expected_vm1 = matches!(access_path, MultiAccessPath::VM1(_));
+
+            let found_txn = txn_infos_in_seq.iter().find(|info| {
+                let global_index = match info {
+                    starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(txn) => {
+                        txn.transaction_global_index.0
+                    }
+                    starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(txn) => {
+                        txn.transaction_global_index.0
+                    }
+                };
+                global_index == opt.transaction_global_index
+            });
+
+            match found_txn {
+                Some(info) => {
+                    let is_vm1 = matches!(
+                        info,
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(_)
+                    );
+                    ensure!(
+                        is_vm1 == expected_vm1,
+                        "Transaction {} VM type mismatch: access_path is {}, but transaction is {}",
+                        opt.transaction_global_index,
+                        if expected_vm1 { "VM1" } else { "VM2" },
+                        if is_vm1 { "VM1" } else { "VM2" }
+                    );
+                }
+                None => {
+                    return Err(format_err!(
+                        "Transaction with global index {} not found in block {}",
+                        opt.transaction_global_index,
+                        opt.block_hash
+                    ));
+                }
+            }
         }
-        
+
+        // Verify final transaction exists and matches VM type from final_access_path (if provided)
         if let Some(ref final_access_path) = opt.final_access_path {
-            let is_vm1 = matches!(final_access_path, MultiAccessPath::VM1(_));
-            
-            let final_txn_infos = if is_vm1 {
-                client.chain_get_block_txn_infos(opt.block_hash)?
-                    .into_iter()
-                    .map(|info| info.transaction_global_index.0)
-                    .collect::<Vec<_>>()
-            } else {
-                client.chain_get_block_txn_infos2(opt.block_hash)?
-                    .into_iter()
-                    .map(|info| info.transaction_global_index.0)
-                    .collect::<Vec<_>>()
-            };
-            
-            ensure!(
-                final_txn_infos.contains(&opt.final_transaction_info_index),
-                "Transaction with global index {} not found in block {} for VM type {}",
-                opt.final_transaction_info_index,
-                opt.block_hash,
-                if is_vm1 { "VM1" } else { "VM2" }
-            );
+            let expected_vm1 = matches!(final_access_path, MultiAccessPath::VM1(_));
+
+            let found_txn = txn_infos_in_seq.iter().find(|info| {
+                let global_index = match info {
+                    starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(txn) => {
+                        txn.transaction_global_index.0
+                    }
+                    starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(txn) => {
+                        txn.transaction_global_index.0
+                    }
+                };
+                global_index == opt.final_transaction_info_index
+            });
+
+            match found_txn {
+                Some(info) => {
+                    let is_vm1 = matches!(
+                        info,
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(_)
+                    );
+                    ensure!(
+                        is_vm1 == expected_vm1,
+                        "Transaction {} VM type mismatch: final_access_path is {}, but transaction is {}",
+                        opt.final_transaction_info_index,
+                        if expected_vm1 { "VM1" } else { "VM2" },
+                        if is_vm1 { "VM1" } else { "VM2" }
+                    );
+                }
+                None => {
+                    return Err(format_err!(
+                        "Transaction with global index {} not found in block {}",
+                        opt.final_transaction_info_index,
+                        opt.block_hash
+                    ));
+                }
+            }
         }
-        
-        // Extract VM2 AccessPath for RPC call (RPC only supports VM2)
-        let access_path_v2 = opt.access_path.as_ref().and_then(|multi_path| {
-            multi_path.clone().to_v2()
-        });
-        
+
         let (txn_proof, result) = if opt.raw {
             let txn_proof_hex = client
                 .chain_get_transaction_proof2_raw(
                     opt.block_hash,
                     opt.transaction_global_index,
                     opt.event_index,
-                    access_path_v2,
+                    opt.access_path.clone(),
                 )?
                 .ok_or_else(|| {
                     format_err!(
@@ -154,7 +182,7 @@ impl CommandAction for GetTransactionProofCommand {
                     opt.block_hash,
                     opt.transaction_global_index,
                     opt.event_index,
-                    access_path_v2,
+                    opt.access_path.clone(),
                 )?
                 .ok_or_else(|| {
                     format_err!(
@@ -168,7 +196,7 @@ impl CommandAction for GetTransactionProofCommand {
         ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
             "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
             opt.transaction_global_index, txn_proof.transaction_info.transaction_global_index);
-        
+
         txn_proof.verify(
             block.header.txn_accumulator_root,
             opt.transaction_global_index,

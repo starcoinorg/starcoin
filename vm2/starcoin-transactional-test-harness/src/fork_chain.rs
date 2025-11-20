@@ -32,6 +32,7 @@ use starcoin_storage::{
 use starcoin_types::{
     block::{Block, BlockInfo, BlockNumber},
     contract_event::StcContractEvent,
+    multi_access_path::MultiAccessPath,
     startup_info::{ChainInfo, ChainStatus},
 };
 use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
@@ -43,7 +44,7 @@ use starcoin_vm2_types::{
         TransactionInfoView as TransactionInfoView2,
     },
 };
-use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView};
+use starcoin_vm2_vm_types::StateView;
 use starcoin_vm_types::access_path::AccessPath as AccessPath1;
 use std::{
     hash::Hash,
@@ -614,7 +615,7 @@ impl ChainApi for MockChainApi {
         _block_hash: HashValue,
         _transaction_global_index: u64,
         _event_index: Option<u64>,
-        _access_path: Option<StrView2<AccessPath2>>,
+        _access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let fut = async move {
             bail!("not implemented.");
@@ -627,7 +628,7 @@ impl ChainApi for MockChainApi {
         _block_hash: HashValue,
         _transaction_global_index: u64,
         _event_index: Option<u64>,
-        _access_path: Option<StrView2<AccessPath2>>,
+        _access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
         let fut = async move {
             bail!("not implemented.");
