@@ -302,93 +302,85 @@ where
     ) -> FutureResult<ListResourceView> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
-        let option = option.unwrap_or_default();
         let fut = async move {
-            let state_root = option
-                .state_root
-                .unwrap_or(state_service.state_root().await?);
+            let ListResourceOption {
+                decode,
+                state_root,
+                start_index,
+                max_size,
+                resource_types,
+                primary_fungible_store,
+            } = option.unwrap_or_default();
+            let state_root = state_root.unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
 
             let state = statedb.get_account_state_set(&addr)?;
-            let filter_types = option.resource_types;
+            let filter_types = resource_types;
             if filter_types.is_some() && filter_types.as_ref().unwrap().len() > 10 {
                 return Err(anyhow::anyhow!("Query resources is limited by 10"));
             }
 
-            let mut list = match state {
-                None => ListResourceView::default(),
-                Some(s) => {
-                    let resources: Result<BTreeMap<StructTagView, ResourceView>, anyhow::Error> = s
-                        .resource_set()
-                        .cloned()
-                        .unwrap_or_default()
+            let matches_filter = |tag: &StructTag| {
+                if let Some(filters) = &filter_types {
+                    filters
                         .iter()
-                        .filter(|(k, _)| {
-                            if filter_types.is_none() {
-                                return true;
-                            }
-
-                            let resource_struct_tag = StructTag::decode(k.as_slice()).unwrap();
-                            for filter_type in filter_types.as_ref().unwrap() {
-                                if struct_tag_match(&filter_type.0, &resource_struct_tag) {
-                                    return true;
-                                }
-                            }
-                            false
-                        })
-                        .skip(option.start_index)
-                        .take(option.max_size)
-                        .map(|(k, v)| {
-                            let struct_tag = StructTag::decode(k.as_slice())?;
-                            let decoded = if option.decode {
-                                //ignore the resource decode error
-                                view_resource(&statedb, struct_tag.clone(), v.as_slice())
-                                    .ok()
-                                    .map(Into::into)
-                            } else {
-                                None
-                            };
-
-                            Ok((
-                                StrView(struct_tag),
-                                ResourceView {
-                                    raw: StrView(v.clone()),
-                                    json: decoded,
-                                },
-                            ))
-                        })
-                        .collect();
-                    ListResourceView {
-                        resources: resources?,
-                    }
+                        .any(|filter| struct_tag_match(&filter.0, tag))
+                } else {
+                    true
                 }
             };
 
-            if let Some(primary_store) = option.primary_fungible_store {
-                if let Some(bytes) =
-                    resolve_primary_store_bytes(&statedb, addr, primary_store.token_code)?
-                {
-                    let decoded = if option.decode {
-                        view_resource(
-                            &statedb,
-                            FungibleStoreResource::struct_tag(),
-                            bytes.as_slice(),
-                        )
-                        .ok()
-                        .map(Into::into)
+            let mut collected: Vec<(StructTag, Vec<u8>)> = match state {
+                None => Vec::new(),
+                Some(s) => {
+                    let mut entries = Vec::new();
+                    for (k, v) in s.resource_set().cloned().unwrap_or_default().iter() {
+                        let struct_tag = StructTag::decode(k.as_slice())?;
+                        if matches_filter(&struct_tag) {
+                            entries.push((struct_tag, v.clone()));
+                        }
+                    }
+                    entries
+                }
+            };
+
+            if let Some(primary_store) = primary_fungible_store {
+                let primary_tag = FungibleStoreResource::struct_tag();
+                if matches_filter(&primary_tag) {
+                    if let Some(bytes) =
+                        resolve_primary_store_bytes(&statedb, addr, primary_store.token_code)?
+                    {
+                        collected.push((primary_tag, bytes));
+                    }
+                }
+            }
+
+            let resources: Result<BTreeMap<StructTagView, ResourceView>, anyhow::Error> = collected
+                .into_iter()
+                .skip(start_index)
+                .take(max_size)
+                .map(|(struct_tag, bytes)| {
+                    let decoded = if decode {
+                        view_resource(&statedb, struct_tag.clone(), bytes.as_slice())
+                            .ok()
+                            .map(Into::into)
                     } else {
                         None
                     };
-                    list.resources.insert(
-                        StrView(FungibleStoreResource::struct_tag()),
+
+                    Ok((
+                        StrView(struct_tag),
                         ResourceView {
                             raw: StrView(bytes),
                             json: decoded,
                         },
-                    );
-                }
-            }
-            Ok(list)
+                    ))
+                })
+                .collect();
+
+            Ok(ListResourceView {
+                resources: resources?,
+            })
         };
         Box::pin(fut.map_err(map_err).boxed())
     }
