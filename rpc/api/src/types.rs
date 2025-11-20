@@ -1015,6 +1015,7 @@ impl TryFrom<BlockView> for Block {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {
+    pub transaction_info_id: HashValue,
     pub block_hash: HashValue,
     pub block_number: StrView<u64>,
     /// The hash of this transaction.
@@ -1042,6 +1043,7 @@ pub struct TransactionInfoView {
 impl TransactionInfoView {
     pub fn new(txn_info: RichTransactionInfo) -> Self {
         Self {
+            transaction_info_id: txn_info.id(),
             block_hash: txn_info.block_id,
             block_number: txn_info.block_number.into(),
             transaction_hash: txn_info.transaction_hash,
