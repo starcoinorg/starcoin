@@ -73,6 +73,7 @@ impl<'a> RemoteStateReader<'a> {
             0,
             usize::MAX,
             Some(vec![StrView::from(stc.clone())]),
+            None,
         )?;
         for (key, resource) in resources.resources {
             if key.0 != stc {
