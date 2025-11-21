@@ -112,7 +112,7 @@ impl CommandAction for GetTransactionProofCommand {
         };
         ensure!(txn_proof.transaction_info.transaction_global_index == opt.transaction_global_index,
             "response transaction_info.transaction_global_index({}) do not match with opt transaction_global_index({}).",
-            opt.transaction_global_index, txn_proof.transaction_info.transaction_global_index);
+            txn_proof.transaction_info.transaction_global_index, opt.transaction_global_index);
 
         txn_proof.verify(
             block.header.txn_accumulator_root,
