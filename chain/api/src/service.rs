@@ -30,7 +30,7 @@ pub trait ReadableChainService {
     fn get_block_txn_infos_in_seq(
         &self,
         block_id: HashValue,
-    ) -> Result<Vec<crate::TransactionInfoInSeq>>;
+    ) -> Result<Vec<StcRichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
@@ -151,7 +151,7 @@ pub trait ChainAsyncService:
     fn get_block_txn_infos_in_seq(
         &self,
         block_hash: HashValue,
-    ) -> impl std::future::Future<Output = Result<Vec<crate::TransactionInfoInSeq>>> + Send;
+    ) -> impl std::future::Future<Output = Result<Vec<StcRichTransactionInfo>>> + Send;
     fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
@@ -362,7 +362,7 @@ where
     async fn get_block_txn_infos_in_seq(
         &self,
         block_hash: HashValue,
-    ) -> Result<Vec<crate::TransactionInfoInSeq>> {
+    ) -> Result<Vec<StcRichTransactionInfo>> {
         let response = self
             .send(ChainRequest::GetBlockTransactionInfosInSeq(block_hash))
             .await??;

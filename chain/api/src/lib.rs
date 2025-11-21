@@ -33,7 +33,6 @@ use starcoin_vm2_types::view::{
     AccumulatorProofView as AccumulatorProofView2, EventWithProofView as EventWithProofView2,
     StrView as StrView2,
 };
-use starcoin_vm2_vm_types::transaction::RichTransactionInfo as RichTransactionInfo2;
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {
@@ -229,10 +228,4 @@ impl MultiEventWithProof {
             Self::VM2(event_with_proof) => event_with_proof.verify(event_root_hash, event_index),
         }
     }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum TransactionInfoInSeq {
-    VM1(StcRichTransactionInfo),
-    VM2(RichTransactionInfo2),
 }

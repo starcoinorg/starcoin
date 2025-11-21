@@ -108,7 +108,7 @@ pub enum ChainResponse {
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<Option<BlockHeader>>),
     TransactionInfos(Vec<StcRichTransactionInfo>),
-    TransactionInfosInSeq(Vec<crate::TransactionInfoInSeq>),
+    TransactionInfosInSeq(Vec<StcRichTransactionInfo>),
     TransactionInfo(Option<StcRichTransactionInfo>),
     Events(Vec<StcContractEventInfo>),
     MainEvents(Vec<StcContractEventInfo>),

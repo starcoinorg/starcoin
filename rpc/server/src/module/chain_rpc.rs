@@ -4,7 +4,6 @@
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_abi_decoder::decode_txn_payload;
-use starcoin_chain_api::TransactionInfoInSeq;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -414,13 +413,13 @@ where
                 .get_block_txn_infos_in_seq(block_hash)
                 .await?
                 .into_iter()
-                .filter_map(|info| match info {
-                    TransactionInfoInSeq::VM1(stc_rich_info) => stc_rich_info
+                .filter_map(|stc_rich_info| match &stc_rich_info.transaction_info {
+                    starcoin_types::transaction::StcTransactionInfo::V1(_) => stc_rich_info
                         .to_v1()
                         .map(|vm1_info| TransactionInfoViewEnum::VM1(vm1_info.into())),
-                    TransactionInfoInSeq::VM2(vm2_info) => {
-                        Some(TransactionInfoViewEnum::VM2(vm2_info.into()))
-                    }
+                    starcoin_types::transaction::StcTransactionInfo::V2(_) => stc_rich_info
+                        .to_v2()
+                        .map(|vm2_info| TransactionInfoViewEnum::VM2(vm2_info.into())),
                 })
                 .collect::<Vec<_>>())
         }
