@@ -72,6 +72,7 @@ impl CommandAction for ShowCommand {
             0,
             usize::MAX,
             None,
+            None,
         )?;
 
         let mut balances: HashMap<TokenCode, u128> = resources
