@@ -92,7 +92,7 @@ impl ChainNotifyHandlerService {
         let mut all_events2 = vec![];
         for txn_info_id in txn_info_ids.into_iter().rev() {
             let txn_info = store
-                .get_transaction_info(txn_info_id)?
+                .get_transaction_info_by_info_id(txn_info_id, block_id)?
                 .ok_or_else(|| format_err!("cannot find txn info by it's id {}", &txn_info_id))?;
             // get events directly by txn_info_id
             let events = store

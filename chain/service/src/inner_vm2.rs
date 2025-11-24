@@ -20,7 +20,7 @@ impl ChainReaderServiceInner {
             .ok_or_else(|| anyhow::anyhow!("cannot find txn info of txn {}", txn_hash))?;
 
         let events = self
-            .get_events_by_txn_info_hash2(txn_info.id())?
+            .get_events_by_txn_info_hash2(txn_info.transaction_info.id())?
             .unwrap_or_default();
 
         let event_infos = events

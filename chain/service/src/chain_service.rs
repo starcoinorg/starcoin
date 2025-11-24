@@ -214,7 +214,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 
                 let events = self
                     .inner
-                    .get_events_by_txn_info_hash(txn_info.id())?
+                    .get_events_by_txn_info_hash(txn_info.transaction_info.id())?
                     .unwrap_or_default();
 
                 let event_infos = if events.is_empty() {

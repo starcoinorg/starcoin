@@ -444,7 +444,7 @@ impl ChainApi for MockChainApi {
         let storage = chain.storage.clone();
         let client = chain.remote_chain_client();
         let fut = async move {
-            match storage.get_transaction_info(transaction_hash)? {
+            match storage.get_transaction_info_by_rich_info_id(transaction_hash)? {
                 Some(_txn) => {
                     debug_assert!(false); // Never saved transaction info.
                     unimplemented!()

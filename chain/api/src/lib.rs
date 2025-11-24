@@ -97,7 +97,11 @@ impl TransactionInfoWithProof {
         final_state_root: Option<HashValue>,
     ) -> Result<()> {
         self.proof
-            .verify(expect_root, self.transaction_info.id(), transaction_index)
+            .verify(
+                expect_root,
+                self.transaction_info.inner_transaction_info_id(),
+                transaction_index,
+            )
             .map_err(|e| format_err!("transaction info proof verify failed: {}", e))?;
         self.final_proof
             .verify(
