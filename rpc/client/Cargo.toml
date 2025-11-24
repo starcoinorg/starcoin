@@ -57,9 +57,7 @@ starcoin-dag = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-rpc-server = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-txpool-api = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
-starcoin-vm2-types = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
 

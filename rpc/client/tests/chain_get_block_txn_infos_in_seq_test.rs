@@ -26,15 +26,15 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
 
     let txpool = node_handle.txpool();
 
-    let vm1_txn1 = gen_vm1_user_txn(&config);
-    let vm1_txn2 = gen_vm1_user_txn(&config);
+    let vm1_txn1 = gen_vm1_user_txn(&config, 0);
+    let vm1_txn2 = gen_vm1_user_txn(&config, 1);
 
     let import_result = txpool.add_txns(vec![vm1_txn1.clone(), vm1_txn2.clone()])?;
     assert!(import_result[0].is_ok());
     assert!(import_result[1].is_ok());
 
-    let vm2_txn1 = gen_vm2_user_txn(&config);
-    let vm2_txn2 = gen_vm2_user_txn(&config);
+    let vm2_txn1 = gen_vm2_user_txn(&config, 0);
+    let vm2_txn2 = gen_vm2_user_txn(&config, 1);
 
     let multi_txns = vec![
         MultiSignedUserTransaction::try_from(vm2_txn1.clone())?,
@@ -174,12 +174,12 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     Ok(())
 }
 
-fn gen_vm1_user_txn(config: &NodeConfig) -> SignedUserTransaction {
+fn gen_vm1_user_txn(config: &NodeConfig, seq_number: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = build_transfer_from_association(
         account_address,
-        0,
+        seq_number,
         10000,
         config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         config.net(),
@@ -187,7 +187,7 @@ fn gen_vm1_user_txn(config: &NodeConfig) -> SignedUserTransaction {
     txn.as_signed_user_txn().unwrap().clone()
 }
 
-fn gen_vm2_user_txn(config: &NodeConfig) -> Transaction2 {
+fn gen_vm2_user_txn(config: &NodeConfig, seq_number: u64) -> Transaction2 {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = starcoin_vm2_types::account_address::AccountAddress::from_bytes(
         account_address::from_public_key(&public_key).to_vec(),
@@ -196,7 +196,7 @@ fn gen_vm2_user_txn(config: &NodeConfig) -> Transaction2 {
 
     starcoin_vm2_test_helper::txn::build_transfer_from_association(
         account_address,
-        0,
+        seq_number,
         10000,
         config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         config.net(),
