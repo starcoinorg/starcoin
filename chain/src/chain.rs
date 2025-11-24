@@ -844,7 +844,10 @@ impl BlockChain {
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(
             block_id,
-            txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect(),
         )?;
         storage.commit_block(block.clone())?;
 
@@ -1617,10 +1620,10 @@ impl ChainReader for BlockChain {
                 MultiAccessPath::VM2(_) => {
                     let statedb2 = statedb2.fork_at(final_state_root_hash);
                     let state_key = final_access_path.to_state_key()?.ok_or_else(|| {
-                                format_err!(
+                        format_err!(
                                     "the transaction to be verified is vm version 2 but the access path is not"
                                 )
-                            })?;
+                    })?;
                     Some(MultiStateProof::VM2(statedb2.get_with_proof(&state_key)?))
                 }
             }
@@ -2556,10 +2559,15 @@ impl BlockChain {
 
         // Save block's transaction ids and info ids
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-        storage.save_block_txn_info_ids(
-            block_id,
-            txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
-        )?;
+        let ordered_ids = if txn_info_ids.is_empty() {
+            vm2_txn_info_ids
+        } else {
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect()
+        };
+        storage.save_block_txn_info_ids(block_id, ordered_ids)?;
 
         // Save table infos
         storage.save_table_infos(txn_table_infos)?;

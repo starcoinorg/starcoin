@@ -48,6 +48,7 @@ timeout-join-handler = { workspace = true }
 starcoin-dag = { workspace = true }
 serde = { workspace = true }
 byteorder = { workspace = true }
+sp-utils = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }
@@ -70,6 +71,7 @@ starcoin-executor = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-genesis = { workspace = true }
+starcoin-node-api = { workspace = true }
 
 [package]
 authors = { workspace = true }

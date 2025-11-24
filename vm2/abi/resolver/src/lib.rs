@@ -360,7 +360,6 @@ fn find_struct_def_in_module(
 mod tests {
     use crate::ABIResolver;
     use anyhow::Result;
-    use starcoin_framework;
     use starcoin_vm2_vm_types::access_path::DataPath;
     use starcoin_vm2_vm_types::account_address::AccountAddress;
     use starcoin_vm2_vm_types::account_config::genesis_address;
@@ -427,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_resolver_abi() {
-        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         // test module ok
@@ -440,7 +439,7 @@ mod tests {
             let st = parse_struct_tag(
                 "0x1::dao::Proposal<0x1::starcoin_coin::STC, 0x1::dao_features_proposal::FeaturesUpdate>",
             )
-            .unwrap();
+                .unwrap();
             r.resolve_struct_tag(&st).unwrap();
         }
         // test struct def
@@ -461,13 +460,13 @@ mod tests {
         // test resolve module function index overflow
         {
             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-            assert!(r.resolve_module_function_index(&m, 31).is_err())
+            assert!(r.resolve_module_function_index(&m, 33).is_err())
         }
     }
 
     #[test]
     fn test_normalized() {
-        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
         let dao = modules
             .iter()
             .find(|m| {
@@ -493,7 +492,7 @@ mod tests {
             test_helper::executor::compile_modules_with_address(address, test_source)
                 .pop()
                 .unwrap();
-        let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         let _abi = r.resolve_module_code(module.code()).unwrap();

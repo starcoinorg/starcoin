@@ -479,4 +479,65 @@ impl PeerSelector {
             .map(|peer| (peer.peer_id(), peer.score_counter.score()))
             .collect()
     }
+
+    /// Create a new peer iterator that returns peers sorted by score (highest first)
+    /// This allows for retry logic - if a peer fails, call next() to get the next best peer
+    pub fn peer_iterator(&self) -> PeerIterator {
+        PeerIterator::new(self.clone())
+    }
+
+    /// Select a peer by index from the score-sorted peer list
+    /// Returns None if index is out of bounds
+    /// Index 0 returns the peer with highest score, index 1 the second highest, etc.
+    pub fn select_peer_by_index(&self, index: usize) -> Option<PeerId> {
+        let lock = self.details.lock();
+        let mut details: Vec<(PeerId, u64)> = lock
+            .iter()
+            .map(|peer| (peer.peer_id(), peer.score()))
+            .collect();
+        // Sort by score in descending order (highest score first)
+        details.sort_by(|a, b| b.1.cmp(&a.1));
+        details.get(index).map(|(peer_id, _)| peer_id.clone())
+    }
+}
+
+/// Iterator for selecting peers in order of their scores (highest to lowest)
+/// This allows retry logic: if a peer fails, call next() to get the next best peer
+pub struct PeerIterator {
+    selector: PeerSelector,
+    current_index: usize,
+}
+
+impl PeerIterator {
+    fn new(selector: PeerSelector) -> Self {
+        Self {
+            selector,
+            current_index: 0,
+        }
+    }
+
+    /// Get the next peer in order of score (highest to lowest)
+    /// Returns None when all peers have been exhausted
+    pub fn next(&mut self) -> Option<PeerId> {
+        let peer = self.selector.select_peer_by_index(self.current_index);
+        if peer.is_some() {
+            self.current_index = self.current_index.saturating_add(1);
+        }
+        peer
+    }
+
+    /// Reset the iterator to start from the beginning
+    pub fn reset(&mut self) {
+        self.current_index = 0;
+    }
+
+    /// Get the current index
+    pub fn current_index(&self) -> usize {
+        self.current_index
+    }
+
+    /// Get the number of remaining peers
+    pub fn remaining(&self) -> usize {
+        self.selector.len().saturating_sub(self.current_index)
+    }
 }

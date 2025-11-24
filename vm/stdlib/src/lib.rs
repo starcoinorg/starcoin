@@ -37,9 +37,11 @@ pub use starcoin_move_compiler::utils::iterate_directory;
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
 
 /// The output path under which compiled files will be put
-pub const COMPILED_OUTPUT_PATH: &str = "compiled";
+pub const COMPILED_OUTPUT_PATH: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib");
 /// The latest output path under which compiled files will be put
-pub const LATEST_COMPILED_OUTPUT_PATH: &str = "compiled/latest";
+pub const LATEST_COMPILED_OUTPUT_PATH: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../../networks/stdlib/latest");
 /// The output path for the compiled stdlib
 pub const STDLIB_DIR_NAME: &str = "stdlib";
 /// The extension for compiled files
@@ -47,16 +49,27 @@ pub const COMPILED_EXTENSION: &str =
     starcoin_move_compiler::move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 
 /// The output path for stdlib documentation.
-pub const STD_LIB_DOC_DIR: &str = "compiled/latest/doc";
-pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
+pub const STD_LIB_DOC_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../networks/stdlib/latest/doc"
+);
+pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../networks/stdlib/latest/transaction_scripts/abi"
+);
 // use same dir as scripts abi
-pub const COMPILED_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
+pub const COMPILED_SCRIPTS_ABI_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../networks/stdlib/latest/transaction_scripts/abi"
+);
 
 pub const ERROR_DESC_DIR: &str = "error_descriptions";
 pub const ERROR_DESC_FILENAME: &str = "error_descriptions";
 pub const ERROR_DESC_EXTENSION: &str = "errmap";
-pub const ERROR_DESCRIPTIONS: &[u8] =
-    std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
+pub const ERROR_DESCRIPTIONS: &[u8] = std::include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../networks/stdlib/latest/error_descriptions/error_descriptions.errmap"
+));
 
 pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
 
@@ -76,7 +89,7 @@ static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
 // This needs to be a string literal due to restrictions imposed by include_bytes.
 /// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
-pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
+pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("../../networks/stdlib");
 
 pub const LATEST_VERSION: &str = "latest";
 

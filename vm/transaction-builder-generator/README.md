@@ -57,7 +57,7 @@ target/debug/generate-transaction-builders \
     --starcoin-package-name "starcoin" \
     --serde-package-name "starcoin" \
     --target-source-dir "target/python" \
-    "vm/stdlib/compiled/latest/transaction_scripts/abi"
+    "networks/stdlib/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Python demo file](examples/python3/stdlib_demo.py) with:
 ```
@@ -74,7 +74,7 @@ target/debug/generate-transaction-builders \
     --module-name libra_stdlib \
     --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/cpp" \
-    "vm/stdlib/compiled/latest/transaction_scripts/abi"
+    "networks/stdlib/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [C++ demo file](examples/cpp/stdlib_demo.cpp) with:
 ```
@@ -92,7 +92,7 @@ target/debug/generate-transaction-builders \
     --module-name org.starcoin.stdlib.Stdlib \
     --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/java" \
-    "vm/stdlib/compiled/latest/transaction_scripts/abi"
+    "networks/stdlib/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Java demo file](examples/java/StdlibDemo.java) with:
 ```
@@ -110,7 +110,7 @@ target/debug/generate-transaction-builders \
     --module-name starcoin-stdlib \
     --with-starcoin-types "etc/starcoin_types.yml" \
     --target-source-dir "target/rust" \
-    "vm/stdlib/compiled/latest/transaction_scripts/abi"
+    "networks/stdlib/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Rust demo file](examples/rust/stdlib_demo.rs). (See [unit test](tests/generation.rs) for details.)
 

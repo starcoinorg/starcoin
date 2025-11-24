@@ -39,18 +39,10 @@ use std::sync::RwLock;
 use crate::{MinerService, NewHeaderChannel};
 
 use super::metrics::BlockBuilderMetrics;
-use once_cell::sync::Lazy;
+use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-
-static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get())
-        .thread_name(|index| format!("parallel_executor_{}", index))
-        .build()
-        .expect("failed to build rayon thread pool for building block service")
-});
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {

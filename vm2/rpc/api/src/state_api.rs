@@ -119,9 +119,18 @@ pub trait StateApi {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
 #[serde(default)]
+pub struct PrimaryFungibleStoreOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_code: Option<String>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
+#[serde(default)]
 pub struct GetResourceOption {
     pub decode: bool,
     pub state_root: Option<HashValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub primary_fungible_store: Option<PrimaryFungibleStoreOption>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
@@ -140,6 +149,8 @@ pub struct ListResourceOption {
     pub start_index: usize,
     pub max_size: usize,
     pub resource_types: Option<Vec<StructTagView>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub primary_fungible_store: Option<PrimaryFungibleStoreOption>,
 }
 
 impl Default for ListResourceOption {
@@ -150,6 +161,7 @@ impl Default for ListResourceOption {
             start_index: 0,
             max_size: usize::MAX,
             resource_types: None,
+            primary_fungible_store: None,
         }
     }
 }

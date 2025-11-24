@@ -16,8 +16,9 @@ Feature: cmd integration test
     Then cmd: "chain get-events {{$.chain[4].ok[0].transaction_hash}}"
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then cmd: "chain get-block-info {{$.chain[1].ok[0].number}}"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --final-transaction-id 0xd2dd960bffa976fc7f44552c8a1be415b82e0c0a608bfac7341c71a1d04639c6 --final-transaction-info-index 1"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw --final-transaction-id 0xd2dd960bffa976fc7f44552c8a1be415b82e0c0a608bfac7341c71a1d04639c6 --final-transaction-info-index 1"
+    Then cmd: "chain get-txn-info --block-hash {{$.chain[1].ok[0].block_hash}} --idx 1 --vm1"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --final-transaction-id {{$.chain[9].ok.transaction_info_id}} --final-transaction-info-index 1"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw --final-transaction-id {{$.chain[9].ok.transaction_info_id}} --final-transaction-info-index 1"
     Then stop
 
     Examples:
@@ -100,6 +101,7 @@ Feature: cmd integration test
     Then cmd: "state get-root"
     Then cmd: "dev get-coin"
     Then cmd: "account show"
+    Then assert: "{{$.account[-1].ok.balances.'0x1::starcoin_coin::STC'}} != 0"
     Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account"
     Then cmd: "state get-proof {{$.account[0].ok.account.address}}/1/0x1::account::Account --raw"
     Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::account::Account"
@@ -110,6 +112,14 @@ Feature: cmd integration test
     Then cmd: "state list resource -s 5 -i 0 {{$.account[0].ok.account.address}}"
     Then cmd: "account show"
     Then cmd: "state list code {{$.account[0].ok.account.address}}"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::fungible_asset::FungibleStore --primary-store"
+    Then assert: "{{$.state[-1].ok.json.balance}} != 0"
+    Then cmd: "state get resource {{$.account[0].ok.account.address}} 0x1::fungible_asset::FungibleStore --primary-store --token-code 0x1::starcoin_coin::STC"
+    Then assert: "{{$.state[-1].ok}} != null"
+    Then cmd: "state list resource {{$.account[0].ok.account.address}} --primary-store"
+    Then assert: "{{$.state[-1].ok.resources.'0x1::fungible_asset::FungibleStore'.json.balance}} != 0"
+    Then cmd: "state list resource {{$.account[0].ok.account.address}} --primary-store --token-code 0x1::starcoin_coin::STC"
+    Then assert: "{{$.state[-1].ok.resources.'0x1::fungible_asset::FungibleStore'}} != null"
     Then stop
 
     Examples:
@@ -320,4 +330,3 @@ Feature: cmd integration test
 #
 #    Examples:
 #      |  |
-
