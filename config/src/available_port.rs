@@ -22,14 +22,12 @@ fn check_port_in_use(port: u16) -> bool {
     if G_USED_PORTS.lock().contains(&port) {
         return true;
     }
-    use std::net::TcpStream;
-    let in_use = match TcpStream::connect(("0.0.0.0", port)) {
-        Ok(_) => true,
-        Err(_e) => false,
-    };
+    use std::net::TcpListener;
+    // Prefer binding to detect availability; avoids outbound connects in sandboxed envs.
+    let in_use = TcpListener::bind(("127.0.0.1", port)).is_err();
     if !in_use {
         G_USED_PORTS.lock().push(port);
-    };
+    }
     in_use
 }
 
@@ -54,18 +52,15 @@ pub fn get_random_available_ports(num: usize) -> Vec<u16> {
 }
 
 fn get_ephemeral_port() -> ::std::io::Result<u16> {
-    use std::net::{TcpListener, TcpStream};
+    use std::net::TcpListener;
 
-    // Request a random available port from the OS
+    // Request a random available port from the OS and return it.
+    // Note: Avoid making an active connection to the listener here, since
+    // some sandboxed environments disallow loopback connects, which would
+    // cause tests to fail spuriously. Rely on process-local tracking to
+    // avoid reuse within the same test process.
     let listener = TcpListener::bind(("localhost", 0))?;
     let addr = listener.local_addr()?;
-
-    // Create and accept a connection (which we'll promptly drop) in order to force the port
-    // into the TIME_WAIT state, ensuring that the port will be reserved from some limited
-    // amount of time (roughly 60s on some Linux systems)
-    let _sender = TcpStream::connect(addr)?;
-    let _incoming = listener.accept()?;
-
     Ok(addr.port())
 }
 

@@ -26,17 +26,21 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
+use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
-use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
+    block_meta_txn_hash: HashValue,
     gas_limit: u64,
 
     state: (Arc<ChainStateDB>, Arc<ChainStateDB2>),
@@ -55,6 +59,9 @@ pub struct OpenedBlock {
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
+    // VM2: pre-state fingerprint used for ExecRecord keying
+    epoch_id2: u64,
+    base_state_root2: HashValue,
 }
 
 impl OpenedBlock {
@@ -104,9 +111,19 @@ impl OpenedBlock {
             red_blocks,
         );
 
+        // Compute pre-state fingerprint for VM2 witness keying
+        let base_state_root2 = chain_state_dbs.1.state_root();
+        let epoch_version = AccountStateReader2::new(chain_state_dbs.1.as_ref())
+            .get_epoch()
+            .map_err(|e| format_err!("read epoch failed: {}", e))?
+            .number();
+
+        let block_meta_txn_hash = Transaction2::BlockMetadata(block_meta.clone()).id();
+
         let mut opened_block = Self {
             previous_block_info: block_info,
             block_meta,
+            block_meta_txn_hash,
             gas_limit: block_gas_limit,
             state: chain_state_dbs,
             txn_accumulator,
@@ -122,6 +139,8 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
+            epoch_id2: epoch_version,
+            base_state_root2,
         };
 
         opened_block.initialize()?;

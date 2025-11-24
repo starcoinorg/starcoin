@@ -12,6 +12,7 @@ use starcoin_vm2_types::{
     transaction::{Transaction, TransactionInfo, TransactionStatus},
 };
 use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm2_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -20,6 +21,7 @@ pub struct BlockExecutedData {
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
     pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
+    pub write_sets: Vec<WriteSet>,
 }
 
 impl Default for BlockExecutedData {
@@ -29,6 +31,7 @@ impl Default for BlockExecutedData {
             txn_events: vec![],
             txn_infos: vec![],
             txn_table_infos: BTreeMap::new(),
+            write_sets: vec![],
         }
     }
 }
@@ -67,6 +70,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 ));
             }
             TransactionStatus::Keep(status) => {
+                let write_set_clone = write_set.clone();
                 chain_state
                     .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -89,6 +93,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 );
                 executed_data.txn_infos.push(t);
                 executed_data.txn_events.push(events);
+                executed_data.write_sets.push(write_set_clone);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };

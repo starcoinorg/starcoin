@@ -11590,6 +11590,7 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-dag",
  "starcoin-data-migration",
+ "starcoin-exec-merge",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -12041,6 +12042,24 @@ dependencies = [
  "starcoin-vm1-vm-types",
  "thiserror",
  "vm-status-translator",
+]
+
+[[package]]
+name = "starcoin-exec-merge"
+version = "2.1.1"
+dependencies = [
+ "anyhow",
+ "once_cell",
+ "quick_cache",
+ "serde 1.0.205",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-logger",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "starcoin-vm1-types",
+ "starcoin-vm2-executor",
+ "starcoin-vm2-statedb",
 ]
 
 [[package]]
@@ -12860,6 +12879,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-exec-merge",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -12867,9 +12887,9 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm1-types",
- "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
@@ -13693,21 +13713,27 @@ dependencies = [
  "serde_bytes",
  "starcoin-aggregator",
  "starcoin-cached-packages",
+ "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-exec-merge",
  "starcoin-framework 0.1.0",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
+ "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-parallel-executor",
  "starcoin-table-natives",
+ "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
  "starcoin-vm1-types",
+ "starcoin-vm2-executor",
+ "starcoin-vm2-statedb",
  "tracing",
 ]
 
@@ -14000,7 +14026,11 @@ name = "starcoin-vm2-chain"
 version = "2.1.1"
 dependencies = [
  "anyhow",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-exec-merge",
+ "starcoin-logger",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-state-api",

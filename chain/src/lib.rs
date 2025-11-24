@@ -4,6 +4,7 @@
 mod chain;
 mod fixed_blocks;
 pub mod verifier;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub use chain::BlockChain;
@@ -64,4 +65,35 @@ pub fn get_merge_bound_hash(
             )
         })?;
     Ok(leaf_hash)
+}
+
+pub struct Vm2ReuseGuard {
+    previous: bool,
+}
+
+pub fn enable_vm2_reuse_for_test() -> Vm2ReuseGuard {
+    set_vm2_reuse_for_test(true)
+}
+
+pub fn disable_vm2_reuse_for_test() -> Vm2ReuseGuard {
+    set_vm2_reuse_for_test(false)
+}
+
+pub fn set_vm2_reuse(enabled: bool) {
+    crate::chain::TEST_VM2_REUSE_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+pub fn vm2_reuse_enabled_for_execution() -> bool {
+    crate::chain::TEST_VM2_REUSE_ENABLED.load(Ordering::Relaxed)
+}
+
+pub fn set_vm2_reuse_for_test(enabled: bool) -> Vm2ReuseGuard {
+    let previous = crate::chain::TEST_VM2_REUSE_ENABLED.swap(enabled, Ordering::Relaxed);
+    Vm2ReuseGuard { previous }
+}
+
+impl Drop for Vm2ReuseGuard {
+    fn drop(&mut self) {
+        crate::chain::TEST_VM2_REUSE_ENABLED.store(self.previous, Ordering::Relaxed);
+    }
 }

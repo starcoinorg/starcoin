@@ -4,6 +4,7 @@
 
 use crate::default_gas_schedule;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
+use crate::reuse_recorder;
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -15,9 +16,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
-use starcoin_vm_runtime_types::resolver::{
-    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
-};
+use starcoin_vm_runtime_types::resolver::{ExecutorView, ResourceGroupSize, TResourceGroupView};
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
@@ -117,11 +116,22 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.bytes().map(|bytes| {
-                StateValue::new_with_metadata(bytes.clone(), opt_data.metadata().clone())
-            })),
+            Some(opt_data) => {
+                let value = opt_data.bytes().map(|bytes| {
+                    StateValue::new_with_metadata(bytes.clone(), opt_data.metadata().clone())
+                });
+                if reuse_recorder::is_active() {
+                    reuse_recorder::record_read(state_key, false, value.as_ref());
+                }
+                Ok(value)
+            }
             None => match self.data_view.get_state_value(state_key) {
-                Ok(remote_data) => Ok(remote_data),
+                Ok(remote_data) => {
+                    if reuse_recorder::is_active() {
+                        reuse_recorder::record_read(state_key, true, remote_data.as_ref());
+                    }
+                    Ok(remote_data)
+                }
                 // TODO: should we forward some error info?
                 Err(e) => {
                     error!("[VM] Error getting data from storage for {:?}", state_key);
@@ -183,6 +193,12 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn get(&self, key: &StateKey) -> Result<Option<StateValue>, PartialVMError> {
         self.executor_view
             .get_state_value(key)
+            .map(|value| {
+                if reuse_recorder::is_active() {
+                    reuse_recorder::record_read(key, true, value.as_ref());
+                }
+                value
+            })
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 }
@@ -210,7 +226,8 @@ impl<S: StateView> ModuleResolver for StorageAdapter<'_, S> {
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
         // REVIEW: cache this?
         let key = StateKey::module_id(module_id);
-        self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
+        self.get(&key)
+            .map(|maybe_value| maybe_value.map(|state_value| state_value.bytes().clone()))
     }
 }
 impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
@@ -242,8 +259,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
         } else {
             let state_key = resource_state_key(address, struct_tag)?;
             let buf = self
-                .executor_view
-                .get_resource_bytes(&state_key, maybe_layout)?;
+                .get(&state_key)?
+                .map(|state_value| state_value.bytes().clone());
             let buf_size = resource_size(&buf);
             Ok((buf, buf_size))
         }
@@ -296,9 +313,9 @@ impl<S: StateView> TableResolver for StorageAdapter<'_, S> {
         key: &[u8],
         _maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<Option<Bytes>, PartialVMError> {
-        self.executor_view
-            .get_state_value(&StateKey::table_item(&(*handle).into(), key))
-            .map(|r| r.map(|v| v.bytes().clone()))
+        let state_key = StateKey::table_item(&(*handle).into(), key);
+        self.get(&state_key)
+            .map(|maybe_value| maybe_value.map(|state_value| state_value.bytes().clone()))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
             })

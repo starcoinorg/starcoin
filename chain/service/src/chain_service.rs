@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Error, Result};
-use starcoin_chain::BlockChain;
+use starcoin_chain::{set_vm2_reuse, BlockChain};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
@@ -333,6 +333,7 @@ impl ChainReaderServiceInner {
         dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        set_vm2_reuse(config.vm2_reuse_enabled());
         let net = config.net();
         let main = BlockChain::new(
             net.time_service(),
