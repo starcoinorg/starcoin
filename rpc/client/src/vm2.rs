@@ -3,12 +3,15 @@
 
 use crate::{map_err, remote_state_reader2::RemoteStateReader, RpcClient, StateRootOption};
 use bcs_ext::BCSCodec;
-use starcoin_rpc_api::chain::GetEventOption;
+use starcoin_rpc_api::{chain::GetEventOption, types::TransactionInfoWithProofView};
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_rpc_api::{
-    state_api::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
+    state_api::{
+        GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
+        PrimaryFungibleStoreOption,
+    },
     DecodedMoveValue,
 };
 use starcoin_vm2_types::{
@@ -20,7 +23,7 @@ use starcoin_vm2_types::{
         DryRunTransactionRequest, FunctionIdView, ListCodeView, ListResourceView, ModuleIdView,
         ResourceView, SignedMessageView, StateWithProofView, StateWithTableItemProofView, StrView,
         StructTagView, TransactionEventResponse as TransactionEventResponse2, TransactionInfoView,
-        TransactionInfoWithProofView, TransactionRequest,
+        TransactionRequest,
     },
 };
 use starcoin_vm2_vm_types::{
@@ -262,12 +265,17 @@ impl RpcClient {
         resource_type: StructTag,
         decode: bool,
         state_root: Option<HashValue>,
+        primary_fungible_store: Option<PrimaryFungibleStoreOption>,
     ) -> anyhow::Result<Option<ResourceView>> {
         self.call_rpc_blocking(|inner| {
             inner.state_client2.get_resource(
                 address,
                 StrView(resource_type),
-                Some(GetResourceOption { decode, state_root }),
+                Some(GetResourceOption {
+                    decode,
+                    state_root,
+                    primary_fungible_store,
+                }),
             )
         })
         .map_err(map_err)
@@ -281,6 +289,7 @@ impl RpcClient {
         start_index: usize,
         max_size: usize,
         resource_types: Option<Vec<StructTagView>>,
+        primary_fungible_store: Option<PrimaryFungibleStoreOption>,
     ) -> anyhow::Result<ListResourceView> {
         self.call_rpc_blocking(|inner| {
             inner.state_client2.list_resource(
@@ -291,6 +300,7 @@ impl RpcClient {
                     start_index,
                     max_size,
                     resource_types,
+                    primary_fungible_store,
                 }),
             )
         })

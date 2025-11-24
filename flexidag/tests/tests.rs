@@ -35,7 +35,7 @@ use std::{
 #[test]
 fn test_dag_commit() -> Result<()> {
     let mut dag = BlockDAG::create_for_testing().unwrap();
-    let genesis = BlockHeader::dag_genesis_random(0)
+    let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -60,7 +60,7 @@ fn test_dag_commit() -> Result<()> {
 
 #[test]
 fn test_dag_1() -> Result<()> {
-    let genesis = BlockHeader::dag_genesis_random(0)
+    let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -135,7 +135,7 @@ fn test_dag_1() -> Result<()> {
 #[tokio::test]
 async fn test_with_spawn() {
     use starcoin_types::block::{BlockHeader, BlockHeaderBuilder};
-    let genesis = BlockHeader::dag_genesis_random(0)
+    let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -201,7 +201,7 @@ async fn test_with_spawn() {
 #[test]
 fn test_write_asynchronization() -> anyhow::Result<()> {
     let mut dag = BlockDAG::create_for_testing()?;
-    let genesis = BlockHeader::dag_genesis_random(0)
+    let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -275,7 +275,7 @@ fn test_dag_genesis_fork() {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let genesis = BlockHeader::dag_genesis_random(0)
+    let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -296,7 +296,7 @@ fn test_dag_genesis_fork() {
     }
 
     // fork, produce a new dag genesis
-    let new_genesis = BlockHeader::dag_genesis_random(0)
+    let new_genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
@@ -374,8 +374,7 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -890,8 +889,7 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -929,8 +927,7 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -984,8 +981,7 @@ fn test_prune() -> anyhow::Result<()> {
 
     let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
     println!("genesis: {}", genesis.id());
 
     dag.init_with_genesis(genesis.clone()).unwrap();
@@ -1150,8 +1146,7 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1370,7 +1365,7 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 //     let mut dag = BlockDAG::create_for_testing_with_k_and_merge_depth(k, merge_depth).unwrap();
 
 //     let origin = BlockHeaderBuilder::random().with_number(0).build();
-//     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+//     let genesis = BlockHeader::random();
 
 //     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1576,8 +1571,7 @@ fn test_check_ancestor_of() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1639,8 +1633,7 @@ fn test_get_blocks_in_batch() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
 
-    let origin = BlockHeaderBuilder::random().with_number(0).build();
-    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let genesis = BlockHeader::random();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 

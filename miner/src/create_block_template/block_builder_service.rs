@@ -39,18 +39,10 @@ use std::sync::RwLock;
 use crate::{MinerService, NewHeaderChannel};
 
 use super::metrics::BlockBuilderMetrics;
-use once_cell::sync::Lazy;
+use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-
-static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get())
-        .thread_name(|index| format!("parallel_executor_{}", index))
-        .build()
-        .expect("failed to build rayon thread pool for building block service")
-});
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
@@ -200,18 +192,56 @@ impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     }
 }
 
+pub trait BlockTemplateCallBack {
+    fn block_template_callback(
+        &mut self,
+        parent_header: BlockHeader,
+        block_template: BlockTemplate,
+    ) -> Result<()>;
+}
+struct BlockBuilderTemplateNotify {
+    miner_service: ServiceRef<MinerService>,
+    event: GenerateBlockEvent,
+}
+
+impl BlockBuilderTemplateNotify {
+    pub fn new(miner_service: ServiceRef<MinerService>, event: GenerateBlockEvent) -> Self {
+        Self {
+            miner_service,
+            event,
+        }
+    }
+}
+
+impl BlockTemplateCallBack for BlockBuilderTemplateNotify {
+    fn block_template_callback(
+        &mut self,
+        parent: BlockHeader,
+        block_template: BlockTemplate,
+    ) -> Result<()> {
+        self.miner_service
+            .notify(BlockTemplateResponse {
+                parent,
+                template: block_template,
+                event: self.event.clone(),
+            })
+            .map_err(|e| format_err!("failed to notify block template for: {:?}", e))
+    }
+}
+
 impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle_event(&mut self, msg: BlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         // TODO: Get block_header_version from GenesisConfig according to dag-master's implementation
         let header_version = 1u8; // Default block header version for now
-        let miner_serivce = ctx
+        let miner_service = ctx
             .service_ref::<MinerService>()
             .expect("MinerService should exist")
             .clone();
         let _ = self.receive_header();
+        let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
         if let Err(e) = self
             .inner
-            .create_block_template(header_version, miner_serivce, msg.event)
+            .create_block_template(header_version, Box::new(callback))
         {
             error!("Failed to create block template: {}", e);
         }
@@ -421,8 +451,9 @@ where
     pub fn create_block_template(
         &mut self,
         version: Version,
-        miner_service: ServiceRef<MinerService>,
-        event: GenerateBlockEvent,
+        mut block_template_call_back: Box<dyn BlockTemplateCallBack + Send + Sync>,
+        // miner_service: Option<ServiceRef<MinerService>>,
+        // event: Option<GenerateBlockEvent>,
     ) -> Result<()> {
         let (
             MinerResponse {
@@ -548,7 +579,6 @@ where
             }
 
             // Process VM2 transactions
-            let vm2_contains_user_transaction = !txns2.is_empty();
             let excluded_txns2 = match opened_block.push_txns2(txns2) {
                 Ok(excluded_txns) => excluded_txns,
                 Err(e) => {
@@ -566,7 +596,7 @@ where
                 excluded_txns2.untouched_txns.len()
             );
 
-            if vm2_contains_user_transaction {
+            if !opened_block.included_user_txns2().is_empty() {
                 match opened_block.finalize_block_epilogue() {
                     Ok(()) => {}
                     Err(e) => {
@@ -583,11 +613,10 @@ where
                     return;
                 }
             };
-            if let Err(e) = miner_service.notify(BlockTemplateResponse {
-                parent: previous_header,
-                template,
-                event,
-            }) {
+
+            if let Err(e) =
+                block_template_call_back.block_template_callback(previous_header, template)
+            {
                 error!("[BlockProcess] notify BlockTemplateResponse error: {}", e);
             }
         });

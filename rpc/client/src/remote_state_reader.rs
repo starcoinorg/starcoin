@@ -79,9 +79,10 @@ impl<'a> RemoteStateReader<'a> {
 
 impl ChainStateReader for RemoteStateReader<'_> {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.client
-            .state_get_with_proof_by_root(access_path.clone(), self.state_root)
-            .map(Into::into)
+        Ok(self
+            .client
+            .state_get_with_proof_by_root(access_path.clone(), self.state_root)?
+            .into())
     }
 
     fn get_account_state(&self, _address: &AccountAddress) -> Result<Option<AccountState>> {

@@ -19,7 +19,6 @@ use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
-    TransactionInfoWithProofView as TransactionInfoWithProofView2,
 };
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
@@ -196,7 +195,7 @@ pub trait ChainApi {
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView2<AccessPath2>>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView2>>;
+    ) -> FutureResult<Option<TransactionInfoWithProofView>>;
 
     /// Get TransactionInfoWithProof2Raw, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
     #[rpc(name = "chain.get_transaction_proof2_raw")]

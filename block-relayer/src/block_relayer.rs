@@ -205,6 +205,8 @@ impl BlockRelayer {
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<ExecuteService>()?.clone();
+        let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let max_retry_times = node_config.sync.max_retry_times();
         let txpool = self.txpool.clone();
         let metrics = self.metrics.clone();
         let fut = async move {
@@ -231,7 +233,7 @@ impl BlockRelayer {
                     )
                 })?;
                 let peer_selector = PeerSelector::new(vec![peer], PeerStrategy::default(), None);
-                let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+                let rpc_client = VerifiedRpcClient::new(peer_selector, network, max_retry_times);
                 let _timer = metrics
                     .as_ref()
                     .map(|metrics| metrics.txns_filled_time.start_timer());

@@ -14,7 +14,7 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, EventWithProof2,
-    ExcludedTxns, ExecutedBlock, TransactionInfoWithProof, TransactionInfoWithProof2,
+    ExcludedTxns, ExecutedBlock, MultiEventWithProof, MultiStateProof, TransactionInfoWithProof,
     VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
@@ -34,7 +34,6 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_time_service::TimeService;
 use starcoin_types::filter::Filter;
-use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
@@ -48,17 +47,13 @@ use starcoin_types::{
     U256,
 };
 use starcoin_types::{contract_event::StcContractEventInfo, transaction::StcTransactionInfo};
+use starcoin_types::{multi_access_path::MultiAccessPath, multi_state::MultiState};
 use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::{
-    access_path::{AccessPath as AccessPath2, DataPath as DataPath2},
-    on_chain_resource::Epoch,
-};
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::collections::BTreeMap;
@@ -849,7 +844,10 @@ impl BlockChain {
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         storage.save_block_txn_info_ids(
             block_id,
-            txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect(),
         )?;
         storage.commit_block(block.clone())?;
 
@@ -1453,147 +1451,192 @@ impl ChainReader for BlockChain {
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
+        access_path: Option<MultiAccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
         let (storage, _storage2) = &self.storage;
-        let (statedb, _statedb2) = &self.statedb;
-        let block_info = match self.get_block_info(Some(block_id))? {
+        let (statedb, statedb2) = &self.statedb;
+
+        let block_info = match storage.get_block_info(block_id)? {
             Some(block_info) => block_info,
             None => return Ok(None),
         };
-        let accumulator = self
-            .txn_accumulator
-            .fork(Some(block_info.txn_accumulator_info));
-        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
-            Some(proof) => proof,
-            None => return Ok(None),
-        };
 
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
-        let txn_info_hash = accumulator
-            .get_leaf(transaction_global_index)?
+        let transaction_accumulator = MerkleAccumulator::new_with_info(
+            block_info.txn_accumulator_info,
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
+
+        let final_transaction_global_index = transaction_accumulator
+            .num_leaves()
+            .checked_sub(1)
+            .ok_or_else(|| format_err!("accumulator is empty"))?;
+        let final_proof = transaction_accumulator
+            .get_proof(final_transaction_global_index)?
             .ok_or_else(|| {
                 format_err!(
-                    "Can not find txn info hash by index {}",
+                    "final transaction proof is not found using the accumulator leaf index: {:?}",
+                    final_transaction_global_index
+                )
+            })?;
+
+        let proof = transaction_accumulator
+            .get_proof(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "transaction proof is not found using the accumulator leaf index: {:?}",
                     transaction_global_index
                 )
             })?;
-        let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
-            .and_then(|i| i.to_v1())
-            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
-        let event_proof = if let Some(event_index) = event_index {
-            let events = storage
-                .get_contract_events(txn_info_hash)?
-                .unwrap_or_default();
-            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
-                format_err!("event index out of range, events len:{}", events.len())
+        let transaction_info_id = transaction_accumulator
+            .get_leaf(transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "transaction info is not found using the accumulator leaf index: {}",
+                    transaction_global_index
+                )
             })?;
-            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
 
-            let event_proof =
-                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
-            Some(EventWithProof {
-                event,
-                proof: event_proof,
-            })
+        let proof_transaction_info_id = transaction_accumulator
+            .get_leaf(final_transaction_global_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "proof transaction info is not found using the accumulator leaf index: {}",
+                    final_transaction_global_index
+                )
+            })?;
+
+        let proof_rich_transaction_info = storage
+            .get_transaction_info(proof_transaction_info_id)?
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get proof txn info by hash:{}",
+                    proof_transaction_info_id
+                )
+            })?;
+
+        let proof_transaction_info = proof_rich_transaction_info.transaction_info;
+
+        let input_rich_transaction_info = storage
+            .get_transaction_info(transaction_info_id)?
+            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
+
+        let final_raw_transaction = storage
+            .get_transaction(proof_transaction_info.transaction_hash())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find txn by hash:{}",
+                    proof_transaction_info.transaction_hash()
+                )
+            })?
+            .to_transaction();
+
+        let final_state_root_hash = proof_transaction_info
+            .state_root()
+            .ok_or_else(|| format_err!("Cannot get state root hash"))?;
+        let final_access_path = final_raw_transaction.access_path();
+
+        let transaction_info = storage
+            .get_transaction_info(transaction_info_id)?
+            .ok_or_else(|| format_err!("failed to get txn info by hash:{}", transaction_info_id))?;
+
+        let event_proof = match input_rich_transaction_info.transaction_info {
+            StcTransactionInfo::V1(_) => {
+                if let Some(event_index) = event_index {
+                    let events: Vec<ContractEvent> = storage
+                        .get_contract_events(transaction_info_id)?
+                        .unwrap_or_default();
+                    let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                        format_err!("event index out of range, events len:{}", events.len())
+                    })?;
+                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+                    let event_proof = InMemoryAccumulator::get_proof_from_leaves(
+                        event_hashes.as_slice(),
+                        event_index,
+                    )?;
+                    Some(MultiEventWithProof::VM1(EventWithProof {
+                        event,
+                        proof: event_proof,
+                    }))
+                } else {
+                    None
+                }
+            }
+            StcTransactionInfo::V2(_) => {
+                if let Some(event_index) = event_index {
+                    let events = storage
+                        .get_contract_events_v2(transaction_info_id)?
+                        .unwrap_or_default();
+                    let events = events
+                        .into_iter()
+                        .filter_map(|e| e.to_v2())
+                        .collect::<Vec<_>>();
+                    let event = events.get(event_index as usize).cloned().ok_or_else(|| {
+                        format_err!("event index out of range, events len:{}", events.len())
+                    })?;
+                    let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+
+                    let event_proof = InMemoryAccumulator::get_proof_from_leaves(
+                        event_hashes.as_slice(),
+                        event_index,
+                    )?;
+                    Some(MultiEventWithProof::VM2(EventWithProof2 {
+                        event,
+                        proof: event_proof,
+                    }))
+                } else {
+                    None
+                }
+            }
+        };
+
+        let final_state_proof = if access_path.is_some() {
+            match &final_access_path {
+                MultiAccessPath::VM1(access_path) => {
+                    let statedb = statedb.fork_at(final_state_root_hash);
+                    Some(MultiStateProof::VM1(statedb.get_with_proof(access_path)?))
+                }
+                MultiAccessPath::VM2(_) => {
+                    let statedb2 = statedb2.fork_at(final_state_root_hash);
+                    let state_key = final_access_path.to_state_key()?.ok_or_else(|| {
+                        format_err!(
+                                    "the transaction to be verified is vm version 2 but the access path is not"
+                                )
+                    })?;
+                    Some(MultiStateProof::VM2(statedb2.get_with_proof(&state_key)?))
+                }
+            }
         } else {
             None
         };
+
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
-            Some(statedb.get_with_proof(&access_path)?)
+            if let Some(state_root) = transaction_info.state_root() {
+                match transaction_info.txn_info() {
+                    StcTransactionInfo::V1(_) => {
+                        let statedb = statedb.fork_at(state_root);
+                        Some(MultiStateProof::VM1(statedb.get_with_proof(&access_path.to_v1().ok_or_else(|| format_err!("the transaction to be verified is vm version 1 but the access path is not"))?)?))
+                    }
+                    StcTransactionInfo::V2(_) => {
+                        let statedb2 = statedb2.fork_at(state_root);
+                        Some(MultiStateProof::VM2(statedb2.get_with_proof(&access_path.to_state_key()?.ok_or_else(|| format_err!("the transaction to be verified is vm version 2 but the access path is not"))?)?))
+                    }
+                }
+            } else {
+                None
+            }
         } else {
             None
         };
+
         Ok(Some(TransactionInfoWithProof {
             transaction_info,
-            proof: txn_proof,
+            proof,
+            final_proof,
             event_proof,
             state_proof,
-        }))
-    }
-
-    fn get_transaction_proof2(
-        &self,
-        block_id: HashValue,
-        transaction_global_index: u64,
-        event_index: Option<u64>,
-        access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof2>> {
-        let (storage, _) = &self.storage;
-        let (_, statedb2) = &self.statedb;
-        let block_info = match self.get_block_info(Some(block_id))? {
-            Some(block_info) => block_info,
-            None => return Ok(None),
-        };
-        let accumulator = self
-            .txn_accumulator
-            .fork(Some(block_info.txn_accumulator_info));
-        let txn_proof = match accumulator.get_proof(transaction_global_index)? {
-            Some(proof) => proof,
-            None => return Ok(None),
-        };
-
-        //if can get proof by leaf_index, the leaf and transaction info should exist.
-        let txn_info_hash = accumulator
-            .get_leaf(transaction_global_index)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Can not find txn info hash by index {}",
-                    transaction_global_index
-                )
-            })?;
-        let transaction_info = storage
-            .get_transaction_info(txn_info_hash)?
-            .and_then(|i| i.to_v2())
-            .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
-
-        let event_proof = if let Some(event_index) = event_index {
-            let events = storage
-                .get_contract_events_v2(txn_info_hash)?
-                .unwrap_or_default();
-            let events = events
-                .into_iter()
-                .filter_map(|e| e.to_v2())
-                .collect::<Vec<_>>();
-            let event = events.get(event_index as usize).cloned().ok_or_else(|| {
-                format_err!("event index out of range, events len:{}", events.len())
-            })?;
-            let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
-
-            let event_proof =
-                InMemoryAccumulator::get_proof_from_leaves(event_hashes.as_slice(), event_index)?;
-            Some(EventWithProof2 {
-                event,
-                proof: event_proof,
-            })
-        } else {
-            None
-        };
-        let state_proof = if let Some(access_path) = access_path {
-            let statedb = statedb2.fork_at(transaction_info.txn_info().state_root_hash().ok_or_else(|| format_err!("cannot get the root state root maybe it is in the middle of transactions of a block"))?);
-            let state_key = match access_path.path {
-                DataPath2::Code(module_name) => {
-                    StateKey::module(&access_path.address, &module_name)
-                }
-                DataPath2::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, &struct_tag)?
-                }
-                DataPath2::ResourceGroup(struct_tag) => {
-                    StateKey::resource_group(&access_path.address, &struct_tag)
-                }
-            };
-            Some(statedb.get_with_proof(&state_key)?)
-        } else {
-            None
-        };
-        Ok(Some(TransactionInfoWithProof2 {
-            transaction_info,
-            proof: txn_proof,
-            event_proof,
-            state_proof,
+            final_state_proof,
         }))
     }
 
@@ -2087,7 +2130,7 @@ impl ChainWriter for BlockChain {
         self.apply_with_verifier::<FullVerifier>(block)
     }
 
-    fn chain_state(&mut self) -> &ChainStateDB {
+    fn chain_state(&self) -> &ChainStateDB {
         &self.statedb.0
     }
 
@@ -2494,10 +2537,15 @@ impl BlockChain {
 
         // Save block's transaction ids and info ids
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-        storage.save_block_txn_info_ids(
-            block_id,
-            txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
-        )?;
+        let ordered_ids = if txn_info_ids.is_empty() {
+            vm2_txn_info_ids
+        } else {
+            std::iter::once(vm2_txn_info_ids[0])
+                .chain(txn_info_ids)
+                .chain(vm2_txn_info_ids.into_iter().skip(1))
+                .collect()
+        };
+        storage.save_block_txn_info_ids(block_id, ordered_ids)?;
 
         // Save table infos
         storage.save_table_infos(txn_table_infos)?;

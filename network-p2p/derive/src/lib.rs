@@ -18,8 +18,7 @@ use syn::parse_macro_input;
 #[proc_macro_attribute]
 pub fn net_rpc(attr: TokenStream, input: TokenStream) -> TokenStream {
     let input_tokens = parse_macro_input!(input as syn::Item);
-    let args = syn::parse_macro_input!(attr as syn::AttributeArgs);
-    let derive_options = options::DeriveOptions::new(args);
+    let derive_options = options::DeriveOptions::parse(attr);
     let token_stream = rpc_trait::rpc_impl(input_tokens, &derive_options).unwrap();
     token_stream.into()
 }

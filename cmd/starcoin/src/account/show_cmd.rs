@@ -9,10 +9,12 @@ use starcoin_rpc_client::StateRootOption;
 use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
 use starcoin_vm2_statedb::ChainStateReader;
 use starcoin_vm2_vm_types::{
-    account_address::AccountAddress, account_config::CoinStoreResource, state_view::StateReaderExt,
-    token::token_code::TokenCode,
+    account_address::AccountAddress,
+    account_config::CoinStoreResource,
+    state_view::StateReaderExt,
+    token::{stc::G_STC_TOKEN_CODE, token_code::TokenCode},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 
 /// Show a account info, only the accounts managed by the current node are supported
 #[derive(Debug, Parser, Default)]
@@ -70,9 +72,10 @@ impl CommandAction for ShowCommand {
             0,
             usize::MAX,
             None,
+            None,
         )?;
 
-        let balances: HashMap<TokenCode, u128> = resources
+        let mut balances: HashMap<TokenCode, u128> = resources
             .resources
             .into_iter()
             .filter_map(|(resource_type, resource)| {
@@ -87,6 +90,16 @@ impl CommandAction for ShowCommand {
                 }
             })
             .collect();
+
+        if let Ok(stc_struct_tag) = G_STC_TOKEN_CODE.clone().try_into() {
+            if let Ok(total_balance) =
+                chain_state_reader.get_balance_by_type(*account.address(), stc_struct_tag)
+            {
+                if total_balance > 0 || balances.contains_key(&G_STC_TOKEN_CODE) {
+                    balances.insert(G_STC_TOKEN_CODE.clone(), total_balance);
+                }
+            }
+        }
 
         let auth_key = account.public_key.authentication_key();
         Ok(AccountWithStateView {

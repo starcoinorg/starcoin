@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Ok, Result};
 use network_api::PeerId;
-use once_cell::sync::Lazy;
+use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_chain::{verifier::FullVerifier, BlockChain};
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_api::ExecutedBlock;
@@ -21,14 +21,6 @@ use starcoin_types::block::Block;
 use starcoin_types::system_events::{MinedBlock, NewDagBlock, NewDagBlockFromPeer};
 
 use crate::sync::CheckSyncEvent;
-
-static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get())
-        .thread_name(|index| format!("parallel_executor_{}", index))
-        .build()
-        .expect("failed to build rayon thread pool for executing block service")
-});
 
 #[derive(Debug, Clone)]
 enum ExecuteResult {

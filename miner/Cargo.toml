@@ -26,6 +26,7 @@ starcoin-storage = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
+sp-utils = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-types = { workspace = true }
@@ -53,6 +54,10 @@ starcoin-time-service = { workspace = true }
 stest = { workspace = true }
 starcoin-sync = { workspace = true }
 test-helper = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-transaction-builder = { workspace = true}
+starcoin-txpool-mock-service = { workspace = true }
 
 [package]
 authors = { workspace = true }

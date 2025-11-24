@@ -58,16 +58,19 @@ pub fn stdlib_upgrade_init_script(
 
 fn load_compiled_modules(version: StdlibVersion, package_name: &str) -> Vec<CompiledModule> {
     let package_file = format!("{version}/{package_name}.mrb");
-    let package = COMPILED_MOVE_CODE_DIR
-        .get_file(package_file)
-        .map(|file| {
-            let mrb = bcs_ext::from_bytes::<ReleaseBundle>(file.contents())
-                .expect("Decode release bundle should success");
-            mrb.compiled_modules()
-        })
-        .expect("Can not find package");
+    let package = COMPILED_MOVE_CODE_DIR.get_file(package_file).map(|file| {
+        let mrb = bcs_ext::from_bytes::<ReleaseBundle>(file.contents())
+            .expect("Decode release bundle should success");
+        mrb.compiled_modules()
+    });
 
-    package
+    if version.is_latest() {
+        package.unwrap_or_else(|| {
+            starcoin_vm2_cached_packages::head_release_bundle().compiled_modules()
+        })
+    } else {
+        package.expect("Can not find package")
+    }
 }
 
 pub fn modules_diff(

@@ -10,8 +10,7 @@ use crate::{
     },
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
-use ark_ec::Group;
-use ark_ff::Field;
+use ark_ff::{AdditiveGroup, Field};
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
