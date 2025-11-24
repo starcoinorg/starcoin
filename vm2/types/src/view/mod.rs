@@ -80,7 +80,6 @@ pub use transaction_request::*;
 pub mod transaction_status_view;
 pub use transaction_status_view::*;
 pub mod transaction_with_proof;
-pub use transaction_with_proof::*;
 pub mod write_op_value_view;
 pub use write_op_value_view::*;
 pub mod write_op_view;

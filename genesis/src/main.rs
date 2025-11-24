@@ -24,7 +24,7 @@ fn main() {
     info!("found exec_path: {:?} ", exec_path);
     let work_dir_path = exec_path
         .parent()
-        .map(|p| p.join("../../genesis"))
+        .map(|p| p.join("../../networks"))
         .and_then(|p| p.canonicalize().ok())
         .expect("cannot find work dir");
     info!("work_dir_path: {:?} ", work_dir_path);

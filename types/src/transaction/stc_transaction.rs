@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 pub use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 
+use crate::multi_transaction::{MultiAccountAddress, MultiTransaction};
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StcTransaction {
     V1(super::Transaction),
@@ -30,6 +32,27 @@ impl StcTransaction {
         match self {
             StcTransaction::V1(_) => None,
             StcTransaction::V2(txn) => Some(txn),
+        }
+    }
+
+    pub fn to_transaction(self) -> MultiTransaction {
+        match self {
+            StcTransaction::V1(txn) => MultiTransaction::VM1(txn),
+            StcTransaction::V2(txn) => MultiTransaction::VM2(txn),
+        }
+    }
+
+    pub fn address(&self) -> MultiAccountAddress {
+        match self {
+            StcTransaction::V1(txn) => match txn {
+                super::Transaction::UserTransaction(txn) => MultiAccountAddress::VM1(txn.sender()),
+                super::Transaction::BlockMetadata(txn) => MultiAccountAddress::VM1(txn.author()),
+            },
+            StcTransaction::V2(txn) => match txn {
+                Transaction2::UserTransaction(txn) => MultiAccountAddress::VM2(txn.sender()),
+                Transaction2::BlockMetadata(txn) => MultiAccountAddress::VM2(txn.author()),
+                Transaction2::BlockEpilogue(txn, _) => MultiAccountAddress::VM2(txn.author()),
+            },
         }
     }
 }

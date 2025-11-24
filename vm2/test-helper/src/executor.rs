@@ -109,7 +109,7 @@ pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<
 }
 
 fn stdlib_files() -> Vec<String> {
-    starcoin_vm2_framework::testnet_release_bundle()
+    starcoin_cached_packages::head_release_bundle()
         .files()
         .unwrap()
         .clone()

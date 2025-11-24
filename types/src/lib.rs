@@ -23,6 +23,8 @@ pub mod account_state;
 
 pub mod multi_state;
 
+pub mod multi_access_path;
+
 #[allow(clippy::too_many_arguments)]
 pub mod block;
 pub mod blockhash;

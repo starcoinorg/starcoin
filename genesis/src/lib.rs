@@ -48,8 +48,8 @@ use starcoin_vm_types::state_view::StateView;
 
 use starcoin_storage::{Storage2, Store2};
 
-pub static G_GENESIS_GENERATED_DIR: &str = "generated";
-pub const GENESIS_DIR: Dir = include_dir!("generated");
+pub static G_GENESIS_GENERATED_DIR: &str = "genesis";
+pub const GENESIS_DIR: Dir = include_dir!("../networks/genesis");
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
@@ -199,7 +199,7 @@ impl Genesis {
     pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
         let package = build_stdlib_package(
             net,
-            if net.is_test() {
+            if net.is_test() || net.is_dev() {
                 StdLibOptions::Fresh
             } else {
                 StdLibOptions::Compiled(net.stdlib_version())

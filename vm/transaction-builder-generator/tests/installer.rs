@@ -24,7 +24,10 @@ fn test_that_installed_rust_code_compiles() {
         .arg("etc/starcoin_types.yml")
         .arg("--target-source-dir")
         .arg(dir.path())
-        .arg("vm/stdlib/compiled/latest/transaction_scripts/abi")
+        .arg(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../networks/stdlib/latest/transaction_scripts/abi"
+        ))
         .status()
         .unwrap();
     assert!(status.success());

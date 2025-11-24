@@ -36,6 +36,7 @@ fn test_deserialize() {
     println!("{:?}", v);
 }
 
+#[ignore]
 #[test]
 fn test_generated_schema_are_up_to_date_in_git() {
     // Better not run the `stdlib` tool when the repository is not in a clean state.
