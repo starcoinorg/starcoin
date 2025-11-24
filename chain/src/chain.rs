@@ -1253,7 +1253,7 @@ impl ChainReader for BlockChain {
         let (storage, _storage2) = &self.storage;
         let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            let txn_info = storage.get_transaction_info(txn_info_id)?;
+            let txn_info = storage.get_transaction_info_by_rich_info_id(txn_info_id)?;
             if let Some(txn_info) = txn_info {
                 if self.exist_block(txn_info.block_id())? {
                     return Ok(Some(txn_info));
@@ -1414,7 +1414,7 @@ impl ChainReader for BlockChain {
             .get_leaves(start_index, reverse, max_size)?;
         let mut infos = vec![];
         let txn_infos =
-            storage.get_transaction_infos_by_block_id(hashes.clone(), chain_header.id())?;
+            storage.get_transaction_infos_by_info_ids(hashes.clone(), chain_header.id())?;
         for (i, info) in txn_infos.into_iter().enumerate() {
             match info {
                 Some(info) => infos.push(info),
@@ -1493,19 +1493,28 @@ impl ChainReader for BlockChain {
                 )
             })?;
 
-        let get_transaction_info = |id: HashValue| {
-            // try vm2 query style first
-            // vm2 stores StcRichTransactionInfo's id and (TransactionInfo's id with block id).
-            // vm1 stores TransactionInfo's id only.
-            if let Ok(info) = storage.get_transaction_info_by_block_id(id, block_id) {
-                return Ok(info);
-            } else {
-                return storage.get_transaction_info(id);
-            }
-        };
+        let get_transaction_info_in_this_chain =
+            |id: HashValue| -> Result<Option<StcRichTransactionInfo>> {
+                // vm1's TransactionInfo's id and StcRichTransactionInfo's id are same,
+                // vm2's TransactionInfo's id and StcRichTransactionInfo's id are different
+                // we are not sure whether the id is from vm1 or vm2, so we need to check both.
+                let mut rich_ids = storage.get_rich_ids_by_info_id(id).unwrap_or(vec![]);
+                rich_ids.push(id);
+                let rich_infos = storage.get_transaction_infos_by_rich_ids(rich_ids)?;
+                for rich_info in rich_infos {
+                    if rich_info.is_none() {
+                        continue;
+                    }
+                    let rich_info = rich_info.unwrap();
+                    if self.check_exist_block(rich_info.block_id(), rich_info.block_number)? {
+                        return Ok(Some(rich_info));
+                    }
+                }
+                Ok(None)
+            };
 
-        let proof_rich_transaction_info = get_transaction_info(proof_transaction_info_id)?
-            .ok_or_else(|| {
+        let proof_rich_transaction_info =
+            get_transaction_info_in_this_chain(proof_transaction_info_id)?.ok_or_else(|| {
                 format_err!(
                     "failed to get proof txn info by hash:{}, block id:{}",
                     proof_transaction_info_id,
@@ -1515,8 +1524,8 @@ impl ChainReader for BlockChain {
 
         let proof_transaction_info = proof_rich_transaction_info.transaction_info;
 
-        let input_rich_transaction_info =
-            get_transaction_info(transaction_info_id)?.ok_or_else(|| {
+        let input_rich_transaction_info = get_transaction_info_in_this_chain(transaction_info_id)?
+            .ok_or_else(|| {
                 format_err!(
                     "failed to get txn info by hash:{}, block id:{}",
                     transaction_info_id,
@@ -1539,13 +1548,14 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Cannot get state root hash"))?;
         let final_access_path = final_raw_transaction.access_path();
 
-        let transaction_info = get_transaction_info(transaction_info_id)?.ok_or_else(|| {
-            format_err!(
-                "failed to get txn info by hash:{}, block id:{}",
-                transaction_info_id,
-                block_id
-            )
-        })?;
+        let transaction_info = get_transaction_info_in_this_chain(transaction_info_id)?
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get txn info by hash:{}, block id:{}",
+                    transaction_info_id,
+                    block_id
+                )
+            })?;
 
         let event_proof = match input_rich_transaction_info.transaction_info {
             StcTransactionInfo::V1(_) => {
@@ -1828,7 +1838,7 @@ impl BlockChain {
                 }
 
                 let txn_info = storage
-                    .get_transaction_info_by_block_id(*id, block_id)?
+                    .get_transaction_info_by_info_id(*id, block_id)?
                     .ok_or_else(|| {
                         anyhow::anyhow!(format!(
                             "cannot find txn info with txn_info_id {} on main chain(head: {})",

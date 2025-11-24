@@ -134,12 +134,23 @@ impl From<RichTransactionInfo> for StcRichTransactionInfo {
 }
 
 impl StcRichTransactionInfo {
+    // this returns id of rich info
+    // in vm1 it's the same as inner txn info id
+    // in vm2 it's the hash of rich txn info struct
     pub fn id(&self) -> HashValue {
         match &self.transaction_info {
             StcTransactionInfo::V1(info) => info.id(),
             StcTransactionInfo::V2(_) => self.crypto_hash(),
         }
     }
+
+    pub fn inner_transaction_info_id(&self) -> HashValue {
+        match &self.transaction_info {
+            StcTransactionInfo::V1(info) => info.id(),
+            StcTransactionInfo::V2(info) => info.id(),
+        }
+    }
+
     pub fn transaction_hash(&self) -> HashValue {
         match &self.transaction_info {
             StcTransactionInfo::V1(info) => info.transaction_hash(),

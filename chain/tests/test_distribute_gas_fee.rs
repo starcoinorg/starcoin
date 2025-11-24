@@ -113,7 +113,7 @@ fn test_distribute_transaction_fee() -> Result<()> {
 
         gas_used += block_chain
             .get_storage()
-            .get_transaction_info(txn_info_ids[0])?
+            .get_transaction_info_by_rich_info_id(txn_info_ids[0])?
             .unwrap()
             .transaction_info
             .to_v2()

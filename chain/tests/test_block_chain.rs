@@ -300,11 +300,11 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Get the actual transaction_info objects
     let txn_info1 = block_chain
         .get_storage()
-        .get_transaction_info(txn_info_ids[0])?
+        .get_transaction_info_by_rich_info_id(txn_info_ids[0])?
         .expect("transaction_info should exist");
     let txn_info2 = block_chain_1
         .get_storage()
-        .get_transaction_info(txn_info_ids[1])?
+        .get_transaction_info_by_rich_info_id(txn_info_ids[1])?
         .expect("transaction_info should exist");
 
     // Verify they are different
