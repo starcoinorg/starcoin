@@ -67,8 +67,7 @@ use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm1_types::stdlib::StdlibVersion;
 use std::sync::LazyLock;
 
-static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> =
-    LazyLock::new(|| AtomicUsize::new(num_cpus::get()));
+static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
