@@ -49,6 +49,10 @@ impl PTransactionOutput for StarcoinTransactionOutput {
         self.0.write_set().iter().cloned().collect()
     }
 
+    fn gas_used(&self) -> u64 {
+        self.0.gas_used()
+    }
+
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self {
         Self(TransactionOutput::new(
@@ -78,6 +82,7 @@ impl ParallelStarcoinVM {
 
         match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
             concurrency_level,
+            block_gas_limit,
         )
         .execute_transactions_parallel(state_view, signature_verified_block)
         {

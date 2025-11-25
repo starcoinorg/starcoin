@@ -123,4 +123,15 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
             }
         }
     }
+
+    // Get gas_used from the transaction output without consuming it
+    pub fn gas_used(&self, txn_idx: TxnIndex) -> u64 {
+        match &self.outputs[txn_idx].load_full() {
+            None => 0,
+            Some(txn_output) => match txn_output.as_ref() {
+                ExecutionStatus::Success(t) | ExecutionStatus::SkipRest(t) => t.gas_used(),
+                ExecutionStatus::Abort(_) => 0,
+            },
+        }
+    }
 }

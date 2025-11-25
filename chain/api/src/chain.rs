@@ -98,12 +98,6 @@ pub trait ChainReader {
     /// Get transaction info by transaction's hash
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>>;
 
-    /// get transaction info by global index in chain.
-    fn get_transaction_info_by_global_index(
-        &self,
-        transaction_global_index: u64,
-    ) -> Result<Option<StcRichTransactionInfo>>;
-
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn chain_state_reader2(&self) -> &dyn ChainStateReader2;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;

@@ -214,7 +214,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 
                 let events = self
                     .inner
-                    .get_events_by_txn_info_hash(txn_info.id())?
+                    .get_events_by_txn_info_hash(txn_info.transaction_info.id())?
                     .unwrap_or_default();
 
                 let event_infos = if events.is_empty() {
@@ -413,7 +413,24 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         txn_hash: HashValue,
     ) -> Result<Option<StcRichTransactionInfo>, Error> {
-        self.main.get_transaction_info(txn_hash)
+        let txn_info_ids = self
+            .storage
+            .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
+        for txn_info_id in txn_info_ids {
+            let txn_info = self
+                .storage
+                .get_transaction_info_by_rich_info_id(txn_info_id)?;
+            if let Some(txn_info) = txn_info {
+                if self
+                    .storage
+                    .get_block_by_hash(txn_info.block_id())?
+                    .is_some()
+                {
+                    return Ok(Some(txn_info));
+                }
+            }
+        }
+        Ok(None)
     }
 
     fn get_block_txn_infos(

@@ -288,14 +288,55 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Query all transaction_info for this transaction
     let txn_info_ids = block_chain
         .get_storage()
-        .get_transaction_info_ids_by_txn_hash(txn_hash)?;
+        .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
 
     // Should have 2 transaction infos (one in each block)
     assert_eq!(
         txn_info_ids.len(),
-        1,
-        "Should have 1 transaction infos in DAG cause same txn in two block contains same state_root(None)"
+        2,
+        "Should have 2 transaction infos in DAG"
     );
+
+    // Get the actual transaction_info objects
+    let txn_info1 = block_chain
+        .get_storage()
+        .get_transaction_info_by_rich_info_id(txn_info_ids[0])?
+        .expect("transaction_info should exist");
+    let txn_info2 = block_chain_1
+        .get_storage()
+        .get_transaction_info_by_rich_info_id(txn_info_ids[1])?
+        .expect("transaction_info should exist");
+
+    // Verify they are different
+    assert_ne!(
+        txn_info1, txn_info2,
+        "Same txn in different blocks should have different info"
+    );
+    assert_ne!(
+        txn_info1.id(),
+        txn_info2.id(),
+        "Transaction info IDs should be different"
+    );
+
+    // Verify they belong to different blocks
+    let block_ids = [block_b2.id(), block_b2_1.id()];
+    assert!(
+        block_ids.contains(&txn_info1.block_id()),
+        "txn_info1 should be in b2 or b3"
+    );
+    assert!(
+        block_ids.contains(&txn_info2.block_id()),
+        "txn_info2 should be in b2 or b3"
+    );
+    assert_ne!(
+        txn_info1.block_id(),
+        txn_info2.block_id(),
+        "Should be in different blocks"
+    );
+
+    // Verify transaction hash is correct
+    assert_eq!(txn_info1.transaction_hash(), txn_hash);
+    assert_eq!(txn_info2.transaction_hash(), txn_hash);
 
     Ok(())
 }

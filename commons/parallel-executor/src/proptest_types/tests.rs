@@ -45,9 +45,11 @@ where
 
     let mut ret = true;
     for _ in 0..num_repeat {
-        let output =
-            ParallelTransactionExecutor::<Transaction<K, V>, Task<K, V>>::new(num_cpus::get())
-                .execute_transactions_parallel((), transactions.clone());
+        let output = ParallelTransactionExecutor::<Transaction<K, V>, Task<K, V>>::new(
+            num_cpus::get(),
+            None,
+        )
+        .execute_transactions_parallel((), transactions.clone());
 
         let baseline = ExpectedOutput::generate_baseline(&transactions);
 
