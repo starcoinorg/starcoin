@@ -262,7 +262,7 @@ impl BenchmarkManager {
         }
 
         // this variable could only be set once, default is serialize, so we run serialize first.
-        StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        StarcoinVM::set_concurrency_level(num_cpus::get());
         assert_eq!(StarcoinVM::get_concurrency_level(), num_cpus::get());
 
         // run parallel txns
