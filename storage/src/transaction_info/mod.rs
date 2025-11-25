@@ -8,6 +8,8 @@ use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_types::transaction::StcRichTransactionInfo;
+use std::collections::HashMap;
+use std::collections::HashSet;
 
 define_storage!(
     StcTransactionInfoStorage,
@@ -33,6 +35,8 @@ impl ValueCodec for StcRichTransactionInfo {
     }
 }
 
+// it not only store the txn_hash => rich_txn_info_hash
+// it also store the txn_info_hash => rich_txn_info_hash
 impl TransactionInfoHashStorage {
     pub(crate) fn get_transaction_info_ids_by_hash(
         &self,
@@ -49,27 +53,45 @@ impl TransactionInfoHashStorage {
         &self,
         vec_txn_info: &[StcRichTransactionInfo],
     ) -> Result<(), Error> {
-        let mut batch = CodecWriteBatch::new();
+        let mut map = HashMap::new();
         for txn_info in vec_txn_info {
-            if let Some(mut id_vec) = self.get(txn_info.transaction_hash())? {
-                if !id_vec.contains(&txn_info.id()) {
-                    id_vec.push(txn_info.id());
-                    batch.put(txn_info.transaction_hash(), id_vec)?;
-                }
+            map.entry(txn_info.transaction_hash())
+                .and_modify(|v: &mut Vec<HashValue>| v.push(txn_info.id()))
+                .or_insert_with(|| vec![txn_info.id()]);
+
+            // some object caches the txn_info_hash before rich info was created
+            // it's necessary to supply this mapping mechanism for them to retrieve the rich info.
+            map.entry(txn_info.transaction_info.id())
+                .and_modify(|v| v.push(txn_info.id()))
+                .or_insert_with(|| vec![txn_info.id()]);
+        }
+
+        let mut batch = CodecWriteBatch::new();
+        for (k, v) in map {
+            if let Some(r) = self.get(k)? {
+                let merged: Vec<_> = v
+                    .into_iter()
+                    .chain(r)
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect();
+                batch.put(k, merged)?;
             } else {
-                batch.put(txn_info.transaction_hash(), vec![txn_info.id()])?;
+                batch.put(k, v)?;
             }
         }
         self.write_batch(batch)
     }
 }
+
 impl StcTransactionInfoStorage {
-    pub(crate) fn get_transaction_info(
+    pub(crate) fn get_transaction_info_by_rich_info_id(
         &self,
-        id: HashValue,
+        rich_info_id: HashValue,
     ) -> Result<Option<StcRichTransactionInfo>, Error> {
-        self.get(id)
+        self.get(rich_info_id)
     }
+
     pub(crate) fn save_transaction_infos(
         &self,
         vec_txn_info: Vec<StcRichTransactionInfo>,
@@ -81,10 +103,10 @@ impl StcTransactionInfoStorage {
         self.write_batch(batch)
     }
 
-    pub(crate) fn get_transaction_infos(
+    pub(crate) fn get_transaction_infos_by_rich_info_id(
         &self,
-        ids: Vec<HashValue>,
+        rich_info_ids: Vec<HashValue>,
     ) -> Result<Vec<Option<StcRichTransactionInfo>>, Error> {
-        self.multiple_get(ids)
+        self.multiple_get(rich_info_ids)
     }
 }

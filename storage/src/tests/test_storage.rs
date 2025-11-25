@@ -210,7 +210,7 @@ fn test_missing_key_handle() -> Result<()> {
     let db_storage = instance.db().unwrap();
     let storage = Storage::new(instance.clone()).unwrap();
     let key = HashValue::random();
-    let result = storage.get_transaction_info(key)?;
+    let result = storage.get_transaction_info_by_rich_info_id(key)?;
     assert!(result.is_none());
     let value2 = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, key.clone().to_vec())?;
     assert!(value2.is_none());
