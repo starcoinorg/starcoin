@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas_tracker::GasTracker;
 use crossbeam::utils::CachePadded;
 use starcoin_infallible::Mutex;
 use std::{
@@ -135,11 +136,13 @@ pub struct Scheduler {
     txn_dependency: Vec<CachePadded<Mutex<Vec<TxnIndex>>>>,
     /// An index i maps to the most up-to-date status of transaction i.
     txn_status: Vec<CachePadded<Mutex<TransactionStatus>>>,
+
+    gas_tracker: Option<GasTracker>,
 }
 
 /// Public Interfaces for the Scheduler
 impl Scheduler {
-    pub fn new(num_txns: usize) -> Self {
+    pub fn new(num_txns: usize, gas_limit: Option<u64>) -> Self {
         Self {
             num_txns,
             execution_idx: AtomicUsize::new(0),
@@ -153,12 +156,22 @@ impl Scheduler {
             txn_status: (0..num_txns)
                 .map(|_| CachePadded::new(Mutex::new(TransactionStatus::ReadyToExecute(0, None))))
                 .collect(),
+            gas_tracker: gas_limit.map(|limit| GasTracker::new(num_txns, limit)),
         }
     }
 
     /// Return the number of transactions to be executed from the block.
     pub fn num_txn_to_execute(&self) -> usize {
         self.num_txns
+    }
+
+    /// Get the first index that exceeds the gas limit.
+    /// Returns the total number of transactions if no transaction exceeds the limit.
+    pub fn first_exceeding_index(&self) -> usize {
+        self.gas_tracker
+            .as_ref()
+            .map(|tracker| tracker.first_exceeding_index())
+            .unwrap_or(self.num_txns)
     }
 
     /// Try to abort version = (txn_idx, incarnation), called upon validation failure.
@@ -331,6 +344,14 @@ impl Scheduler {
 
         SchedulerTask::NoTask
     }
+
+    pub fn finish_validation(&self, txn_idx: TxnIndex, gas_used: u64) {
+        if let Some(tracker) = &self.gas_tracker {
+            if tracker.update_and_check_reach_gas_limit(txn_idx, gas_used) {
+                self.done_marker.store(true, Ordering::Release);
+            }
+        }
+    }
 }
 
 /// Public functions of the Scheduler
@@ -339,6 +360,9 @@ impl Scheduler {
     fn decrease_validation_idx(&self, target_idx: TxnIndex) {
         if self.validation_idx.fetch_min(target_idx, Ordering::SeqCst) > target_idx {
             self.decrease_cnt.fetch_add(1, Ordering::SeqCst);
+        }
+        if let Some(tracker) = self.gas_tracker.as_ref() {
+            tracker.decrease_validation_idx(target_idx)
         }
     }
 

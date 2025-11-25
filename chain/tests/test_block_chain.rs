@@ -288,7 +288,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     // Query all transaction_info for this transaction
     let txn_info_ids = block_chain
         .get_storage()
-        .get_transaction_info_ids_by_txn_hash(txn_hash)?;
+        .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
 
     // Should have 2 transaction infos (one in each block)
     assert_eq!(

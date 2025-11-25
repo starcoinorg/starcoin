@@ -108,7 +108,7 @@ fn test_distribute_transaction_fee() -> Result<()> {
         let txn_hash = signed_txn.id();
         let txn_info_ids = block_chain
             .get_storage()
-            .get_transaction_info_ids_by_txn_hash(txn_hash)?;
+            .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
         assert_eq!(txn_info_ids.len(), 1, "should have 1 transaction infos");
 
         gas_used += block_chain

@@ -184,7 +184,10 @@ pub trait BlockTransactionInfoStore {
     fn get_rich_ids_by_info_id(&self, info_id: HashValue) -> Result<Vec<HashValue>>;
     /// Get transaction info ids by transaction hash, one transaction may be in different chain branch, so produce multiply transaction info.
     /// if not transaction info match with the `txn_hash`, return empty Vec.
-    fn get_transaction_info_ids_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<HashValue>>;
+    fn get_rich_transaction_info_ids_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<HashValue>>;
     fn save_transaction_infos(&self, vec_txn_info: Vec<StcRichTransactionInfo>) -> Result<()>;
     fn get_transaction_infos_by_rich_ids(
         &self,
@@ -532,7 +535,7 @@ impl BlockTransactionInfoStore for Storage {
         Ok(transaction_info_vec)
     }
 
-    fn get_transaction_info_ids_by_txn_hash(
+    fn get_rich_transaction_info_ids_by_txn_hash(
         &self,
         txn_hash: HashValue,
     ) -> Result<Vec<HashValue>, Error> {

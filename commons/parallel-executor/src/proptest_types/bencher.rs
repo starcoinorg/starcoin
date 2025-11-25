@@ -103,9 +103,11 @@ where
     }
 
     pub(crate) fn run(self) {
-        let output =
-            ParallelTransactionExecutor::<Transaction<K, V>, Task<K, V>>::new(num_cpus::get())
-                .execute_transactions_parallel((), self.transactions.clone());
+        let output = ParallelTransactionExecutor::<Transaction<K, V>, Task<K, V>>::new(
+            num_cpus::get(),
+            None,
+        )
+        .execute_transactions_parallel((), self.transactions.clone());
 
         assert!(self.expected_output.check_output(&output));
     }

@@ -14,18 +14,13 @@ use starcoin_parallel_executor::{
 
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::PeerId;
 use starcoin_vm_types::{
     state_store::state_key::StateKey, state_store::StateView, write_set::WriteOp,
 };
-use std::collections::HashSet;
-use std::sync::Mutex;
 
 pub(crate) struct StarcoinVMWrapper<'a, S> {
     vm: StarcoinVM,
     base_view: &'a S,
-    senders: Mutex<HashSet<AccountAddress>>,
 }
 
 impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
@@ -42,7 +37,6 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         Self {
             vm,
             base_view: argument,
-            senders: Mutex::new(HashSet::new()),
         }
     }
 
@@ -69,12 +63,6 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
                 if StarcoinVM::should_restart_execution(&output) {
                     ExecutionStatus::SkipRest(StarcoinTransactionOutput::new(output))
                 } else {
-                    if let PreprocessedTransaction::UserTransaction(t) = txn {
-                        self.senders
-                            .lock()
-                            .unwrap()
-                            .insert(PeerId::from(*t.sender()));
-                    }
                     ExecutionStatus::Success(StarcoinTransactionOutput::new(output))
                 }
             }
