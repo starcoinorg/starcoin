@@ -1254,7 +1254,7 @@ impl ChainReader for BlockChain {
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<StcRichTransactionInfo>> {
         let (storage, _storage2) = &self.storage;
-        let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
+        let txn_info_ids = storage.get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
             let txn_info = storage.get_transaction_info_by_rich_info_id(txn_info_id)?;
             if let Some(txn_info) = txn_info {

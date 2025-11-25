@@ -415,9 +415,11 @@ impl ReadableChainService for ChainReaderServiceInner {
     ) -> Result<Option<StcRichTransactionInfo>, Error> {
         let txn_info_ids = self
             .storage
-            .get_transaction_info_ids_by_txn_hash(txn_hash)?;
+            .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            let txn_info = self.storage.get_transaction_info(txn_info_id)?;
+            let txn_info = self
+                .storage
+                .get_transaction_info_by_rich_info_id(txn_info_id)?;
             if let Some(txn_info) = txn_info {
                 if self
                     .storage
