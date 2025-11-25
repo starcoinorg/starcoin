@@ -41,10 +41,12 @@ pub struct StarcoinGasMeter {
     feature_version: u64,
     gas_params: StarcoinGasParameters,
 
+    initial_balance: InternalGas,
     balance: InternalGas,
 
     max_execution_gas: InternalGas,
     execution_gas_used: InternalGas,
+    total_consumed: InternalGas,
 
     charge: bool,
 }
@@ -57,9 +59,11 @@ impl StarcoinGasMeter {
         Self {
             feature_version: LATEST_GAS_FEATURE_VERSION,
             gas_params,
+            initial_balance: balance,
             balance,
             max_execution_gas,
             execution_gas_used: 0.into(),
+            total_consumed: 0.into(),
             charge: true,
         }
     }
@@ -71,19 +75,8 @@ impl StarcoinGasMeter {
 
     // todo: remove me and use charge instead
     pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
-        if !self.charge {
-            return Ok(());
-        }
-        match self.balance.checked_sub(amount) {
-            Some(new_balance) => {
-                self.balance = new_balance;
-                Ok(())
-            }
-            None => {
-                self.balance = 0.into();
-                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
-            }
-        }
+        let (_, res) = self.charge(amount);
+        res
     }
 
     pub fn set_metering(&mut self, enabled: bool) {
@@ -92,6 +85,33 @@ impl StarcoinGasMeter {
 
     pub fn get_metering(&self) -> bool {
         self.charge
+    }
+
+    pub fn check_consistency(&self) -> PartialVMResult<()> {
+        let total = self
+            .initial_balance
+            .checked_sub(self.balance)
+            .ok_or_else(|| {
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Current balance ({}) exceeds the initial balance ({})",
+                        self.balance, self.initial_balance
+                    ),
+                )
+            })?;
+
+        if total != self.total_consumed {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Recorded gas usage ({}) does not match consumption derived from balance ({}) (execution recorded: {})",
+                        self.total_consumed, total, self.execution_gas_used
+                    ),
+                ),
+            );
+        }
+
+        Ok(())
     }
 
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
@@ -106,17 +126,19 @@ impl StarcoinGasMeter {
 
     fn charge(&mut self, amount: InternalGas) -> (InternalGas, PartialVMResult<()>) {
         if !self.charge {
-            return (amount, Ok(()));
+            return (0.into(), Ok(()));
         }
 
         match self.balance.checked_sub(amount) {
             Some(new_balance) => {
                 self.balance = new_balance;
+                self.total_consumed += amount;
                 (amount, Ok(()))
             }
             None => {
                 let old_balance = self.balance;
                 self.balance = 0.into();
+                self.total_consumed += old_balance;
                 (
                     old_balance,
                     Err(PartialVMError::new(StatusCode::OUT_OF_GAS)),
@@ -632,5 +654,46 @@ impl GasMeter for StarcoinGasMeter {
         _size: NumBytes,
     ) -> PartialVMResult<()> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use move_vm_types::gas::SimpleInstruction;
+    use starcoin_gas_schedule::InitialGasSchedule;
+
+    #[test]
+    fn consistency_tracks_all_consumption() {
+        let params = StarcoinGasParameters::initial();
+        let mut meter = StarcoinGasMeter::new(params, 10);
+
+        meter.deduct_gas(4.into()).unwrap();
+        meter.charge_simple_instr(SimpleInstruction::Add).unwrap();
+
+        meter.check_consistency().unwrap();
+        assert!(meter.total_consumed >= 4.into());
+    }
+
+    #[test]
+    fn consistency_handles_out_of_gas() {
+        let params = StarcoinGasParameters::initial();
+        let mut meter = StarcoinGasMeter::new(params, 5);
+
+        assert!(meter.deduct_gas(10.into()).is_err());
+        assert_eq!(meter.total_consumed, 5.into());
+        meter.check_consistency().unwrap();
+    }
+
+    #[test]
+    fn consistency_ignores_disabled_metering() {
+        let params = StarcoinGasParameters::initial();
+        let mut meter = StarcoinGasMeter::new(params, 12);
+
+        meter.set_metering(false);
+        meter.deduct_gas(6.into()).unwrap();
+
+        assert_eq!(meter.total_consumed, 0.into());
+        meter.check_consistency().unwrap();
     }
 }

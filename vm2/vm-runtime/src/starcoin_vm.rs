@@ -1424,6 +1424,13 @@ impl StarcoinVM {
         txn_data: &TransactionMetadata,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         gas_meter.set_metering(false);
+        if let Err(err) = gas_meter.check_consistency() {
+            warn!(
+                "[starcoin-vm][gas-meter][success-epilogue] consistency check failed: {}",
+                err
+            );
+            return Err(err.finish(Location::Undefined).into_vm_status());
+        }
         self.run_epilogue(&mut session, gas_meter, txn_data, true)?;
 
         Ok((
@@ -1446,6 +1453,12 @@ impl StarcoinVM {
         storage: &S,
     ) -> (VMStatus, TransactionOutput) {
         gas_meter.set_metering(false);
+        if let Err(err) = gas_meter.check_consistency() {
+            warn!(
+                "[starcoin-vm][gas-meter][failure-epilogue] consistency check failed: {}",
+                err
+            );
+        }
         let mut session = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(txn_data));
