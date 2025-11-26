@@ -39,7 +39,7 @@ jobs:
         id: sync
         run: |
           set -eo pipefail
-          git submodule update --init --remote networks
+          git submodule update --init
           networks_commit=$(git -C networks rev-parse HEAD)
           echo "networks_commit=$networks_commit" >> "$GITHUB_OUTPUT"
 
