@@ -52,6 +52,10 @@ impl PTransactionOutput for StarcoinTransactionOutput {
             .collect()
     }
 
+    fn gas_used(&self) -> u64 {
+        self.0.gas_used()
+    }
+
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self {
         Self(TransactionOutput::new(

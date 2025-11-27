@@ -85,7 +85,7 @@ impl DebugApi for DebugRpcImpl {
     }
 
     fn set_concurrency_level(&self, level: usize) -> Result<()> {
-        StarcoinVM2::set_concurrency_level_once(level);
+        StarcoinVM2::set_concurrency_level(level);
         Ok(())
     }
 

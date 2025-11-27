@@ -290,7 +290,7 @@ fn test_full_build_and_execute_in_custom_network() -> Result<()> {
             tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
         }
 
-        StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        StarcoinVM::set_concurrency_level(num_cpus::get());
 
         // transfer token from default account to receivers
         let mid = receivers.len() / 2;

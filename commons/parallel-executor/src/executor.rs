@@ -297,7 +297,7 @@ where
         let num_txns = signature_verified_block.len();
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
-        let scheduler = Scheduler::new(num_txns);
+        let scheduler = Scheduler::new(num_txns, None);
 
         RAYON_EXEC_POOL.scope(|s| {
             for _ in 0..self.concurrency_level {

@@ -19,9 +19,19 @@ pub enum ExecutionStatus<T, E> {
 
 /// Trait that defines a transaction that could be parallel executed by the scheduler. Each
 /// transaction will write to a key value storage as their side effect.
-pub trait Transaction: Sync + Send + 'static {
+pub trait Transaction: Sync + Send + Clone + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
+
+    /// Returns true if this transaction is block metadata.
+    /// Default false to preserve backward compatibility for existing implementors.
+    fn is_block_prologue(&self) -> bool {
+        false
+    }
+
+    fn is_block_epilogue(&self) -> bool {
+        false
+    }
 }
 
 /// Inference result of a transaction.
@@ -69,6 +79,9 @@ pub trait TransactionOutput: Send + Sync {
         <Self::T as Transaction>::Key,
         <Self::T as Transaction>::Value,
     )>;
+
+    /// Get the gas used by this transaction.
+    fn gas_used(&self) -> u64;
 
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self;

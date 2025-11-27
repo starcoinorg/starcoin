@@ -432,7 +432,7 @@ async fn run_benchmark(
             tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
         }
 
-        StarcoinVM::set_concurrency_level_once(num_cpus::get());
+        StarcoinVM::set_concurrency_level(num_cpus::get());
 
         let mid = receivers.len() / 2;
         let signed_transactions = build_transaction_to_send_token_to_account(
