@@ -375,7 +375,7 @@ impl std::fmt::Debug for Inner {
 }
 
 impl Inner {
-    pub(crate) fn queue(&self) -> Arc<TxnQueue> {
+    pub fn queue(&self) -> Arc<TxnQueue> {
         self.queue.clone()
     }
     pub(crate) fn pool_status(&self) -> Status {
@@ -410,7 +410,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn import_txns(
+    pub fn import_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
         bypass_vm1_limit: bool,
@@ -433,7 +433,7 @@ impl Inner {
             .pop()
             .expect("remove should return one result per hash")
     }
-    pub(crate) fn get_pending(
+    pub fn get_pending(
         &self,
         max_len: u64,
         current_timestamp_secs: u64,
@@ -575,7 +575,7 @@ impl Inner {
         }
     }
 
-    fn get_pool_client(&self) -> Result<PoolClient> {
+    pub fn get_pool_client(&self) -> Result<PoolClient> {
         let state = self
             .storage
             .get_vm_multi_state(self.chain_header.read().id())?;
