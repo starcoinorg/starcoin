@@ -21,6 +21,7 @@ starcoin-chain-service = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-node = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
