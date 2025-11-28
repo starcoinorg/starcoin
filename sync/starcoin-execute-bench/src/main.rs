@@ -24,6 +24,7 @@ use starcoin_logger::{
     prelude::{error, info, LevelFilter},
     LoggerHandle,
 };
+use starcoin_node::NodeHandle;
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -177,8 +178,7 @@ impl DataDir {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let network_choice = cli.network;
@@ -202,13 +202,21 @@ async fn main() -> Result<()> {
     global_opt.genesis_config = init_opt.genesis_config.clone();
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
-    let bench_result = run_benchmark(
-        node_config,
+    let node = run_node_with_all_service(node_config.clone())?;
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+
+    let bench_result = rt.block_on(execute_benchmark(
+        &node,
         cli.account_count,
         cli.initial_balance,
         cli.initial_gas_fee,
-    )
-    .await;
+    ));
+
+    node.stop()?;
+
     let close_result = data_dir.close();
     bench_result?;
     close_result?;
@@ -341,13 +349,12 @@ async fn get_balance(
     Ok(balance)
 }
 
-async fn run_benchmark(
-    node_config: Arc<NodeConfig>,
+async fn execute_benchmark(
+    node: &NodeHandle,
     account_count: u32,
     initial_balance: u128,
     initial_gas_fee: u128,
 ) -> Result<()> {
-    let node = run_node_with_all_service(node_config.clone())?;
     let registry = node.registry();
     let storage1 = node.storage();
     let storage2 = node.storage2();
@@ -469,10 +476,9 @@ async fn run_benchmark(
         Ok::<(), anyhow::Error>(())
     };
 
-    fut.await?;
+    let result = fut.await;
 
-    node.stop_service(ObserverService::service_name().to_string())?;
-    node.stop()?;
+    result?;
 
     Ok(())
 }
