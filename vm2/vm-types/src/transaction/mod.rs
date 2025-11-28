@@ -1063,9 +1063,10 @@ impl Transaction {
         match self {
             Self::UserTransaction(signed) => signed.id(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
-            Self::BlockEpilogue(block_metadata, _) => {
-                let meta_id: HashValue = block_metadata.id();
-                HashValue::sha3_256_of(meta_id.as_ref())
+            Self::BlockEpilogue(block_metadata, senders) => {
+                let block_epilogue_bytes = bcs_ext::to_bytes(&(block_metadata, senders))
+                    .expect("Serialize BlockEpilogue should success.");
+                HashValue::sha3_256_of(block_epilogue_bytes.as_ref())
             }
         }
     }
