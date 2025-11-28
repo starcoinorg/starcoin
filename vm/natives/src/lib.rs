@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::secp256k1::{DecompressPubKeyGasParameters, Secp256k1EcdsaRecoverGasParameters};
+use crate::secp256k1::{
+    DecompressPubKeyGasParameters, Secp256k1EcdsaRecoverGasParameters, Secp256k1SignGasParameters,
+};
 
 pub mod account;
 pub mod hash;
@@ -80,6 +82,11 @@ impl GasParameters {
                 },
 
                 decompress_pubkey: DecompressPubKeyGasParameters {
+                    base: 0.into(),
+                    per_byte: 0.into(),
+                },
+
+                secp256k1_sign: Secp256k1SignGasParameters {
                     base: 0.into(),
                     per_byte: 0.into(),
                 },

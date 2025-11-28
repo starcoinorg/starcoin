@@ -476,6 +476,7 @@ pub fn v5_native_table() -> Vec<GasCost> {
         (N::SECP256K1_ECDSA_RECOVER_INTERNAL, GasCost::new(4, 1)),
         (N::VECTOR_SPAWN_FROM, GasCost::new(4, 1)),
         (N::SECP256K1_DECOMPRESS_PUBKEY, GasCost::new(4, 1)),
+        (N::SECP256K1_SECP256K1_SIGN, GasCost::new(4, 1)),
     ];
     raw_native_table.sort_by_key(|cost| cost.0 as u64);
     raw_native_table
