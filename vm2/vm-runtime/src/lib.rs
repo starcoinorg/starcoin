@@ -16,7 +16,7 @@ pub use move_vm_runtime::{move_vm, session};
 use starcoin_gas_schedule::{
     InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
 };
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 mod access_path_cache;
 mod errors;
@@ -56,7 +56,7 @@ pub trait VMExecutor: Send + Sync {
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
-    BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
 }
 
 #[inline]

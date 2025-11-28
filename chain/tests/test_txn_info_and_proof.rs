@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use anyhow::{bail, format_err, Result};
 use move_vm2_core_types::move_resource::MoveStructType;
@@ -128,7 +128,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         if contain_vm2_transactions {
             let block_epilogue_txn = Transaction2::BlockEpilogue(
                 vm2_block_metadata,
-                HashSet::from_iter([association_address2()]),
+                BTreeSet::from_iter([association_address2()]),
             );
             all_txns.push(block_epilogue_txn.into());
         }

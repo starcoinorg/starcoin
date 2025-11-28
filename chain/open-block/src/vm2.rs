@@ -17,7 +17,7 @@ use starcoin_vm2_types::transaction::{
     TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
     TransactionStatus as TransactionStatus2,
 };
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 impl OpenedBlock {
     pub fn initialize(&mut self) -> anyhow::Result<()> {
@@ -123,7 +123,7 @@ impl OpenedBlock {
     pub fn finalize_block_epilogue(&mut self) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         // Directly use VM2 BlockEpilogue
-        let senders: HashSet<AccountAddress> = self
+        let senders: BTreeSet<AccountAddress> = self
             .included_user_txns2
             .iter()
             .map(|txn| txn.sender())

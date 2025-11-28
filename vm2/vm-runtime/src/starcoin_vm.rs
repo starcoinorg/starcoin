@@ -10,6 +10,7 @@ use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver}
 use crate::{
     default_gas_schedule, discard_error_output, discard_error_vm_status, PreprocessedTransaction,
 };
+use crate::{verifier, VMExecutor};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
@@ -26,6 +27,8 @@ use starcoin_gas_schedule::{
     G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
+#[cfg(feature = "metrics")]
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::{
     account_config,
@@ -35,6 +38,7 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
+use starcoin_vm1_types::stdlib::StdlibVersion;
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm_types::transaction::TransactionAuxiliaryData;
@@ -59,13 +63,8 @@ use starcoin_vm_types::{
 };
 use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
-use std::{borrow::Borrow, cmp::min, collections::HashSet, sync::Arc};
-
-use crate::{verifier, VMExecutor};
-#[cfg(feature = "metrics")]
-use starcoin_metrics::metrics::VMMetrics;
-use starcoin_vm1_types::stdlib::StdlibVersion;
 use std::sync::LazyLock;
+use std::{borrow::Borrow, cmp::min, collections::BTreeSet, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
 
@@ -953,7 +952,7 @@ impl StarcoinVM {
     fn process_block_epilogue<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
-        senders: HashSet<AccountAddress>,
+        senders: BTreeSet<AccountAddress>,
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(feature = "testing")]
         info!("process_block_epilogue begin");
@@ -1524,7 +1523,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
-    BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
 }
 
 impl TransactionBlock {

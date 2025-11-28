@@ -36,7 +36,7 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
@@ -982,7 +982,7 @@ pub enum Transaction {
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
     /// Block Epilogue, gathering all sender address to process transaction fee
-    BlockEpilogue(BlockMetadata, HashSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
 }
 
 // Legacy BlockMetadata for database upgrade compatibility
