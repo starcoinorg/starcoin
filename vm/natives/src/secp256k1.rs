@@ -8,9 +8,10 @@
  *
  **************************************************************************************************/
 
-use crate::ecrecover::pubkey_to_address;
+use crate::ecrecover::{keccak, pubkey_to_address};
 use crate::util::make_native_from_func;
-use libsecp256k1::PublicKey;
+use arrayref::array_ref;
+use libsecp256k1::{Message, PublicKey, SecretKey};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -25,6 +26,7 @@ use std::collections::VecDeque;
 pub struct GasParameters {
     pub ecdsa_recover_internal: Secp256k1EcdsaRecoverGasParameters,
     pub decompress_pubkey: DecompressPubKeyGasParameters,
+    pub secp256k1_sign: Secp256k1SignGasParameters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -39,12 +41,24 @@ pub struct DecompressPubKeyGasParameters {
     pub per_byte: InternalGasPerByte,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Secp256k1SignGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
 /// Abort code when deserialization fails (0x01 == INVALID_ARGUMENT)
 /// NOTE: This must match the code in the Move implementation
 ///
 pub mod abort_codes {
     pub const NFE_DESERIALIZE: u64 = 0x01_0001;
+    pub const INVALID_PRIVKEY: u64 = 0x01_0002;
+    pub const INVALID_HASH_FUNCTION: u64 = 0x01_0003;
 }
+
+// Hash function constants (must match Move implementation)
+const HASH_KECCAK256: u8 = 0;
+const HASH_SHA256: u8 = 1;
 
 fn native_ecdsa_recover_internal(
     gas_params: &Secp256k1EcdsaRecoverGasParameters,
@@ -136,6 +150,69 @@ fn native_decompress_pubkey(
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(address)]))
 }
 
+pub fn native_secp256k1_sign(
+    gas_params: &Secp256k1SignGasParameters,
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 4);
+
+    // The corresponding Move function is only used for testing, so we don't need to charge any gas.
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::one();
+
+    // Parameters are popped in reverse order (last parameter first)
+    let private_key_bytes = pop_arg!(args, Vec<u8>);
+    let msg = pop_arg!(args, Vec<u8>);
+    let hash = pop_arg!(args, u8);
+    let recoverable = pop_arg!(args, bool);
+
+    // Parse private key (must be 32 bytes)
+    if private_key_bytes.len() != 32 {
+        return Ok(NativeResult::err(cost, abort_codes::INVALID_PRIVKEY));
+    }
+
+    let seckey = match SecretKey::parse(array_ref![private_key_bytes, 0, 32]) {
+        Ok(sk) => sk,
+        Err(_) => return Ok(NativeResult::err(cost, abort_codes::INVALID_PRIVKEY)),
+    };
+
+    // Hash the message based on hash function type
+    let msg_hash: [u8; 32] = match hash {
+        HASH_KECCAK256 => keccak(&msg),
+        HASH_SHA256 => {
+            // Use sha3 for SHA3-256 hashing (project standard)
+            use sha3::{Digest, Sha3_256};
+            let mut hasher = Sha3_256::new();
+            hasher.update(&msg);
+            let result = hasher.finalize();
+            result.into()
+        }
+        _ => return Ok(NativeResult::err(cost, abort_codes::INVALID_HASH_FUNCTION)),
+    };
+
+    // Parse the hashed message
+    let message = match Message::parse_slice(&msg_hash) {
+        Ok(msg) => msg,
+        Err(_) => return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE)),
+    };
+
+    // Sign the message
+    let (sig, rec_id) = libsecp256k1::sign(&message, &seckey);
+    let mut signature = sig.serialize().to_vec();
+
+    // If recoverable, append recovery ID (in Ethereum format: rec_id + 27)
+    if recoverable {
+        signature.push(rec_id.serialize() + 27);
+    }
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::vector_u8(signature)],
+    ))
+}
+
 /***************************************************************************************************
  * module
  *
@@ -153,6 +230,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "decompress_pubkey",
             make_native_from_func(gas_params.decompress_pubkey, native_decompress_pubkey),
+        ),
+        (
+            "secp256k1_sign",
+            make_native_from_func(gas_params.secp256k1_sign, native_secp256k1_sign),
         ),
     ];
 

@@ -10170,6 +10170,7 @@ dependencies = [
  "num_enum",
  "rand 0.8.5",
  "ripemd160",
+ "sha3",
  "smallvec 1.10.0",
  "starcoin-crypto",
  "starcoin-uint",

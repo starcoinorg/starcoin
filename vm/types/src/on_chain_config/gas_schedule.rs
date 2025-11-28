@@ -655,6 +655,7 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "starcoin_natives.frombcs.base",
         "starcoin_natives.secp256k1.ecdsa_recover_internal.base",
         "starcoin_natives.secp256k1.decompress_pubkey.base",
+        "starcoin_natives.secp256k1.secp256k1_sign.base",
         "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit",
     ]
 });
