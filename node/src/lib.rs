@@ -17,7 +17,7 @@ use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Storage2};
 use starcoin_sync::sync::{CheckSyncEvent, SyncService};
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::Block;
@@ -135,6 +135,12 @@ impl NodeHandle {
         self.registry
             .get_shared_sync::<Arc<Storage>>()
             .expect("Storage must exist.")
+    }
+
+    pub fn storage2(&self) -> Arc<Storage2> {
+        self.registry
+            .get_shared_sync::<Arc<Storage2>>()
+            .expect("Storage2 must exist.")
     }
 
     pub fn genesis(&self) -> Genesis {

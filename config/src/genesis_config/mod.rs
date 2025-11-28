@@ -238,7 +238,7 @@ impl Display for CustomNetworkID {
 }
 
 impl CustomNetworkID {
-    fn new(chain_name: String, chain_id: ChainId) -> Self {
+    pub fn new(chain_name: String, chain_id: ChainId) -> Self {
         Self {
             chain_name,
             chain_id,
