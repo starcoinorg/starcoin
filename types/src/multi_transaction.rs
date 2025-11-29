@@ -31,8 +31,8 @@ pub enum MultiAddress {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MultiTransaction {
-    VM1(Transaction),
-    VM2(Transaction2),
+    VM1(Box<Transaction>),
+    VM2(Box<Transaction2>),
 }
 
 impl From<AccountAddress> for MultiAddress {
@@ -50,11 +50,11 @@ impl From<AccountAddress2> for MultiAddress {
 impl MultiTransaction {
     pub fn sender_address(&self) -> MultiAddress {
         match self {
-            MultiTransaction::VM1(txn) => match txn {
+            MultiTransaction::VM1(txn) => match txn.as_ref() {
                 Transaction::UserTransaction(txn) => MultiAddress::VM1(txn.sender()),
                 Transaction::BlockMetadata(txn) => MultiAddress::VM1(txn.author()),
             },
-            MultiTransaction::VM2(txn) => match txn {
+            MultiTransaction::VM2(txn) => match txn.as_ref() {
                 Transaction2::UserTransaction(txn) => MultiAddress::VM2(txn.sender()),
                 Transaction2::BlockMetadata(txn) => MultiAddress::VM2(txn.author()),
                 Transaction2::BlockEpilogue(txn, _) => MultiAddress::VM2(txn.author()),
@@ -105,8 +105,8 @@ impl TryFrom<StcTransaction> for MultiSignedUserTransaction {
     type Error = Error;
     fn try_from(txn: StcTransaction) -> Result<Self, Self::Error> {
         Ok(match txn {
-            StcTransaction::V1(txn) => MultiSignedUserTransaction::VM1(txn.try_into()?),
-            StcTransaction::V2(txn) => MultiSignedUserTransaction::VM2(txn.try_into()?),
+            StcTransaction::V1(txn) => MultiSignedUserTransaction::VM1((*txn).try_into()?),
+            StcTransaction::V2(txn) => MultiSignedUserTransaction::VM2((*txn).try_into()?),
         })
     }
 }

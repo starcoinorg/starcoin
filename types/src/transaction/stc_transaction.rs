@@ -9,8 +9,8 @@ use crate::multi_transaction::{MultiAccountAddress, MultiTransaction};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StcTransaction {
-    V1(super::Transaction),
-    V2(Transaction2),
+    V1(Box<super::Transaction>),
+    V2(Box<Transaction2>),
 }
 
 impl StcTransaction {
@@ -23,7 +23,7 @@ impl StcTransaction {
 
     pub fn to_v1(self) -> Option<super::Transaction> {
         match self {
-            StcTransaction::V1(txn) => Some(txn),
+            StcTransaction::V1(txn) => Some(*txn),
             StcTransaction::V2(_) => None,
         }
     }
@@ -31,7 +31,7 @@ impl StcTransaction {
     pub fn to_v2(self) -> Option<Transaction2> {
         match self {
             StcTransaction::V1(_) => None,
-            StcTransaction::V2(txn) => Some(txn),
+            StcTransaction::V2(txn) => Some(*txn),
         }
     }
 
@@ -44,11 +44,11 @@ impl StcTransaction {
 
     pub fn address(&self) -> MultiAccountAddress {
         match self {
-            StcTransaction::V1(txn) => match txn {
+            StcTransaction::V1(txn) => match txn.as_ref() {
                 super::Transaction::UserTransaction(txn) => MultiAccountAddress::VM1(txn.sender()),
                 super::Transaction::BlockMetadata(txn) => MultiAccountAddress::VM1(txn.author()),
             },
-            StcTransaction::V2(txn) => match txn {
+            StcTransaction::V2(txn) => match txn.as_ref() {
                 Transaction2::UserTransaction(txn) => MultiAccountAddress::VM2(txn.sender()),
                 Transaction2::BlockMetadata(txn) => MultiAccountAddress::VM2(txn.author()),
                 Transaction2::BlockEpilogue(txn, _) => MultiAccountAddress::VM2(txn.author()),
@@ -59,12 +59,12 @@ impl StcTransaction {
 
 impl From<super::Transaction> for StcTransaction {
     fn from(txn: super::Transaction) -> Self {
-        StcTransaction::V1(txn)
+        StcTransaction::V1(Box::new(txn))
     }
 }
 
 impl From<Transaction2> for StcTransaction {
     fn from(txn: Transaction2) -> Self {
-        StcTransaction::V2(txn)
+        StcTransaction::V2(Box::new(txn))
     }
 }
