@@ -143,11 +143,9 @@ fn native_decompress_pubkey(
         Err(_) => return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE)),
     };
 
-    // Calculate address from public key (keccak256 hash of uncompressed public key, last 20 bytes)
-    let address = pubkey_to_address(&pubkey);
-
-    // Return decompressed public key (without first byte, same as original implementation)
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(address)]))
+    // Return the full 65-byte uncompressed public key (0x04 prefix + 64 bytes x,y coordinates)
+    // This matches the expected format in Move contract committee.move
+    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(pubkey.serialize().to_vec())]))
 }
 
 pub fn native_secp256k1_sign(
@@ -241,13 +239,11 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
 }
 
 #[test]
-fn test_decomparess() -> anyhow::Result<()> {
-    use crate::ecrecover::pubkey_to_address;
+fn test_decompress() -> anyhow::Result<()> {
     use hex::FromHex;
     use libsecp256k1::PublicKey;
 
     let validator_pub_key = "029bef8d556d80e43ae7e0becb3a7e6838b95defe45896ed6075bb9035d06c9964";
-    let expected_address = "b14d3c4f5fbfbcfb98af2d330000d49c95b93aa7";
 
     // Convert hex string to bytes
     let compressed_key_bytes: Vec<u8> = FromHex::from_hex(validator_pub_key)?;
@@ -266,19 +262,12 @@ fn test_decomparess() -> anyhow::Result<()> {
     let pubkey = PublicKey::parse_compressed(&fixed_size_key)
         .map_err(|e| anyhow::anyhow!("Failed to parse compressed public key: {:?}", e))?;
 
-    // Calculate address from public key (keccak256 hash of uncompressed public key, last 20 bytes)
-    let address = pubkey_to_address(&pubkey);
-
-    // Convert expected address from hex
-    let expected_address_bytes: Vec<u8> = FromHex::from_hex(expected_address)?;
-    assert_eq!(expected_address_bytes.len(), 20, "Address must be 20 bytes");
-
-    // Verify the address matches
-    assert_eq!(
-        address, expected_address_bytes,
-        "Address mismatch. Got: {:?}, Expected: {}",
-        address, expected_address
-    );
+    // Get the full 65-byte uncompressed public key
+    let uncompressed = pubkey.serialize();
+    
+    // Verify the uncompressed key is 65 bytes (0x04 prefix + 64 bytes)
+    assert_eq!(uncompressed.len(), 65, "Uncompressed public key must be 65 bytes");
+    assert_eq!(uncompressed[0], 0x04, "Uncompressed public key must start with 0x04");
 
     Ok(())
 }
