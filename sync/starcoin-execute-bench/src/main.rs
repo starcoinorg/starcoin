@@ -410,7 +410,10 @@ async fn execute_benchmark(
                     continue;
                 }
             };
-            if default_account_balance > account_count as u128 * initial_balance + initial_gas_fee {
+            let per_tx_fee = max_gas as u128 * gas_price as u128;
+            let needed_balance =
+                account_count as u128 * (initial_balance + per_tx_fee) + initial_gas_fee;
+            if default_account_balance >= needed_balance {
                 break;
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
