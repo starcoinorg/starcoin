@@ -12,6 +12,7 @@ use starcoin_parallel_executor::{
     task::{ExecutionStatus, ExecutorTask},
 };
 
+use crate::data_cache::AsMoveResolver;
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::{
@@ -46,7 +47,8 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let versioned_view = VersionedView::new_view(self.base_view, view);
-        match self.vm.execute_single_transaction(txn, &versioned_view) {
+        let resolver = versioned_view.as_move_resolver();
+        match self.vm.execute_single_transaction(txn, &resolver) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
                     match sender {

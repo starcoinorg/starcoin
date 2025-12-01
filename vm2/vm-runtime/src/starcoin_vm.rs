@@ -1734,28 +1734,25 @@ impl StarcoinVM {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
-                let (vm_status, output) =
-                    self.execute_user_transaction(&data_cache.as_move_resolver(), *txn.clone());
+                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
                 // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let (vm_status, output) = match self
-                    .process_block_metadata(&data_cache.as_move_resolver(), block_meta.clone())
-                {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_metadata(data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_metadata".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_, senders) => {
-                let (vm_status, output) = match self
-                    .process_block_epilogue(&data_cache.as_move_resolver(), senders.clone())
-                {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_epilogue(data_cache, senders.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })

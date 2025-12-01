@@ -31,12 +31,7 @@ use starcoin_vm_types::{
     write_set::{WriteOp, WriteSet},
 };
 use std::collections::HashMap;
-use std::{
-    cell::RefCell,
-    collections::btree_map::BTreeMap,
-    collections::HashSet,
-    ops::{Deref, DerefMut},
-};
+use std::{cell::RefCell, collections::btree_map::BTreeMap, collections::HashSet, ops::Deref};
 
 pub fn get_resource_group_member_from_metadata(
     struct_tag: &StructTag,
@@ -317,40 +312,6 @@ impl<S: StateView> AsMoveResolver<S> for S {
 impl<S: StateView> AsExecutorView for StorageAdapter<'_, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
         self.executor_view
-    }
-}
-
-pub struct RemoteStorageOwned<S> {
-    state_view: S,
-}
-
-impl<S> Deref for RemoteStorageOwned<S> {
-    type Target = S;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state_view
-    }
-}
-
-impl<S> DerefMut for RemoteStorageOwned<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state_view
-    }
-}
-
-impl<S: StateView> AsExecutorView for RemoteStorageOwned<S> {
-    fn as_executor_view(&self) -> &dyn ExecutorView {
-        &self.state_view
-    }
-}
-
-pub trait IntoMoveResolver<S> {
-    fn into_move_resolver(self) -> RemoteStorageOwned<S>;
-}
-
-impl<S: StateView> IntoMoveResolver<S> for S {
-    fn into_move_resolver(self) -> RemoteStorageOwned<S> {
-        RemoteStorageOwned { state_view: self }
     }
 }
 

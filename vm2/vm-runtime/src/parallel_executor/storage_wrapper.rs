@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::data_cache::{IntoMoveResolver, RemoteStorageOwned};
 use starcoin_parallel_executor::executor::MVHashMapView;
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -18,12 +17,11 @@ impl<'a, S: StateView> VersionedView<'a, S> {
     pub fn new_view(
         base_view: &'a S,
         hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp>,
-    ) -> RemoteStorageOwned<VersionedView<'a, S>> {
+    ) -> VersionedView<'a, S> {
         VersionedView {
             base_view,
             hashmap_view,
         }
-        .into_move_resolver()
     }
 }
 
