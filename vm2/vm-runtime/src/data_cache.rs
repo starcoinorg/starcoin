@@ -140,32 +140,6 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
     }
 }
 
-impl<S: StateView> ModuleResolver for StateViewCache<'_, S> {
-    type Error = PartialVMError;
-
-    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
-        self.as_move_resolver().get_module_metadata(module_id)
-    }
-
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
-        self.as_move_resolver().get_module(module_id)
-    }
-}
-impl<S: StateView> ResourceResolver for StateViewCache<'_, S> {
-    type Error = PartialVMError;
-
-    fn get_resource_bytes_with_metadata_and_layout(
-        &self,
-        address: &AccountAddress,
-        struct_tag: &StructTag,
-        metadata: &[Metadata],
-        layout: Option<&MoveTypeLayout>,
-    ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        self.as_move_resolver()
-            .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
-    }
-}
-
 impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn new(
         state_store: &'a S,
@@ -361,75 +335,6 @@ impl<S> Deref for RemoteStorageOwned<S> {
 impl<S> DerefMut for RemoteStorageOwned<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state_view
-    }
-}
-
-impl<S: StateView> ModuleResolver for RemoteStorageOwned<S> {
-    type Error = PartialVMError;
-
-    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
-        self.as_move_resolver().get_module_metadata(module_id)
-    }
-
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
-        self.as_move_resolver().get_module(module_id)
-    }
-}
-
-impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
-    type Error = PartialVMError;
-
-    fn get_resource_bytes_with_metadata_and_layout(
-        &self,
-        address: &AccountAddress,
-        struct_tag: &StructTag,
-        metadata: &[Metadata],
-        layout: Option<&MoveTypeLayout>,
-    ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        self.as_move_resolver()
-            .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
-    }
-}
-
-impl<S: StateView> ResourceGroupResolver for RemoteStorageOwned<S> {
-    fn release_resource_group_cache(
-        &self,
-    ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
-        self.as_move_resolver().release_resource_group_cache()
-    }
-
-    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
-        self.as_move_resolver().resource_group_size(group_key)
-    }
-
-    fn resource_size_in_group(
-        &self,
-        group_key: &StateKey,
-        resource_tag: &StructTag,
-    ) -> PartialVMResult<usize> {
-        self.as_move_resolver()
-            .resource_size_in_group(group_key, resource_tag)
-    }
-
-    fn resource_exists_in_group(
-        &self,
-        group_key: &StateKey,
-        resource_tag: &StructTag,
-    ) -> PartialVMResult<bool> {
-        self.as_move_resolver()
-            .resource_exists_in_group(group_key, resource_tag)
-    }
-}
-
-impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
-    fn resolve_table_entry_bytes_with_layout(
-        &self,
-        handle: &TableHandle,
-        key: &[u8],
-        maybe_layout: Option<&MoveTypeLayout>,
-    ) -> Result<Option<Bytes>, PartialVMError> {
-        self.as_move_resolver()
-            .resolve_table_entry_bytes_with_layout(handle, key, maybe_layout)
     }
 }
 

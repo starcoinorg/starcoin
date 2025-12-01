@@ -189,10 +189,9 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
-        let remote_storage = state.as_move_resolver();
-        self.version = Version::fetch_config(&remote_storage);
+        self.version = Version::fetch_config(&state);
         // move version can be none.
-        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
+        self.move_version = MoveLanguageVersion::fetch_config(&state);
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
@@ -203,7 +202,7 @@ impl StarcoinVM {
                     stdlib_version
                 );
                 // todo: fetch gas schedule from GasSchedule Config on chain
-                VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
+                VMConfig::fetch_config(&state).map(|v| v.gas_schedule)
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
