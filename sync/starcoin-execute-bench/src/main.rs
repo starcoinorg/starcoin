@@ -88,6 +88,20 @@ struct Cli {
         help = "Initial gas fee for transactions."
     )]
     initial_gas_fee: u128,
+
+    #[arg(
+        long = "gas-price",
+        default_value = "100000",
+        help = "Gas price for transactions (max: 10000)."
+    )]
+    gas_price: u64,
+
+    #[arg(
+        long = "max-gas",
+        default_value = "40000000",
+        help = "Max gas for transactions."
+    )]
+    max_gas: u64,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -213,6 +227,8 @@ fn main() -> Result<()> {
         cli.account_count,
         cli.initial_balance,
         cli.initial_gas_fee,
+        cli.gas_price,
+        cli.max_gas,
     ));
 
     node.stop()?;
@@ -260,6 +276,8 @@ async fn build_transaction_to_send_token_to_account(
     sender: &[AccountInfo],
     receiver: &[AccountInfo],
     amount: u128,
+    gas_price: u64,
+    max_gas: u64,
     account_service: ServiceRef<AccountService2>,
     config: Arc<NodeConfig>,
     header_block: &BlockHeader,
@@ -292,8 +310,8 @@ async fn build_transaction_to_send_token_to_account(
             vec![receiver.get(index).unwrap().address],
             next_seq,
             amount,
-            1,
-            40_000_000,
+            gas_price,
+            max_gas,
             expire_time,
             header_block.chain_id().id().into(),
         );
@@ -346,6 +364,7 @@ async fn get_balance(
     let multi_state = storage1.get_vm_multi_state(header_id)?;
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
+    info!("jacktest: balance of {} is {}", address, balance);
     Ok(balance)
 }
 
@@ -354,6 +373,8 @@ async fn execute_benchmark(
     account_count: u32,
     initial_balance: u128,
     initial_gas_fee: u128,
+    gas_price: u64,
+    max_gas: u64,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -412,6 +433,8 @@ async fn execute_benchmark(
             &vec![default_account; receivers.len()],
             &receivers,
             initial_balance,
+            gas_price,
+            max_gas,
             account_service.clone(),
             config.clone(),
             &get_current_header(chain_reader_service.clone()).await?,
@@ -439,13 +462,15 @@ async fn execute_benchmark(
             tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
         }
 
-        StarcoinVM::set_concurrency_level(1);
+        StarcoinVM::set_concurrency_level(num_cpus::get());
 
         let mid = receivers.len() / 2;
         let signed_transactions = build_transaction_to_send_token_to_account(
             &receivers[..mid],
             &receivers[mid..],
             1,
+            gas_price,
+            max_gas,
             account_service.clone(),
             config.clone(),
             &get_current_header(chain_reader_service.clone()).await?,
@@ -476,11 +501,7 @@ async fn execute_benchmark(
         Ok::<(), anyhow::Error>(())
     };
 
-    let result = fut.await;
-
-    result?;
-
-    Ok(())
+    fut.await
 }
 
 enum TransactionExecutionResult {
@@ -571,9 +592,11 @@ impl ObserverService {
         Ok(())
     }
 
-    fn collect_executions(&self) -> Vec<(Option<f64>, f64)> {
+    fn collect_executions(&self) -> (HashMap<String, Vec<f64>>, usize, usize) {
         let fmt = "%Y-%m-%d %H:%M:%S%.3f";
-        let mut result = Vec::new();
+        let mut grouped: HashMap<String, Vec<f64>> = HashMap::new();
+        let mut unique_txn_count = 0usize;
+        let mut duplicate_exec_count = 0usize;
 
         for events in self.transaction_data.values() {
             let mut added_times = Vec::new();
@@ -583,7 +606,7 @@ impl ObserverService {
                 match ev {
                     TransactionExecutionResult::Added(ts) => {
                         if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            added_times.push(t);
+                            added_times.push((ts.clone(), t));
                         }
                     }
                     TransactionExecutionResult::Executed(ts)
@@ -600,100 +623,213 @@ impl ObserverService {
                 continue;
             }
 
+            unique_txn_count += 1;
+
+            let (first_add_str, first_add) = &added_times[0];
+
             if executed_times.is_empty() {
-                result.push((None, f64::INFINITY));
+                grouped
+                    .entry(first_add_str.clone())
+                    .or_default()
+                    .push(f64::INFINITY);
                 continue;
             }
 
-            let first_add = added_times[0];
-            for exec in executed_times {
-                let delay = exec - first_add;
-                if let Some(us) = delay.num_microseconds() {
-                    let ms = us as f64 / 1000.0;
-                    if ms >= 0.0 {
-                        result.push((Some(exec.and_utc().timestamp_millis() as f64), ms));
-                    }
+            if executed_times.len() > 1 {
+                duplicate_exec_count += executed_times.len() - 1;
+            }
+
+            let last_exec = executed_times.iter().max().unwrap();
+            let delay = *last_exec - *first_add;
+            if let Some(us) = delay.num_microseconds() {
+                let ms = us as f64 / 1000.0;
+                if ms >= 0.0 {
+                    grouped.entry(first_add_str.clone()).or_default().push(ms);
                 }
             }
         }
 
-        result.sort_by(|a, b| match (a.0, b.0) {
-            (Some(t1), Some(t2)) => t1.partial_cmp(&t2).unwrap_or(std::cmp::Ordering::Equal),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => std::cmp::Ordering::Equal,
-        });
-
-        result
+        (grouped, unique_txn_count, duplicate_exec_count)
     }
 
     pub fn export_latency_timeline_svg(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
-        let data = self.collect_executions();
-        if data.is_empty() {
+        let (grouped, unique_txn_count, duplicate_exec_count) = self.collect_executions();
+        if grouped.is_empty() {
             return Ok(());
         }
 
-        let min_ts = data
-            .iter()
-            .filter_map(|(t, _)| *t)
-            .fold(f64::INFINITY, f64::min);
-        let max_ts = data
-            .iter()
-            .filter_map(|(t, _)| *t)
-            .fold(f64::NEG_INFINITY, f64::max);
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+        let mut sorted_times: Vec<String> = grouped.keys().cloned().collect();
+        sorted_times.sort_by(|a, b| {
+            let t1 = NaiveDateTime::parse_from_str(a, fmt).ok();
+            let t2 = NaiveDateTime::parse_from_str(b, fmt).ok();
+            match (t1, t2) {
+                (Some(t1), Some(t2)) => t1.cmp(&t2),
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
 
-        let max_latency = data
-            .iter()
-            .filter(|(_, d)| d.is_finite())
-            .map(|(_, d)| *d)
-            .fold(0.0, f64::max)
+        let mut latency_counts: Vec<(String, HashMap<i64, usize>)> = Vec::new();
+        for time_str in &sorted_times {
+            let delays = grouped.get(time_str).unwrap();
+            let mut count_map: HashMap<i64, usize> = HashMap::new();
+            for d in delays {
+                if d.is_finite() {
+                    let key = (*d * 10.0).round() as i64;
+                    *count_map.entry(key).or_insert(0) += 1;
+                }
+            }
+            latency_counts.push((time_str.clone(), count_map));
+        }
+
+        let max_latency: f64 = grouped
+            .values()
+            .flat_map(|v| v.iter())
+            .filter(|d| d.is_finite())
+            .fold(0.0f64, |acc, &d| acc.max(d))
             .max(1.0);
 
         let root = SVGBackend::new(file_path, (1600, 800)).into_drawing_area();
         root.fill(&WHITE)?;
 
+        let num_bars = sorted_times.len();
+
         let mut chart = ChartBuilder::on(&root)
             .caption(
-                "Add → Execute Latency Timeline (included unexecuted transactions)",
+                "Transaction Latency (Added to Executed)",
                 ("sans-serif", 28),
             )
             .margin(20)
-            .x_label_area_size(80)
+            .x_label_area_size(120)
             .y_label_area_size(70)
-            .build_cartesian_2d(min_ts..(max_ts + 2000.0), 0f64..max_latency)?;
+            .build_cartesian_2d(0f64..(num_bars as f64), 0f64..max_latency)?;
 
         chart
             .configure_mesh()
-            .x_desc("Execution Time (ms since start)")
+            .x_desc("Added Time")
             .y_desc("Latency (ms)")
+            .x_label_formatter(&|x| {
+                let idx = *x as usize;
+                if idx < sorted_times.len() {
+                    let t = &sorted_times[idx];
+                    if let Some(pos) = t.find(' ') {
+                        t[pos + 1..].to_string()
+                    } else {
+                        t.clone()
+                    }
+                } else {
+                    String::new()
+                }
+            })
             .axis_desc_style(("sans-serif", 20))
-            .label_style(("sans-serif", 14))
+            .label_style(("sans-serif", 10))
+            .x_labels(num_bars.min(15))
             .draw()?;
 
-        let bar_width = 200.0;
+        let bar_width = 0.8;
+        for (idx, (time_str, count_map)) in latency_counts.iter().enumerate() {
+            let delays = grouped.get(time_str).unwrap();
+            let max_delay = delays
+                .iter()
+                .filter(|d| d.is_finite())
+                .fold(0.0f64, |acc, &d| acc.max(d));
 
-        chart.draw_series(data.iter().map(|(opt_t, delay)| {
-            let color = if delay.is_finite() {
-                RGBColor(50, 100, 220).filled()
-            } else {
-                RED.filled()
-            };
+            if max_delay > 0.0 {
+                let x_center = idx as f64 + 0.5;
+                let x_left = x_center - bar_width / 2.0;
+                let x_right = x_center + bar_width / 2.0;
 
-            if let Some(ts) = opt_t {
-                Rectangle::new(
-                    [
-                        (ts - bar_width / 2.0, 0.0),
-                        (ts + bar_width / 2.0, delay.min(max_latency)),
-                    ],
-                    color,
-                )
-            } else {
-                Rectangle::new(
-                    [(max_ts + 1000.0, 0.0), (max_ts + 1500.0, max_latency * 0.9)],
-                    color,
-                )
+                chart.draw_series(std::iter::once(Rectangle::new(
+                    [(x_left, 0.0), (x_right, max_delay.min(max_latency))],
+                    RGBColor(50, 100, 220).filled(),
+                )))?;
+
+                for (&latency_key, &count) in count_map {
+                    let latency = latency_key as f64 / 10.0;
+                    if latency > 0.0 && latency < max_delay {
+                        chart.draw_series(std::iter::once(PathElement::new(
+                            vec![(x_left, latency), (x_right, latency)],
+                            ShapeStyle::from(&WHITE).stroke_width(2),
+                        )))?;
+
+                        chart.draw_series(std::iter::once(Text::new(
+                            format!("{}", count),
+                            (x_center, latency + max_latency * 0.01),
+                            ("sans-serif", 10).into_font().color(&WHITE),
+                        )))?;
+                    }
+                }
+
+                let total_count: usize = count_map.values().sum();
+                chart.draw_series(std::iter::once(Text::new(
+                    format!("{}", total_count),
+                    (x_center, max_delay + max_latency * 0.02),
+                    ("sans-serif", 12).into_font().color(&BLACK),
+                )))?;
             }
-        }))?;
+        }
+
+        let all_delays: Vec<f64> = grouped
+            .values()
+            .flat_map(|v| v.iter())
+            .filter(|d| d.is_finite())
+            .copied()
+            .collect();
+
+        let total_txns = all_delays.len();
+        let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_delay_stat = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
+        let avg_delay = if total_txns > 0 {
+            all_delays.iter().sum::<f64>() / total_txns as f64
+        } else {
+            0.0
+        };
+        let median_delay = if total_txns > 0 {
+            let mut sorted = all_delays.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            if sorted.len() % 2 == 0 {
+                (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
+            } else {
+                sorted[sorted.len() / 2]
+            }
+        } else {
+            0.0
+        };
+
+        let tps = if !sorted_times.is_empty() && sorted_times.len() >= 2 {
+            let first_time = NaiveDateTime::parse_from_str(&sorted_times[0], fmt).ok();
+            let last_time =
+                NaiveDateTime::parse_from_str(&sorted_times[sorted_times.len() - 1], fmt).ok();
+            if let (Some(first), Some(last)) = (first_time, last_time) {
+                let duration_secs = (last - first).num_milliseconds() as f64 / 1000.0;
+                if duration_secs > 0.0 {
+                    total_txns as f64 / duration_secs
+                } else {
+                    total_txns as f64
+                }
+            } else {
+                0.0
+            }
+        } else {
+            total_txns as f64
+        };
+
+        let duplicate_pct = if unique_txn_count > 0 {
+            duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
+        } else {
+            0.0
+        };
+
+        let stats_text = format!(
+            "TPS: {:.2} | Total Exec: {} | Unique Txn: {} | Dup: {} ({:.1}%) | Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            tps, total_txns, unique_txn_count, duplicate_exec_count, duplicate_pct, min_delay, max_delay_stat, avg_delay, median_delay
+        );
+
+        root.draw(&Text::new(
+            stats_text,
+            (800, 780),
+            ("sans-serif", 16).into_font().color(&BLACK),
+        ))?;
 
         root.present()?;
         Ok(())
