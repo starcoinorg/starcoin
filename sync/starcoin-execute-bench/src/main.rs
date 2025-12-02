@@ -34,7 +34,7 @@ use starcoin_types::{
     block::BlockHeader,
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{NewDagBlock, NewDagBlockFromPeer},
+    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock},
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -550,17 +550,25 @@ impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
+        ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewDagBlock>();
         ctx.unsubscribe::<NewDagBlockFromPeer>();
+        ctx.unsubscribe::<NewHeadBlock>();
 
         if let Err(e) = self.dump_results() {
             error!("failed to dump the results: {:?}", e);
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, NewHeadBlock> for ObserverService {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+       
     }
 }
 
