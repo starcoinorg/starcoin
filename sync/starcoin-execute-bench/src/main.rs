@@ -367,6 +367,162 @@ async fn get_balance(
     Ok(balance)
 }
 
+/// Phase 1: Wait for blocks to be mined and default account to have sufficient balance
+async fn wait_for_sufficient_balance(
+    default_account: &AccountInfo,
+    account_count: u32,
+    initial_balance: u128,
+    initial_gas_fee: u128,
+    gas_price: u64,
+    max_gas: u64,
+    chain_reader_service: ServiceRef<ChainReaderService>,
+    storage1: Arc<Storage>,
+    storage2: Arc<Storage2>,
+) -> Result<()> {
+    loop {
+        let current_header = get_current_header(chain_reader_service.clone()).await?;
+        let default_account_balance = match get_balance(
+            default_account.address,
+            storage1.clone(),
+            storage2.clone(),
+            current_header.id(),
+        )
+        .await
+        {
+            Ok(balance) => balance,
+            Err(e) => {
+                info!(
+                    "get balance error: {} and waiting for the token initialization",
+                    e
+                );
+                tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+                continue;
+            }
+        };
+        let per_tx_fee = max_gas as u128 * gas_price as u128;
+        let needed_balance =
+            account_count as u128 * (initial_balance + per_tx_fee) + initial_gas_fee;
+        if default_account_balance >= needed_balance {
+            info!(
+                "Default account has sufficient balance: {} >= {}",
+                default_account_balance, needed_balance
+            );
+            break;
+        }
+        info!(
+            "Waiting for sufficient balance: {} < {}",
+            default_account_balance, needed_balance
+        );
+        tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+    }
+    Ok(())
+}
+
+/// Phase 2: Transfer tokens from default account to created accounts
+async fn transfer_to_accounts(
+    default_account: &AccountInfo,
+    receivers: &[AccountInfo],
+    initial_balance: u128,
+    gas_price: u64,
+    max_gas: u64,
+    account_service: ServiceRef<AccountService2>,
+    config: Arc<NodeConfig>,
+    chain_reader_service: ServiceRef<ChainReaderService>,
+    txpool: &starcoin_txpool::TxPoolService,
+    storage1: Arc<Storage>,
+    storage2: Arc<Storage2>,
+) -> Result<()> {
+    let signed_transactions = build_transaction_to_send_token_to_account(
+        &vec![default_account.clone(); receivers.len()],
+        receivers,
+        initial_balance,
+        gas_price,
+        max_gas,
+        account_service,
+        config.clone(),
+        &get_current_header(chain_reader_service).await?,
+        storage1,
+        storage2,
+    )
+    .await?;
+
+    txpool.inner.import_txns(
+        signed_transactions
+            .into_iter()
+            .map(MultiSignedUserTransaction::VM2)
+            .collect(),
+        false,
+        None,
+    )?;
+
+    // Wait for all transactions to be processed
+    loop {
+        let transactions = txpool
+            .inner
+            .get_pending(100, config.net().time_service().now_secs())?;
+        if transactions.is_empty() {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+    }
+
+    info!("Phase 2 completed: transferred tokens to {} accounts", receivers.len());
+    Ok(())
+}
+
+/// Phase 3: Transfer tokens between created accounts
+async fn transfer_between_accounts(
+    receivers: &[AccountInfo],
+    gas_price: u64,
+    max_gas: u64,
+    account_service: ServiceRef<AccountService2>,
+    config: Arc<NodeConfig>,
+    chain_reader_service: ServiceRef<ChainReaderService>,
+    txpool: &starcoin_txpool::TxPoolService,
+    storage1: Arc<Storage>,
+    storage2: Arc<Storage2>,
+) -> Result<()> {
+    StarcoinVM::set_concurrency_level(num_cpus::get());
+
+    let mid = receivers.len() / 2;
+    let signed_transactions = build_transaction_to_send_token_to_account(
+        &receivers[..mid],
+        &receivers[mid..],
+        1,
+        gas_price,
+        max_gas,
+        account_service,
+        config.clone(),
+        &get_current_header(chain_reader_service).await?,
+        storage1,
+        storage2,
+    )
+    .await?;
+
+    txpool.inner.import_txns(
+        signed_transactions
+            .into_iter()
+            .map(MultiSignedUserTransaction::VM2)
+            .collect(),
+        false,
+        None,
+    )?;
+
+    // Wait for all transactions to be processed
+    loop {
+        let transactions = txpool
+            .inner
+            .get_pending(100, config.net().time_service().now_secs())?;
+        if transactions.is_empty() {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+    }
+
+    info!("Phase 3 completed: transferred tokens between {} accounts", receivers.len());
+    Ok(())
+}
+
 async fn execute_benchmark(
     node: &NodeHandle,
     account_count: u32,
@@ -389,34 +545,19 @@ async fn execute_benchmark(
         let default_account = default_account(account_service.clone()).await?;
 
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
-        loop {
-            let current_header = get_current_header(chain_reader_service.clone()).await?;
-            let default_account_balance = match get_balance(
-                default_account.address,
-                storage1.clone(),
-                storage2.clone(),
-                current_header.id(),
-            )
-            .await
-            {
-                Ok(balance) => balance,
-                Err(e) => {
-                    info!(
-                        "get balance error: {} and waiting for the token initialization",
-                        e
-                    );
-                    tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
-                    continue;
-                }
-            };
-            let per_tx_fee = max_gas as u128 * gas_price as u128;
-            let needed_balance =
-                account_count as u128 * (initial_balance + per_tx_fee) + initial_gas_fee;
-            if default_account_balance >= needed_balance {
-                break;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
-        }
+
+        wait_for_sufficient_balance(
+            &default_account,
+            account_count,
+            initial_balance,
+            initial_gas_fee,
+            gas_price,
+            max_gas,
+            chain_reader_service.clone(),
+            storage1.clone(),
+            storage2.clone(),
+        )
+        .await?;
 
         let txpool = registry
             .get_shared::<starcoin_txpool::TxPoolService>()
@@ -431,74 +572,33 @@ async fn execute_benchmark(
 
         let receivers = create_account(account_count, account_service.clone()).await?;
 
-        let signed_transactions = build_transaction_to_send_token_to_account(
-            &vec![default_account; receivers.len()],
+        transfer_to_accounts(
+            &default_account,
             &receivers,
             initial_balance,
             gas_price,
             max_gas,
             account_service.clone(),
             config.clone(),
-            &get_current_header(chain_reader_service.clone()).await?,
+            chain_reader_service.clone(),
+            &txpool,
             storage1.clone(),
             storage2.clone(),
         )
         .await?;
 
-        txpool.inner.import_txns(
-            signed_transactions
-                .into_iter()
-                .map(MultiSignedUserTransaction::VM2)
-                .collect(),
-            false,
-            None,
-        )?;
-
-        loop {
-            let transactions = txpool
-                .inner
-                .get_pending(100, config.net().time_service().now_secs())?;
-            if transactions.is_empty() {
-                break;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
-        }
-
-        StarcoinVM::set_concurrency_level(num_cpus::get());
-
-        let mid = receivers.len() / 2;
-        let signed_transactions = build_transaction_to_send_token_to_account(
-            &receivers[..mid],
-            &receivers[mid..],
-            1,
+        transfer_between_accounts(
+            &receivers,
             gas_price,
             max_gas,
             account_service.clone(),
             config.clone(),
-            &get_current_header(chain_reader_service.clone()).await?,
+            chain_reader_service.clone(),
+            &txpool,
             storage1.clone(),
             storage2.clone(),
         )
         .await?;
-
-        txpool.inner.import_txns(
-            signed_transactions
-                .into_iter()
-                .map(MultiSignedUserTransaction::VM2)
-                .collect(),
-            false,
-            None,
-        )?;
-
-        loop {
-            let transactions = txpool
-                .inner
-                .get_pending(100, config.net().time_service().now_secs())?;
-            if transactions.is_empty() {
-                break;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
-        }
 
         Ok::<(), anyhow::Error>(())
     };
@@ -525,11 +625,12 @@ impl ObserverService {
             .get_block_by_hash(new_header)?
             .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
         let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        let block_number = block.header().number();
         for transaction in block.body.transactions2 {
             self.transaction_data
                 .entry(transaction.id())
                 .or_default()
-                .push(TransactionExecutionResult::Executed(now.clone()));
+                .push(TransactionExecutionResult::Executed(now.clone(), block_number));
         }
         Ok(())
     }
