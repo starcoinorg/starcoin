@@ -92,6 +92,20 @@ impl<'a> ResultsDumper<'a> {
     pub fn calculate_stats(&self) -> BenchmarkStats {
         let (executions, unique_txn_count, duplicate_exec_count) = self.collect_executions();
 
+        // Count raw statistics for debugging
+        let total_txn_entries = self.transaction_data.len();
+        let mut added_count = 0usize;
+        let mut executed_count = 0usize;
+        for events in self.transaction_data.values() {
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(_) => added_count += 1,
+                    TransactionExecutionResult::Executed(_, _) => executed_count += 1,
+                    _ => {}
+                }
+            }
+        }
+
         // Filter finite latency data
         let all_delays: Vec<f64> = executions.iter()
             .filter(|(_, _, latency)| latency.is_finite())
@@ -99,6 +113,11 @@ impl<'a> ResultsDumper<'a> {
             .collect();
 
         let total_txns = all_delays.len();
+        
+        // Log debug info
+        eprintln!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
+            total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
+
         let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max_delay = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
         let avg_delay = if total_txns > 0 {
@@ -252,10 +271,17 @@ impl<'a> ResultsDumper<'a> {
 
             let last_exec = executed_times.iter().max().unwrap();
             let delay = *last_exec - *first_add;
-            if let Some(us) = delay.num_microseconds() {
-                let ms = us as f64 / 1000.0;
-                if ms >= 0.0 {
-                    results.push((*txn_id, *first_add, ms));
+            match delay.num_microseconds() {
+                Some(microseconds) => {
+                    let ms = microseconds as f64 / 1000.0;
+                    // Use absolute value to handle clock skew
+                    results.push((*txn_id, *first_add, ms.abs()));
+                }
+                None => {
+                    // Overflow, use milliseconds directly
+                    if let Some(milliseconds) = delay.num_milliseconds().checked_abs() {
+                        results.push((*txn_id, *first_add, milliseconds as f64));
+                    }
                 }
             }
         }
