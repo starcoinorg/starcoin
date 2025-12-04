@@ -919,15 +919,15 @@ impl ServiceFactory<Self> for ObserverService {
 
 impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<NewDagBlock>();
-        ctx.subscribe::<NewDagBlockFromPeer>();
+        // ctx.subscribe::<NewDagBlock>();
+        // ctx.subscribe::<NewDagBlockFromPeer>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<NewDagBlock>();
-        ctx.unsubscribe::<NewDagBlockFromPeer>();
+        // ctx.unsubscribe::<NewDagBlock>();
+        // ctx.unsubscribe::<NewDagBlockFromPeer>();
         ctx.unsubscribe::<NewHeadBlock>();
 
         if let Err(e) = self.dump_results() {
@@ -957,21 +957,21 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
     }
 }
 
-impl EventHandler<Self, NewDagBlock> for ObserverService {
-    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.update_transaction_status(msg.executed_block.block().id()) {
-            error!("failed to update transactions status: {:?}", e);
-        }
-    }
-}
+// impl EventHandler<Self, NewDagBlock> for ObserverService {
+//     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+//         if let Err(e) = self.update_transaction_status(msg.executed_block.block().id()) {
+//             error!("failed to update transactions status: {:?}", e);
+//         }
+//     }
+// }
 
-impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
-    fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.update_transaction_status(msg.executed_block.id()) {
-            error!("failed to update transactions status: {:?}", e);
-        }
-    }
-}
+// impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
+//     fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
+//         if let Err(e) = self.update_transaction_status(msg.executed_block.id()) {
+//             error!("failed to update transactions status: {:?}", e);
+//         }
+//     }
+// }
 
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
     fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
