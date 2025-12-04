@@ -680,6 +680,9 @@ async fn execute_benchmark(
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
 
+        // Wait a bit more to ensure all events are processed
+        tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+
         info!(
             "Benchmark completed: {} user transactions executed",
             benchmark_state.executed_count.load(Ordering::SeqCst)
@@ -893,6 +896,11 @@ impl ObserverService {
 
     fn dump_results(&self) -> Result<()> {
         let dumper = ResultsDumper::new(&self.transaction_data);
+        
+        // Calculate and log statistics
+        let stats = dumper.calculate_stats();
+        info!("\n{}", stats);
+        
         dumper.dump_results()
     }
 }

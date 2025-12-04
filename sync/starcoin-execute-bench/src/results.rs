@@ -45,6 +45,36 @@ impl std::fmt::Debug for TransactionExecutionResult {
     }
 }
 
+/// Benchmark statistics
+#[derive(Debug, Clone)]
+pub struct BenchmarkStats {
+    pub tps: f64,
+    pub total_executed: usize,
+    pub unique_txn_count: usize,
+    pub duplicate_exec_count: usize,
+    pub duplicate_pct: f64,
+    pub min_latency_ms: f64,
+    pub max_latency_ms: f64,
+    pub avg_latency_ms: f64,
+    pub median_latency_ms: f64,
+}
+
+impl std::fmt::Display for BenchmarkStats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "========== Benchmark Results ==========")?;
+        writeln!(f, "TPS: {:.2}", self.tps)?;
+        writeln!(f, "Total Executed: {}", self.total_executed)?;
+        writeln!(f, "Unique Txn (with Added): {} | Duplicates: {} ({:.1}%)",
+                 self.unique_txn_count, self.duplicate_exec_count, self.duplicate_pct)?;
+        if self.min_latency_ms > 0.0 || self.max_latency_ms > 0.0 {
+            writeln!(f, "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                     self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms)?;
+        }
+        writeln!(f, "========================================")?;
+        Ok(())
+    }
+}
+
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
 }
@@ -55,6 +85,101 @@ impl<'a> ResultsDumper<'a> {
     ) -> Self {
         Self { 
             transaction_data,
+        }
+    }
+
+    /// Calculate and return benchmark statistics
+    pub fn calculate_stats(&self) -> BenchmarkStats {
+        let (grouped, unique_txn_count, duplicate_exec_count) = self.collect_executions();
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+
+        let mut sorted_times: Vec<String> = grouped.keys().cloned().collect();
+        sorted_times.sort_by(|a, b| {
+            let t1 = NaiveDateTime::parse_from_str(a, fmt).ok();
+            let t2 = NaiveDateTime::parse_from_str(b, fmt).ok();
+            match (t1, t2) {
+                (Some(t1), Some(t2)) => t1.cmp(&t2),
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
+
+        let all_delays: Vec<f64> = grouped
+            .values()
+            .flat_map(|v| v.iter())
+            .filter(|d| d.is_finite())
+            .copied()
+            .collect();
+
+        let total_txns = all_delays.len();
+        let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_delay = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
+        let avg_delay = if total_txns > 0 {
+            all_delays.iter().sum::<f64>() / total_txns as f64
+        } else {
+            0.0
+        };
+        let median_delay = if total_txns > 0 {
+            let mut sorted = all_delays.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            if sorted.len() % 2 == 0 {
+                (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
+            } else {
+                sorted[sorted.len() / 2]
+            }
+        } else {
+            0.0
+        };
+
+        // Calculate TPS based on executed times (more reliable)
+        let tps = self.calculate_tps_from_executed();
+
+        let duplicate_pct = if unique_txn_count > 0 {
+            duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
+        } else {
+            0.0
+        };
+
+        BenchmarkStats {
+            tps,
+            total_executed: total_txns,
+            unique_txn_count,
+            duplicate_exec_count,
+            duplicate_pct,
+            min_latency_ms: if min_delay.is_finite() { min_delay } else { 0.0 },
+            max_latency_ms: max_delay,
+            avg_latency_ms: avg_delay,
+            median_latency_ms: median_delay,
+        }
+    }
+
+    /// Calculate TPS based on executed transaction times
+    fn calculate_tps_from_executed(&self) -> f64 {
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+        let mut all_exec_times: Vec<NaiveDateTime> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            for ev in events {
+                if let TransactionExecutionResult::Executed(ts, _) = ev {
+                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                        all_exec_times.push(t);
+                    }
+                }
+            }
+        }
+
+        if all_exec_times.len() < 2 {
+            return all_exec_times.len() as f64;
+        }
+
+        all_exec_times.sort();
+        let first = all_exec_times.first().unwrap();
+        let last = all_exec_times.last().unwrap();
+        let duration_secs = (*last - *first).num_milliseconds() as f64 / 1000.0;
+
+        if duration_secs > 0.0 {
+            all_exec_times.len() as f64 / duration_secs
+        } else {
+            all_exec_times.len() as f64
         }
     }
 
