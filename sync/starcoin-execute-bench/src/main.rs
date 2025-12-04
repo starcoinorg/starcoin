@@ -31,13 +31,14 @@ use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
 use starcoin_types::{
     block::BlockHeader,
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock},
+    system_events::NewHeadBlock,
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -500,7 +501,6 @@ struct BenchmarkState {
     executed_count: AtomicUsize,
     round: AtomicUsize,
     is_completed: AtomicBool,
-    seq_numbers: RwLock<HashMap<AccountAddress, u64>>,
     user_txn_hashes: RwLock<std::collections::HashSet<HashValue>>,
     chain_id: ChainId2,
 }
@@ -513,10 +513,6 @@ impl BenchmarkState {
         target_txn_count: usize,
         chain_id: ChainId2,
     ) -> Self {
-        let mut seq_numbers = HashMap::new();
-        for account in &accounts {
-            seq_numbers.insert(account.address, 0);
-        }
         Self {
             accounts,
             gas_price,
@@ -525,13 +521,16 @@ impl BenchmarkState {
             executed_count: AtomicUsize::new(0),
             round: AtomicUsize::new(0),
             is_completed: AtomicBool::new(false),
-            seq_numbers: RwLock::new(seq_numbers),
             user_txn_hashes: RwLock::new(std::collections::HashSet::new()),
             chain_id,
         }
     }
 
-    fn build_next_batch(&self, expire_time: u64) -> Result<Vec<RawUserTransaction2>> {
+    fn build_next_batch(
+        &self,
+        expire_time: u64,
+        seq_numbers: &mut HashMap<AccountAddress, u64>,
+    ) -> Result<Vec<RawUserTransaction2>> {
         let round = self.round.fetch_add(1, Ordering::SeqCst);
         let mid = self.accounts.len() / 2;
 
@@ -541,14 +540,13 @@ impl BenchmarkState {
             (&self.accounts[mid..], &self.accounts[..mid])
         };
 
-        let mut seq_numbers = self.seq_numbers.write().unwrap();
         build_transfer_transactions_sync(
             senders,
             receivers,
             1,
             self.gas_price,
             self.max_gas,
-            &mut seq_numbers,
+            seq_numbers,
             expire_time,
             self.chain_id,
         )
@@ -664,9 +662,21 @@ async fn execute_benchmark(
 
         info!("Starting benchmark with target {} user transactions", target_txn_count);
 
+        // Get initial sequence numbers from current state
+        let multi_state = storage1.get_vm_multi_state(current_header.id())?;
+        let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
+        let mut seq_numbers: HashMap<AccountAddress, u64> = HashMap::new();
+        for account in &receivers {
+            let seq = statedb2
+                .get_account_resource(account.address)?
+                .sequence_number();
+            seq_numbers.insert(account.address, seq);
+        }
+
         // Submit first batch to kickstart the benchmark
         let batch = benchmark_state.build_next_batch(
             config.net().time_service().now_secs() + 3600,
+            &mut seq_numbers,
         )?;
         let txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
         benchmark_state.register_user_txns(&txn_hashes);
@@ -807,6 +817,9 @@ fn sign_and_import_transactions_sync(
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
     storage1: Arc<Storage>,
+    storage2: Arc<Storage2>,
+    dag: BlockDAG,
+    genesis_hash: HashValue,
     benchmark_state: Option<Arc<BenchmarkState>>,
     account_service: Option<ServiceRef<AccountService2>>,
     txpool: Option<starcoin_txpool::TxPoolService>,
@@ -814,10 +827,13 @@ struct ObserverService {
 }
 
 impl ObserverService {
-    fn new(storage1: Arc<Storage>) -> Result<Self> {
+    fn new(storage1: Arc<Storage>, storage2: Arc<Storage2>, dag: BlockDAG, genesis_hash: HashValue) -> Result<Self> {
         Ok(Self {
             transaction_data: HashMap::new(),
             storage1,
+            storage2,
+            dag,
+            genesis_hash,
             benchmark_state: None,
             account_service: None,
             txpool: None,
@@ -825,7 +841,7 @@ impl ObserverService {
         })
     }
 
-    fn try_submit_next_batch(&self) -> Result<()> {
+    fn try_submit_next_batch(&self, block_id: HashValue) -> Result<()> {
         let state = match &self.benchmark_state {
             Some(s) => s,
             None => return Ok(()),
@@ -847,8 +863,66 @@ impl ObserverService {
             return Ok(());
         }
 
+        // Get the new block header
+        let new_block_header = self
+            .storage1
+            .get_block_header_by_hash(block_id)?
+            .ok_or_else(|| format_err!("block header not found: {:?}", block_id))?;
+
+        // Get pruning point from new block's parent
+        let parent_header = self
+            .storage1
+            .get_block_header_by_hash(new_block_header.parent_hash())?
+            .ok_or_else(|| format_err!("parent header not found: {:?}", new_block_header.parent_hash()))?;
+
+        // Get current tips based on pruning point (same logic as BlockChain::connect)
+        let pruning_point = if parent_header.pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            parent_header.pruning_point()
+        };
+
+        let mut tips = self
+            .dag
+            .get_dag_state(pruning_point)
+            .map(|state| state.tips)
+            .unwrap_or_else(|_| vec![parent_header.id()]);
+
+        // Update tips: remove ancestors of new block and add the new block
+        let mut new_tips = vec![];
+        for hash in tips {
+            if !self.dag.check_ancestor_of(hash, block_id)? {
+                new_tips.push(hash);
+            }
+        }
+        tips = new_tips;
+        tips.push(block_id);
+
+        // Select the best parent from updated tips using GHOSTDAG
+        let selected_block_hash = self
+            .dag
+            .ghost_dag_manager()
+            .find_selected_parent(tips.iter().copied())?;
+
+        info!(
+            "jacktest: block_id={:?}, selected_block_hash={:?}, tips={:?}",
+            block_id, selected_block_hash, tips
+        );
+
+        // Get sequence numbers from selected block's state
+        let multi_state = self.storage1.get_vm_multi_state(selected_block_hash)?;
+        let statedb2 = ChainStateDB::new(self.storage2.clone(), Some(multi_state.state_root2()));
+        
+        let mut seq_numbers: HashMap<AccountAddress, u64> = HashMap::new();
+        for account in &state.accounts {
+            let seq = statedb2
+                .get_account_resource(account.address)?
+                .sequence_number();
+            seq_numbers.insert(account.address, seq);
+        }
+
         let expire_time = config.net().time_service().now_secs() + 3600;
-        let batch = state.build_next_batch(expire_time)?;
+        let batch = state.build_next_batch(expire_time, &mut seq_numbers)?;
         info!("jacktest: try submit next batch1");
         let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
         info!("jacktest: try submit next batch2");
@@ -908,7 +982,11 @@ impl ObserverService {
 impl ServiceFactory<Self> for ObserverService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let storage1 = ctx.get_shared::<Arc<Storage>>()?;
-        let mut service = Self::new(storage1)?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+        let genesis = ctx.get_shared::<starcoin_genesis::Genesis>()?;
+        let genesis_hash = genesis.block().id();
+        let mut service = Self::new(storage1, storage2, dag, genesis_hash)?;
         service.benchmark_state = ctx.get_shared::<Arc<BenchmarkState>>().ok();
         service.account_service = ctx.service_ref_opt::<AccountService2>()?.cloned();
         service.txpool = ctx.get_shared::<starcoin_txpool::TxPoolService>().ok();
@@ -950,7 +1028,7 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
         }
         // Submit next batch of transactions after processing the block
         info!("jacktest: try to submit next batch begin");
-        if let Err(e) = self.try_submit_next_batch() {
+        if let Err(e) = self.try_submit_next_batch(msg.executed_block.block().id()) {
             error!("failed to submit next batch: {:?}", e);
         }
         info!("jacktest: try to submit next batch end");

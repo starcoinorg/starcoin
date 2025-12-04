@@ -20,6 +20,8 @@ starcoin-chain-api = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
+starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-node = { workspace = true }
 starcoin-service-registry = { workspace = true }
