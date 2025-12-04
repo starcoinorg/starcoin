@@ -12,6 +12,8 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_logger::prelude::*;
+use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
+use starcoin_vm2_crypto::multi_ed25519::genesis_multi_key_pair as genesis_multi_key_pair_vm2;
 use std::convert::TryFrom;
 use std::fs;
 use std::fs::create_dir_all;
@@ -379,7 +381,7 @@ impl BaseConfig {
                     name.push_str(".2");
                     name
                 }).ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
-                let genesis_configs = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
+                let mut genesis_configs = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
                 {
                     Ok(net) => (net.genesis_config().clone(), net.genesis_config2().clone()),
                     Err(_) => {
@@ -388,6 +390,17 @@ impl BaseConfig {
                         (GenesisConfig::load(path)?, GenesisConfig2::load(path2)?)
                     }
                 };
+
+                let (association_private_key, association_public_key) = genesis_multi_key_pair();
+                genesis_configs.0.association_key_pair = (Some(Arc::new(
+                    association_private_key,
+                )), association_public_key);
+
+                let (association_private_key, association_public_key) = genesis_multi_key_pair_vm2();
+                genesis_configs.1.association_key_pair = (Some(Arc::new(
+                    association_private_key,
+                )), association_public_key);
+
                 genesis_configs.0.save(config_path.as_path())?;
                 genesis_configs.1.save(config_path2.as_path())?;
                 genesis_configs
