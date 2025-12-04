@@ -207,11 +207,6 @@ impl OpenedBlock {
         self.vm2_txn_events.push(events);
 
         self.txn_accumulator.append(&[txn_info.id()])?;
-
-        info!(
-            "OpenedBlock::push_txn_and_state2 | root_hash : {:?}",
-            txn_state_root
-        );
         Ok(())
     }
 }
