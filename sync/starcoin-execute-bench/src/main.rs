@@ -46,7 +46,7 @@ use starcoin_vm2_account_api::{
 use starcoin_vm2_account_service::AccountService as AccountService2;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::{
-    account_config::G_STC_TOKEN_CODE,
+    account_config::{association_address, G_STC_TOKEN_CODE},
     genesis_config::ChainId as ChainId2,
     transaction::{RawUserTransaction as RawUserTransaction2, SignedUserTransaction},
 };
@@ -273,6 +273,8 @@ async fn create_account(
     Ok(results)
 }
 
+/// Get the default account from account service (kept for future use)
+#[allow(dead_code)]
 async fn default_account(account_service: ServiceRef<AccountService2>) -> Result<AccountInfo> {
     let default_account = match account_service
         .send(AccountRequest::GetDefaultAccount())
@@ -287,42 +289,33 @@ async fn default_account(account_service: ServiceRef<AccountService2>) -> Result
     Ok(default_account)
 }
 
-async fn build_transaction_to_send_token_to_account(
-    sender: &[AccountInfo],
-    receiver: &[AccountInfo],
+/// Build and sign transactions using association account from genesis config
+async fn build_association_transfer_transactions(
+    receivers: &[AccountInfo],
     amount: u128,
     gas_price: u64,
     max_gas: u64,
-    account_service: ServiceRef<AccountService2>,
     config: Arc<NodeConfig>,
     header_block: &BlockHeader,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
 ) -> Result<Vec<SignedUserTransaction>> {
-    if sender.len() != receiver.len() {
-        bail!("sender.len() != receiver.len()");
-    }
     let expire_time = config.net().time_service().now_secs() + 3600;
     let multi_state = storage1.get_vm_multi_state(header_block.id())?;
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
-    let mut next_seq_map = HashMap::new();
-    for s in sender {
-        let next_seq = statedb2
-            .get_account_resource(*s.address())?
-            .sequence_number();
-        next_seq_map.entry(*s.address()).or_insert(next_seq);
-    }
+
+    let sender_address = association_address();
+    let mut next_seq = statedb2
+        .get_account_resource(sender_address)?
+        .sequence_number();
+
+    let genesis_config2 = config.net().genesis_config2();
 
     let mut signed_transactions = vec![];
-    for index in 0..receiver.len() {
-        let sender_address = sender.get(index).unwrap().address;
-        let next_seq = *next_seq_map.get(&sender_address).unwrap();
-        next_seq_map
-            .entry(sender_address)
-            .and_modify(|next_seq| *next_seq += 1);
-        let transaction = build_batch_transfer_txn2(
-            sender.get(index).unwrap().address,
-            vec![receiver.get(index).unwrap().address],
+    for receiver in receivers {
+        let raw_txn = build_batch_transfer_txn2(
+            sender_address,
+            vec![receiver.address],
             next_seq,
             amount,
             gas_price,
@@ -330,28 +323,9 @@ async fn build_transaction_to_send_token_to_account(
             expire_time,
             header_block.chain_id().id().into(),
         );
-        match account_service
-            .send(AccountRequest::UnlockAccount(
-                sender_address,
-                "".to_string(),
-                std::time::Duration::from_secs(100),
-            ))
-            .await??
-        {
-            AccountResponse::AccountInfo(_) => (),
-            _ => bail!("Unexpected response type."),
-        }
-        let signed_transaction = match account_service
-            .send(AccountRequest::SignTxn {
-                txn: Box::new(transaction),
-                signer: sender_address,
-            })
-            .await??
-        {
-            AccountResponse::SignedTxn(signed_transaction) => *signed_transaction,
-            _ => bail!("Unexpected response type."),
-        };
-        signed_transactions.push(signed_transaction);
+        let signed_txn = genesis_config2.sign_with_association(raw_txn)?;
+        signed_transactions.push(signed_txn);
+        next_seq += 1;
     }
 
     Ok(signed_transactions)
@@ -384,7 +358,6 @@ async fn get_balance(
 }
 
 async fn wait_for_sufficient_balance(
-    default_account: &AccountInfo,
     account_count: u32,
     initial_balance: u128,
     initial_gas_fee: u128,
@@ -396,8 +369,8 @@ async fn wait_for_sufficient_balance(
 ) -> Result<()> {
     loop {
         let current_header = get_current_header(chain_reader_service.clone()).await?;
-        let default_account_balance = match get_balance(
-            default_account.address,
+        let association_balance = match get_balance(
+            association_address(),
             storage1.clone(),
             storage2.clone(),
             current_header.id(),
@@ -417,16 +390,16 @@ async fn wait_for_sufficient_balance(
         let per_tx_fee = max_gas as u128 * gas_price as u128;
         let needed_balance =
             account_count as u128 * (initial_balance + per_tx_fee) + initial_gas_fee;
-        if default_account_balance >= needed_balance {
+        if association_balance >= needed_balance {
             info!(
-                "Default account has sufficient balance: {} >= {}",
-                default_account_balance, needed_balance
+                "Association account has sufficient balance: {} >= {}",
+                association_balance, needed_balance
             );
             break;
         }
         info!(
             "Waiting for sufficient balance: {} < {}",
-            default_account_balance, needed_balance
+            association_balance, needed_balance
         );
         tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
     }
@@ -434,25 +407,21 @@ async fn wait_for_sufficient_balance(
 }
 
 async fn transfer_to_accounts(
-    default_account: &AccountInfo,
     receivers: &[AccountInfo],
     initial_balance: u128,
     gas_price: u64,
     max_gas: u64,
-    account_service: ServiceRef<AccountService2>,
     config: Arc<NodeConfig>,
     chain_reader_service: ServiceRef<ChainReaderService>,
     txpool: &starcoin_txpool::TxPoolService,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
 ) -> Result<()> {
-    let signed_transactions = build_transaction_to_send_token_to_account(
-        &vec![default_account.clone(); receivers.len()],
+    let signed_transactions = build_association_transfer_transactions(
         receivers,
         initial_balance,
         gas_price,
         max_gas,
-        account_service,
         config.clone(),
         &get_current_header(chain_reader_service).await?,
         storage1,
@@ -635,12 +604,10 @@ async fn execute_benchmark(
         log_handler.update_level(LevelFilter::Info);
 
         let account_service = registry.service_ref::<AccountService2>().await?;
-        let default_account = default_account(account_service.clone()).await?;
 
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
 
         wait_for_sufficient_balance(
-            &default_account,
             account_count,
             initial_balance,
             initial_gas_fee,
@@ -661,12 +628,10 @@ async fn execute_benchmark(
         let receivers = create_account(account_count, account_service.clone()).await?;
 
         transfer_to_accounts(
-            &default_account,
             &receivers,
             initial_balance,
             gas_price,
             max_gas,
-            account_service.clone(),
             config.clone(),
             chain_reader_service.clone(),
             &txpool,
