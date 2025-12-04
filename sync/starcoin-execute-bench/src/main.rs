@@ -652,6 +652,7 @@ async fn execute_benchmark(
         ));
 
         registry.put_shared(benchmark_state.clone()).await?;
+        registry.put_shared(txpool.clone()).await?;
 
         let observer = registry.register::<ObserverService>().await?;
 
@@ -663,30 +664,20 @@ async fn execute_benchmark(
 
         info!("Starting benchmark with target {} user transactions", target_txn_count);
 
+        // Submit first batch to kickstart the benchmark
+        let batch = benchmark_state.build_next_batch(
+            config.net().time_service().now_secs() + 3600,
+        )?;
+        let txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
+        benchmark_state.register_user_txns(&txn_hashes);
+        info!("Submitted initial {} transactions", batch.len());
+
+        // Wait for benchmark to complete (transactions are submitted in NewHeadBlock handler)
         loop {
             if benchmark_state.is_completed() {
                 break;
             }
-
-            let batch = benchmark_state.build_next_batch(
-                config.net().time_service().now_secs() + 3600,
-            )?;
-            let txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
-            benchmark_state.register_user_txns(&txn_hashes);
-            info!("Submitted {} transactions (round {})", batch.len(), benchmark_state.round.load(Ordering::SeqCst));
-
-            loop {
-                if benchmark_state.is_completed() {
-                    break;
-                }
-                let pending = txpool
-                    .inner
-                    .get_pending(100, config.net().time_service().now_secs())?;
-                if pending.is_empty() {
-                    break;
-                }
-                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
 
         info!(
@@ -746,10 +737,77 @@ async fn sign_and_import_transactions(
     Ok(txn_hashes)
 }
 
+fn sign_and_import_transactions_sync(
+    transactions: &[RawUserTransaction2],
+    account_service: &ServiceRef<AccountService2>,
+    txpool: &starcoin_txpool::TxPoolService,
+) -> Result<Vec<HashValue>> {
+    let transactions = transactions.to_vec();
+    let account_service = account_service.clone();
+    let txpool = txpool.clone();
+
+    // Spawn a new thread to avoid deadlock since we're already in a block_on context
+    let handle = std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create runtime");
+
+        rt.block_on(async {
+            let mut signed_transactions = vec![];
+            let mut txn_hashes = vec![];
+
+            for txn in &transactions {
+                let sender_address = txn.sender();
+                match account_service
+                    .send(AccountRequest::UnlockAccount(
+                        sender_address,
+                        "".to_string(),
+                        std::time::Duration::from_secs(100),
+                    ))
+                    .await??
+                {
+                    AccountResponse::AccountInfo(_) => (),
+                    _ => bail!("Unexpected response type."),
+                }
+
+                let signed_transaction = match account_service
+                    .send(AccountRequest::SignTxn {
+                        txn: Box::new(txn.clone()),
+                        signer: sender_address,
+                    })
+                    .await??
+                {
+                    AccountResponse::SignedTxn(signed_transaction) => *signed_transaction,
+                    _ => bail!("Unexpected response type."),
+                };
+                txn_hashes.push(signed_transaction.id());
+                signed_transactions.push(signed_transaction);
+            }
+
+            txpool.inner.import_txns(
+                signed_transactions
+                    .into_iter()
+                    .map(MultiSignedUserTransaction::VM2)
+                    .collect(),
+                false,
+                None,
+            )?;
+
+            Ok::<Vec<HashValue>, anyhow::Error>(txn_hashes)
+        })
+    });
+
+    handle.join().map_err(|_| format_err!("Thread panicked"))?
+}
+
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
     storage1: Arc<Storage>,
     benchmark_state: Option<Arc<BenchmarkState>>,
+    account_service: Option<ServiceRef<AccountService2>>,
+    txpool: Option<starcoin_txpool::TxPoolService>,
+    config: Option<Arc<NodeConfig>>,
 }
 
 impl ObserverService {
@@ -758,7 +816,47 @@ impl ObserverService {
             transaction_data: HashMap::new(),
             storage1,
             benchmark_state: None,
+            account_service: None,
+            txpool: None,
+            config: None,
         })
+    }
+
+    fn try_submit_next_batch(&self) -> Result<()> {
+        let state = match &self.benchmark_state {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+        let account_service = match &self.account_service {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+        let txpool = match &self.txpool {
+            Some(t) => t,
+            None => return Ok(()),
+        };
+        let config = match &self.config {
+            Some(c) => c,
+            None => return Ok(()),
+        };
+
+        if state.is_completed() {
+            return Ok(());
+        }
+
+        let expire_time = config.net().time_service().now_secs() + 3600;
+        let batch = state.build_next_batch(expire_time)?;
+        info!("jacktest: try submit next batch1");
+        let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
+        info!("jacktest: try submit next batch2");
+        state.register_user_txns(&txn_hashes);
+        info!(
+            "Submitted {} transactions (round {})",
+            batch.len(),
+            state.round.load(Ordering::SeqCst)
+        );
+
+        Ok(())
     }
 
     fn update_transaction_status(&mut self, new_header: HashValue) -> Result<usize> {
@@ -804,6 +902,9 @@ impl ServiceFactory<Self> for ObserverService {
         let storage1 = ctx.get_shared::<Arc<Storage>>()?;
         let mut service = Self::new(storage1)?;
         service.benchmark_state = ctx.get_shared::<Arc<BenchmarkState>>().ok();
+        service.account_service = ctx.service_ref_opt::<AccountService2>()?.cloned();
+        service.txpool = ctx.get_shared::<starcoin_txpool::TxPoolService>().ok();
+        service.config = ctx.get_shared::<Arc<NodeConfig>>().ok();
         Ok(service)
     }
 }
@@ -836,8 +937,15 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
         if let Some(ref state) = self.benchmark_state {
             if state.is_target_reached() {
                 state.mark_completed();
+                return;
             }
         }
+        // Submit next batch of transactions after processing the block
+        info!("jacktest: try to submit next batch begin");
+        if let Err(e) = self.try_submit_next_batch() {
+            error!("failed to submit next batch: {:?}", e);
+        }
+        info!("jacktest: try to submit next batch end");
     }
 }
 
