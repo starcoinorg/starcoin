@@ -289,6 +289,7 @@ async fn default_account(account_service: ServiceRef<AccountService2>) -> Result
 }
 
 /// Build and sign transactions using association account from genesis config
+/// Batches multiple receivers into single transactions for efficiency
 async fn build_association_transfer_transactions(
     receivers: &[AccountInfo],
     amount: u128,
@@ -298,6 +299,7 @@ async fn build_association_transfer_transactions(
     header_block: &BlockHeader,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
+    batch_size: usize,
 ) -> Result<Vec<SignedUserTransaction>> {
     let expire_time = config.net().time_service().now_secs() + 3600;
     let multi_state = storage1.get_vm_multi_state(header_block.id())?;
@@ -311,10 +313,13 @@ async fn build_association_transfer_transactions(
     let genesis_config2 = config.net().genesis_config2();
 
     let mut signed_transactions = vec![];
-    for receiver in receivers {
+    
+    // Batch receivers into chunks
+    for chunk in receivers.chunks(batch_size) {
+        let receiver_addresses: Vec<AccountAddress> = chunk.iter().map(|r| r.address).collect();
         let raw_txn = build_batch_transfer_txn2(
             sender_address,
-            vec![receiver.address],
+            receiver_addresses,
             next_seq,
             amount,
             gas_price,
@@ -326,6 +331,13 @@ async fn build_association_transfer_transactions(
         signed_transactions.push(signed_txn);
         next_seq += 1;
     }
+
+    info!(
+        "Built {} batch transactions for {} receivers (batch_size={})",
+        signed_transactions.len(),
+        receivers.len(),
+        batch_size
+    );
 
     Ok(signed_transactions)
 }
@@ -415,6 +427,7 @@ async fn transfer_to_accounts(
     txpool: &starcoin_txpool::TxPoolService,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
+    batch_size: usize,
 ) -> Result<()> {
     let signed_transactions = build_association_transfer_transactions(
         receivers,
@@ -425,6 +438,7 @@ async fn transfer_to_accounts(
         &get_current_header(chain_reader_service.clone()).await?,
         storage1.clone(),
         storage2.clone(),
+        batch_size,
     )
     .await?;
 
@@ -634,6 +648,8 @@ async fn execute_benchmark(
 
         let receivers = create_account(account_count, account_service.clone()).await?;
 
+        // Use batch size of 100 for efficient token distribution
+        let batch_size = 1000;
         transfer_to_accounts(
             &receivers,
             initial_balance,
@@ -644,6 +660,7 @@ async fn execute_benchmark(
             &txpool,
             storage1.clone(),
             storage2.clone(),
+            batch_size,
         )
         .await?;
 
