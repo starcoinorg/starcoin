@@ -838,6 +838,50 @@ where
         Ok(())
     }
 
+    fn fetch_transactions(
+        &self,
+        header: &BlockHeader,
+        blue_blocks: &[Block],
+        max_txns: u64,
+    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
+        let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, header);
+
+        // Separate VM1 and VM2 transactions
+        let mut pending_transactions = vec![];
+        let mut pending_transactions2 = vec![];
+        pending_multi_transactions
+            .into_iter()
+            .for_each(|txn| match txn {
+                MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
+                MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
+            });
+
+        return Ok((pending_transactions, pending_transactions2));
+        // if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
+        // }
+
+        // blue_blocks.iter().for_each(|block| {
+        //     block.transactions().iter().for_each(|transaction| {
+        //         pending_transactions.push(transaction.clone());
+        //     });
+
+        //     block.transactions2().iter().for_each(|transaction| {
+        //         pending_transactions2.push(transaction.clone());
+        //     })
+        // });
+
+        // pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+        //     std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+        //     other => other,
+        // });
+
+        // pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+        //     std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+        //     other => other,
+        // });
+
+        // Ok((pending_transactions, pending_transactions2))
+    }
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
         if self.main.id() == header.id() {
             return Ok(());
