@@ -313,7 +313,7 @@ async fn build_association_transfer_transactions(
     let genesis_config2 = config.net().genesis_config2();
 
     let mut signed_transactions = vec![];
-    
+
     // Batch receivers into chunks
     for chunk in receivers.chunks(batch_size) {
         let receiver_addresses: Vec<AccountAddress> = chunk.iter().map(|r| r.address).collect();
@@ -649,7 +649,7 @@ async fn execute_benchmark(
         let receivers = create_account(account_count, account_service.clone()).await?;
 
         // Use batch size of 100 for efficient token distribution
-        let batch_size = 1000;
+        let batch_size = 10;
         transfer_to_accounts(
             &receivers,
             initial_balance,
