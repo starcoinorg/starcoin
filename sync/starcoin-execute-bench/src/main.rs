@@ -22,6 +22,7 @@ use starcoin_config::{
     StarcoinOpt,
 };
 use starcoin_crypto::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::{
     prelude::{error, info, LevelFilter},
     LoggerHandle,
@@ -31,13 +32,10 @@ use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
-use starcoin_dag::blockdag::BlockDAG;
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
 use starcoin_types::{
-    block::BlockHeader,
-    genesis_config::ChainId,
-    multi_transaction::MultiSignedUserTransaction,
+    block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
     system_events::NewHeadBlock,
 };
 use starcoin_vm2_account_api::{
@@ -450,7 +448,10 @@ async fn transfer_to_accounts(
         tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
     }
 
-    info!("Phase 2 completed: transferred tokens to {} accounts", receivers.len());
+    info!(
+        "Phase 2 completed: transferred tokens to {} accounts",
+        receivers.len()
+    );
     Ok(())
 }
 
@@ -638,6 +639,9 @@ async fn execute_benchmark(
         )
         .await?;
 
+        // wait a bit to ensure all is settled
+        tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
+
         let current_header = get_current_header(chain_reader_service.clone()).await?;
         let chain_id = ChainId2::new(current_header.chain_id().id());
 
@@ -660,7 +664,10 @@ async fn execute_benchmark(
 
         StarcoinVM::set_concurrency_level(num_cpus::get());
 
-        info!("Starting benchmark with target {} user transactions", target_txn_count);
+        info!(
+            "Starting benchmark with target {} user transactions",
+            target_txn_count
+        );
 
         // Get initial sequence numbers from current state
         let multi_state = storage1.get_vm_multi_state(current_header.id())?;
@@ -691,7 +698,7 @@ async fn execute_benchmark(
         }
 
         // Wait a bit more to ensure all events are processed
-        tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+        // tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 
         info!(
             "Benchmark completed: {} user transactions executed",
@@ -827,7 +834,12 @@ struct ObserverService {
 }
 
 impl ObserverService {
-    fn new(storage1: Arc<Storage>, storage2: Arc<Storage2>, dag: BlockDAG, genesis_hash: HashValue) -> Result<Self> {
+    fn new(
+        storage1: Arc<Storage>,
+        storage2: Arc<Storage2>,
+        dag: BlockDAG,
+        genesis_hash: HashValue,
+    ) -> Result<Self> {
         Ok(Self {
             transaction_data: HashMap::new(),
             storage1,
@@ -873,7 +885,12 @@ impl ObserverService {
         let parent_header = self
             .storage1
             .get_block_header_by_hash(new_block_header.parent_hash())?
-            .ok_or_else(|| format_err!("parent header not found: {:?}", new_block_header.parent_hash()))?;
+            .ok_or_else(|| {
+                format_err!(
+                    "parent header not found: {:?}",
+                    new_block_header.parent_hash()
+                )
+            })?;
 
         // Get current tips based on pruning point (same logic as BlockChain::connect)
         let pruning_point = if parent_header.pruning_point() == HashValue::zero() {
@@ -912,7 +929,7 @@ impl ObserverService {
         // Get sequence numbers from selected block's state
         let multi_state = self.storage1.get_vm_multi_state(selected_block_hash)?;
         let statedb2 = ChainStateDB::new(self.storage2.clone(), Some(multi_state.state_root2()));
-        
+
         let mut seq_numbers: HashMap<AccountAddress, u64> = HashMap::new();
         for account in &state.accounts {
             let seq = statedb2
@@ -949,7 +966,10 @@ impl ObserverService {
             self.transaction_data
                 .entry(transaction.id())
                 .or_default()
-                .push(TransactionExecutionResult::Executed(now.clone(), block_number));
+                .push(TransactionExecutionResult::Executed(
+                    now.clone(),
+                    block_number,
+                ));
             executed_hashes.push(transaction.id());
         }
 
@@ -958,7 +978,7 @@ impl ObserverService {
             if user_txn_count > 0 {
                 let total = state.add_executed_count(user_txn_count);
                 info!(
-                    "Block {} executed {} user txns, total: {}/{}",
+                    "jacktest: Block {} executed {} user txns, total: {}/{}",
                     block_number, user_txn_count, total, state.target_txn_count
                 );
                 // Mark completed immediately when target is reached
@@ -974,12 +994,13 @@ impl ObserverService {
 
     fn dump_results(&self) -> Result<()> {
         let dumper = ResultsDumper::new(&self.transaction_data);
-        
+
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
-        
-        dumper.dump_results()
+
+        Ok(())
+        // dumper.dump_results()
     }
 }
 

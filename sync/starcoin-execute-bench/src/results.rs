@@ -1,13 +1,9 @@
-use std::{
-    collections::HashMap,
-    error::Error,
-    fs::OpenOptions,
-    io::Write,
-};
+use std::{collections::HashMap, error::Error, fs::OpenOptions, io::Write};
 
 use chrono::NaiveDateTime;
 use plotters::prelude::*;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::info;
 
 #[derive(Clone)]
 pub enum TransactionExecutionResult {
@@ -64,12 +60,16 @@ impl std::fmt::Display for BenchmarkStats {
         writeln!(f, "========== Benchmark Results ==========")?;
         writeln!(f, "TPS: {:.2}", self.tps)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
-        writeln!(f, "Unique Txn (with Added): {} | Duplicates: {} ({:.1}%)",
-                 self.unique_txn_count, self.duplicate_exec_count, self.duplicate_pct)?;
-        if self.min_latency_ms > 0.0 || self.max_latency_ms > 0.0 {
-            writeln!(f, "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
-                     self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms)?;
-        }
+        writeln!(
+            f,
+            "Unique Txn (with Added): {} | Duplicates: {} ({:.1}%)",
+            self.unique_txn_count, self.duplicate_exec_count, self.duplicate_pct
+        )?;
+        writeln!(
+            f,
+            "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms
+        )?;
         writeln!(f, "========================================")?;
         Ok(())
     }
@@ -80,12 +80,8 @@ pub struct ResultsDumper<'a> {
 }
 
 impl<'a> ResultsDumper<'a> {
-    pub fn new(
-        transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
-    ) -> Self {
-        Self { 
-            transaction_data,
-        }
+    pub fn new(transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>) -> Self {
+        Self { transaction_data }
     }
 
     /// Calculate and return benchmark statistics
@@ -107,15 +103,16 @@ impl<'a> ResultsDumper<'a> {
         }
 
         // Filter finite latency data
-        let all_delays: Vec<f64> = executions.iter()
+        let all_delays: Vec<f64> = executions
+            .iter()
             .filter(|(_, _, latency)| latency.is_finite())
             .map(|(_, _, latency)| *latency)
             .collect();
 
         let total_txns = all_delays.len();
-        
+
         // Log debug info
-        eprintln!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
+        info!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
             total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
 
         let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
@@ -152,7 +149,11 @@ impl<'a> ResultsDumper<'a> {
             unique_txn_count,
             duplicate_exec_count,
             duplicate_pct,
-            min_latency_ms: if min_delay.is_finite() { min_delay } else { 0.0 },
+            min_latency_ms: if min_delay.is_finite() {
+                min_delay
+            } else {
+                0.0
+            },
             max_latency_ms: max_delay,
             avg_latency_ms: avg_delay,
             median_latency_ms: median_delay,
@@ -191,29 +192,29 @@ impl<'a> ResultsDumper<'a> {
     }
 
     pub fn dump_results(&self) -> anyhow::Result<()> {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open("./transaction_results.txt")?;
+        // let mut file = OpenOptions::new()
+        //     .write(true)
+        //     .create(true)
+        //     .truncate(true)
+        //     .open("./transaction_results.txt")?;
 
-        for (transaction, results) in self.transaction_data {
-            writeln!(
-                file,
-                "transaction id: {}, results: {:?}",
-                *transaction, results
-            )?;
-        }
+        // for (transaction, results) in self.transaction_data {
+        //     writeln!(
+        //         file,
+        //         "transaction id: {}, results: {:?}",
+        //         *transaction, results
+        //     )?;
+        // }
 
-        match self.export_combined_svg("./benchmark_results.svg") {
-            Ok(_) => (),
-            Err(e) => {
-                return Err(anyhow::format_err!(
-                    "failed to export benchmark results svg: {}",
-                    e
-                ));
-            }
-        }
+        // match self.export_combined_svg("./benchmark_results.svg") {
+        //     Ok(_) => (),
+        //     Err(e) => {
+        //         return Err(anyhow::format_err!(
+        //             "failed to export benchmark results svg: {}",
+        //             e
+        //         ));
+        //     }
+        // }
 
         Ok(())
     }
@@ -271,19 +272,7 @@ impl<'a> ResultsDumper<'a> {
 
             let last_exec = executed_times.iter().max().unwrap();
             let delay = *last_exec - *first_add;
-            match delay.num_microseconds() {
-                Some(microseconds) => {
-                    let ms = microseconds as f64 / 1000.0;
-                    // Use absolute value to handle clock skew
-                    results.push((*txn_id, *first_add, ms.abs()));
-                }
-                None => {
-                    // Overflow, use milliseconds directly
-                    if let Some(milliseconds) = delay.num_milliseconds().checked_abs() {
-                        results.push((*txn_id, *first_add, milliseconds as f64));
-                    }
-                }
-            }
+            results.push((*txn_id, *first_add, delay.num_milliseconds().checked_abs().unwrap_or(0) as f64));
         }
 
         // Sort by Added time
@@ -294,10 +283,12 @@ impl<'a> ResultsDumper<'a> {
 
     fn get_user_transfer_block_stats(&self) -> Vec<(u64, usize)> {
         let mut block_counts: HashMap<u64, usize> = HashMap::new();
-        
+
         for events in self.transaction_data.values() {
-            let has_added = events.iter().any(|e| matches!(e, TransactionExecutionResult::Added(_)));
-            
+            let has_added = events
+                .iter()
+                .any(|e| matches!(e, TransactionExecutionResult::Added(_)));
+
             if has_added {
                 for ev in events {
                     if let TransactionExecutionResult::Executed(_, block_number) = ev {
@@ -340,7 +331,8 @@ impl<'a> ResultsDumper<'a> {
         }
 
         // Filter finite latency data
-        let valid_executions: Vec<_> = executions.iter()
+        let valid_executions: Vec<_> = executions
+            .iter()
             .filter(|(_, _, latency)| latency.is_finite())
             .collect();
 
@@ -356,7 +348,10 @@ impl<'a> ResultsDumper<'a> {
         }
 
         let mut chart = ChartBuilder::on(area)
-            .caption("Transaction Latency (Added to Executed)", ("sans-serif", 28))
+            .caption(
+                "Transaction Latency (Added to Executed)",
+                ("sans-serif", 28),
+            )
             .margin(20)
             .x_label_area_size(120)
             .y_label_area_size(70)
@@ -440,10 +435,14 @@ impl<'a> ResultsDumper<'a> {
 
         let stats_lines = vec![
             format!("TPS: {:.2}", tps),
-            format!("Total Executed: {} | Unique Txn: {} | Duplicates: {} ({:.1}%)", 
-                    total_txns, unique_txn_count, duplicate_exec_count, duplicate_pct),
-            format!("Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
-                    min_delay, max_delay_stat, avg_delay, median_delay),
+            format!(
+                "Total Executed: {} | Unique Txn: {} | Duplicates: {} ({:.1}%)",
+                total_txns, unique_txn_count, duplicate_exec_count, duplicate_pct
+            ),
+            format!(
+                "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                min_delay, max_delay_stat, avg_delay, median_delay
+            ),
         ];
 
         let line_height = 22;
@@ -512,7 +511,7 @@ impl<'a> ResultsDumper<'a> {
         let total_txns: usize = txn_counts.iter().sum();
         let num_blocks = block_stats.len();
         let empty_blocks = (max_block - min_block + 1) as usize - num_blocks;
-        
+
         let avg_txn_count = if !txn_counts.is_empty() {
             total_txns as f64 / txn_counts.len() as f64
         } else {
@@ -530,14 +529,20 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-        let labels: Vec<String> = display_items.iter().map(|(label, _, _)| label.clone()).collect();
+        let labels: Vec<String> = display_items
+            .iter()
+            .map(|(label, _, _)| label.clone())
+            .collect();
 
         let mut chart = ChartBuilder::on(area)
             .caption("User Transactions per Block", ("sans-serif", 28))
             .margin(20)
             .x_label_area_size(60)
             .y_label_area_size(70)
-            .build_cartesian_2d(0f64..(num_items as f64), 0f64..((max_txn_count as f64) * 1.1))?;
+            .build_cartesian_2d(
+                0f64..(num_items as f64),
+                0f64..((max_txn_count as f64) * 1.1),
+            )?;
 
         chart
             .configure_mesh()
@@ -589,11 +594,15 @@ impl<'a> ResultsDumper<'a> {
         }
 
         let stats_lines = vec![
-            format!("Block Range: {} - {} ({} blocks with txns, {} empty blocks)", 
-                    min_block, max_block, num_blocks, empty_blocks),
+            format!(
+                "Block Range: {} - {} ({} blocks with txns, {} empty blocks)",
+                min_block, max_block, num_blocks, empty_blocks
+            ),
             format!("Total Transactions: {}", total_txns),
-            format!("Txns per Block - Min: {} | Max: {} | Avg: {:.2} | Median: {:.2}", 
-                    min_txn_count, max_txn_count, avg_txn_count, median_txn_count),
+            format!(
+                "Txns per Block - Min: {} | Max: {} | Avg: {:.2} | Median: {:.2}",
+                min_txn_count, max_txn_count, avg_txn_count, median_txn_count
+            ),
         ];
 
         let line_height = 22;
