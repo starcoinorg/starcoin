@@ -453,14 +453,14 @@ async fn transfer_to_accounts(
 
     // Wait for all transactions to be processed
     for account in receivers {
-        let balance = get_balance(
-            account.address,
-            storage1.clone(),
-            storage2.clone(),
-            get_current_header(chain_reader_service.clone()).await?.id(),
-        )
-        .await?;
         loop {
+            let balance = get_balance(
+                account.address,
+                storage1.clone(),
+                storage2.clone(),
+                get_current_header(chain_reader_service.clone()).await?.id(),
+            )
+            .await?;
             if balance >= initial_balance {
                 break;
             } else {
