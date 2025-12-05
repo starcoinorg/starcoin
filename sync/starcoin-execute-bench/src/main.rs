@@ -422,9 +422,9 @@ async fn transfer_to_accounts(
         gas_price,
         max_gas,
         config.clone(),
-        &get_current_header(chain_reader_service).await?,
-        storage1,
-        storage2,
+        &get_current_header(chain_reader_service.clone()).await?,
+        storage1.clone(),
+        storage2.clone(),
     )
     .await?;
 
@@ -438,14 +438,22 @@ async fn transfer_to_accounts(
     )?;
 
     // Wait for all transactions to be processed
-    loop {
-        let transactions = txpool
-            .inner
-            .get_pending(100, config.net().time_service().now_secs())?;
-        if transactions.is_empty() {
-            break;
+    for account in receivers {
+        let balance = get_balance(
+            account.address,
+            storage1.clone(),
+            storage2.clone(),
+            get_current_header(chain_reader_service.clone()).await?.id(),
+        )
+        .await?;
+        loop {
+            if balance >= initial_balance {
+                break;
+            } else {
+                info!("waiting for the transfer to account {}, current balance: {}, initial balance: {}", account.address, balance, initial_balance);
+                tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+            }
         }
-        tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
     }
 
     info!(
