@@ -272,7 +272,11 @@ impl<'a> ResultsDumper<'a> {
 
             let last_exec = executed_times.iter().max().unwrap();
             let delay = *last_exec - *first_add;
-            results.push((*txn_id, *first_add, delay.num_milliseconds().checked_abs().unwrap_or(0) as f64));
+            results.push((
+                *txn_id,
+                *first_add,
+                delay.num_milliseconds().checked_abs().unwrap_or(0) as f64,
+            ));
         }
 
         // Sort by Added time
