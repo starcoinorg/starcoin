@@ -859,7 +859,7 @@ impl ObserverService {
             None => return Ok(()),
         };
 
-        if state.is_completed() {
+        if state.is_completed() || state.is_target_reached() {
             return Ok(());
         }
 
@@ -961,6 +961,10 @@ impl ObserverService {
                     "Block {} executed {} user txns, total: {}/{}",
                     block_number, user_txn_count, total, state.target_txn_count
                 );
+                // Mark completed immediately when target is reached
+                if total >= state.target_txn_count {
+                    state.mark_completed();
+                }
                 return Ok(user_txn_count);
             }
         }
@@ -1020,18 +1024,16 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
         if let Err(e) = self.update_transaction_status(msg.executed_block.block().id()) {
             error!("failed to update transactions status: {:?}", e);
         }
+        // Check if completed (already marked in update_transaction_status when target reached)
         if let Some(ref state) = self.benchmark_state {
-            if state.is_target_reached() {
-                state.mark_completed();
+            if state.is_completed() {
                 return;
             }
         }
         // Submit next batch of transactions after processing the block
-        info!("jacktest: try to submit next batch begin");
         if let Err(e) = self.try_submit_next_batch(msg.executed_block.block().id()) {
             error!("failed to submit next batch: {:?}", e);
         }
-        info!("jacktest: try to submit next batch end");
     }
 }
 
