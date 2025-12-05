@@ -687,7 +687,7 @@ async fn execute_benchmark(
         txpool.inner.queue().add_full_listener(sender);
         observer.add_event_stream(receiver)?;
 
-        StarcoinVM::set_concurrency_level(num_cpus::get());
+        StarcoinVM::set_concurrency_level(1);
 
         info!(
             "Starting benchmark with target {} user transactions",
