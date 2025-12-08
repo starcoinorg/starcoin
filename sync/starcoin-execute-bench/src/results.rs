@@ -41,10 +41,20 @@ impl std::fmt::Debug for TransactionExecutionResult {
     }
 }
 
+/// Per-block TPS statistics
+#[derive(Debug, Clone)]
+pub struct BlockTpsStats {
+    pub block_number: u64,
+    pub user_txn_count: usize,
+    pub time_since_last_block_ms: f64,
+    pub instant_tps: f64,
+}
+
 /// Benchmark statistics
 #[derive(Debug, Clone)]
 pub struct BenchmarkStats {
     pub tps: f64,
+    pub user_txn_tps: f64, // TPS only for user transactions
     pub total_executed: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
@@ -53,12 +63,16 @@ pub struct BenchmarkStats {
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
     pub median_latency_ms: f64,
+    pub block_tps_stats: Vec<BlockTpsStats>, // Per-block TPS
+    pub min_block_tps: f64,
+    pub max_block_tps: f64,
+    pub avg_block_tps: f64,
 }
 
 impl std::fmt::Display for BenchmarkStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "TPS: {:.2}", self.tps)?;
+        writeln!(f, "Overall TPS: {:.2} (all txns) | User TPS: {:.2} (user txns only)", self.tps, self.user_txn_tps)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -69,6 +83,11 @@ impl std::fmt::Display for BenchmarkStats {
             f,
             "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
             self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms
+        )?;
+        writeln!(
+            f,
+            "Block TPS - Min: {:.2} | Max: {:.2} | Avg: {:.2} ({} blocks with user txns)",
+            self.min_block_tps, self.max_block_tps, self.avg_block_tps, self.block_tps_stats.len()
         )?;
         writeln!(f, "========================================")?;
         Ok(())
@@ -134,8 +153,29 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-        // Calculate TPS based on executed times (more reliable)
+        // Calculate TPS based on all executed times
         let tps = self.calculate_tps_from_executed();
+        
+        // Calculate TPS for user transactions only (those with Added events)
+        let user_txn_tps = self.calculate_user_txn_tps();
+        
+        // Calculate per-block TPS statistics
+        let block_tps_stats = self.calculate_block_tps_stats();
+        
+        // Calculate block TPS summary
+        let block_tps_values: Vec<f64> = block_tps_stats
+            .iter()
+            .filter(|s| s.instant_tps.is_finite() && s.instant_tps > 0.0)
+            .map(|s| s.instant_tps)
+            .collect();
+        
+        let min_block_tps = block_tps_values.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_block_tps = block_tps_values.iter().fold(0.0f64, |a, &b| a.max(b));
+        let avg_block_tps = if !block_tps_values.is_empty() {
+            block_tps_values.iter().sum::<f64>() / block_tps_values.len() as f64
+        } else {
+            0.0
+        };
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -145,6 +185,7 @@ impl<'a> ResultsDumper<'a> {
 
         BenchmarkStats {
             tps,
+            user_txn_tps,
             total_executed: total_txns,
             unique_txn_count,
             duplicate_exec_count,
@@ -157,6 +198,10 @@ impl<'a> ResultsDumper<'a> {
             max_latency_ms: max_delay,
             avg_latency_ms: avg_delay,
             median_latency_ms: median_delay,
+            block_tps_stats,
+            min_block_tps: if min_block_tps.is_finite() { min_block_tps } else { 0.0 },
+            max_block_tps,
+            avg_block_tps,
         }
     }
 
@@ -189,6 +234,147 @@ impl<'a> ResultsDumper<'a> {
         } else {
             all_exec_times.len() as f64
         }
+    }
+
+    /// Calculate TPS for user transactions only (those with Added events)
+    fn calculate_user_txn_tps(&self) -> f64 {
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+        let mut user_exec_times: Vec<NaiveDateTime> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            // Only count transactions that have Added event (user transactions)
+            let has_added = events
+                .iter()
+                .any(|e| matches!(e, TransactionExecutionResult::Added(_)));
+
+            if !has_added {
+                continue;
+            }
+
+            // Collect execution times for this user transaction
+            for ev in events {
+                if let TransactionExecutionResult::Executed(ts, _) = ev {
+                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                        user_exec_times.push(t);
+                        break; // Only count first execution to avoid duplicates
+                    }
+                }
+            }
+        }
+
+        if user_exec_times.len() < 2 {
+            return user_exec_times.len() as f64;
+        }
+
+        user_exec_times.sort();
+        let first = user_exec_times.first().unwrap();
+        let last = user_exec_times.last().unwrap();
+        let duration_secs = (*last - *first).num_milliseconds() as f64 / 1000.0;
+
+        info!(
+            "DEBUG: user_txn_count={}, duration={:.3}s, user_tps={:.2}",
+            user_exec_times.len(),
+            duration_secs,
+            if duration_secs > 0.0 {
+                user_exec_times.len() as f64 / duration_secs
+            } else {
+                0.0
+            }
+        );
+
+        if duration_secs > 0.0 {
+            user_exec_times.len() as f64 / duration_secs
+        } else {
+            user_exec_times.len() as f64
+        }
+    }
+
+    /// Calculate per-block TPS statistics for user transactions
+    fn calculate_block_tps_stats(&self) -> Vec<BlockTpsStats> {
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+
+        // Collect user transactions per block with their execution times
+        // Key: block_number, Value: (user_txn_count, exec_time)
+        let mut block_data: HashMap<u64, (usize, NaiveDateTime)> = HashMap::new();
+
+        for events in self.transaction_data.values() {
+            // Only count transactions that have Added event (user transactions)
+            let has_added = events
+                .iter()
+                .any(|e| matches!(e, TransactionExecutionResult::Added(_)));
+
+            if !has_added {
+                continue;
+            }
+
+            // Find the first Executed event for this user transaction
+            for ev in events {
+                if let TransactionExecutionResult::Executed(ts, block_number) = ev {
+                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                        let entry = block_data.entry(*block_number).or_insert((0, t));
+                        entry.0 += 1;
+                        // Keep the earliest execution time for this block
+                        if t < entry.1 {
+                            entry.1 = t;
+                        }
+                        break; // Only count first execution
+                    }
+                }
+            }
+        }
+
+        if block_data.is_empty() {
+            return Vec::new();
+        }
+
+        // Sort by block number
+        let mut sorted_blocks: Vec<(u64, usize, NaiveDateTime)> = block_data
+            .into_iter()
+            .map(|(block_num, (count, time))| (block_num, count, time))
+            .collect();
+        sorted_blocks.sort_by_key(|(block_num, _, _)| *block_num);
+
+        // Calculate per-block TPS
+        let mut stats: Vec<BlockTpsStats> = Vec::new();
+        let mut prev_time: Option<NaiveDateTime> = None;
+
+        for (block_number, user_txn_count, exec_time) in sorted_blocks {
+            let (time_since_last_block_ms, instant_tps) = if let Some(prev) = prev_time {
+                let duration_ms = (exec_time - prev).num_milliseconds() as f64;
+                let tps = if duration_ms > 0.0 {
+                    user_txn_count as f64 / (duration_ms / 1000.0)
+                } else {
+                    0.0
+                };
+                (duration_ms, tps)
+            } else {
+                (0.0, 0.0) // First block, no previous time
+            };
+
+            stats.push(BlockTpsStats {
+                block_number,
+                user_txn_count,
+                time_since_last_block_ms,
+                instant_tps,
+            });
+
+            prev_time = Some(exec_time);
+        }
+
+        // Log per-block stats for debugging
+        for stat in &stats {
+            if stat.user_txn_count > 0 {
+                info!(
+                    "Block {}: {} user txns, {:.0}ms since last, TPS: {:.2}",
+                    stat.block_number,
+                    stat.user_txn_count,
+                    stat.time_since_last_block_ms,
+                    stat.instant_tps
+                );
+            }
+        }
+
+        stats
     }
 
     pub fn dump_results(&self) -> anyhow::Result<()> {
