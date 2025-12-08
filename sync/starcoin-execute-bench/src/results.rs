@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fs::OpenOptions, io::Write};
 
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, Local};
 use plotters::prelude::*;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
@@ -11,8 +11,8 @@ pub enum TransactionExecutionResult {
     Added(u64),
     Rejected(String),
     Culled(String),
-    /// Executed(connected_time_ms, block_number, block_hash)
-    Executed(u64, u64, HashValue),
+    /// Executed(connected_time_ms, block_number) - epoch ms from NewHeadBlock
+    Executed(u64, u64),
     #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
@@ -22,10 +22,11 @@ pub enum TransactionExecutionResult {
 fn format_epoch_ms(epoch_ms: u64) -> String {
     let secs = (epoch_ms / 1000) as i64;
     let nanos = ((epoch_ms % 1000) * 1_000_000) as u32;
-    Local
-        .timestamp_opt(secs, nanos)
-        .single()
-        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S%.3f").to_string())
+    DateTime::from_timestamp(secs, nanos)
+        .map(|dt| {
+            let local: DateTime<Local> = dt.into();
+            local.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+        })
         .unwrap_or_else(|| format!("{}ms", epoch_ms))
 }
 
@@ -41,8 +42,8 @@ impl std::fmt::Debug for TransactionExecutionResult {
             TransactionExecutionResult::Culled(op_time) => {
                 write!(f, "Culled({})", op_time)
             }
-            TransactionExecutionResult::Executed(ts_ms, block_number, block_hash) => {
-                write!(f, "Executed({}, block={}, hash={})", format_epoch_ms(*ts_ms), block_number, block_hash)
+            TransactionExecutionResult::Executed(ts_ms, block_number) => {
+                write!(f, "Executed({}, block={})", format_epoch_ms(*ts_ms), block_number)
             }
             TransactionExecutionResult::ExecutedNotInMain(op_time) => {
                 write!(f, "ExecutedNotInMain({})", op_time)
@@ -54,21 +55,10 @@ impl std::fmt::Debug for TransactionExecutionResult {
     }
 }
 
-/// Per-block TPS statistics
-#[derive(Debug, Clone)]
-pub struct BlockTpsStats {
-    pub block_number: u64,
-    pub block_hash: HashValue,
-    pub user_txn_count: usize,
-    pub time_since_last_block_ms: f64,
-    pub instant_tps: f64,
-}
-
 /// Benchmark statistics
 #[derive(Debug, Clone)]
 pub struct BenchmarkStats {
     pub tps: f64,
-    pub user_txn_tps: f64, // TPS only for user transactions
     pub total_executed: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
@@ -77,16 +67,12 @@ pub struct BenchmarkStats {
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
     pub median_latency_ms: f64,
-    pub block_tps_stats: Vec<BlockTpsStats>, // Per-block TPS
-    pub min_block_tps: f64,
-    pub max_block_tps: f64,
-    pub avg_block_tps: f64,
 }
 
 impl std::fmt::Display for BenchmarkStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "Overall TPS: {:.2} (all txns) | User TPS: {:.2} (user txns only)", self.tps, self.user_txn_tps)?;
+        writeln!(f, "TPS: {:.2}", self.tps)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -97,11 +83,6 @@ impl std::fmt::Display for BenchmarkStats {
             f,
             "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
             self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms
-        )?;
-        writeln!(
-            f,
-            "Block TPS - Min: {:.2} | Max: {:.2} | Avg: {:.2} ({} blocks with user txns)",
-            self.min_block_tps, self.max_block_tps, self.avg_block_tps, self.block_tps_stats.len()
         )?;
         writeln!(f, "========================================")?;
         Ok(())
@@ -129,7 +110,7 @@ impl<'a> ResultsDumper<'a> {
             for ev in events {
                 match ev {
                     TransactionExecutionResult::Added(_) => added_count += 1,
-                    TransactionExecutionResult::Executed(_, _, _) => executed_count += 1,
+                    TransactionExecutionResult::Executed(_, _) => executed_count += 1,
                     _ => {}
                 }
             }
@@ -167,29 +148,8 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-        // Calculate TPS based on all executed times
+        // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
-        
-        // Calculate TPS for user transactions only (those with Added events)
-        let user_txn_tps = self.calculate_user_txn_tps();
-        
-        // Calculate per-block TPS statistics
-        let block_tps_stats = self.calculate_block_tps_stats();
-        
-        // Calculate block TPS summary
-        let block_tps_values: Vec<f64> = block_tps_stats
-            .iter()
-            .filter(|s| s.instant_tps.is_finite() && s.instant_tps > 0.0)
-            .map(|s| s.instant_tps)
-            .collect();
-        
-        let min_block_tps = block_tps_values.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max_block_tps = block_tps_values.iter().fold(0.0f64, |a, &b| a.max(b));
-        let avg_block_tps = if !block_tps_values.is_empty() {
-            block_tps_values.iter().sum::<f64>() / block_tps_values.len() as f64
-        } else {
-            0.0
-        };
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -199,7 +159,6 @@ impl<'a> ResultsDumper<'a> {
 
         BenchmarkStats {
             tps,
-            user_txn_tps,
             total_executed: total_txns,
             unique_txn_count,
             duplicate_exec_count,
@@ -212,10 +171,6 @@ impl<'a> ResultsDumper<'a> {
             max_latency_ms: max_delay,
             avg_latency_ms: avg_delay,
             median_latency_ms: median_delay,
-            block_tps_stats,
-            min_block_tps: if min_block_tps.is_finite() { min_block_tps } else { 0.0 },
-            max_block_tps,
-            avg_block_tps,
         }
     }
 
@@ -225,7 +180,7 @@ impl<'a> ResultsDumper<'a> {
 
         for events in self.transaction_data.values() {
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
+                if let TransactionExecutionResult::Executed(ts_ms, _) = ev {
                     all_exec_times.push(*ts_ms);
                 }
             }
@@ -245,224 +200,6 @@ impl<'a> ResultsDumper<'a> {
         } else {
             all_exec_times.len() as f64
         }
-    }
-
-    /// Calculate TPS for user transactions only (those with Added events)
-    fn calculate_user_txn_tps(&self) -> f64 {
-        let mut user_exec_times: Vec<u64> = Vec::new();
-
-        for events in self.transaction_data.values() {
-            // Only count transactions that have Added event (user transactions)
-            let has_added = events
-                .iter()
-                .any(|e| matches!(e, TransactionExecutionResult::Added(_)));
-
-            if !has_added {
-                continue;
-            }
-
-            // Collect execution times for this user transaction
-            for ev in events {
-                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
-                    user_exec_times.push(*ts_ms);
-                    break; // Only count first execution to avoid duplicates
-                }
-            }
-        }
-
-        if user_exec_times.len() < 2 {
-            return user_exec_times.len() as f64;
-        }
-
-        user_exec_times.sort();
-        let first = *user_exec_times.first().unwrap();
-        let last = *user_exec_times.last().unwrap();
-        let duration_secs = (last - first) as f64 / 1000.0;
-
-        info!(
-            "DEBUG: user_txn_count={}, duration={:.3}s, user_tps={:.2}",
-            user_exec_times.len(),
-            duration_secs,
-            if duration_secs > 0.0 {
-                user_exec_times.len() as f64 / duration_secs
-            } else {
-                0.0
-            }
-        );
-
-        if duration_secs > 0.0 {
-            user_exec_times.len() as f64 / duration_secs
-        } else {
-            user_exec_times.len() as f64
-        }
-    }
-
-    /// Calculate per-block TPS statistics for user transactions
-    fn calculate_block_tps_stats(&self) -> Vec<BlockTpsStats> {
-        // Collect user transactions per block with their execution times
-        // Key: block_number, Value: (user_txn_count, exec_time_ms, block_hash)
-        let mut block_data: HashMap<u64, (usize, u64, HashValue)> = HashMap::new();
-
-        for events in self.transaction_data.values() {
-            // Only count transactions that have Added event (user transactions)
-            let has_added = events
-                .iter()
-                .any(|e| matches!(e, TransactionExecutionResult::Added(_)));
-
-            if !has_added {
-                continue;
-            }
-
-            // Find the first Executed event for this user transaction
-            for ev in events {
-                if let TransactionExecutionResult::Executed(ts_ms, block_number, block_hash) = ev {
-                    let entry = block_data.entry(*block_number).or_insert((0, *ts_ms, *block_hash));
-                    entry.0 += 1;
-                    // Keep the earliest execution time for this block
-                    if *ts_ms < entry.1 {
-                        entry.1 = *ts_ms;
-                    }
-                    break; // Only count first execution
-                }
-            }
-        }
-
-        if block_data.is_empty() {
-            return Vec::new();
-        }
-
-        // Sort by block number
-        let mut sorted_blocks: Vec<(u64, usize, u64, HashValue)> = block_data
-            .into_iter()
-            .map(|(block_num, (count, time, hash))| (block_num, count, time, hash))
-            .collect();
-        sorted_blocks.sort_by_key(|(block_num, _, _, _)| *block_num);
-
-        // Calculate per-block TPS
-        let mut stats: Vec<BlockTpsStats> = Vec::new();
-        let mut prev_time: Option<u64> = None;
-
-        for (block_number, user_txn_count, exec_time_ms, block_hash) in sorted_blocks {
-            let (time_since_last_block_ms, instant_tps) = if let Some(prev) = prev_time {
-                let duration_ms = (exec_time_ms.saturating_sub(prev)) as f64;
-                let tps = if duration_ms > 0.0 {
-                    user_txn_count as f64 / (duration_ms / 1000.0)
-                } else {
-                    0.0
-                };
-                (duration_ms, tps)
-            } else {
-                (0.0, 0.0) // First block, no previous time
-            };
-
-            stats.push(BlockTpsStats {
-                block_number,
-                block_hash,
-                user_txn_count,
-                time_since_last_block_ms,
-                instant_tps,
-            });
-
-            prev_time = Some(exec_time_ms);
-        }
-
-        stats
-    }
-
-    /// Export benchmark results to a file
-    pub fn export_stats_to_file(&self, file_path: &str) -> anyhow::Result<()> {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(file_path)?;
-
-        // Write header
-        writeln!(file, "===== Benchmark Statistics Export =====")?;
-        writeln!(file, "Generated at: {}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"))?;
-        writeln!(file)?;
-
-        // Write overall stats
-        let stats = self.calculate_stats();
-        writeln!(file, "{}", stats)?;
-
-        // Write per-block TPS stats
-        writeln!(file, "===== Per-Block TPS Statistics =====")?;
-        writeln!(file, "{:>8} | {:>66} | {:>6} | {:>10} | {:>12}", 
-            "Block#", "BlockHash", "TxnCnt", "Interval", "InstantTPS")?;
-        writeln!(file, "{}", "-".repeat(120))?;
-
-        for stat in &stats.block_tps_stats {
-            writeln!(
-                file,
-                "{:>8} | {} | {:>6} | {:>8.0}ms | {:>12.2}",
-                stat.block_number,
-                stat.block_hash,
-                stat.user_txn_count,
-                stat.time_since_last_block_ms,
-                stat.instant_tps
-            )?;
-        }
-        writeln!(file)?;
-
-        // Write top latency transactions
-        let executions = self.collect_executions_with_block();
-        let mut sorted_executions = executions;
-        sorted_executions.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
-
-        writeln!(file, "===== Top 100 Highest Latency Transactions =====")?;
-        writeln!(file, "{:>4} | {:>12} | {:>8} | {:>66} | {}", 
-            "Rank", "Latency(ms)", "Block#", "BlockHash", "TxnID")?;
-        writeln!(file, "{}", "-".repeat(180))?;
-
-        for (idx, (txn_id, block_num, block_hash, latency_ms)) in sorted_executions.iter().take(100).enumerate() {
-            writeln!(
-                file,
-                "{:>4} | {:>12.2} | {:>8} | {} | {}",
-                idx + 1,
-                latency_ms,
-                block_num,
-                block_hash,
-                txn_id
-            )?;
-        }
-        writeln!(file)?;
-
-        // Write block summary for high latency transactions
-        let mut block_latencies: HashMap<u64, (HashValue, Vec<f64>)> = HashMap::new();
-        for (_, block_num, block_hash, latency_ms) in sorted_executions.iter().take(100) {
-            let entry = block_latencies.entry(*block_num).or_insert((*block_hash, Vec::new()));
-            entry.1.push(*latency_ms);
-        }
-
-        let mut block_summary: Vec<(u64, HashValue, usize, f64, f64)> = block_latencies
-            .into_iter()
-            .map(|(block, (hash, latencies))| {
-                let count = latencies.len();
-                let max_lat = latencies.iter().fold(0.0f64, |a, &b| a.max(b));
-                let avg_lat = latencies.iter().sum::<f64>() / count as f64;
-                (block, hash, count, max_lat, avg_lat)
-            })
-            .collect();
-        block_summary.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
-
-        writeln!(file, "===== Blocks with High Latency Transactions =====")?;
-        writeln!(file, "{:>8} | {:>66} | {:>5} | {:>12} | {:>12}", 
-            "Block#", "BlockHash", "Count", "MaxLat(ms)", "AvgLat(ms)")?;
-        writeln!(file, "{}", "-".repeat(120))?;
-
-        for (block_num, block_hash, count, max_lat, avg_lat) in block_summary {
-            writeln!(
-                file,
-                "{:>8} | {} | {:>5} | {:>12.2} | {:>12.2}",
-                block_num, block_hash, count, max_lat, avg_lat
-            )?;
-        }
-
-        writeln!(file, "=================================================")?;
-
-        info!("Benchmark stats exported to: {}", file_path);
-        Ok(())
     }
 
     pub fn dump_results(&self) -> anyhow::Result<()> {
@@ -495,7 +232,7 @@ impl<'a> ResultsDumper<'a> {
 
     /// Collect execution latency for each transaction
     /// Returns: (transaction latency data list, unique transaction count, duplicate execution count)
-    /// Each element is (transaction ID, Added time in ms, latency in milliseconds)
+    /// Each element is (transaction ID, Added time in epoch ms, latency in milliseconds)
     fn collect_executions(&self) -> (Vec<(HashValue, u64, f64)>, usize, usize) {
         let mut results: Vec<(HashValue, u64, f64)> = Vec::new();
         let mut unique_txn_count = 0usize;
@@ -510,7 +247,7 @@ impl<'a> ResultsDumper<'a> {
                     TransactionExecutionResult::Added(ts_ms) => {
                         added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts_ms, _, _) => {
+                    TransactionExecutionResult::Executed(ts_ms, _) => {
                         executed_times.push(*ts_ms);
                     }
                     _ => {}
@@ -535,7 +272,12 @@ impl<'a> ResultsDumper<'a> {
             }
 
             let last_exec = *executed_times.iter().max().unwrap();
-            let delay_ms = last_exec.saturating_sub(first_add) as f64;
+            // Calculate latency: executed_time - added_time
+            let delay_ms = if last_exec >= first_add {
+                (last_exec - first_add) as f64
+            } else {
+                0.0
+            };
             results.push((*txn_id, first_add, delay_ms));
         }
 
@@ -543,110 +285,6 @@ impl<'a> ResultsDumper<'a> {
         results.sort_by_key(|(_, add_time, _)| *add_time);
 
         (results, unique_txn_count, duplicate_exec_count)
-    }
-
-    /// Collect execution latency with block number and hash for each transaction
-    /// Returns: Vec of (txn_id, block_number, block_hash, latency_ms)
-    fn collect_executions_with_block(&self) -> Vec<(HashValue, u64, HashValue, f64)> {
-        let mut results: Vec<(HashValue, u64, HashValue, f64)> = Vec::new();
-
-        for (txn_id, events) in self.transaction_data.iter() {
-            let mut added_times: Vec<u64> = Vec::new();
-            let mut executed_data: Vec<(u64, u64, HashValue)> = Vec::new();
-
-            for ev in events {
-                match ev {
-                    TransactionExecutionResult::Added(ts_ms) => {
-                        added_times.push(*ts_ms);
-                    }
-                    TransactionExecutionResult::Executed(ts_ms, block_num, block_hash) => {
-                        executed_data.push((*ts_ms, *block_num, *block_hash));
-                    }
-                    _ => {}
-                }
-            }
-
-            if added_times.is_empty() || executed_data.is_empty() {
-                continue;
-            }
-
-            let first_add = *added_times.iter().min().unwrap();
-            // Find the execution with max time (last execution)
-            let (last_exec_time, block_num, block_hash) = executed_data
-                .iter()
-                .max_by_key(|(t, _, _)| t)
-                .unwrap();
-
-            let latency_ms = last_exec_time.saturating_sub(first_add) as f64;
-
-            results.push((*txn_id, *block_num, *block_hash, latency_ms));
-        }
-
-        results
-    }
-
-    /// Log the top N transactions with highest latency
-    pub fn log_top_latency_transactions(&self, top_n: usize) {
-        let mut executions = self.collect_executions_with_block();
-
-        // Sort by latency descending
-        executions.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
-
-        // Take top N
-        let top_txns: Vec<_> = executions.into_iter().take(top_n).collect();
-
-        if top_txns.is_empty() {
-            info!("No transactions with latency data found");
-            return;
-        }
-
-        info!("===== Top {} Highest Latency Transactions =====", top_txns.len());
-        info!("{:>4} | {:>12} | {:>8} | {:>66} | {}", "Rank", "Latency(ms)", "Block#", "BlockHash", "TxnID");
-        info!("{}", "-".repeat(160));
-
-        for (idx, (txn_id, block_num, block_hash, latency_ms)) in top_txns.iter().enumerate() {
-            info!(
-                "{:>4} | {:>12.2} | {:>8} | {} | {}",
-                idx + 1,
-                latency_ms,
-                block_num,
-                block_hash,
-                txn_id
-            );
-        }
-
-        // Group by block and show block summary
-        let mut block_latencies: HashMap<u64, (HashValue, Vec<f64>)> = HashMap::new();
-        for (_, block_num, block_hash, latency_ms) in &top_txns {
-            let entry = block_latencies.entry(*block_num).or_insert((*block_hash, Vec::new()));
-            entry.1.push(*latency_ms);
-        }
-
-        let mut block_summary: Vec<(u64, HashValue, usize, f64, f64)> = block_latencies
-            .into_iter()
-            .map(|(block, (hash, latencies))| {
-                let count = latencies.len();
-                let max_lat = latencies.iter().fold(0.0f64, |a, &b| a.max(b));
-                let avg_lat = latencies.iter().sum::<f64>() / count as f64;
-                (block, hash, count, max_lat, avg_lat)
-            })
-            .collect();
-
-        // Sort by max latency descending
-        block_summary.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
-
-        info!("");
-        info!("===== Blocks with High Latency Transactions =====");
-        info!("{:>8} | {:>66} | {:>5} | {:>12} | {:>12}", "Block#", "BlockHash", "Count", "MaxLat(ms)", "AvgLat(ms)");
-        info!("{}", "-".repeat(120));
-
-        for (block_num, block_hash, count, max_lat, avg_lat) in block_summary {
-            info!(
-                "{:>8} | {} | {:>5} | {:>12.2} | {:>12.2}",
-                block_num, block_hash, count, max_lat, avg_lat
-            );
-        }
-        info!("=================================================");
     }
 
     fn get_user_transfer_block_stats(&self) -> Vec<(u64, usize)> {
@@ -659,7 +297,7 @@ impl<'a> ResultsDumper<'a> {
 
             if has_added {
                 for ev in events {
-                    if let TransactionExecutionResult::Executed(_, block_number, _) = ev {
+                    if let TransactionExecutionResult::Executed(_, block_number) = ev {
                         *block_counts.entry(*block_number).or_insert(0) += 1;
                     }
                 }
