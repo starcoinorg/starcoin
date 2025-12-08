@@ -131,6 +131,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
         let NewHeadBlock {
             executed_block: block,
+            connected_time_ms: _,
         } = msg;
 
         let state_root = block.multi_state().state_root1();
