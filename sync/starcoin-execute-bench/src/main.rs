@@ -33,7 +33,6 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
-use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
     system_events::NewHeadBlock,
@@ -618,6 +617,18 @@ impl BenchmarkState {
             user_txn_hashes.insert(*hash);
         }
     }
+    
+    /// Get total number of registered user transactions
+    fn registered_txn_count(&self) -> usize {
+        self.user_txn_hashes.read().unwrap().len()
+    }
+    
+    /// Check if all registered transactions have been executed
+    fn all_txns_executed(&self) -> bool {
+        let registered = self.registered_txn_count();
+        let executed = self.executed_count.load(Ordering::SeqCst);
+        registered > 0 && executed >= registered
+    }
 
     fn count_executed_user_txns(&self, executed_txn_hashes: &[HashValue]) -> usize {
         let user_txn_hashes = self.user_txn_hashes.read().unwrap();
@@ -750,28 +761,29 @@ async fn execute_benchmark(
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
-        // 2. Transaction pool is empty (all transactions executed)
+        // 2. All registered transactions have been executed
         loop {
             if benchmark_state.is_completed() {
                 break;
             }
             
-            // Check if all batches sent and txpool is empty
-            if benchmark_state.all_batches_sent() {
-                let pool_status = txpool.status();
-                if pool_status.txn_count == 0 {
-                    info!("All batches sent and transaction pool is empty, completing benchmark");
-                    benchmark_state.mark_completed();
-                    break;
-                }
+            // Check if all batches sent and all transactions executed
+            if benchmark_state.all_batches_sent() && benchmark_state.all_txns_executed() {
+                info!(
+                    "All batches sent and all {} transactions executed, completing benchmark",
+                    benchmark_state.executed_count.load(Ordering::SeqCst)
+                );
+                benchmark_state.mark_completed();
+                break;
             }
             
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
 
         info!(
-            "Benchmark completed: {} user transactions executed",
-            benchmark_state.executed_count.load(Ordering::SeqCst)
+            "Benchmark completed: {}/{} user transactions executed",
+            benchmark_state.executed_count.load(Ordering::SeqCst),
+            benchmark_state.registered_txn_count()
         );
 
         Ok::<(), anyhow::Error>(())
