@@ -1,27 +1,39 @@
 use std::{collections::HashMap, error::Error, fs::OpenOptions, io::Write};
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Local, TimeZone};
 use plotters::prelude::*;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 
 #[derive(Clone)]
 pub enum TransactionExecutionResult {
-    Added(String),
+    /// Added(timestamp_ms) - epoch milliseconds when txn was added to txpool
+    Added(u64),
     Rejected(String),
     Culled(String),
-    /// Executed(timestamp, block_number, block_hash)
-    Executed(String, u64, HashValue),
+    /// Executed(connected_time_ms, block_number, block_hash)
+    Executed(u64, u64, HashValue),
     #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
 }
 
+/// Helper function to format epoch millis to readable string
+fn format_epoch_ms(epoch_ms: u64) -> String {
+    let secs = (epoch_ms / 1000) as i64;
+    let nanos = ((epoch_ms % 1000) * 1_000_000) as u32;
+    Local
+        .timestamp_opt(secs, nanos)
+        .single()
+        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S%.3f").to_string())
+        .unwrap_or_else(|| format!("{}ms", epoch_ms))
+}
+
 impl std::fmt::Debug for TransactionExecutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransactionExecutionResult::Added(op_time) => {
-                write!(f, "Added({})", op_time)
+            TransactionExecutionResult::Added(ts_ms) => {
+                write!(f, "Added({})", format_epoch_ms(*ts_ms))
             }
             TransactionExecutionResult::Rejected(op_time) => {
                 write!(f, "Rejected({})", op_time)
@@ -29,8 +41,8 @@ impl std::fmt::Debug for TransactionExecutionResult {
             TransactionExecutionResult::Culled(op_time) => {
                 write!(f, "Culled({})", op_time)
             }
-            TransactionExecutionResult::Executed(op_time, block_number, block_hash) => {
-                write!(f, "Executed({}, block={}, hash={})", op_time, block_number, block_hash)
+            TransactionExecutionResult::Executed(ts_ms, block_number, block_hash) => {
+                write!(f, "Executed({}, block={}, hash={})", format_epoch_ms(*ts_ms), block_number, block_hash)
             }
             TransactionExecutionResult::ExecutedNotInMain(op_time) => {
                 write!(f, "ExecutedNotInMain({})", op_time)
@@ -209,15 +221,12 @@ impl<'a> ResultsDumper<'a> {
 
     /// Calculate TPS based on executed transaction times
     fn calculate_tps_from_executed(&self) -> f64 {
-        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
-        let mut all_exec_times: Vec<NaiveDateTime> = Vec::new();
+        let mut all_exec_times: Vec<u64> = Vec::new();
 
         for events in self.transaction_data.values() {
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts, _, _) = ev {
-                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                        all_exec_times.push(t);
-                    }
+                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
+                    all_exec_times.push(*ts_ms);
                 }
             }
         }
@@ -227,9 +236,9 @@ impl<'a> ResultsDumper<'a> {
         }
 
         all_exec_times.sort();
-        let first = all_exec_times.first().unwrap();
-        let last = all_exec_times.last().unwrap();
-        let duration_secs = (*last - *first).num_milliseconds() as f64 / 1000.0;
+        let first = *all_exec_times.first().unwrap();
+        let last = *all_exec_times.last().unwrap();
+        let duration_secs = (last - first) as f64 / 1000.0;
 
         if duration_secs > 0.0 {
             all_exec_times.len() as f64 / duration_secs
@@ -240,8 +249,7 @@ impl<'a> ResultsDumper<'a> {
 
     /// Calculate TPS for user transactions only (those with Added events)
     fn calculate_user_txn_tps(&self) -> f64 {
-        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
-        let mut user_exec_times: Vec<NaiveDateTime> = Vec::new();
+        let mut user_exec_times: Vec<u64> = Vec::new();
 
         for events in self.transaction_data.values() {
             // Only count transactions that have Added event (user transactions)
@@ -255,11 +263,9 @@ impl<'a> ResultsDumper<'a> {
 
             // Collect execution times for this user transaction
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts, _, _) = ev {
-                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                        user_exec_times.push(t);
-                        break; // Only count first execution to avoid duplicates
-                    }
+                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
+                    user_exec_times.push(*ts_ms);
+                    break; // Only count first execution to avoid duplicates
                 }
             }
         }
@@ -269,9 +275,9 @@ impl<'a> ResultsDumper<'a> {
         }
 
         user_exec_times.sort();
-        let first = user_exec_times.first().unwrap();
-        let last = user_exec_times.last().unwrap();
-        let duration_secs = (*last - *first).num_milliseconds() as f64 / 1000.0;
+        let first = *user_exec_times.first().unwrap();
+        let last = *user_exec_times.last().unwrap();
+        let duration_secs = (last - first) as f64 / 1000.0;
 
         info!(
             "DEBUG: user_txn_count={}, duration={:.3}s, user_tps={:.2}",
@@ -293,11 +299,9 @@ impl<'a> ResultsDumper<'a> {
 
     /// Calculate per-block TPS statistics for user transactions
     fn calculate_block_tps_stats(&self) -> Vec<BlockTpsStats> {
-        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
-
         // Collect user transactions per block with their execution times
-        // Key: block_number, Value: (user_txn_count, exec_time, block_hash)
-        let mut block_data: HashMap<u64, (usize, NaiveDateTime, HashValue)> = HashMap::new();
+        // Key: block_number, Value: (user_txn_count, exec_time_ms, block_hash)
+        let mut block_data: HashMap<u64, (usize, u64, HashValue)> = HashMap::new();
 
         for events in self.transaction_data.values() {
             // Only count transactions that have Added event (user transactions)
@@ -311,16 +315,14 @@ impl<'a> ResultsDumper<'a> {
 
             // Find the first Executed event for this user transaction
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts, block_number, block_hash) = ev {
-                    if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                        let entry = block_data.entry(*block_number).or_insert((0, t, *block_hash));
-                        entry.0 += 1;
-                        // Keep the earliest execution time for this block
-                        if t < entry.1 {
-                            entry.1 = t;
-                        }
-                        break; // Only count first execution
+                if let TransactionExecutionResult::Executed(ts_ms, block_number, block_hash) = ev {
+                    let entry = block_data.entry(*block_number).or_insert((0, *ts_ms, *block_hash));
+                    entry.0 += 1;
+                    // Keep the earliest execution time for this block
+                    if *ts_ms < entry.1 {
+                        entry.1 = *ts_ms;
                     }
+                    break; // Only count first execution
                 }
             }
         }
@@ -330,7 +332,7 @@ impl<'a> ResultsDumper<'a> {
         }
 
         // Sort by block number
-        let mut sorted_blocks: Vec<(u64, usize, NaiveDateTime, HashValue)> = block_data
+        let mut sorted_blocks: Vec<(u64, usize, u64, HashValue)> = block_data
             .into_iter()
             .map(|(block_num, (count, time, hash))| (block_num, count, time, hash))
             .collect();
@@ -338,11 +340,11 @@ impl<'a> ResultsDumper<'a> {
 
         // Calculate per-block TPS
         let mut stats: Vec<BlockTpsStats> = Vec::new();
-        let mut prev_time: Option<NaiveDateTime> = None;
+        let mut prev_time: Option<u64> = None;
 
-        for (block_number, user_txn_count, exec_time, block_hash) in sorted_blocks {
+        for (block_number, user_txn_count, exec_time_ms, block_hash) in sorted_blocks {
             let (time_since_last_block_ms, instant_tps) = if let Some(prev) = prev_time {
-                let duration_ms = (exec_time - prev).num_milliseconds() as f64;
+                let duration_ms = (exec_time_ms.saturating_sub(prev)) as f64;
                 let tps = if duration_ms > 0.0 {
                     user_txn_count as f64 / (duration_ms / 1000.0)
                 } else {
@@ -361,7 +363,7 @@ impl<'a> ResultsDumper<'a> {
                 instant_tps,
             });
 
-            prev_time = Some(exec_time);
+            prev_time = Some(exec_time_ms);
         }
 
         stats
@@ -493,33 +495,23 @@ impl<'a> ResultsDumper<'a> {
 
     /// Collect execution latency for each transaction
     /// Returns: (transaction latency data list, unique transaction count, duplicate execution count)
-    /// Each element is (transaction ID, Added time, latency in milliseconds)
-    fn collect_executions(&self) -> (Vec<(HashValue, NaiveDateTime, f64)>, usize, usize) {
-        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
-        let mut results: Vec<(HashValue, NaiveDateTime, f64)> = Vec::new();
+    /// Each element is (transaction ID, Added time in ms, latency in milliseconds)
+    fn collect_executions(&self) -> (Vec<(HashValue, u64, f64)>, usize, usize) {
+        let mut results: Vec<(HashValue, u64, f64)> = Vec::new();
         let mut unique_txn_count = 0usize;
         let mut duplicate_exec_count = 0usize;
 
         for (txn_id, events) in self.transaction_data.iter() {
-            let mut added_times = Vec::new();
-            let mut executed_times = Vec::new();
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut executed_times: Vec<u64> = Vec::new();
 
             for ev in events {
                 match ev {
-                    TransactionExecutionResult::Added(ts) => {
-                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            added_times.push(t);
-                        }
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts, _, _) => {
-                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            executed_times.push(t);
-                        }
-                    }
-                    TransactionExecutionResult::ExecutedNotInMain(ts) => {
-                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            executed_times.push(t);
-                        }
+                    TransactionExecutionResult::Executed(ts_ms, _, _) => {
+                        executed_times.push(*ts_ms);
                     }
                     _ => {}
                 }
@@ -531,10 +523,10 @@ impl<'a> ResultsDumper<'a> {
 
             unique_txn_count += 1;
 
-            let first_add = added_times.iter().min().unwrap();
+            let first_add = *added_times.iter().min().unwrap();
 
             if executed_times.is_empty() {
-                results.push((*txn_id, *first_add, f64::INFINITY));
+                results.push((*txn_id, first_add, f64::INFINITY));
                 continue;
             }
 
@@ -542,13 +534,9 @@ impl<'a> ResultsDumper<'a> {
                 duplicate_exec_count += executed_times.len() - 1;
             }
 
-            let last_exec = executed_times.iter().max().unwrap();
-            let delay = *last_exec - *first_add;
-            results.push((
-                *txn_id,
-                *first_add,
-                delay.num_milliseconds().checked_abs().unwrap_or(0) as f64,
-            ));
+            let last_exec = *executed_times.iter().max().unwrap();
+            let delay_ms = last_exec.saturating_sub(first_add) as f64;
+            results.push((*txn_id, first_add, delay_ms));
         }
 
         // Sort by Added time
@@ -560,24 +548,19 @@ impl<'a> ResultsDumper<'a> {
     /// Collect execution latency with block number and hash for each transaction
     /// Returns: Vec of (txn_id, block_number, block_hash, latency_ms)
     fn collect_executions_with_block(&self) -> Vec<(HashValue, u64, HashValue, f64)> {
-        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
         let mut results: Vec<(HashValue, u64, HashValue, f64)> = Vec::new();
 
         for (txn_id, events) in self.transaction_data.iter() {
-            let mut added_times = Vec::new();
-            let mut executed_data: Vec<(NaiveDateTime, u64, HashValue)> = Vec::new();
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut executed_data: Vec<(u64, u64, HashValue)> = Vec::new();
 
             for ev in events {
                 match ev {
-                    TransactionExecutionResult::Added(ts) => {
-                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            added_times.push(t);
-                        }
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts, block_num, block_hash) => {
-                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
-                            executed_data.push((t, *block_num, *block_hash));
-                        }
+                    TransactionExecutionResult::Executed(ts_ms, block_num, block_hash) => {
+                        executed_data.push((*ts_ms, *block_num, *block_hash));
                     }
                     _ => {}
                 }
@@ -587,15 +570,14 @@ impl<'a> ResultsDumper<'a> {
                 continue;
             }
 
-            let first_add = added_times.iter().min().unwrap();
+            let first_add = *added_times.iter().min().unwrap();
             // Find the execution with max time (last execution)
             let (last_exec_time, block_num, block_hash) = executed_data
                 .iter()
                 .max_by_key(|(t, _, _)| t)
                 .unwrap();
 
-            let delay = *last_exec_time - *first_add;
-            let latency_ms = delay.num_milliseconds().checked_abs().unwrap_or(0) as f64;
+            let latency_ms = last_exec_time.saturating_sub(first_add) as f64;
 
             results.push((*txn_id, *block_num, *block_hash, latency_ms));
         }
@@ -708,7 +690,7 @@ impl<'a> ResultsDumper<'a> {
     fn draw_latency_chart(
         &self,
         area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
-        executions: &[(HashValue, NaiveDateTime, f64)],
+        executions: &[(HashValue, u64, f64)],
         unique_txn_count: usize,
         duplicate_exec_count: usize,
     ) -> Result<(), Box<dyn Error>> {
@@ -743,7 +725,6 @@ impl<'a> ResultsDumper<'a> {
             .y_label_area_size(70)
             .build_cartesian_2d(0f64..(num_bars as f64), 0f64..max_latency)?;
 
-        let fmt = "%H:%M:%S";
         chart
             .configure_mesh()
             .x_desc("Transaction Index (by Added Time)")
@@ -751,7 +732,15 @@ impl<'a> ResultsDumper<'a> {
             .x_label_formatter(&|x| {
                 let idx = *x as usize;
                 if idx < valid_executions.len() {
-                    valid_executions[idx].1.format(fmt).to_string()
+                    let epoch_ms = valid_executions[idx].1 as i64;
+                    let secs = epoch_ms / 1000;
+                    let nanos = ((epoch_ms % 1000) * 1_000_000) as u32;
+                    if let Some(dt) = DateTime::from_timestamp(secs, nanos) {
+                        let local: DateTime<Local> = dt.into();
+                        local.format("%H:%M:%S").to_string()
+                    } else {
+                        String::new()
+                    }
                 } else {
                     String::new()
                 }
@@ -797,10 +786,11 @@ impl<'a> ResultsDumper<'a> {
 
         // Calculate TPS based on first to last transaction Added time
         let tps = if valid_executions.len() >= 2 {
-            let first_time = valid_executions.first().map(|(_, t, _)| t);
-            let last_time = valid_executions.last().map(|(_, t, _)| t);
+            let first_time = valid_executions.first().map(|(_, t, _)| *t);
+            let last_time = valid_executions.last().map(|(_, t, _)| *t);
             if let (Some(first), Some(last)) = (first_time, last_time) {
-                let duration_secs = (*last - *first).num_milliseconds() as f64 / 1000.0;
+                let duration_ms = last.saturating_sub(first);
+                let duration_secs = duration_ms as f64 / 1000.0;
                 if duration_secs > 0.0 {
                     total_txns as f64 / duration_secs
                 } else {

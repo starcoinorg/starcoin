@@ -306,8 +306,10 @@ where
         if branch_total_difficulty > main_total_difficulty {
             self.main = new_branch;
             self.update_startup_info(self.main.head_block().header())?;
+            let connected_time = self.main.time_service().now_millis();
             ctx.broadcast(NewHeadBlock {
                 executed_block: Arc::new(self.main.head_block()),
+                connected_time_ms: connected_time,
             });
             Ok(())
         } else {
@@ -577,8 +579,10 @@ where
                 .inc()
         }
 
+        let connected_time = self.main.time_service().now_millis();
         if let Err(e) = self.bus.broadcast(NewHeadBlock {
             executed_block: Arc::new(block),
+            connected_time_ms: connected_time,
         }) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }

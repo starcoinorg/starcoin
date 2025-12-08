@@ -120,6 +120,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let block_detail = Arc::new(executed_block);
     bus.broadcast(NewHeadBlock {
         executed_block: block_detail,
+        connected_time_ms: 0,
     })?;
 
     let mut receiver = receiver;
