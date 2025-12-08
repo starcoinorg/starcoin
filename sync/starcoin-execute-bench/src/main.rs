@@ -969,12 +969,11 @@ impl ObserverService {
         Ok(())
     }
 
-    fn update_transaction_status(&mut self, new_header: HashValue) -> Result<usize> {
+    fn update_transaction_status(&mut self, new_header: HashValue, connected_time_ms: u64) -> Result<usize> {
         let block = self
             .storage1
             .get_block_by_hash(new_header)?
             .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
-        let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         let block_number = block.header().number();
         let block_hash = block.header().id();
 
@@ -984,7 +983,7 @@ impl ObserverService {
                 .entry(transaction.id())
                 .or_default()
                 .push(TransactionExecutionResult::Executed(
-                    now.clone(),
+                    connected_time_ms,
                     block_number,
                     block_hash,
                 ));
@@ -1065,7 +1064,10 @@ impl ActorService for ObserverService {
 
 impl EventHandler<Self, NewHeadBlock> for ObserverService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.update_transaction_status(msg.executed_block.block().id()) {
+        if let Err(e) = self.update_transaction_status(
+            msg.executed_block.block().id(),
+            msg.connected_time_ms,
+        ) {
             error!("failed to update transactions status: {:?}", e);
         }
         // Check if completed
@@ -1099,24 +1101,30 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
 
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
     fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
-        let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        let now_str = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        
         for transaction_event in msg.as_ref() {
             match transaction_event.1 {
                 starcoin_types::transaction::TxStatus::Added => self
                     .transaction_data
                     .entry(transaction_event.0)
                     .or_default()
-                    .push(TransactionExecutionResult::Added(now.clone())),
+                    .push(TransactionExecutionResult::Added(now_ms)),
                 starcoin_types::transaction::TxStatus::Rejected => self
                     .transaction_data
                     .entry(transaction_event.0)
                     .or_default()
-                    .push(TransactionExecutionResult::Rejected(now.clone())),
+                    .push(TransactionExecutionResult::Rejected(now_str.clone())),
                 starcoin_types::transaction::TxStatus::Culled => self
                     .transaction_data
                     .entry(transaction_event.0)
                     .or_default()
-                    .push(TransactionExecutionResult::Culled(now.clone())),
+                    .push(TransactionExecutionResult::Culled(now_str.clone())),
                 _ => self
                     .transaction_data
                     .entry(transaction_event.0)
@@ -1124,7 +1132,7 @@ impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
                     .push(TransactionExecutionResult::Other(format!(
                         "{}({})",
                         transaction_event.1,
-                        now.clone()
+                        now_str.clone()
                     ))),
             }
         }

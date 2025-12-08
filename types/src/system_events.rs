@@ -12,6 +12,8 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock {
     pub executed_block: Arc<ExecutedBlock>,
+    /// Timestamp in milliseconds when the block was executed and connected to chain
+    pub connected_time_ms: u64,
 }
 
 #[derive(Clone, Debug)]
