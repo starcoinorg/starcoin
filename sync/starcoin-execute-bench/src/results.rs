@@ -6,14 +6,14 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub enum TransactionExecutionResult {
-    /// Added(timestamp_ms) - epoch milliseconds when txn was added to txpool
+    /// Added(timestamp_ms) - epoch milliseconds when txn was added to txpool (no longer used)
     Added(u64),
     Rejected(String),
     Culled(String),
     /// Executed(connected_time_ms, block_number) - epoch ms from NewHeadBlock
     Executed(u64, u64),
-    #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
 }
@@ -91,11 +91,16 @@ impl std::fmt::Display for BenchmarkStats {
 
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    /// Submit times recorded when transactions were successfully added to txpool
+    submit_times: HashMap<HashValue, u64>,
 }
 
 impl<'a> ResultsDumper<'a> {
-    pub fn new(transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>) -> Self {
-        Self { transaction_data }
+    pub fn new(
+        transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+        submit_times: HashMap<HashValue, u64>,
+    ) -> Self {
+        Self { transaction_data, submit_times }
     }
 
     /// Calculate and return benchmark statistics
@@ -104,14 +109,12 @@ impl<'a> ResultsDumper<'a> {
 
         // Count raw statistics for debugging
         let total_txn_entries = self.transaction_data.len();
-        let mut added_count = 0usize;
+        let submit_times_count = self.submit_times.len();
         let mut executed_count = 0usize;
         for events in self.transaction_data.values() {
             for ev in events {
-                match ev {
-                    TransactionExecutionResult::Added(_) => added_count += 1,
-                    TransactionExecutionResult::Executed(_, _) => executed_count += 1,
-                    _ => {}
+                if let TransactionExecutionResult::Executed(_, _) = ev {
+                    executed_count += 1;
                 }
             }
         }
@@ -126,8 +129,8 @@ impl<'a> ResultsDumper<'a> {
         let total_txns = all_delays.len();
 
         // Log debug info
-        info!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
-            total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
+        info!("DEBUG: total_txn_entries={}, submit_times={}, executed_events={}, unique_with_submit_time={}, matched_with_latency={}",
+            total_txn_entries, submit_times_count, executed_count, unique_txn_count, total_txns);
 
         let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max_delay = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
@@ -232,38 +235,31 @@ impl<'a> ResultsDumper<'a> {
 
     /// Collect execution latency for each transaction
     /// Returns: (transaction latency data list, unique transaction count, duplicate execution count)
-    /// Each element is (transaction ID, Added time in epoch ms, latency in milliseconds)
+    /// Each element is (transaction ID, submit time in epoch ms, latency in milliseconds)
+    /// Uses submit_times from BenchmarkState instead of Added events from callbacks
     fn collect_executions(&self) -> (Vec<(HashValue, u64, f64)>, usize, usize) {
         let mut results: Vec<(HashValue, u64, f64)> = Vec::new();
         let mut unique_txn_count = 0usize;
         let mut duplicate_exec_count = 0usize;
 
         for (txn_id, events) in self.transaction_data.iter() {
-            let mut added_times: Vec<u64> = Vec::new();
+            // Use submit_times from BenchmarkState instead of Added events
+            let submit_time = match self.submit_times.get(txn_id) {
+                Some(t) => *t,
+                None => continue, // Skip transactions without recorded submit time
+            };
+
             let mut executed_times: Vec<u64> = Vec::new();
-
             for ev in events {
-                match ev {
-                    TransactionExecutionResult::Added(ts_ms) => {
-                        added_times.push(*ts_ms);
-                    }
-                    TransactionExecutionResult::Executed(ts_ms, _) => {
-                        executed_times.push(*ts_ms);
-                    }
-                    _ => {}
+                if let TransactionExecutionResult::Executed(ts_ms, _) = ev {
+                    executed_times.push(*ts_ms);
                 }
-            }
-
-            if added_times.is_empty() {
-                continue;
             }
 
             unique_txn_count += 1;
 
-            let first_add = *added_times.iter().min().unwrap();
-
             if executed_times.is_empty() {
-                results.push((*txn_id, first_add, f64::INFINITY));
+                results.push((*txn_id, submit_time, f64::INFINITY));
                 continue;
             }
 
@@ -272,17 +268,20 @@ impl<'a> ResultsDumper<'a> {
             }
 
             let last_exec = *executed_times.iter().max().unwrap();
-            // Calculate latency: executed_time - added_time
-            let delay_ms = if last_exec >= first_add {
-                (last_exec - first_add) as f64
+            // Calculate latency: executed_time - submit_time
+            let delay_ms = if last_exec >= submit_time {
+                (last_exec - submit_time) as f64
             } else {
+                // This shouldn't happen with proper timestamps
+                info!("Warning: executed_time ({}) < submit_time ({}) for txn {}", 
+                    last_exec, submit_time, txn_id);
                 0.0
             };
-            results.push((*txn_id, first_add, delay_ms));
+            results.push((*txn_id, submit_time, delay_ms));
         }
 
-        // Sort by Added time
-        results.sort_by_key(|(_, add_time, _)| *add_time);
+        // Sort by submit time
+        results.sort_by_key(|(_, submit_time, _)| *submit_time);
 
         (results, unique_txn_count, duplicate_exec_count)
     }

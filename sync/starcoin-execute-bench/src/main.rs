@@ -11,9 +11,7 @@ use std::{
 };
 
 use anyhow::{bail, format_err, Result};
-use chrono::Local;
 use clap::{Parser, ValueHint};
-use futures::channel::mpsc;
 use results::{ResultsDumper, TransactionExecutionResult};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
@@ -32,7 +30,6 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
-use starcoin_txpool::TxStatus;
 use starcoin_types::{
     block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
     system_events::NewHeadBlock,
@@ -533,6 +530,8 @@ struct BenchmarkState {
     batch_index: AtomicUsize,
     is_completed: AtomicBool,
     user_txn_hashes: RwLock<std::collections::HashSet<HashValue>>,
+    /// Records the epoch milliseconds when each transaction was submitted to txpool
+    submit_times: RwLock<HashMap<HashValue, u64>>,
     chain_id: ChainId2,
 }
 
@@ -555,6 +554,7 @@ impl BenchmarkState {
             batch_index: AtomicUsize::new(0),
             is_completed: AtomicBool::new(false),
             user_txn_hashes: RwLock::new(std::collections::HashSet::new()),
+            submit_times: RwLock::new(HashMap::new()),
             chain_id,
         }
     }
@@ -611,11 +611,23 @@ impl BenchmarkState {
         self.accounts.len() / self.batch_user_count
     }
 
-    fn register_user_txns(&self, txn_hashes: &[HashValue]) {
+    fn register_user_txns(&self, txn_hashes: &[HashValue], submit_time_ms: u64) {
         let mut user_txn_hashes = self.user_txn_hashes.write().unwrap();
+        let mut submit_times = self.submit_times.write().unwrap();
         for hash in txn_hashes {
             user_txn_hashes.insert(*hash);
+            submit_times.insert(*hash, submit_time_ms);
         }
+    }
+
+    /// Get submit time for a transaction
+    fn get_submit_time(&self, txn_hash: &HashValue) -> Option<u64> {
+        self.submit_times.read().unwrap().get(txn_hash).copied()
+    }
+
+    /// Get all submit times
+    fn get_all_submit_times(&self) -> HashMap<HashValue, u64> {
+        self.submit_times.read().unwrap().clone()
     }
     
     /// Get total number of registered user transactions
@@ -738,11 +750,10 @@ async fn execute_benchmark(
         registry.put_shared(benchmark_state.clone()).await?;
         registry.put_shared(txpool.clone()).await?;
 
-        let observer = registry.register::<ObserverService>().await?;
+        let _observer = registry.register::<ObserverService>().await?;
 
-        let (sender, receiver) = mpsc::unbounded::<Arc<[(HashValue, TxStatus)]>>();
-        txpool.inner.queue().add_full_listener(sender);
-        observer.add_event_stream(receiver)?;
+        // TxStatus events are no longer needed since submit_times are recorded
+        // directly after successful txpool import
 
         StarcoinVM::set_concurrency_level(num_cpus::get());
 
@@ -755,7 +766,13 @@ async fn execute_benchmark(
         let expire_time = config.net().time_service().now_secs() + 3600;
         if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
             let txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
-            benchmark_state.register_user_txns(&txn_hashes);
+            // Record submit time immediately after successful import
+            use std::time::{SystemTime, UNIX_EPOCH};
+            let submit_time_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            benchmark_state.register_user_txns(&txn_hashes, submit_time_ms);
             info!("Submitted initial batch: {} transactions", batch.len());
         }
 
@@ -958,7 +975,13 @@ impl ObserverService {
         
         let batch_index = state.batch_index.load(Ordering::SeqCst);
         let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
-        state.register_user_txns(&txn_hashes);
+        // Record submit time immediately after successful import
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let submit_time_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        state.register_user_txns(&txn_hashes, submit_time_ms);
         info!(
             "Submitted batch {}/{}: {} transactions",
             batch_index,
@@ -1008,7 +1031,12 @@ impl ObserverService {
     }
 
     fn dump_results(&self) -> Result<()> {
-        let dumper = ResultsDumper::new(&self.transaction_data);
+        // Get submit times from BenchmarkState
+        let submit_times = match &self.benchmark_state {
+            Some(state) => state.get_all_submit_times(),
+            None => HashMap::new(),
+        };
+        let dumper = ResultsDumper::new(&self.transaction_data, submit_times);
 
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
@@ -1072,58 +1100,5 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
     }
 }
 
-// impl EventHandler<Self, NewDagBlock> for ObserverService {
-//     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-//         if let Err(e) = self.update_transaction_status(msg.executed_block.block().id()) {
-//             error!("failed to update transactions status: {:?}", e);
-//         }
-//     }
-// }
-
-// impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
-//     fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {
-//         if let Err(e) = self.update_transaction_status(msg.executed_block.id()) {
-//             error!("failed to update transactions status: {:?}", e);
-//         }
-//     }
-// }
-
-impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
-    fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-        let now_str = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-        
-        for transaction_event in msg.as_ref() {
-            match transaction_event.1 {
-                starcoin_types::transaction::TxStatus::Added => self
-                    .transaction_data
-                    .entry(transaction_event.0)
-                    .or_default()
-                    .push(TransactionExecutionResult::Added(now_ms)),
-                starcoin_types::transaction::TxStatus::Rejected => self
-                    .transaction_data
-                    .entry(transaction_event.0)
-                    .or_default()
-                    .push(TransactionExecutionResult::Rejected(now_str.clone())),
-                starcoin_types::transaction::TxStatus::Culled => self
-                    .transaction_data
-                    .entry(transaction_event.0)
-                    .or_default()
-                    .push(TransactionExecutionResult::Culled(now_str.clone())),
-                _ => self
-                    .transaction_data
-                    .entry(transaction_event.0)
-                    .or_default()
-                    .push(TransactionExecutionResult::Other(format!(
-                        "{}({})",
-                        transaction_event.1,
-                        now_str.clone()
-                    ))),
-            }
-        }
-    }
-}
+// TxStatus event handler removed - submit_times are now recorded directly
+// after successful txpool import in try_submit_next_batch()
