@@ -471,6 +471,117 @@ impl<'a> ResultsDumper<'a> {
         (results, unique_txn_count, duplicate_exec_count)
     }
 
+    /// Collect execution latency with block number for each transaction
+    /// Returns: Vec of (txn_id, block_number, latency_ms)
+    fn collect_executions_with_block(&self) -> Vec<(HashValue, u64, f64)> {
+        let fmt = "%Y-%m-%d %H:%M:%S%.3f";
+        let mut results: Vec<(HashValue, u64, f64)> = Vec::new();
+
+        for (txn_id, events) in self.transaction_data.iter() {
+            let mut added_times = Vec::new();
+            let mut executed_data: Vec<(NaiveDateTime, u64)> = Vec::new();
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(ts) => {
+                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                            added_times.push(t);
+                        }
+                    }
+                    TransactionExecutionResult::Executed(ts, block_num) => {
+                        if let Ok(t) = NaiveDateTime::parse_from_str(ts, fmt) {
+                            executed_data.push((t, *block_num));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            if added_times.is_empty() || executed_data.is_empty() {
+                continue;
+            }
+
+            let first_add = added_times.iter().min().unwrap();
+            // Find the execution with max time (last execution)
+            let (last_exec_time, block_num) = executed_data
+                .iter()
+                .max_by_key(|(t, _)| t)
+                .unwrap();
+
+            let delay = *last_exec_time - *first_add;
+            let latency_ms = delay.num_milliseconds().checked_abs().unwrap_or(0) as f64;
+
+            results.push((*txn_id, *block_num, latency_ms));
+        }
+
+        results
+    }
+
+    /// Log the top N transactions with highest latency
+    pub fn log_top_latency_transactions(&self, top_n: usize) {
+        let mut executions = self.collect_executions_with_block();
+
+        // Sort by latency descending
+        executions.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Take top N
+        let top_txns: Vec<_> = executions.into_iter().take(top_n).collect();
+
+        if top_txns.is_empty() {
+            info!("No transactions with latency data found");
+            return;
+        }
+
+        info!("===== Top {} Highest Latency Transactions =====", top_txns.len());
+        info!("{:>4} | {:>12} | {:>8} | {}", "Rank", "Latency(ms)", "Block", "TxnID");
+        info!("{}", "-".repeat(80));
+
+        for (idx, (txn_id, block_num, latency_ms)) in top_txns.iter().enumerate() {
+            info!(
+                "{:>4} | {:>12.2} | {:>8} | {}",
+                idx + 1,
+                latency_ms,
+                block_num,
+                txn_id
+            );
+        }
+
+        // Group by block and show block summary
+        let mut block_latencies: HashMap<u64, Vec<f64>> = HashMap::new();
+        for (_, block_num, latency_ms) in &top_txns {
+            block_latencies
+                .entry(*block_num)
+                .or_default()
+                .push(*latency_ms);
+        }
+
+        let mut block_summary: Vec<(u64, usize, f64, f64)> = block_latencies
+            .into_iter()
+            .map(|(block, latencies)| {
+                let count = latencies.len();
+                let max_lat = latencies.iter().fold(0.0f64, |a, &b| a.max(b));
+                let avg_lat = latencies.iter().sum::<f64>() / count as f64;
+                (block, count, max_lat, avg_lat)
+            })
+            .collect();
+
+        // Sort by max latency descending
+        block_summary.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+        info!("");
+        info!("===== Blocks with High Latency Transactions =====");
+        info!("{:>8} | {:>5} | {:>12} | {:>12}", "Block", "Count", "MaxLat(ms)", "AvgLat(ms)");
+        info!("{}", "-".repeat(50));
+
+        for (block_num, count, max_lat, avg_lat) in block_summary {
+            info!(
+                "{:>8} | {:>5} | {:>12.2} | {:>12.2}",
+                block_num, count, max_lat, avg_lat
+            );
+        }
+        info!("=================================================");
+    }
+
     fn get_user_transfer_block_stats(&self) -> Vec<(u64, usize)> {
         let mut block_counts: HashMap<u64, usize> = HashMap::new();
 
