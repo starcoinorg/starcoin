@@ -1015,6 +1015,9 @@ impl ObserverService {
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
 
+        // Log top 100 highest latency transactions with their block IDs
+        dumper.log_top_latency_transactions(100);
+
         Ok(())
         // dumper.dump_results()
     }
