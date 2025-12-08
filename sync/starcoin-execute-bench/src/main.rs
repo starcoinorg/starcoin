@@ -975,7 +975,6 @@ impl ObserverService {
             .get_block_by_hash(new_header)?
             .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
         let block_number = block.header().number();
-        let block_hash = block.header().id();
 
         let mut executed_hashes = vec![];
         for transaction in &block.body.transactions2 {
@@ -985,7 +984,6 @@ impl ObserverService {
                 .push(TransactionExecutionResult::Executed(
                     connected_time_ms,
                     block_number,
-                    block_hash,
                 ));
             executed_hashes.push(transaction.id());
         }
@@ -1016,17 +1014,8 @@ impl ObserverService {
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
 
-        // Log top 100 highest latency transactions with their block IDs
-        dumper.log_top_latency_transactions(100);
-
-        // Export detailed stats to file
-        let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-        let file_path = format!("./benchmark_stats_{}.txt", timestamp);
-        if let Err(e) = dumper.export_stats_to_file(&file_path) {
-            info!("Failed to export stats to file: {}", e);
-        }
-
         Ok(())
+        // dumper.dump_results()
     }
 }
 
