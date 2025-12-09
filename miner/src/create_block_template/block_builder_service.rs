@@ -660,6 +660,7 @@ where
                 MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
             });
 
+        // return Ok((pending_transactions, pending_transactions2));
         if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
             return Ok((pending_transactions, pending_transactions2));
         }
