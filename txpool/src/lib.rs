@@ -204,7 +204,7 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
                     .inc();
             }
 
-            if *s == TxStatus::Added {
+            if matches!(s, TxStatus::Added(_)) {
                 has_new_txns = true;
             }
         }
