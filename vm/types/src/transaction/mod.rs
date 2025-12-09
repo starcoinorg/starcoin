@@ -775,8 +775,8 @@ impl TryFrom<Transaction> for SignedUserTransaction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TxStatus {
-    /// Added transaction
-    Added,
+    /// Added transaction with timestamp (epoch milliseconds)
+    Added(u64),
     /// Rejected transaction
     Rejected,
     /// Dropped transaction
@@ -792,7 +792,7 @@ pub enum TxStatus {
 impl std::fmt::Display for TxStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            TxStatus::Added => "added",
+            TxStatus::Added(ts) => return write!(f, "added({})", ts),
             TxStatus::Rejected => "rejected",
             TxStatus::Dropped => "dropped",
             TxStatus::Invalid => "invalid",

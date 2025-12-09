@@ -1055,20 +1055,15 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
 
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
     fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
         let now_str = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
         
         for transaction_event in msg.as_ref() {
-            match transaction_event.1 {
-                starcoin_types::transaction::TxStatus::Added => self
+            match &transaction_event.1 {
+                starcoin_types::transaction::TxStatus::Added(added_time_ms) => self
                     .transaction_data
                     .entry(transaction_event.0)
                     .or_default()
-                    .push(TransactionExecutionResult::Added(now_ms)),
+                    .push(TransactionExecutionResult::Added(*added_time_ms)),
                 starcoin_types::transaction::TxStatus::Rejected => self
                     .transaction_data
                     .entry(transaction_event.0)

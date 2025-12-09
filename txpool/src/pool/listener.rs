@@ -97,7 +97,12 @@ impl StatusLogger {
 }
 impl tx_pool::Listener<Transaction> for StatusLogger {
     fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
-        Self::log_status(tx, TxStatus::Added);
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        Self::log_status(tx, TxStatus::Added(now_ms));
         if let Some(old) = old {
             Self::log_status(old, TxStatus::Dropped);
         }
@@ -180,9 +185,14 @@ impl fmt::Debug for TransactionsPoolNotifier {
 
 impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
     fn added(&mut self, tx: &Arc<Transaction>, _old: Option<&Arc<Transaction>>) {
-        self.tx_statuses.push((tx.hash, TxStatus::Added));
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        self.tx_statuses.push((tx.hash, TxStatus::Added(now_ms)));
         self.full_listeners
-            .retain(|listener| listener.unbounded_send(Arc::new([(tx.hash, TxStatus::Added)])).is_ok());
+            .retain(|listener| listener.unbounded_send(Arc::new([(tx.hash, TxStatus::Added(now_ms))])).is_ok());
     }
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
