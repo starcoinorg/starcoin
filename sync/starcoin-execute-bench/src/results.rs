@@ -11,8 +11,8 @@ pub enum TransactionExecutionResult {
     Added(u64),
     Rejected(String),
     Culled(String),
-    /// Executed(connected_time_ms, block_number) - epoch ms from NewHeadBlock
-    Executed(u64, u64),
+    /// Executed(connected_time_ms, block_number, block_id) - epoch ms from NewHeadBlock
+    Executed(u64, u64, HashValue),
     #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
@@ -42,8 +42,8 @@ impl std::fmt::Debug for TransactionExecutionResult {
             TransactionExecutionResult::Culled(op_time) => {
                 write!(f, "Culled({})", op_time)
             }
-            TransactionExecutionResult::Executed(ts_ms, block_number) => {
-                write!(f, "Executed({}, block={})", format_epoch_ms(*ts_ms), block_number)
+            TransactionExecutionResult::Executed(ts_ms, block_number, block_id) => {
+                write!(f, "Executed({}, block={}, id={})", format_epoch_ms(*ts_ms), block_number, block_id)
             }
             TransactionExecutionResult::ExecutedNotInMain(op_time) => {
                 write!(f, "ExecutedNotInMain({})", op_time)
@@ -110,7 +110,7 @@ impl<'a> ResultsDumper<'a> {
             for ev in events {
                 match ev {
                     TransactionExecutionResult::Added(_) => added_count += 1,
-                    TransactionExecutionResult::Executed(_, _) => executed_count += 1,
+                    TransactionExecutionResult::Executed(_, _, _) => executed_count += 1,
                     _ => {}
                 }
             }
@@ -174,13 +174,72 @@ impl<'a> ResultsDumper<'a> {
         }
     }
 
+    /// Get top N blocks with highest latency transactions (deduplicated by block_id)
+    /// Returns: Vec of (block_id, block_number, max_latency_ms)
+    pub fn get_top_latency_blocks(&self, top_n: usize) -> Vec<(HashValue, u64, f64)> {
+        // Collect (txn_id, latency, block_id, block_number) for transactions with valid latency
+        let mut txn_latencies: Vec<(HashValue, f64, HashValue, u64)> = Vec::new();
+
+        for (txn_id, events) in self.transaction_data.iter() {
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut executed_info: Vec<(u64, u64, HashValue)> = Vec::new(); // (exec_time, block_num, block_id)
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, block_number, block_id) => {
+                        executed_info.push((*ts_ms, *block_number, *block_id));
+                    }
+                    _ => {}
+                }
+            }
+
+            if added_times.is_empty() || executed_info.is_empty() {
+                continue;
+            }
+
+            let first_add = *added_times.iter().min().unwrap();
+            // Get the last execution (max exec time)
+            let last_exec = executed_info.iter().max_by_key(|(ts, _, _)| ts).unwrap();
+            let latency_ms = if last_exec.0 >= first_add {
+                (last_exec.0 - first_add) as f64
+            } else {
+                0.0
+            };
+
+            txn_latencies.push((*txn_id, latency_ms, last_exec.2, last_exec.1));
+        }
+
+        // Sort by latency descending
+        txn_latencies.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Deduplicate by block_id, keep highest latency per block
+        let mut seen_blocks: std::collections::HashSet<HashValue> = std::collections::HashSet::new();
+        let mut result: Vec<(HashValue, u64, f64)> = Vec::new();
+
+        for (_, latency, block_id, block_number) in txn_latencies {
+            if seen_blocks.contains(&block_id) {
+                continue;
+            }
+            seen_blocks.insert(block_id);
+            result.push((block_id, block_number, latency));
+            if result.len() >= top_n {
+                break;
+            }
+        }
+
+        result
+    }
+
     /// Calculate TPS based on executed transaction times
     fn calculate_tps_from_executed(&self) -> f64 {
         let mut all_exec_times: Vec<u64> = Vec::new();
 
         for events in self.transaction_data.values() {
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts_ms, _) = ev {
+                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
                     all_exec_times.push(*ts_ms);
                 }
             }
@@ -247,7 +306,7 @@ impl<'a> ResultsDumper<'a> {
                     TransactionExecutionResult::Added(ts_ms) => {
                         added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts_ms, _) => {
+                    TransactionExecutionResult::Executed(ts_ms, _, _) => {
                         executed_times.push(*ts_ms);
                     }
                     _ => {}
@@ -297,7 +356,7 @@ impl<'a> ResultsDumper<'a> {
 
             if has_added {
                 for ev in events {
-                    if let TransactionExecutionResult::Executed(_, block_number) = ev {
+                    if let TransactionExecutionResult::Executed(_, block_number, _) = ev {
                         *block_counts.entry(*block_number).or_insert(0) += 1;
                     }
                 }
