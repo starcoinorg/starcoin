@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fs::OpenOptions, io::Write};
+use std::{collections::HashMap, error::Error};
 
 use chrono::{DateTime, Local};
 use plotters::prelude::*;
@@ -11,8 +11,9 @@ pub enum TransactionExecutionResult {
     Added(u64),
     Rejected(String),
     Culled(String),
-    /// Executed(connected_time_ms, block_number, block_id) - epoch ms from NewHeadBlock
-    Executed(u64, u64, HashValue),
+    /// Executed(connected_time_ms, block_number, block_id, block_timestamp_ms) - epoch ms from NewHeadBlock
+    /// block_timestamp_ms is the block's timestamp (when it was created)
+    Executed(u64, u64, HashValue, u64),
     #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
@@ -42,8 +43,9 @@ impl std::fmt::Debug for TransactionExecutionResult {
             TransactionExecutionResult::Culled(op_time) => {
                 write!(f, "Culled({})", op_time)
             }
-            TransactionExecutionResult::Executed(ts_ms, block_number, block_id) => {
-                write!(f, "Executed({}, block={}, id={})", format_epoch_ms(*ts_ms), block_number, block_id)
+            TransactionExecutionResult::Executed(ts_ms, block_number, block_id, block_ts) => {
+                write!(f, "Executed({}, block={}, id={}, block_ts={})", 
+                    format_epoch_ms(*ts_ms), block_number, block_id, format_epoch_ms(*block_ts))
             }
             TransactionExecutionResult::ExecutedNotInMain(op_time) => {
                 write!(f, "ExecutedNotInMain({})", op_time)
@@ -59,6 +61,7 @@ impl std::fmt::Debug for TransactionExecutionResult {
 #[derive(Debug, Clone)]
 pub struct BenchmarkStats {
     pub tps: f64,
+    pub tps_block_time: f64,
     pub total_executed: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
@@ -72,7 +75,8 @@ pub struct BenchmarkStats {
 impl std::fmt::Display for BenchmarkStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "TPS: {:.2}", self.tps)?;
+        writeln!(f, "TPS (executed-time): {:.2}", self.tps)?;
+        writeln!(f, "TPS (block-time start): {:.2}", self.tps_block_time)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -110,7 +114,7 @@ impl<'a> ResultsDumper<'a> {
             for ev in events {
                 match ev {
                     TransactionExecutionResult::Added(_) => added_count += 1,
-                    TransactionExecutionResult::Executed(_, _, _) => executed_count += 1,
+                    TransactionExecutionResult::Executed(_, _, _, _) => executed_count += 1,
                     _ => {}
                 }
             }
@@ -148,8 +152,10 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-        // Calculate TPS based on executed times (more reliable)
-        let tps = self.calculate_tps_from_executed();
+    // Calculate TPS based on executed times (more reliable)
+    let tps = self.calculate_tps_from_executed();
+    // Calculate TPS using block timestamp as start time (per-transaction pick the execution with largest block number)
+    let tps_block_time = self.calculate_tps_from_block_time();
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -159,6 +165,7 @@ impl<'a> ResultsDumper<'a> {
 
         BenchmarkStats {
             tps,
+            tps_block_time,
             total_executed: total_txns,
             unique_txn_count,
             duplicate_exec_count,
@@ -189,7 +196,7 @@ impl<'a> ResultsDumper<'a> {
                     TransactionExecutionResult::Added(ts_ms) => {
                         added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts_ms, block_number, block_id) => {
+                    TransactionExecutionResult::Executed(ts_ms, block_number, block_id, _) => {
                         executed_info.push((*ts_ms, *block_number, *block_id));
                     }
                     _ => {}
@@ -239,7 +246,7 @@ impl<'a> ResultsDumper<'a> {
 
         for events in self.transaction_data.values() {
             for ev in events {
-                if let TransactionExecutionResult::Executed(ts_ms, _, _) = ev {
+                if let TransactionExecutionResult::Executed(ts_ms, _, _, _) = ev {
                     all_exec_times.push(*ts_ms);
                 }
             }
@@ -258,6 +265,53 @@ impl<'a> ResultsDumper<'a> {
             all_exec_times.len() as f64 / duration_secs
         } else {
             all_exec_times.len() as f64
+        }
+    }
+
+    /// Calculate TPS using block timestamp as the start time.
+    /// For transactions executed in multiple blocks, pick the execution with the largest block number.
+    fn calculate_tps_from_block_time(&self) -> f64 {
+        let mut starts: Vec<u64> = Vec::new();
+        let mut ends: Vec<u64> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            // chosen = (block_number, exec_ts, block_ts)
+            let mut chosen: Option<(u64, u64, u64)> = None;
+            for ev in events {
+                if let TransactionExecutionResult::Executed(exec_ts, block_number, _block_id, block_ts) = ev {
+                    match chosen {
+                        Some((bn, _e, _b)) => {
+                            if *block_number > bn {
+                                chosen = Some((*block_number, *exec_ts, *block_ts));
+                            }
+                        }
+                        None => chosen = Some((*block_number, *exec_ts, *block_ts)),
+                    }
+                }
+            }
+
+            if let Some((_bn, exec_ts, block_ts)) = chosen {
+                starts.push(block_ts);
+                ends.push(exec_ts);
+            }
+        }
+
+        if starts.len() < 2 {
+            return starts.len() as f64;
+        }
+
+        let first = *starts.iter().min().unwrap();
+        let last = *ends.iter().max().unwrap();
+        let duration_secs = if last > first {
+            (last - first) as f64 / 1000.0
+        } else {
+            0.0
+        };
+
+        if duration_secs > 0.0 {
+            starts.len() as f64 / duration_secs
+        } else {
+            starts.len() as f64
         }
     }
 
@@ -306,7 +360,7 @@ impl<'a> ResultsDumper<'a> {
                     TransactionExecutionResult::Added(ts_ms) => {
                         added_times.push(*ts_ms);
                     }
-                    TransactionExecutionResult::Executed(ts_ms, _, _) => {
+                    TransactionExecutionResult::Executed(ts_ms, _, _, _) => {
                         executed_times.push(*ts_ms);
                     }
                     _ => {}
@@ -356,7 +410,7 @@ impl<'a> ResultsDumper<'a> {
 
             if has_added {
                 for ev in events {
-                    if let TransactionExecutionResult::Executed(_, block_number, _) = ev {
+                    if let TransactionExecutionResult::Executed(_, block_number, _, _) = ev {
                         *block_counts.entry(*block_number).or_insert(0) += 1;
                     }
                 }
