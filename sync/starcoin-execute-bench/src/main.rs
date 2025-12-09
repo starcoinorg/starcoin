@@ -33,7 +33,6 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
-use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
     system_events::NewHeadBlock,
@@ -869,9 +868,6 @@ fn sign_and_import_transactions_sync(
     handle.join().map_err(|_| format_err!("Thread panicked"))?
 }
 
-/// Timeout for empty pool before auto-exit (2 minutes)
-const EMPTY_POOL_TIMEOUT_SECS: u64 = 120;
-
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
     storage1: Arc<Storage>,
@@ -879,8 +875,6 @@ struct ObserverService {
     account_service: Option<ServiceRef<AccountService2>>,
     txpool: Option<starcoin_txpool::TxPoolService>,
     config: Option<Arc<NodeConfig>>,
-    /// Timestamp when pool became empty (None if pool is not empty)
-    pool_empty_since: Option<std::time::Instant>,
 }
 
 impl ObserverService {
@@ -892,48 +886,7 @@ impl ObserverService {
             account_service: None,
             txpool: None,
             config: None,
-            pool_empty_since: None,
         })
-    }
-
-    /// Check if pool is empty and handle timeout
-    /// Returns true if should exit
-    fn check_empty_pool_timeout(&mut self) -> bool {
-        let txpool = match &self.txpool {
-            Some(t) => t,
-            None => return false,
-        };
-
-        let status = txpool.status();
-        let is_empty = status.txn_count == 0;
-
-        if is_empty {
-            let now = std::time::Instant::now();
-            match self.pool_empty_since {
-                None => {
-                    // Pool just became empty
-                    self.pool_empty_since = Some(now);
-                    info!("Transaction pool is empty, will exit in {} seconds if no new transactions", EMPTY_POOL_TIMEOUT_SECS);
-                    false
-                }
-                Some(since) => {
-                    let elapsed = now.duration_since(since);
-                    if elapsed.as_secs() >= EMPTY_POOL_TIMEOUT_SECS {
-                        info!("Transaction pool has been empty for {} seconds, exiting...", elapsed.as_secs());
-                        true
-                    } else {
-                        false
-                    }
-                }
-            }
-        } else {
-            // Pool is not empty, reset the timer
-            if self.pool_empty_since.is_some() {
-                info!("Transaction pool has new transactions, resetting empty pool timer");
-            }
-            self.pool_empty_since = None;
-            false
-        }
     }
 
     fn try_submit_next_batch(&self) -> Result<()> {
@@ -1086,15 +1039,6 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
             msg.connected_time_ms,
         ) {
             error!("failed to update transactions status: {:?}", e);
-        }
-        
-        // Check empty pool timeout - exit if pool has been empty for too long
-        if self.check_empty_pool_timeout() {
-            info!("Stopping system due to empty pool timeout");
-            if let Err(e) = ctx.registry_ref().shutdown_system_sync() {
-                error!("Failed to shutdown system: {:?}", e);
-            }
-            return;
         }
         
         // Check if completed

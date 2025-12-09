@@ -795,9 +795,6 @@ where
                         return;
                     }
                 }
-                for txn in opened_block.included_user_txns2() {
-                    tx_provider.remove_txn(txn.id(), false);
-                }   
             }
 
             if is_node_shutting_down() {
