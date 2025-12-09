@@ -606,9 +606,6 @@ where
                         return;
                     }
                 }
-                for txn in opened_block.included_user_txns2() {
-                    tx_provider.remove_txn(txn.id(), false);
-                }   
             }
 
             let (template, vm1_outputs, vm2_outputs) = match opened_block.finalize() {
