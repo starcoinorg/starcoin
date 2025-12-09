@@ -606,6 +606,9 @@ where
                         return;
                     }
                 }
+                for txn in opened_block.included_user_txns2() {
+                    tx_provider.remove_txn(txn.id(), false);
+                }   
             }
 
             let (template, vm1_outputs, vm2_outputs) = match opened_block.finalize() {
@@ -660,32 +663,31 @@ where
                 MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
             });
 
-        return Ok((pending_transactions, pending_transactions2));
-        // if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
-        //     return Ok((pending_transactions, pending_transactions2));
-        // }
+        if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
+            return Ok((pending_transactions, pending_transactions2));
+        }
 
-        // blue_blocks.iter().for_each(|block| {
-        //     block.transactions().iter().for_each(|transaction| {
-        //         pending_transactions.push(transaction.clone());
-        //     });
+        blue_blocks.iter().for_each(|block| {
+            block.transactions().iter().for_each(|transaction| {
+                pending_transactions.push(transaction.clone());
+            });
 
-        //     block.transactions2().iter().for_each(|transaction| {
-        //         pending_transactions2.push(transaction.clone());
-        //     })
-        // });
+            block.transactions2().iter().for_each(|transaction| {
+                pending_transactions2.push(transaction.clone());
+            })
+        });
 
-        // pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
-        //     std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-        //     other => other,
-        // });
+        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
 
-        // pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
-        //     std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-        //     other => other,
-        // });
+        pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
+        });
 
-        // Ok((pending_transactions, pending_transactions2))
+        Ok((pending_transactions, pending_transactions2))
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {

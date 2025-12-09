@@ -28,6 +28,7 @@ starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-txpool = { workspace = true }
+starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm2-account-api = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
