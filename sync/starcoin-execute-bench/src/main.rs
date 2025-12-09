@@ -748,7 +748,6 @@ async fn execute_benchmark(
         );
 
         registry.put_shared(benchmark_state.clone()).await?;
-        registry.put_shared(txpool.clone()).await?;
 
         let _observer = registry.register::<ObserverService>().await?;
 
