@@ -940,6 +940,7 @@ impl ObserverService {
             .get_block_by_hash(new_header)?
             .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
         let block_number = block.header().number();
+        let block_id = block.header().id();
 
         // Count user transactions (non-block-metadata transactions)
         let user_txn_count = block.body.transactions2.len();
@@ -951,6 +952,7 @@ impl ObserverService {
                 .push(TransactionExecutionResult::Executed(
                     connected_time_ms,
                     block_number,
+                    block_id,
                 ));
         }
 
@@ -978,6 +980,18 @@ impl ObserverService {
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
+
+        // Print top 10 blocks with highest latency
+        let top_latency_blocks = dumper.get_top_latency_blocks(10);
+        if !top_latency_blocks.is_empty() {
+            info!("Top {} blocks with highest latency (deduplicated by block_id):", top_latency_blocks.len());
+            for (i, (block_id, block_number, latency_ms)) in top_latency_blocks.iter().enumerate() {
+                info!(
+                    "  #{}: block_number={}, latency={:.2}ms, block_id={}",
+                    i + 1, block_number, latency_ms, block_id
+                );
+            }
+        }
 
         Ok(())
         // dumper.dump_results()
