@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc, RwLock,
+        Arc,
     },
 };
 
@@ -106,14 +106,6 @@ struct Cli {
         help = "Max gas for transactions."
     )]
     max_gas: u64,
-
-    #[arg(
-        short = 't',
-        long = "target-txn-count",
-        default_value = "2000",
-        help = "Target number of user transactions to execute before exiting."
-    )]
-    target_txn_count: usize,
 
     #[arg(
         long = "batch-user-count",
@@ -248,7 +240,6 @@ fn main() -> Result<()> {
         cli.initial_gas_fee,
         cli.gas_price,
         cli.max_gas,
-        cli.target_txn_count,
         cli.batch_user_count,
     ));
 
@@ -527,12 +518,12 @@ struct BenchmarkState {
     accounts: Vec<AccountInfo>,
     gas_price: u64,
     max_gas: u64,
-    target_txn_count: usize,
     batch_user_count: usize,
+    /// Total number of user transactions to be sent (calculated from accounts and batch_user_count)
+    total_txn_count: usize,
     executed_count: AtomicUsize,
     batch_index: AtomicUsize,
     is_completed: AtomicBool,
-    user_txn_hashes: RwLock<std::collections::HashSet<HashValue>>,
     chain_id: ChainId2,
 }
 
@@ -541,20 +532,23 @@ impl BenchmarkState {
         accounts: Vec<AccountInfo>,
         gas_price: u64,
         max_gas: u64,
-        target_txn_count: usize,
         batch_user_count: usize,
         chain_id: ChainId2,
     ) -> Self {
+        // Each batch has batch_user_count/2 senders, each sends 1 transaction
+        let total_batches = accounts.len() / batch_user_count;
+        let txns_per_batch = batch_user_count / 2;
+        let total_txn_count = total_batches * txns_per_batch;
+        
         Self {
             accounts,
             gas_price,
             max_gas,
-            target_txn_count,
             batch_user_count,
+            total_txn_count,
             executed_count: AtomicUsize::new(0),
             batch_index: AtomicUsize::new(0),
             is_completed: AtomicBool::new(false),
-            user_txn_hashes: RwLock::new(std::collections::HashSet::new()),
             chain_id,
         }
     }
@@ -611,39 +605,13 @@ impl BenchmarkState {
         self.accounts.len() / self.batch_user_count
     }
 
-    fn register_user_txns(&self, txn_hashes: &[HashValue]) {
-        let mut user_txn_hashes = self.user_txn_hashes.write().unwrap();
-        for hash in txn_hashes {
-            user_txn_hashes.insert(*hash);
-        }
-    }
-    
-    /// Get total number of registered user transactions
-    fn registered_txn_count(&self) -> usize {
-        self.user_txn_hashes.read().unwrap().len()
-    }
-    
-    /// Check if all registered transactions have been executed
+    /// Check if all transactions have been executed
     fn all_txns_executed(&self) -> bool {
-        let registered = self.registered_txn_count();
-        let executed = self.executed_count.load(Ordering::SeqCst);
-        registered > 0 && executed >= registered
-    }
-
-    fn count_executed_user_txns(&self, executed_txn_hashes: &[HashValue]) -> usize {
-        let user_txn_hashes = self.user_txn_hashes.read().unwrap();
-        executed_txn_hashes
-            .iter()
-            .filter(|h| user_txn_hashes.contains(h))
-            .count()
+        self.executed_count.load(Ordering::SeqCst) >= self.total_txn_count
     }
 
     fn add_executed_count(&self, count: usize) -> usize {
         self.executed_count.fetch_add(count, Ordering::SeqCst) + count
-    }
-
-    fn is_target_reached(&self) -> bool {
-        self.executed_count.load(Ordering::SeqCst) >= self.target_txn_count
     }
 
     fn mark_completed(&self) {
@@ -662,7 +630,6 @@ async fn execute_benchmark(
     initial_gas_fee: u128,
     gas_price: u64,
     max_gas: u64,
-    target_txn_count: usize,
     batch_user_count: usize,
 ) -> Result<()> {
     let registry = node.registry();
@@ -723,16 +690,16 @@ async fn execute_benchmark(
             receivers.clone(),
             gas_price,
             max_gas,
-            target_txn_count,
             batch_user_count,
             chain_id,
         ));
 
         info!(
-            "Benchmark configured: {} accounts, {} users per batch, {} total batches",
+            "Benchmark configured: {} accounts, {} users per batch, {} total batches, {} total txns",
             receivers.len(),
             batch_user_count,
-            benchmark_state.total_batches()
+            benchmark_state.total_batches(),
+            benchmark_state.total_txn_count
         );
 
         registry.put_shared(benchmark_state.clone()).await?;
@@ -746,21 +713,20 @@ async fn execute_benchmark(
         StarcoinVM::set_concurrency_level(num_cpus::get());
 
         info!(
-            "Starting benchmark with target {} user transactions",
-            target_txn_count
+            "Starting benchmark with {} user transactions",
+            benchmark_state.total_txn_count
         );
 
         // Submit first batch to kickstart the benchmark
         let expire_time = config.net().time_service().now_secs() + 3600;
         if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
-            let txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
-            benchmark_state.register_user_txns(&txn_hashes);
+            let _txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
             info!("Submitted initial batch: {} transactions", batch.len());
         }
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
-        // 2. All registered transactions have been executed
+        // 2. All transactions have been executed
         loop {
             if benchmark_state.is_completed() {
                 break;
@@ -769,8 +735,9 @@ async fn execute_benchmark(
             // Check if all batches sent and all transactions executed
             if benchmark_state.all_batches_sent() && benchmark_state.all_txns_executed() {
                 info!(
-                    "All batches sent and all {} transactions executed, completing benchmark",
-                    benchmark_state.executed_count.load(Ordering::SeqCst)
+                    "All batches sent and all {}/{} transactions executed, completing benchmark",
+                    benchmark_state.executed_count.load(Ordering::SeqCst),
+                    benchmark_state.total_txn_count
                 );
                 benchmark_state.mark_completed();
                 break;
@@ -782,7 +749,7 @@ async fn execute_benchmark(
         info!(
             "Benchmark completed: {}/{} user transactions executed",
             benchmark_state.executed_count.load(Ordering::SeqCst),
-            benchmark_state.registered_txn_count()
+            benchmark_state.total_txn_count
         );
 
         Ok::<(), anyhow::Error>(())
@@ -956,8 +923,7 @@ impl ObserverService {
         };
         
         let batch_index = state.batch_index.load(Ordering::SeqCst);
-        let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
-        state.register_user_txns(&txn_hashes);
+        let _txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
         info!(
             "Submitted batch {}/{}: {} transactions",
             batch_index,
@@ -975,7 +941,9 @@ impl ObserverService {
             .ok_or_else(|| format_err!("block not found: {:?}", new_header))?;
         let block_number = block.header().number();
 
-        let mut executed_hashes = vec![];
+        // Count user transactions (non-block-metadata transactions)
+        let user_txn_count = block.body.transactions2.len();
+        
         for transaction in &block.body.transactions2 {
             self.transaction_data
                 .entry(transaction.id())
@@ -984,19 +952,17 @@ impl ObserverService {
                     connected_time_ms,
                     block_number,
                 ));
-            executed_hashes.push(transaction.id());
         }
 
         if let Some(ref state) = self.benchmark_state {
-            let user_txn_count = state.count_executed_user_txns(&executed_hashes);
             if user_txn_count > 0 {
                 let total = state.add_executed_count(user_txn_count);
                 info!(
-                    "jacktest: Block {} executed {} user txns, total: {}/{}",
-                    block_number, user_txn_count, total, state.target_txn_count
+                    "Block {} executed {} user txns, total: {}/{}",
+                    block_number, user_txn_count, total, state.total_txn_count
                 );
-                // Mark completed immediately when target is reached
-                if total >= state.target_txn_count {
+                // Mark completed when all transactions are executed
+                if state.all_batches_sent() && total >= state.total_txn_count {
                     state.mark_completed();
                 }
                 return Ok(user_txn_count);
