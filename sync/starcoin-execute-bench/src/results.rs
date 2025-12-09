@@ -61,7 +61,11 @@ impl std::fmt::Debug for TransactionExecutionResult {
 #[derive(Debug, Clone)]
 pub struct BenchmarkStats {
     pub tps: f64,
-    pub tps_block_time: f64,
+    /// Block-based TPS statistics (calculated per block, then aggregated)
+    pub block_tps_min: f64,
+    pub block_tps_max: f64,
+    pub block_tps_avg: f64,
+    pub block_tps_median: f64,
     pub total_executed: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
@@ -76,7 +80,8 @@ impl std::fmt::Display for BenchmarkStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "========== Benchmark Results ==========")?;
         writeln!(f, "TPS (executed-time): {:.2}", self.tps)?;
-        writeln!(f, "TPS (block-time start): {:.2}", self.tps_block_time)?;
+        writeln!(f, "TPS (per-block) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.block_tps_min, self.block_tps_max, self.block_tps_avg, self.block_tps_median)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -152,10 +157,10 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-    // Calculate TPS based on executed times (more reliable)
-    let tps = self.calculate_tps_from_executed();
-    // Calculate TPS using block timestamp as start time (per-transaction pick the execution with largest block number)
-    let tps_block_time = self.calculate_tps_from_block_time();
+        // Calculate TPS based on executed times (more reliable)
+        let tps = self.calculate_tps_from_executed();
+        // Calculate per-block TPS statistics
+        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median) = self.calculate_per_block_tps_stats();
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -165,7 +170,10 @@ impl<'a> ResultsDumper<'a> {
 
         BenchmarkStats {
             tps,
-            tps_block_time,
+            block_tps_min,
+            block_tps_max,
+            block_tps_avg,
+            block_tps_median,
             total_executed: total_txns,
             unique_txn_count,
             duplicate_exec_count,
@@ -268,51 +276,60 @@ impl<'a> ResultsDumper<'a> {
         }
     }
 
-    /// Calculate TPS using block timestamp as the start time.
-    /// For transactions executed in multiple blocks, pick the execution with the largest block number.
-    fn calculate_tps_from_block_time(&self) -> f64 {
-        let mut starts: Vec<u64> = Vec::new();
-        let mut ends: Vec<u64> = Vec::new();
+    /// Calculate per-block TPS statistics.
+    /// For each block, TPS = txn_count / (exec_time - block_timestamp) in seconds.
+    /// Returns: (min_tps, max_tps, avg_tps, median_tps)
+    fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64) {
+        // Collect block data: block_number -> (block_timestamp, exec_time, txn_count)
+        let mut block_data: HashMap<u64, (u64, u64, usize)> = HashMap::new();
 
         for events in self.transaction_data.values() {
-            // chosen = (block_number, exec_ts, block_ts)
-            let mut chosen: Option<(u64, u64, u64)> = None;
             for ev in events {
                 if let TransactionExecutionResult::Executed(exec_ts, block_number, _block_id, block_ts) = ev {
-                    match chosen {
-                        Some((bn, _e, _b)) => {
-                            if *block_number > bn {
-                                chosen = Some((*block_number, *exec_ts, *block_ts));
-                            }
-                        }
-                        None => chosen = Some((*block_number, *exec_ts, *block_ts)),
+                    let entry = block_data.entry(*block_number).or_insert((*block_ts, *exec_ts, 0));
+                    // Update exec_time to the max (last execution time for this block)
+                    if *exec_ts > entry.1 {
+                        entry.1 = *exec_ts;
                     }
+                    entry.2 += 1; // Increment txn count
                 }
             }
+        }
 
-            if let Some((_bn, exec_ts, block_ts)) = chosen {
-                starts.push(block_ts);
-                ends.push(exec_ts);
+        if block_data.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        // Calculate TPS for each block
+        let mut block_tps_list: Vec<f64> = Vec::new();
+        for (_block_num, (block_ts, exec_ts, txn_count)) in block_data.iter() {
+            if *exec_ts > *block_ts && *txn_count > 0 {
+                let duration_secs = (*exec_ts - *block_ts) as f64 / 1000.0;
+                if duration_secs > 0.0 {
+                    let tps = *txn_count as f64 / duration_secs;
+                    block_tps_list.push(tps);
+                }
             }
         }
 
-        if starts.len() < 2 {
-            return starts.len() as f64;
+        if block_tps_list.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
         }
 
-        let first = *starts.iter().min().unwrap();
-        let last = *ends.iter().max().unwrap();
-        let duration_secs = if last > first {
-            (last - first) as f64 / 1000.0
+        // Calculate statistics
+        let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
+        let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
+        
+        // Median
+        block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let median_tps = if block_tps_list.len() % 2 == 0 {
+            (block_tps_list[block_tps_list.len() / 2 - 1] + block_tps_list[block_tps_list.len() / 2]) / 2.0
         } else {
-            0.0
+            block_tps_list[block_tps_list.len() / 2]
         };
 
-        if duration_secs > 0.0 {
-            starts.len() as f64 / duration_secs
-        } else {
-            starts.len() as f64
-        }
+        (min_tps, max_tps, avg_tps, median_tps)
     }
 
     pub fn dump_results(&self) -> anyhow::Result<()> {
