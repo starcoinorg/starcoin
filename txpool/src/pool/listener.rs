@@ -149,23 +149,23 @@ impl TransactionsPoolNotifier {
 
     /// Notify listeners about all currently transactions.
     pub fn notify(&mut self) {
-        if self.tx_statuses.is_empty() {
-            return;
-        }
+        // if self.tx_statuses.is_empty() {
+        //     return;
+        // }
 
-        let to_pending_send: Arc<[H256]> = self
-            .tx_statuses
-            .clone()
-            .into_iter()
-            .map(|(hash, _)| hash)
-            .collect::<Vec<_>>()
-            .into();
-        self.pending_listeners
-            .retain(|listener| listener.unbounded_send(to_pending_send.clone()).is_ok());
+        // let to_pending_send: Arc<[H256]> = self
+        //     .tx_statuses
+        //     .clone()
+        //     .into_iter()
+        //     .map(|(hash, _)| hash)
+        //     .collect::<Vec<_>>()
+        //     .into();
+        // self.pending_listeners
+        //     .retain(|listener| listener.unbounded_send(to_pending_send.clone()).is_ok());
 
-        let to_full_send: Arc<[(H256, TxStatus)]> = std::mem::take(&mut self.tx_statuses).into();
-        self.full_listeners
-            .retain(|listener| listener.unbounded_send(to_full_send.clone()).is_ok());
+        // let to_full_send: Arc<[(H256, TxStatus)]> = std::mem::take(&mut self.tx_statuses).into();
+        // self.full_listeners
+        //     .retain(|listener| listener.unbounded_send(to_full_send.clone()).is_ok());
     }
 }
 
@@ -181,6 +181,8 @@ impl fmt::Debug for TransactionsPoolNotifier {
 impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
     fn added(&mut self, tx: &Arc<Transaction>, _old: Option<&Arc<Transaction>>) {
         self.tx_statuses.push((tx.hash, TxStatus::Added));
+        self.full_listeners
+            .retain(|listener| listener.unbounded_send(Arc::new([(tx.hash, TxStatus::Added)])).is_ok());
     }
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
