@@ -361,7 +361,7 @@ async fn test_txpool_actor_service() {
     tx_pool_actor
         .notify(Into::<TxnStatusFullEvent>::into(vec![(
             txn.id(),
-            TxStatus::Added,
+            TxStatus::Added(0),
         )]))
         .unwrap();
 

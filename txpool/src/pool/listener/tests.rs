@@ -29,7 +29,13 @@ fn should_notify_listeners() {
     tx_listener.notify();
     let full_res = full_receiver.try_next().unwrap();
     let pending_res = pending_receiver.try_next().unwrap();
-    assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Added)].into()));
+    // Check that we got Added with some timestamp
+    match &full_res {
+        Some(v) if v.len() == 1 && v[0].0 == *tx.hash() => {
+            assert!(matches!(v[0].1, TxStatus::Added(_)));
+        }
+        _ => panic!("Expected Added status"),
+    }
     assert_eq!(pending_res, Some(vec![*tx.hash()].into()));
 }
 
