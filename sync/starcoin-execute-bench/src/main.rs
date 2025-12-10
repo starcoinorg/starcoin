@@ -34,8 +34,8 @@ use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
 use starcoin_types::{
-    block::BlockHeader, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
-    system_events::NewHeadBlock,
+    block::{Block, BlockHeader}, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
+    system_events::{MinedBlock, NewHeadBlock},
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -976,6 +976,37 @@ impl ObserverService {
         Ok(0)
     }
 
+    fn record_mined_event(&mut self, block: &Block) -> Result<()> {
+        let mined_time_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_millis() as u64;
+        let block_number = block.header().number();
+        let block_id = block.header().id();
+
+        // Record mined event for each transaction in the block
+        let user_txn_count = block.body.transactions2.len();
+        for transaction in &block.body.transactions2 {
+            self.transaction_data
+                .entry(transaction.id())
+                .or_default()
+                .push(TransactionExecutionResult::Mined(
+                    mined_time_ms,
+                    block_number,
+                    block_id,
+                ));
+        }
+
+        if user_txn_count > 0 {
+            info!(
+                "Block {} mined with {} user txns at {}",
+                block_number, user_txn_count, mined_time_ms
+            );
+        }
+
+        Ok(())
+    }
+
     fn dump_results(&self) -> Result<()> {
         let dumper = ResultsDumper::new(&self.transaction_data);
 
@@ -1016,6 +1047,7 @@ impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.subscribe::<NewDagBlock>();
         // ctx.subscribe::<NewDagBlockFromPeer>();
+        ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
@@ -1023,6 +1055,7 @@ impl ActorService for ObserverService {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.unsubscribe::<NewDagBlock>();
         // ctx.unsubscribe::<NewDagBlockFromPeer>();
+        ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewHeadBlock>();
 
         if let Err(e) = self.dump_results() {
@@ -1050,6 +1083,14 @@ impl EventHandler<Self, NewHeadBlock> for ObserverService {
         // Submit next batch of transactions after processing the block
         if let Err(e) = self.try_submit_next_batch() {
             error!("failed to submit next batch: {:?}", e);
+        }
+    }
+}
+
+impl EventHandler<Self, MinedBlock> for ObserverService {
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+        if let Err(e) = self.record_mined_event(msg.0.as_ref()) {
+            error!("failed to record mined event: {:?}", e);
         }
     }
 }
