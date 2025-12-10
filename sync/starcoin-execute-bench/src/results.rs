@@ -11,6 +11,8 @@ pub enum TransactionExecutionResult {
     Added(u64),
     Rejected(String),
     Culled(String),
+    /// Mined(mined_time_ms, block_number, block_id) - epoch ms when MinedBlock event received
+    Mined(u64, u64, HashValue),
     /// Executed(connected_time_ms, block_number, block_id, block_timestamp_ms) - epoch ms from NewHeadBlock
     /// block_timestamp_ms is the block's timestamp (when it was created)
     Executed(u64, u64, HashValue, u64),
@@ -43,6 +45,10 @@ impl std::fmt::Debug for TransactionExecutionResult {
             TransactionExecutionResult::Culled(op_time) => {
                 write!(f, "Culled({})", op_time)
             }
+            TransactionExecutionResult::Mined(ts_ms, block_number, block_id) => {
+                write!(f, "Mined({}, block={}, id={})", 
+                    format_epoch_ms(*ts_ms), block_number, block_id)
+            }
             TransactionExecutionResult::Executed(ts_ms, block_number, block_id, block_ts) => {
                 write!(f, "Executed({}, block={}, id={}, block_ts={})", 
                     format_epoch_ms(*ts_ms), block_number, block_id, format_epoch_ms(*block_ts))
@@ -61,11 +67,16 @@ impl std::fmt::Debug for TransactionExecutionResult {
 #[derive(Debug, Clone)]
 pub struct BenchmarkStats {
     pub tps: f64,
-    /// Block-based TPS statistics (calculated per block, then aggregated)
+    /// Block-based TPS statistics (calculated per block: from block_timestamp to executed_time)
     pub block_tps_min: f64,
     pub block_tps_max: f64,
     pub block_tps_avg: f64,
     pub block_tps_median: f64,
+    /// Mined-based TPS statistics (calculated per block: from mined_time to executed_time)
+    pub mined_tps_min: f64,
+    pub mined_tps_max: f64,
+    pub mined_tps_avg: f64,
+    pub mined_tps_median: f64,
     pub total_executed: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
@@ -80,8 +91,10 @@ impl std::fmt::Display for BenchmarkStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "========== Benchmark Results ==========")?;
         writeln!(f, "TPS (executed-time): {:.2}", self.tps)?;
-        writeln!(f, "TPS (per-block) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+        writeln!(f, "TPS (per-block, block_ts->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.block_tps_min, self.block_tps_max, self.block_tps_avg, self.block_tps_median)?;
+        writeln!(f, "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.mined_tps_min, self.mined_tps_max, self.mined_tps_avg, self.mined_tps_median)?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -159,8 +172,10 @@ impl<'a> ResultsDumper<'a> {
 
         // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
-        // Calculate per-block TPS statistics
+        // Calculate per-block TPS statistics (block_timestamp -> executed_time)
         let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median) = self.calculate_per_block_tps_stats();
+        // Calculate per-block TPS statistics (mined_time -> executed_time)
+        let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) = self.calculate_per_block_mined_tps_stats();
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -174,6 +189,10 @@ impl<'a> ResultsDumper<'a> {
             block_tps_max,
             block_tps_avg,
             block_tps_median,
+            mined_tps_min,
+            mined_tps_max,
+            mined_tps_avg,
+            mined_tps_median,
             total_executed: total_txns,
             unique_txn_count,
             duplicate_exec_count,
@@ -308,6 +327,74 @@ impl<'a> ResultsDumper<'a> {
                 if duration_secs > 0.0 {
                     let tps = *txn_count as f64 / duration_secs;
                     block_tps_list.push(tps);
+                }
+            }
+        }
+
+        if block_tps_list.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        // Calculate statistics
+        let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
+        let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
+        
+        // Median
+        block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let median_tps = if block_tps_list.len() % 2 == 0 {
+            (block_tps_list[block_tps_list.len() / 2 - 1] + block_tps_list[block_tps_list.len() / 2]) / 2.0
+        } else {
+            block_tps_list[block_tps_list.len() / 2]
+        };
+
+        (min_tps, max_tps, avg_tps, median_tps)
+    }
+
+    /// Calculate per-block TPS statistics based on Mined event time.
+    /// For each block, TPS = txn_count / (exec_time - mined_time) in seconds.
+    /// Returns: (min_tps, max_tps, avg_tps, median_tps)
+    fn calculate_per_block_mined_tps_stats(&self) -> (f64, f64, f64, f64) {
+        // Collect block data: block_id -> (mined_time, exec_time, txn_count)
+        let mut block_data: HashMap<HashValue, (Option<u64>, Option<u64>, usize)> = HashMap::new();
+
+        for events in self.transaction_data.values() {
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Mined(mined_ts, _block_number, block_id) => {
+                        let entry = block_data.entry(*block_id).or_insert((None, None, 0));
+                        // Use the earliest mined time
+                        if entry.0.is_none() || *mined_ts < entry.0.unwrap() {
+                            entry.0 = Some(*mined_ts);
+                        }
+                    }
+                    TransactionExecutionResult::Executed(exec_ts, _block_number, block_id, _block_ts) => {
+                        let entry = block_data.entry(*block_id).or_insert((None, None, 0));
+                        // Use the latest exec time
+                        if entry.1.is_none() || *exec_ts > entry.1.unwrap() {
+                            entry.1 = Some(*exec_ts);
+                        }
+                        entry.2 += 1; // Increment txn count
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if block_data.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        // Calculate TPS for each block
+        let mut block_tps_list: Vec<f64> = Vec::new();
+        for (_block_id, (mined_ts_opt, exec_ts_opt, txn_count)) in block_data.iter() {
+            if let (Some(mined_ts), Some(exec_ts)) = (mined_ts_opt, exec_ts_opt) {
+                if *exec_ts > *mined_ts && *txn_count > 0 {
+                    let duration_secs = (*exec_ts - *mined_ts) as f64 / 1000.0;
+                    if duration_secs > 0.0 {
+                        let tps = *txn_count as f64 / duration_secs;
+                        block_tps_list.push(tps);
+                    }
                 }
             }
         }
