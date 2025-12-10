@@ -76,14 +76,13 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         let is_retracted = tx.is_retracted();
         let verified_txn = match tx {
             PoolTransaction::Unverified(unverified) | PoolTransaction::Retracted(unverified) => {
-                PendingTransaction::from(txn.into_inner())
-                // match self.client.verify_transaction(unverified) {
-                //     Ok(txn) => PendingTransaction::from(txn.into_inner()),
-                //     Err(err) => {
-                //         warn!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
-                //         return Err(err);
-                //     }
-                // }
+                match self.client.verify_transaction(unverified) {
+                    Ok(txn) => PendingTransaction::from(txn.into_inner()),
+                    Err(err) => {
+                        warn!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
+                        return Err(err);
+                    }
+                }
             }
             PoolTransaction::Local(txn) => {
                 txn

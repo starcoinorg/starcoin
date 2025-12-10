@@ -34,7 +34,9 @@ use starcoin_storage::{BlockStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
 use starcoin_txpool::TxStatus;
 use starcoin_types::{
-    block::{Block, BlockHeader}, genesis_config::ChainId, multi_transaction::MultiSignedUserTransaction,
+    block::{Block, BlockHeader},
+    genesis_config::ChainId,
+    multi_transaction::MultiSignedUserTransaction,
     system_events::{MinedBlock, NewHeadBlock},
 };
 use starcoin_vm2_account_api::{
@@ -539,7 +541,7 @@ impl BenchmarkState {
         let total_batches = accounts.len() / batch_user_count;
         let txns_per_batch = batch_user_count / 2;
         let total_txn_count = total_batches * txns_per_batch;
-        
+
         Self {
             accounts,
             gas_price,
@@ -559,23 +561,23 @@ impl BenchmarkState {
     fn build_next_batch(&self, expire_time: u64) -> Option<Vec<RawUserTransaction2>> {
         let batch_index = self.batch_index.fetch_add(1, Ordering::SeqCst);
         let start = batch_index * self.batch_user_count;
-        
+
         // Check if we have enough accounts for this batch
         if start + self.batch_user_count > self.accounts.len() {
             return None;
         }
-        
+
         let batch_accounts = &self.accounts[start..start + self.batch_user_count];
         let mid = self.batch_user_count / 2;
         let senders = &batch_accounts[..mid];
         let receivers = &batch_accounts[mid..];
-        
+
         // Each sender's sequence number is 0 since they haven't sent before
         let mut seq_numbers: HashMap<AccountAddress, u64> = HashMap::new();
         for sender in senders {
             seq_numbers.insert(sender.address, 0);
         }
-        
+
         match build_transfer_transactions_sync(
             senders,
             receivers,
@@ -593,13 +595,13 @@ impl BenchmarkState {
             }
         }
     }
-    
+
     /// Check if all batches have been sent
     fn all_batches_sent(&self) -> bool {
         let next_start = self.batch_index.load(Ordering::SeqCst) * self.batch_user_count;
         next_start + self.batch_user_count > self.accounts.len()
     }
-    
+
     /// Get total number of batches
     fn total_batches(&self) -> usize {
         self.accounts.len() / self.batch_user_count
@@ -720,7 +722,8 @@ async fn execute_benchmark(
         // Submit first batch to kickstart the benchmark
         let expire_time = config.net().time_service().now_secs() + 3600;
         if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
-            let _txn_hashes = sign_and_import_transactions(&batch, &account_service, &txpool).await?;
+            let _txn_hashes =
+                sign_and_import_transactions(&batch, &account_service, &txpool).await?;
             info!("Submitted initial batch: {} transactions", batch.len());
         }
 
@@ -731,7 +734,7 @@ async fn execute_benchmark(
             if benchmark_state.is_completed() {
                 break;
             }
-            
+
             // Check if all batches sent and all transactions executed
             if benchmark_state.all_batches_sent() && benchmark_state.all_txns_executed() {
                 info!(
@@ -742,7 +745,7 @@ async fn execute_benchmark(
                 benchmark_state.mark_completed();
                 break;
             }
-            
+
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
 
@@ -912,7 +915,7 @@ impl ObserverService {
         }
 
         let expire_time = config.net().time_service().now_secs() + 3600;
-        
+
         // Build next batch - each batch uses different users with seq=0
         let batch = match state.build_next_batch(expire_time) {
             Some(b) => b,
@@ -921,7 +924,7 @@ impl ObserverService {
                 return Ok(());
             }
         };
-        
+
         let batch_index = state.batch_index.load(Ordering::SeqCst);
         let _txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
         info!(
@@ -934,7 +937,11 @@ impl ObserverService {
         Ok(())
     }
 
-    fn update_transaction_status(&mut self, new_header: HashValue, connected_time_ms: u64) -> Result<usize> {
+    fn update_transaction_status(
+        &mut self,
+        new_header: HashValue,
+        connected_time_ms: u64,
+    ) -> Result<usize> {
         let block = self
             .storage1
             .get_block_by_hash(new_header)?
@@ -945,7 +952,7 @@ impl ObserverService {
 
         // Count user transactions (non-block-metadata transactions)
         let user_txn_count = block.body.transactions2.len();
-        
+
         for transaction in &block.body.transactions2 {
             self.transaction_data
                 .entry(transaction.id())
@@ -1017,11 +1024,17 @@ impl ObserverService {
         // Print top 10 blocks with highest latency
         let top_latency_blocks = dumper.get_top_latency_blocks(10);
         if !top_latency_blocks.is_empty() {
-            info!("Top {} blocks with highest latency (deduplicated by block_id):", top_latency_blocks.len());
+            info!(
+                "Top {} blocks with highest latency (deduplicated by block_id):",
+                top_latency_blocks.len()
+            );
             for (i, (block_id, block_number, latency_ms)) in top_latency_blocks.iter().enumerate() {
                 info!(
                     "  #{}: block_number={}, latency={:.2}ms, block_id={}",
-                    i + 1, block_number, latency_ms, block_id
+                    i + 1,
+                    block_number,
+                    latency_ms,
+                    block_id
                 );
             }
         }
@@ -1067,13 +1080,12 @@ impl ActorService for ObserverService {
 
 impl EventHandler<Self, NewHeadBlock> for ObserverService {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.update_transaction_status(
-            msg.executed_block.block().id(),
-            msg.connected_time_ms,
-        ) {
+        if let Err(e) =
+            self.update_transaction_status(msg.executed_block.block().id(), msg.connected_time_ms)
+        {
             error!("failed to update transactions status: {:?}", e);
         }
-        
+
         // Check if completed
         if let Some(ref state) = self.benchmark_state {
             if state.is_completed() || state.all_batches_sent() {
@@ -1127,7 +1139,7 @@ impl EventHandler<Self, MinedBlock> for ObserverService {
 impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
     fn handle_event(&mut self, msg: Arc<[(HashValue, TxStatus)]>, _ctx: &mut ServiceContext<Self>) {
         let now_str = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-        
+
         for transaction_event in msg.as_ref() {
             match &transaction_event.1 {
                 starcoin_types::transaction::TxStatus::Added(added_time_ms) => self
