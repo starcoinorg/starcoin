@@ -191,8 +191,11 @@ impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
         self.tx_statuses.push((tx.hash, TxStatus::Added(now_ms)));
-        self.full_listeners
-            .retain(|listener| listener.unbounded_send(Arc::new([(tx.hash, TxStatus::Added(now_ms))])).is_ok());
+        self.full_listeners.retain(|listener| {
+            listener
+                .unbounded_send(Arc::new([(tx.hash, TxStatus::Added(now_ms))]))
+                .is_ok()
+        });
     }
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
