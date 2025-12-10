@@ -46,12 +46,23 @@ impl std::fmt::Debug for TransactionExecutionResult {
                 write!(f, "Culled({})", op_time)
             }
             TransactionExecutionResult::Mined(ts_ms, block_number, block_id) => {
-                write!(f, "Mined({}, block={}, id={})", 
-                    format_epoch_ms(*ts_ms), block_number, block_id)
+                write!(
+                    f,
+                    "Mined({}, block={}, id={})",
+                    format_epoch_ms(*ts_ms),
+                    block_number,
+                    block_id
+                )
             }
             TransactionExecutionResult::Executed(ts_ms, block_number, block_id, block_ts) => {
-                write!(f, "Executed({}, block={}, id={}, block_ts={})", 
-                    format_epoch_ms(*ts_ms), block_number, block_id, format_epoch_ms(*block_ts))
+                write!(
+                    f,
+                    "Executed({}, block={}, id={}, block_ts={})",
+                    format_epoch_ms(*ts_ms),
+                    block_number,
+                    block_id,
+                    format_epoch_ms(*block_ts)
+                )
             }
             TransactionExecutionResult::ExecutedNotInMain(op_time) => {
                 write!(f, "ExecutedNotInMain({})", op_time)
@@ -93,8 +104,11 @@ impl std::fmt::Display for BenchmarkStats {
         writeln!(f, "TPS (executed-time): {:.2}", self.tps)?;
         writeln!(f, "TPS (per-block, block_ts->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.block_tps_min, self.block_tps_max, self.block_tps_avg, self.block_tps_median)?;
-        writeln!(f, "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
-            self.mined_tps_min, self.mined_tps_max, self.mined_tps_avg, self.mined_tps_median)?;
+        writeln!(
+            f,
+            "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.mined_tps_min, self.mined_tps_max, self.mined_tps_avg, self.mined_tps_median
+        )?;
         writeln!(f, "Total Executed: {}", self.total_executed)?;
         writeln!(
             f,
@@ -173,9 +187,11 @@ impl<'a> ResultsDumper<'a> {
         // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
         // Calculate per-block TPS statistics (block_timestamp -> executed_time)
-        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median) = self.calculate_per_block_tps_stats();
+        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median) =
+            self.calculate_per_block_tps_stats();
         // Calculate per-block TPS statistics (mined_time -> executed_time)
-        let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) = self.calculate_per_block_mined_tps_stats();
+        let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) =
+            self.calculate_per_block_mined_tps_stats();
 
         let duplicate_pct = if unique_txn_count > 0 {
             duplicate_exec_count as f64 / unique_txn_count as f64 * 100.0
@@ -250,7 +266,8 @@ impl<'a> ResultsDumper<'a> {
         txn_latencies.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         // Deduplicate by block_id, keep highest latency per block
-        let mut seen_blocks: std::collections::HashSet<HashValue> = std::collections::HashSet::new();
+        let mut seen_blocks: std::collections::HashSet<HashValue> =
+            std::collections::HashSet::new();
         let mut result: Vec<(HashValue, u64, f64)> = Vec::new();
 
         for (_, latency, block_id, block_number) in txn_latencies {
@@ -304,8 +321,16 @@ impl<'a> ResultsDumper<'a> {
 
         for events in self.transaction_data.values() {
             for ev in events {
-                if let TransactionExecutionResult::Executed(exec_ts, block_number, _block_id, block_ts) = ev {
-                    let entry = block_data.entry(*block_number).or_insert((*block_ts, *exec_ts, 0));
+                if let TransactionExecutionResult::Executed(
+                    exec_ts,
+                    block_number,
+                    _block_id,
+                    block_ts,
+                ) = ev
+                {
+                    let entry = block_data
+                        .entry(*block_number)
+                        .or_insert((*block_ts, *exec_ts, 0));
                     // Update exec_time to the max (last execution time for this block)
                     if *exec_ts > entry.1 {
                         entry.1 = *exec_ts;
@@ -339,11 +364,13 @@ impl<'a> ResultsDumper<'a> {
         let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
         let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
-        
+
         // Median
         block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let median_tps = if block_tps_list.len() % 2 == 0 {
-            (block_tps_list[block_tps_list.len() / 2 - 1] + block_tps_list[block_tps_list.len() / 2]) / 2.0
+            (block_tps_list[block_tps_list.len() / 2 - 1]
+                + block_tps_list[block_tps_list.len() / 2])
+                / 2.0
         } else {
             block_tps_list[block_tps_list.len() / 2]
         };
@@ -368,7 +395,12 @@ impl<'a> ResultsDumper<'a> {
                             entry.0 = Some(*mined_ts);
                         }
                     }
-                    TransactionExecutionResult::Executed(exec_ts, _block_number, block_id, _block_ts) => {
+                    TransactionExecutionResult::Executed(
+                        exec_ts,
+                        _block_number,
+                        block_id,
+                        _block_ts,
+                    ) => {
                         let entry = block_data.entry(*block_id).or_insert((None, None, 0));
                         // Use the latest exec time
                         if entry.1.is_none() || *exec_ts > entry.1.unwrap() {
@@ -407,11 +439,13 @@ impl<'a> ResultsDumper<'a> {
         let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
         let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
-        
+
         // Median
         block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let median_tps = if block_tps_list.len() % 2 == 0 {
-            (block_tps_list[block_tps_list.len() / 2 - 1] + block_tps_list[block_tps_list.len() / 2]) / 2.0
+            (block_tps_list[block_tps_list.len() / 2 - 1]
+                + block_tps_list[block_tps_list.len() / 2])
+                / 2.0
         } else {
             block_tps_list[block_tps_list.len() / 2]
         };
