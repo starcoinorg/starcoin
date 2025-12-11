@@ -85,18 +85,17 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
                 }
             }
             PoolTransaction::Local(txn) => {
-                txn
-                // let user_txn = txn.transaction.clone();
-                // match self
-                //     .client
-                //     .verify_transaction(UnverifiedUserTransaction::from(user_txn))
-                // {
-                //     Ok(_) => txn,
-                //     Err(err) => {
-                //         warn!(target: "txqueue", "[{:?}] Rejected local tx {:?}", hash, err);
-                //         return Err(err);
-                //     }
-                // }
+                let user_txn = txn.transaction.clone();
+                match self
+                    .client
+                    .verify_transaction(UnverifiedUserTransaction::from(user_txn))
+                {
+                    Ok(_) => txn,
+                    Err(err) => {
+                        warn!(target: "txqueue", "[{:?}] Rejected local tx {:?}", hash, err);
+                        return Err(err);
+                    }
+                }
             }
         };
 
