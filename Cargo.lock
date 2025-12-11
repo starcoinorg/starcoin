@@ -13079,6 +13079,7 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-block-relayer",
+ "starcoin-chain",
  "starcoin-chain-notify",
  "starcoin-chain-service",
  "starcoin-config",

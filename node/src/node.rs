@@ -13,6 +13,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
+use starcoin_chain::txn_output_cache::TransactionOutputCache;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
@@ -254,6 +255,9 @@ impl NodeService {
 
         registry.put_shared(config.clone()).await?;
         registry.put_shared(logger_handle).await?;
+        registry
+            .put_shared(Arc::new(TransactionOutputCache::new()))
+            .await?;
         let vm_metrics = config
             .metrics
             .registry()
