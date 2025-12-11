@@ -2230,7 +2230,9 @@ impl BlockChain {
         let cache = global_txn_output_cache();
         let cached_outputs = cache.get(header.txn_accumulator_root());
 
-        // Execute VM1 transactions
+        let cache = global_txn_output_cache();
+        let cached_outputs = cache.get(header.state_root(), header.state_root());
+
         let executed_data = if !transactions.is_empty() {
             if let Some(ref cached) = cached_outputs {
                 if let Some(ref vm1_outputs) = cached.vm1_outputs {
@@ -2270,7 +2272,6 @@ impl BlockChain {
             }
         };
 
-        // Apply write sets for VM1
         for write_set in executed_data.write_sets {
             statedb
                 .apply_write_set(write_set)
@@ -2280,8 +2281,6 @@ impl BlockChain {
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
         }
 
-        // Execute VM2 transactions
-        // Calculate gas used from VM1 transactions
         let vm1_gas_used = executed_data
             .txn_infos
             .iter()

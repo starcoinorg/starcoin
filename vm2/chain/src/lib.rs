@@ -16,11 +16,18 @@ pub fn execute_transactions(
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
-    // This function will execute the transactions in the block using vm2
-    // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
         block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
+    Ok(executed_data)
+}
 
+pub fn execute_transactions_with_outputs(
+    statedb: &ChainStateDB,
+    transactions: Vec<Transaction>,
+    outputs: Vec<TransactionOutput>,
+) -> ExecutorResult<BlockExecutedData> {
+    let executed_data =
+        block_executor::block_execute_with_outputs(statedb, transactions, outputs)?;
     Ok(executed_data)
 }
 
