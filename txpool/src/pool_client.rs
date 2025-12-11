@@ -188,32 +188,31 @@ impl crate::pool::Client for PoolClient {
         let checked_txn = txn.clone().check_signature().map_err(|e| {
             MultiTransactionError::VM1(TransactionError::InvalidSignature(e.to_string()))
         })?;
-        Ok(checked_txn)
-        // match txn {
-        //     MultiSignedUserTransaction::VM1(txn) => {
-        //         match starcoin_executor::validate_transaction(
-        //             self.nonce_client.statedb.as_ref(),
-        //             txn,
-        //             self.vm_metrics.clone(),
-        //         ) {
-        //             None => Ok(checked_txn),
-        //             Some(status) => {
-        //                 Err(TransactionError::CallErr(CallError::ExecutionError(status)).into())
-        //             }
-        //         }
-        //     }
-        //     MultiSignedUserTransaction::VM2(txn) => {
-        //         match starcoin_vm2_executor::validate_transaction(
-        //             self.nonce_client.statedb2.as_ref(),
-        //             txn,
-        //             self.vm_metrics.clone(),
-        //         ) {
-        //             None => Ok(checked_txn),
-        //             Some(status) => {
-        //                 Err(TransactionError2::CallErr(CallError2::ExecutionError(status)).into())
-        //             }
-        //         }
-        //     }
-        // }
+        match txn {
+            MultiSignedUserTransaction::VM1(txn) => {
+                match starcoin_executor::validate_transaction(
+                    self.nonce_client.statedb.as_ref(),
+                    txn,
+                    self.vm_metrics.clone(),
+                ) {
+                    None => Ok(checked_txn),
+                    Some(status) => {
+                        Err(TransactionError::CallErr(CallError::ExecutionError(status)).into())
+                    }
+                }
+            }
+            MultiSignedUserTransaction::VM2(txn) => {
+                match starcoin_vm2_executor::validate_transaction(
+                    self.nonce_client.statedb2.as_ref(),
+                    txn,
+                    self.vm_metrics.clone(),
+                ) {
+                    None => Ok(checked_txn),
+                    Some(status) => {
+                        Err(TransactionError2::CallErr(CallError2::ExecutionError(status)).into())
+                    }
+                }
+            }
+        }
     }
 }
