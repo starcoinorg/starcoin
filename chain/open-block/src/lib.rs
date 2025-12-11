@@ -1,6 +1,3 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 mod vm2;
 
 use anyhow::{bail, format_err, Result};
@@ -32,6 +29,7 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm2_types::transaction::TransactionOutput as TransactionOutput2;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -51,7 +49,6 @@ pub struct OpenedBlock {
     difficulty: U256,
     strategy: ConsensusStrategy,
     vm_metrics: Option<VMMetrics>,
-    // DAG fields
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
@@ -142,7 +139,6 @@ impl OpenedBlock {
         self.gas_limit
     }
 
-    // TODO: should use check_sub or not
     pub fn gas_left(&self) -> u64 {
         debug_assert!(self.gas_limit >= self.gas_used);
         self.gas_limit - self.gas_used
@@ -156,7 +152,6 @@ impl OpenedBlock {
         &self.block_meta
     }
 
-    /// Convert VM2 BlockMetadata to VM1 format with uncles set to 0
     pub fn convert_block_meta_to_legacy(&self) -> BlockMetadataLegacy {
         block_metadata::from(self.block_meta.clone())
     }
@@ -176,11 +171,6 @@ impl OpenedBlock {
         self.chain_id
     }
 
-    /// Try to add `user_txns` into this block.
-    /// Return any txns  not included, either txn is discarded, or block gas limit is reached.
-    /// If error occurs during the processing, the `open_block` should be dropped,
-    /// as the internal state may be corrupted.
-    /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
         let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
@@ -188,7 +178,6 @@ impl OpenedBlock {
             .into_iter()
             .filter(|txn| {
                 let is_blacklisted = AddressFilter::is_blacklisted(self.block_number());
-                // Discard the txns send by the account in black list after a block number.
                 if is_blacklisted {
                     discard_txns.push(txn.clone().into());
                 }
@@ -249,7 +238,6 @@ impl OpenedBlock {
         })
     }
 
-    /// Run blockmeta first
     fn execute_block_meta_vm1(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
         let vm1_metadata = self.convert_block_meta_to_legacy();
@@ -303,9 +291,6 @@ impl OpenedBlock {
         root_state_calc: bool,
     ) -> Result<(Option<HashValue>, HashValue)> {
         let (state, _state2) = &mut self.state;
-        // Ignore the newly created table_infos.
-        // Because they are not needed to calculate state_root, or included to TransactionInfo.
-        // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
         let (_table_infos, write_set, events, gas_used, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status
@@ -347,7 +332,6 @@ impl OpenedBlock {
         Vec<starcoin_vm2_types::transaction::TransactionOutput>,
     )> {
         let accumulator_root = self.txn_accumulator.root_hash();
-        // update state_root accumulator, state_root order is important
         let (state_root, state_root1, state_root2) = {
             self.vm_state_accumulator
                 .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
@@ -390,17 +374,12 @@ impl OpenedBlock {
 }
 
 pub struct AddressFilter;
-//static BLACKLIST: [&str; 0] = [];
+
 impl AddressFilter {
     const FROZEN_BEGIN_BLOCK_NUMBER: BlockNumber = 16801958;
     const FROZEN_END_BLOCK_NUMBER: BlockNumber = 23026635;
     pub fn is_blacklisted(block_number: BlockNumber) -> bool {
         block_number > Self::FROZEN_BEGIN_BLOCK_NUMBER
             && block_number < Self::FROZEN_END_BLOCK_NUMBER
-        /*&& BLACKLIST
-            .iter()
-            .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
-            .any(|x| x == raw_txn.sender())
-        */
     }
 }
