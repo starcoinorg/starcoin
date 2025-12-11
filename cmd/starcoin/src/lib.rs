@@ -100,6 +100,7 @@ pub fn add_command(
                 .subcommand(chain::GetTransactionCommand)
                 .subcommand(chain::GetTxnInfosCommand)
                 .subcommand(chain::GetTransactionInfoCommand)
+                .subcommand(chain::GetTransactionInfoInSeqCommand)
                 .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetTransactionInfoListCommand)

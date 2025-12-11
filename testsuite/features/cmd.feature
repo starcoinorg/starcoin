@@ -16,9 +16,9 @@ Feature: cmd integration test
     Then cmd: "chain get-events {{$.chain[4].ok[0].transaction_hash}}"
     Then cmd: "chain get-txn-info-list -s 0 -c 5"
     Then cmd: "chain get-block-info {{$.chain[1].ok[0].number}}"
-    Then cmd: "chain get-txn-info --block-hash {{$.chain[1].ok[0].block_hash}} --idx 1 --vm1"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --final-transaction-id {{$.chain[9].ok.transaction_info_id}} --final-transaction-info-index 1"
-    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index 0 --raw --final-transaction-id {{$.chain[9].ok.transaction_info_id}} --final-transaction-info-index 1"
+    Then cmd: "chain get-txn-info-in-seq {{$.chain[1].ok[0].block_hash}}"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index {{$.chain[9].ok[0].transaction_global_index}} --final-transaction-info-id {{$.chain[9].ok[-1].transaction_info_id}} --final-transaction-info-index {{$.chain[9].ok[-1].transaction_global_index}}"
+    Then cmd: "chain get-txn-proof --block-hash {{$.chain[1].ok[0].block_hash}} --transaction-global-index {{$.chain[9].ok[0].transaction_global_index}} --raw --final-transaction-info-id {{$.chain[9].ok[-1].transaction_info_id}} --final-transaction-info-index {{$.chain[9].ok[-1].transaction_global_index}}"
     Then stop
 
     Examples:

@@ -41,7 +41,7 @@ use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
 };
-use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, StateView as StateView2};
+use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
 
@@ -401,6 +401,33 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+        let service = self.service.clone();
+        let fut = async move {
+            use starcoin_rpc_api::types::TransactionInfoViewEnum;
+
+            Ok(service
+                .get_block_txn_infos_in_seq(block_hash)
+                .await?
+                .into_iter()
+                .filter_map(|stc_rich_info| match &stc_rich_info.transaction_info {
+                    starcoin_types::transaction::StcTransactionInfo::V1(_) => stc_rich_info
+                        .to_v1()
+                        .map(|vm1_info| TransactionInfoViewEnum::VM1(vm1_info.into())),
+                    starcoin_types::transaction::StcTransactionInfo::V2(_) => stc_rich_info
+                        .to_v2()
+                        .map(|vm2_info| TransactionInfoViewEnum::VM2(vm2_info.into())),
+                })
+                .collect::<Vec<_>>())
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
     fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
@@ -661,6 +688,7 @@ where
         Box::pin(fut.boxed())
     }
 
+    #[allow(deprecated)]
     fn get_transaction_proof(
         &self,
         block_hash: HashValue,
@@ -685,6 +713,7 @@ where
         Box::pin(fut.boxed())
     }
 
+    #[allow(deprecated)]
     fn get_transaction_proof_raw(
         &self,
         block_hash: HashValue,
@@ -720,7 +749,7 @@ where
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
@@ -729,7 +758,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
+                    access_path,
                 )
                 .await?
                 .map(Into::into))
@@ -744,7 +773,7 @@ where
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
         let service = self.service.clone();
         let fut = async move {
@@ -753,7 +782,7 @@ where
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(|access_path| MultiAccessPath::VM2(access_path.into())),
+                    access_path,
                 )
                 .await?
                 .map(|proof| {

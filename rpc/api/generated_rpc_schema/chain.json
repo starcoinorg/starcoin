@@ -4319,7 +4319,8 @@
             "status",
             "transaction_global_index",
             "transaction_hash",
-            "transaction_index"
+            "transaction_index",
+            "transaction_info_id"
           ],
           "properties": {
             "block_hash": {
@@ -4454,6 +4455,10 @@
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0
+            },
+            "transaction_info_id": {
+              "type": "string",
+              "format": "HashValue"
             }
           }
         }
@@ -4663,7 +4668,8 @@
               "status",
               "transaction_global_index",
               "transaction_hash",
-              "transaction_index"
+              "transaction_index",
+              "transaction_info_id"
             ],
             "properties": {
               "block_hash": {
@@ -4798,6 +4804,10 @@
                 "type": "integer",
                 "format": "uint32",
                 "minimum": 0.0
+              },
+              "transaction_info_id": {
+                "type": "string",
+                "format": "HashValue"
               }
             }
           }
@@ -4980,6 +4990,352 @@
       }
     },
     {
+      "name": "chain.get_block_txn_infos_in_seq",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionInfoViewEnum >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionInfoViewEnum",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "block_hash",
+                  "block_number",
+                  "event_root_hash",
+                  "gas_used",
+                  "status",
+                  "transaction_global_index",
+                  "transaction_hash",
+                  "transaction_index",
+                  "transaction_info_id",
+                  "vm_type"
+                ],
+                "properties": {
+                  "block_hash": {
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "block_number": {
+                    "type": "string"
+                  },
+                  "event_root_hash": {
+                    "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "gas_used": {
+                    "description": "The amount of gas used.",
+                    "type": "string"
+                  },
+                  "state_root_hash": {
+                    "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "HashValue"
+                  },
+                  "status": {
+                    "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Executed",
+                          "OutOfGas",
+                          "MiscellaneousError",
+                          "Retry"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "MoveAbort"
+                        ],
+                        "properties": {
+                          "MoveAbort": {
+                            "type": "object",
+                            "required": [
+                              "abort_code",
+                              "location"
+                            ],
+                            "properties": {
+                              "abort_code": {
+                                "type": "string"
+                              },
+                              "location": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "ExecutionFailure"
+                        ],
+                        "properties": {
+                          "ExecutionFailure": {
+                            "type": "object",
+                            "required": [
+                              "code_offset",
+                              "function",
+                              "location"
+                            ],
+                            "properties": {
+                              "code_offset": {
+                                "type": "integer",
+                                "format": "uint16",
+                                "minimum": 0.0
+                              },
+                              "function": {
+                                "type": "integer",
+                                "format": "uint16",
+                                "minimum": 0.0
+                              },
+                              "location": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Discard"
+                        ],
+                        "properties": {
+                          "Discard": {
+                            "type": "object",
+                            "required": [
+                              "status_code",
+                              "status_code_name"
+                            ],
+                            "properties": {
+                              "status_code": {
+                                "type": "string"
+                              },
+                              "status_code_name": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "transaction_global_index": {
+                    "description": "The index of this transaction in chain",
+                    "type": "string"
+                  },
+                  "transaction_hash": {
+                    "description": "The hash of this transaction.",
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "transaction_index": {
+                    "description": "The index of this transaction in block",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "transaction_info_id": {
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "vm_type": {
+                    "type": "string",
+                    "enum": [
+                      "vm1"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "block_hash",
+                  "block_number",
+                  "event_root_hash",
+                  "gas_used",
+                  "status",
+                  "transaction_global_index",
+                  "transaction_hash",
+                  "transaction_index",
+                  "transaction_info_id",
+                  "vm_type"
+                ],
+                "properties": {
+                  "block_hash": {
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "block_number": {
+                    "type": "string"
+                  },
+                  "event_root_hash": {
+                    "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "gas_used": {
+                    "description": "The amount of gas used.",
+                    "type": "string"
+                  },
+                  "state_root_hash": {
+                    "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "HashValue"
+                  },
+                  "status": {
+                    "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "Executed",
+                          "OutOfGas",
+                          "MiscellaneousError",
+                          "Retry"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "MoveAbort"
+                        ],
+                        "properties": {
+                          "MoveAbort": {
+                            "type": "object",
+                            "required": [
+                              "abort_code",
+                              "location"
+                            ],
+                            "properties": {
+                              "abort_code": {
+                                "type": "string"
+                              },
+                              "location": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "ExecutionFailure"
+                        ],
+                        "properties": {
+                          "ExecutionFailure": {
+                            "type": "object",
+                            "required": [
+                              "code_offset",
+                              "function",
+                              "location"
+                            ],
+                            "properties": {
+                              "code_offset": {
+                                "type": "integer",
+                                "format": "uint16",
+                                "minimum": 0.0
+                              },
+                              "function": {
+                                "type": "integer",
+                                "format": "uint16",
+                                "minimum": 0.0
+                              },
+                              "location": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "Discard"
+                        ],
+                        "properties": {
+                          "Discard": {
+                            "type": "object",
+                            "required": [
+                              "status_code",
+                              "status_code_name"
+                            ],
+                            "properties": {
+                              "status_code": {
+                                "type": "string"
+                              },
+                              "status_code_name": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "transaction_global_index": {
+                    "description": "The index of this transaction in chain",
+                    "type": "string"
+                  },
+                  "transaction_hash": {
+                    "description": "The hash of this transaction.",
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "transaction_index": {
+                    "description": "The index of this transaction in block",
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "transaction_info_id": {
+                    "type": "string",
+                    "format": "HashValue"
+                  },
+                  "vm_type": {
+                    "type": "string",
+                    "enum": [
+                      "vm2"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "name": "chain.get_txn_info_by_block_and_index",
       "params": [
         {
@@ -5019,7 +5375,8 @@
             "status",
             "transaction_global_index",
             "transaction_hash",
-            "transaction_index"
+            "transaction_index",
+            "transaction_info_id"
           ],
           "properties": {
             "block_hash": {
@@ -5154,6 +5511,10 @@
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0
+            },
+            "transaction_info_id": {
+              "type": "string",
+              "format": "HashValue"
             }
           }
         }
@@ -5934,7 +6295,8 @@
               "status",
               "transaction_global_index",
               "transaction_hash",
-              "transaction_index"
+              "transaction_index",
+              "transaction_info_id"
             ],
             "properties": {
               "block_hash": {
@@ -6069,6 +6431,10 @@
                 "type": "integer",
                 "format": "uint32",
                 "minimum": 0.0
+              },
+              "transaction_info_id": {
+                "type": "string",
+                "format": "HashValue"
               }
             }
           }
@@ -6589,157 +6955,328 @@
               }
             },
             "transaction_info": {
-              "type": "object",
-              "required": [
-                "block_hash",
-                "block_number",
-                "event_root_hash",
-                "gas_used",
-                "status",
-                "transaction_global_index",
-                "transaction_hash",
-                "transaction_index",
-                "transaction_info_id"
-              ],
-              "properties": {
-                "block_hash": {
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "block_number": {
-                  "type": "string"
-                },
-                "event_root_hash": {
-                  "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "gas_used": {
-                  "description": "The amount of gas used.",
-                  "type": "string"
-                },
-                "state_root_hash": {
-                  "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                  "type": [
-                    "string",
-                    "null"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "block_hash",
+                    "block_number",
+                    "event_root_hash",
+                    "gas_used",
+                    "status",
+                    "transaction_global_index",
+                    "transaction_hash",
+                    "transaction_index",
+                    "transaction_info_id",
+                    "vm_type"
                   ],
-                  "format": "HashValue"
-                },
-                "status": {
-                  "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-                  "oneOf": [
-                    {
+                  "properties": {
+                    "block_hash": {
                       "type": "string",
-                      "enum": [
-                        "Executed",
-                        "OutOfGas",
-                        "MiscellaneousError",
-                        "Retry"
+                      "format": "HashValue"
+                    },
+                    "block_number": {
+                      "type": "string"
+                    },
+                    "event_root_hash": {
+                      "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "gas_used": {
+                      "description": "The amount of gas used.",
+                      "type": "string"
+                    },
+                    "state_root_hash": {
+                      "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "HashValue"
+                    },
+                    "status": {
+                      "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "Executed",
+                            "OutOfGas",
+                            "MiscellaneousError",
+                            "Retry"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "MoveAbort"
+                          ],
+                          "properties": {
+                            "MoveAbort": {
+                              "type": "object",
+                              "required": [
+                                "abort_code",
+                                "location"
+                              ],
+                              "properties": {
+                                "abort_code": {
+                                  "type": "string"
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "ExecutionFailure"
+                          ],
+                          "properties": {
+                            "ExecutionFailure": {
+                              "type": "object",
+                              "required": [
+                                "code_offset",
+                                "function",
+                                "location"
+                              ],
+                              "properties": {
+                                "code_offset": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "function": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Discard"
+                          ],
+                          "properties": {
+                            "Discard": {
+                              "type": "object",
+                              "required": [
+                                "status_code",
+                                "status_code_name"
+                              ],
+                              "properties": {
+                                "status_code": {
+                                  "type": "string"
+                                },
+                                "status_code_name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
                       ]
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "MoveAbort"
-                      ],
-                      "properties": {
-                        "MoveAbort": {
-                          "type": "object",
-                          "required": [
-                            "abort_code",
-                            "location"
-                          ],
-                          "properties": {
-                            "abort_code": {
-                              "type": "string"
-                            },
-                            "location": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_global_index": {
+                      "description": "The index of this transaction in chain",
+                      "type": "string"
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "ExecutionFailure"
-                      ],
-                      "properties": {
-                        "ExecutionFailure": {
-                          "type": "object",
-                          "required": [
-                            "code_offset",
-                            "function",
-                            "location"
-                          ],
-                          "properties": {
-                            "code_offset": {
-                              "type": "integer",
-                              "format": "uint16",
-                              "minimum": 0.0
-                            },
-                            "function": {
-                              "type": "integer",
-                              "format": "uint16",
-                              "minimum": 0.0
-                            },
-                            "location": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_hash": {
+                      "description": "The hash of this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "Discard"
-                      ],
-                      "properties": {
-                        "Discard": {
-                          "type": "object",
-                          "required": [
-                            "status_code",
-                            "status_code_name"
-                          ],
-                          "properties": {
-                            "status_code": {
-                              "type": "string"
-                            },
-                            "status_code_name": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_index": {
+                      "description": "The index of this transaction in block",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "transaction_info_id": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "vm_type": {
+                      "type": "string",
+                      "enum": [
+                        "vm1"
+                      ]
                     }
-                  ]
+                  }
                 },
-                "transaction_global_index": {
-                  "description": "The index of this transaction in chain",
-                  "type": "string"
-                },
-                "transaction_hash": {
-                  "description": "The hash of this transaction.",
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "transaction_index": {
-                  "description": "The index of this transaction in block",
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0.0
-                },
-                "transaction_info_id": {
-                  "type": "string",
-                  "format": "HashValue"
+                {
+                  "type": "object",
+                  "required": [
+                    "block_hash",
+                    "block_number",
+                    "event_root_hash",
+                    "gas_used",
+                    "status",
+                    "transaction_global_index",
+                    "transaction_hash",
+                    "transaction_index",
+                    "transaction_info_id",
+                    "vm_type"
+                  ],
+                  "properties": {
+                    "block_hash": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "block_number": {
+                      "type": "string"
+                    },
+                    "event_root_hash": {
+                      "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "gas_used": {
+                      "description": "The amount of gas used.",
+                      "type": "string"
+                    },
+                    "state_root_hash": {
+                      "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "HashValue"
+                    },
+                    "status": {
+                      "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "Executed",
+                            "OutOfGas",
+                            "MiscellaneousError",
+                            "Retry"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "MoveAbort"
+                          ],
+                          "properties": {
+                            "MoveAbort": {
+                              "type": "object",
+                              "required": [
+                                "abort_code",
+                                "location"
+                              ],
+                              "properties": {
+                                "abort_code": {
+                                  "type": "string"
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "ExecutionFailure"
+                          ],
+                          "properties": {
+                            "ExecutionFailure": {
+                              "type": "object",
+                              "required": [
+                                "code_offset",
+                                "function",
+                                "location"
+                              ],
+                              "properties": {
+                                "code_offset": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "function": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Discard"
+                          ],
+                          "properties": {
+                            "Discard": {
+                              "type": "object",
+                              "required": [
+                                "status_code",
+                                "status_code_name"
+                              ],
+                              "properties": {
+                                "status_code": {
+                                  "type": "string"
+                                },
+                                "status_code_name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "transaction_global_index": {
+                      "description": "The index of this transaction in chain",
+                      "type": "string"
+                    },
+                    "transaction_hash": {
+                      "description": "The hash of this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "transaction_index": {
+                      "description": "The index of this transaction in block",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "transaction_info_id": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "vm_type": {
+                      "type": "string",
+                      "enum": [
+                        "vm2"
+                      ]
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         }
@@ -6843,10 +7380,127 @@
           "name": "access_path",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
-            "type": [
-              "string",
-              "null"
+            "title": "Nullable_MultiAccessPath",
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "VM1"
+                    ],
+                    "properties": {
+                      "VM1": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "VM2"
+                    ],
+                    "properties": {
+                      "VM2": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         }
@@ -7124,157 +7778,328 @@
               }
             },
             "transaction_info": {
-              "type": "object",
-              "required": [
-                "block_hash",
-                "block_number",
-                "event_root_hash",
-                "gas_used",
-                "status",
-                "transaction_global_index",
-                "transaction_hash",
-                "transaction_index",
-                "transaction_info_id"
-              ],
-              "properties": {
-                "block_hash": {
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "block_number": {
-                  "type": "string"
-                },
-                "event_root_hash": {
-                  "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "gas_used": {
-                  "description": "The amount of gas used.",
-                  "type": "string"
-                },
-                "state_root_hash": {
-                  "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
-                  "type": [
-                    "string",
-                    "null"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "block_hash",
+                    "block_number",
+                    "event_root_hash",
+                    "gas_used",
+                    "status",
+                    "transaction_global_index",
+                    "transaction_hash",
+                    "transaction_index",
+                    "transaction_info_id",
+                    "vm_type"
                   ],
-                  "format": "HashValue"
-                },
-                "status": {
-                  "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
-                  "oneOf": [
-                    {
+                  "properties": {
+                    "block_hash": {
                       "type": "string",
-                      "enum": [
-                        "Executed",
-                        "OutOfGas",
-                        "MiscellaneousError",
-                        "Retry"
+                      "format": "HashValue"
+                    },
+                    "block_number": {
+                      "type": "string"
+                    },
+                    "event_root_hash": {
+                      "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "gas_used": {
+                      "description": "The amount of gas used.",
+                      "type": "string"
+                    },
+                    "state_root_hash": {
+                      "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "HashValue"
+                    },
+                    "status": {
+                      "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "Executed",
+                            "OutOfGas",
+                            "MiscellaneousError",
+                            "Retry"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "MoveAbort"
+                          ],
+                          "properties": {
+                            "MoveAbort": {
+                              "type": "object",
+                              "required": [
+                                "abort_code",
+                                "location"
+                              ],
+                              "properties": {
+                                "abort_code": {
+                                  "type": "string"
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "ExecutionFailure"
+                          ],
+                          "properties": {
+                            "ExecutionFailure": {
+                              "type": "object",
+                              "required": [
+                                "code_offset",
+                                "function",
+                                "location"
+                              ],
+                              "properties": {
+                                "code_offset": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "function": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Discard"
+                          ],
+                          "properties": {
+                            "Discard": {
+                              "type": "object",
+                              "required": [
+                                "status_code",
+                                "status_code_name"
+                              ],
+                              "properties": {
+                                "status_code": {
+                                  "type": "string"
+                                },
+                                "status_code_name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
                       ]
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "MoveAbort"
-                      ],
-                      "properties": {
-                        "MoveAbort": {
-                          "type": "object",
-                          "required": [
-                            "abort_code",
-                            "location"
-                          ],
-                          "properties": {
-                            "abort_code": {
-                              "type": "string"
-                            },
-                            "location": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_global_index": {
+                      "description": "The index of this transaction in chain",
+                      "type": "string"
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "ExecutionFailure"
-                      ],
-                      "properties": {
-                        "ExecutionFailure": {
-                          "type": "object",
-                          "required": [
-                            "code_offset",
-                            "function",
-                            "location"
-                          ],
-                          "properties": {
-                            "code_offset": {
-                              "type": "integer",
-                              "format": "uint16",
-                              "minimum": 0.0
-                            },
-                            "function": {
-                              "type": "integer",
-                              "format": "uint16",
-                              "minimum": 0.0
-                            },
-                            "location": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_hash": {
+                      "description": "The hash of this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
                     },
-                    {
-                      "type": "object",
-                      "required": [
-                        "Discard"
-                      ],
-                      "properties": {
-                        "Discard": {
-                          "type": "object",
-                          "required": [
-                            "status_code",
-                            "status_code_name"
-                          ],
-                          "properties": {
-                            "status_code": {
-                              "type": "string"
-                            },
-                            "status_code_name": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      },
-                      "additionalProperties": false
+                    "transaction_index": {
+                      "description": "The index of this transaction in block",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "transaction_info_id": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "vm_type": {
+                      "type": "string",
+                      "enum": [
+                        "vm1"
+                      ]
                     }
-                  ]
+                  }
                 },
-                "transaction_global_index": {
-                  "description": "The index of this transaction in chain",
-                  "type": "string"
-                },
-                "transaction_hash": {
-                  "description": "The hash of this transaction.",
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "transaction_index": {
-                  "description": "The index of this transaction in block",
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0.0
-                },
-                "transaction_info_id": {
-                  "type": "string",
-                  "format": "HashValue"
+                {
+                  "type": "object",
+                  "required": [
+                    "block_hash",
+                    "block_number",
+                    "event_root_hash",
+                    "gas_used",
+                    "status",
+                    "transaction_global_index",
+                    "transaction_hash",
+                    "transaction_index",
+                    "transaction_info_id",
+                    "vm_type"
+                  ],
+                  "properties": {
+                    "block_hash": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "block_number": {
+                      "type": "string"
+                    },
+                    "event_root_hash": {
+                      "description": "The root hash of Merkle Accumulator storing all events emitted during this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "gas_used": {
+                      "description": "The amount of gas used.",
+                      "type": "string"
+                    },
+                    "state_root_hash": {
+                      "description": "The root hash of Sparse Merkle Tree describing the world state at the end of this transaction.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "HashValue"
+                    },
+                    "status": {
+                      "description": "The vm status. If it is not `Executed`, this will provide the general error class. Execution failures and Move abort's receive more detailed information. But other errors are generally categorized with no status code or other information",
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "Executed",
+                            "OutOfGas",
+                            "MiscellaneousError",
+                            "Retry"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "MoveAbort"
+                          ],
+                          "properties": {
+                            "MoveAbort": {
+                              "type": "object",
+                              "required": [
+                                "abort_code",
+                                "location"
+                              ],
+                              "properties": {
+                                "abort_code": {
+                                  "type": "string"
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "ExecutionFailure"
+                          ],
+                          "properties": {
+                            "ExecutionFailure": {
+                              "type": "object",
+                              "required": [
+                                "code_offset",
+                                "function",
+                                "location"
+                              ],
+                              "properties": {
+                                "code_offset": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "function": {
+                                  "type": "integer",
+                                  "format": "uint16",
+                                  "minimum": 0.0
+                                },
+                                "location": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "Discard"
+                          ],
+                          "properties": {
+                            "Discard": {
+                              "type": "object",
+                              "required": [
+                                "status_code",
+                                "status_code_name"
+                              ],
+                              "properties": {
+                                "status_code": {
+                                  "type": "string"
+                                },
+                                "status_code_name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "transaction_global_index": {
+                      "description": "The index of this transaction in chain",
+                      "type": "string"
+                    },
+                    "transaction_hash": {
+                      "description": "The hash of this transaction.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "transaction_index": {
+                      "description": "The index of this transaction in block",
+                      "type": "integer",
+                      "format": "uint32",
+                      "minimum": 0.0
+                    },
+                    "transaction_info_id": {
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "vm_type": {
+                      "type": "string",
+                      "enum": [
+                        "vm2"
+                      ]
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         }
@@ -7319,10 +8144,127 @@
           "name": "access_path",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "Nullable_starcoin_vm_types::access_path::AccessPath",
-            "type": [
-              "string",
-              "null"
+            "title": "Nullable_MultiAccessPath",
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "VM1"
+                    ],
+                    "properties": {
+                      "VM1": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "VM2"
+                    ],
+                    "properties": {
+                      "VM2": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         }

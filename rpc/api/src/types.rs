@@ -48,8 +48,8 @@ use starcoin_types::{
         authenticator::{AccountPublicKey, AuthenticationKey, TransactionAuthenticator},
         legacy::RichTransactionInfo,
         RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, StcRichTransactionInfo,
-        Transaction, TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload,
-        TransactionStatus,
+        StcTransactionInfo, Transaction, TransactionArgument, TransactionInfo, TransactionOutput,
+        TransactionPayload, TransactionStatus,
     },
     vm_error::AbortLocation,
     U256,
@@ -84,8 +84,10 @@ pub use vm_status_translator::VmStatusExplainView;
 pub type ByteCode = Vec<u8>;
 mod node_api_types;
 pub mod pubsub;
-use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
-use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
+use starcoin_vm2_types::{
+    transaction::RichTransactionInfo as RichTransactionInfo2,
+    view::TransactionInfoView as TransactionInfoView2,
+};
 use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -1013,6 +1015,7 @@ impl TryFrom<BlockView> for Block {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {
+    pub transaction_info_id: HashValue,
     pub block_hash: HashValue,
     pub block_number: StrView<u64>,
     /// The hash of this transaction.
@@ -1040,6 +1043,7 @@ pub struct TransactionInfoView {
 impl TransactionInfoView {
     pub fn new(txn_info: RichTransactionInfo) -> Self {
         Self {
+            transaction_info_id: txn_info.id(),
             block_hash: txn_info.block_id,
             block_number: txn_info.block_number.into(),
             transaction_hash: txn_info.transaction_hash,
@@ -1087,6 +1091,15 @@ impl TryFrom<TransactionInfoView> for RichTransactionInfo {
             }
         }
     }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "vm_type")]
+pub enum TransactionInfoViewEnum {
+    #[serde(rename = "vm1")]
+    VM1(TransactionInfoView),
+    #[serde(rename = "vm2")]
+    VM2(TransactionInfoView2),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -1714,7 +1727,7 @@ impl From<EventWithProofView> for MultiEventWithProof {
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoWithProofView {
-    pub transaction_info: TransactionInfoView2,
+    pub transaction_info: TransactionInfoViewEnum,
     pub proof: AccumulatorProofView,
     pub final_proof: AccumulatorProofView,
     pub event_proof: Option<EventWithProofView>,
@@ -1724,12 +1737,31 @@ pub struct TransactionInfoWithProofView {
 
 impl From<TransactionInfoWithProof> for TransactionInfoWithProofView {
     fn from(origin: TransactionInfoWithProof) -> Self {
+        let transaction_info = match origin.transaction_info.transaction_info {
+            StcTransactionInfo::V1(info) => {
+                let rich_info = RichTransactionInfo {
+                    block_id: origin.transaction_info.block_id,
+                    block_number: origin.transaction_info.block_number,
+                    transaction_info: info,
+                    transaction_index: origin.transaction_info.transaction_index,
+                    transaction_global_index: origin.transaction_info.transaction_global_index,
+                };
+                TransactionInfoViewEnum::VM1(rich_info.into())
+            }
+            StcTransactionInfo::V2(info) => {
+                let rich_info = RichTransactionInfo2 {
+                    block_id: origin.transaction_info.block_id,
+                    block_number: origin.transaction_info.block_number,
+                    transaction_info: info,
+                    transaction_index: origin.transaction_info.transaction_index,
+                    transaction_global_index: origin.transaction_info.transaction_global_index,
+                };
+                TransactionInfoViewEnum::VM2(rich_info.into())
+            }
+        };
+
         Self {
-            transaction_info: origin
-                .transaction_info
-                .to_v2()
-                .expect("this must be v1 transaction info")
-                .into(),
+            transaction_info,
             proof: origin.proof.into(),
             final_proof: origin.final_proof.into(),
             event_proof: origin.event_proof.map(Into::into),
@@ -1743,10 +1775,17 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
     type Error = anyhow::Error;
 
     fn try_from(view: TransactionInfoWithProofView) -> Result<Self, Self::Error> {
+        let transaction_info = match view.transaction_info {
+            TransactionInfoViewEnum::VM1(info) => {
+                StcRichTransactionInfo::from(RichTransactionInfo::try_from(info)?)
+            }
+            TransactionInfoViewEnum::VM2(info) => {
+                StcRichTransactionInfo::from(RichTransactionInfo2::try_from(info)?)
+            }
+        };
+
         Ok(Self {
-            transaction_info: StcRichTransactionInfo::from(RichTransactionInfo2::try_from(
-                view.transaction_info,
-            )?),
+            transaction_info,
             proof: view.proof.into(),
             final_proof: view.final_proof.into(),
             event_proof: view.event_proof.map(TryInto::try_into).transpose()?,

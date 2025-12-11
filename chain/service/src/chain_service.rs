@@ -199,6 +199,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
                 ChainResponse::TransactionInfos(self.inner.get_block_txn_infos(block_id)?),
             ),
+            ChainRequest::GetBlockTransactionInfosInSeq(block_id) => {
+                Ok(ChainResponse::TransactionInfosInSeq(
+                    self.inner.get_block_txn_infos_in_seq(block_id)?,
+                ))
+            }
             ChainRequest::GetTransactionInfoByBlockAndIndex {
                 block_hash: block_id,
                 txn_idx,
@@ -438,6 +443,15 @@ impl ReadableChainService for ChainReaderServiceInner {
         block_id: HashValue,
     ) -> Result<Vec<StcRichTransactionInfo>, Error> {
         self.storage.get_block_transaction_infos(block_id)
+    }
+
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Vec<StcRichTransactionInfo>, Error> {
+        let mut all_txn_infos = self.storage.get_block_transaction_infos(block_id)?;
+        all_txn_infos.sort_by_key(|info| info.transaction_global_index);
+        Ok(all_txn_infos)
     }
 
     fn get_txn_info_by_block_and_index(

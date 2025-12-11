@@ -38,6 +38,7 @@ starcoin-abi-types = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
 starcoin-chain = { workspace = true }
+starcoin-chain-api = { workspace = true }
 starcoin-chain-notify = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-config = { workspace = true }

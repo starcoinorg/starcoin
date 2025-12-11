@@ -5,7 +5,8 @@ pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, MultiStateView, StrView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoViewEnum,
+    TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -15,12 +16,12 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::multi_access_path::MultiAccessPath;
 use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_types::view::{
     StrView as StrView2, TransactionEventResponse as TransactionEventResponse2,
     TransactionInfoView as TransactionInfoView2,
 };
-use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
 #[openrpc]
@@ -103,6 +104,13 @@ pub trait ChainApi {
         block_hash: HashValue,
     ) -> FutureResult<Vec<TransactionInfoView2>>;
 
+    /// Get chain transactions infos by block id in sequence (both VM1 and VM2)
+    #[rpc(name = "chain.get_block_txn_infos_in_seq")]
+    fn get_block_txn_infos_in_seq(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionInfoViewEnum>>;
+
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]
     fn get_txn_info_by_block_and_index(
@@ -163,9 +171,6 @@ pub trait ChainApi {
         max_size: u64,
     ) -> FutureResult<Vec<TransactionInfoView2>>;
 
-    /// Get TransactionInfoWithProof, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
-    /// if `event_index` is some, also return the EventWithProof in current transaction event_root
-    /// if `access_path` is some, also return the StateWithProof in current transaction state_root
     #[rpc(name = "chain.get_transaction_proof")]
     fn get_transaction_proof(
         &self,
@@ -175,7 +180,6 @@ pub trait ChainApi {
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>>;
 
-    /// Get TransactionInfoWithProof, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
     #[rpc(name = "chain.get_transaction_proof_raw")]
     fn get_transaction_proof_raw(
         &self,
@@ -185,26 +189,22 @@ pub trait ChainApi {
         access_path: Option<StrView<AccessPath>>,
     ) -> FutureResult<Option<StrView<Vec<u8>>>>;
 
-    /// Get TransactionInfoWithProof2, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
-    /// if `event_index` is some, also return the EventWithProof in current transaction event_root
-    /// if `access_path` is some, also return the StateWithProof in current transaction state_root
     #[rpc(name = "chain.get_transaction_proof2")]
     fn get_transaction_proof2(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<TransactionInfoWithProofView>>;
 
-    /// Get TransactionInfoWithProof2Raw, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
     #[rpc(name = "chain.get_transaction_proof2_raw")]
     fn get_transaction_proof2_raw(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<StrView2<AccessPath2>>,
+        access_path: Option<MultiAccessPath>,
     ) -> FutureResult<Option<StrView2<Vec<u8>>>>;
 
     #[rpc(name = "chain.get_vm_multi_state")]

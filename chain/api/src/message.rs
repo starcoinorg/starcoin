@@ -36,6 +36,7 @@ pub enum ChainRequest {
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
+    GetBlockTransactionInfosInSeq(HashValue),
     GetTransactionInfoByBlockAndIndex {
         block_hash: HashValue,
         txn_idx: u64,
@@ -107,6 +108,7 @@ pub enum ChainResponse {
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<Option<BlockHeader>>),
     TransactionInfos(Vec<StcRichTransactionInfo>),
+    TransactionInfosInSeq(Vec<StcRichTransactionInfo>),
     TransactionInfo(Option<StcRichTransactionInfo>),
     Events(Vec<StcContractEventInfo>),
     MainEvents(Vec<StcContractEventInfo>),
