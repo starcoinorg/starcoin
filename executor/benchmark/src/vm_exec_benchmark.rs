@@ -29,7 +29,10 @@ use std::cmp::min;
 use std::sync::Arc;
 
 const INIT_ACCOUNT_BALANCE: u64 = 40_000_000_000;
+// Keep account creation batches small to avoid overwhelming caches.
 const CREATE_BATCH_SIZE: usize = 500;
+// Give generated transactions ample TTL to avoid expiration during generation/execution.
+const TXN_TTL_SECS: u64 = 3600;
 
 struct AccountData {
     private_key: AccountPrivateKey,
@@ -80,9 +83,8 @@ impl TransactionGenerator {
     fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction> {
         // Generate creation txns in chunks to avoid exceeding association account sequence window.
         let mut all_txns = Vec::with_capacity(self.accounts.len());
-        let chunk_size = 2000; // stay within reasonable batch size
+        let chunk_size = CREATE_BATCH_SIZE; // stay within reasonable batch size
         for (chunk_idx, chunk) in self.accounts.chunks(chunk_size).enumerate() {
-            self.net.time_service().sleep(1000);
             for (offset, receiver) in chunk.iter().enumerate() {
                 let seq = (chunk_idx * chunk_size + offset) as u64;
                 let payload = transfer_scripts_batch_peer_to_peer_v2(
@@ -96,7 +98,7 @@ impl TransactionGenerator {
                     seq, // The first transaction from the association account should have sequence number 0
                     DEFAULT_MAX_GAS_AMOUNT,
                     1,
-                    self.net.time_service().now_secs() + seq,
+                    self.net.time_service().now_secs() + TXN_TTL_SECS,
                     self.net.chain_id().id().into(),
                     self.net.genesis_config2(),
                 );
@@ -109,7 +111,6 @@ impl TransactionGenerator {
     }
 
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction> {
-        self.net.time_service().sleep(1000);
         let mut txns = Vec::with_capacity(txns_num);
         self.accounts.iter_mut().for_each(|account| {
             account.sequence_number = 0;
@@ -129,9 +130,7 @@ impl TransactionGenerator {
                     sender,
                     self.accounts[sender_idx].sequence_number,
                     payload,
-                    self.net.time_service().now_secs()
-                        + self.accounts[sender_idx].sequence_number
-                        + 1,
+                    self.net.time_service().now_secs() + TXN_TTL_SECS,
                     &self.net,
                 );
                 self.accounts[sender_idx].sequence_number += 1;
