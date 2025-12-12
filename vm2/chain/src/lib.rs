@@ -26,8 +26,7 @@ pub fn execute_transactions_with_outputs(
     transactions: Vec<Transaction>,
     outputs: Vec<TransactionOutput>,
 ) -> ExecutorResult<BlockExecutedData> {
-    let executed_data =
-        block_executor::block_execute_with_outputs(statedb, transactions, outputs)?;
+    let executed_data = block_executor::block_execute_with_outputs(statedb, transactions, outputs)?;
     Ok(executed_data)
 }
 

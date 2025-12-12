@@ -6,7 +6,7 @@ use anyhow::{bail, format_err};
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::debug;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;

@@ -14,6 +14,7 @@ use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutpu
 use starcoin_vm_types::account_config::{BalanceEvent, STCUnit, G_STC_TOKEN_CODE};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
