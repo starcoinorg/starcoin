@@ -395,7 +395,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn import_txns(
+    pub fn import_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
         bypass_vm1_limit: bool,
