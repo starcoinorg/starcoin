@@ -60,9 +60,16 @@ impl OpenedBlock {
     ) -> anyhow::Result<ExcludedTxns> {
         let start_time = std::time::Instant::now();
         let input_count = user_txns.len();
+        let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+            format_err!(
+                "block gas_used {} exceed block gas_limit:{}",
+                self.gas_used,
+                self.gas_limit
+            )
+        })?;
         info!(
-            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
-            input_count, self.gas_used, self.gas_limit
+            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}, gas_left={}",
+            input_count, self.gas_used, self.gas_limit, gas_left
         );
         let state = &self.state.1;
         let mut txns = user_txns
@@ -74,13 +81,6 @@ impl OpenedBlock {
 
         let exec_start = std::time::Instant::now();
         let txn_outputs = {
-            let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
-                format_err!(
-                    "block gas_used {} exceed block gas_limit:{}",
-                    self.gas_used,
-                    self.gas_limit
-                )
-            })?;
             do_execute_block_transactions(
                 state,
                 txns.clone(),
@@ -90,11 +90,13 @@ impl OpenedBlock {
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
         };
         info!(
-            "[jacktest] push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
+            "[jacktest] push_txns2 execution done: input={}, outputs={}, exec_elapsed_ms={}",
+            txns.len(),
             txn_outputs.len(),
             exec_start.elapsed().as_millis()
         );
 
+        let gas_exceeded_count = txns.len().saturating_sub(txn_outputs.len());
         if txn_outputs.len() < txns.len() {
             untouched_txns = txns
                 .drain(txn_outputs.len()..)
@@ -102,14 +104,27 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        
+        let mut keep_count = 0;
+        let mut discard_count = 0;
+        let mut retry_count = 0;
+        
+        for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
+                    discard_count += 1;
+                    if index < 5 {
+                        info!(
+                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=discard, reason={:?}",
+                            index, &txn_hash.to_string()[..6], status
+                        );
+                    }
                     debug!("discard txn {}, vm status: {:?}", txn_hash, status);
                     discarded_txns.push(txn.try_into().expect("user txn"));
                 }
                 TransactionStatus2::Keep(status) => {
+                    keep_count += 1;
                     if !status.is_success() {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
@@ -121,12 +136,19 @@ impl OpenedBlock {
                     self.total_fee2 = self
                         .total_fee2
                         .saturating_add(u128::from(gas_used) * u128::from(gas_price));
+                    if index < 5 || index % 500 == 0 {
+                        info!(
+                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=keep, gas_used={}, total_gas={}",
+                            index, &txn_hash.to_string()[..6], gas_used, self.gas_used + gas_used
+                        );
+                    }
                     self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
                         .push(txn.try_into().expect("user txn"));
                 }
                 TransactionStatus2::Retry => {
+                    retry_count += 1;
                     debug!("impossible retry txn {}", txn_hash);
                     discarded_txns.push(txn.try_into().expect("user txn"));
                 }
@@ -134,11 +156,13 @@ impl OpenedBlock {
         }
 
         info!(
-            "[jacktest] push_txns2 done: input={}, included={}, discarded={}, untouched={}, total_elapsed_ms={}",
+            "[jacktest] push_txns2 done: input={}, keep={}, discard={}, retry={}, gas_exceeded={}, final_gas={}, elapsed_ms={}",
             input_count,
-            self.included_user_txns2.len(),
-            discarded_txns.len(),
-            untouched_txns.len(),
+            keep_count,
+            discard_count,
+            retry_count,
+            gas_exceeded_count,
+            self.gas_used,
             start_time.elapsed().as_millis()
         );
 
