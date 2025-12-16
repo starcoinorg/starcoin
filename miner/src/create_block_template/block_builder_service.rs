@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -50,6 +51,9 @@ use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+
+/// Global flag to prevent concurrent block building
+static IS_BUILDING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
