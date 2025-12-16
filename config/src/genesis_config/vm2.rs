@@ -182,7 +182,7 @@ static G_DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(10));
 
-pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000_000; //must big than maximum_number_of_gas_units
+pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 pub static G_MAX_TRANSACTION_PER_BLOCK: u64 = 2000;
 
 // DAG pruning parameters

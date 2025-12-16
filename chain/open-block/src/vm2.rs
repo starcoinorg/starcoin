@@ -60,16 +60,9 @@ impl OpenedBlock {
     ) -> anyhow::Result<ExcludedTxns> {
         let start_time = std::time::Instant::now();
         let input_count = user_txns.len();
-        let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
-            format_err!(
-                "block gas_used {} exceed block gas_limit:{}",
-                self.gas_used,
-                self.gas_limit
-            )
-        })?;
         info!(
-            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}, gas_left={}",
-            input_count, self.gas_used, self.gas_limit, gas_left
+            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
+            input_count, self.gas_used, self.gas_limit
         );
         let state = &self.state.1;
         let mut txns = user_txns
@@ -81,17 +74,24 @@ impl OpenedBlock {
 
         let exec_start = std::time::Instant::now();
         let txn_outputs = {
+            let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+                format_err!(
+                    "block gas_used {} exceed block gas_limit:{}",
+                    self.gas_used,
+                    self.gas_limit
+                )
+            })?;
             do_execute_block_transactions(
                 state,
                 txns.clone(),
-                Some(gas_left),
+                // Some(gas_left),
+                Some(1_000_000_000),
                 self.vm_metrics.clone(),
             )
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
         };
         info!(
-            "[jacktest] push_txns2 execution done: input={}, outputs={}, exec_elapsed_ms={}",
-            txns.len(),
+            "[jacktest] push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
             txn_outputs.len(),
             exec_start.elapsed().as_millis()
         );
