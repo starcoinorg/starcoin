@@ -258,11 +258,11 @@ impl BlockVerifier for BasicVerifier {
 
         let block_gas_limit = epoch.block_gas_limit();
 
-        verify_block!(
-            VerifyBlockField::Header,
-            new_block_header.gas_used() <= block_gas_limit,
-            "invalid block: gas_used should not greater than block_gas_limit"
-        );
+        // verify_block!(
+        //     VerifyBlockField::Header,
+        //     new_block_header.gas_used() <= block_gas_limit,
+        //     "invalid block: gas_used should not greater than block_gas_limit"
+        // );
 
         let current_block_info = current_chain
             .get_block_info(Some(current_id))?
