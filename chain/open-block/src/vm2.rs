@@ -6,7 +6,7 @@ use anyhow::{bail, format_err};
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::debug;
+use starcoin_logger::prelude::{debug, info};
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
@@ -60,6 +60,12 @@ impl OpenedBlock {
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
     ) -> anyhow::Result<ExcludedTxns> {
+        let start_time = std::time::Instant::now();
+        let input_count = user_txns.len();
+        info!(
+            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
+            input_count, self.gas_used, self.gas_limit
+        );
         let state = &self.state.1;
         let mut txns = user_txns
             .into_iter()
@@ -68,6 +74,7 @@ impl OpenedBlock {
         let mut discarded_txns: Vec<MultiSignedUserTransaction> = Vec::new();
         let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
+        let exec_start = std::time::Instant::now();
         let txn_outputs = {
             let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
                 format_err!(
@@ -84,6 +91,11 @@ impl OpenedBlock {
             )
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
         };
+        info!(
+            "[jacktest] push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
+            txn_outputs.len(),
+            exec_start.elapsed().as_millis()
+        );
 
         if txn_outputs.len() < txns.len() {
             untouched_txns = txns
@@ -116,6 +128,15 @@ impl OpenedBlock {
                 }
             };
         }
+
+        info!(
+            "[jacktest] push_txns2 done: input={}, included={}, discarded={}, untouched={}, total_elapsed_ms={}",
+            input_count,
+            self.included_user_txns2.len(),
+            discarded_txns.len(),
+            untouched_txns.len(),
+            start_time.elapsed().as_millis()
+        );
 
         Ok(ExcludedTxns {
             discarded_txns,

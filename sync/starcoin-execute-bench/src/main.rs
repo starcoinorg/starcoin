@@ -111,7 +111,7 @@ struct Cli {
 
     #[arg(
         long = "batch-user-count",
-        default_value = "2000",
+        default_value = "4000",
         help = "Number of users per batch. Each batch uses different users (0 to batch_user_count-1 in first batch, etc). Within each batch, first half sends to second half."
     )]
     batch_user_count: usize,
