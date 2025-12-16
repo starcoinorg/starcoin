@@ -744,7 +744,7 @@ impl ChainStateWriter for ChainStateDB {
             //update self updates record
             match state_key.inner() {
                 StateKeyInner::AccessPath(access_path) => {
-                    locks.insert(access_path.address);
+                    let is_new_address = locks.insert(access_path.address);
                     let (account_address, data_path) = access_path.clone().into_inner();
                     // todo: squash write_set?
                     match write_op {
@@ -752,8 +752,21 @@ impl ChainStateWriter for ChainStateDB {
                             let account_state_object =
                                 self.get_account_state_object(&account_address, true)?;
                             account_state_object.set(data_path, data.into());
+                            if is_new_address {
+                                info!(
+                                    "[jacktest] apply_write_set: new address {} added (Creation/Modification)",
+                                    account_address
+                                );
+                            }
                         }
                         WriteOp::Deletion { .. } => {
+                            if is_new_address {
+                                info!(
+                                    "[jacktest] apply_write_set: new address {} added (Deletion), cache_exists={}",
+                                    account_address,
+                                    self.cache.get(&account_address).is_some()
+                                );
+                            }
                             let account_state_object =
                                 self.get_account_state_object(&account_address, false)?;
                             account_state_object.remove(&data_path)?;
@@ -815,7 +828,18 @@ impl ChainStateWriter for ChainStateDB {
         }
 
         for address in self.updates.read().iter() {
-            let account_state_object = self.get_account_state_object(address, false)?;
+            let account_state_object = match self.get_account_state_object(address, false) {
+                Ok(obj) => obj,
+                Err(e) => {
+                    info!(
+                        "[jacktest] commit failed: address={}, error={}, cache_exists={}",
+                        address,
+                        e,
+                        self.cache.get(address).is_some()
+                    );
+                    return Err(e);
+                }
+            };
             let state = account_state_object.commit()?;
             self.state_tree.put(*address, state.try_into()?);
         }
