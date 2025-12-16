@@ -831,11 +831,18 @@ impl ChainStateWriter for ChainStateDB {
             let account_state_object = match self.get_account_state_object(address, false) {
                 Ok(obj) => obj,
                 Err(e) => {
+                    let cache_status = match self.cache.get(address) {
+                        Some(item) => match item.as_object() {
+                            Some(_) => "AccountObject",
+                            None => "AccountNotExist",
+                        },
+                        None => "NotInCache",
+                    };
                     info!(
-                        "[jacktest] commit failed: address={}, error={}, cache_exists={}",
+                        "[jacktest] commit failed: address={}, error={}, cache_status={}",
                         address,
                         e,
-                        self.cache.get(address).is_some()
+                        cache_status
                     );
                     return Err(e);
                 }
