@@ -845,7 +845,18 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
+        let start_time = std::time::Instant::now();
+        info!(
+            "[jacktest] fetch_transactions start: max_txns={}, header_number={}",
+            max_txns,
+            header.number()
+        );
         let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, header);
+        info!(
+            "[jacktest] fetch_transactions got from txpool: count={}, elapsed_ms={}",
+            pending_multi_transactions.len(),
+            start_time.elapsed().as_millis()
+        );
 
         // Separate VM1 and VM2 transactions
         let mut pending_transactions = vec![];
@@ -859,6 +870,12 @@ where
 
         // return Ok((pending_transactions, pending_transactions2));
         if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
+            info!(
+                "[jacktest] fetch_transactions done (from txpool only): vm1={}, vm2={}, elapsed_ms={}",
+                pending_transactions.len(),
+                pending_transactions2.len(),
+                start_time.elapsed().as_millis()
+            );
             return Ok((pending_transactions, pending_transactions2));
         }
 
@@ -882,6 +899,13 @@ where
             other => other,
         });
 
+        info!(
+            "[jacktest] fetch_transactions done (with blue_blocks): vm1={}, vm2={}, blue_blocks={}, elapsed_ms={}",
+            pending_transactions.len(),
+            pending_transactions2.len(),
+            blue_blocks.len(),
+            start_time.elapsed().as_millis()
+        );
         Ok((pending_transactions, pending_transactions2))
     }
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
