@@ -2302,7 +2302,8 @@ impl BlockChain {
                 starcoin_vm2_chain::execute_transactions(
                     statedb2,
                     transactions2.clone(),
-                    epoch.block_gas_limit() - vm1_gas_used,
+                    u64::MAX,
+                    // epoch.block_gas_limit() - vm1_gas_used,
                     self.vm_metrics.clone(),
                 )?
             }
