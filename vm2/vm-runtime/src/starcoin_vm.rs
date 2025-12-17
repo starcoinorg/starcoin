@@ -19,7 +19,6 @@ use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
-use std::time::Instant;
 use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::Gas;
 use starcoin_gas_meter::StarcoinGasMeter;
@@ -65,6 +64,7 @@ use starcoin_vm_types::{
 use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
 use std::sync::LazyLock;
+use std::time::{Duration, Instant};
 use std::{borrow::Borrow, cmp::min, collections::BTreeSet, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
@@ -437,10 +437,11 @@ impl StarcoinVM {
         prologue_result
     }
 
-    pub fn verify_transaction<S: StateView>(
+    fn verify_transaction_with_options<S: StateView>(
         &mut self,
         state_view: &S,
         txn: SignedUserTransaction,
+        reload_configs: bool,
     ) -> Option<VMStatus> {
         let total_start = Instant::now();
         #[cfg(feature = "metrics")]
@@ -465,19 +466,22 @@ impl StarcoinVM {
         };
         let sig_dur = sig_start.elapsed();
 
-        let cfg_start = Instant::now();
-        if let Err(err) = self.load_configs(state_view) {
-            warn!("Load config error at verify_transaction: {}", err);
-            debug!(
-                target: "txpool",
-                "vm2 verify_transaction load_configs failed sig_ms={:.3} cfg_ms={:.3} total_ms={:.3}",
-                sig_dur.as_secs_f64() * 1000.0,
-                cfg_start.elapsed().as_secs_f64() * 1000.0,
-                total_start.elapsed().as_secs_f64() * 1000.0,
-            );
-            return Some(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
+        let mut cfg_dur = Duration::from_millis(0);
+        if reload_configs || self.vm_config.is_none() || self.gas_schedule.is_none() {
+            let cfg_start = Instant::now();
+            if let Err(err) = self.load_configs(state_view) {
+                warn!("Load config error at verify_transaction: {}", err);
+                debug!(
+                    target: "txpool",
+                    "vm2 verify_transaction load_configs failed sig_ms={:.3} cfg_ms={:.3} total_ms={:.3}",
+                    sig_dur.as_secs_f64() * 1000.0,
+                    cfg_start.elapsed().as_secs_f64() * 1000.0,
+                    total_start.elapsed().as_secs_f64() * 1000.0,
+                );
+                return Some(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
+            }
+            cfg_dur = cfg_start.elapsed();
         }
-        let cfg_dur = cfg_start.elapsed();
         let verify_start = Instant::now();
         let verify_result = match self.verify_transaction_impl(&signature_verified_txn, &data_cache)
         {
@@ -500,6 +504,22 @@ impl StarcoinVM {
             total_start.elapsed().as_secs_f64() * 1000.0,
         );
         verify_result
+    }
+
+    pub fn verify_transaction<S: StateView>(
+        &mut self,
+        state_view: &S,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        self.verify_transaction_with_options(state_view, txn, true)
+    }
+
+    pub fn verify_transaction_cached_config<S: StateView>(
+        &mut self,
+        state_view: &S,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        self.verify_transaction_with_options(state_view, txn, false)
     }
 
     fn only_new_module_strategy<S: StateView>(

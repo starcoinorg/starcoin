@@ -2,28 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use num_cpus;
 use rayon::prelude::*;
-use rayon::ThreadPoolBuilder;
+use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::{init_with_default_level, LogPattern};
+use starcoin_storage::Store;
 use starcoin_transaction_builder::vm2::build_transfer_from_association;
-use starcoin_vm2_vm_types::account_address::AccountAddress as Vm2AccountAddress;
-use transaction_pool::Verifier as TxPoolVerifier;
 use starcoin_txpool::{
-    NonceCache, PoolClient, PoolTransaction, SeqNumberAndGasPrice,
-    UnverifiedUserTransaction, VerifiedTransaction, Verifier, VerifierOptions,
+    NonceCache, PoolClient, PoolTransaction, SeqNumberAndGasPrice, UnverifiedUserTransaction,
+    VerifiedTransaction, Verifier, VerifierOptions, VerifierPool,
 };
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_storage::Store;
+use starcoin_vm2_vm_types::account_address::AccountAddress as Vm2AccountAddress;
 use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Once};
+use transaction_pool::Verifier as TxPoolVerifier;
 
 static LOG_INIT: Once = Once::new();
 
-fn build_verifier() -> (
+fn build_verifier(
+    use_pool: bool,
+) -> (
     Verifier<PoolClient, SeqNumberAndGasPrice, VerifiedTransaction>,
     MultiSignedUserTransaction,
 ) {
@@ -38,6 +39,16 @@ fn build_verifier() -> (
         .get_vm_multi_state(chain_info.head().id())
         .expect("multi state from genesis");
 
+    let verifier_pool = if use_pool {
+        Some(Arc::new(VerifierPool::new(
+            num_cpus::get(),
+            storage2.clone(),
+            None,
+        )))
+    } else {
+        None
+    };
+
     let pool_client = PoolClient::new(
         multi_state.state_root1(),
         multi_state.state_root2(),
@@ -45,6 +56,7 @@ fn build_verifier() -> (
         storage2,
         NonceCache::new(128),
         None,
+        verifier_pool,
     );
 
     let verifier = Verifier::new(
@@ -56,7 +68,7 @@ fn build_verifier() -> (
 
     let receiver: Vm2AccountAddress = "0x2".parse().expect("valid vm2 address literal");
     let txn = build_transfer_from_association(
-        receiver.into(),
+        receiver,
         0,
         10_000,
         net.time_service().now_secs() + 3_600,
@@ -72,54 +84,131 @@ fn build_verifier() -> (
 }
 
 fn bench_verify_transaction(c: &mut Criterion) {
-    let (verifier, base_txn) = build_verifier();
-
-    c.bench_function("txpool_verify_transaction", |b| {
-        b.iter_batched(
-            || PoolTransaction::Unverified(UnverifiedUserTransaction::from(base_txn.clone())),
-            |pool_txn| {
-                TxPoolVerifier::verify_transaction(&verifier, pool_txn)
-                    .expect("transaction should verify");
-            },
-            BatchSize::SmallInput,
-        )
-    });
-}
-
-fn bench_verify_transaction_parallel(c: &mut Criterion) {
-    let (verifier, base_txn) = build_verifier();
-    let verifier = Arc::new(verifier);
+    let (verifier_no_pool, base_txn) = build_verifier(false);
+    let (verifier_pool, _) = build_verifier(true);
     let base_txn = Arc::new(base_txn);
-    let thread_counts = [4usize, num_cpus::get().max(2)];
+    let verifier_no_pool = Arc::new(verifier_no_pool);
+    let verifier_pool = Arc::new(verifier_pool);
 
-    for &threads in &thread_counts {
-        let name = format!("txpool_verify_transaction_par_{}", threads);
-        let verifier = Arc::clone(&verifier);
-        let base_txn = Arc::clone(&base_txn);
-        c.bench_function(&name, move |b| {
-            let pool = ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .expect("build rayon pool");
-            b.iter(|| {
-                let txns: Vec<_> = (0..threads)
-                    .map(|_| {
-                        PoolTransaction::Unverified(UnverifiedUserTransaction::from(
-                            base_txn.as_ref().clone(),
-                        ))
-                    })
-                    .collect();
-                pool.install(|| {
-                    txns.par_iter().for_each(|tx| {
-                        let tx = tx.clone();
-                        TxPoolVerifier::verify_transaction(&*verifier, tx)
+    let sizes = [1usize, 4, 16, 64, 1024];
+    for &batch in &sizes {
+        let name_no_pool = format!("txpool_verify_batch_no_pool_{}", batch);
+        let name_pool = format!("txpool_verify_batch_with_pool_{}", batch);
+        let base_txn_no_pool = Arc::clone(&base_txn);
+        let verifier_no_pool = Arc::clone(&verifier_no_pool);
+        c.bench_function(&name_no_pool, move |b| {
+            let base_txn = base_txn_no_pool.clone();
+            let verifier_no_pool = verifier_no_pool.clone();
+            b.iter_batched(
+                || {
+                    (0..batch)
+                        .map(|_| {
+                            PoolTransaction::Unverified(UnverifiedUserTransaction::from(
+                                base_txn.as_ref().clone(),
+                            ))
+                        })
+                        .collect::<Vec<_>>()
+                },
+                |txns| {
+                    txns.into_iter().for_each(|pool_txn| {
+                        TxPoolVerifier::verify_transaction(&*verifier_no_pool, pool_txn)
                             .expect("transaction should verify");
                     });
-                });
-            });
+                },
+                BatchSize::SmallInput,
+            )
+        });
+
+        let base_txn_pool = Arc::clone(&base_txn);
+        let verifier_pool = Arc::clone(&verifier_pool);
+        c.bench_function(&name_pool, move |b| {
+            let base_txn = base_txn_pool.clone();
+            let verifier_pool = verifier_pool.clone();
+            b.iter_batched(
+                || {
+                    (0..batch)
+                        .map(|_| {
+                            PoolTransaction::Unverified(UnverifiedUserTransaction::from(
+                                base_txn.as_ref().clone(),
+                            ))
+                        })
+                        .collect::<Vec<_>>()
+                },
+                |txns| {
+                    txns.into_iter().for_each(|pool_txn| {
+                        TxPoolVerifier::verify_transaction(&*verifier_pool, pool_txn)
+                            .expect("transaction should verify");
+                    });
+                },
+                BatchSize::SmallInput,
+            )
         });
     }
 }
 
-criterion_group!(benches, bench_verify_transaction, bench_verify_transaction_parallel);
+fn bench_verify_transaction_parallel(c: &mut Criterion) {
+    let (pool_client_no_pool, base_txn) = build_verifier(false);
+    let (pool_client_with_pool, _) = build_verifier(true);
+    let base_txn = Arc::new(base_txn);
+    let pool_client_no_pool = Arc::new(pool_client_no_pool);
+    let pool_client_with_pool = Arc::new(pool_client_with_pool);
+
+    let sizes = [4usize, 16, 64, 1024];
+    for &batch in &sizes {
+        let name_no_pool = format!("txpool_rayontest_no_pool_{}", batch);
+        let name_pool = format!("txpool_rayontest_with_pool_{}", batch);
+
+        let base_txn_no_pool = Arc::clone(&base_txn);
+        let client_no_pool = Arc::clone(&pool_client_no_pool);
+        c.bench_function(&name_no_pool, move |b| {
+            let base_txn = base_txn_no_pool.clone();
+            let client = client_no_pool.clone();
+            b.iter_batched(
+                || {
+                    (0..batch)
+                        .map(|_| UnverifiedUserTransaction::from(base_txn.as_ref().clone()))
+                        .collect::<Vec<_>>()
+                },
+                |txns| {
+                    RAYON_EXEC_POOL.install(|| {
+                        txns.par_iter().for_each(|tx| {
+                            let pool_txn = PoolTransaction::Unverified(tx.clone());
+                            let _ = client.clone().verify_transaction(pool_txn).expect("verify");
+                        });
+                    });
+                },
+                BatchSize::SmallInput,
+            )
+        });
+
+        let base_txn_pool = Arc::clone(&base_txn);
+        let client_with_pool = Arc::clone(&pool_client_with_pool);
+        c.bench_function(&name_pool, move |b| {
+            let base_txn = base_txn_pool.clone();
+            let client = client_with_pool.clone();
+            b.iter_batched(
+                || {
+                    (0..batch)
+                        .map(|_| UnverifiedUserTransaction::from(base_txn.as_ref().clone()))
+                        .collect::<Vec<_>>()
+                },
+                |txns| {
+                    RAYON_EXEC_POOL.install(|| {
+                        txns.par_iter().for_each(|tx| {
+                            let pool_txn = PoolTransaction::Unverified(tx.clone());
+                            let _ = client.clone().verify_transaction(pool_txn).expect("verify");
+                        });
+                    });
+                },
+                BatchSize::SmallInput,
+            )
+        });
+    }
+}
+
+criterion_group!(
+    benches,
+    bench_verify_transaction,
+    bench_verify_transaction_parallel
+);
 criterion_main!(benches);
