@@ -12,6 +12,12 @@ use anyhow::{format_err, Result};
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::queue::Pool;
 pub use pool::TxStatus;
+pub use pool::{
+    PoolTransaction, UnverifiedUserTransaction, VerifiedTransaction, VerifierOptions,
+};
+pub use pool::scoring::SeqNumberAndGasPrice;
+pub use pool::verifier::Verifier;
+pub use pool_client::{NonceCache, PoolClient};
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};

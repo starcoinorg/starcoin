@@ -12,6 +12,8 @@ use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
 
 use starcoin_vm2_vm_runtime::VMExecutor;
 use starcoin_vm2_vm_types::StateView;
+use log::debug;
+use std::time::Instant;
 
 pub fn do_execute_block_transactions<S: StateView + Sync>(
     chain_state: &S,
@@ -30,8 +32,23 @@ pub fn validate_transaction<S: StateView>(
     txn: SignedUserTransaction,
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
+    let total_start = Instant::now();
+    let init_start = Instant::now();
     let mut vm = StarcoinVM::new(metrics, chain_state);
-    vm.verify_transaction(chain_state, txn)
+    let init_dur = init_start.elapsed();
+
+    let verify_start = Instant::now();
+    let result = vm.verify_transaction(chain_state, txn);
+    let verify_dur = verify_start.elapsed();
+
+    debug!(
+        target: "txpool",
+        "vm2 validate_transaction init_ms={:.3} verify_ms={:.3} total_ms={:.3}",
+        init_dur.as_secs_f64() * 1000.0,
+        verify_dur.as_secs_f64() * 1000.0,
+        total_start.elapsed().as_secs_f64() * 1000.0,
+    );
+    result
 }
 
 pub fn execute_readonly_function<S: StateView>(
