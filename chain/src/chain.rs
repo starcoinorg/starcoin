@@ -4,6 +4,7 @@
 use crate::{
     fixed_blocks::MAIN_DIRECT_SAVE_BLOCK_HASH_MAP,
     get_merge_bound_hash,
+    txn_output_cache::global_txn_output_cache,
     verifier::{BlockVerifier, FullVerifier},
 };
 use anyhow::{bail, ensure, format_err, Result};
@@ -449,7 +450,7 @@ impl BlockChain {
         if vm2_contains_user_transaction {
             opened_block.finalize_block_epilogue()?;
         }
-        let template = opened_block.finalize()?;
+        let (template, _vm1_outputs, _vm2_outputs) = opened_block.finalize()?;
 
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }
@@ -2224,14 +2225,40 @@ impl BlockChain {
         // Get epoch from forked statedb (read from VM2's statedb)
         let epoch = get_epoch_from_statedb(statedb2)?;
 
+        // Check cache for pre-executed outputs
+        let cache = global_txn_output_cache();
+        let cached_outputs = cache.get(header.state_root(), header.state_root());
+
         // Execute VM1 transactions
         let executed_data = if !transactions.is_empty() {
-            starcoin_executor::block_execute(
-                statedb,
-                transactions.clone(),
-                epoch.block_gas_limit(),
-                self.vm_metrics.clone(),
-            )?
+            if let Some(ref cached) = cached_outputs {
+                if let Some(ref vm1_outputs) = cached.vm1_outputs {
+                    info!(
+                        "Using cached VM1 outputs for block {:?}, outputs count: {}",
+                        block_id,
+                        vm1_outputs.len()
+                    );
+                    starcoin_executor::block_execute_with_outputs(
+                        statedb,
+                        transactions.clone(),
+                        vm1_outputs.clone(),
+                    )?
+                } else {
+                    starcoin_executor::block_execute(
+                        statedb,
+                        transactions.clone(),
+                        epoch.block_gas_limit(),
+                        self.vm_metrics.clone(),
+                    )?
+                }
+            } else {
+                starcoin_executor::block_execute(
+                    statedb,
+                    transactions.clone(),
+                    epoch.block_gas_limit(),
+                    self.vm_metrics.clone(),
+                )?
+            }
         } else {
             BlockExecutedData {
                 state_root: statedb.state_root(),
@@ -2259,12 +2286,39 @@ impl BlockChain {
             .iter()
             .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
 
-        let executed_data2 = starcoin_vm2_chain::execute_transactions(
-            statedb2,
-            transactions2.clone(),
-            epoch.block_gas_limit() - vm1_gas_used,
-            self.vm_metrics.clone(),
-        )?;
+        let executed_data2 = if let Some(ref cached) = cached_outputs {
+            if let Some(ref vm2_outputs) = cached.vm2_outputs {
+                info!(
+                    "Using cached VM2 outputs for block {:?}, outputs count: {}",
+                    block_id,
+                    vm2_outputs.len()
+                );
+                starcoin_vm2_chain::execute_transactions_with_outputs(
+                    statedb2,
+                    transactions2.clone(),
+                    vm2_outputs.clone(),
+                )?
+            } else {
+                starcoin_vm2_chain::execute_transactions(
+                    statedb2,
+                    transactions2.clone(),
+                    epoch.block_gas_limit() - vm1_gas_used,
+                    self.vm_metrics.clone(),
+                )?
+            }
+        } else {
+            starcoin_vm2_chain::execute_transactions(
+                statedb2,
+                transactions2.clone(),
+                epoch.block_gas_limit() - vm1_gas_used,
+                self.vm_metrics.clone(),
+            )?
+        };
+
+        // Remove cached outputs after use
+        if cached_outputs.is_some() {
+            cache.remove(header.state_root(), header.state_root());
+        }
 
         // Update state roots
         let (state_root, multi_state, vm_state_accumulator) = {

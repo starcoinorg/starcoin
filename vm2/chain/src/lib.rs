@@ -6,7 +6,7 @@ use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::error::ExecutorResult;
-use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 
@@ -21,6 +21,15 @@ pub fn execute_transactions(
     let executed_data =
         block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
 
+    Ok(executed_data)
+}
+
+pub fn execute_transactions_with_outputs(
+    statedb: &ChainStateDB,
+    transactions: Vec<Transaction>,
+    outputs: Vec<TransactionOutput>,
+) -> ExecutorResult<BlockExecutedData> {
+    let executed_data = block_executor::block_execute_with_outputs(statedb, transactions, outputs)?;
     Ok(executed_data)
 }
 

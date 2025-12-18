@@ -102,6 +102,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
+                    self.cached_vm2_outputs.push(output.clone());
                     self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2

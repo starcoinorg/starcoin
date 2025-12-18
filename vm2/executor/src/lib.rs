@@ -5,7 +5,7 @@ pub mod executor;
 
 pub mod block_executor;
 
-pub use block_executor::block_execute;
+pub use block_executor::{block_execute, block_execute_with_outputs};
 pub use executor::{
     do_execute_block_transactions, execute_readonly_function, validate_transaction,
 };
