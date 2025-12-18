@@ -2381,7 +2381,6 @@ impl BlockChain {
             statedb.flush()?;
             statedb2.flush()?;
         }
-
         // Update state roots
         let (state_root, multi_state, vm_state_accumulator) = {
             let state_root1 = executed_data.state_root;

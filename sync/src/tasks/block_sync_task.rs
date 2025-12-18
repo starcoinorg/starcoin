@@ -361,11 +361,14 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        let mut branch = self.chain.fork(block.parent_hash())?;
+        if self.chain.status().head().id() != block.parent_hash() {
+            self.chain = self.chain.fork(block.parent_hash())?;
+        }
         let apply_result = if self.skip_pow_verify {
-            branch.apply_with_verifier::<BasicVerifier>(block.clone())
+            self.chain
+                .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            branch.apply_for_sync(block.clone())
+            self.chain.apply_for_sync(block.clone())
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -396,8 +399,6 @@ where
                 Err(e) => Err(e),
             }
         } else {
-            let _ = apply_result.expect("checked Ok above");
-            self.chain = branch;
             Ok(())
         }
     }
