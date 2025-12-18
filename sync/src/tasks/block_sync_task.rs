@@ -352,6 +352,9 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
+        if self.chain.status().head().parent_hash() != block.parent_hash() {
+            self.chain = self.chain.fork(block.parent_hash())?;
+        }
         let apply_result = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
