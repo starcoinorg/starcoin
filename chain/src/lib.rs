@@ -3,12 +3,16 @@
 #![allow(clippy::arithmetic_side_effects)]
 mod chain;
 mod fixed_blocks;
+pub mod txn_output_cache;
 pub mod verifier;
 use std::sync::Arc;
 
 pub use chain::BlockChain;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 pub use starcoin_chain_api::{ChainReader, ChainWriter};
+pub use txn_output_cache::{
+    global_txn_output_cache, CacheKey, CachedBlockOutputs, TransactionOutputCache,
+};
 
 pub use starcoin_data_migration::*;
 

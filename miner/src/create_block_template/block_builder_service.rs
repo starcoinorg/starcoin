@@ -5,7 +5,9 @@ use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use starcoin_chain::{get_merge_bound_hash, BlockChain, ChainReader};
+use starcoin_chain::{
+    get_merge_bound_hash, txn_output_cache::global_txn_output_cache, BlockChain, ChainReader,
+};
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
@@ -606,13 +608,30 @@ where
                 }
             }
 
-            let template = match opened_block.finalize() {
-                Ok(template) => template,
+            let (template, vm1_outputs, vm2_outputs) = match opened_block.finalize() {
+                Ok(result) => result,
                 Err(e) => {
                     error!("[BlockProcess] finalize block error: {}", e);
                     return;
                 }
             };
+
+            // Insert cached outputs for reuse during block execution
+            let cache = global_txn_output_cache();
+            cache.insert_outputs(
+                template.state_root,
+                template.state_root,
+                if vm1_outputs.is_empty() {
+                    None
+                } else {
+                    Some(vm1_outputs)
+                },
+                if vm2_outputs.is_empty() {
+                    None
+                } else {
+                    Some(vm2_outputs)
+                },
+            );
 
             if let Err(e) =
                 block_template_call_back.block_template_callback(previous_header, template)

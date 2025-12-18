@@ -55,6 +55,9 @@ pub struct OpenedBlock {
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
+    // Cached outputs for reuse during block execution
+    cached_vm1_outputs: Vec<TransactionOutput>,
+    cached_vm2_outputs: Vec<starcoin_vm2_types::transaction::TransactionOutput>,
 }
 
 impl OpenedBlock {
@@ -122,6 +125,8 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
+            cached_vm1_outputs: vec![],
+            cached_vm2_outputs: vec![],
         };
 
         opened_block.initialize()?;
@@ -225,6 +230,7 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
+                    self.cached_vm1_outputs.push(output.clone());
                     self.push_txn_and_state(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns
@@ -331,7 +337,13 @@ impl OpenedBlock {
     }
 
     /// Construct a block template for mining.
-    pub fn finalize(self) -> Result<BlockTemplate> {
+    pub fn finalize(
+        self,
+    ) -> Result<(
+        BlockTemplate,
+        Vec<TransactionOutput>,
+        Vec<starcoin_vm2_types::transaction::TransactionOutput>,
+    )> {
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
         let (state_root, state_root1, state_root2) = {
@@ -367,7 +379,11 @@ impl OpenedBlock {
             self.pruning_point,
             self.parents_hash.clone(),
         );
-        Ok(block_template)
+        Ok((
+            block_template,
+            self.cached_vm1_outputs,
+            self.cached_vm2_outputs,
+        ))
     }
 }
 

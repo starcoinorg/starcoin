@@ -1,6 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
+dashmap = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 proptest = { optional = true, workspace = true }

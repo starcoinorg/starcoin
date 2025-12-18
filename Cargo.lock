@@ -11569,6 +11569,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "dashmap",
  "flate2",
  "futures 0.3.31",
  "log 0.4.27",
