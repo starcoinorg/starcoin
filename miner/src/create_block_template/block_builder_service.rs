@@ -617,10 +617,10 @@ where
             };
 
             // Insert cached outputs for reuse during block execution
+            // Use txn_accumulator_root as key since block_id is not known at template creation time
             let cache = global_txn_output_cache();
             cache.insert_outputs(
-                template.state_root,
-                template.state_root,
+                template.txn_accumulator_root,
                 if vm1_outputs.is_empty() {
                     None
                 } else {
