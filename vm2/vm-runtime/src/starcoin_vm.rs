@@ -189,10 +189,9 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
-        let remote_storage = state.as_move_resolver();
-        self.version = Version::fetch_config(&remote_storage);
+        self.version = Version::fetch_config(&state);
         // move version can be none.
-        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
+        self.move_version = MoveLanguageVersion::fetch_config(&state);
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
@@ -203,7 +202,7 @@ impl StarcoinVM {
                     stdlib_version
                 );
                 // todo: fetch gas schedule from GasSchedule Config on chain
-                VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
+                VMConfig::fetch_config(&state).map(|v| v.gas_schedule)
             };
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
@@ -1735,28 +1734,25 @@ impl StarcoinVM {
         Ok(match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
-                let (vm_status, output) =
-                    self.execute_user_transaction(&data_cache.as_move_resolver(), *txn.clone());
+                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
                 // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let (vm_status, output) = match self
-                    .process_block_metadata(&data_cache.as_move_resolver(), block_meta.clone())
-                {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_metadata(data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_metadata".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_, senders) => {
-                let (vm_status, output) = match self
-                    .process_block_epilogue(&data_cache.as_move_resolver(), senders.clone())
-                {
-                    Ok(output) => (VMStatus::Executed, output),
-                    Err(vm_status) => discard_error_vm_status(vm_status),
-                };
+                let (vm_status, output) =
+                    match self.process_block_epilogue(data_cache, senders.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })
