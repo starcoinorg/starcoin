@@ -2226,8 +2226,9 @@ impl BlockChain {
         let epoch = get_epoch_from_statedb(statedb2)?;
 
         // Check cache for pre-executed outputs
+        // Use txn_accumulator_root as key since it uniquely identifies the transaction list
         let cache = global_txn_output_cache();
-        let cached_outputs = cache.get(header.state_root(), header.state_root());
+        let cached_outputs = cache.get(header.txn_accumulator_root());
 
         // Execute VM1 transactions
         let executed_data = if !transactions.is_empty() {
@@ -2241,7 +2242,7 @@ impl BlockChain {
                     starcoin_executor::block_execute_with_outputs(
                         statedb,
                         transactions.clone(),
-                        vm1_outputs.clone(),
+                        vm1_outputs.as_ref().clone(),
                     )?
                 } else {
                     starcoin_executor::block_execute(
@@ -2296,7 +2297,7 @@ impl BlockChain {
                 starcoin_vm2_chain::execute_transactions_with_outputs(
                     statedb2,
                     transactions2.clone(),
-                    vm2_outputs.clone(),
+                    vm2_outputs.as_ref().clone(),
                 )?
             } else {
                 starcoin_vm2_chain::execute_transactions(
@@ -2317,7 +2318,7 @@ impl BlockChain {
 
         // Remove cached outputs after use
         if cached_outputs.is_some() {
-            cache.remove(header.state_root(), header.state_root());
+            cache.remove(header.txn_accumulator_root());
         }
 
         // Update state roots
