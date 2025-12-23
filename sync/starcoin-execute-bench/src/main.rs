@@ -543,7 +543,9 @@ impl BenchmarkState {
             let adjusted = accounts.len() & !1; // Round down to even number
             info!(
                 "Adjusted batch_user_count from {} to {} (account_count={})",
-                batch_user_count, adjusted, accounts.len()
+                batch_user_count,
+                adjusted,
+                accounts.len()
             );
             adjusted
         } else {
@@ -802,7 +804,10 @@ async fn execute_benchmark(
                 } else {
                     // Txpool has transactions, reset the timer
                     if txpool_empty_since.is_some() {
-                        info!("Txpool has {} pending transactions, resetting timeout", pending_count);
+                        info!(
+                            "Txpool has {} pending transactions, resetting timeout",
+                            pending_count
+                        );
                     }
                     txpool_empty_since = None;
                 }
