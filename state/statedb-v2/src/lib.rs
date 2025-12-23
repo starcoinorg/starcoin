@@ -846,9 +846,7 @@ impl ChainStateWriter for ChainStateDB {
                     };
                     info!(
                         "[jacktest] commit failed: address={}, error={}, cache_status={}",
-                        address,
-                        e,
-                        cache_status
+                        address, e, cache_status
                     );
                     return Err(e);
                 }

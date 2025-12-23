@@ -105,11 +105,11 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        
+
         let mut keep_count = 0;
         let mut discard_count = 0;
         let mut retry_count = 0;
-        
+
         for (index, (txn, output)) in txns.into_iter().zip(txn_outputs.into_iter()).enumerate() {
             let txn_hash = txn.id();
             match output.status() {
@@ -118,7 +118,9 @@ impl OpenedBlock {
                     if index < 5 {
                         info!(
                             "[jacktest] push_txns2 tx #{}: hash=0x{}, status=discard, reason={:?}",
-                            index, &txn_hash.to_string()[..6], status
+                            index,
+                            &txn_hash.to_string()[..6],
+                            status
                         );
                     }
                     debug!("discard txn {}, vm status: {:?}", txn_hash, status);

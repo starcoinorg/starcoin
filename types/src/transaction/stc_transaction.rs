@@ -37,7 +37,7 @@ impl StcTransaction {
 
     pub fn to_transaction(self) -> MultiTransaction {
         match self {
-            StcTransaction::V1(txn) => MultiTransaction::VM1(Box::new(txn)),
+            StcTransaction::V1(txn) => MultiTransaction::VM1(txn),
             StcTransaction::V2(txn) => MultiTransaction::VM2(txn),
         }
     }
