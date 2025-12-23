@@ -2231,7 +2231,7 @@ impl BlockChain {
         let cached_outputs = cache.get(header.txn_accumulator_root());
 
         let cache = global_txn_output_cache();
-        let cached_outputs = cache.get(header.state_root(), header.state_root());
+        let cached_outputs = cache.get(header.txn_accumulator_root());
 
         let executed_data = if !transactions.is_empty() {
             if let Some(ref cached) = cached_outputs {
