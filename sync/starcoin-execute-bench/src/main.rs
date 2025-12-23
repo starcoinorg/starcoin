@@ -97,8 +97,8 @@ struct Cli {
 
     #[arg(
         long = "gas-price",
-        default_value = "100000",
-        help = "Gas price for transactions (max: 10000)."
+        default_value = "1",
+        help = "Gas price for transactions."
     )]
     gas_price: u64,
 
@@ -537,16 +537,38 @@ impl BenchmarkState {
         batch_user_count: usize,
         chain_id: ChainId2,
     ) -> Self {
+        // Adjust batch_user_count if it's larger than account count
+        let effective_batch_user_count = if batch_user_count > accounts.len() {
+            // Use all accounts as one batch, ensuring even number
+            let adjusted = accounts.len() & !1; // Round down to even number
+            info!(
+                "Adjusted batch_user_count from {} to {} (account_count={})",
+                batch_user_count, adjusted, accounts.len()
+            );
+            adjusted
+        } else {
+            batch_user_count
+        };
+
         // Each batch has batch_user_count/2 senders, each sends 1 transaction
-        let total_batches = accounts.len() / batch_user_count;
-        let txns_per_batch = batch_user_count / 2;
+        let total_batches = if effective_batch_user_count > 0 {
+            accounts.len() / effective_batch_user_count
+        } else {
+            0
+        };
+        let txns_per_batch = effective_batch_user_count / 2;
         let total_txn_count = total_batches * txns_per_batch;
+
+        info!(
+            "BenchmarkState: accounts={}, effective_batch_user_count={}, total_batches={}, txns_per_batch={}, total_txn_count={}",
+            accounts.len(), effective_batch_user_count, total_batches, txns_per_batch, total_txn_count
+        );
 
         Self {
             accounts,
             gas_price,
             max_gas,
-            batch_user_count,
+            batch_user_count: effective_batch_user_count,
             total_txn_count,
             executed_count: AtomicUsize::new(0),
             batch_index: AtomicUsize::new(0),
@@ -729,7 +751,11 @@ async fn execute_benchmark(
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
-        // 2. All transactions have been executed
+        // 2. All transactions have been executed, OR
+        // 3. Txpool is empty for more than 10 seconds after all batches sent
+        let mut txpool_empty_since: Option<std::time::Instant> = None;
+        const TXPOOL_EMPTY_TIMEOUT_SECS: u64 = 10;
+
         loop {
             if benchmark_state.is_completed() {
                 break;
@@ -744,6 +770,42 @@ async fn execute_benchmark(
                 );
                 benchmark_state.mark_completed();
                 break;
+            }
+
+            // Check txpool empty timeout after all batches are sent
+            if benchmark_state.all_batches_sent() {
+                let pending_count = txpool.inner.queue().status().status.transaction_count;
+                if pending_count == 0 {
+                    match txpool_empty_since {
+                        None => {
+                            txpool_empty_since = Some(std::time::Instant::now());
+                            info!(
+                                "Txpool is empty, starting {} second timeout (executed: {}/{})",
+                                TXPOOL_EMPTY_TIMEOUT_SECS,
+                                benchmark_state.executed_count.load(Ordering::SeqCst),
+                                benchmark_state.total_txn_count
+                            );
+                        }
+                        Some(since) => {
+                            if since.elapsed().as_secs() >= TXPOOL_EMPTY_TIMEOUT_SECS {
+                                info!(
+                                    "Txpool empty for {} seconds, completing benchmark (executed: {}/{})",
+                                    TXPOOL_EMPTY_TIMEOUT_SECS,
+                                    benchmark_state.executed_count.load(Ordering::SeqCst),
+                                    benchmark_state.total_txn_count
+                                );
+                                benchmark_state.mark_completed();
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // Txpool has transactions, reset the timer
+                    if txpool_empty_since.is_some() {
+                        info!("Txpool has {} pending transactions, resetting timeout", pending_count);
+                    }
+                    txpool_empty_since = None;
+                }
             }
 
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
