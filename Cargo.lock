@@ -11618,6 +11618,7 @@ dependencies = [
  "starcoin-vm1-vm-runtime",
  "starcoin-vm1-vm-types",
  "starcoin-vm2-chain",
+ "starcoin-vm2-executor",
  "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
  "stest",
