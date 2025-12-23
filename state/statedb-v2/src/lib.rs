@@ -378,30 +378,35 @@ impl ChainStateDB {
         &self,
         account_address: &AccountAddress,
     ) -> Result<Option<Arc<AccountStateObject>>> {
-        if let Some(item) = self.cache.get(account_address) {
-            return Ok(item.as_object());
-        }
+        // Use get_or_insert_with directly to avoid TOCTOU race condition
+        // The closure is only called when the key is not in cache
+        let store = self.store.clone();
+        let item = self.cache.get_or_insert_with(
+            account_address,
+            || -> Result<CacheItem, anyhow::Error> {
+                let object = self
+                    .state_tree
+                    .get(account_address)
+                    .and_then(|value| match value {
+                        Some(v) => Ok(Some(AccountState::decode(v.as_slice())?)),
+                        None => Ok(None),
+                    })?
+                    .map(|account_state| {
+                        Arc::new(AccountStateObject::new(account_state, store.clone()))
+                    });
 
-        let object = self
-            .get_account_state(account_address)?
-            .map(|account_state| {
-                Arc::new(AccountStateObject::new(account_state, self.store.clone()))
-            });
-
-        let cache_item = match &object {
-            Some(obj) => CacheItem::new(obj.clone()),
-            None => CacheItem::AccountNotExist(),
-        };
-
-        let item = self
-            .cache
-            .get_or_insert_with(account_address, || -> Result<CacheItem, anyhow::Error> {
+                let cache_item = match &object {
+                    Some(obj) => CacheItem::new(obj.clone()),
+                    None => CacheItem::AccountNotExist(),
+                };
                 Ok(cache_item)
-            })?;
+            },
+        )?;
 
         Ok(item.as_object())
     }
 
+    #[allow(dead_code)]
     fn get_account_state(&self, account_address: &AccountAddress) -> Result<Option<AccountState>> {
         self.state_tree
             .get(account_address)
@@ -415,26 +420,27 @@ impl ChainStateDB {
         &self,
         handle: &TableHandle,
     ) -> Result<Arc<TableHandleStateObject>> {
-        if let Some(item) = self.cache_table_handle.get(handle) {
-            return Ok(item.clone());
-        }
-
+        // Use get_or_insert_with to avoid TOCTOU race condition
+        // Pre-compute values needed by the closure to avoid borrowing self inside
         let idx = handle.get_idx()?;
-        let val = self.get_state_tree_table_handles(idx)?.get(handle)?;
+        let state_tree = self.get_state_tree_table_handles(idx)?;
+        let val = state_tree.get(handle)?;
         let hash = match val {
             Some(val) => HashValue::from_slice(val)?,
             None => *SPARSE_MERKLE_PLACEHOLDER_HASH,
         };
-
-        let obj = Arc::new(TableHandleStateObject::new(
-            *handle,
-            self.store.clone(),
-            hash,
-        ));
+        let store = self.store.clone();
+        let handle_copy = *handle;
 
         let item = self.cache_table_handle.get_or_insert_with(
             handle,
-            || -> Result<Arc<TableHandleStateObject>, anyhow::Error> { Ok(obj.clone()) },
+            || -> Result<Arc<TableHandleStateObject>, anyhow::Error> {
+                Ok(Arc::new(TableHandleStateObject::new(
+                    handle_copy,
+                    store.clone(),
+                    hash,
+                )))
+            },
         )?;
 
         Ok(item)

@@ -86,8 +86,7 @@ impl OpenedBlock {
             do_execute_block_transactions(
                 state,
                 txns.clone(),
-                // Some(gas_left),
-                Some(u64::MAX),
+                Some(gas_left),
                 self.vm_metrics.clone(),
             )
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
