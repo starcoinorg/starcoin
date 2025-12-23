@@ -30,15 +30,6 @@ pub fn execute_transactions_with_outputs(
     Ok(executed_data)
 }
 
-pub fn execute_transactions_with_outputs(
-    statedb: &ChainStateDB,
-    transactions: Vec<Transaction>,
-    outputs: Vec<TransactionOutput>,
-) -> ExecutorResult<BlockExecutedData> {
-    let executed_data = block_executor::block_execute_with_outputs(statedb, transactions, outputs)?;
-    Ok(executed_data)
-}
-
 pub fn build_block_transactions(
     signed_txns: &[SignedUserTransaction],
     block_meta: Option<BlockMetadata>,
