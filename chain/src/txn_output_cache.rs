@@ -4,6 +4,10 @@
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
+use starcoin_executor::BlockExecutedData as BlockExecutedData1;
+use starcoin_statedb::ChainStateDB;
+use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::transaction::TransactionOutput as TransactionOutput2;
 use starcoin_vm_types::transaction::TransactionOutput as TransactionOutput1;
 use std::sync::Arc;
@@ -25,6 +29,88 @@ impl CachedBlockOutputs {
             vm2_outputs: vm2_outputs.map(Arc::new),
         }
     }
+}
+
+/// Cached block state including StateDB and execution results.
+/// This allows block execution to skip re-execution and apply_write_set entirely.
+#[derive(Clone)]
+pub struct CachedBlockState {
+    /// Cached StateDB for VM1 (already applied write_sets and committed, not flushed)
+    pub statedb: Option<Arc<ChainStateDB>>,
+    /// Cached StateDB for VM2 (already applied write_sets and committed, not flushed)
+    pub statedb2: Option<Arc<ChainStateDB2>>,
+    /// Block executed data for VM1 (txn_infos, events, etc.)
+    pub executed_data: Option<BlockExecutedData1>,
+    /// Block executed data for VM2 (txn_infos, events, etc.)
+    pub executed_data2: Option<BlockExecutedData2>,
+}
+
+impl CachedBlockState {
+    pub fn new(
+        statedb: Option<Arc<ChainStateDB>>,
+        statedb2: Option<Arc<ChainStateDB2>>,
+        executed_data: Option<BlockExecutedData1>,
+        executed_data2: Option<BlockExecutedData2>,
+    ) -> Self {
+        Self {
+            statedb,
+            statedb2,
+            executed_data,
+            executed_data2,
+        }
+    }
+}
+
+/// Cache for block state, keyed by txn_accumulator_root
+pub struct BlockStateCache {
+    cache: DashMap<HashValue, CachedBlockState>,
+}
+
+impl BlockStateCache {
+    pub fn new() -> Self {
+        Self {
+            cache: DashMap::new(),
+        }
+    }
+
+    /// Insert cached state using txn_accumulator_root as key
+    pub fn insert(&self, txn_accumulator_root: HashValue, state: CachedBlockState) {
+        self.cache.insert(txn_accumulator_root, state);
+    }
+
+    /// Get cached state
+    pub fn get(&self, txn_accumulator_root: HashValue) -> Option<CachedBlockState> {
+        self.cache.get(&txn_accumulator_root).map(|v| v.clone())
+    }
+
+    /// Remove and return cached state
+    pub fn remove(&self, txn_accumulator_root: HashValue) -> Option<CachedBlockState> {
+        self.cache.remove(&txn_accumulator_root).map(|(_, v)| v)
+    }
+
+    pub fn len(&self) -> usize {
+        self.cache.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cache.is_empty()
+    }
+
+    pub fn clear(&self) {
+        self.cache.clear();
+    }
+}
+
+impl Default for BlockStateCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+static GLOBAL_BLOCK_STATE_CACHE: Lazy<BlockStateCache> = Lazy::new(BlockStateCache::new);
+
+pub fn global_block_state_cache() -> &'static BlockStateCache {
+    &GLOBAL_BLOCK_STATE_CACHE
 }
 
 /// Cache for transaction outputs, keyed by txn_accumulator_root

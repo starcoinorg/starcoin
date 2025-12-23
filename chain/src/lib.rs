@@ -10,7 +10,10 @@ use std::sync::Arc;
 pub use chain::BlockChain;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 pub use starcoin_chain_api::{ChainReader, ChainWriter};
-pub use txn_output_cache::{global_txn_output_cache, CachedBlockOutputs, TransactionOutputCache};
+pub use txn_output_cache::{
+    global_block_state_cache, global_txn_output_cache, BlockStateCache, CachedBlockOutputs,
+    CachedBlockState, TransactionOutputCache,
+};
 
 pub use starcoin_data_migration::*;
 

@@ -279,10 +279,11 @@ async fn test_rollback() -> Result<()> {
             assert_eq!(excluded_txns.discarded_txns.len(), 0);
             assert_eq!(excluded_txns.untouched_txns.len(), 0);
         }
-        let (block_template, _vm1_outputs, _vm2_outputs) = open_block.finalize()?;
-        let (_, root1, _) = block_template.state_roots();
-        let block =
-            block_template.into_block(0, starcoin_types::block::BlockHeaderExtra::new([0u8; 4]));
+        let finalized = open_block.finalize()?;
+        let (_, root1, _) = finalized.template.state_roots();
+        let block = finalized
+            .template
+            .into_block(0, starcoin_types::block::BlockHeaderExtra::new([0u8; 4]));
         Ok::<_, anyhow::Error>((block, root1))
     };
 

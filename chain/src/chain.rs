@@ -4,7 +4,7 @@
 use crate::{
     fixed_blocks::MAIN_DIRECT_SAVE_BLOCK_HASH_MAP,
     get_merge_bound_hash,
-    txn_output_cache::global_txn_output_cache,
+    txn_output_cache::{global_block_state_cache, global_txn_output_cache},
     verifier::{BlockVerifier, FullVerifier},
 };
 use anyhow::{bail, ensure, format_err, Result};
@@ -450,9 +450,9 @@ impl BlockChain {
         if vm2_contains_user_transaction {
             opened_block.finalize_block_epilogue()?;
         }
-        let (template, _vm1_outputs, _vm2_outputs) = opened_block.finalize()?;
+        let finalized = opened_block.finalize()?;
 
-        Ok((template, excluded_txns.absorb(excluded_txns2)))
+        Ok((finalized.template, excluded_txns.absorb(excluded_txns2)))
     }
 
     /// Get block hash by block number, if not exist, return Error.
@@ -2166,6 +2166,103 @@ impl ChainWriter for BlockChain {
     }
 }
 
+use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
+use crate::txn_output_cache::CachedBlockOutputs;
+
+/// Helper function to execute block transactions with optional cache
+fn execute_block_transactions_with_cache(
+    statedb: &ChainStateDB,
+    statedb2: &ChainStateDB2,
+    transactions: &[Transaction],
+    transactions2: &[starcoin_vm2_types::transaction::Transaction],
+    epoch: &Epoch,
+    cached_outputs: &Option<CachedBlockOutputs>,
+    block_id: HashValue,
+    vm_metrics: Option<VMMetrics>,
+) -> Result<(
+    BlockExecutedData,
+    BlockExecutedData2,
+    Option<Arc<ChainStateDB>>,
+    Option<Arc<ChainStateDB2>>,
+)> {
+    // Execute VM1 transactions
+    let executed_data = if !transactions.is_empty() {
+        if let Some(ref cached) = cached_outputs {
+            if let Some(ref vm1_outputs) = cached.vm1_outputs {
+                info!(
+                    "Using cached VM1 outputs for block {:?}, outputs count: {}",
+                    block_id,
+                    vm1_outputs.len()
+                );
+                starcoin_executor::block_execute_with_outputs(
+                    statedb,
+                    transactions.to_vec(),
+                    vm1_outputs.as_ref().clone(),
+                )?
+            } else {
+                starcoin_executor::block_execute(
+                    statedb,
+                    transactions.to_vec(),
+                    epoch.block_gas_limit(),
+                    vm_metrics.clone(),
+                )?
+            }
+        } else {
+            starcoin_executor::block_execute(
+                statedb,
+                transactions.to_vec(),
+                epoch.block_gas_limit(),
+                vm_metrics.clone(),
+            )?
+        }
+    } else {
+        BlockExecutedData {
+            state_root: statedb.state_root(),
+            txn_infos: vec![],
+            txn_events: vec![],
+            txn_table_infos: BTreeMap::new(),
+            write_sets: vec![],
+        }
+    };
+
+    let vm1_gas_used = executed_data
+        .txn_infos
+        .iter()
+        .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
+
+    // Execute VM2 transactions
+    let executed_data2 = if let Some(ref cached) = cached_outputs {
+        if let Some(ref vm2_outputs) = cached.vm2_outputs {
+            info!(
+                "Using cached VM2 outputs for block {:?}, outputs count: {}",
+                block_id,
+                vm2_outputs.len()
+            );
+            starcoin_vm2_chain::execute_transactions_with_outputs(
+                statedb2,
+                transactions2.to_vec(),
+                vm2_outputs.as_ref().clone(),
+            )?
+        } else {
+            starcoin_vm2_chain::execute_transactions(
+                statedb2,
+                transactions2.to_vec(),
+                epoch.block_gas_limit() - vm1_gas_used,
+                vm_metrics,
+            )?
+        }
+    } else {
+        starcoin_vm2_chain::execute_transactions(
+            statedb2,
+            transactions2.to_vec(),
+            epoch.block_gas_limit() - vm1_gas_used,
+            vm_metrics,
+        )?
+    };
+
+    Ok((executed_data, executed_data2, None, None))
+}
+
 impl BlockChain {
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.block.header().id());
@@ -2225,99 +2322,86 @@ impl BlockChain {
         // Get epoch from forked statedb (read from VM2's statedb)
         let epoch = get_epoch_from_statedb(statedb2)?;
 
-        // Check cache for pre-executed outputs
-        // Use txn_accumulator_root as key since it uniquely identifies the transaction list
-        let cache = global_txn_output_cache();
-        let cached_outputs = cache.get(header.txn_accumulator_root());
+        // Check for cached state (StateDB + BlockExecutedData)
+        // If cache hit, we can skip execution and apply_write_set entirely
+        let state_cache = global_block_state_cache();
+        let cached_state = state_cache.remove(header.txn_accumulator_root());
 
-        let cache = global_txn_output_cache();
-        let cached_outputs = cache.get(header.txn_accumulator_root());
+        // Also check output cache for backward compatibility
+        let output_cache = global_txn_output_cache();
+        let cached_outputs = output_cache.get(header.txn_accumulator_root());
 
-        let executed_data = if !transactions.is_empty() {
-            if let Some(ref cached) = cached_outputs {
-                if let Some(ref vm1_outputs) = cached.vm1_outputs {
+        // Execute or use cached data
+        let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
+            if let Some(ref cached) = cached_state {
+                if cached.statedb.is_some()
+                    && cached.statedb2.is_some()
+                    && cached.executed_data.is_some()
+                    && cached.executed_data2.is_some()
+                {
                     info!(
-                        "Using cached VM1 outputs for block {:?}, outputs count: {}",
-                        block_id,
-                        vm1_outputs.len()
+                        "Using cached StateDB and executed data for block {:?}",
+                        block_id
                     );
-                    starcoin_executor::block_execute_with_outputs(
-                        statedb,
-                        transactions.clone(),
-                        vm1_outputs.as_ref().clone(),
-                    )?
+                    (
+                        cached.executed_data.clone().unwrap(),
+                        cached.executed_data2.clone().unwrap(),
+                        cached.statedb.clone(),
+                        cached.statedb2.clone(),
+                    )
                 } else {
-                    starcoin_executor::block_execute(
+                    // Partial cache - fall back to execution
+                    execute_block_transactions_with_cache(
                         statedb,
-                        transactions.clone(),
-                        epoch.block_gas_limit(),
+                        statedb2,
+                        &transactions,
+                        &transactions2,
+                        &epoch,
+                        &cached_outputs,
+                        block_id,
                         self.vm_metrics.clone(),
                     )?
                 }
             } else {
-                starcoin_executor::block_execute(
+                // No cache - execute normally
+                execute_block_transactions_with_cache(
                     statedb,
-                    transactions.clone(),
-                    epoch.block_gas_limit(),
+                    statedb2,
+                    &transactions,
+                    &transactions2,
+                    &epoch,
+                    &cached_outputs,
+                    block_id,
                     self.vm_metrics.clone(),
                 )?
-            }
-        } else {
-            BlockExecutedData {
-                state_root: statedb.state_root(),
-                txn_infos: vec![],
-                txn_events: vec![],
-                txn_table_infos: BTreeMap::new(),
-                write_sets: vec![],
-            }
-        };
+            };
 
-        for write_set in executed_data.write_sets {
-            statedb
-                .apply_write_set(write_set)
-                .map_err(BlockExecutorError::BlockChainStateErr)?;
-            statedb
-                .commit()
-                .map_err(BlockExecutorError::BlockChainStateErr)?;
+        // If we used cached statedb, we need to flush the cached ones
+        // Otherwise, we still need to apply write_sets to self.statedb and flush
+        if cached_statedb.is_some() && cached_statedb2.is_some() {
+            // Flush cached statedbs
+            let cached_db = cached_statedb.as_ref().unwrap();
+            let cached_db2 = cached_statedb2.as_ref().unwrap();
+            cached_db.flush()?;
+            cached_db2.flush()?;
+        } else {
+            // Apply write_sets to self.statedb
+            for write_set in executed_data.write_sets.clone() {
+                statedb
+                    .apply_write_set(write_set)
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                statedb
+                    .commit()
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+            }
+            // Flush self.statedb
+            statedb.flush()?;
+            statedb2.flush()?;
         }
 
-        let vm1_gas_used = executed_data
-            .txn_infos
-            .iter()
-            .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
-
-        let executed_data2 = if let Some(ref cached) = cached_outputs {
-            if let Some(ref vm2_outputs) = cached.vm2_outputs {
-                info!(
-                    "Using cached VM2 outputs for block {:?}, outputs count: {}",
-                    block_id,
-                    vm2_outputs.len()
-                );
-                starcoin_vm2_chain::execute_transactions_with_outputs(
-                    statedb2,
-                    transactions2.clone(),
-                    vm2_outputs.as_ref().clone(),
-                )?
-            } else {
-                starcoin_vm2_chain::execute_transactions(
-                    statedb2,
-                    transactions2.clone(),
-                    epoch.block_gas_limit() - vm1_gas_used,
-                    self.vm_metrics.clone(),
-                )?
-            }
-        } else {
-            starcoin_vm2_chain::execute_transactions(
-                statedb2,
-                transactions2.clone(),
-                epoch.block_gas_limit() - vm1_gas_used,
-                self.vm_metrics.clone(),
-            )?
-        };
-
-        // Remove cached outputs after use
+        // Remove output cache after use
         if cached_outputs.is_some() {
-            cache.remove(header.txn_accumulator_root());
+            output_cache.remove(header.txn_accumulator_root());
         }
 
         // Update state roots
