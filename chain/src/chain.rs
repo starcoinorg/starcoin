@@ -2166,8 +2166,8 @@ impl ChainWriter for BlockChain {
     }
 }
 
-use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 use crate::txn_output_cache::CachedBlockOutputs;
+use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 
 /// Helper function to execute block transactions with optional cache
 fn execute_block_transactions_with_cache(

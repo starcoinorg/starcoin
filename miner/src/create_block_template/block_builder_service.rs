@@ -6,8 +6,8 @@ use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_chain::{
-    get_merge_bound_hash, global_block_state_cache,
-    txn_output_cache::global_txn_output_cache, BlockChain, CachedBlockState, ChainReader,
+    get_merge_bound_hash, global_block_state_cache, txn_output_cache::global_txn_output_cache,
+    BlockChain, CachedBlockState, ChainReader,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
