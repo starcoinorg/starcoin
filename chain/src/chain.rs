@@ -2377,7 +2377,7 @@ impl BlockChain {
             };
 
         // If we used cached statedb, we need to flush the cached ones
-        // Otherwise, we still need to apply write_sets to self.statedb and flush
+        // Otherwise, we only need to flush self.statedb (executor already applied write_sets)
         if cached_statedb.is_some() && cached_statedb2.is_some() {
             // Flush cached statedbs
             let cached_db = cached_statedb.as_ref().unwrap();
@@ -2385,16 +2385,8 @@ impl BlockChain {
             cached_db.flush()?;
             cached_db2.flush()?;
         } else {
-            // Apply write_sets to self.statedb
-            for write_set in executed_data.write_sets.clone() {
-                statedb
-                    .apply_write_set(write_set)
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
-                statedb
-                    .commit()
-                    .map_err(BlockExecutorError::BlockChainStateErr)?;
-            }
-            // Flush self.statedb
+            // Note: write_sets are already applied and committed by executor functions
+            // (block_execute / execute_transactions), we only need to flush here
             statedb.flush()?;
             statedb2.flush()?;
         }

@@ -38,6 +38,7 @@ use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm2_types::transaction::TransactionOutput as TransactionOutput2;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::{convert::TryInto, sync::Arc};
 
@@ -82,9 +83,11 @@ pub struct OpenedBlock {
     vm1_txn_infos: Vec<TransactionInfo>,
     vm1_txn_events: Vec<Vec<ContractEvent>>,
     vm1_write_sets: Vec<WriteSet>,
+    vm1_table_infos: BTreeMap<TableHandle, TableInfo>,
     // Tracked execution data for VM2
     vm2_txn_infos: Vec<starcoin_vm2_types::transaction::TransactionInfo>,
     vm2_txn_events: Vec<Vec<ContractEvent2>>,
+    // Note: VM2 doesn't track table_infos in its output (TransactionAuxiliaryData instead)
 }
 
 impl OpenedBlock {
@@ -157,6 +160,7 @@ impl OpenedBlock {
             vm1_txn_infos: vec![],
             vm1_txn_events: vec![],
             vm1_write_sets: vec![],
+            vm1_table_infos: BTreeMap::new(),
             vm2_txn_infos: vec![],
             vm2_txn_events: vec![],
         };
@@ -335,14 +339,15 @@ impl OpenedBlock {
         root_state_calc: bool,
     ) -> Result<(Option<HashValue>, HashValue)> {
         let (state, _state2) = &mut self.state;
-        // Ignore the newly created table_infos.
-        // Because they are not needed to calculate state_root, or included to TransactionInfo.
-        // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
-        let (_table_infos, write_set, events, gas_used, status) = output.into_inner();
+        // Extract table_infos and merge them into vm1_table_infos
+        let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
+
+        // Track table_infos (merge into existing, keeping latest for same TableHandle)
+        self.vm1_table_infos.append(&mut table_infos);
 
         // Track write_set for later use
         self.vm1_write_sets.push(write_set.clone());
@@ -423,16 +428,17 @@ impl OpenedBlock {
             state_root: state_root1,
             txn_infos: self.vm1_txn_infos,
             txn_events: self.vm1_txn_events,
-            txn_table_infos: BTreeMap::new(), // TODO: track table infos if needed
+            txn_table_infos: self.vm1_table_infos,
             write_sets: self.vm1_write_sets,
         };
 
         // Build BlockExecutedData for VM2 (no write_sets field in VM2)
+        // Note: VM2 doesn't track table_infos in its TransactionOutput (uses TransactionAuxiliaryData instead)
         let executed_data2 = BlockExecutedData2 {
             state_root: state_root2,
             txn_infos: self.vm2_txn_infos,
             txn_events: self.vm2_txn_events,
-            txn_table_infos: BTreeMap::new(), // TODO: track table infos if needed
+            txn_table_infos: BTreeMap::new(),
         };
 
         Ok(FinalizedBlock {
