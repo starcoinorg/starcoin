@@ -8,7 +8,7 @@
  *
  **************************************************************************************************/
 
-use crate::ecrecover::{keccak, pubkey_to_address};
+use crate::ecrecover::keccak;
 use crate::util::make_native_from_func;
 use arrayref::array_ref;
 use libsecp256k1::{Message, PublicKey, SecretKey};
@@ -145,7 +145,10 @@ fn native_decompress_pubkey(
 
     // Return the full 65-byte uncompressed public key (0x04 prefix + 64 bytes x,y coordinates)
     // This matches the expected format in Move contract committee.move
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(pubkey.serialize().to_vec())]))
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::vector_u8(pubkey.serialize().to_vec())],
+    ))
 }
 
 pub fn native_secp256k1_sign(
@@ -264,10 +267,17 @@ fn test_decompress() -> anyhow::Result<()> {
 
     // Get the full 65-byte uncompressed public key
     let uncompressed = pubkey.serialize();
-    
+
     // Verify the uncompressed key is 65 bytes (0x04 prefix + 64 bytes)
-    assert_eq!(uncompressed.len(), 65, "Uncompressed public key must be 65 bytes");
-    assert_eq!(uncompressed[0], 0x04, "Uncompressed public key must start with 0x04");
+    assert_eq!(
+        uncompressed.len(),
+        65,
+        "Uncompressed public key must be 65 bytes"
+    );
+    assert_eq!(
+        uncompressed[0], 0x04,
+        "Uncompressed public key must start with 0x04"
+    );
 
     Ok(())
 }
