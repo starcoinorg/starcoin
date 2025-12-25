@@ -134,6 +134,14 @@ pub fn global_block_state_cache() -> &'static BlockStateCache {
     &GLOBAL_BLOCK_STATE_CACHE
 }
 
+/// Clear all entries in the global block state cache.
+/// This should be called when the node is shutting down to release
+/// database connections and prevent lock file issues on restart.
+pub fn clear_global_block_state_cache() {
+    log::info!("Clearing global block state cache to release database connections");
+    GLOBAL_BLOCK_STATE_CACHE.clear();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

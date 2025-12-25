@@ -13,6 +13,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
+use starcoin_chain::clear_global_block_state_cache;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
@@ -443,6 +444,10 @@ impl NodeService {
     }
 
     fn shutdown_system(&self) {
+        // Clear the global block state cache to release database connections
+        // This is critical to prevent lock file issues on node restart
+        clear_global_block_state_cache();
+
         if let Err(e) = self.registry.shutdown_system_sync() {
             error!("Shutdown registry error: {}", e);
         };
