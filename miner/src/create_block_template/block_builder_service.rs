@@ -6,8 +6,7 @@ use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_chain::{
-    get_merge_bound_hash, global_block_state_cache, txn_output_cache::global_txn_output_cache,
-    BlockChain, CachedBlockState, ChainReader,
+    get_merge_bound_hash, global_block_state_cache, BlockChain, CachedBlockState, ChainReader,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
@@ -619,25 +618,9 @@ where
 
             let template = finalized.template;
 
-            // Insert cached outputs for reuse during block execution
-            // Use txn_accumulator_root as key since block_id is not known at template creation time
-            let cache = global_txn_output_cache();
-            cache.insert_outputs(
-                template.txn_accumulator_root,
-                if finalized.vm1_outputs.is_empty() {
-                    None
-                } else {
-                    Some(finalized.vm1_outputs)
-                },
-                if finalized.vm2_outputs.is_empty() {
-                    None
-                } else {
-                    Some(finalized.vm2_outputs)
-                },
-            );
-
-            // Cache the StateDB and executed data for reuse during block execution
-            // This allows skipping apply_write_set entirely
+            // Cache the StateDB and executed data for reuse during block execution.
+            // This allows skipping re-execution and apply_write_set entirely.
+            // BlockExecutedData contains all necessary data: txn_infos, events, table_infos, write_sets.
             let state_cache = global_block_state_cache();
             state_cache.insert(
                 template.txn_accumulator_root,

@@ -43,8 +43,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                // Cache BlockMetadata output for reuse during block execution
-                self.cached_vm2_outputs.push(output.clone());
                 self.push_txn_and_state2(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
@@ -104,7 +102,6 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.cached_vm2_outputs.push(output.clone());
                     self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
@@ -151,8 +148,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                // Cache BlockEpilogue output for reuse during block execution
-                self.cached_vm2_outputs.push(output.clone());
                 self.push_txn_and_state2(block_epilogue_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {

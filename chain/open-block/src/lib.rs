@@ -36,22 +36,21 @@ use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_vm2_types::transaction::TransactionOutput as TransactionOutput2;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::{convert::TryInto, sync::Arc};
 
-/// Result of OpenedBlock::finalize(), containing all data needed for caching
+/// Result of OpenedBlock::finalize(), containing all data needed for caching.
+/// This includes the StateDB (with write_sets applied) and BlockExecutedData,
+/// which allows skipping re-execution entirely when the mined block is received.
 pub struct FinalizedBlock {
     pub template: BlockTemplate,
-    pub vm1_outputs: Vec<TransactionOutput>,
-    pub vm2_outputs: Vec<TransactionOutput2>,
     pub statedb: Arc<ChainStateDB>,
     pub statedb2: Arc<ChainStateDB2>,
-    /// Executed data for VM1 (can be used to skip re-execution)
+    /// Executed data for VM1 (txn_infos, events, table_infos, write_sets)
     pub executed_data: BlockExecutedData1,
-    /// Executed data for VM2 (can be used to skip re-execution)
+    /// Executed data for VM2 (txn_infos, events, table_infos)
     pub executed_data2: BlockExecutedData2,
 }
 
@@ -76,9 +75,6 @@ pub struct OpenedBlock {
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
-    // Cached outputs for reuse during block execution
-    cached_vm1_outputs: Vec<TransactionOutput>,
-    cached_vm2_outputs: Vec<starcoin_vm2_types::transaction::TransactionOutput>,
     // Tracked execution data for VM1
     vm1_txn_infos: Vec<TransactionInfo>,
     vm1_txn_events: Vec<Vec<ContractEvent>>,
@@ -155,8 +151,6 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
-            cached_vm1_outputs: vec![],
-            cached_vm2_outputs: vec![],
             vm1_txn_infos: vec![],
             vm1_txn_events: vec![],
             vm1_write_sets: vec![],
@@ -266,7 +260,6 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
-                    self.cached_vm1_outputs.push(output.clone());
                     self.push_txn_and_state(txn_hash, output, index == last_index)?;
                     self.gas_used += gas_used;
                     self.included_user_txns
@@ -307,8 +300,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus::Keep(_) => {
-                // Cache BlockMetadata output for reuse during block execution
-                self.cached_vm1_outputs.push(output.clone());
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
@@ -443,8 +434,6 @@ impl OpenedBlock {
 
         Ok(FinalizedBlock {
             template: block_template,
-            vm1_outputs: self.cached_vm1_outputs,
-            vm2_outputs: self.cached_vm2_outputs,
             statedb: self.state.0,
             statedb2: self.state.1,
             executed_data,
