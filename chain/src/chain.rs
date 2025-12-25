@@ -2474,13 +2474,6 @@ impl BlockChain {
             executed_accumulator_root,
             header.txn_accumulator_root(),
         );
-
-        // Flush state to ensure state tree nodes are persisted
-        // This is critical for dual-VM: both VM1 and VM2 states must be flushed
-        statedb.flush()?;
-        statedb2.flush()?;
-
-        // Create local block_accumulator from parent's accumulator info
         let parent_block_accumulator_info = parent_block_info.get_block_accumulator_info();
         let block_accumulator = MerkleAccumulator::new_with_info(
             parent_block_accumulator_info.clone(),
