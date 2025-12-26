@@ -130,11 +130,27 @@ impl Default for BlockStateCache {
 
 static GLOBAL_BLOCK_STATE_CACHE: Lazy<BlockStateCache> = Lazy::new(BlockStateCache::new);
 
+static GLOBAL_SHUTDOWN_FLAG: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 pub fn global_block_state_cache() -> &'static BlockStateCache {
     &GLOBAL_BLOCK_STATE_CACHE
 }
 
+pub fn is_node_shutting_down() -> bool {
+    GLOBAL_SHUTDOWN_FLAG.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+pub fn set_node_shutting_down() {
+    GLOBAL_SHUTDOWN_FLAG.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn reset_node_shutdown_flag() {
+    GLOBAL_SHUTDOWN_FLAG.store(false, std::sync::atomic::Ordering::SeqCst);
+}
+
 pub fn clear_global_block_state_cache() {
+    set_node_shutting_down();
     let count = GLOBAL_BLOCK_STATE_CACHE.len();
     GLOBAL_BLOCK_STATE_CACHE.clear();
     log::info!(

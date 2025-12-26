@@ -6,7 +6,8 @@ use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_chain::{
-    get_merge_bound_hash, global_block_state_cache, BlockChain, CachedBlockState, ChainReader,
+    get_merge_bound_hash, global_block_state_cache, is_node_shutting_down, BlockChain,
+    CachedBlockState, ChainReader,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
@@ -537,6 +538,10 @@ where
             >= vm1_offline_height(previous_header.chain_id().id().into());
 
         RAYON_EXEC_POOL.spawn(move || {
+            if is_node_shutting_down() {
+                return;
+            }
+
             let mut opened_block = match OpenedBlock::new(
                 storage.clone(),
                 storage2.clone(),
@@ -561,6 +566,10 @@ where
                 }
             };
 
+            if is_node_shutting_down() {
+                return;
+            }
+
             // Process VM1 transactions
             if !vm1_offline {
                 let excluded_txns = match opened_block.process_vm1_transactions(txns) {
@@ -578,6 +587,10 @@ where
                     excluded_txns.discarded_txns.len(),
                     excluded_txns.untouched_txns.len(),
                 );
+            }
+
+            if is_node_shutting_down() {
+                return;
             }
 
             // Process VM2 transactions
@@ -598,6 +611,10 @@ where
                 excluded_txns2.untouched_txns.len()
             );
 
+            if is_node_shutting_down() {
+                return;
+            }
+
             if !opened_block.included_user_txns2().is_empty() {
                 match opened_block.finalize_block_epilogue() {
                     Ok(()) => {}
@@ -608,6 +625,10 @@ where
                 }
             }
 
+            if is_node_shutting_down() {
+                return;
+            }
+
             let finalized = match opened_block.finalize() {
                 Ok(result) => result,
                 Err(e) => {
@@ -615,6 +636,10 @@ where
                     return;
                 }
             };
+
+            if is_node_shutting_down() {
+                return;
+            }
 
             let template = finalized.template;
 
