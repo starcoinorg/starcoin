@@ -46,8 +46,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         view: &MVHashMapView<StateKey, WriteOp>,
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
-        let versioned_view = VersionedView::new_view(self.base_view, view);
-        let resolver = versioned_view.as_move_resolver();
+        let resolver = VersionedView::new_view(self.base_view, view);
         match self.vm.execute_single_transaction(txn, &resolver) {
             Ok((vm_status, output, sender)) => {
                 if output.status().is_discarded() {
