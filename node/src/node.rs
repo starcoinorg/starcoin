@@ -444,14 +444,11 @@ impl NodeService {
     }
 
     fn shutdown_system(&self) {
-        // Clear the global block state cache to release database connections
-        // This is critical to prevent lock file issues on node restart
         clear_global_block_state_cache();
 
         if let Err(e) = self.registry.shutdown_system_sync() {
             error!("Shutdown registry error: {}", e);
         };
-        //wait a seconds for registry shutdown, then stop System.
         std::thread::sleep(Duration::from_millis(2000));
         System::current().stop();
     }
