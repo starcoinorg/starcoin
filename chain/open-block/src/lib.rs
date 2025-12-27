@@ -343,6 +343,10 @@ impl OpenedBlock {
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
     fn execute_extra_txn(&mut self) -> Result<()> {
+        if (self.chain_id.is_dev() || self.chain_id.is_halley() || self.chain_id().is_proxima()) {
+            return Ok(());
+        };
+
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
