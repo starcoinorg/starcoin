@@ -17,15 +17,13 @@ use starcoin_vm_types::genesis_config::ChainId;
 ///
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23009355;
 
+pub fn should_force_upgrade(chain_id: &ChainId) -> bool {
+    chain_id.is_main() || chain_id.is_barnard()
+}
+
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_main() {
         FORCE_UPGRADE_BLOCK_NUMBER
-    } else if chain_id.is_test() {
-        50
-    } else if chain_id.is_dev() {
-        5
-    } else if chain_id.is_halley() || chain_id.is_proxima() {
-        300
     } else if chain_id.is_barnard() {
         // add 8000 + BARNARD_HARD_FORK_HEIGHT
         16081000
@@ -51,7 +49,7 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
     if chain_id.is_main() {
         // 0xed9ea1f3533c14e1b52d9ff6475776ba
         create_account("650a4e2222996b607bbed13e1de45ad946cd0e66167f45efaa943a58e692e280")
-    } else if chain_id.is_barnard() || chain_id.is_proxima() || chain_id.is_halley() {
+    } else if chain_id.is_barnard() {
         // 0x0b1d07ae560c26af9bbb8264f4c7ee73
         create_account("6105e78821ace0676faf437fb40dd6892e72f01c09351298106bad2964edb007")
     } else if chain_id.id() == 123 {
@@ -84,27 +82,6 @@ mod tests {
             *get_force_upgrade_account(&ChainId::new(251))?.address(),
             AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
         );
-        // Proxima 252
-        assert_eq!(
-            get_force_upgrade_account(&ChainId::new(252))?.address(),
-            &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
-        );
-        // Halley 253
-        assert_eq!(
-            get_force_upgrade_account(&ChainId::new(253))?.address(),
-            &AccountAddress::from_hex_literal("0x0b1d07ae560c26af9bbb8264f4c7ee73")?
-        );
-        // Dev 254
-        assert_eq!(
-            get_force_upgrade_account(&ChainId::new(254))?.address(),
-            &AccountAddress::from_hex_literal("0xA550C18")?
-        );
-        // Test 255
-        assert_eq!(
-            get_force_upgrade_account(&ChainId::new(255))?.address(),
-            &AccountAddress::from_hex_literal("0xA550C18")?
-        );
-
         Ok(())
     }
 }

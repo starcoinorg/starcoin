@@ -15,7 +15,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
+    get_force_upgrade_account, get_force_upgrade_block_number, should_force_upgrade,
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
@@ -136,12 +136,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
-    if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
-        .map_err(BlockExecutorError::BlockChainStateErr)?
-    {
-        // !!! commit suicide if any error or exception happens !!!
-        execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
-            .expect("extra txn must be executed successfully");
+    if should_force_upgrade(&chain_state.get_chain_id().expect("Get chain id fail")) {
+        if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
+            .map_err(BlockExecutorError::BlockChainStateErr)?
+        {
+            // !!! commit suicide if any error or exception happens !!!
+            execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
+                .expect("extra txn must be executed successfully");
+        }
     }
 
     executed_data.state_root = chain_state.state_root();

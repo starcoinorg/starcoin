@@ -27,7 +27,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
+    get_force_upgrade_account, get_force_upgrade_block_number, should_force_upgrade,
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
@@ -216,8 +216,10 @@ impl OpenedBlock {
             };
         }
 
-        self.execute_extra_txn()
-            .expect("Extra txn must be executed successfully");
+        if should_force_upgrade(&self.chain_id) {
+            self.execute_extra_txn()
+                .expect("Extra txn must be executed successfully");
+        };
 
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
@@ -343,10 +345,6 @@ impl OpenedBlock {
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
     fn execute_extra_txn(&mut self) -> Result<()> {
-        if self.chain_id.is_dev() || self.chain_id.is_halley() || self.chain_id().is_proxima() {
-            return Ok(());
-        };
-
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
