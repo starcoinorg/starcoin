@@ -21,3 +21,4 @@ mod pool_client;
 mod test;
 mod tx_pool_actor_service;
 mod tx_pool_service_impl;
+pub use tx_pool_actor_service::CommitBlockTransactions;

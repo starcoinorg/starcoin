@@ -6,17 +6,15 @@ use crate::block_connector::WriteBlockChainService;
 use anyhow::{bail, format_err, Ok};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
-use starcoin_chain_service::WriteableChainService;
 use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
 use std::sync::Arc;
 
 pub fn gen_dag_blocks(
     times: u64,
-    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    writeable_block_chain_service: &mut WriteBlockChainService,
     net: &ChainNetwork,
 ) -> anyhow::Result<HashValue> {
     let miner_account = AccountInfo::random();
@@ -25,7 +23,7 @@ pub fn gen_dag_blocks(
         for i in 0..times {
             let block = new_dag_block(Some(&miner_account), writeable_block_chain_service, net)?;
             last_block_hash = Some(block.id());
-            let e = writeable_block_chain_service.try_connect(block);
+            let e = writeable_block_chain_service.try_connect(block, |_| {});
             println!("try_connect result: {:?}", e);
             assert!(e.is_ok());
             if (i + 1) % 3 == 0 {
@@ -40,7 +38,7 @@ pub fn gen_dag_blocks(
 
 pub fn new_dag_block(
     miner_account: Option<&AccountInfo>,
-    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    writeable_block_chain_service: &mut WriteBlockChainService,
     net: &ChainNetwork,
 ) -> anyhow::Result<Block> {
     let miner = match miner_account {
@@ -99,7 +97,7 @@ fn gen_fork_dag_block_chain(
     fork_number: u64,
     node_config: Arc<NodeConfig>,
     times: u64,
-    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    writeable_block_chain_service: &mut WriteBlockChainService,
 ) -> Option<HashValue> {
     let miner_account = AccountInfo::random();
     let dag = writeable_block_chain_service.get_dag();
@@ -137,7 +135,9 @@ fn gen_fork_dag_block_chain(
                 .unwrap();
             parent_id = block.id();
 
-            writeable_block_chain_service.try_connect(block).unwrap();
+            writeable_block_chain_service
+                .try_connect(block, |_| {})
+                .unwrap();
         }
         Some(parent_id)
     } else {
@@ -197,7 +197,7 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
         .get_main()
         .get_block_by_number(3)?
         .unwrap();
-    writeable_block_chain_service.reset(block.id())?;
+    writeable_block_chain_service.reset(block.id(), |_| {})?;
     assert_eq!(
         writeable_block_chain_service
             .get_main()

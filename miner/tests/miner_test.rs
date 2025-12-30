@@ -166,10 +166,7 @@ async fn test_miner_service() {
 
     registry.register::<PruningPointService>().await.unwrap();
 
-    registry
-        .register::<BlockConnectorService<TxPoolService>>()
-        .await
-        .unwrap();
+    registry.register::<BlockConnectorService>().await.unwrap();
 
     registry.put_shared(NewHeaderChannel::new()).await.unwrap();
     registry.register::<NewHeaderService>().await.unwrap();

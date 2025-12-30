@@ -9,7 +9,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{DeterminedDagBlock, NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{NewHeadBlock, SyncStatusChangeEvent},
 };
 use std::sync::Arc;
 
@@ -119,12 +119,12 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
     }
 }
 
-impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
-        if self.is_synced() {
-            self.send_event(true, ctx)
-        } else {
-            debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
-        }
-    }
-}
+// impl EventHandler<Self, DeterminedDagBlock> for GenerateBlockEventPacemaker {
+//     fn handle_event(&mut self, _msg: DeterminedDagBlock, ctx: &mut ServiceContext<Self>) {
+//         if self.is_synced() {
+//             self.send_event(true, ctx)
+//         } else {
+//             debug!("[pacemaker] Ignore NewDagBlock event because the node has not been synchronized yet.")
+//         }
+//     }
+// }

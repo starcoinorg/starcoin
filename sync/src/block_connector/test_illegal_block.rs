@@ -7,7 +7,6 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_mock::MockChain;
-use starcoin_chain_service::WriteableChainService;
 use starcoin_config::{
     BuiltinNetworkID, ChainNetwork, GenesisBlockParameter, GenesisBlockParameterConfig, NodeConfig,
     G_TEST_CONFIG,
@@ -18,7 +17,6 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::Storage2;
 use starcoin_storage::Store;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
-use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
@@ -68,7 +66,7 @@ async fn uncle_block_and_writeable_block_chain(
     uncle: u64,
 ) -> anyhow::Result<(
     BlockHeader,
-    WriteBlockChainService<MockTxPoolService>,
+    WriteBlockChainService,
     Arc<NodeConfig>,
     Arc<dyn Store>,
     Arc<Storage2>,
@@ -118,7 +116,7 @@ async fn uncle_block_and_writeable_block_chain(
 fn apply_with_illegal_uncle(
     net: &ChainNetwork,
     uncles: Vec<BlockHeader>,
-    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    writeable_block_chain_service: &mut WriteBlockChainService,
     storage: Arc<dyn Store>,
     storage2: Arc<Storage2>,
 ) -> Result<Block> {
@@ -148,7 +146,7 @@ fn apply_with_illegal_uncle(
 
 fn apply_legal_block(
     uncles: Vec<BlockHeader>,
-    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    writeable_block_chain_service: &mut WriteBlockChainService,
 ) {
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
@@ -167,7 +165,7 @@ fn apply_legal_block(
         )
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, |_| {})
         .unwrap();
 }
 
@@ -801,7 +799,7 @@ async fn test_verify_uncles_uncle_exist_failed() -> anyhow::Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, |_| {})
         .unwrap();
 
     info!(
@@ -877,7 +875,7 @@ async fn test_verify_uncle_and_parent_number_failed() -> anyhow::Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
-        .try_connect(new_block)
+        .try_connect(new_block, |_| {})
         .unwrap();
     let new_number = writeable_block_chain_service
         .get_main()

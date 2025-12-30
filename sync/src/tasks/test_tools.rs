@@ -108,16 +108,13 @@ impl SyncTestSystem {
                     .put_shared(dag)
                     .await
                     .expect("failed to put dag in registry");
-                registry.put_shared(MockTxPoolService::new()).await.unwrap();
 
                 Delay::new(Duration::from_secs(2)).await;
 
+                registry.register::<MockTxPoolService>().await.unwrap();
                 registry.register::<ChainReaderService>().await.unwrap();
                 registry.register::<PruningPointService>().await.unwrap();
-                registry
-                    .register::<BlockConnectorService<MockTxPoolService>>()
-                    .await
-                    .unwrap();
+                registry.register::<BlockConnectorService>().await.unwrap();
 
                 registry_sender.send(registry).unwrap();
             });

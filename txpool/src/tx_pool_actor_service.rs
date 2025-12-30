@@ -6,6 +6,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use starcoin_types::block::Block;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
@@ -17,6 +18,12 @@ use std::time::Duration;
 use crate::pool::TxStatus;
 use crate::tx_pool_service_impl::Inner;
 use crate::TxPoolService;
+
+#[derive(Clone, Debug)]
+pub struct CommitBlockTransactions {
+    pub enacted: Box<Vec<Block>>,
+    pub retracted: Box<Vec<Block>>,
+}
 
 #[derive(Clone)]
 pub struct TxPoolActorService {
@@ -142,6 +149,12 @@ impl ActorService for TxPoolActorService {
 impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
     fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
         self.sync_status = Some(msg.0);
+    }
+}
+
+impl EventHandler<Self, CommitBlockTransactions> for TxPoolActorService {
+    fn handle_event(&mut self, msg: CommitBlockTransactions, _ctx: &mut ServiceContext<Self>) {
+        self.inner.chain_new_block(*msg.enacted, *msg.retracted);
     }
 }
 

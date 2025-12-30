@@ -49,7 +49,7 @@ use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
 use starcoin_vm2_account_service::{
     AccountEventService as AccountEventService2, AccountService as AccountService2,
@@ -135,9 +135,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::ResetNode(block_hash) => {
-                let connect_service = ctx
-                    .service_ref::<BlockConnectorService<TxPoolService>>()?
-                    .clone();
+                let connect_service = ctx.service_ref::<BlockConnectorService>()?.clone();
                 let fut = async move {
                     info!("Prepare to reset node startup info to {}", block_hash);
                     connect_service.send(ResetRequest { block_hash }).await?
@@ -364,9 +362,7 @@ impl NodeService {
         registry.register::<ChainNotifyHandlerService>().await?;
 
         registry.register::<ExecuteService>().await?;
-        registry
-            .register::<BlockConnectorService<TxPoolService>>()
-            .await?;
+        registry.register::<BlockConnectorService>().await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;

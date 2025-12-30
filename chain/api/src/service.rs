@@ -100,11 +100,6 @@ pub trait ReadableChainService {
     fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>>;
 }
 
-/// Writeable block chain service trait
-pub trait WriteableChainService: Send + Sync {
-    fn try_connect(&mut self, block: Block) -> Result<()>;
-}
-
 pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {

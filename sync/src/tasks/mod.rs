@@ -24,9 +24,6 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::{Store, Store2};
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_txpool::TxPoolService;
-#[cfg(test)]
-use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
@@ -517,15 +514,7 @@ pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
 }
 
-impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<TxPoolService>> {
-    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
-        self.notify(event)?;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService<MockTxPoolService>> {
+impl BlockConnectedEventHandle for ServiceRef<BlockConnectorService> {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
         self.notify(event)?;
         Ok(())
