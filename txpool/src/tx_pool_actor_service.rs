@@ -129,6 +129,7 @@ impl TxPoolActorService {
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
+        ctx.subscribe::<CommitBlockTransactions>();
         ctx.add_stream(self.inner.subscribe_txns());
 
         let myself = self.clone();
@@ -142,6 +143,7 @@ impl ActorService for TxPoolActorService {
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
+        ctx.unsubscribe::<CommitBlockTransactions>();
         Ok(())
     }
 }
