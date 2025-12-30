@@ -215,6 +215,11 @@ impl EventHandler<Self, BlockDiskCheckEvent> for BlockConnectorService {
 
 impl EventHandler<Self, NewDagBlock> for BlockConnectorService {
     fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
+        info!(
+            "jacktest BlockConnectorService NewDagBlock start: block_number={}, block_id={}",
+            msg.executed_block.header().number(),
+            msg.executed_block.header().id()
+        );
         let block_header = match self.chain_service.switch_header(
             msg.executed_block.header(),
             |msg: CommitBlockTransactions| ctx.broadcast(msg),
@@ -229,6 +234,10 @@ impl EventHandler<Self, NewDagBlock> for BlockConnectorService {
                 return;
             }
         };
+        info!(
+            "jacktest BlockConnectorService NewDagBlock done: block_number={}",
+            msg.executed_block.header().number()
+        );
 
         let _consume = self
             .pruning_point_channel

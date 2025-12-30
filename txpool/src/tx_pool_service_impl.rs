@@ -541,37 +541,41 @@ impl Inner {
     }
 
     pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        debug!(
-            "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
-            enacted
-                .iter()
-                .map(|b| b.header().number())
-                .collect::<Vec<_>>(),
-            retracted
-                .iter()
-                .map(|b| b.header().number())
-                .collect::<Vec<_>>()
+        let enacted_nums: Vec<_> = enacted.iter().map(|b| b.header().number()).collect();
+        let retracted_nums: Vec<_> = retracted.iter().map(|b| b.header().number()).collect();
+        info!(
+            "jacktest chain_new_block start: enacted={:?}, retracted={:?}",
+            enacted_nums, retracted_nums
         );
 
         // new head block, update chain header
         if let Some(block) = enacted.last() {
+            info!(
+                "jacktest chain_new_block notify_new_chain_header: block_number={}",
+                block.header().number()
+            );
             self.notify_new_chain_header(block.header().clone());
         }
 
         // remove outdated txns.
+        info!("jacktest chain_new_block cull start");
         if let Err(e) = self.cull() {
             error!("failed to cull in chain_new_block: {}", e);
             return;
         }
+        info!("jacktest chain_new_block cull done");
 
         // import retracted txns.
-        let txns = retracted
+        let txns: Vec<_> = retracted
             .into_iter()
             .flat_map(|b| {
                 let txns: Vec<MultiSignedUserTransaction> = b.into_inner().1.into();
                 txns.into_iter()
             })
-            .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
+            .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)))
+            .collect();
+        let txn_count = txns.len();
+        info!("jacktest chain_new_block import retracted start: count={}", txn_count);
         let client = match self.get_pool_client() {
             Ok(client) => client,
             Err(e) => {
@@ -579,12 +583,13 @@ impl Inner {
                 return;
             }
         };
-        let results = self.queue.import(client, txns, true, None);
+        let results = self.queue.import(client, txns.into_iter(), true, None);
         for result in results {
             if let Err(err) = result {
                 debug!("retracted transaction fail: {}", err);
             }
         }
+        info!("jacktest chain_new_block done: enacted={:?}, retracted={:?}", enacted_nums, retracted_nums);
     }
 
     pub fn get_pool_client(&self) -> Result<PoolClient> {

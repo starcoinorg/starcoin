@@ -156,7 +156,17 @@ impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
 
 impl EventHandler<Self, CommitBlockTransactions> for TxPoolActorService {
     fn handle_event(&mut self, msg: CommitBlockTransactions, _ctx: &mut ServiceContext<Self>) {
+        let enacted_count = msg.enacted.len();
+        let retracted_count = msg.retracted.len();
+        log::info!(
+            "jacktest TxPoolActorService handle CommitBlockTransactions: enacted_count={}, retracted_count={}",
+            enacted_count, retracted_count
+        );
         self.inner.chain_new_block(*msg.enacted, *msg.retracted);
+        log::info!(
+            "jacktest TxPoolActorService handle CommitBlockTransactions done: enacted_count={}, retracted_count={}",
+            enacted_count, retracted_count
+        );
     }
 }
 

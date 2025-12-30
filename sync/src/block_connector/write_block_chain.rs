@@ -164,6 +164,11 @@ impl WriteBlockChainService {
     where
         F: FnMut(CommitBlockTransactions),
     {
+        info!(
+            "[jacktest] switch_header called for block: {:?}, number: {}",
+            header.id(),
+            header.number()
+        );
         let new_branch = self.main.select_dag_state(header)?;
         self.select_head(new_branch, broadcast)?;
         self.update_startup_info(&self.main.current_header())?;
@@ -306,9 +311,19 @@ impl WriteBlockChainService {
         F: FnMut(CommitBlockTransactions),
     {
         let executed_block = new_branch.head_block();
+        info!(
+            "[jacktest] select_head called, new_branch head: {:?}, number: {}",
+            executed_block.header().id(),
+            executed_block.header().number()
+        );
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
+
+        info!(
+            "[jacktest] select_head: main_total_difficulty={}, branch_total_difficulty={}, parent_is_main_head={}",
+            main_total_difficulty, branch_total_difficulty, parent_is_main_head
+        );
 
         if branch_total_difficulty > main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
@@ -354,10 +369,13 @@ impl WriteBlockChainService {
                 metrics.chain_rollback_block_total.inc_by(retracted_count);
             }
         }
+        info!("jacktest do_new_head broadcast start: block_number={}, enacted_count={}, retracted_count={}", 
+            executed_block.header().number(), enacted_count, retracted_count);
         broadcast(CommitBlockTransactions {
             enacted: Box::new(enacted_blocks),
             retracted: Box::new(retracted_blocks),
         });
+        info!("jacktest do_new_head broadcast done: block_number={}", executed_block.header().number());
         self.config
             .net()
             .time_service()
