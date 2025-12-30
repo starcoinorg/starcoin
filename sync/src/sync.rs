@@ -32,7 +32,6 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
     SyncStatusRequest, SyncTarget,
 };
-use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
@@ -473,9 +472,7 @@ impl SyncService {
         let storage = self.storage.clone();
         let storage2 = self.storage2.clone();
         let self_ref = ctx.self_ref();
-        let connector_service = ctx
-            .service_ref::<BlockConnectorService<TxPoolService>>()?
-            .clone();
+        let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();

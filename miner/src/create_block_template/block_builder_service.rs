@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -7,8 +6,8 @@ use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use starcoin_chain::{
-    get_merge_bound_hash, global_block_state_cache,
-    txn_output_cache::global_txn_output_cache, BlockChain, CachedBlockState, ChainReader,
+    get_merge_bound_hash, global_block_state_cache, txn_output_cache::global_txn_output_cache,
+    BlockChain, CachedBlockState, ChainReader,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_config::NodeConfig;
@@ -47,9 +46,6 @@ use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-
-/// Global flag to prevent concurrent block building
-static IS_BUILDING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
@@ -482,7 +478,7 @@ where
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
-        //TODO use a GasConstant value to replace 200.
+        // TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         // let max_txns = min((block_gas_limit / 200) * 2, max_transaction_per_block);
         let max_txns = max_transaction_per_block;

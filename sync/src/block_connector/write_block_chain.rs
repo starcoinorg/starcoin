@@ -5,7 +5,7 @@ use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
 use itertools::Itertools;
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError};
 use starcoin_config::NodeConfig;
 #[cfg(test)]
 use starcoin_consensus::Consensus;
@@ -15,9 +15,9 @@ use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::{ServiceContext, ServiceRef};
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{Store, Store2};
-use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool::CommitBlockTransactions;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::multi_state::MultiState;
 #[cfg(test)]
@@ -32,20 +32,14 @@ use starcoin_vm_types::account_address::AccountAddress;
 // use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
-use super::BlockConnectorService;
-
 const MAX_ROLL_BACK_BLOCK: usize = 10;
 
-pub struct WriteBlockChainService<P>
-where
-    P: TxPoolSyncService,
-{
+pub struct WriteBlockChainService {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
     storage2: Arc<dyn Store2>,
-    txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -75,48 +69,12 @@ impl std::fmt::Display for ConnectOk {
     }
 }
 
-impl<P> WriteableChainService for WriteBlockChainService<P>
-where
-    P: TxPoolSyncService + 'static,
-{
-    fn try_connect(&mut self, block: Block) -> Result<()> {
-        let _timer = self
-            .metrics
-            .as_ref()
-            .map(|metrics| metrics.chain_block_connect_time.start_timer());
-
-        let result = self.connect_inner(block);
-
-        if let Some(metrics) = self.metrics.as_ref() {
-            let result = match result.as_ref() {
-                std::result::Result::Ok(connect) => format!("Ok_{}", connect),
-                Err(err) => {
-                    if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
-                        format!("Err_{}", connect_err.reason())
-                    } else {
-                        "Err_other".to_string()
-                    }
-                }
-            };
-            metrics
-                .chain_block_connect_total
-                .with_label_values(&[result.as_str()])
-                .inc();
-        }
-        result.map(|_| ())
-    }
-}
-
-impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
+impl WriteBlockChainService {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
-        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -142,12 +100,42 @@ where
             main,
             storage,
             storage2,
-            txpool,
+            // txpool,
             bus,
             metrics,
             vm_metrics,
             dag,
         })
+    }
+
+    pub fn try_connect<F>(&mut self, block: Block, broadcast: F) -> Result<()>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
+        let _timer = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.chain_block_connect_time.start_timer());
+
+        let result = self.connect_inner(block, broadcast);
+
+        if let Some(metrics) = self.metrics.as_ref() {
+            let result = match result.as_ref() {
+                std::result::Result::Ok(connect) => format!("Ok_{}", connect),
+                Err(err) => {
+                    if let Some(connect_err) = err.downcast_ref::<ConnectBlockError>() {
+                        format!("Err_{}", connect_err.reason())
+                    } else {
+                        "Err_other".to_string()
+                    }
+                }
+            };
+            metrics
+                .chain_block_connect_total
+                .with_label_values(&[result.as_str()])
+                .inc();
+        }
+        result.map(|_| ())
     }
 
     #[cfg(test)]
@@ -156,7 +144,6 @@ where
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
-        txpool: TransactionPoolServiceT,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -166,7 +153,6 @@ where
             startup_info,
             storage,
             storage2,
-            txpool,
             bus,
             vm_metrics,
             dag,
@@ -174,9 +160,12 @@ where
         Ok(this)
     }
 
-    pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
-        let new_branch = self.main.select_dag_state(header)?; // 1
-        self.select_head(new_branch)?;
+    pub fn switch_header<F>(&mut self, header: &BlockHeader, broadcast: F) -> Result<BlockHeader>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
+        let new_branch = self.main.select_dag_state(header)?;
+        self.select_head(new_branch, broadcast)?;
         self.update_startup_info(&self.main.current_header())?;
         Ok(self.main.current_header())
     }
@@ -284,13 +273,9 @@ where
     // switch by:
     // 1, update the startup info
     // 2, broadcast the new header
-    pub fn switch_new_main(
-        &mut self,
-        new_head_block: HashValue,
-        ctx: &mut ServiceContext<BlockConnectorService<TransactionPoolServiceT>>,
-    ) -> Result<()>
+    pub fn switch_new_main<F>(&mut self, new_head_block: HashValue, mut broadcast: F) -> Result<()>
     where
-        TransactionPoolServiceT: TxPoolSyncService,
+        F: FnMut(CommitBlockTransactions),
     {
         let new_branch = BlockChain::new(
             self.config.net().time_service(),
@@ -306,10 +291,9 @@ where
         if branch_total_difficulty > main_total_difficulty {
             self.main = new_branch;
             self.update_startup_info(self.main.head_block().header())?;
-            let connected_time = self.main.time_service().now_millis();
-            ctx.broadcast(NewHeadBlock {
-                executed_block: Arc::new(self.main.head_block()),
-                connected_time_ms: connected_time,
+            broadcast(CommitBlockTransactions {
+                enacted: Box::new(vec![self.main.head_block().block().clone()]),
+                retracted: Box::new(vec![]),
             });
             Ok(())
         } else {
@@ -317,7 +301,10 @@ where
         }
     }
 
-    pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
+    pub fn select_head<F>(&mut self, new_branch: BlockChain, mut broadcast: F) -> Result<()>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
         let executed_block = new_branch.head_block();
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
@@ -338,6 +325,7 @@ where
                 enacted_blocks,
                 retracted_count,
                 retracted_blocks,
+                &mut broadcast,
             )?;
         } else {
             //send new branch event
@@ -346,14 +334,18 @@ where
         Ok(())
     }
 
-    fn do_new_head(
+    fn do_new_head<F>(
         &mut self,
         executed_block: ExecutedBlock,
         enacted_count: u64,
         enacted_blocks: Vec<Block>,
         retracted_count: u64,
         retracted_blocks: Vec<Block>,
-    ) -> Result<()> {
+        broadcast: &mut F,
+    ) -> Result<()>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
         debug_assert!(!enacted_blocks.is_empty());
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
         self.update_startup_info(executed_block.block().header())?;
@@ -362,7 +354,10 @@ where
                 metrics.chain_rollback_block_total.inc_by(retracted_count);
             }
         }
-        self.commit_2_txpool(enacted_blocks, retracted_blocks);
+        broadcast(CommitBlockTransactions {
+            enacted: Box::new(enacted_blocks),
+            retracted: Box::new(retracted_blocks),
+        });
         self.config
             .net()
             .time_service()
@@ -385,7 +380,10 @@ where
     }
 
     /// Reset the node to `block_id`, and replay blocks after the block
-    pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
+    pub fn reset<F>(&mut self, block_id: HashValue, mut broadcast: F) -> Result<()>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
         let new_head_block = self
             .main
             .get_storage()
@@ -439,6 +437,7 @@ where
             enacted_blocks,
             retracted_count,
             retracted_blocks,
+            &mut broadcast,
         )?;
         Ok(())
     }
@@ -466,11 +465,11 @@ where
         self.storage.save_startup_info(self.startup_info.clone())
     }
 
-    fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
-            error!("rollback err : {:?}", e);
-        }
-    }
+    // fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
+    //     if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
+    //         error!("rollback err : {:?}", e);
+    //     }
+    // }
 
     fn find_ancestors_from_accumulator(
         &self,
@@ -600,7 +599,10 @@ where
         }
     }
 
-    fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
+    fn connect_inner<F>(&mut self, block: Block, mut broadcast: F) -> Result<ConnectOk>
+    where
+        F: FnMut(CommitBlockTransactions),
+    {
         let block_id = block.id();
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
@@ -625,7 +627,7 @@ where
         {
             let executed_block = self.main.apply(block)?;
             let enacted_blocks = vec![executed_block.block().clone()];
-            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![], &mut broadcast)?;
             return Ok(ConnectOk::ExeConnectMain);
         }
         let (block_info_with_state, fork) = self.find_or_fork(block.header())?;
@@ -637,7 +639,7 @@ where
                     block_id,
                     branch.get_total_difficulty()?
                 );
-                self.select_head(branch)?;
+                self.select_head(branch, broadcast)?;
                 Ok(ConnectOk::Duplicate)
             }
             // block has been processed, and its parent is main chain, so just connect it to main chain.
@@ -651,13 +653,13 @@ where
                     "Block {} main has been processed, trigger head selection",
                     block_id
                 );
-                self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
+                self.do_new_head(executed_block, 1, vec![block], 0, vec![], &mut broadcast)?;
                 Ok(ConnectOk::Connect)
             }
             // the block is not processed but its parent branch exists
             (None, Some(mut branch)) => {
                 let _executed_block = branch.apply(block)?;
-                self.select_head(branch)?;
+                self.select_head(branch, broadcast)?;
                 Ok(ConnectOk::ExeConnectBranch)
             }
             (None, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),

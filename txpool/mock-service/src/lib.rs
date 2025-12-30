@@ -5,6 +5,8 @@ use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
 use starcoin_miner::create_block_template::block_builder_service::TemplateTxProvider;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
+use starcoin_txpool::CommitBlockTransactions;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
@@ -30,6 +32,24 @@ impl MockTxPoolService {
         MockTxPoolService {
             pool: Arc::new(Mutex::new(txns)),
         }
+    }
+}
+
+impl ActorService for MockTxPoolService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<CommitBlockTransactions>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<CommitBlockTransactions>();
+        Ok(())
+    }
+}
+
+impl EventHandler<Self, CommitBlockTransactions> for MockTxPoolService {
+    fn handle_event(&mut self, msg: CommitBlockTransactions, _ctx: &mut ServiceContext<Self>) {
+        let _ = self.chain_new_block(*msg.enacted, *msg.retracted);
     }
 }
 

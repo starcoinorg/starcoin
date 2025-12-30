@@ -13908,6 +13908,8 @@ dependencies = [
  "futures-channel",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-miner",
+ "starcoin-service-registry",
+ "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm1-types",

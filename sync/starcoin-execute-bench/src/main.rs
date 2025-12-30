@@ -1146,7 +1146,7 @@ impl ActorService for ObserverService {
 }
 
 impl EventHandler<Self, NewHeadBlock> for ObserverService {
-    fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
         if let Err(e) =
             self.update_transaction_status(msg.executed_block.block().id(), msg.connected_time_ms)
         {

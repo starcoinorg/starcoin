@@ -24,7 +24,7 @@ pub use chain::{
     VerifiedBlock,
 };
 pub use errors::*;
-pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
+pub use service::{ChainAsyncService, ReadableChainService};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::contract_event::ContractEvent;

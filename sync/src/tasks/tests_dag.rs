@@ -10,7 +10,6 @@ use futures::channel::mpsc::unbounded;
 use starcoin_chain_api::ChainReader;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
 
 async fn sync_block_process(
@@ -30,9 +29,7 @@ async fn sync_block_process(
         let local_net = local_node.chain_mocker.net();
         let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
 
-        let block_chain_service = registry
-            .service_ref::<BlockConnectorService<MockTxPoolService>>()
-            .await?;
+        let block_chain_service = registry.service_ref::<BlockConnectorService>().await?;
 
         let storage2 = local_node.get_storage2();
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -58,7 +55,7 @@ async fn sync_block_process(
         assert_eq!(branch.current_header().id(), target.target_id.id());
 
         let block_connector_service = registry
-            .service_ref::<BlockConnectorService<MockTxPoolService>>()
+            .service_ref::<BlockConnectorService>()
             .await?
             .clone();
         let result = block_connector_service

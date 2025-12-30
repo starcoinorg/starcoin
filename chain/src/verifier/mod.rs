@@ -238,7 +238,7 @@ impl BlockVerifier for BasicVerifier {
             epoch.end_block_number(),
         );
 
-        let block_gas_limit = epoch.block_gas_limit();
+        let _block_gas_limit = epoch.block_gas_limit();
 
         // verify_block!(
         //     VerifyBlockField::Header,

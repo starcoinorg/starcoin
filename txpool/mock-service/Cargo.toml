@@ -4,6 +4,8 @@ starcoin-crypto = { workspace = true }
 starcoin-types = { workspace = true }
 futures-channel = { workspace = true }
 starcoin-txpool-api = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-service-registry = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-miner = { workspace = true }
