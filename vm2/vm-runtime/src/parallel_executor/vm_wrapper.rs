@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
+    parallel_executor::{
+        storage_wrapper::{ResourceGroupCacheEntry, VersionedView},
+        StarcoinTransactionOutput,
+    },
     starcoin_vm::StarcoinVM,
     PreprocessedTransaction,
 };
@@ -42,7 +45,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
 
     fn execute_transaction(
         &self,
-        view: &MVHashMapView<StateKey, WriteOp>,
+        view: &MVHashMapView<StateKey, WriteOp, ResourceGroupCacheEntry>,
         txn: &PreprocessedTransaction,
     ) -> ExecutionStatus<StarcoinTransactionOutput, VMStatus> {
         let resolver = VersionedView::new_view(self.base_view, view);

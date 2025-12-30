@@ -59,16 +59,20 @@ impl<V> WriteCell<V> {
 /// Concurrency is managed by DashMap, i.e. when a method accesses a BTreeMap at a
 /// given key, it holds exclusive access and doesn't need to explicitly synchronize
 /// with other reader/writers.
-pub struct MVHashMap<K, V> {
+pub struct MVHashMap<K, V, G = ()> {
     data: DashMap<K, BTreeMap<TxnIndex, CachePadded<WriteCell<V>>>>,
+    group_data: DashMap<K, BTreeMap<TxnIndex, CachePadded<WriteCell<G>>>>,
+    group_base_data: DashMap<K, Arc<G>>,
 }
 
 #[allow(clippy::new_without_default)]
 #[allow(clippy::or_fun_call)]
-impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
-    pub fn new() -> MVHashMap<K, V> {
+impl<K: Hash + Clone + Eq, V, G> MVHashMap<K, V, G> {
+    pub fn new() -> MVHashMap<K, V, G> {
         MVHashMap {
             data: DashMap::new(),
+            group_data: DashMap::new(),
+            group_base_data: DashMap::new(),
         }
     }
 
@@ -131,5 +135,70 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
             }
             None => Err(None),
         }
+    }
+}
+
+impl<K: Hash + Clone + Eq, V, G: Send + Sync> MVHashMap<K, V, G> {
+    pub fn write_group_data(&self, key: &K, version: Version, data: G) -> Arc<G> {
+        let (txn_idx, incarnation) = version;
+        let mut map = self.group_data.entry(key.clone()).or_default();
+        let cell = CachePadded::new(WriteCell::new_from(FLAG_DONE, incarnation, data));
+        let data_ref = cell.data.clone();
+        let prev_cell = map.insert(txn_idx, cell);
+        assert!(prev_cell
+            .map(|cell| cell.incarnation <= incarnation)
+            .unwrap_or(true));
+        data_ref
+    }
+
+    pub fn mark_group_estimate(&self, key: &K, txn_idx: TxnIndex) {
+        if let Some(map) = self.group_data.get(key) {
+            if let Some(cell) = map.get(&txn_idx) {
+                cell.mark_estimate();
+            }
+        }
+    }
+
+    pub fn delete_group_data(&self, key: &K, txn_idx: TxnIndex) {
+        if let Some(mut map) = self.group_data.get_mut(key) {
+            map.remove(&txn_idx);
+        }
+    }
+
+    pub fn read_group_data(
+        &self,
+        key: &K,
+        txn_idx: TxnIndex,
+    ) -> Result<(Version, Arc<G>), Option<TxnIndex>> {
+        match self.group_data.get(key) {
+            Some(tree) => {
+                let mut iter = tree.range(0..txn_idx);
+                if let Some((idx, write_cell)) = iter.next_back() {
+                    let flag = write_cell.flag();
+
+                    if flag == FLAG_ESTIMATE {
+                        Err(Some(*idx))
+                    } else {
+                        debug_assert!(flag == FLAG_DONE);
+                        let write_version = (*idx, write_cell.incarnation);
+                        Ok((write_version, write_cell.data.clone()))
+                    }
+                } else {
+                    Err(None)
+                }
+            }
+            None => Err(None),
+        }
+    }
+
+    pub fn read_group_base_data(&self, key: &K) -> Option<Arc<G>> {
+        self.group_base_data.get(key).map(|entry| entry.clone())
+    }
+
+    pub fn write_group_base_data_if_absent(&self, key: &K, data: G) -> Arc<G> {
+        self.group_base_data
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(data))
+            .clone()
     }
 }

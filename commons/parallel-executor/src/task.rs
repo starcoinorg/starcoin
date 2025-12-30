@@ -22,6 +22,7 @@ pub enum ExecutionStatus<T, E> {
 pub trait Transaction: Sync + Send + Clone + 'static {
     type Key: PartialOrd + Send + Sync + Clone + Hash + Eq;
     type Value: Send + Sync;
+    type GroupValue: Send + Sync;
 
     /// Returns true if this transaction is block metadata.
     /// Default false to preserve backward compatibility for existing implementors.
@@ -62,7 +63,11 @@ pub trait ExecutorTask: Sync {
     /// Execute one single transaction given the view of the current state.
     fn execute_transaction(
         &self,
-        view: &MVHashMapView<<Self::T as Transaction>::Key, <Self::T as Transaction>::Value>,
+        view: &MVHashMapView<
+            <Self::T as Transaction>::Key,
+            <Self::T as Transaction>::Value,
+            <Self::T as Transaction>::GroupValue,
+        >,
         txn: &Self::T,
     ) -> ExecutionStatus<Self::Output, Self::Error>;
 }

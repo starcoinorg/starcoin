@@ -30,14 +30,16 @@ static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
 /// XXX FIXME YSG TODO(issue 10177): MvHashMapView currently needs to be sync due to trait bounds, but should
 /// not be. In this case, the read_dependency member can have a RefCell<bool> type and the
 /// captured_reads member can have RefCell<Vec<ReadDescriptor<K>>> type.
-pub struct MVHashMapView<'a, K, V> {
-    versioned_map: &'a MVHashMap<K, V>,
+pub struct MVHashMapView<'a, K, V, G = ()> {
+    versioned_map: &'a MVHashMap<K, V, G>,
     txn_idx: TxnIndex,
     scheduler: &'a Scheduler,
     captured_reads: Mutex<Vec<ReadDescriptor<K>>>,
 }
 
-impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_, K, V> {
+impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync, G: Send + Sync>
+    MVHashMapView<'_, K, V, G>
+{
     /// Drains the captured reads.
     pub fn take_reads(&self) -> Vec<ReadDescriptor<K>> {
         let mut reads = self.captured_reads.lock();
@@ -45,7 +47,7 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
     }
 
     /// Captures a read from the VM execution.
-    pub fn read(&self, key: &K) -> Option<Arc<V>> {
+    pub fn read_with_version(&self, key: &K) -> Option<(Version, Arc<V>)> {
         loop {
             match self.versioned_map.read(key, self.txn_idx) {
                 Ok((version, v)) => {
@@ -55,7 +57,7 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
                         txn_idx,
                         incarnation,
                     ));
-                    return Some(v);
+                    return Some((version, v));
                 }
                 Err(None) => {
                     self.captured_reads
@@ -92,6 +94,26 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
                 }
             };
         }
+    }
+
+    pub fn read(&self, key: &K) -> Option<Arc<V>> {
+        self.read_with_version(key).map(|(_, v)| v)
+    }
+
+    pub fn read_group_data(&self, key: &K) -> Option<(Version, Arc<G>)> {
+        self.versioned_map.read_group_data(key, self.txn_idx).ok()
+    }
+
+    pub fn write_group_data(&self, key: &K, version: Version, data: G) -> Arc<G> {
+        self.versioned_map.write_group_data(key, version, data)
+    }
+
+    pub fn read_group_base_data(&self, key: &K) -> Option<Arc<G>> {
+        self.versioned_map.read_group_base_data(key)
+    }
+
+    pub fn write_group_base_data_if_absent(&self, key: &K, data: G) -> Arc<G> {
+        self.versioned_map.write_group_base_data_if_absent(key, data)
     }
 
     /// Return txn_idx associated with the MVHashMapView
@@ -137,7 +159,11 @@ where
             <E as ExecutorTask>::Output,
             <E as ExecutorTask>::Error,
         >,
-        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        versioned_data_cache: &MVHashMap<
+            <T as Transaction>::Key,
+            <T as Transaction>::Value,
+            <T as Transaction>::GroupValue,
+        >,
         scheduler: &'a Scheduler,
         executor: &E,
     ) -> SchedulerTask<'a> {
@@ -194,6 +220,7 @@ where
         // Remove entries from previous write set that were not overwritten.
         for k in &prev_write_set {
             versioned_data_cache.delete(k, idx_to_execute);
+            versioned_data_cache.delete_group_data(k, idx_to_execute);
         }
 
         last_input_output.record(idx_to_execute, state_view.take_reads(), result);
@@ -210,7 +237,11 @@ where
             <E as ExecutorTask>::Output,
             <E as ExecutorTask>::Error,
         >,
-        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        versioned_data_cache: &MVHashMap<
+            <T as Transaction>::Key,
+            <T as Transaction>::Value,
+            <T as Transaction>::GroupValue,
+        >,
         scheduler: &'a Scheduler,
     ) -> SchedulerTask<'a> {
         let (idx_to_validate, incarnation) = version_to_validate;
@@ -235,6 +266,7 @@ where
             // Not valid and successfully aborted, mark the latest write-set as estimates.
             for k in &last_input_output.write_set(idx_to_validate) {
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
+                versioned_data_cache.mark_group_estimate(k, idx_to_validate);
             }
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
@@ -254,7 +286,11 @@ where
             <E as ExecutorTask>::Output,
             <E as ExecutorTask>::Error,
         >,
-        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        versioned_data_cache: &MVHashMap<
+            <T as Transaction>::Key,
+            <T as Transaction>::Value,
+            <T as Transaction>::GroupValue,
+        >,
         scheduler: &Scheduler,
     ) {
         // Make executor for each task. TODO: fast concurrent executor.
@@ -306,7 +342,11 @@ where
             <E as ExecutorTask>::Output,
             <E as ExecutorTask>::Error,
         >,
-        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        versioned_data_cache: &MVHashMap<
+            <T as Transaction>::Key,
+            <T as Transaction>::Value,
+            <T as Transaction>::GroupValue,
+        >,
         scheduler: &Scheduler,
     ) {
         if block.is_empty() || !block[0].is_block_prologue() {
@@ -361,7 +401,11 @@ where
             <E as ExecutorTask>::Output,
             <E as ExecutorTask>::Error,
         >,
-        versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
+        versioned_data_cache: &MVHashMap<
+            <T as Transaction>::Key,
+            <T as Transaction>::Value,
+            <T as Transaction>::GroupValue,
+        >,
         scheduler: &Scheduler,
     ) {
         // Check if block has epilogue
@@ -559,6 +603,7 @@ mod tests {
     impl Transaction for TestTransaction {
         type Key = String;
         type Value = u64;
+        type GroupValue = ();
     }
 
     // Generic test output that can track both writes and gas
@@ -1077,6 +1122,7 @@ mod tests {
     impl Transaction for BlockTransaction {
         type Key = String;
         type Value = u64;
+        type GroupValue = ();
 
         fn is_block_prologue(&self) -> bool {
             self.is_prologue

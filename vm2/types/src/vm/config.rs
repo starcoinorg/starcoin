@@ -100,6 +100,7 @@ pub fn starcoin_prod_vm_config(
         type_base_cost,
         type_byte_cost,
         // todo: support aggregator_v2_type_tagging, set false as default now.
+        // Be careful to enable this feature, it'll break some codes. see trait ResourceResolver
         aggregator_v2_type_tagging: false,
         check_invariant_in_swap_loc: false,
         ty_builder,

@@ -5,8 +5,10 @@ mod storage_wrapper;
 mod vm_wrapper;
 
 use crate::{
-    parallel_executor::vm_wrapper::StarcoinVMWrapper, preprocess_transaction,
-    starcoin_vm::StarcoinVM, PreprocessedTransaction,
+    parallel_executor::{
+        storage_wrapper::ResourceGroupCacheEntry, vm_wrapper::StarcoinVMWrapper,
+    },
+    preprocess_transaction, starcoin_vm::StarcoinVM, PreprocessedTransaction,
 };
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
@@ -27,6 +29,7 @@ use starcoin_vm_types::{
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
+    type GroupValue = ResourceGroupCacheEntry;
 
     fn is_block_prologue(&self) -> bool {
         matches!(self, PreprocessedTransaction::BlockMetadata(_))

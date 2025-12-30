@@ -24,19 +24,26 @@ use starcoin_vm_types::state_store::{
 use starcoin_vm_types::write_set::WriteOp;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::Arc;
+
+#[derive(Clone, Debug)]
+pub struct ResourceGroupCacheEntry {
+    data: BTreeMap<StructTag, Bytes>,
+    size: ResourceGroupSize,
+}
 
 pub(crate) struct VersionedView<'a, S: StateView> {
     base_view: &'a S,
-    hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp>,
+    hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp, ResourceGroupCacheEntry>,
     group_size_kind: GroupSizeKind,
-    group_cache: RefCell<HashMap<StateKey, (BTreeMap<StructTag, Bytes>, ResourceGroupSize)>>,
     accessed_groups: RefCell<HashSet<StateKey>>,
+    group_sizes: RefCell<HashMap<StateKey, ResourceGroupSize>>,
 }
 
 impl<'a, S: StateView> VersionedView<'a, S> {
     pub fn new_view(
         base_view: &'a S,
-        hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp>,
+        hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp, ResourceGroupCacheEntry>,
     ) -> VersionedView<'a, S> {
         let gas_feature_version = VMConfig::fetch_config(base_view)
             .map(|config| config.gas_schedule)
@@ -47,44 +54,79 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             base_view,
             hashmap_view,
             group_size_kind,
-            group_cache: RefCell::new(HashMap::new()),
             accessed_groups: RefCell::new(HashSet::new()),
+            group_sizes: RefCell::new(HashMap::new()),
         }
     }
 
-    fn load_group_to_cache(&self, group_key: &StateKey) -> PartialVMResult<()> {
-        if self.group_cache.borrow().contains_key(group_key) {
-            return Ok(());
+    fn empty_group_size(&self) -> ResourceGroupSize {
+        match self.group_size_kind {
+            GroupSizeKind::AsSum => ResourceGroupSize::zero_combined(),
+            GroupSizeKind::None | GroupSizeKind::AsBlob => ResourceGroupSize::zero_concrete(),
+        }
+    }
+
+    fn parse_group_entry(
+        &self,
+        group_key: &StateKey,
+        bytes: &Bytes,
+    ) -> PartialVMResult<ResourceGroupCacheEntry> {
+        let data: BTreeMap<StructTag, Bytes> = bcs_ext::from_bytes(bytes).map_err(|e| {
+            PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
+                format!(
+                    "Failed to deserialize the resource group at {:?}: {:?}",
+                    group_key, e
+                ),
+            )
+        })?;
+        let size = match self.group_size_kind {
+            GroupSizeKind::None => ResourceGroupSize::Concrete(0),
+            GroupSizeKind::AsBlob => ResourceGroupSize::Concrete(bytes.len() as u64),
+            GroupSizeKind::AsSum => {
+                group_size_as_sum(data.iter().map(|(tag, value)| (tag, value.len())))?
+            }
+        };
+        Ok(ResourceGroupCacheEntry { data, size })
+    }
+
+    fn load_group_entry(
+        &self,
+        group_key: &StateKey,
+    ) -> PartialVMResult<Option<Arc<ResourceGroupCacheEntry>>> {
+        if let Some((version, write_op)) = self.hashmap_view.read_with_version(group_key) {
+            if let Some(bytes) = write_op.bytes() {
+                if let Some((cached_version, cached_entry)) =
+                    self.hashmap_view.read_group_data(group_key)
+                {
+                    if cached_version == version {
+                        return Ok(Some(cached_entry));
+                    }
+                }
+                let entry = self.parse_group_entry(group_key, bytes)?;
+                return Ok(Some(
+                    self.hashmap_view
+                        .write_group_data(group_key, version, entry),
+                ));
+            }
+            return Ok(None);
         }
 
-        let (group_data, blob_len) = match self.get_state_value(group_key)? {
-            Some(state_value) => {
-                let bytes = state_value.bytes();
-                let group_data: BTreeMap<StructTag, Bytes> =
-                    bcs_ext::from_bytes(bytes).map_err(|e| {
-                    PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
-                        format!(
-                            "Failed to deserialize the resource group at {:?}: {:?}",
-                            group_key, e
-                        ),
-                    )
-                })?;
-                (group_data, bytes.len() as u64)
-            }
-            None => (BTreeMap::new(), 0),
+        if let Some(entry) = self.hashmap_view.read_group_base_data(group_key) {
+            return Ok(Some(entry));
+        }
+
+        let entry = match self.base_view.get_state_value(group_key)? {
+            Some(state_value) => self.parse_group_entry(group_key, state_value.bytes())?,
+            None => ResourceGroupCacheEntry {
+                data: BTreeMap::new(),
+                size: self.empty_group_size(),
+            },
         };
 
-        let group_size = match self.group_size_kind {
-            GroupSizeKind::None => ResourceGroupSize::Concrete(0),
-            GroupSizeKind::AsBlob => ResourceGroupSize::Concrete(blob_len),
-            GroupSizeKind::AsSum => {
-                group_size_as_sum(group_data.iter().map(|(tag, value)| (tag, value.len())))?
-            }
-        };
-        self.group_cache
-            .borrow_mut()
-            .insert(group_key.clone(), (group_data, group_size));
-        Ok(())
+        Ok(Some(
+            self.hashmap_view
+                .write_group_base_data_if_absent(group_key, entry),
+        ))
     }
 }
 
@@ -126,12 +168,15 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
         maybe_layout: Option<&Self::Layout>,
     ) -> PartialVMResult<Option<Bytes>> {
         let _ = maybe_layout;
-        self.load_group_to_cache(group_key)?;
-        Ok(self
-            .group_cache
-            .borrow()
-            .get(group_key)
-            .and_then(|(group_data, _)| group_data.get(resource_tag).cloned()))
+        let entry = self.load_group_entry(group_key)?;
+        let group_size = entry
+            .as_ref()
+            .map(|entry| entry.size)
+            .unwrap_or_else(|| self.empty_group_size());
+        self.group_sizes
+            .borrow_mut()
+            .insert(group_key.clone(), group_size);
+        Ok(entry.and_then(|entry| entry.data.get(resource_tag).cloned()))
     }
 
     fn resource_size_in_group(
@@ -203,10 +248,10 @@ impl<S: StateView> ResourceResolver for VersionedView<'_, S> {
 
             let first_access = self.accessed_groups.borrow_mut().insert(group_key.clone());
             let group_size = if first_access {
-                self.group_cache
+                self.group_sizes
                     .borrow()
                     .get(&group_key)
-                    .map(|(_, size)| size.get())
+                    .map(|size| size.get())
                     .unwrap_or(0)
             } else {
                 0

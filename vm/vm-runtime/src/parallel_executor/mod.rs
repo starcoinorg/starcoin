@@ -28,6 +28,7 @@ use std::collections::BTreeMap;
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
     type Value = WriteOp;
+    type GroupValue = ();
 }
 
 // Wrapper to avoid orphan rule
