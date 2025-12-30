@@ -21,7 +21,7 @@ fn create_write_read_placeholder_struct() {
     let ap2 = b"/foo/c".to_vec();
     let ap3 = b"/foo/d".to_vec();
 
-    let mvtbl = MVHashMap::new();
+    let mvtbl: MVHashMap<Vec<u8>, Vec<usize>, ()> = MVHashMap::new();
 
     // Reads that should go the DB return Err(None)
     let r_db = mvtbl.read(&ap1, 5);
