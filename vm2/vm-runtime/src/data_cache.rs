@@ -195,9 +195,9 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
         let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
         if let Some(resource_group) = resource_group {
             let key = StateKey::resource_group(address, &resource_group);
-            let buf =
-                self.resource_group_view
-                    .get_resource_from_group(&key, struct_tag, maybe_layout)?;
+            let buf = self
+                .resource_group_view
+                .get_resource_from_group(&key, struct_tag)?;
 
             let first_access = self.accessed_groups.borrow_mut().insert(key.clone());
             let group_size = if first_access {

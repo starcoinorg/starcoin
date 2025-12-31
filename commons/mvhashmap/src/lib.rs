@@ -146,7 +146,7 @@ impl<K: Hash + Clone + Eq, V, G: Send + Sync> MVHashMap<K, V, G> {
         let data_ref = cell.data.clone();
         let prev_cell = map.insert(txn_idx, cell);
         assert!(prev_cell
-            .map(|cell| cell.incarnation <= incarnation)
+            .map(|cell| cell.incarnation < incarnation)
             .unwrap_or(true));
         data_ref
     }

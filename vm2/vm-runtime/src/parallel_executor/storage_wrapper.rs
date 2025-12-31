@@ -14,8 +14,8 @@ use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::StatusCode;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_parallel_executor::executor::MVHashMapView;
-use starcoin_vm_runtime_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
 use starcoin_vm_runtime_types::resolver::{ExecutorView, ResourceGroupSize, TResourceGroupView};
+use starcoin_vm_runtime_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
 use starcoin_vm_types::on_chain_config::{OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -72,12 +72,10 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         bytes: &Bytes,
     ) -> PartialVMResult<ResourceGroupCacheEntry> {
         let data: BTreeMap<StructTag, Bytes> = bcs_ext::from_bytes(bytes).map_err(|e| {
-            PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
-                format!(
-                    "Failed to deserialize the resource group at {:?}: {:?}",
-                    group_key, e
-                ),
-            )
+            PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(format!(
+                "Failed to deserialize the resource group at {:?}: {:?}",
+                group_key, e
+            ))
         })?;
         let size = match self.group_size_kind {
             GroupSizeKind::None => ResourceGroupSize::Concrete(0),
@@ -165,9 +163,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
-        maybe_layout: Option<&Self::Layout>,
     ) -> PartialVMResult<Option<Bytes>> {
-        let _ = maybe_layout;
         let entry = self.load_group_entry(group_key)?;
         let group_size = entry
             .as_ref()
@@ -239,12 +235,16 @@ impl<S: StateView> ResourceResolver for VersionedView<'_, S> {
         address: &AccountAddress,
         struct_tag: &StructTag,
         metadata: &[Metadata],
-        layout: Option<&MoveTypeLayout>,
+        _layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
+        assert!(
+            _layout.is_none(),
+            "Layout has not been supported, must be empty"
+        );
         let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
         if let Some(resource_group) = resource_group {
             let group_key = StateKey::resource_group(address, &resource_group);
-            let buf = self.get_resource_from_group(&group_key, struct_tag, layout)?;
+            let buf = self.get_resource_from_group(&group_key, struct_tag)?;
 
             let first_access = self.accessed_groups.borrow_mut().insert(group_key.clone());
             let group_size = if first_access {

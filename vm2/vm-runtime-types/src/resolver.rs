@@ -96,7 +96,6 @@ pub trait TResourceGroupView {
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
-        maybe_layout: Option<&Self::Layout>,
     ) -> PartialVMResult<Option<Bytes>>;
 
     /// Needed for charging storage fees for a resource group write, as that requires knowing
@@ -110,7 +109,7 @@ pub trait TResourceGroupView {
         resource_tag: &Self::ResourceTag,
     ) -> PartialVMResult<usize> {
         Ok(self
-            .get_resource_from_group(group_key, resource_tag, None)?
+            .get_resource_from_group(group_key, resource_tag)?
             .map_or(0, |bytes| bytes.len()))
     }
 
@@ -129,7 +128,7 @@ pub trait TResourceGroupView {
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
     ) -> PartialVMResult<bool> {
-        self.get_resource_from_group(group_key, resource_tag, None)
+        self.get_resource_from_group(group_key, resource_tag)
             .map(|maybe_bytes| maybe_bytes.is_some())
     }
 

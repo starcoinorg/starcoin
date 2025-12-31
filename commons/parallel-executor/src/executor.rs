@@ -113,7 +113,8 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync, G: Send + Sync>
     }
 
     pub fn write_group_base_data_if_absent(&self, key: &K, data: G) -> Arc<G> {
-        self.versioned_map.write_group_base_data_if_absent(key, data)
+        self.versioned_map
+            .write_group_base_data_if_absent(key, data)
     }
 
     /// Return txn_idx associated with the MVHashMapView

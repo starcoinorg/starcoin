@@ -235,10 +235,9 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
-        maybe_layout: Option<&MoveTypeLayout>,
     ) -> PartialVMResult<Option<Bytes>> {
         if let Some(group_view) = self.maybe_resource_group_view {
-            return group_view.get_resource_from_group(group_key, resource_tag, maybe_layout);
+            return group_view.get_resource_from_group(group_key, resource_tag);
         }
         // info!("get resource {:?} from group {:?}", resource_tag, group_key);
         self.load_to_cache(group_key)?;
@@ -415,7 +414,6 @@ mod tests {
             &self,
             group_key: &Self::GroupKey,
             resource_tag: &Self::ResourceTag,
-            _maybe_layout: Option<&Self::Layout>,
         ) -> PartialVMResult<Option<Bytes>> {
             Ok(self
                 .group
@@ -481,7 +479,7 @@ mod tests {
         let tag_0 = mock_tag_0();
 
         assert_ok_eq!(adapter.load_to_cache(&key_1), false);
-        let _ = adapter.get_resource_from_group(&key_1, &tag_0, None);
+        let _ = adapter.get_resource_from_group(&key_1, &tag_0);
         assert_ok_eq!(adapter.load_to_cache(&key_1), true);
     }
 
@@ -499,21 +497,15 @@ mod tests {
         let tag_2 = mock_tag_2();
 
         // key_0 / tag_0 does not exist.
-        assert_none!(adapter
-            .get_resource_from_group(&key_0, &tag_0, None)
-            .unwrap());
+        assert_none!(adapter.get_resource_from_group(&key_0, &tag_0).unwrap());
 
         assert_some_eq!(
-            adapter
-                .get_resource_from_group(&key_1, &tag_0, None)
-                .unwrap(),
+            adapter.get_resource_from_group(&key_1, &tag_0).unwrap(),
             vec![0; 1000]
         );
 
         // key_2 / tag_1 does not exist.
-        assert_none!(adapter
-            .get_resource_from_group(&key_2, &tag_1, None)
-            .unwrap());
+        assert_none!(adapter.get_resource_from_group(&key_2, &tag_1).unwrap());
 
         let key_1_blob = &state_view.group.get(&key_1).unwrap().blob;
 
@@ -526,15 +518,11 @@ mod tests {
         assert_eq!(bcs::to_bytes(&cache_key_1_contents).unwrap(), *key_1_blob);
 
         assert_some_eq!(
-            adapter
-                .get_resource_from_group(&key_1, &tag_1, None)
-                .unwrap(),
+            adapter.get_resource_from_group(&key_1, &tag_1).unwrap(),
             vec![1; 500]
         );
 
-        assert_none!(adapter
-            .get_resource_from_group(&key_1, &tag_2, None)
-            .unwrap());
+        assert_none!(adapter.get_resource_from_group(&key_1, &tag_2).unwrap());
 
         let cache = adapter.release_group_cache().unwrap();
         assert_eq!(cache.len(), 1);
@@ -715,12 +703,12 @@ mod tests {
         let tag_2 = mock_tag_2();
 
         let key_1_tag_0_len = adapter
-            .get_resource_from_group(&key_1, &tag_0, None)
+            .get_resource_from_group(&key_1, &tag_0)
             .unwrap()
             .unwrap()
             .len();
         let key_1_tag_1_len = adapter
-            .get_resource_from_group(&key_1, &tag_1, None)
+            .get_resource_from_group(&key_1, &tag_1)
             .unwrap()
             .unwrap()
             .len();
