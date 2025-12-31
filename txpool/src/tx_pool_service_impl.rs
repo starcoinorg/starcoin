@@ -371,7 +371,15 @@ impl Inner {
     }
 
     pub(crate) fn notify_new_chain_header(&self, header: BlockHeader) {
-        *self.chain_header.write() = header;
+        info!(
+            "jacktest notify_new_chain_header: acquiring write lock, block_number={}",
+            header.number()
+        );
+        *self.chain_header.write() = header.clone();
+        info!(
+            "jacktest notify_new_chain_header: write lock released, block_number={}",
+            header.number()
+        );
         self.sequence_number_cache.clear();
     }
 
@@ -390,8 +398,14 @@ impl Inner {
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.
+        info!("jacktest cull: acquiring chain_header read lock");
         let now_seconds = self.chain_header.read().timestamp() / 1000;
-        self.queue.cull(self.get_pool_client()?, now_seconds);
+        info!("jacktest cull: chain_header read lock released, now_seconds={}", now_seconds);
+        info!("jacktest cull: getting pool client");
+        let client = self.get_pool_client()?;
+        info!("jacktest cull: calling queue.cull");
+        self.queue.cull(client, now_seconds);
+        info!("jacktest cull: queue.cull done");
         Ok(())
     }
 
@@ -405,7 +419,7 @@ impl Inner {
         let txn_count = txns.len();
         let txn_hashes: Vec<_> = txns.iter().map(|t| t.id()).collect();
         info!(
-            "[jacktest] txpool import_txns start: count={}, first_hash={:?}",
+            "jacktest txpool import_txns start: count={}, first_hash={:?}",
             txn_count,
             txn_hashes.first()
         );
@@ -416,7 +430,7 @@ impl Inner {
             .queue
             .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id);
         info!(
-            "[jacktest] txpool import_txns done: count={}, elapsed_ms={}, first_hash={:?}",
+            "jacktest txpool import_txns done: count={}, elapsed_ms={}, first_hash={:?}",
             txn_count,
             import_time.elapsed().as_millis(),
             txn_hashes.first()
@@ -463,7 +477,7 @@ impl Inner {
         let start_time = std::time::Instant::now();
         let pool_status = self.queue.status();
         info!(
-            "[jacktest] get_pending start: max_len={}, pool_status={:?}",
+            "jacktest get_pending start: max_len={}, pool_status={:?}",
             max_len, pool_status
         );
         let pending_settings = PendingSettings {
@@ -477,7 +491,7 @@ impl Inner {
         //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         let result = self.queue.pending(pool_client, pending_settings);
         info!(
-            "[jacktest] get_pending done: returned={}, elapsed_ms={}, pool_txn_count={}",
+            "jacktest get_pending done: returned={}, elapsed_ms={}, pool_txn_count={}",
             result.len(),
             start_time.elapsed().as_millis(),
             pool_status.status.transaction_count
@@ -593,9 +607,12 @@ impl Inner {
     }
 
     pub fn get_pool_client(&self) -> Result<PoolClient> {
+        info!("jacktest get_pool_client: acquiring chain_header read lock");
+        let header_id = self.chain_header.read().id();
+        info!("jacktest get_pool_client: chain_header read lock released, header_id={:?}", header_id);
         let state = self
             .storage
-            .get_vm_multi_state(self.chain_header.read().id())?;
+            .get_vm_multi_state(header_id)?;
         let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         Ok(PoolClient::new(
             state_root1,

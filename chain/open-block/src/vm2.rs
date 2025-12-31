@@ -63,7 +63,7 @@ impl OpenedBlock {
         let start_time = std::time::Instant::now();
         let input_count = user_txns.len();
         info!(
-            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
+            "jacktest push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
             input_count, self.gas_used, self.gas_limit
         );
         let state = &self.state.1;
@@ -92,7 +92,7 @@ impl OpenedBlock {
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
         };
         info!(
-            "[jacktest] push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
+            "jacktest push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
             txn_outputs.len(),
             exec_start.elapsed().as_millis()
         );
@@ -117,7 +117,7 @@ impl OpenedBlock {
                     discard_count += 1;
                     if index < 5 {
                         info!(
-                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=discard, reason={:?}",
+                            "jacktest push_txns2 tx #{}: hash=0x{}, status=discard, reason={:?}",
                             index,
                             &txn_hash.to_string()[..6],
                             status
@@ -134,7 +134,7 @@ impl OpenedBlock {
                     let gas_used = output.gas_used();
                     if index < 5 || index % 500 == 0 {
                         info!(
-                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=keep, gas_used={}, total_gas={}",
+                            "jacktest push_txns2 tx #{}: hash=0x{}, status=keep, gas_used={}, total_gas={}",
                             index, &txn_hash.to_string()[..6], gas_used, self.gas_used + gas_used
                         );
                     }
@@ -153,7 +153,7 @@ impl OpenedBlock {
         }
 
         info!(
-            "[jacktest] push_txns2 done: input={}, keep={}, discard={}, retry={}, gas_exceeded={}, final_gas={}, elapsed_ms={}",
+            "jacktest push_txns2 done: input={}, keep={}, discard={}, retry={}, gas_exceeded={}, final_gas={}, elapsed_ms={}",
             input_count,
             keep_count,
             discard_count,

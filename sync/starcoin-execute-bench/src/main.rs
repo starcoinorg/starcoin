@@ -37,7 +37,7 @@ use starcoin_types::{
     block::{Block, BlockHeader},
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{MinedBlock, NewHeadBlock},
+    system_events::{MinedBlock, NewDagBlock, NewHeadBlock},
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -1125,7 +1125,7 @@ impl ServiceFactory<Self> for ObserverService {
 
 impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        // ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<NewDagBlock>();
         // ctx.subscribe::<NewDagBlockFromPeer>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewHeadBlock>();
@@ -1133,7 +1133,7 @@ impl ActorService for ObserverService {
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        // ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         // ctx.unsubscribe::<NewDagBlockFromPeer>();
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewHeadBlock>();
@@ -1174,26 +1174,32 @@ impl EventHandler<Self, MinedBlock> for ObserverService {
     }
 }
 
-// impl EventHandler<Self, NewDagBlock> for ObserverService {
-//     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-//         if let Err(e) = self.update_transaction_status(
-//             msg.executed_block.block().id(),
-//             msg.connected_time_ms,
-//         ) {
-//             error!("failed to update transactions status: {:?}", e);
-//         }
-//         // Check if completed
-//         if let Some(ref state) = self.benchmark_state {
-//             if state.is_completed() || state.all_batches_sent() {
-//                 return;
-//             }
-//         }
-//         // Submit next batch of transactions after processing the block
-//         if let Err(e) = self.try_submit_next_batch() {
-//             error!("failed to submit next batch: {:?}", e);
-//         }
-//     }
-// }
+impl EventHandler<Self, NewDagBlock> for ObserverService {
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        // NewDagBlock doesn't have connected_time_ms, use current time
+        let connected_time_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        let block_id = msg.executed_block.block().id();
+        let block_number = msg.executed_block.block().header().number();
+        // Use transactions2() for VM2 transactions (transactions() is for VM1)
+        let txn_count = msg.executed_block.block().transactions().len()
+            + msg.executed_block.block().transactions2().len();
+
+        info!(
+            "jacktest ObserverService received NewDagBlock: block_id={:?}, number={}, txn_count={} (vm1={}, vm2={})",
+            block_id, block_number, txn_count,
+            msg.executed_block.block().transactions().len(),
+            msg.executed_block.block().transactions2().len()
+        );
+
+        if let Err(e) = self.update_transaction_status(block_id, connected_time_ms) {
+            error!("failed to update transactions status: {:?}", e);
+        }
+    }
+}
 
 // impl EventHandler<Self, NewDagBlockFromPeer> for ObserverService {
 //     fn handle_event(&mut self, msg: NewDagBlockFromPeer, _ctx: &mut ServiceContext<Self>) {

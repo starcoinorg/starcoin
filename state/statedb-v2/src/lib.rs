@@ -760,7 +760,7 @@ impl ChainStateWriter for ChainStateDB {
                             account_state_object.set(data_path, data.into());
                             if is_new_address {
                                 info!(
-                                    "[jacktest] apply_write_set: new address {} added (Creation/Modification)",
+                                    "jacktest apply_write_set: new address {} added (Creation/Modification)",
                                     account_address
                                 );
                             }
@@ -768,7 +768,7 @@ impl ChainStateWriter for ChainStateDB {
                         WriteOp::Deletion { .. } => {
                             if is_new_address {
                                 info!(
-                                    "[jacktest] apply_write_set: new address {} added (Deletion), cache_exists={}",
+                                    "jacktest apply_write_set: new address {} added (Deletion), cache_exists={}",
                                     account_address,
                                     self.cache.get(&account_address).is_some()
                                 );
@@ -845,7 +845,7 @@ impl ChainStateWriter for ChainStateDB {
                         None => "NotInCache",
                     };
                     info!(
-                        "[jacktest] commit failed: address={}, error={}, cache_status={}",
+                        "jacktest commit failed: address={}, error={}, cache_status={}",
                         address, e, cache_status
                     );
                     return Err(e);

@@ -165,7 +165,7 @@ impl WriteBlockChainService {
         F: FnMut(CommitBlockTransactions),
     {
         info!(
-            "[jacktest] switch_header called for block: {:?}, number: {}",
+            "jacktest switch_header called for block: {:?}, number: {}",
             header.id(),
             header.number()
         );
@@ -293,7 +293,8 @@ impl WriteBlockChainService {
 
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
-        if branch_total_difficulty > main_total_difficulty {
+        // Use >= instead of > to handle DAG parallel blocks with same difficulty
+        if branch_total_difficulty >= main_total_difficulty {
             self.main = new_branch;
             self.update_startup_info(self.main.head_block().header())?;
             broadcast(CommitBlockTransactions {
@@ -312,7 +313,7 @@ impl WriteBlockChainService {
     {
         let executed_block = new_branch.head_block();
         info!(
-            "[jacktest] select_head called, new_branch head: {:?}, number: {}",
+            "jacktest select_head called, new_branch head: {:?}, number: {}",
             executed_block.header().id(),
             executed_block.header().number()
         );
@@ -321,11 +322,13 @@ impl WriteBlockChainService {
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
         info!(
-            "[jacktest] select_head: main_total_difficulty={}, branch_total_difficulty={}, parent_is_main_head={}",
+            "jacktest select_head: main_total_difficulty={}, branch_total_difficulty={}, parent_is_main_head={}",
             main_total_difficulty, branch_total_difficulty, parent_is_main_head
         );
 
-        if branch_total_difficulty > main_total_difficulty {
+        // Use >= instead of > to handle DAG parallel blocks with same difficulty
+        // This ensures mining continues even when parallel blocks have equal difficulty
+        if branch_total_difficulty >= main_total_difficulty {
             let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
