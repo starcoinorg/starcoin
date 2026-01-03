@@ -169,10 +169,13 @@ module starcoin_framework::stc_block {
         debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
-    public fun block_epilogue(framework: &signer, txn_sender_addresses: vector<address>) {
+    public fun block_epilogue(framework: &signer, total_fee: u64) {
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Entered"));
         system_addresses::assert_starcoin_framework(framework);
-        transaction_fee::merge_fee_to_framework_account(framework, txn_sender_addresses);
+        if (total_fee > 0) {
+            let fee = transaction_fee::mint_fee(total_fee);
+            transaction_fee::pay_fee(framework, fee);
+        };
         debug::print(&std::string::utf8(b"stc_block::block_epilogue | Exited"));
     }
 

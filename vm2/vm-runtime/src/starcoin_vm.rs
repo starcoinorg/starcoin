@@ -65,7 +65,7 @@ use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
-use std::{borrow::Borrow, cmp::min, collections::BTreeSet, sync::Arc};
+use std::{borrow::Borrow, cmp::min, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
 
@@ -1027,7 +1027,7 @@ impl StarcoinVM {
     fn process_block_epilogue<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
-        senders: BTreeSet<AccountAddress>,
+        total_fee: u64,
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(feature = "testing")]
         info!("process_block_epilogue begin");
@@ -1035,11 +1035,7 @@ impl StarcoinVM {
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::void();
         let function_name = &account_config::G_BLOCK_EPILOGUE_NAME;
-        let senders_vec: Vec<AccountAddress> = senders.clone().into_iter().collect();
-        let args_vec = vec![
-            MoveValue::Signer(txn_sender),
-            MoveValue::vector_address(senders_vec),
-        ];
+        let args_vec = vec![MoveValue::Signer(txn_sender), MoveValue::U64(total_fee)];
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);
         let traverse_storage = TraversalStorage::new();
@@ -1341,7 +1337,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
-                TransactionBlock::BlockEpilogue(_, senders) => {
+                TransactionBlock::BlockEpilogue(_, total_fee) => {
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1351,7 +1347,7 @@ impl StarcoinVM {
                     });
 
                     let (status, output) = match self
-                        .process_block_epilogue(&data_cache.as_move_resolver(), senders)
+                        .process_block_epilogue(&data_cache.as_move_resolver(), total_fee)
                     {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
@@ -1611,7 +1607,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
-    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, u64),
 }
 
 impl TransactionBlock {
@@ -1640,12 +1636,12 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
-            Transaction::BlockEpilogue(data, senders) => {
+            Transaction::BlockEpilogue(data, total_fee) => {
                 if !buf.is_empty() {
                     blocks.push(TransactionBlock::UserTransaction(buf));
                     buf = vec![];
                 }
-                blocks.push(TransactionBlock::BlockEpilogue(data, senders));
+                blocks.push(TransactionBlock::BlockEpilogue(data, total_fee));
             }
         }
     }
@@ -1823,12 +1819,12 @@ impl StarcoinVM {
                     };
                 (vm_status, output, Some("block_metadata".to_string()))
             }
-            PreprocessedTransaction::BlockEpilogue(_, senders) => {
-                let (vm_status, output) =
-                    match self.process_block_epilogue(data_cache, senders.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
+            PreprocessedTransaction::BlockEpilogue(_, total_fee) => {
+                let (vm_status, output) = match self.process_block_epilogue(data_cache, *total_fee)
+                {
+                    Ok(output) => (VMStatus::Executed, output),
+                    Err(vm_status) => discard_error_vm_status(vm_status),
+                };
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
         })

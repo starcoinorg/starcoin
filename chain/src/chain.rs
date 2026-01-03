@@ -37,7 +37,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction};
+use starcoin_types::transaction::{StcRichTransactionInfo, StcTransaction, Transaction2};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate},
@@ -54,6 +54,7 @@ use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfo2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
@@ -656,9 +657,14 @@ impl BlockChain {
             "invalid txn num in the block"
         );
 
+        let expected_vm2_txn_num = if transactions2.len() > 1 {
+            transactions2.len() + 1
+        } else {
+            transactions2.len()
+        };
         verify_block!(
             VerifyBlockField::State,
-            vm2_txn_infos.len() == transactions2.len(),
+            vm2_txn_infos.len() == expected_vm2_txn_num,
             "invalid vm2 txn num in the block"
         );
 
@@ -779,6 +785,8 @@ impl BlockChain {
                 storage.save_contract_events_v2(*info_id, events)?;
             }
         }
+        let transactions2_for_storage =
+            append_vm2_epilogue_for_storage(transactions2, vm2_txn_infos)?;
 
         if txn_infos.is_empty() {
             storage.save_transaction_infos(
@@ -831,7 +839,7 @@ impl BlockChain {
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
             .map(Into::into)
-            .chain(transactions2.into_iter().map(Into::into))
+            .chain(transactions2_for_storage.into_iter().map(Into::into))
             .collect();
         let txn_id_vec = all_transactions
             .iter()
@@ -2393,7 +2401,13 @@ impl BlockChain {
 
         // Verify transaction count
         let total_txn_num = executed_data.txn_infos.len() + executed_data2.txn_infos.len();
-        let expected_txn_num = transactions.len() + transactions2.len();
+        // VM2 epilogue is executed internally (not included in transactions2).
+        let expected_vm2_txn_num = if transactions2.len() > 1 {
+            transactions2.len() + 1
+        } else {
+            transactions2.len()
+        };
+        let expected_txn_num = transactions.len() + expected_vm2_txn_num;
         verify_block!(
             VerifyBlockField::State,
             total_txn_num == expected_txn_num,
@@ -2559,6 +2573,8 @@ impl BlockChain {
         ) {
             storage.save_contract_events_v2(*info_id, events)?;
         }
+        let transactions2_for_storage =
+            append_vm2_epilogue_for_storage(transactions2, &vm2_txn_infos)?;
 
         // Save transaction infos
         if txn_infos.is_empty() {
@@ -2610,7 +2626,7 @@ impl BlockChain {
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
             .map(Into::into)
-            .chain(transactions2.into_iter().map(Into::into))
+            .chain(transactions2_for_storage.into_iter().map(Into::into))
             .collect();
         let txn_id_vec = all_transactions
             .iter()
@@ -2646,4 +2662,36 @@ pub(crate) fn info_2_accumulator(
         accumulator_info,
         node_store.get_accumulator_store(store_type),
     )
+}
+
+fn append_vm2_epilogue_for_storage(
+    transactions2: Vec<Transaction2>,
+    vm2_txn_infos: &[TransactionInfo2],
+) -> Result<Vec<Transaction2>> {
+    if vm2_txn_infos.len() == transactions2.len() {
+        return Ok(transactions2);
+    }
+    ensure!(
+        vm2_txn_infos.len() == transactions2.len() + 1,
+        "vm2 txn info length mismatch, txn_infos: {}, txns: {}",
+        vm2_txn_infos.len(),
+        transactions2.len()
+    );
+    let block_meta = match transactions2.first() {
+        Some(Transaction2::BlockMetadata(meta)) => meta.clone(),
+        _ => bail!("vm2 transactions missing block metadata"),
+    };
+    let mut total_fee: u128 = 0;
+    for (txn, info) in transactions2.iter().zip(vm2_txn_infos.iter()) {
+        if let Transaction2::UserTransaction(user_txn) = txn {
+            total_fee = total_fee.saturating_add(
+                u128::from(info.gas_used()) * u128::from(user_txn.gas_unit_price()),
+            );
+        }
+    }
+    let total_fee =
+        u64::try_from(total_fee).map_err(|_| format_err!("total fee overflow"))?;
+    let mut txns = transactions2;
+    txns.push(Transaction2::BlockEpilogue(block_meta, total_fee));
+    Ok(txns)
 }
