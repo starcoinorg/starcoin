@@ -269,7 +269,7 @@ module starcoin_framework::stc_transaction_validation {
                 starcoin_coin::get_stc_fa_metadata(),
                 (transaction_fee_amount as u64)
             );
-            transaction_fee::pay_fee(sender_signer, transaction_fee);
+            transaction_fee::burn_fee(transaction_fee);
         };
     }
 }

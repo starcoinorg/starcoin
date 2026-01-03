@@ -324,6 +324,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
     <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
+    <a href="transaction_fee.md#0x1_transaction_fee_store_fee_caps">transaction_fee::store_fee_caps</a>(starcoin_framework, burn_cap, mint_cap);
 
     <b>let</b> (mint_ref, mint_ref_receipt) = <a href="coin.md#0x1_coin_get_paired_mint_ref">coin::get_paired_mint_ref</a>(&mint_cap);
     <b>let</b> fa_stc = <a href="fungible_asset.md#0x1_fungible_asset_mint">fungible_asset::mint</a>(&mint_ref, (total_stc_amount <b>as</b> u64));
