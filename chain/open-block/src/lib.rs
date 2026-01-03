@@ -64,6 +64,7 @@ pub struct OpenedBlock {
     vm_state_accumulator: MerkleAccumulator,
 
     gas_used: u64,
+    total_fee2: u128,
     included_user_txns: Vec<SignedUserTransaction>,
     included_user_txns2: Vec<SignedUserTransaction2>,
     uncles: Vec<BlockHeader>,
@@ -141,6 +142,7 @@ impl OpenedBlock {
             txn_accumulator,
             vm_state_accumulator,
             gas_used: 0,
+            total_fee2: 0,
             included_user_txns: vec![],
             included_user_txns2: vec![],
             uncles,

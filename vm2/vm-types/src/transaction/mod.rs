@@ -36,7 +36,6 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
-use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
@@ -981,8 +980,8 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
-    /// Block Epilogue, gathering all sender address to process transaction fee
-    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
+    /// Block Epilogue, mint aggregated transaction fees
+    BlockEpilogue(BlockMetadata, u64),
 }
 
 // Legacy BlockMetadata for database upgrade compatibility
@@ -1063,8 +1062,8 @@ impl Transaction {
         match self {
             Self::UserTransaction(signed) => signed.id(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
-            Self::BlockEpilogue(block_metadata, senders) => {
-                let block_epilogue_bytes = bcs_ext::to_bytes(&(block_metadata, senders))
+            Self::BlockEpilogue(block_metadata, total_fee) => {
+                let block_epilogue_bytes = bcs_ext::to_bytes(&(block_metadata, total_fee))
                     .expect("Serialize BlockEpilogue should success.");
                 HashValue::sha3_256_of(block_epilogue_bytes.as_ref())
             }

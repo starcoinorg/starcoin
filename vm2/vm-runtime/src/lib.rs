@@ -8,15 +8,11 @@ pub mod starcoin_vm;
 #[macro_use]
 pub mod counters;
 
-use move_core_types::{
-    account_address::AccountAddress,
-    vm_status::{StatusCode, VMStatus},
-};
+use move_core_types::vm_status::{StatusCode, VMStatus};
 pub use move_vm_runtime::{move_vm, session};
 use starcoin_gas_schedule::{
     InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
 };
-use std::collections::BTreeSet;
 
 mod access_path_cache;
 mod errors;
@@ -56,7 +52,7 @@ pub trait VMExecutor: Send + Sync {
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
-    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, u64),
 }
 
 #[inline]
@@ -66,8 +62,8 @@ pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
-        Transaction::BlockEpilogue(b, senders) => {
-            PreprocessedTransaction::BlockEpilogue(b, senders)
+        Transaction::BlockEpilogue(b, total_fee) => {
+            PreprocessedTransaction::BlockEpilogue(b, total_fee)
         }
     }
 }

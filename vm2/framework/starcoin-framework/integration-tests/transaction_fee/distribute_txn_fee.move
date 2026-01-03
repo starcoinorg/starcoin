@@ -25,13 +25,10 @@ script {
 
 //# run --signers Genesis
 script {
-    use std::vector;
     use starcoin_framework::stc_block;
 
     fun block_epilogue(account: signer) {
-        let addresses = vector::empty<address>();
-        vector::push_back(&mut addresses, @bob);
-        stc_block::block_epilogue(&account, addresses);
+        stc_block::block_epilogue(&account, 200);
     }
 }
 // check: EXECUTED
@@ -69,4 +66,3 @@ script {
     }
 }
 // check: ABORTED
-

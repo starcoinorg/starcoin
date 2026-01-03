@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use anyhow::{bail, format_err, Result};
 use move_vm2_core_types::move_resource::MoveStructType;
 use rand::Rng;
@@ -22,7 +20,6 @@ use starcoin_types::transaction::{StcTransaction, Transaction, Transaction2};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_types::account_config::AccountResource as AccountResource2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
-use starcoin_vm2_vm_types::account_config::association_address as association_address2;
 use starcoin_vm_types::account_address::AccountAddress;
 
 #[stest::test(timeout = 480)]
@@ -126,10 +123,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let contain_vm2_transactions = !txns2.is_empty();
         all_txns.extend(txns2.into_iter().map(|txn| Transaction2::from(txn).into()));
         if contain_vm2_transactions {
-            let block_epilogue_txn = Transaction2::BlockEpilogue(
-                vm2_block_metadata,
-                BTreeSet::from_iter([association_address2()]),
-            );
+            let block_epilogue_txn = Transaction2::BlockEpilogue(vm2_block_metadata, 0);
             all_txns.push(block_epilogue_txn.into());
         }
         current_header = block.header().clone();
