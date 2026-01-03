@@ -11,13 +11,11 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
-use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::{
     SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
     TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
     TransactionStatus as TransactionStatus2,
 };
-use std::collections::BTreeSet;
 
 impl OpenedBlock {
     pub fn initialize(&mut self) -> anyhow::Result<()> {
@@ -135,13 +133,19 @@ impl OpenedBlock {
                         debug!("txn {:?} execute error: {:?}", txn_hash, status);
                     }
                     let gas_used = output.gas_used();
+                    let gas_price = match &txn {
+                        Transaction2::UserTransaction(user_txn) => user_txn.gas_unit_price(),
+                        _ => 0,
+                    };
+                    self.total_fee2 = self
+                        .total_fee2
+                        .saturating_add(u128::from(gas_used) * u128::from(gas_price));
                     if index < 5 || index % 500 == 0 {
                         info!(
                             "[jacktest] push_txns2 tx #{}: hash=0x{}, status=keep, gas_used={}, total_gas={}",
                             index, &txn_hash.to_string()[..6], gas_used, self.gas_used + gas_used
                         );
                     }
-                    self.cached_vm2_outputs.push(output.clone());
                     self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
@@ -175,12 +179,9 @@ impl OpenedBlock {
     pub fn finalize_block_epilogue(&mut self) -> anyhow::Result<()> {
         let (_state, state) = &self.state;
         // Directly use VM2 BlockEpilogue
-        let senders: BTreeSet<AccountAddress> = self
-            .included_user_txns2
-            .iter()
-            .map(|txn| txn.sender())
-            .collect();
-        let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone(), senders);
+        let total_fee =
+            u64::try_from(self.total_fee2).map_err(|_| format_err!("total fee overflow"))?;
+        let block_epilogue_txn = Transaction2::BlockEpilogue(self.block_meta.clone(), total_fee);
         let block_epilogue_txn_hash = block_epilogue_txn.id();
         let mut results = do_execute_block_transactions(
             state,

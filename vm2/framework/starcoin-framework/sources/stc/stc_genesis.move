@@ -247,6 +247,7 @@ module starcoin_framework::stc_genesis {
         coin::register<STC>(starcoin_framework);
         coin::create_coin_conversion_map(starcoin_framework);
         coin::create_pairing<STC>(starcoin_framework);
+        transaction_fee::store_fee_caps(starcoin_framework, burn_cap, mint_cap);
 
         let (mint_ref, mint_ref_receipt) = coin::get_paired_mint_ref(&mint_cap);
         let fa_stc = fungible_asset::mint(&mint_ref, (total_stc_amount as u64));

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::executor::do_execute_block_transactions;
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 pub use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm2_crypto::HashValue;
@@ -13,7 +14,7 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
-
+use starcoin_logger::prelude::*;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
@@ -39,6 +40,22 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
+    info!(target:"vm2-blockbench","block execute start");
+    debug_assert!(
+        !txns
+            .iter()
+            .any(|txn| matches!(txn, Transaction::BlockEpilogue(..))),
+        "block_execute expects no BlockEpilogue in input"
+    );
+
+    let block_meta = txns.iter().find_map(|txn| match txn {
+        Transaction::BlockMetadata(meta) => Some(meta.clone()),
+        _ => None,
+    });
+    let has_user_txns = txns
+        .iter()
+        .any(|txn| matches!(txn, Transaction::UserTransaction(_)));
+    let should_execute_epilogue = block_meta.is_some() && has_user_txns;
     let txn_outputs = do_execute_block_transactions(
         chain_state,
         txns.clone(),
@@ -46,12 +63,15 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
         vm_metrics.clone(),
     )
     .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-
+    info!(target:"vm2-blockbench","block execute end");
     let mut executed_data = BlockExecutedData::default();
     let last_index = txn_outputs
         .len()
         .checked_sub(1)
         .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
+    info!(target:"vm2-blockbench","bench start process output");
+    let mut total_fee: u128 = 0;
+    let mut total_gas_used: u64 = 0;
     for (index, (txn, output)) in txns
         .iter()
         .take(txn_outputs.len())
@@ -67,19 +87,25 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 ));
             }
             TransactionStatus::Keep(status) => {
+                if let Transaction::UserTransaction(user_txn) = txn {
+                    total_gas_used = total_gas_used.saturating_add(gas_used);
+                    total_fee = total_fee.saturating_add(
+                        u128::from(gas_used) * u128::from(user_txn.gas_unit_price()),
+                    );
+                }
                 chain_state
                     .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
-                let txn_state_root = if index == last_index || index == 0 {
-                    Some(
-                        chain_state
-                            .commit()
-                            .map_err(BlockExecutorError::BlockChainStateErr)?,
-                    )
-                } else {
-                    None
-                };
-
+                let txn_state_root =
+                    if index == 0 || (!should_execute_epilogue && index == last_index) {
+                        Some(
+                            chain_state
+                                .commit()
+                                .map_err(BlockExecutorError::BlockChainStateErr)?,
+                        )
+                    } else {
+                        None
+                    };
                 let t = TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
@@ -93,7 +119,54 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
     }
+    info!(target:"vm2-blockbench","bench end process output");
 
+    if should_execute_epilogue {
+        let total_fee = u64::try_from(total_fee)
+            .map_err(|_| BlockExecutorError::OtherError(anyhow!("total fee overflow").into()))?;
+        let epilogue_txn =
+            Transaction::BlockEpilogue(block_meta.expect("block meta is present"), total_fee);
+        let mut outputs = do_execute_block_transactions(
+            chain_state,
+            vec![epilogue_txn.clone()],
+            Some(block_gas_limit.saturating_sub(total_gas_used)),
+            vm_metrics,
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let output = outputs
+            .pop()
+            .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
+
+        let txn_hash = epilogue_txn.id();
+        let (write_set, events, gas_used, status, _) = output.into_inner();
+        match status {
+            TransactionStatus::Discard(status) => {
+                return Err(BlockExecutorError::BlockTransactionDiscard(
+                    status, txn_hash,
+                ));
+            }
+            TransactionStatus::Keep(status) => {
+                chain_state
+                    .apply_write_set(write_set)
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                let txn_state_root = Some(
+                    chain_state
+                        .commit()
+                        .map_err(BlockExecutorError::BlockChainStateErr)?,
+                );
+                let t = TransactionInfo::new(
+                    txn_hash,
+                    txn_state_root,
+                    events.as_slice(),
+                    gas_used,
+                    status,
+                );
+                executed_data.txn_infos.push(t);
+                executed_data.txn_events.push(events);
+            }
+            TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
+        };
+    }
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
 }

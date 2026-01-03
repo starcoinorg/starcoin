@@ -8,7 +8,11 @@ Then they are distributed in <code>TransactionManager</code>.
 
 
 -  [Resource `TransactionFeePod`](#0x1_transaction_fee_TransactionFeePod)
+-  [Resource `FeeCapStore`](#0x1_transaction_fee_FeeCapStore)
 -  [Constants](#@Constants_0)
+-  [Function `store_fee_caps`](#0x1_transaction_fee_store_fee_caps)
+-  [Function `burn_fee`](#0x1_transaction_fee_burn_fee)
+-  [Function `mint_fee`](#0x1_transaction_fee_mint_fee)
 -  [Function `initialize`](#0x1_transaction_fee_initialize)
 -  [Function `pay_fee`](#0x1_transaction_fee_pay_fee)
 -  [Function `merge_fee_to_framework_account`](#0x1_transaction_fee_merge_fee_to_framework_account)
@@ -21,7 +25,8 @@ Then they are distributed in <code>TransactionManager</code>.
     -  [Function `withdraw_account_transaction_fees`](#@Specification_1_withdraw_account_transaction_fees)
 
 
-<pre><code><b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
@@ -66,9 +71,52 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 </details>
 
+<a id="0x1_transaction_fee_FeeCapStore"></a>
+
+## Resource `FeeCapStore`
+
+Mint/Burn capabilities for fee accounting.
+
+
+<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a id="@Constants_0"></a>
 
 ## Constants
+
+
+<a id="0x1_transaction_fee_ETXN_FEE_CAPS_ALREADY_INIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_CAPS_ALREADY_INIT">ETXN_FEE_CAPS_ALREADY_INIT</a>: u64 = 6;
+</code></pre>
+
 
 
 <a id="0x1_transaction_fee_ETXN_FEE_FA_METADATA_NOT_FOUND"></a>
@@ -115,6 +163,94 @@ fiat <code>TokenType</code> that can be collected as a transaction fee.
 </code></pre>
 
 
+
+<a id="0x1_transaction_fee_store_fee_caps"></a>
+
+## Function `store_fee_caps`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_fee_caps">store_fee_caps</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_fee_caps">store_fee_caps</a>(
+    framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    burn_cap: BurnCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;,
+    mint_cap: MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;,
+) {
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
+    <b>assert</b>!(
+        !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework)),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="transaction_fee.md#0x1_transaction_fee_ETXN_FEE_CAPS_ALREADY_INIT">ETXN_FEE_CAPS_ALREADY_INIT</a>)
+    );
+    <b>move_to</b>(framework, <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> { mint_cap, burn_cap });
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_transaction_fee_burn_fee"></a>
+
+## Function `burn_fee`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">burn_fee</a>(fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">burn_fee</a>(fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> {
+    <b>let</b> cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a>&gt;(get_starcoin_framework()).burn_cap;
+    <b>let</b> (burn_ref, receipt) = <a href="coin.md#0x1_coin_get_paired_burn_ref">coin::get_paired_burn_ref</a>(cap);
+    <a href="fungible_asset.md#0x1_fungible_asset_burn">fungible_asset::burn</a>(&burn_ref, fa);
+    <a href="coin.md#0x1_coin_return_paired_burn_ref">coin::return_paired_burn_ref</a>(burn_ref, receipt);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_transaction_fee_mint_fee"></a>
+
+## Function `mint_fee`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_mint_fee">mint_fee</a>(amount: u64): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_mint_fee">mint_fee</a>(amount: u64): FungibleAsset <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> {
+    <b>let</b> cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a>&gt;(get_starcoin_framework()).mint_cap;
+    <b>let</b> (mint_ref, receipt) = <a href="coin.md#0x1_coin_get_paired_mint_ref">coin::get_paired_mint_ref</a>(cap);
+    <b>let</b> fa = <a href="fungible_asset.md#0x1_fungible_asset_mint">fungible_asset::mint</a>(&mint_ref, amount);
+    <a href="coin.md#0x1_coin_return_paired_mint_ref">coin::return_paired_mint_ref</a>(mint_ref, receipt);
+    fa
+}
+</code></pre>
+
+
+
+</details>
 
 <a id="0x1_transaction_fee_initialize"></a>
 

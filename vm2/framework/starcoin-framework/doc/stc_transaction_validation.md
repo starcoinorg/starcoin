@@ -514,7 +514,7 @@ It collects gas and bumps the sequence number
             <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
             (transaction_fee_amount <b>as</b> u64)
         );
-        <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a>(sender_signer, <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
+        <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">transaction_fee::burn_fee</a>(<a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
     };
 }
 </code></pre>
