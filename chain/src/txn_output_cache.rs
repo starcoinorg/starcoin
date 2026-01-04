@@ -1,6 +1,3 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
@@ -8,7 +5,7 @@ use starcoin_executor::BlockExecutedData as BlockExecutedData1;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Maximum number of entries in the block state cache.
 /// Since this cache is for blocks being mined, a small limit is sufficient.
@@ -63,6 +60,7 @@ impl CachedBlockState {
 pub struct BlockStateCache {
     cache: DashMap<HashValue, CachedBlockState>,
     max_size: usize,
+    eviction_lock: Mutex<()>,
 }
 
 impl BlockStateCache {
@@ -74,27 +72,29 @@ impl BlockStateCache {
         Self {
             cache: DashMap::new(),
             max_size,
+            eviction_lock: Mutex::new(()),
         }
     }
 
     /// Insert cached state using txn_accumulator_root as key.
-    /// If cache exceeds max_size, older entries are evicted.
     pub fn insert(&self, txn_accumulator_root: HashValue, state: CachedBlockState) {
-        // Evict entries if cache is full
         if self.cache.len() >= self.max_size {
-            let to_remove: Vec<_> = self
-                .cache
-                .iter()
-                .take(self.max_size / 2)
-                .map(|entry| *entry.key())
-                .collect();
-            for key in to_remove {
-                self.cache.remove(&key);
+            let _guard = self.eviction_lock.lock().unwrap();
+            if self.cache.len() >= self.max_size {
+                let to_remove: Vec<_> = self
+                    .cache
+                    .iter()
+                    .take(self.max_size / 2)
+                    .map(|entry| *entry.key())
+                    .collect();
+                for key in to_remove {
+                    self.cache.remove(&key);
+                }
+                log::debug!(
+                    "BlockStateCache evicted entries, new size: {}",
+                    self.cache.len()
+                );
             }
-            log::debug!(
-                "BlockStateCache evicted entries, new size: {}",
-                self.cache.len()
-            );
         }
         self.cache.insert(txn_accumulator_root, state);
     }
