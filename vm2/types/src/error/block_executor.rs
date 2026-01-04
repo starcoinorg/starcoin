@@ -33,4 +33,6 @@ pub enum BlockExecutorError {
     BlockExecuteRetryErr,
     #[error("block transaction is zero")]
     BlockTransactionZero,
+    #[error("the number of transaction outputs is not equal to the number of transactions, expected length: {expected}, actual length: {actual}")]
+    InvalidOutputCount { expected: usize, actual: usize },
 }

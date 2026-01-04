@@ -109,6 +109,12 @@ pub fn block_execute_with_outputs<S: ChainStateReader + ChainStateWriter + Sync>
         .len()
         .checked_sub(1)
         .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
+    if txns.len() != outputs.len() {
+        return Err(BlockExecutorError::InvalidOutputCount {
+            expected: txns.len(),
+            actual: outputs.len(),
+        });
+    }
     for (index, (txn, output)) in txns
         .iter()
         .take(outputs.len())
