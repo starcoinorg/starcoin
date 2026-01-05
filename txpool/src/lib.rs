@@ -17,6 +17,7 @@ pub use pool::TxStatus;
 pub use pool::{PoolTransaction, UnverifiedUserTransaction, VerifiedTransaction, VerifierOptions};
 pub use pool_client::{NonceCache, PoolClient};
 use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::Storage2;
@@ -103,6 +104,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let txpool_service = ctx.get_shared_or_put(|| {
             let startup_info = storage
@@ -121,6 +123,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
                 node_config,
                 storage,
                 storage2,
+                dag,
                 best_block_header,
                 vm_metrics,
             ))

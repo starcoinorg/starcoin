@@ -38,6 +38,7 @@ use starcoin_vm2_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm2_types::transaction::SignedUserTransaction;
 use starcoin_vm2_types::{account_address, account_config};
 use starcoin_vm2_vm_types::state_view::StateReaderExt;
+use std::intrinsics::simd::simd_expose_provenance;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -220,7 +221,6 @@ async fn test_miner_service() {
     let (storage, storage2, _chain_info, genesis, dag) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
-    registry.put_shared(storage2.clone()).await.unwrap();
     registry.put_shared(dag).await.unwrap();
 
     let genesis_hash = genesis.block().id();
@@ -234,6 +234,7 @@ async fn test_miner_service() {
         node_config.clone(),
         storage.clone(),
         storage2,
+        dag,
         chain_header,
         None,
     );
@@ -611,6 +612,7 @@ pub fn test_block_template_filters_txpool_after_blue() -> Result<()> {
         config.clone(),
         storage.clone(),
         storage2.clone(),
+        dag.clone(),
         main3_header.clone(),
         None,
     );
