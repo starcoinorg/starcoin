@@ -39,7 +39,7 @@ dependencies = [
  "pin-project-lite 0.2.16",
  "smallvec 1.15.1",
  "tokio",
- "tokio-util 0.7.17",
+ "tokio-util 0.7.18",
 ]
 
 [[package]]
@@ -4419,7 +4419,7 @@ dependencies = [
  "indexmap 2.7.1",
  "slab",
  "tokio",
- "tokio-util 0.7.17",
+ "tokio-util 0.7.18",
  "tracing",
 ]
 
@@ -5838,7 +5838,7 @@ dependencies = [
  "thiserror",
  "tinytemplate",
  "tokio",
- "tokio-util 0.7.17",
+ "tokio-util 0.7.18",
  "webrtc",
 ]
 
@@ -8095,7 +8095,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "tokio-util 0.7.17",
+ "tokio-util 0.7.18",
  "unsigned-varint 0.8.0",
  "void",
  "wasm-timer",
@@ -10283,7 +10283,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-native-tls",
- "tokio-util 0.7.17",
+ "tokio-util 0.7.18",
  "tower-service",
  "url 2.3.1",
  "wasm-bindgen",
@@ -15520,9 +15520,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.17"
+version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2efa149fe76073d6e8fd97ef4f4eca7b67f599660115591483572e406e165594"
+checksum = "9ae9cec805b01e8fc3fd2fe289f89149a9b66dd16786abd8b19cfa7b48cb0098"
 dependencies = [
  "bytes 1.6.1",
  "futures-core",
