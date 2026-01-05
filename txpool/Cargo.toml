@@ -14,6 +14,7 @@ serde = { workspace = true }
 serde_derive = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dag = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-metrics = { workspace = true }

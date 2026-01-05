@@ -142,7 +142,7 @@ async fn test_miner_service() {
     let (storage, storage2, _chain_info, genesis, dag) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
-    registry.put_shared(dag).await.unwrap();
+    registry.put_shared(dag.clone()).await.unwrap();
 
     let genesis_hash = genesis.block().id();
     registry.put_shared(genesis).await.unwrap();
@@ -155,6 +155,7 @@ async fn test_miner_service() {
         node_config.clone(),
         storage.clone(),
         storage2,
+        dag,
         chain_header,
         None,
     );

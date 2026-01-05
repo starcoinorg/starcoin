@@ -63,7 +63,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
 #[stest::test(timeout = 120)]
 fn test_switch_main() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let times = 10;
@@ -77,7 +77,7 @@ fn test_switch_main() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2.clone(), dag.clone(), chain_header, None);
 
     let net = node_config.net();
     for i in 0..times {
@@ -195,7 +195,7 @@ fn test_switch_main() {
 #[stest::test]
 fn test_do_uncles() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let times = 2;
@@ -209,7 +209,7 @@ fn test_do_uncles() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2.clone(), dag.clone(), chain_header, None);
 
     let net = node_config.net();
     for _i in 0..times {
@@ -323,7 +323,7 @@ fn test_do_uncles() {
 #[stest::test(timeout = 120)]
 fn test_new_head() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let times = 10;
@@ -334,7 +334,7 @@ fn test_new_head() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2.clone(), dag.clone(), chain_header, None);
 
     let mut main_inner = Inner::new(
         node_config.net(),
@@ -367,7 +367,7 @@ fn test_new_head() {
 #[stest::test(timeout = 120)]
 fn test_new_branch() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let times = 5;
@@ -377,7 +377,7 @@ fn test_new_branch() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2.clone(), dag.clone(), chain_header, None);
 
     let miner_account = AccountInfo::random();
     // main
@@ -449,7 +449,7 @@ async fn test_create_block_template_actor() {
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
 
-    let (storage, _storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, storage2, _chain_info, genesis, dag) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
     let chain_header = storage
@@ -458,7 +458,7 @@ async fn test_create_block_template_actor() {
         .unwrap();
 
     //TODO mock txpool.
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), storage2.clone(), dag.clone(), chain_header, None);
     registry.put_shared(txpool).await.unwrap();
     registry.put_shared(dag).await.unwrap();
     registry.put_shared(storage).await.unwrap();
