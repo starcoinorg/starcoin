@@ -18,6 +18,7 @@ use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::info;
 use starcoin_storage::Store;
@@ -44,6 +45,7 @@ impl TxPoolService {
         node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
+        dag: BlockDAG,
         chain_header: BlockHeader,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
@@ -84,6 +86,7 @@ impl TxPoolService {
             queue,
             storage,
             storage2,
+            dag,
             chain_header: Arc::new(RwLock::new(chain_header)),
             sequence_number_cache: NonceCache::new(128),
             metrics,
@@ -360,6 +363,7 @@ pub struct Inner {
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,
     storage2: Arc<dyn Store2>,
+    dag: BlockDAG,
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -379,6 +383,11 @@ impl Inner {
     pub fn queue(&self) -> Arc<TxnQueue> {
         self.queue.clone()
     }
+
+    pub fn dag(&self) -> &BlockDAG {
+        &self.dag
+    }
+
     pub(crate) fn pool_status(&self) -> Status {
         self.queue.status()
     }
@@ -605,9 +614,11 @@ impl Inner {
     }
 
     pub fn get_pool_client(&self) -> Result<PoolClient> {
+        let tips = self.dag().get_dag_state(self.chain_header.read().id())?.tips;
+        let header_id = self.dag().ghost_dag_manager().find_selected_parent(tips)?;
         let state = self
             .storage
-            .get_vm_multi_state(self.chain_header.read().id())?;
+            .get_vm_multi_state(header_id)?;
         let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         Ok(PoolClient::new(
             state_root1,
