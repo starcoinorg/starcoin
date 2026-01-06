@@ -630,6 +630,10 @@ impl BlockDAG {
         self.genesis
     }
 
+    pub fn set_genesis(&mut self, genesis: Hash) {
+        self.genesis = genesis;
+    }
+
     pub fn save_dag_state_directly(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         self.storage.state_store.write().insert(hash, state)?;
         anyhow::Ok(())
