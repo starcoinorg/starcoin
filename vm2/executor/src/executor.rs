@@ -1,6 +1,3 @@
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm2_types::{
     identifier::Identifier,
@@ -19,8 +16,16 @@ pub fn do_execute_block_transactions<S: StateView + Sync>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<TransactionOutput>> {
+    eprintln!(
+        "jacktest do_execute_block_transactions: txn_count={}, gas_limit={:?}",
+        txns.len(), block_gas_limit
+    );
     let result =
         <StarcoinVM as VMExecutor>::execute_block(txns, chain_state, block_gas_limit, metrics)?;
+    eprintln!(
+        "jacktest do_execute_block_transactions done: output_count={}",
+        result.len()
+    );
     Ok(result)
 }
 

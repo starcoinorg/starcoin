@@ -1667,11 +1667,6 @@ pub fn log_vm_status(
 
 // Executor external API
 impl VMExecutor for StarcoinVM {
-    /// Execute a block of `transactions`. The output vector will have the exact same length as the
-    /// input vector. The discarded transactions will be marked as `TransactionStatus::Discard` and
-    /// have an empty `WriteSet`. Also `state_view` is immutable, and does not have interior
-    /// mutability. Writes to be applied to the data view are encoded in the write set part of a
-    /// transaction output.
     fn execute_block(
         transactions: Vec<Transaction>,
         state_view: &(impl StateView + Sync),
@@ -1687,7 +1682,12 @@ impl VMExecutor for StarcoinVM {
         });
 
         let concurrency_level = Self::get_concurrency_level();
+        info!(
+            "jacktest VMExecutor::execute_block: txn_count={}, concurrency_level={}",
+            transactions.len(), concurrency_level
+        );
         if concurrency_level > 1 {
+            info!("jacktest VMExecutor::execute_block: using parallel executor");
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
                 state_view,
@@ -1695,15 +1695,17 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
+            info!("jacktest VMExecutor::execute_block parallel done: output_count={}", result.len());
             Ok(result)
         } else {
+            info!("jacktest VMExecutor::execute_block: using sequential executor");
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
                 block_gas_limit,
                 metrics,
             )?;
+            info!("jacktest VMExecutor::execute_block sequential done: output_count={}", output.len());
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)

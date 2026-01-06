@@ -63,7 +63,7 @@ impl OpenedBlock {
         let start_time = std::time::Instant::now();
         let input_count = user_txns.len();
         info!(
-            "[jacktest] push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
+            "jacktest push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
             input_count, self.gas_used, self.gas_limit
         );
         let state = &self.state.1;
@@ -75,24 +75,26 @@ impl OpenedBlock {
         let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
         let exec_start = std::time::Instant::now();
-        let txn_outputs = {
-            let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
-                format_err!(
-                    "block gas_used {} exceed block gas_limit:{}",
-                    self.gas_used,
-                    self.gas_limit
-                )
-            })?;
-            do_execute_block_transactions(
-                state,
-                txns.clone(),
-                Some(gas_left),
-                self.vm_metrics.clone(),
+        let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
+            format_err!(
+                "block gas_used {} exceed block gas_limit:{}",
+                self.gas_used,
+                self.gas_limit
             )
-            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?
-        };
+        })?;
         info!(
-            "[jacktest] push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
+            "jacktest push_txns2 before exec: txn_count={}, gas_left={}",
+            txns.len(), gas_left
+        );
+        let txn_outputs = do_execute_block_transactions(
+            state,
+            txns.clone(),
+            Some(gas_left),
+            self.vm_metrics.clone(),
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        info!(
+            "jacktest push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
             txn_outputs.len(),
             exec_start.elapsed().as_millis()
         );
