@@ -51,13 +51,11 @@ pub fn init_storage_for_test_with_temp_dir(
 
     let storage2 = Arc::new(Storage2(storage.clone()));
 
-    // Load or build genesis
     let genesis = Genesis::load_or_build(net)?;
 
-    // Create DAG for testing
-    let dag = BlockDAG::create_for_testing()?;
+    let genesis_hash = genesis.block().id();
+    let dag = BlockDAG::create_for_testing(genesis_hash)?;
 
-    // Execute genesis block
     let chain_info =
         genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
 

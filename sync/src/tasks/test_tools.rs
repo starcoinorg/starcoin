@@ -52,16 +52,15 @@ impl SyncTestSystem {
             ))
             .unwrap(),
         );
-        // Create storage2 using cache instance for simplicity in tests
         let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(config.net())?;
-        // init dag
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             dag_path.as_path(),
             FlexiDagStorageConfig::new(),
         )
         .expect("init dag storage fail.");
-        let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage); // local dag
+        let genesis_hash = genesis.block().id();
+        let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage, genesis_hash);
 
         let chain_info = genesis.execute_genesis_block(
             config.net(),

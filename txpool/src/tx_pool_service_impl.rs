@@ -597,7 +597,7 @@ impl Inner {
     }
 
     pub fn get_pool_client(&self) -> Result<PoolClient> {
-        let tips = self.dag().get_dag_state(self.chain_header.read().id())?.tips;
+        let tips = self.dag().get_dag_state(self.chain_header.read().pruning_point())?.tips;
         let header_id = self.dag().ghost_dag_manager().find_selected_parent(tips)?;
         let state = self
             .storage
