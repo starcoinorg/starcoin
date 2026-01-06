@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{Storage, Storage2};
+use starcoin_storage::{BlockStore, Storage, Storage2};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -49,11 +49,13 @@ pub fn init_or_load_data_dir(
         .genesis_config2()
         .consensus_config
         .base_max_uncles_per_block;
+    let genesis_hash = storage.get_genesis()?.unwrap_or(starcoin_crypto::HashValue::zero());
     let dag = starcoin_dag::blockdag::BlockDAG::new(
         starcoin_types::blockhash::KType::try_from(k)?,
         config.miner.dag_merge_depth(),
         config.miner.maximum_parents_count(),
         dag_storage.clone(),
+        genesis_hash,
     );
     let (chain_info, _genesis) = Genesis::init_and_check_storage(
         config.net(),

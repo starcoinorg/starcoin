@@ -40,7 +40,8 @@ pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
     );
     let genesis = Genesis::load_or_build(&net).unwrap();
     let storage2 = Arc::new(Storage2(storage.clone()));
-    let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing().unwrap();
+    let genesis_hash = genesis.block().id();
+    let dag = starcoin_dag::blockdag::BlockDAG::create_for_testing(genesis_hash).unwrap();
     genesis
         .execute_genesis_block(&net, storage, storage2, dag)
         .unwrap();
