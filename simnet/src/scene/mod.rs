@@ -44,9 +44,9 @@ impl GhostAdpter {
         let db_tempdir = tempfile::tempdir()?;
         let config = FlexiDagStorageConfig::new();
         let dag_storage = FlexiDagStorage::create_from_path(db_tempdir.path(), config)?;
-        let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage);
-        dag.init_with_genesis(genesis.clone())?;
         let genesis_id = genesis.id();
+        let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage, genesis_id);
+        dag.init_with_genesis(genesis.clone())?;
         Ok(Self {
             genesis,
             dag,

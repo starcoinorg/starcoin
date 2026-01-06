@@ -10,13 +10,14 @@ fn test_commit_atomicity() -> Result<()> {
     let db_tempdir = tempfile::tempdir()?;
     let config = FlexiDagStorageConfig::new();
     let dag_storage = FlexiDagStorage::create_from_path(db_tempdir.path(), config)?;
-    let mut dag = BlockDAG::new(8, 8, 3, dag_storage);
 
     // Create and initialize genesis
     let genesis = BlockHeaderBuilder::new()
         .with_number(0)
         .with_parent_hash(HashValue::zero())
         .build();
+
+    let mut dag = BlockDAG::new(8, 8, 3, dag_storage, genesis.id());
 
     // Initialize DAG with genesis
     dag.init_with_genesis(genesis.clone())?;
@@ -68,13 +69,14 @@ fn test_partial_write_detection() -> Result<()> {
     let db_tempdir = tempfile::tempdir()?;
     let config = FlexiDagStorageConfig::new();
     let dag_storage = FlexiDagStorage::create_from_path(db_tempdir.path(), config)?;
-    let mut dag = BlockDAG::new(8, 8, 3, dag_storage);
 
     // Create and initialize genesis
     let genesis = BlockHeaderBuilder::new()
         .with_number(0)
         .with_parent_hash(HashValue::zero())
         .build();
+
+    let mut dag = BlockDAG::new(8, 8, 3, dag_storage, genesis.id());
 
     // Initialize DAG with genesis
     dag.init_with_genesis(genesis.clone())?;

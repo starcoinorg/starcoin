@@ -17,6 +17,7 @@ use starcoin_chain::{clear_global_block_state_cache, reset_node_shutdown_flag};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -296,22 +297,22 @@ impl NodeService {
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
 
-        // Initialize DAG
         let dag_storage = starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             config.storage.dag_dir(),
             config.storage.clone().into(),
         )?;
-        // Get K from genesis config instead of using constant directly
         let k = config
             .net()
             .genesis_config2()
             .consensus_config
             .base_max_uncles_per_block;
+        let genesis_hash = storage.get_genesis()?.unwrap_or(HashValue::zero());
         let dag = starcoin_dag::blockdag::BlockDAG::new(
             starcoin_types::blockhash::KType::try_from(k)?,
             config.miner.dag_merge_depth(),
             config.miner.maximum_parents_count(),
             dag_storage.clone(),
+            genesis_hash,
         );
         registry.put_shared(dag.clone()).await?;
 
