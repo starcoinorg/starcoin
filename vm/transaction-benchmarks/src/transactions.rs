@@ -145,7 +145,7 @@ impl TransactionBenchState {
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             0,
-            minter_account.address().clone(),
+            *minter_account.address(),
             Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,

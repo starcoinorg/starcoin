@@ -37,7 +37,7 @@ impl RawRpcClient for MockRpcClient {
         peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         *self.call_count.lock().unwrap() += 1;
         if peer_id == self.peer_id1 {
             futures::future::ready(Err(format_err!("NotConnected"))).boxed()

@@ -122,7 +122,7 @@ impl SyncDagStore {
         }
     }
 
-    pub fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<Vec<u8>, Vec<u8>>> {
+    pub fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<'_, Vec<u8>, Vec<u8>>> {
         self.absent_dag_store.iter_at_first()
     }
 

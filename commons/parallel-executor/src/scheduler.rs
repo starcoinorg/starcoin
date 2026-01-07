@@ -192,7 +192,7 @@ impl Scheduler {
     }
 
     /// Return the next task for the thread.
-    pub fn next_task(&self) -> SchedulerTask {
+    pub fn next_task(&self) -> SchedulerTask<'_> {
         loop {
             if self.done() {
                 // No more tasks.
@@ -415,7 +415,7 @@ impl Scheduler {
     /// - If the transaction is ready for validation (EXECUTED state), return the version
     ///   to the caller together with a guard to be used for the corresponding ValidationTask.
     /// - Otherwise, return None.
-    fn try_validate_next_version(&self) -> Option<(Version, TaskGuard)> {
+    fn try_validate_next_version(&self) -> Option<(Version, TaskGuard<'_>)> {
         let idx_to_validate = self.validation_idx.load(Ordering::SeqCst);
 
         if idx_to_validate >= self.num_txns {
@@ -445,7 +445,9 @@ impl Scheduler {
     ///   return the version to the caller together with a guard to be used for the
     ///   corresponding ExecutionTask.
     /// - Otherwise, return None.
-    fn try_execute_next_version(&self) -> Option<(Version, Option<DependencyCondvar>, TaskGuard)> {
+    fn try_execute_next_version(
+        &self,
+    ) -> Option<(Version, Option<DependencyCondvar>, TaskGuard<'_>)> {
         let idx_to_execute = self.execution_idx.load(Ordering::SeqCst);
 
         if idx_to_execute >= self.num_txns {

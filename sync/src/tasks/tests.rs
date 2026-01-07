@@ -601,7 +601,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         let blocks = self.blocks.lock().unwrap();
         let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
             .iter()
@@ -623,7 +623,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
         let blocks = self.blocks.lock().unwrap();
         let result = block_ids
             .iter()
@@ -645,7 +645,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let blocks = self.blocks.lock().unwrap();
         let mut result: Vec<HashValue> = vec![];
         block_ids.iter().for_each(|block_id| {
@@ -671,7 +671,7 @@ impl BlockFetcher for MockBlockFetcher {
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         let mut round = block_ids.into_iter().collect::<HashSet<HashValue>>();
         let blocks = self.blocks.lock().unwrap();
         let mut result = HashSet::new();

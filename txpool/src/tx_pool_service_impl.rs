@@ -456,7 +456,7 @@ impl Inner {
         self.queue.pending(pool_client, pending_settings)
     }
 
-    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<crate::Pool>> {
+    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<'_, crate::Pool>> {
         self.queue.try_read()
     }
 

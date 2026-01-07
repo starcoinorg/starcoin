@@ -266,7 +266,7 @@ impl TransactionQueue {
         }
     }
 
-    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<Pool>> {
+    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<'_, Pool>> {
         self.pool.try_read()
     }
 

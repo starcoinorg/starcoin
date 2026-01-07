@@ -285,11 +285,11 @@ impl<S: StateView> CompiledModuleView for StorageAdapter<'_, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> StorageAdapter<S>;
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> StorageAdapter<S> {
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         assert!(!features.is_resource_groups_split_in_vm_change_set_enabled());

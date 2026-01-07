@@ -312,7 +312,7 @@ impl DiscoveryBehaviour {
     /// If we didn't know this address before, also generates a `Discovered` event.
     pub fn add_known_address(&mut self, peer_id: PeerId, addr: Multiaddr) {
         let addrs_list = self.ephemeral_addresses.entry(peer_id).or_default();
-        if !addrs_list.iter().any(|a| *a == addr) {
+        if !addrs_list.contains(&addr) {
             if let Some(k) = self.kademlia.as_mut() {
                 k.add_address(&peer_id, addr.clone());
             }

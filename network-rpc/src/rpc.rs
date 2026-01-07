@@ -54,7 +54,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithSize,
-    ) -> BoxFuture<Result<Vec<MultiSignedUserTransaction>>> {
+    ) -> BoxFuture<'_, Result<Vec<MultiSignedUserTransaction>>> {
         let txpool = self.txpool_service.clone();
         let max_size = if req.max_size < MAX_TXN_REQUEST_SIZE {
             req.max_size
@@ -78,7 +78,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<MultiSignedUserTransaction>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<MultiSignedUserTransaction>>>> {
         let txpool = self.txpool_service.clone();
         let fut = async move {
             let mut data = vec![];
@@ -94,7 +94,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<StcTransaction>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<StcTransaction>>>> {
         let storage = self.storage.clone();
         let fut = async move {
             let txns = storage.get_transactions(req.ids)?;
@@ -107,7 +107,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         block_id: HashValue,
-    ) -> BoxFuture<Result<Option<Vec<StcTransactionInfo>>>> {
+    ) -> BoxFuture<'_, Result<Option<Vec<StcTransactionInfo>>>> {
         let storage = self.storage.clone();
         let fut = async move {
             match storage.get_block_transaction_infos(block_id) {
@@ -127,7 +127,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         request: GetBlockHeadersByNumber,
-    ) -> BoxFuture<Result<Vec<Option<BlockHeader>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockHeader>>>> {
         let chain_reader = self.chain_service.clone();
 
         let fut = async move {
@@ -150,7 +150,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockHeader>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockHeader>>>> {
         let chain_reader = self.chain_service.clone();
         let fut = async move {
             if hashes.len() as u64 > MAX_BLOCK_HEADER_REQUEST_SIZE {
@@ -169,7 +169,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>> {
         let chain_reader = self.chain_service.clone();
         let fut = async move {
             if hashes.len() as u64 > MAX_BLOCK_INFO_REQUEST_SIZE {
@@ -189,7 +189,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockBody>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockBody>>>> {
         let chain_reader = self.chain_service.clone();
         let fut = async move {
             if hashes.len() as u64 > MAX_BLOCK_REQUEST_SIZE {
@@ -213,14 +213,14 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         request: GetAccumulatorNodeByNodeHash,
-    ) -> BoxFuture<Result<Option<AccumulatorNode>>> {
+    ) -> BoxFuture<'_, Result<Option<AccumulatorNode>>> {
         let storage = self.storage.clone();
         let acc_store = storage.get_accumulator_store(request.accumulator_storage_type);
         let fut = async move { acc_store.get_node(request.node_hash) };
         Box::pin(fut)
     }
 
-    fn ping(&self, _peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>> {
+    fn ping(&self, _peer_id: PeerId, req: Ping) -> BoxFuture<'_, Result<String>> {
         if req.err {
             futures::future::ready(Err(NetRpcError::client_err(req.msg).into())).boxed()
         } else {
@@ -232,7 +232,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetBlockIds,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move {
             req.verify()?;
@@ -247,7 +247,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<Block>>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move {
             if ids.len() as u64 > MAX_BLOCK_REQUEST_SIZE {
@@ -266,7 +266,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         id: HashValue,
-    ) -> BoxFuture<Result<Option<Vec<HashValue>>>> {
+    ) -> BoxFuture<'_, Result<Option<Vec<HashValue>>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move {
             chain_service
@@ -284,7 +284,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         request: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let chain_service = self.chain_service.clone();
         let fut = async move { chain_service.get_dag_block_children(request).await };
         Box::pin(fut)
@@ -294,7 +294,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetRangeInLocationRequest,
-    ) -> BoxFuture<Result<GetRangeInLocationResponse>> {
+    ) -> BoxFuture<'_, Result<GetRangeInLocationResponse>> {
         let chain_service = self.chain_service.clone();
         let fut = async move { chain_service.get_range_in_location(req).await };
         Box::pin(fut)
@@ -304,7 +304,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetAbsentBlockRequest,
-    ) -> BoxFuture<Result<GetAbsentBlockResponse>> {
+    ) -> BoxFuture<'_, Result<GetAbsentBlockResponse>> {
         let chain_service = self.chain_service.clone();
         let fut = async move { chain_service.get_absent_blocks(req).await };
         Box::pin(fut)

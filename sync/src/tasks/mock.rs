@@ -129,7 +129,7 @@ impl BlockIdFetcher for MockBlockIdFetcher {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
     }
@@ -173,7 +173,7 @@ impl BlockIdRangeFetcher for MockRangeLocationFetcher {
         _peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+    ) -> BoxFuture<'_, Result<starcoin_network_rpc_api::RangeInLocation>> {
         self.fetch_range_locate(start_id, end_id).boxed()
     }
 }
@@ -419,7 +419,7 @@ impl BlockIdFetcher for SyncNodeMocker {
         start_number: BlockNumber,
         reverse: bool,
         max_size: u64,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let result = self.chain().get_block_ids(start_number, reverse, max_size);
         async move {
             let _ = self.select_a_peer()?;
@@ -458,7 +458,7 @@ impl BlockFetcher for SyncNodeMocker {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
         async move {
             let blocks = self.fetch_blocks(block_ids).await?;
             blocks
@@ -472,7 +472,7 @@ impl BlockFetcher for SyncNodeMocker {
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         async move {
             let blocks = self.fetch_blocks(block_ids).await?;
             let mut result = vec![];
@@ -488,7 +488,7 @@ impl BlockFetcher for SyncNodeMocker {
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         let dag = self.chain().dag();
         let result = match dag.get_absent_blocks(GetAbsentBlock {
             absent_id: block_ids,
@@ -521,7 +521,7 @@ impl BlockInfoFetcher for SyncNodeMocker {
         &self,
         _peer_id: Option<PeerId>,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<Option<BlockInfo>>>> {
+    ) -> BoxFuture<'_, Result<Vec<Option<BlockInfo>>>> {
         let mut result: Vec<Option<BlockInfo>> = Vec::new();
         block_ids.into_iter().for_each(|hash| {
             result.push(self.chain().get_block_info(Some(hash)).unwrap());
@@ -541,7 +541,7 @@ impl BlockIdRangeFetcher for SyncNodeMocker {
         _peer: Option<PeerId>,
         _start_id: HashValue,
         _end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+    ) -> BoxFuture<'_, Result<starcoin_network_rpc_api::RangeInLocation>> {
         unimplemented!()
     }
 }
