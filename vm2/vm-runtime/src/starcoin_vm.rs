@@ -1827,7 +1827,8 @@ impl VMExecutor for StarcoinVM {
         let concurrency_level = Self::get_concurrency_level();
         info!(
             "jacktest VMExecutor::execute_block: txn_count={}, concurrency_level={}",
-            transactions.len(), concurrency_level
+            transactions.len(),
+            concurrency_level
         );
         if concurrency_level > 1 {
             info!("jacktest VMExecutor::execute_block: using parallel executor");
@@ -1838,7 +1839,10 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            info!("jacktest VMExecutor::execute_block parallel done: output_count={}", result.len());
+            info!(
+                "jacktest VMExecutor::execute_block parallel done: output_count={}",
+                result.len()
+            );
             Ok(result)
         } else {
             info!("jacktest VMExecutor::execute_block: using sequential executor");
@@ -1848,7 +1852,10 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            info!("jacktest VMExecutor::execute_block sequential done: output_count={}", output.len());
+            info!(
+                "jacktest VMExecutor::execute_block sequential done: output_count={}",
+                output.len()
+            );
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)
