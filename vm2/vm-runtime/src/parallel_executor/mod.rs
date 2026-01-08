@@ -8,9 +8,9 @@ use crate::{
     parallel_executor::vm_wrapper::StarcoinVMWrapper, preprocess_transaction,
     starcoin_vm::StarcoinVM, PreprocessedTransaction,
 };
-use starcoin_logger::prelude::*;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
+use starcoin_logger::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_parallel_executor::{
     errors::Error,
@@ -87,20 +87,27 @@ impl ParallelStarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<(Vec<TransactionOutput>, Option<Error<VMStatus>>), VMStatus> {
-        info!("jacktest ParallelStarcoinVM::execute_block start, txns: {}, concurrency: {}", transactions.len(), concurrency_level);
+        info!(
+            "jacktest ParallelStarcoinVM::execute_block start, txns: {}, concurrency: {}",
+            transactions.len(),
+            concurrency_level
+        );
         let signature_verified_block: Vec<PreprocessedTransaction> = transactions
             .par_iter()
             .map(|txn| preprocess_transaction(txn.clone()))
             .collect();
-        info!("jacktest ParallelStarcoinVM::execute_block signature verified, count: {}", signature_verified_block.len());
-
-        let executor = ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
-            concurrency_level,
-            block_gas_limit,
+        info!(
+            "jacktest ParallelStarcoinVM::execute_block signature verified, count: {}",
+            signature_verified_block.len()
         );
+
+        let executor =
+            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
+                concurrency_level,
+                block_gas_limit,
+            );
         info!("jacktest ParallelStarcoinVM::execute_block about to call execute_transactions_parallel");
-        match executor.execute_transactions_parallel(state_view, signature_verified_block)
-        {
+        match executor.execute_transactions_parallel(state_view, signature_verified_block) {
             Ok(results) => Ok((
                 results
                     .into_iter()

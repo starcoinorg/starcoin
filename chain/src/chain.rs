@@ -2166,8 +2166,8 @@ impl ChainWriter for BlockChain {
     }
 }
 
-use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 use crate::txn_output_cache::CachedBlockOutputs;
+use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 
 /// Helper function to execute block transactions with optional cache
 fn execute_block_transactions_with_cache(
@@ -2383,10 +2383,16 @@ impl BlockChain {
             // Flush cached statedbs
             let cached_db = cached_statedb.as_ref().unwrap();
             let cached_db2 = cached_statedb2.as_ref().unwrap();
-            info!("[jacktest] start Applying state changes for block {:?}", block_id);
+            info!(
+                "[jacktest] start Applying state changes for block {:?}",
+                block_id
+            );
             cached_db.flush()?;
             cached_db2.flush()?;
-            info!("[jacktest] end Applying state changes for block {:?}", block_id);
+            info!(
+                "[jacktest] end Applying state changes for block {:?}",
+                block_id
+            );
         } else {
             // Apply write_sets to self.statedb
             for write_set in executed_data.write_sets.clone() {
@@ -2398,10 +2404,16 @@ impl BlockChain {
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
             }
             // Flush self.statedb
-            info!("[jacktest] start Applying state changes for block no cache {:?}", block_id);
+            info!(
+                "[jacktest] start Applying state changes for block no cache {:?}",
+                block_id
+            );
             statedb.flush()?;
             statedb2.flush()?;
-            info!("[jacktest] end Applying state changes for block no cache {:?}", block_id);
+            info!(
+                "[jacktest] end Applying state changes for block no cache {:?}",
+                block_id
+            );
         }
 
         // Remove output cache after use

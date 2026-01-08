@@ -49,7 +49,9 @@ pub fn init_or_load_data_dir(
         .genesis_config2()
         .consensus_config
         .base_max_uncles_per_block;
-    let genesis_hash = storage.get_genesis()?.unwrap_or(starcoin_crypto::HashValue::zero());
+    let genesis_hash = storage
+        .get_genesis()?
+        .unwrap_or(starcoin_crypto::HashValue::zero());
     let dag = starcoin_dag::blockdag::BlockDAG::new(
         starcoin_types::blockhash::KType::try_from(k)?,
         config.miner.dag_merge_depth(),

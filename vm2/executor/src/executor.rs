@@ -18,7 +18,8 @@ pub fn do_execute_block_transactions<S: StateView + Sync>(
 ) -> anyhow::Result<Vec<TransactionOutput>> {
     eprintln!(
         "jacktest do_execute_block_transactions: txn_count={}, gas_limit={:?}",
-        txns.len(), block_gas_limit
+        txns.len(),
+        block_gas_limit
     );
     let result =
         <StarcoinVM as VMExecutor>::execute_block(txns, chain_state, block_gas_limit, metrics)?;

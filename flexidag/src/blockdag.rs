@@ -74,7 +74,13 @@ impl BlockDAG {
         Self::new(8, 3600, 8, dag_storage, genesis)
     }
 
-    pub fn new(k: KType, merge_depth: u64, max_parents_count: usize, db: FlexiDagStorage, genesis: Hash) -> Self {
+    pub fn new(
+        k: KType,
+        merge_depth: u64,
+        max_parents_count: usize,
+        db: FlexiDagStorage,
+        genesis: Hash,
+    ) -> Self {
         // Ensure k >= max_parents_count to prevent protocol violations
         assert!(
             k as usize >= max_parents_count,
@@ -545,7 +551,11 @@ impl BlockDAG {
         } else {
             hash
         };
-        Ok(self.storage.state_store.read().get_state_by_hash(query_hash)?)
+        Ok(self
+            .storage
+            .state_store
+            .read()
+            .get_state_by_hash(query_hash)?)
     }
 
     pub fn genesis(&self) -> Hash {

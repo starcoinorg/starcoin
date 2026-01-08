@@ -414,7 +414,10 @@ where
         }
 
         let num_txns = signature_verified_block.len();
-        info!("jacktest execute_transactions_parallel start, num_txns: {}, concurrency: {}", num_txns, self.concurrency_level);
+        info!(
+            "jacktest execute_transactions_parallel start, num_txns: {}, concurrency: {}",
+            num_txns, self.concurrency_level
+        );
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns, self.gas_limit);

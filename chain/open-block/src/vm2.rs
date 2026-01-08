@@ -84,7 +84,8 @@ impl OpenedBlock {
         })?;
         info!(
             "jacktest push_txns2 before exec: txn_count={}, gas_left={}",
-            txns.len(), gas_left
+            txns.len(),
+            gas_left
         );
         let txn_outputs = do_execute_block_transactions(
             state,

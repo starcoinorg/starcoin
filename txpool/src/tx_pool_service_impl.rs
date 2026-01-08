@@ -418,12 +418,17 @@ impl Inner {
             txn_count,
             txn_hashes.first()
         );
+
+        let now_seconds = self.chain_header.read().timestamp() / 1000;
+        let pool_client = self.get_pool_client()?;
+        self.queue.cull(pool_client.clone(), now_seconds);
+
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
         let result = self
             .queue
-            .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id);
+            .import(pool_client, txns, bypass_vm1_limit, peer_id);
         info!(
             "[jacktest] txpool import_txns done: count={}, elapsed_ms={}, first_hash={:?}",
             txn_count,
@@ -597,11 +602,12 @@ impl Inner {
     }
 
     pub fn get_pool_client(&self) -> Result<PoolClient> {
-        let tips = self.dag().get_dag_state(self.chain_header.read().pruning_point())?.tips;
+        let tips = self
+            .dag()
+            .get_dag_state(self.chain_header.read().pruning_point())?
+            .tips;
         let header_id = self.dag().ghost_dag_manager().find_selected_parent(tips)?;
-        let state = self
-            .storage
-            .get_vm_multi_state(header_id)?;
+        let state = self.storage.get_vm_multi_state(header_id)?;
         let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         Ok(PoolClient::new(
             state_root1,
