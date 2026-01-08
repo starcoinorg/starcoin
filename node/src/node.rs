@@ -17,6 +17,7 @@ use starcoin_chain::{clear_global_block_state_cache, reset_node_shutdown_flag};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
@@ -301,13 +302,14 @@ impl NodeService {
             .genesis_config2()
             .consensus_config
             .base_max_uncles_per_block;
-        let dag = starcoin_dag::blockdag::BlockDAG::new(
+        let genesis_hash = storage.get_genesis()?.unwrap_or(HashValue::zero());
+        let mut dag = starcoin_dag::blockdag::BlockDAG::new(
             starcoin_types::blockhash::KType::try_from(k)?,
             config.miner.dag_merge_depth(),
             config.miner.maximum_parents_count(),
             dag_storage.clone(),
+            genesis_hash,
         );
-        registry.put_shared(dag.clone()).await?;
 
         let (chain_info, genesis) = Genesis::init_and_check_storage(
             config.net(),
@@ -315,6 +317,11 @@ impl NodeService {
             dag.clone(),
             config.data_dir(),
         )?;
+
+        if genesis_hash == HashValue::zero() {
+            dag.set_genesis(chain_info.genesis_hash());
+        }
+        registry.put_shared(dag.clone()).await?;
 
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
