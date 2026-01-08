@@ -1,4 +1,4 @@
-FROM summerwind/actions-runner:v2.283.3-ubuntu-20.04-b01e193 as actions-runner
+FROM summerwind/actions-runner:v2.329.0-ubuntu-22.04 as actions-runner
 
 WORKDIR /starcoin
 COPY rust-toolchain.toml /starcoin/rust-toolchain.toml
