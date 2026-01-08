@@ -1,0 +1,238 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use anyhow::{format_err, Result};
+use network_api::messages::PeerTransactionsMessage;
+use starcoin_config::NodeConfig;
+use starcoin_dag::blockdag::BlockDAG;
+use starcoin_executor::VMMetrics;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::Storage2;
+use starcoin_storage::{BlockStore, Storage};
+use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::SyncStatusChangeEvent;
+use starcoin_vm2_state_api::AccountStateReader;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+
+use crate::pool::TxStatus;
+use crate::tx_pool_service_impl::Inner;
+use crate::TxPoolService;
+
+//TODO refactor TxPoolService and rename.
+#[derive(Clone)]
+pub struct TxPoolActorService {
+    inner: Inner,
+    new_txs_received: Arc<AtomicBool>,
+    sync_status: Option<SyncStatus>,
+}
+
+impl std::fmt::Debug for TxPoolActorService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "pool: {:?}", &self.inner,)
+    }
+}
+
+const MIN_TXN_TO_PROPAGATE: usize = 256;
+const PROPAGATE_FOR_BLOCKS: u64 = 4;
+
+impl TxPoolActorService {
+    pub(crate) fn new(inner: Inner) -> Self {
+        Self {
+            inner,
+            sync_status: None,
+            new_txs_received: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
+            None => false,
+        }
+    }
+
+    fn transactions_to_propagate(&self) -> Result<Vec<MultiSignedUserTransaction>> {
+        let statedb = self.inner.get_chain_reader()?;
+        let reader = AccountStateReader::new(&statedb);
+
+        let max_len = 100;
+        let current_timestamp = reader.get_timestamp()?.seconds();
+        Ok(self
+            .inner
+            .get_pending(max_len, current_timestamp)?
+            .into_iter()
+            .map(|t| t.signed().clone())
+            .collect())
+    }
+
+    fn try_propagate_txns(&self, ctx: &mut ServiceContext<Self>) {
+        if self.new_txs_received.load(Ordering::Relaxed) {
+            match self.transactions_to_propagate() {
+                Err(e) => {
+                    log::error!("txpool: fail to get txn to propagate, err: {}", &e)
+                }
+                Ok(txs) if !txs.is_empty() => {
+                    if self
+                        .new_txs_received
+                        .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+                        .unwrap_or_else(|x| x)
+                    {
+                        let request = PropagateTransactions::new(txs);
+                        ctx.broadcast(request);
+                    }
+                }
+                Ok(_) => {}
+            }
+        }
+    }
+
+    fn try_cull(&self) {
+        if let Err(e) = self.inner.cull() {
+            log::error!("txpool: fail to cull expired transactions, err: {}", e);
+        }
+    }
+}
+
+impl ServiceFactory<Self> for TxPoolActorService {
+    fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
+        let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let txpool_service = ctx.get_shared_or_put(|| {
+            let startup_info = storage
+                .get_startup_info()?
+                .ok_or_else(|| format_err!("StartupInfo should exist when service init."))?;
+            let best_block = storage
+                .get_block_by_hash(startup_info.main)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "best block id {} should exists in storage",
+                        startup_info.main
+                    )
+                })?;
+            let best_block_header = best_block.into_inner().0;
+            Ok(TxPoolService::new(
+                node_config,
+                storage,
+                storage2,
+                dag,
+                best_block_header,
+                vm_metrics,
+            ))
+        })?;
+        Ok(Self::new(txpool_service.get_inner()))
+    }
+}
+
+impl ActorService for TxPoolActorService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<SyncStatusChangeEvent>();
+        ctx.add_stream(self.inner.subscribe_txns());
+
+        let myself = self.clone();
+        let interval = self.inner.node_config.tx_pool.tx_propagate_interval();
+        ctx.run_interval(Duration::from_secs(interval), move |ctx| {
+            myself.try_propagate_txns(ctx)
+        });
+
+        let myself_for_cull = self.clone();
+        let cull_interval = self.inner.node_config.tx_pool.cull_interval();
+        ctx.run_interval(Duration::from_secs(cull_interval), move |_ctx| {
+            myself_for_cull.try_cull()
+        });
+
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
+        Ok(())
+    }
+}
+
+impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.sync_status = Some(msg.0);
+    }
+}
+
+impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
+    fn handle_event(&mut self, item: TxnStatusFullEvent, _ctx: &mut ServiceContext<Self>) {
+        if let Some(metrics) = self.inner.metrics.as_ref() {
+            let status = self.inner.pool_status().status;
+            let mem_usage = status.mem_usage;
+            let senders = status.senders;
+            let txn_count = status.transaction_count;
+
+            metrics
+                .txpool_status
+                .with_label_values(&["mem_usage"])
+                .set(mem_usage as u64);
+            metrics
+                .txpool_status
+                .with_label_values(&["senders"])
+                .set(senders as u64);
+            metrics
+                .txpool_status
+                .with_label_values(&["count"])
+                .set(txn_count as u64);
+        }
+        let mut has_new_txns = false;
+        for (_, s) in item.iter() {
+            if let Some(metrics) = self.inner.metrics.as_ref() {
+                metrics
+                    .txpool_txn_event_total
+                    .with_label_values(&[format!("{}", s).as_str()])
+                    .inc();
+            }
+
+            if matches!(s, TxStatus::Added(_)) {
+                has_new_txns = true;
+            }
+        }
+        if has_new_txns {
+            self.new_txs_received.store(true, Ordering::Relaxed);
+        }
+    }
+}
+
+impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
+    fn handle_event(&mut self, msg: PeerTransactionsMessage, _ctx: &mut ServiceContext<Self>) {
+        if self.is_synced() {
+            let bypass_vm1_limit = msg
+                .message
+                .txns
+                .iter()
+                .all(|txn| matches!(txn, MultiSignedUserTransaction::VM2(_)));
+            let _ = self.inner.import_txns(
+                msg.message.txns,
+                bypass_vm1_limit,
+                Some(msg.peer_id.to_string()),
+            );
+        } else {
+            debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_sync_and_send {
+    use super::TxPoolActorService;
+
+    fn assert_send<T: Send>() {}
+    fn assert_sync<T: Sync>() {}
+    fn assert_static<T: 'static>() {}
+
+    #[test]
+    fn test_sync_and_send() {
+        assert_send::<TxPoolActorService>();
+        assert_sync::<TxPoolActorService>();
+        assert_static::<TxPoolActorService>();
+    }
+}
