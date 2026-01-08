@@ -34,6 +34,11 @@ pub struct TxPoolConfig {
     tx_propagate_interval: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-cull-interval", long)]
+    /// interval(s) of cull expired transactions timer. default to 1.
+    cull_interval: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "txpool-min-gas-price", long)]
     /// reject transaction whose gas_price is less than the min_gas_price. default to 1.
     min_gas_price: Option<u64>,
@@ -90,6 +95,9 @@ impl TxPoolConfig {
     pub fn tx_propagate_interval(&self) -> u64 {
         self.tx_propagate_interval.unwrap_or(2)
     }
+    pub fn cull_interval(&self) -> u64 {
+        self.cull_interval.unwrap_or(1)
+    }
     pub fn min_gas_price(&self) -> u64 {
         self.min_gas_price.unwrap_or(1)
     }
@@ -124,6 +132,9 @@ impl ConfigModule for TxPoolConfig {
         }
         if let Some(m) = txpool_opt.tx_propagate_interval.as_ref() {
             self.tx_propagate_interval = Some(*m);
+        }
+        if let Some(m) = txpool_opt.cull_interval.as_ref() {
+            self.cull_interval = Some(*m);
         }
         if let Some(m) = txpool_opt.min_gas_price.as_ref() {
             self.min_gas_price = Some(*m);
