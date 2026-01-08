@@ -400,12 +400,16 @@ impl Inner {
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
     ) -> Result<Vec<Result<(), MultiTransactionError>>> {
+        let now_seconds = self.chain_header.read().timestamp() / 1000;
+        let pool_client = self.get_pool_client()?;
+        self.queue.cull(pool_client.clone(), now_seconds);
+
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
         Ok(self
             .queue
-            .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id))
+            .import(pool_client, txns, bypass_vm1_limit, peer_id))
     }
     pub(crate) fn remove_txn(
         &self,
