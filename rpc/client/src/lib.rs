@@ -60,6 +60,7 @@ use starcoin_types::block::BlockNumber;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_account_api::AccountInfo as AccountInfo2;
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
 use starcoin_vm2_rpc_api::{
@@ -69,6 +70,11 @@ use starcoin_vm2_rpc_api::{
 use starcoin_vm2_types::view::{
     TransactionEventView as TransactionEventView2, TransactionInfoView as TransactionInfoView2,
 };
+use starcoin_vm2_types::{
+    account_address::AccountAddress as AccountAddress2,
+    transaction::SignedUserTransaction as SignedUserTransaction2,
+};
+use starcoin_vm2_vm_types::transaction::RawUserTransaction as RawUserTransaction2;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -306,6 +312,14 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn next_sequence_number_in_txpool2(
+        &self,
+        address: AccountAddress2,
+    ) -> anyhow::Result<Option<u64>> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.next_sequence_number2(address))
+            .map_err(map_err)
+    }
+
     pub fn next_sequence_number_in_txpool(
         &self,
         address: AccountAddress,
@@ -322,6 +336,18 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn next_sequence_number_in_batch2(
+        &self,
+        addresses: Vec<AccountAddress2>,
+    ) -> anyhow::Result<Option<Vec<(AccountAddress2, Option<u64>)>>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .txpool_client
+                .next_sequence_number_in_batch2(addresses)
+        })
+        .map_err(map_err)
+    }
+
     pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
             .map_err(map_err)
@@ -332,6 +358,14 @@ impl RpcClient {
         txns: Vec<SignedUserTransaction>,
     ) -> anyhow::Result<Vec<HashValue>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_transactions(txns))
+            .map_err(map_err)
+    }
+
+    pub fn submit_transactions2(
+        &self,
+        txns: Vec<SignedUserTransaction2>,
+    ) -> anyhow::Result<Vec<HashValue>> {
+        self.call_rpc_blocking(|inner| inner.txpool_client.submit_transactions2(txns))
             .map_err(map_err)
     }
 
@@ -424,6 +458,14 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn account_sign_txn_in_batch2(
+        &self,
+        raw_txns: Vec<RawUserTransaction2>,
+    ) -> anyhow::Result<Vec<SignedUserTransaction2>> {
+        self.call_rpc_blocking(|inner| inner.account_client2.sign_txn_in_batch(raw_txns))
+            .map_err(map_err)
+    }
+
     pub fn account_sign_message(
         &self,
         signer: AccountAddress,
@@ -460,6 +502,19 @@ impl RpcClient {
             inner
                 .account_client
                 .unlock(address, password, Some(duration.as_secs() as u32))
+        })
+        .map_err(map_err)
+    }
+
+    pub fn account_unlock_in_batch2(
+        &self,
+        batch: Vec<(AccountAddress2, String)>,
+        duration: std::time::Duration,
+    ) -> anyhow::Result<Vec<AccountInfo2>> {
+        self.call_rpc_blocking(|inner| {
+            inner
+                .account_client2
+                .unlock_in_batch(batch, Some(duration.as_secs() as u32))
         })
         .map_err(map_err)
     }

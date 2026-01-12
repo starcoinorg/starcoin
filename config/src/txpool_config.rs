@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_system::get_free_mem_size;
 use std::sync::Arc;
 
-pub const DEFAULT_MEM_SIZE: u64 = 128 * 1024 * 1024; // 128M
+pub const DEFAULT_MEM_SIZE: u64 = 1024 * 1024 * 1024; // 1G
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -59,10 +59,10 @@ impl TxPoolConfig {
         self.max_count = Some(max_count);
     }
     pub fn max_count(&self) -> u64 {
-        self.max_count.unwrap_or(4096)
+        self.max_count.unwrap_or(40960000)
     }
     pub fn max_per_sender(&self) -> u64 {
-        self.max_per_sender.unwrap_or(128)
+        self.max_per_sender.unwrap_or(1280000)
     }
     pub fn max_mem_usage(&self) -> u64 {
         self.max_mem_usage

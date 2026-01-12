@@ -1,0 +1,124 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.58s
+warning: the following packages contain code that will be rejected by a future version of Rust: traitobject v0.1.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 2`
+     Running unittests src/main.rs (/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/target/debug/deps/starcoin_execute_bench-822ac97e134b5c66)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/state_root_consistency_test.rs (/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/target/debug/deps/state_root_consistency_test-01cdc2aa8e5ecb26)
+
+running 1 test
+2025-11-27T15:50:16.539710+08:00 DEBUG starcoin_vm_runtime::starcoin_vm::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/vm2/vm-runtime/src/starcoin_vm.rs::574 - execute init script(0x00000000000000000000000000000001::stc_genesis::initialize) by account 0x00000000000000000000000000000001
+2025-11-27T15:50:16.930246+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize Entered"
+2025-11-27T15:50:16.933961+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "consensus_strategy::initialize | entered "
+2025-11-27T15:50:16.935169+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "consensus_strategy::initialize | exited "
+2025-11-27T15:50:16.935406+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_block::initialize | entered "
+2025-11-27T15:50:16.935945+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_block::initialize | exited "
+2025-11-27T15:50:16.936153+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_publish_option::initialize | entered "
+2025-11-27T15:50:16.937058+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_publish_option::initialize | exited "
+2025-11-27T15:50:16.937264+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "vm_config::initialize | entered"
+2025-11-27T15:50:16.940650+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "vm_config::initialize | exited"
+2025-11-27T15:50:16.942456+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "epoch::initialize | Entered "
+2025-11-27T15:50:16.943329+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "epoch::initialize | Exited "
+2025-11-27T15:50:16.943591+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_package_validation::update_module_upgrade_strategy | entered "
+2025-11-27T15:50:16.943928+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_package_validation::update_module_upgrade_strategy | ModuleUpgradeStrategy updated "
+2025-11-27T15:50:16.944857+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_package_validation::update_module_upgrade_strategy | UpgradePlanCapability && TwoPhaseUpgradeV2 updated "
+2025-11-27T15:50:16.945026+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_package_validation::update_module_upgrade_strategy | exited "
+2025-11-27T15:50:16.945204+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_stc | Entered"
+2025-11-27T15:50:16.946554+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::register | Entered"
+2025-11-27T15:50:16.947820+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::register | Exited normally"
+2025-11-27T15:50:16.948260+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::create_and_return_paired_metadata_if_not_exist | entered"
+2025-11-27T15:50:16.949502+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "fungible_asset::add_fungibility | entered"
+2025-11-27T15:50:16.949929+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "fungible_asset::add_fungibility | default_to_concurrent_fungible_supply"
+2025-11-27T15:50:16.950169+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] false
+2025-11-27T15:50:16.950508+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "fungible_asset::add_fungibility | exited"
+2025-11-27T15:50:16.952009+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::create_and_return_paired_metadata_if_not_exist | exited"
+2025-11-27T15:50:16.953241+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_stc | Exited"
+2025-11-27T15:50:16.953399+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "block_reward::initialize | Entered "
+2025-11-27T15:50:16.956062+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "block_reward::initialize | Exited"
+2025-11-27T15:50:16.956330+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_dao | Entered "
+2025-11-27T15:50:16.961443+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_dao | Exited"
+2025-11-27T15:50:16.961606+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "account::create_account | Entered"
+2025-11-27T15:50:16.961709+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] @0xa550c18
+2025-11-27T15:50:16.962239+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "account::create_account | Exited"
+2025-11-27T15:50:16.962398+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::register | Entered"
+2025-11-27T15:50:16.964331+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "coin::register | Exited normally"
+2025-11-27T15:50:16.964578+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_stc_governance_allocation | Entered"
+2025-11-27T15:50:16.964786+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "treasury::initialize | Entered"
+2025-11-27T15:50:16.964890+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] signer(@0x1)
+2025-11-27T15:50:16.967015+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "treasury::initialize | Exited"
+2025-11-27T15:50:16.967796+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "primary_fungible_store::deposit | entered"
+2025-11-27T15:50:16.969281+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "primary_fungible_store::deposit | exited"
+2025-11-27T15:50:16.969985+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize_stc_governance_allocation | Exited"
+2025-11-27T15:50:16.972866+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_genesis::initialize | Exited"
+2025-11-27T15:50:16.973141+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_validation::epilogue | Entered"
+2025-11-27T15:50:16.974827+08:00 DEBUG starcoin_framework::natives::debug::vm2/framework/src/natives/debug.rs::41 - [framework] "stc_transaction_validation::epilogue | Exited"
+2025-11-27T15:50:16.987123+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1643 - [starcoin-vm] Executed txn: HashValue(0xbdfe4f994f270cff78420410cd2153410fb3484ebf87cfbabc8fc11420446d45) (sender: 0x00000000000000000000000000000001, sequence_number: 0) txn_status: Keep(EXECUTED), gas_used: 0, vm_status: Executed
+2025-11-27T15:50:16.993523+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+Testing on network: test (chain_id: 255)
+2025-11-27T15:50:16.994377+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+
+========== Iteration 1 ==========
+Created account 1: 0x4c4f42886f476af8a06cff216c6ed19b
+Created account 2: 0x94ab1a4ee83c1cd443f2f3519a9a2431
+Created account 3: 0xb5483afffb72b2ded1041d618e133cce
+Created account 4: 0x9302b115a927ba24881207b73c81bad4
+Built 4 transactions for iteration 1
+Phase 1: Pre-execution (no flush)
+2025-11-27T15:50:17.002837+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_block doesn't exist") }
+2025-11-27T15:50:17.004441+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.004574+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x3ecd2be87d54628e3c8c1c697a4c056dd2fdc86ad6160b77da58aefc1f017355) (sender: 0x0000000000000000000000000a550c18, sequence_number: 0) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+2025-11-27T15:50:17.007292+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.007455+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x5a16489a1a77f2df9f39fa8f8e70d566f1ee99b8b337642f40f8c07d96966aa5) (sender: 0x0000000000000000000000000a550c18, sequence_number: 1) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+2025-11-27T15:50:17.008856+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.008972+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x2d5ad6e723dded5eb8290df1fe039895c7647d21fa5f55a7d5824ea6fb1ad3b7) (sender: 0x0000000000000000000000000a550c18, sequence_number: 2) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+2025-11-27T15:50:17.010154+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.010258+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x8a1e47008c879d9443a9aee79af45ffe05f1a685dd6e24299adac13a978f1933) (sender: 0x0000000000000000000000000a550c18, sequence_number: 3) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+2025-11-27T15:50:17.010913+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_block doesn't exist") }
+  Pre-exec txn 1: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+  Pre-exec txn 2: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+  Pre-exec txn 3: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+  Pre-exec txn 4: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+  Pre-exec txn 5: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+  Pre-exec txn 6: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+Phase 2: Actual execution (with flush)
+2025-11-27T15:50:17.016356+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_block doesn't exist") }
+  Actual-exec txn 1: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.016651+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+2025-11-27T15:50:17.022111+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.022300+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x3ecd2be87d54628e3c8c1c697a4c056dd2fdc86ad6160b77da58aefc1f017355) (sender: 0x0000000000000000000000000a550c18, sequence_number: 0) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+  Actual-exec txn 2: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.022699+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+2025-11-27T15:50:17.027524+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.027629+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x5a16489a1a77f2df9f39fa8f8e70d566f1ee99b8b337642f40f8c07d96966aa5) (sender: 0x0000000000000000000000000a550c18, sequence_number: 1) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+  Actual-exec txn 3: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.027951+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+2025-11-27T15:50:17.032585+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.032777+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x2d5ad6e723dded5eb8290df1fe039895c7647d21fa5f55a7d5824ea6fb1ad3b7) (sender: 0x0000000000000000000000000a550c18, sequence_number: 2) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+  Actual-exec txn 4: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.033101+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+2025-11-27T15:50:17.037272+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_transaction_validation doesn't exist") }
+2025-11-27T15:50:17.037372+08:00 INFO starcoin_vm_runtime::starcoin_vm::vm2/vm-runtime/src/starcoin_vm.rs::1650 - [starcoin-vm] Executed txn: HashValue(0x8a1e47008c879d9443a9aee79af45ffe05f1a685dd6e24299adac13a978f1933) (sender: 0x0000000000000000000000000a550c18, sequence_number: 3) txn_status: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION), vm_status: ERROR { status_code: UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, sub_status: None, message: None }
+  Actual-exec txn 5: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.037682+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+2025-11-27T15:50:17.041798+08:00 ERROR starcoin_vm_runtime::errors::vm2/vm-runtime/src/errors.rs::153 - [starcoin_vm] Unexpected prologue error: ERROR { status_code: LINKER_ERROR, sub_status: None, message: Some("Linker Error: Module 0x00000000000000000000000000000001::stc_block doesn't exist") }
+  Actual-exec txn 6: Discard(UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+2025-11-27T15:50:17.042031+08:00 DEBUG starcoin_state_tree::state_tree::/Users/jack/Documents/code/rust/flexidag/starcoin-jack/main/starcoin/state/state-tree/src/state_tree.rs::206 - change_set_list len 0
+  Txn 1 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+  Txn 2 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+  Txn 3 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+  Txn 4 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+  Txn 5 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+  Txn 6 - Pre: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Actual: 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, Match: true
+✓ All state roots matched for iteration 1
+
+========== TEST COMPLETED SUCCESSFULLY ==========
+Total iterations: 1
+Transactions per iteration: 4
+Total transactions: 4
+test test_state_root_consistency_two_phase_execution ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 2.93s
+

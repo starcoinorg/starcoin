@@ -5,6 +5,7 @@ cp -v target/release/starcoin starcoin-artifacts/
 cp -v target/release/starcoin_miner starcoin-artifacts/
 cp -v target/release/mpm starcoin-artifacts/
 cp -v target/release/starcoin_generator starcoin-artifacts/
+cp -v target/release/starcoin_txfactory starcoin-artifacts/
 cp -v scripts/import_block.sh starcoin-artifacts/
 cp -v scripts/import_snapshot.sh starcoin-artifacts/
 cp -v scripts/verify_header.sh starcoin-artifacts/

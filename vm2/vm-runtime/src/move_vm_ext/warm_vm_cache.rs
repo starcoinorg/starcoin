@@ -12,7 +12,6 @@ use once_cell::sync::Lazy;
 use starcoin_framework::natives::code::PackageRegistry;
 use starcoin_metrics::TimerHelper;
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_vm_types::errors::VMError;
 use starcoin_vm_types::on_chain_config::OnChainConfig;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::HashMap;
@@ -70,19 +69,18 @@ impl WarmVmCache {
                 starcoin_natives_with_builder(&mut native_builder),
                 vm_config,
             )?;
+            Self::warm_vm_up(&vm, resolver);
 
             // Not using LruCache because its `::get()` requires &mut self
             if cache_locked.len() >= WARM_VM_CACHE_SIZE {
                 cache_locked.clear();
             }
-            if Self::warm_vm_up(&vm, resolver).is_ok() {
-                cache_locked.insert(id, vm.clone());
-            }
+            cache_locked.insert(id, vm.clone());
             Ok(vm)
         }
     }
 
-    fn warm_vm_up(vm: &MoveVM, resolver: &impl StarcoinMoveResolver) -> Result<(), VMError> {
+    fn warm_vm_up(vm: &MoveVM, resolver: &impl StarcoinMoveResolver) {
         #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["vm_warm_up"]);
 
@@ -93,12 +91,10 @@ impl WarmVmCache {
         //
         // Loading up `0x1::account` should be sufficient as this is the most common module
         // used for prologue, epilogue and transfer functionality.
-        vm.load_module(
+        let _ = vm.load_module(
             &ModuleId::new(CORE_CODE_ADDRESS, ident_str!("account").to_owned()),
             resolver,
-        )?;
-
-        Ok(())
+        );
     }
 }
 

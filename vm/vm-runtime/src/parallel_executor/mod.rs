@@ -82,7 +82,6 @@ impl ParallelStarcoinVM {
 
         match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
             concurrency_level,
-            block_gas_limit,
         )
         .execute_transactions_parallel(state_view, signature_verified_block)
         {

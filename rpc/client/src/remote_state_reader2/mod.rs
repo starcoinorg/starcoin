@@ -11,6 +11,11 @@ use starcoin_vm2_state_api::{
     AccountStateSetIterator, ChainStateReader, StateWithProof, StateWithTableItemProof,
 };
 use starcoin_vm2_types::{
+    account_address::AccountAddress as AccountAddress2,
+    account_config::{stc_struct_tag, CoinStoreResource},
+    view::StrView,
+};
+use starcoin_vm2_types::{
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
@@ -57,6 +62,35 @@ impl<'a> RemoteStateReader<'a> {
 
     fn new_with_root(client: &'a RpcClient, state_root: HashValue) -> Self {
         Self { client, state_root }
+    }
+
+    pub fn get_balance2(&self, address: AccountAddress2) -> Result<Option<u128>> {
+        let stc = stc_struct_tag();
+        let resources = self.client.state_list_resource2(
+            address,
+            false,
+            Some(self.state_root),
+            0,
+            usize::MAX,
+            Some(vec![StrView::from(stc.clone())]),
+            None,
+        )?;
+        for (key, resource) in resources.resources {
+            if key.0 != stc {
+                continue;
+            }
+            if let Some(_token_code) = CoinStoreResource::token_code(&key.0) {
+                let balance = resource
+                    .decode::<CoinStoreResource>()
+                    .ok()
+                    .map(|balance| balance.coin() as u128);
+                return Ok(balance);
+            } else {
+                return Ok(None);
+            }
+        }
+
+        Ok(None)
     }
 }
 
