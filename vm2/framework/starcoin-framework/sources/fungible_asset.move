@@ -21,6 +21,7 @@ module starcoin_framework::fungible_asset {
     friend starcoin_framework::coin;
     friend starcoin_framework::primary_fungible_store;
     friend starcoin_framework::starcoin_account;
+    friend starcoin_framework::transaction_fee;
 
     friend starcoin_framework::dispatchable_fungible_asset;
 
@@ -924,6 +925,23 @@ module starcoin_framework::fungible_asset {
         burn(ref, withdraw_internal(store_addr, amount));
     }
 
+    /// Burn the `amount` of the fungible asset from the given store address without emitting events.
+    public(friend) fun address_burn_from_for_gas(
+        ref: &BurnRef,
+        store_addr: address,
+        amount: u64
+    ) acquires FungibleStore, Supply, ConcurrentSupply, ConcurrentFungibleBalance {
+        if (amount == 0) {
+            return
+        };
+        let fa = withdraw_internal_no_events(store_addr, amount);
+        assert!(
+            ref.metadata == metadata_from_asset(&fa),
+            error::invalid_argument(EBURN_REF_AND_FUNGIBLE_ASSET_MISMATCH)
+        );
+        burn_internal(fa);
+    }
+
     /// Withdraw `amount` of the fungible asset from the `store` ignoring `frozen`.
     public fun withdraw_with_ref<T: key>(
         ref: &TransferRef,
@@ -1041,6 +1059,26 @@ module starcoin_framework::fungible_asset {
         event::emit(Deposit { store: store_addr, amount });
     }
 
+    /// Deposit the fungible asset into the store without emitting events or dispatching hooks.
+    public(friend) fun deposit_internal_no_events(
+        store_addr: address,
+        fa: FungibleAsset
+    ) acquires FungibleStore, ConcurrentFungibleBalance {
+        let FungibleAsset { metadata, amount } = fa;
+        assert!(exists<FungibleStore>(store_addr), error::not_found(EFUNGIBLE_STORE_EXISTENCE));
+        let store = borrow_global_mut<FungibleStore>(store_addr);
+        assert!(metadata == store.metadata, error::invalid_argument(EFUNGIBLE_ASSET_AND_STORE_MISMATCH));
+
+        if (amount == 0) return;
+
+        if (store.balance == 0 && concurrent_fungible_balance_exists_inline(store_addr)) {
+            let balance_resource = borrow_global_mut<ConcurrentFungibleBalance>(store_addr);
+            aggregator_v2::add(&mut balance_resource.balance, amount);
+        } else {
+            store.balance = store.balance + amount;
+        };
+    }
+
     /// Extract `amount` of the fungible asset from `store`.
     public(friend) fun withdraw_internal(
         store_addr: address,
@@ -1063,6 +1101,30 @@ module starcoin_framework::fungible_asset {
             };
 
             event::emit<Withdraw>(Withdraw { store: store_addr, amount });
+        };
+        FungibleAsset { metadata, amount }
+    }
+
+    /// Extract `amount` of the fungible asset from `store` without emitting events or dispatching hooks.
+    public(friend) fun withdraw_internal_no_events(
+        store_addr: address,
+        amount: u64,
+    ): FungibleAsset acquires FungibleStore, ConcurrentFungibleBalance {
+        assert!(exists<FungibleStore>(store_addr), error::not_found(EFUNGIBLE_STORE_EXISTENCE));
+
+        let store = borrow_global_mut<FungibleStore>(store_addr);
+        let metadata = store.metadata;
+        if (amount != 0) {
+            if (store.balance == 0 && concurrent_fungible_balance_exists_inline(store_addr)) {
+                let balance_resource = borrow_global_mut<ConcurrentFungibleBalance>(store_addr);
+                assert!(
+                    aggregator_v2::try_sub(&mut balance_resource.balance, amount),
+                    error::invalid_argument(EINSUFFICIENT_BALANCE)
+                );
+            } else {
+                assert!(store.balance >= amount, error::invalid_argument(EINSUFFICIENT_BALANCE));
+                store.balance = store.balance - amount;
+            };
         };
         FungibleAsset { metadata, amount }
     }
