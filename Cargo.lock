@@ -12533,6 +12533,7 @@ dependencies = [
  "starcoin-vm1-vm-types",
  "starcoin-vm2-account-api",
  "starcoin-vm2-account-service",
+ "starcoin-vm2-state-api",
  "starcoin-vm2-statedb",
  "stest",
  "test-helper",
