@@ -10,7 +10,7 @@ use futures::channel::mpsc::unbounded;
 use futures_timer::Delay;
 use pin_utils::core_reexport::time::Duration;
 use starcoin_account_api::AccountInfo;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain_api::{BlockExecutionCache, ChainReader};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
@@ -103,6 +103,10 @@ impl SyncTestSystem {
                 registry.put_shared(storage.clone()).await.unwrap();
                 registry.put_shared(storage2.clone()).await.unwrap();
                 registry.put_shared(genesis).await.unwrap();
+                registry
+                    .put_shared(Arc::new(BlockExecutionCache::default()))
+                    .await
+                    .unwrap();
                 registry
                     .put_shared(dag)
                     .await
