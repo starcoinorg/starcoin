@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
+    delayed_field::DelayedFieldReads,
     errors::Error,
     scheduler::{Incarnation, TxnIndex, Version},
     task::{ExecutionStatus, Transaction, TransactionOutput},
@@ -12,6 +13,7 @@ use std::{collections::HashSet, sync::Arc};
 
 type TxnInput<K> = Vec<ReadDescriptor<K>>;
 type TxnOutput<T, E> = ExecutionStatus<T, Error<E>>;
+type TxnDelayedInput = DelayedFieldReads;
 
 // If an entry was read from the multi-version data-structure, then kind is
 // MVHashMap(txn_idx, incarnation), with transaction index and incarnation number
@@ -63,6 +65,7 @@ impl<K> ReadDescriptor<K> {
 
 pub struct TxnLastInputOutput<K, T, E> {
     inputs: Vec<CachePadded<ArcSwapOption<TxnInput<K>>>>, // txn_idx -> input.
+    delayed_inputs: Vec<CachePadded<ArcSwapOption<TxnDelayedInput>>>,
 
     outputs: Vec<CachePadded<ArcSwapOption<TxnOutput<T, E>>>>, // txn_idx -> output.
 }
@@ -71,6 +74,9 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
     pub fn new(num_txns: usize) -> Self {
         Self {
             inputs: (0..num_txns)
+                .map(|_| CachePadded::new(ArcSwapOption::empty()))
+                .collect(),
+            delayed_inputs: (0..num_txns)
                 .map(|_| CachePadded::new(ArcSwapOption::empty()))
                 .collect(),
             outputs: (0..num_txns)
@@ -83,14 +89,20 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
         &self,
         txn_idx: TxnIndex,
         input: Vec<ReadDescriptor<K>>,
+        delayed_input: DelayedFieldReads,
         output: ExecutionStatus<T, Error<E>>,
     ) {
         self.inputs[txn_idx].store(Some(Arc::new(input)));
+        self.delayed_inputs[txn_idx].store(Some(Arc::new(delayed_input)));
         self.outputs[txn_idx].store(Some(Arc::new(output)));
     }
 
     pub fn read_set(&self, txn_idx: TxnIndex) -> Option<Arc<Vec<ReadDescriptor<K>>>> {
         self.inputs[txn_idx].load_full()
+    }
+
+    pub fn delayed_read_set(&self, txn_idx: TxnIndex) -> Option<Arc<DelayedFieldReads>> {
+        self.delayed_inputs[txn_idx].load_full()
     }
 
     // Extracts a set of paths written during execution from transaction output.
@@ -114,7 +126,9 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
     pub fn take_output(&self, txn_idx: TxnIndex) -> ExecutionStatus<T, Error<E>> {
         let owning_ptr = self.outputs[txn_idx]
             .swap(None)
-            .expect("Output must be recorded after execution");
+            .unwrap_or_else(|| {
+                panic!("Output must be recorded after execution (txn_idx={})", txn_idx)
+            });
 
         match Arc::try_unwrap(owning_ptr) {
             Ok(output) => output,

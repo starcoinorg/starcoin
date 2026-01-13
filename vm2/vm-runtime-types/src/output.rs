@@ -7,6 +7,8 @@ use crate::module_write_set::ModuleWriteSet;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use move_vm_types::value_serde::deserialize_and_allow_delayed_values;
+use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::delayed_change::DelayedChange;
 use starcoin_aggregator::delta_change_set::DeltaOp;
 use starcoin_aggregator::resolver::AggregatorV1Resolver;
@@ -17,7 +19,7 @@ use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::transaction::{TransactionAuxiliaryData, TransactionOutput};
 use starcoin_vm2_vm_types::write_set::WriteOp;
 use starcoin_vm2_vm_types::{fee_statement::FeeStatement, transaction::TransactionStatus};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 /// Output produced by the VM after executing a transaction.
 ///
@@ -79,6 +81,39 @@ impl VMOutput {
         &self,
     ) -> &BTreeMap<DelayedFieldID, DelayedChange<DelayedFieldID>> {
         self.change_set.delayed_field_change_set()
+    }
+
+    pub fn contains_delayed_fields(&self) -> bool {
+        if !self.delayed_field_change_set().is_empty() {
+            return true;
+        }
+
+        if self.resource_write_set().values().any(|op| {
+            matches!(
+                op,
+                AbstractResourceWriteOp::WriteWithDelayedFields(_)
+                    | AbstractResourceWriteOp::InPlaceDelayedFieldChange(_)
+                    | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
+            )
+        }) {
+            return true;
+        }
+
+        self.events().iter().any(|(event, layout)| {
+            let layout = match layout {
+                Some(layout) => layout,
+                None => return false,
+            };
+            let value = match deserialize_and_allow_delayed_values(event.event_data(), layout) {
+                Some(value) => value,
+                None => return true,
+            };
+            let mut ids = HashSet::new();
+            if find_identifiers_in_value(&value, &mut ids).is_err() {
+                return true;
+            }
+            !ids.is_empty()
+        })
     }
 
     pub fn events(&self) -> &[(ContractEvent, Option<MoveTypeLayout>)] {

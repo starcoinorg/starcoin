@@ -3,18 +3,35 @@
 
 use crate::errors::Error::BlockRestart;
 use crate::{
+    delayed_field::{
+        DelayedFieldRead, DelayedFieldReadKind, DelayedFieldReads, DelayedReadValidationError,
+    },
     errors::*,
     scheduler::{Scheduler, SchedulerTask, TaskGuard, TxnIndex, Version},
     task::{ExecutionStatus, ExecutorTask, Transaction, TransactionOutput},
     txn_last_input_output::{ReadDescriptor, TxnLastInputOutput},
 };
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use num_cpus;
 use once_cell::sync::Lazy;
+use rand::Rng;
+use starcoin_aggregator::types::{DelayedFieldsSpeculativeError, PanicOr};
 use starcoin_infallible::Mutex;
-use starcoin_logger::prelude::error;
-use starcoin_mvhashmap::MVHashMap;
-use std::{collections::HashSet, hash::Hash, marker::PhantomData, sync::Arc, thread::spawn};
-
+use starcoin_logger::prelude::{error, info};
+use starcoin_mvhashmap::{
+    versioned_delayed_fields::{CommitError, VersionedDelayedFields},
+    MVHashMap,
+};
+use std::{
+    collections::HashSet,
+    hash::Hash,
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering},
+        Arc,
+    },
+    thread::spawn,
+};
 static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_cpus::get())
@@ -22,6 +39,59 @@ static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
         .build()
         .unwrap()
 });
+
+fn gen_id_start_value(sequential: bool) -> u32 {
+    let offset = if sequential { 0 } else { 1000 };
+    let mut rng = rand::rng();
+    let base: u32 = rng.random_range((1 + offset)..(1000 + offset));
+    base.saturating_mul(1_000_000)
+}
+
+struct DelayedFieldCommitCoordinator {
+    next_to_commit: AtomicUsize,
+    fatal: AtomicBool,
+}
+
+impl DelayedFieldCommitCoordinator {
+    fn new() -> Self {
+        Self {
+            next_to_commit: AtomicUsize::new(0),
+            fatal: AtomicBool::new(false),
+        }
+    }
+
+    fn advance(&self) {
+        self.next_to_commit.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn next_to_commit(&self) -> usize {
+        self.next_to_commit.load(Ordering::Acquire)
+    }
+
+    fn set_fatal(&self) {
+        self.fatal.store(true, Ordering::Release);
+    }
+
+    fn is_fatal(&self) -> bool {
+        self.fatal.load(Ordering::Acquire)
+    }
+}
+
+fn set_fatal_error<E: Clone>(
+    fatal_flag: &AtomicBool,
+    fatal_error: &Mutex<Option<Error<E>>>,
+    err: Error<E>,
+    scheduler: &Scheduler,
+    commit_coordinator: Option<&DelayedFieldCommitCoordinator>,
+) {
+    if !fatal_flag.swap(true, Ordering::SeqCst) {
+        *fatal_error.lock() = Some(err);
+    }
+    if let Some(coord) = commit_coordinator {
+        coord.set_fatal();
+    }
+    scheduler.force_done();
+}
 
 /// A struct that is always used by a single thread performing an execution task. The struct is
 /// passed to the VM and acts as a proxy to resolve reads first in the shared multi-version
@@ -35,6 +105,9 @@ pub struct MVHashMapView<'a, K, V> {
     txn_idx: TxnIndex,
     scheduler: &'a Scheduler,
     captured_reads: Mutex<Vec<ReadDescriptor<K>>>,
+    captured_delayed_reads: Mutex<DelayedFieldReads>,
+    delayed_field_id_start: u32,
+    delayed_field_id_counter: &'a AtomicU32,
 }
 
 impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_, K, V> {
@@ -42,6 +115,55 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
     pub fn take_reads(&self) -> Vec<ReadDescriptor<K>> {
         let mut reads = self.captured_reads.lock();
         std::mem::take(&mut reads)
+    }
+
+    pub fn take_delayed_field_reads(&self) -> DelayedFieldReads {
+        let mut reads = self.captured_delayed_reads.lock();
+        std::mem::take(&mut *reads)
+    }
+
+    pub fn capture_delayed_field_read(
+        &self,
+        id: DelayedFieldID,
+        update: bool,
+        read: DelayedFieldRead,
+    ) -> std::result::Result<(), PanicOr<DelayedFieldsSpeculativeError>> {
+        self.captured_delayed_reads
+            .lock()
+            .capture_delayed_field_read(id, update, read)
+    }
+
+    pub fn capture_delayed_field_read_error(&self, err: &PanicOr<DelayedFieldsSpeculativeError>) {
+        self.captured_delayed_reads
+            .lock()
+            .capture_delayed_field_read_error(err);
+    }
+
+    pub fn get_delayed_field_by_kind(
+        &self,
+        id: &DelayedFieldID,
+        min_kind: DelayedFieldReadKind,
+    ) -> Option<DelayedFieldRead> {
+        self.captured_delayed_reads
+            .lock()
+            .get_delayed_field_by_kind(id, min_kind)
+    }
+
+    pub fn generate_delayed_field_id(&self, width: u32) -> DelayedFieldID {
+        let index = self.delayed_field_id_counter.fetch_add(1, Ordering::SeqCst);
+        DelayedFieldID::new_with_width(index, width)
+    }
+
+    pub fn delayed_field_id_start(&self) -> u32 {
+        self.delayed_field_id_start
+    }
+
+    pub fn delayed_field_id_counter(&self) -> u32 {
+        self.delayed_field_id_counter.load(Ordering::SeqCst)
+    }
+
+    pub fn delayed_fields(&self) -> &VersionedDelayedFields<DelayedFieldID> {
+        self.versioned_map.delayed_fields()
     }
 
     /// Captures a read from the VM execution.
@@ -98,6 +220,20 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
     pub fn txn_idx(&self) -> TxnIndex {
         self.txn_idx
     }
+
+    pub fn wait_for_dependency(&self, dep_idx: TxnIndex) -> bool {
+        match self.scheduler.wait_for_dependency(self.txn_idx, dep_idx) {
+            Some(dep_condition) => {
+                let (lock, cvar) = &*dep_condition;
+                let mut dep_resolved = lock.lock();
+                while !*dep_resolved {
+                    dep_resolved = cvar.wait(dep_resolved).unwrap();
+                }
+                true
+            }
+            None => true,
+        }
+    }
 }
 pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     // number of active concurrent tasks, corresponding to the maximum number of rayon
@@ -105,6 +241,10 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     concurrency_level: usize,
     phantom: PhantomData<(T, E)>,
     gas_limit: Option<u64>,
+    blockstm_v2: bool,
+    delayed_fields_enabled: bool,
+    delayed_field_id_start: u32,
+    delayed_field_id_counter: AtomicU32,
 }
 
 impl<T, E> ParallelTransactionExecutor<T, E>
@@ -120,11 +260,26 @@ where
             "Parallel execution concurrency level {} should be between 2 and number of CPUs",
             concurrency_level
         );
+        let delayed_field_id_start = gen_id_start_value(false);
         Self {
             concurrency_level,
             phantom: PhantomData,
             gas_limit,
+            blockstm_v2: false,
+            delayed_fields_enabled: false,
+            delayed_field_id_start,
+            delayed_field_id_counter: AtomicU32::new(delayed_field_id_start),
         }
+    }
+
+    pub fn with_blockstm_v2(mut self, enabled: bool) -> Self {
+        self.blockstm_v2 = enabled;
+        self
+    }
+
+    pub fn with_delayed_fields(mut self, enabled: bool) -> Self {
+        self.delayed_fields_enabled = enabled;
+        self
     }
 
     fn execute<'a>(
@@ -140,6 +295,9 @@ where
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &'a Scheduler,
         executor: &E,
+        delayed_commit: Option<&DelayedFieldCommitCoordinator>,
+        fatal_flag: &AtomicBool,
+        fatal_error: &Mutex<Option<Error<E::Error>>>,
     ) -> SchedulerTask<'a> {
         let (idx_to_execute, incarnation) = version;
         let txn = &signature_verified_block[idx_to_execute];
@@ -152,38 +310,86 @@ where
             txn_idx: idx_to_execute,
             scheduler,
             captured_reads: Mutex::new(Vec::new()),
+            captured_delayed_reads: Mutex::new(DelayedFieldReads::default()),
+            delayed_field_id_start: self.delayed_field_id_start,
+            delayed_field_id_counter: &self.delayed_field_id_counter,
         };
 
         // VM execution.
         let execute_result = executor.execute_transaction(&state_view, txn);
         let mut prev_write_set: HashSet<T::Key> = last_input_output.write_set(idx_to_execute);
+        let mut prev_delayed_write_set =
+            versioned_data_cache
+                .delayed_fields()
+                .get_txn_ids(idx_to_execute);
 
         // For tracking whether the recent execution wrote outside of the previous write set.
         let mut writes_outside = false;
-        let mut apply_writes = |output: &<E as ExecutorTask>::Output| {
-            let write_version = (idx_to_execute, incarnation);
-            for (k, v) in output.get_writes().into_iter() {
-                if !prev_write_set.remove(&k) {
-                    writes_outside = true
+        let mut apply_writes =
+            |output: &<E as ExecutorTask>::Output| -> std::result::Result<(), ()> {
+                let write_version = (idx_to_execute, incarnation);
+                for (k, v) in output.get_writes().into_iter() {
+                    if !prev_write_set.remove(&k) {
+                        writes_outside = true
+                    }
+                    versioned_data_cache.write(&k, write_version, v);
                 }
-                versioned_data_cache.write(&k, write_version, v);
-            }
-        };
+                for (id, change) in output.delayed_field_change_set().into_iter() {
+                    if !prev_delayed_write_set.remove(&id) {
+                        writes_outside = true;
+                    }
+                    let entry = change.into_entry_no_additional_history();
+                    if let Err(err) =
+                        versioned_data_cache
+                            .delayed_fields()
+                            .record_change(id, idx_to_execute, entry)
+                    {
+                        match err {
+                            PanicOr::CodeInvariantError(err_msg) => {
+                                error!(
+                                    "record_change failed: txn_idx={} id={:?} err={:?}",
+                                    idx_to_execute, id, err_msg
+                                );
+                                set_fatal_error(
+                                    fatal_flag,
+                                    fatal_error,
+                                    Error::InvariantViolation,
+                                    scheduler,
+                                    delayed_commit,
+                                );
+                                return Err(());
+                            }
+                            PanicOr::Or(_) => {
+                                state_view.capture_delayed_field_read_error(&PanicOr::Or(
+                                    DelayedFieldsSpeculativeError::InconsistentRead,
+                                ));
+                            }
+                        }
+                    }
+                }
+                Ok(())
+            };
 
-        let result = match execute_result {
+        let mut result = match execute_result {
             // These statuses are the results of speculative execution, so even for
             // SkipRest (skip the rest of transactions) and Abort (abort execution with
             // user defined error), no immediate action is taken. Instead the statuses
             // are recorded and (final statuses) are analyzed when the block is executed.
             ExecutionStatus::Success(output) => {
                 // Apply the writes to the versioned_data_cache.
-                apply_writes(&output);
-                ExecutionStatus::Success(output)
+                if apply_writes(&output).is_err() {
+                    ExecutionStatus::Abort(Error::InvariantViolation)
+                } else {
+                    ExecutionStatus::Success(output)
+                }
             }
             ExecutionStatus::SkipRest(output) => {
                 // Apply the writes and record status indicating skip.
-                apply_writes(&output);
-                ExecutionStatus::SkipRest(output)
+                if apply_writes(&output).is_err() {
+                    ExecutionStatus::Abort(Error::InvariantViolation)
+                } else {
+                    ExecutionStatus::SkipRest(output)
+                }
             }
             ExecutionStatus::Abort(err) => {
                 // Record the status indicating abort.
@@ -195,8 +401,30 @@ where
         for k in &prev_write_set {
             versioned_data_cache.delete(k, idx_to_execute);
         }
+        for id in &prev_delayed_write_set {
+            if let Err(err) = versioned_data_cache
+                .delayed_fields()
+                .remove(id, idx_to_execute, self.blockstm_v2)
+            {
+                error!(
+                    "remove delayed field failed: txn_idx={} id={:?} err={:?}",
+                    idx_to_execute, id, err
+                );
+                set_fatal_error(
+                    fatal_flag,
+                    fatal_error,
+                    Error::InvariantViolation,
+                    scheduler,
+                    delayed_commit,
+                );
+                result = ExecutionStatus::Abort(Error::InvariantViolation);
+                break;
+            }
+        }
 
-        last_input_output.record(idx_to_execute, state_view.take_reads(), result);
+        let reads = state_view.take_reads();
+        let delayed_reads = state_view.take_delayed_field_reads();
+        last_input_output.record(idx_to_execute, reads, delayed_reads, result);
         scheduler.finish_execution(idx_to_execute, incarnation, writes_outside, guard)
     }
 
@@ -212,29 +440,94 @@ where
         >,
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &'a Scheduler,
+        _delayed_commit: Option<&DelayedFieldCommitCoordinator>,
+        fatal_flag: &AtomicBool,
+        fatal_error: &Mutex<Option<Error<E::Error>>>,
     ) -> SchedulerTask<'a> {
+        if fatal_flag.load(Ordering::Acquire) {
+            scheduler.force_done();
+            return SchedulerTask::Done;
+        }
         let (idx_to_validate, incarnation) = version_to_validate;
         if signature_verified_block[idx_to_validate].is_block_epilogue() {
+            return SchedulerTask::NoTask;
+        }
+        if !scheduler.is_executed_incarnation(idx_to_validate, incarnation) {
             return SchedulerTask::NoTask;
         }
         let read_set = last_input_output
             .read_set(idx_to_validate)
             .expect("Prior read-set must be recorded");
 
-        let valid = read_set.iter().all(|r| {
+        if let Some(delayed_reads) = last_input_output.delayed_read_set(idx_to_validate) {
+            if delayed_reads.is_incorrect_use() {
+                set_fatal_error(
+                    fatal_flag,
+                    fatal_error,
+                    Error::InvariantViolation,
+                    scheduler,
+                    _delayed_commit,
+                );
+                return SchedulerTask::Done;
+            }
+            if delayed_reads.has_speculative_failure() {
+                // Speculative delayed-field read failure requires re-execution.
+                let aborted = scheduler.try_abort(idx_to_validate, incarnation);
+                if aborted {
+                    for k in &last_input_output.write_set(idx_to_validate) {
+                        versioned_data_cache.mark_estimate(k, idx_to_validate);
+                    }
+                    let delayed_ids = versioned_data_cache
+                        .delayed_fields()
+                        .get_txn_ids(idx_to_validate);
+                    for id in &delayed_ids {
+                        versioned_data_cache
+                            .delayed_fields()
+                            .mark_estimate(id, idx_to_validate);
+                    }
+                    return scheduler.finish_abort(idx_to_validate, incarnation, guard);
+                }
+            }
+        }
+
+        let read_valid = read_set.iter().all(|r| {
             match versioned_data_cache.read(r.path(), idx_to_validate) {
                 Ok((version, _)) => r.validate_version(version),
                 Err(Some(_)) => false, // Dependency implies a validation failure.
                 Err(None) => r.validate_storage(),
             }
         });
+        let valid = read_valid;
+        if !valid {
+            info!(
+                target: "starcoin_parallel_executor",
+                "validate failed txn_idx={} incarnation={} read_valid={}",
+                idx_to_validate,
+                incarnation,
+                read_valid
+            );
+        }
 
         let aborted = !valid && scheduler.try_abort(idx_to_validate, incarnation);
 
         if aborted {
+            info!(
+                target: "starcoin_parallel_executor",
+                "abort txn_idx={} incarnation={}",
+                idx_to_validate,
+                incarnation
+            );
             // Not valid and successfully aborted, mark the latest write-set as estimates.
             for k in &last_input_output.write_set(idx_to_validate) {
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
+            }
+            let delayed_ids = versioned_data_cache
+                .delayed_fields()
+                .get_txn_ids(idx_to_validate);
+            for id in &delayed_ids {
+                versioned_data_cache
+                    .delayed_fields()
+                    .mark_estimate(id, idx_to_validate);
             }
             scheduler.finish_abort(idx_to_validate, incarnation, guard)
         } else {
@@ -256,12 +549,19 @@ where
         >,
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &Scheduler,
+        delayed_commit: Option<Arc<DelayedFieldCommitCoordinator>>,
+        fatal_flag: Arc<AtomicBool>,
+        fatal_error: Arc<Mutex<Option<Error<E::Error>>>>,
     ) {
         // Make executor for each task. TODO: fast concurrent executor.
-        let executor = E::init(*executor_arguments);
+        let executor = E::init(executor_arguments.clone());
 
         let mut scheduler_task = SchedulerTask::NoTask;
         loop {
+            if fatal_flag.load(Ordering::Acquire) {
+                scheduler.force_done();
+                break;
+            }
             scheduler_task = match scheduler_task {
                 SchedulerTask::ValidationTask(version_to_validate, guard) => self.validate(
                     version_to_validate,
@@ -270,6 +570,9 @@ where
                     last_input_output,
                     versioned_data_cache,
                     scheduler,
+                    delayed_commit.as_deref(),
+                    fatal_flag.as_ref(),
+                    fatal_error.as_ref(),
                 ),
                 SchedulerTask::ExecutionTask(version_to_execute, None, guard) => self.execute(
                     version_to_execute,
@@ -279,6 +582,9 @@ where
                     versioned_data_cache,
                     scheduler,
                     &executor,
+                    delayed_commit.as_deref(),
+                    fatal_flag.as_ref(),
+                    fatal_error.as_ref(),
                 ),
                 SchedulerTask::ExecutionTask(_, Some(condvar), _guard) => {
                     let (lock, cvar) = &*condvar;
@@ -308,12 +614,15 @@ where
         >,
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &Scheduler,
+        delayed_commit: Option<&DelayedFieldCommitCoordinator>,
+        fatal_flag: &AtomicBool,
+        fatal_error: &Mutex<Option<Error<E::Error>>>,
     ) {
         if block.is_empty() || !block[0].is_block_prologue() {
             return;
         }
 
-        let executor = E::init(*executor_arguments);
+        let executor = E::init(executor_arguments.clone());
         match scheduler.next_task() {
             SchedulerTask::ExecutionTask(version, None, guard) => {
                 let (idx_to_execute, incarnation) = version;
@@ -326,6 +635,9 @@ where
                     versioned_data_cache,
                     scheduler,
                     &executor,
+                    delayed_commit,
+                    fatal_flag,
+                    fatal_error,
                 );
             }
             _ => {
@@ -344,6 +656,9 @@ where
                     last_input_output,
                     versioned_data_cache,
                     scheduler,
+                    delayed_commit,
+                    fatal_flag,
+                    fatal_error,
                 );
             }
             _ => {
@@ -377,31 +692,54 @@ where
             txn_idx: view_index, // This makes it see state after view_index-1
             scheduler,
             captured_reads: Mutex::new(Vec::new()),
+            captured_delayed_reads: Mutex::new(DelayedFieldReads::default()),
+            delayed_field_id_start: self.delayed_field_id_start,
+            delayed_field_id_counter: &self.delayed_field_id_counter,
         };
 
         // Execute block epilogue with the snapshot view
-        let executor = E::init(*executor_arguments);
+        let executor = E::init(executor_arguments.clone());
         let execute_result = executor.execute_transaction(&state_view, &block[epilogue_idx]);
 
         // Apply the writes from epilogue execution
-        let apply_writes = |output: &<E as ExecutorTask>::Output| {
+        let apply_writes = |output: &<E as ExecutorTask>::Output| -> std::result::Result<(), ()> {
             let write_version = (epilogue_idx, 0);
             for (k, v) in output.get_writes().into_iter() {
                 versioned_data_cache.write(&k, write_version, v);
             }
+            for (id, change) in output.delayed_field_change_set().into_iter() {
+                let entry = change.into_entry_no_additional_history();
+                if let Err(err) =
+                    versioned_data_cache
+                        .delayed_fields()
+                        .record_change(id, epilogue_idx, entry)
+                {
+                    error!(
+                        "record_change failed (epilogue): txn_idx={} id={:?} err={:?}",
+                        epilogue_idx, id, err
+                    );
+                    return Err(());
+                }
+            }
+            Ok(())
         };
 
         let result = match execute_result {
             ExecutionStatus::Success(output) => {
-                apply_writes(&output);
-                ExecutionStatus::Success(output)
+                if apply_writes(&output).is_err() {
+                    ExecutionStatus::Abort(Error::InvariantViolation)
+                } else {
+                    ExecutionStatus::Success(output)
+                }
             }
-            _ => unreachable!("block epilogue execution should not fail"),
+            ExecutionStatus::SkipRest(_output) => ExecutionStatus::Abort(Error::InvariantViolation),
+            ExecutionStatus::Abort(err) => ExecutionStatus::Abort(Error::UserError(err)),
         };
 
         // Record the epilogue execution result
         let reads = state_view.take_reads();
-        last_input_output.record(epilogue_idx, reads, result);
+        let delayed_reads = state_view.take_delayed_field_reads();
+        last_input_output.record(epilogue_idx, reads, delayed_reads, result);
     }
 
     pub fn execute_transactions_parallel(
@@ -409,14 +747,41 @@ where
         executor_initial_arguments: E::Argument,
         signature_verified_block: Vec<T>,
     ) -> Result<Vec<E::Output>, E::Error> {
+        let (outputs, _delayed_fields) = self.execute_transactions_parallel_with_delayed_fields(
+            executor_initial_arguments,
+            signature_verified_block,
+        )?;
+        let mut outputs = outputs;
+        outputs.sort_by_key(|(idx, _)| *idx);
+        Ok(outputs.into_iter().map(|(_, output)| output).collect())
+    }
+
+    pub fn execute_transactions_parallel_with_delayed_fields(
+        &self,
+        executor_initial_arguments: E::Argument,
+        signature_verified_block: Vec<T>,
+    ) -> Result<
+        (
+            Vec<(TxnIndex, E::Output)>,
+            VersionedDelayedFields<DelayedFieldID>,
+        ),
+        E::Error,
+    > {
         if signature_verified_block.is_empty() {
-            return Ok(vec![]);
+            return Ok((vec![], VersionedDelayedFields::empty()));
         }
 
         let num_txns = signature_verified_block.len();
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns, self.gas_limit);
+        let delayed_commit = if self.delayed_fields_enabled {
+            Some(Arc::new(DelayedFieldCommitCoordinator::new()))
+        } else {
+            None
+        };
+        let fatal_flag = Arc::new(AtomicBool::new(false));
+        let fatal_error: Arc<Mutex<Option<Error<E::Error>>>> = Arc::new(Mutex::new(None));
 
         // BlockMetadata is always the first txn of block that modifies fundamental info of block
         // other txns depends on this execution result, execute it first to avoid unnecessary contention
@@ -426,10 +791,16 @@ where
             &last_input_output,
             &versioned_data_cache,
             &scheduler,
+            delayed_commit.as_deref(),
+            fatal_flag.as_ref(),
+            fatal_error.as_ref(),
         );
 
         RAYON_EXEC_POOL.scope(|s| {
             for _ in 0..self.concurrency_level {
+                let delayed_commit = delayed_commit.clone();
+                let fatal_flag = fatal_flag.clone();
+                let fatal_error = fatal_error.clone();
                 s.spawn(|_| {
                     self.work_task_with_scope(
                         &executor_initial_arguments,
@@ -437,6 +808,9 @@ where
                         &last_input_output,
                         &versioned_data_cache,
                         &scheduler,
+                        delayed_commit,
+                        fatal_flag,
+                        fatal_error,
                     );
                 });
             }
@@ -459,54 +833,161 @@ where
         let has_epilogue = !signature_verified_block.is_empty()
             && signature_verified_block[signature_verified_block.len() - 1].is_block_epilogue();
 
-        // TODO: for large block sizes and many cores, extract outputs in parallel.
         let mut maybe_err = None;
-        let mut final_results = Vec::with_capacity(num_txns_to_collect);
-
-        // Collect all outputs from transactions within gas limit (0..num_txns_to_collect)
-        for idx in 0..num_txns_to_collect {
-            match last_input_output.take_output(idx) {
-                ExecutionStatus::Success(t) => final_results.push(t),
-                ExecutionStatus::SkipRest(_t) => {
-                    maybe_err = Some(BlockRestart);
-                    break;
-                }
-                ExecutionStatus::Abort(err) => {
-                    maybe_err = Some(err);
-                    break;
-                }
-            };
+        if fatal_flag.load(Ordering::Acquire) {
+            maybe_err = fatal_error.lock().take();
         }
 
-        // Collect epilogue output if it exists and no error occurred
-        // Epilogue is at the end of the block, so its index might be > num_txns_to_collect
-        if has_epilogue && maybe_err.is_none() {
-            let epilogue_idx = signature_verified_block.len() - 1;
-            // Only collect epilogue if it's not already collected above
-            if epilogue_idx >= num_txns_to_collect {
-                match last_input_output.take_output(epilogue_idx) {
-                    ExecutionStatus::Success(t) => final_results.push(t),
-                    ExecutionStatus::SkipRest(_t) => {
-                        maybe_err = Some(BlockRestart);
+        if maybe_err.is_none() && self.delayed_fields_enabled {
+            if let Some(coord) = delayed_commit.as_deref() {
+                if coord.is_fatal() {
+                    maybe_err = fatal_error.lock().take().or(Some(Error::InvariantViolation));
+                } else {
+                    let delayed_fields = versioned_data_cache.delayed_fields();
+                    let start_idx = coord.next_to_commit();
+                    let epilogue_idx = if has_epilogue {
+                        signature_verified_block.len() - 1
+                    } else {
+                        usize::MAX
+                    };
+                    for idx in start_idx..signature_verified_block.len() {
+                        if coord.is_fatal() {
+                            maybe_err = fatal_error
+                                .lock()
+                                .take()
+                                .or(Some(Error::InvariantViolation));
+                            break;
+                        }
+                        let should_commit =
+                            idx < num_txns_to_collect || (has_epilogue && idx == epilogue_idx);
+                        if should_commit {
+                            if let Some(reads) = last_input_output.delayed_read_set(idx) {
+                                if reads.is_incorrect_use() {
+                                    coord.set_fatal();
+                                    maybe_err = Some(Error::InvariantViolation);
+                                    break;
+                                }
+                                match reads.validate_delayed_field_reads(delayed_fields, idx) {
+                                    Ok(()) => {}
+                                    Err(DelayedReadValidationError::Invalid) => {
+                                        maybe_err = Some(BlockRestart);
+                                        break;
+                                    }
+                                    Err(DelayedReadValidationError::Fatal) => {
+                                        coord.set_fatal();
+                                        maybe_err = Some(Error::InvariantViolation);
+                                        break;
+                                    }
+                                }
+                            }
+                            let delayed_write_set = delayed_fields.take_txn_ids(idx);
+                            match delayed_fields.try_commit(idx, delayed_write_set.into_iter()) {
+                                Ok(()) => coord.advance(),
+                                Err(CommitError::ReExecutionNeeded(_)) => {
+                                    maybe_err = Some(BlockRestart);
+                                    break;
+                                }
+                                Err(CommitError::CodeInvariantError(_)) => {
+                                    coord.set_fatal();
+                                    maybe_err = Some(Error::InvariantViolation);
+                                    break;
+                                }
+                            }
+                        } else {
+                            let delayed_ids = delayed_fields.take_txn_ids(idx);
+                            for id in &delayed_ids {
+                                delayed_fields.mark_estimate(id, idx);
+                                if let Err(err) =
+                                    delayed_fields.remove(id, idx, self.blockstm_v2)
+                                {
+                                    error!(
+                                        "discard delayed field failed: txn_idx={} id={:?} err={:?}",
+                                        idx, id, err
+                                    );
+                                    coord.set_fatal();
+                                    maybe_err = Some(Error::InvariantViolation);
+                                    break;
+                                }
+                            }
+                            if maybe_err.is_some() {
+                                break;
+                            }
+                            match delayed_fields.try_commit(idx, std::iter::empty()) {
+                                Ok(()) => coord.advance(),
+                                Err(CommitError::ReExecutionNeeded(_)) => {
+                                    maybe_err = Some(BlockRestart);
+                                    break;
+                                }
+                                Err(CommitError::CodeInvariantError(_)) => {
+                                    coord.set_fatal();
+                                    maybe_err = Some(Error::InvariantViolation);
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    ExecutionStatus::Abort(err) => {
-                        maybe_err = Some(err);
-                    }
-                };
+                }
+            } else {
+                maybe_err = Some(Error::InvariantViolation);
             }
         }
 
+        if maybe_err.is_none() && fatal_flag.load(Ordering::Acquire) {
+            maybe_err = fatal_error
+                .lock()
+                .take()
+                .or(Some(Error::InvariantViolation));
+        }
+
+        // TODO: for large block sizes and many cores, extract outputs in parallel.
+        let mut final_results = Vec::with_capacity(num_txns_to_collect + 1);
+
+        if maybe_err.is_none() {
+            // Collect all outputs from transactions within gas limit (0..num_txns_to_collect)
+            for idx in 0..num_txns_to_collect {
+                match last_input_output.take_output(idx) {
+                    ExecutionStatus::Success(t) => final_results.push((idx, t)),
+                    ExecutionStatus::SkipRest(_t) => {
+                        maybe_err = Some(BlockRestart);
+                        break;
+                    }
+                    ExecutionStatus::Abort(err) => {
+                        maybe_err = Some(err);
+                        break;
+                    }
+                };
+            }
+
+            // Collect epilogue output if it exists and no error occurred
+            // Epilogue is at the end of the block, so its index might be > num_txns_to_collect
+            if has_epilogue && maybe_err.is_none() {
+                let epilogue_idx = signature_verified_block.len() - 1;
+                // Only collect epilogue if it's not already collected above
+                if epilogue_idx >= num_txns_to_collect {
+                    match last_input_output.take_output(epilogue_idx) {
+                        ExecutionStatus::Success(t) => final_results.push((epilogue_idx, t)),
+                        ExecutionStatus::SkipRest(_t) => {
+                            maybe_err = Some(BlockRestart);
+                        }
+                        ExecutionStatus::Abort(err) => {
+                            maybe_err = Some(err);
+                        }
+                    };
+                }
+            }
+        }
+
+        let delayed_fields = versioned_data_cache.into_delayed_fields();
         spawn(move || {
             // Explicit async drops.
             drop(last_input_output);
             drop(signature_verified_block);
-            drop(versioned_data_cache);
             drop(scheduler);
         });
 
         match maybe_err {
             Some(err) => Err(err),
-            None => Ok(final_results),
+            None => Ok((final_results, delayed_fields)),
         }
     }
 }
@@ -514,8 +995,18 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+    use starcoin_aggregator::delayed_change::DelayedChange;
+    use starcoin_aggregator::types::{
+        DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr, ReadPosition,
+    };
+    use starcoin_mvhashmap::{
+        types::MVDelayedFieldsError,
+        versioned_delayed_fields::TVersionedDelayedFieldView,
+    };
     use std::collections::HashMap;
-    use std::sync::Condvar;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Condvar};
 
     // Minimal transaction implementation for testing
     #[derive(Debug, Clone)]
@@ -639,6 +1130,57 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Clone)]
+    struct SeqTransaction {
+        idx: usize,
+    }
+
+    impl Transaction for SeqTransaction {
+        type Key = usize;
+        type Value = usize;
+    }
+
+    #[derive(Debug, Clone)]
+    struct SeqOutput;
+
+    impl TransactionOutput for SeqOutput {
+        type T = SeqTransaction;
+
+        fn get_writes(&self) -> Vec<(usize, usize)> {
+            vec![]
+        }
+
+        fn gas_used(&self) -> u64 {
+            0
+        }
+
+        fn skip_output() -> Self {
+            Self
+        }
+    }
+
+    struct SeqExecutor;
+
+    impl ExecutorTask for SeqExecutor {
+        type T = SeqTransaction;
+        type Output = SeqOutput;
+        type Error = ();
+        type Argument = ();
+
+        fn init(_args: Self::Argument) -> Self {
+            Self
+        }
+
+        fn execute_transaction(
+            &self,
+            _view: &MVHashMapView<usize, usize>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            info!("parallel execute txn idx={}", txn.idx);
+            ExecutionStatus::Success(SeqOutput)
+        }
+    }
+
     #[test]
     fn test_parallel_conflicting_transactions() {
         // Create two transactions that will conflict (both modify the same key)
@@ -686,6 +1228,20 @@ mod tests {
         if let Some(final_value) = final_output.writes.get("shared_counter") {
             assert_eq!(*final_value, 30, "Final value should be 30 (0 + 10 + 20)");
         }
+    }
+
+    #[test]
+    fn test_parallel_execution_can_start_out_of_order() {
+        starcoin_logger::init_for_test();
+        let count = 50;
+        let transactions: Vec<SeqTransaction> =
+            (0..count).map(|idx| SeqTransaction { idx }).collect();
+        let executor: ParallelTransactionExecutor<SeqTransaction, SeqExecutor> =
+            ParallelTransactionExecutor::new(48, None);
+
+        executor
+            .execute_transactions_parallel((), transactions)
+            .expect("parallel execute");
     }
 
     #[test]
@@ -1535,5 +2091,334 @@ mod tests {
             !epilogue_output.reads.contains(&"user3".to_string()),
             "Epilogue should NOT see user3 (first to exceed gas limit)"
         );
+    }
+
+    #[derive(Debug, Clone)]
+    struct DelayedTxn {
+        id: DelayedFieldID,
+        value: u128,
+        emit_change: bool,
+        fail_first: bool,
+        attempts: Arc<AtomicUsize>,
+    }
+
+    impl Transaction for DelayedTxn {
+        type Key = u64;
+        type Value = u64;
+    }
+
+    #[derive(Debug, Clone)]
+    struct DelayedOutput {
+        gas: u64,
+        changes: Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)>,
+    }
+
+    impl TransactionOutput for DelayedOutput {
+        type T = DelayedTxn;
+
+        fn get_writes(&self) -> Vec<(u64, u64)> {
+            Vec::new()
+        }
+
+        fn gas_used(&self) -> u64 {
+            self.gas
+        }
+
+        fn skip_output() -> Self {
+            Self {
+                gas: 0,
+                changes: Vec::new(),
+            }
+        }
+
+        fn delayed_field_change_set(&self) -> Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)> {
+            self.changes.clone()
+        }
+    }
+
+    struct DelayedExecutor;
+
+    impl ExecutorTask for DelayedExecutor {
+        type T = DelayedTxn;
+        type Output = DelayedOutput;
+        type Error = ();
+        type Argument = ();
+
+        fn init(_args: Self::Argument) -> Self {
+            Self
+        }
+
+        fn execute_transaction(
+            &self,
+            view: &MVHashMapView<u64, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            let attempt = txn.attempts.fetch_add(1, Ordering::SeqCst);
+            if txn.fail_first && attempt == 0 {
+                view.capture_delayed_field_read_error(&PanicOr::Or(
+                    DelayedFieldsSpeculativeError::InconsistentRead,
+                ));
+            }
+            let changes = if txn.emit_change {
+                vec![(
+                    txn.id,
+                    DelayedChange::Create(DelayedFieldValue::Aggregator(txn.value)),
+                )]
+            } else {
+                Vec::new()
+            };
+            ExecutionStatus::Success(DelayedOutput { gas: 0, changes })
+        }
+    }
+
+    #[test]
+    fn test_delayed_field_reexecution_and_commit() {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let txns = vec![
+            DelayedTxn {
+                id: DelayedFieldID::new_with_width(1000, 8),
+                value: 10,
+                emit_change: true,
+                fail_first: true,
+                attempts: attempts.clone(),
+            },
+            DelayedTxn {
+                id: DelayedFieldID::new_with_width(1001, 8),
+                value: 20,
+                emit_change: true,
+                fail_first: false,
+                attempts: Arc::new(AtomicUsize::new(0)),
+            },
+        ];
+
+        let executor: ParallelTransactionExecutor<DelayedTxn, DelayedExecutor> =
+            ParallelTransactionExecutor::new(2, None).with_delayed_fields(true);
+        let (_outputs, delayed_fields) = executor
+            .execute_transactions_parallel_with_delayed_fields((), txns)
+            .unwrap();
+
+        assert!(
+            attempts.load(Ordering::SeqCst) > 1,
+            "expected at least one re-execution for speculative failure"
+        );
+
+        let id0 = DelayedFieldID::new_with_width(1000, 8);
+        let id1 = DelayedFieldID::new_with_width(1001, 8);
+        let v0 = delayed_fields
+            .read_latest_predicted_value(&id0, 2, ReadPosition::AfterCurrentTxn)
+            .unwrap();
+        let v1 = delayed_fields
+            .read_latest_predicted_value(&id1, 2, ReadPosition::AfterCurrentTxn)
+            .unwrap();
+
+        assert_eq!(v0, DelayedFieldValue::Aggregator(10));
+        assert_eq!(v1, DelayedFieldValue::Aggregator(20));
+    }
+
+    #[test]
+    fn test_delayed_field_duplicate_create_is_fatal() {
+        let id = DelayedFieldID::new_with_width(2000, 8);
+        let txns = vec![
+            DelayedTxn {
+                id,
+                value: 10,
+                emit_change: true,
+                fail_first: false,
+                attempts: Arc::new(AtomicUsize::new(0)),
+            },
+            DelayedTxn {
+                id,
+                value: 20,
+                emit_change: true,
+                fail_first: false,
+                attempts: Arc::new(AtomicUsize::new(0)),
+            },
+        ];
+
+        let executor: ParallelTransactionExecutor<DelayedTxn, DelayedExecutor> =
+            ParallelTransactionExecutor::new(2, None).with_delayed_fields(true);
+        let result = executor.execute_transactions_parallel_with_delayed_fields((), txns);
+
+        assert!(matches!(result, Err(Error::InvariantViolation)));
+    }
+
+    #[derive(Debug, Clone)]
+    struct EpilogueTxn {
+        epilogue: bool,
+    }
+
+    impl Transaction for EpilogueTxn {
+        type Key = u64;
+        type Value = u64;
+
+        fn is_block_epilogue(&self) -> bool {
+            self.epilogue
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct EpilogueOutput;
+
+    impl TransactionOutput for EpilogueOutput {
+        type T = EpilogueTxn;
+
+        fn get_writes(&self) -> Vec<(u64, u64)> {
+            Vec::new()
+        }
+
+        fn gas_used(&self) -> u64 {
+            0
+        }
+
+        fn skip_output() -> Self {
+            Self
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    enum EpilogueError {
+        EpilogueFail,
+    }
+
+    struct EpilogueExecutor;
+
+    impl ExecutorTask for EpilogueExecutor {
+        type T = EpilogueTxn;
+        type Output = EpilogueOutput;
+        type Error = EpilogueError;
+        type Argument = ();
+
+        fn init(_args: Self::Argument) -> Self {
+            Self
+        }
+
+        fn execute_transaction(
+            &self,
+            _view: &MVHashMapView<u64, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, Self::Error> {
+            if txn.is_block_epilogue() {
+                ExecutionStatus::Abort(EpilogueError::EpilogueFail)
+            } else {
+                ExecutionStatus::Success(EpilogueOutput)
+            }
+        }
+    }
+
+    #[test]
+    fn test_epilogue_abort_returns_error() {
+        let txns = vec![
+            EpilogueTxn { epilogue: false },
+            EpilogueTxn { epilogue: true },
+        ];
+
+        let executor: ParallelTransactionExecutor<EpilogueTxn, EpilogueExecutor> =
+            ParallelTransactionExecutor::new(2, None);
+        let result = executor.execute_transactions_parallel((), txns);
+
+        assert!(matches!(
+            result,
+            Err(Error::UserError(EpilogueError::EpilogueFail))
+        ));
+    }
+
+    #[derive(Debug, Clone)]
+    struct GasDelayedTxn {
+        id: DelayedFieldID,
+        value: u128,
+        gas: u64,
+    }
+
+    impl Transaction for GasDelayedTxn {
+        type Key = u64;
+        type Value = u64;
+    }
+
+    #[derive(Debug, Clone)]
+    struct GasDelayedOutput {
+        gas: u64,
+        changes: Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)>,
+    }
+
+    impl TransactionOutput for GasDelayedOutput {
+        type T = GasDelayedTxn;
+
+        fn get_writes(&self) -> Vec<(u64, u64)> {
+            Vec::new()
+        }
+
+        fn gas_used(&self) -> u64 {
+            self.gas
+        }
+
+        fn skip_output() -> Self {
+            Self {
+                gas: 0,
+                changes: Vec::new(),
+            }
+        }
+
+        fn delayed_field_change_set(&self) -> Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)> {
+            self.changes.clone()
+        }
+    }
+
+    struct GasDelayedExecutor;
+
+    impl ExecutorTask for GasDelayedExecutor {
+        type T = GasDelayedTxn;
+        type Output = GasDelayedOutput;
+        type Error = ();
+        type Argument = ();
+
+        fn init(_args: Self::Argument) -> Self {
+            Self
+        }
+
+        fn execute_transaction(
+            &self,
+            _view: &MVHashMapView<u64, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            let changes = vec![(
+                txn.id,
+                DelayedChange::Create(DelayedFieldValue::Aggregator(txn.value)),
+            )];
+            ExecutionStatus::Success(GasDelayedOutput {
+                gas: txn.gas,
+                changes,
+            })
+        }
+    }
+
+    #[test]
+    fn test_delayed_fields_beyond_gas_limit_are_discarded() {
+        let txns = vec![
+            GasDelayedTxn {
+                id: DelayedFieldID::new_with_width(3000, 8),
+                value: 10,
+                gas: 10,
+            },
+            GasDelayedTxn {
+                id: DelayedFieldID::new_with_width(3001, 8),
+                value: 20,
+                gas: 10,
+            },
+        ];
+
+        let executor: ParallelTransactionExecutor<GasDelayedTxn, GasDelayedExecutor> =
+            ParallelTransactionExecutor::new(2, Some(10)).with_delayed_fields(true);
+        let (_outputs, delayed_fields) = executor
+            .execute_transactions_parallel_with_delayed_fields((), txns)
+            .unwrap();
+
+        let skipped_id = DelayedFieldID::new_with_width(3001, 8);
+        let res = delayed_fields.read_latest_predicted_value(
+            &skipped_id,
+            2,
+            ReadPosition::AfterCurrentTxn,
+        );
+
+        assert!(matches!(res, Err(MVDelayedFieldsError::NotFound)));
     }
 }
