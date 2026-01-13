@@ -7,9 +7,7 @@ module starcoin_framework::stc_transaction_validation {
     use std::hash;
     use std::signer;
     use std::vector;
-    use starcoin_framework::starcoin_coin;
     use starcoin_framework::transaction_fee;
-    use starcoin_framework::primary_fungible_store;
     use starcoin_std::debug;
 
     use starcoin_framework::account;
@@ -208,8 +206,10 @@ module starcoin_framework::stc_transaction_validation {
                 error::invalid_argument(EBAD_TRANSACTION_FEE_TOKEN)
             );
 
-            let balance_amount = coin::balance<TokenType>(txn_sender);
-            assert!(balance_amount >= max_transaction_fee, error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT));
+            assert!(
+                coin::is_balance_at_least<TokenType>(txn_sender, max_transaction_fee),
+                error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT)
+            );
 
             assert!(
                 (txn_sequence_number as u128) < MAX_U64,
@@ -245,8 +245,9 @@ module starcoin_framework::stc_transaction_validation {
 
         // Charge for gas
         let transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
+        let transaction_fee_amount_u64 = (transaction_fee_amount as u64);
         assert!(
-            coin::balance<STC>(txn_sender) >= (transaction_fee_amount as u64),
+            coin::is_balance_at_least<STC>(txn_sender, transaction_fee_amount_u64),
             error::out_of_range(EINSUFFICIENT_BALANCE)
         );
 
@@ -262,14 +263,8 @@ module starcoin_framework::stc_transaction_validation {
             )
         };
 
-        if (transaction_fee_amount > 0) {
-            let sender_signer = &create_signer::create_signer(txn_sender);
-            let transaction_fee = primary_fungible_store::withdraw(
-                sender_signer,
-                starcoin_coin::get_stc_fa_metadata(),
-                (transaction_fee_amount as u64)
-            );
-            transaction_fee::burn_fee(transaction_fee);
+        if (transaction_fee_amount_u64 > 0) {
+            transaction_fee::burn_fee_from(txn_sender, transaction_fee_amount_u64);
         };
     }
 }
