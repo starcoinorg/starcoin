@@ -244,9 +244,10 @@ where
     fn get_resource_state_value(
         &self,
         state_key: &Self::Key,
-        _maybe_layout: Option<&Self::Layout>,
+        maybe_layout: Option<&Self::Layout>,
     ) -> PartialVMResult<Option<StateValue>> {
-        self.get_state_value(state_key).map_err(Into::into)
+        self.get_state_value_with_layout(state_key, maybe_layout)
+            .map_err(Into::into)
     }
 }
 

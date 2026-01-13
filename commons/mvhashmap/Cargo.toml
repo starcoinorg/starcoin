@@ -18,7 +18,12 @@ num_cpus = { workspace = true }
 crossbeam = { workspace = true }
 dashmap = { workspace = true }
 arc-swap = { workspace = true }
+starcoin-aggregator = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
 
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
+claims = { workspace = true }
+test-case = { workspace = true }

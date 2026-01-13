@@ -165,6 +165,14 @@ impl Scheduler {
         self.num_txns
     }
 
+    pub fn is_executed_incarnation(&self, txn_idx: TxnIndex, incarnation: Incarnation) -> bool {
+        if txn_idx >= self.txn_status.len() {
+            return false;
+        }
+        let status = self.txn_status[txn_idx].lock();
+        matches!(*status, TransactionStatus::Executed(i) if i == incarnation)
+    }
+
     /// Get the first index that exceeds the gas limit.
     /// Returns the total number of transactions if no transaction exceeds the limit.
     pub fn first_exceeding_index(&self) -> usize {
@@ -172,6 +180,10 @@ impl Scheduler {
             .as_ref()
             .map(|tracker| tracker.first_exceeding_index())
             .unwrap_or(self.num_txns)
+    }
+
+    pub fn force_done(&self) {
+        self.done_marker.store(true, Ordering::Release);
     }
 
     /// Try to abort version = (txn_idx, incarnation), called upon validation failure.
@@ -347,9 +359,7 @@ impl Scheduler {
 
     pub fn finish_validation(&self, txn_idx: TxnIndex, gas_used: u64) {
         if let Some(tracker) = &self.gas_tracker {
-            if tracker.update_and_check_reach_gas_limit(txn_idx, gas_used) {
-                self.done_marker.store(true, Ordering::Release);
-            }
+            tracker.update_and_check_reach_gas_limit(txn_idx, gas_used);
         }
     }
 }

@@ -8,12 +8,12 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::state_store::state_key::StateKey;
+use crate::state_store::state_key::{inner::StateKeyInner, StateKey};
 use crate::state_store::StateView;
 use crate::{
     account_config::{
         genesis_address,
-        resources::{primary_store, FungibleStoreResource},
+        resources::{primary_store, ConcurrentFungibleBalanceResource, FungibleStoreResource},
         token_code::TokenCode,
         AccountResource, CoinStoreResource, ObjectGroupResource, TokenInfo, G_STC_TOKEN_CODE,
     },
@@ -120,7 +120,20 @@ pub trait StateReaderExt: StateView {
             &FungibleStoreResource::struct_tag(),
         )?;
 
-        if let Some(bytes) = tag_bytes {
+        let concurrent_balance_bytes = self.get_resource_group_struct_tag_bytes(
+            &address,
+            &StateKey::resource_group(
+                &primary_fungible_store_address,
+                &ObjectGroupResource::struct_tag(),
+            ),
+            &ConcurrentFungibleBalanceResource::struct_tag(),
+        )?;
+
+        if let Some(bytes) = concurrent_balance_bytes {
+            let concurrent_balance =
+                bcs_ext::from_bytes::<ConcurrentFungibleBalanceResource>(&bytes)?;
+            total_balance += concurrent_balance.balance() as u128;
+        } else if let Some(bytes) = tag_bytes {
             let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?;
             total_balance += fungible_store.balance() as u128;
         }
@@ -130,13 +143,23 @@ pub trait StateReaderExt: StateView {
 
     fn get_resource_group_struct_tag_bytes(
         &self,
-        _address: &AccountAddress,
+        address: &AccountAddress,
         group_key: &StateKey,
         struct_tag: &StructTag,
     ) -> Result<Option<Bytes>> {
+        let group_address = match group_key.inner() {
+            StateKeyInner::AccessPath(access_path) => &access_path.address,
+            _ => address,
+        };
+
         let group_data = match self.get_state_value_bytes(group_key)? {
             Some(data) => data,
-            None => return Ok(None),
+            None => {
+                // When resource groups are split in the VM change set, members are stored
+                // directly under their own resource group keys instead of a single map blob.
+                let member_key = StateKey::resource_group(group_address, struct_tag);
+                return Ok(self.get_state_value_bytes(&member_key)?);
+            }
         };
 
         let group_data_map: BTreeMap<StructTag, Bytes> = bcs::from_bytes::<
@@ -149,7 +172,14 @@ pub trait StateReaderExt: StateView {
             ))
         })?;
 
-        Ok(group_data_map.get(struct_tag).cloned())
+        if let Some(bytes) = group_data_map.get(struct_tag) {
+            return Ok(Some(bytes.clone()));
+        }
+
+        // If the group blob doesn't contain the member, fall back to a direct lookup.
+        // This covers the split resource group storage layout.
+        let member_key = StateKey::resource_group(group_address, struct_tag);
+        Ok(self.get_state_value_bytes(&member_key)?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
