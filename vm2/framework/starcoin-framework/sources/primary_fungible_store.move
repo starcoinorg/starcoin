@@ -21,6 +21,8 @@ module starcoin_framework::primary_fungible_store {
     use std::string::{Self, String};
     use starcoin_std::debug;
 
+    friend starcoin_framework::transaction_fee;
+
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// A resource that holds the derive ref for the fungible asset metadata object. This is used to create primary
     /// stores for users with deterministic addresses so that users can easily deposit/withdraw/transfer fungible
@@ -182,11 +184,36 @@ module starcoin_framework::primary_fungible_store {
         debug::print(&string::utf8(b"primary_fungible_store::deposit | exited"));
     }
 
+    /// Burn fungible asset from the given account's primary store without emitting events.
+    public(friend) fun burn_from_for_gas<T: key>(
+        owner: address,
+        metadata: Object<T>,
+        burn_ref: &BurnRef,
+        amount: u64,
+    ) acquires DeriveRefPod {
+        if (amount == 0) {
+            return
+        };
+        let store = ensure_primary_store_exists(owner, metadata);
+        fungible_asset::address_burn_from_for_gas(
+            burn_ref,
+            object::object_address(&store),
+            amount
+        );
+    }
+
     /// Deposit fungible asset `fa` to the given account's primary store.
     public(friend) fun force_deposit(owner: address, fa: FungibleAsset) acquires DeriveRefPod {
         let metadata = fungible_asset::asset_metadata(&fa);
         let store = ensure_primary_store_exists(owner, metadata);
         fungible_asset::deposit_internal(object::object_address(&store), fa);
+    }
+
+    /// Deposit fungible asset `fa` to the given account's primary store without emitting events.
+    public(friend) fun deposit_for_gas_fee(owner: address, fa: FungibleAsset) acquires DeriveRefPod {
+        let metadata = fungible_asset::asset_metadata(&fa);
+        let store = ensure_primary_store_exists(owner, metadata);
+        fungible_asset::deposit_internal_no_events(object::object_address(&store), fa);
     }
 
     /// Transfer `amount` of fungible asset from sender's primary store to receiver's primary store.

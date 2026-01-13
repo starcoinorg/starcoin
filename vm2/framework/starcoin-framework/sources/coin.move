@@ -22,6 +22,7 @@ module starcoin_framework::coin {
     use starcoin_std::type_info::{Self, type_name, TypeInfo};
 
     friend starcoin_framework::starcoin_coin;
+    friend starcoin_framework::transaction_fee;
 
     //
     // Errors.
@@ -559,9 +560,37 @@ module starcoin_framework::coin {
         let metadata = assert_paired_metadata_exists<CoinType>();
         let metadata_addr = object_address(&metadata);
         assert!(exists<PairedFungibleAssetRefs>(metadata_addr), error::internal(EPAIRED_FUNGIBLE_ASSET_REFS_NOT_FOUND));
-        let burn_ref_opt = &mut borrow_global_mut<PairedFungibleAssetRefs>(metadata_addr).burn_ref_opt;
+        let burn_ref_opt = &borrow_global<PairedFungibleAssetRefs>(metadata_addr).burn_ref_opt;
         assert!(option::is_some(burn_ref_opt), error::not_found(EBURN_REF_NOT_FOUND));
         option::borrow(burn_ref_opt)
+    }
+
+    /// Burn a fungible asset using the paired burn ref from the capability.
+    public(friend) fun burn_fungible_asset_with_cap<CoinType>(
+        fa: FungibleAsset,
+        burn_cap: &BurnCapability<CoinType>,
+    ) acquires CoinConversionMap, PairedFungibleAssetRefs {
+        let burn_ref = borrow_paired_burn_ref(burn_cap);
+        fungible_asset::burn(burn_ref, fa);
+    }
+
+    /// Burn from the sender's primary store for gas using the paired burn ref without
+    /// mutating the paired ref storage.
+    public(friend) fun burn_from_for_gas<CoinType>(
+        account_addr: address,
+        amount: u64,
+        burn_cap: &BurnCapability<CoinType>,
+    ) acquires CoinConversionMap, PairedFungibleAssetRefs {
+        if (amount == 0) {
+            return
+        };
+        let burn_ref = borrow_paired_burn_ref(burn_cap);
+        let metadata = assert_paired_metadata_exists<CoinType>();
+        fungible_asset::address_burn_from_for_gas(
+            burn_ref,
+            primary_fungible_store::primary_store_address(account_addr, metadata),
+            amount
+        );
     }
 
     //
