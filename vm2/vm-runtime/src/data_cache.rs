@@ -423,7 +423,10 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
                 })?;
         }
 
-        output.try_materialize(self)?;
+        let has_delayed = output.contains_delayed_fields();
+        if has_delayed {
+            output.try_materialize(self)?;
+        }
 
         let mapping = DelayedFieldValueMapping {
             delayed_fields: &self.delayed_fields,
@@ -438,8 +441,17 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             &group_read_layouts,
             self.executor_view,
             &mut group_cache,
+            has_delayed,
         )?;
-        let patched_events = materialize_events(&output, &mapping)?;
+        let patched_events = if has_delayed {
+            materialize_events(&output, &mapping)?
+        } else {
+            output
+                .events()
+                .iter()
+                .map(|(event, _)| event.clone())
+                .collect()
+        };
 
         output
             .into_transaction_output_with_materialized_write_set(
