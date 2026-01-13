@@ -400,11 +400,6 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         }
         for (key, op) in output.output.resource_write_set() {
             match op {
-                AbstractResourceWriteOp::InPlaceDelayedFieldChange(_)
-                | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_) => {
-                    needs_sequential = true;
-                    break;
-                }
                 AbstractResourceWriteOp::WriteResourceGroup(_) => {
                     if !group_keys.insert(key.clone()) {
                         needs_sequential = true;
@@ -425,6 +420,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             .into_par_iter()
             .map(|(txn_idx, output)| {
                 let (vm_output, group_read_layouts) = output.into_inner();
+                let has_delayed = vm_output.contains_delayed_fields();
                 let has_group_ops = vm_output.resource_write_set().values().any(|op| {
                     matches!(
                         op,
@@ -432,7 +428,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                             | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
                     )
                 });
-                if !vm_output.contains_delayed_fields()
+                if !has_delayed
                     && vm_output.aggregator_v1_delta_set().is_empty()
                     && !has_group_ops
                 {
@@ -458,6 +454,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                         &group_read_layouts,
                         state_view,
                         &mut group_cache,
+                        has_delayed,
                     )?
                 } else {
                     materialize_resource_write_set_no_groups(
@@ -466,7 +463,15 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                         &delayed_field_cache,
                     )?
                 };
-                let patched_events = materialize_events(&vm_output, &mapping)?;
+                let patched_events = if has_delayed {
+                    materialize_events(&vm_output, &mapping)?
+                } else {
+                    vm_output
+                        .events()
+                        .iter()
+                        .map(|(event, _)| event.clone())
+                        .collect()
+                };
 
                 let txn_output = vm_output
                     .into_transaction_output_with_materialized_write_set(
@@ -494,6 +499,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 
     for (txn_idx, output) in outputs.into_iter() {
         let (mut vm_output, group_read_layouts) = output.into_inner();
+        let has_delayed = vm_output.contains_delayed_fields();
         let has_group_ops = vm_output.resource_write_set().values().any(|op| {
             matches!(
                 op,
@@ -501,7 +507,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
             )
         });
-        if !vm_output.contains_delayed_fields()
+        if !has_delayed
             && vm_output.aggregator_v1_delta_set().is_empty()
             && !has_group_ops
         {
@@ -523,7 +529,9 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             continue;
         }
 
-        vm_output.try_materialize(&state_cache)?;
+        if has_delayed {
+            vm_output.try_materialize(&state_cache)?;
+        }
         let mapping = DelayedFieldValueMapping {
             delayed_fields: &delayed_fields,
             txn_idx,
@@ -536,8 +544,17 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             &group_read_layouts,
             &state_cache,
             &mut group_cache,
+            has_delayed,
         )?;
-        let patched_events = materialize_events(&vm_output, &mapping)?;
+        let patched_events = if has_delayed {
+            materialize_events(&vm_output, &mapping)?
+        } else {
+            vm_output
+                .events()
+                .iter()
+                .map(|(event, _)| event.clone())
+                .collect()
+        };
 
         let txn_output = vm_output
             .into_transaction_output_with_materialized_write_set(
@@ -622,6 +639,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
     group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
+    materialize_delayed: bool,
 ) -> Result<Vec<(StateKey, WriteOp)>, VMStatus> {
     let mut patched = Vec::new();
 
@@ -634,52 +652,87 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                 layout,
                 ..
             }) => {
-                delayed_field_cache.insert_base_value(
-                    key.clone(),
-                    write_op.clone(),
-                    true,
-                );
-                materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
+                if materialize_delayed {
+                    delayed_field_cache.insert_base_value(
+                        key.clone(),
+                        write_op.clone(),
+                        true,
+                    );
+                    materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
+                } else {
+                    return Err(VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some(
+                            "unexpected WriteWithDelayedFields without delayed fields".to_string(),
+                        ),
+                    ));
+                }
             }
             AbstractResourceWriteOp::InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
                 layout,
                 metadata,
                 ..
-            }) => materialize_in_place_change(
-                key,
-                layout.as_ref(),
-                metadata,
-                mapping,
-                delayed_field_cache,
-            )?,
+            }) => {
+                if !materialize_delayed {
+                    return Err(VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some("unexpected delayed field change without delayed fields".to_string()),
+                    ));
+                }
+                materialize_in_place_change(
+                    key,
+                    layout.as_ref(),
+                    metadata,
+                    mapping,
+                    delayed_field_cache,
+                )?
+            }
             AbstractResourceWriteOp::WriteResourceGroup(group_write) => {
-                for (tag, (inner_op, _)) in group_write.inner_ops() {
-                    match inner_op {
-                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
-                            delayed_field_cache.insert_group_member_value(
-                                key.clone(),
-                                tag.clone(),
-                                data.clone(),
-                            );
-                        }
-                        WriteOp::Deletion { .. } => {
-                            delayed_field_cache.remove_group_member_value(key, tag);
+                if materialize_delayed {
+                    for (tag, (inner_op, _)) in group_write.inner_ops() {
+                        match inner_op {
+                            WriteOp::Creation { data, .. }
+                            | WriteOp::Modification { data, .. } => {
+                                delayed_field_cache.insert_group_member_value(
+                                    key.clone(),
+                                    tag.clone(),
+                                    data.clone(),
+                                );
+                            }
+                            WriteOp::Deletion { .. } => {
+                                delayed_field_cache.remove_group_member_value(key, tag);
+                            }
                         }
                     }
                 }
-                materialize_group_write(key, group_write, mapping, state_view, group_cache)?
+                materialize_group_write(
+                    key,
+                    group_write,
+                    mapping,
+                    state_view,
+                    group_cache,
+                    materialize_delayed,
+                )?
             }
             AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(
                 ResourceGroupInPlaceDelayedFieldChangeOp { metadata, .. },
-            ) => materialize_group_in_place(
-                key,
-                metadata,
-                mapping,
-                delayed_field_cache,
-                group_read_layouts,
-                state_view,
-                group_cache,
-            )?,
+            ) => {
+                if !materialize_delayed {
+                    return Err(VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some("unexpected group delayed field change without delayed fields".to_string()),
+                    ));
+                }
+                materialize_group_in_place(
+                    key,
+                    metadata,
+                    mapping,
+                    delayed_field_cache,
+                    group_read_layouts,
+                    state_view,
+                    group_cache,
+                )?
+            }
         };
 
         patched.push((key.clone(), write_op));
@@ -752,6 +805,7 @@ fn materialize_group_write<S: StateView>(
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
+    materialize_delayed: bool,
 ) -> Result<WriteOp, VMStatus> {
     let mut remove_cache = false;
     let group_map = load_group_map_cached(state_view, group_cache, key)?;
@@ -762,8 +816,12 @@ fn materialize_group_write<S: StateView>(
                 group_map.remove(tag);
             }
             WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
-                let bytes = if let Some(layout) = layout.as_ref() {
-                    materialize_bytes(data, layout.as_ref(), mapping)?
+                let bytes = if materialize_delayed {
+                    if let Some(layout) = layout.as_ref() {
+                        materialize_bytes(data, layout.as_ref(), mapping)?
+                    } else {
+                        data.clone()
+                    }
                 } else {
                     data.clone()
                 };
