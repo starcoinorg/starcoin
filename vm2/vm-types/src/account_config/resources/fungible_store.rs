@@ -122,6 +122,30 @@ impl MoveStructType for FungibleStoreResource {
 
 impl MoveResource for FungibleStoreResource {}
 
+#[derive(Debug, Serialize, Deserialize)]
+struct AggregatorResource {
+    value: u64,
+    max_value: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConcurrentFungibleBalanceResource {
+    balance: AggregatorResource,
+}
+
+impl ConcurrentFungibleBalanceResource {
+    pub fn balance(&self) -> u64 {
+        self.balance.value
+    }
+}
+
+impl MoveStructType for ConcurrentFungibleBalanceResource {
+    const MODULE_NAME: &'static IdentStr = ident_str!("fungible_asset");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ConcurrentFungibleBalance");
+}
+
+impl MoveResource for ConcurrentFungibleBalanceResource {}
+
 #[cfg(test)]
 mod test {
     use super::*;
