@@ -5,7 +5,8 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo as Vm1AccountInfo;
 use starcoin_account_service::AccountService;
 use starcoin_chain::verifier::VerifyWithoutConsensus;
-use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain_api::CachedVm2Execution;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -320,6 +321,7 @@ impl BlockTemplateCallBack for TestTemplateNotify {
         &mut self,
         _parent: BlockHeader,
         block_template: BlockTemplate,
+        _cached_vm2_execution: Option<Arc<CachedVm2Execution>>,
     ) -> Result<()> {
         let block =
             block_template.into_block(0, starcoin_types::block::BlockHeaderExtra::new([0u8; 4]));

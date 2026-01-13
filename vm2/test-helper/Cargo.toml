@@ -28,3 +28,4 @@ starcoin-cached-packages = { path = "../framework/cached-packages" }
 
 [dev-dependencies]
 starcoin-logger = { workspace = true }
+starcoin-vm-runtime = { path = "../vm-runtime" }
