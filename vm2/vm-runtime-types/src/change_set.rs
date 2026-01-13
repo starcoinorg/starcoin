@@ -299,6 +299,9 @@ impl VMChangeSet {
             })?;
 
             if let AbstractResourceWriteOp::Write(w) = &abstract_write {
+                if w == &new_write {
+                    continue;
+                }
                 return Err(code_invariant_error(format!(
                     "Trying to patch the value that is already materialized: {:?}: {:?} into {:?}.",
                     key, w, new_write

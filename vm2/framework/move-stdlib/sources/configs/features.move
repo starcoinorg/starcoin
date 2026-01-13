@@ -314,6 +314,16 @@ module std::features {
 
     const FEE_PAYER_ACCOUNT_OPTIONAL: u64 = 35;
 
+    /// Whether the Aggregator V2 delayed fields optimization is enabled.
+    /// Lifetime: transient
+    const AGGREGATOR_V2_DELAYED_FIELDS: u64 = 36;
+
+    public fun get_aggregator_v2_delayed_fields_feature(): u64 { AGGREGATOR_V2_DELAYED_FIELDS }
+
+    public fun aggregator_v2_delayed_fields_enabled(): bool acquires Features {
+        is_enabled(AGGREGATOR_V2_DELAYED_FIELDS)
+    }
+
     public fun get_concurrent_token_v2_feature(): u64 {
         error::invalid_argument(EFEATURE_CANNOT_BE_DISABLED)
     }

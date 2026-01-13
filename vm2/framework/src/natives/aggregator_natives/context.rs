@@ -81,6 +81,7 @@ impl<'a> NativeAggregatorContext<'a> {
         let NativeAggregatorContext {
             aggregator_v1_data,
             delayed_field_data,
+            delayed_field_resolver,
             ..
         } = self;
         let (_, destroyed_aggregators, aggregators) = aggregator_v1_data.into_inner().into();
@@ -119,24 +120,27 @@ impl<'a> NativeAggregatorContext<'a> {
             .keys()
             .cloned()
             .collect::<HashSet<_>>();
+        let reads_needing_exchange = if delayed_write_set_ids.is_empty() {
+            BTreeMap::new()
+        } else {
+            delayed_field_resolver.get_reads_needing_exchange(
+                &delayed_write_set_ids,
+                &HashSet::new(),
+            )?
+        };
+        let group_reads_needing_exchange = if delayed_write_set_ids.is_empty() {
+            BTreeMap::new()
+        } else {
+            delayed_field_resolver.get_group_reads_needing_exchange(
+                &delayed_write_set_ids,
+                &HashSet::new(),
+            )?
+        };
         Ok(AggregatorChangeSet {
             aggregator_v1_changes,
             delayed_field_changes,
-            // is_empty check covers both whether delayed fields are enabled or not, as well as whether there
-            // are any changes that would require computing reads needing exchange.
-            // TODO[agg_v2](optimize) we only later compute the write set, so cannot pass the correct skip values here.
-            reads_needing_exchange: if delayed_write_set_ids.is_empty() {
-                BTreeMap::new()
-            } else {
-                self.delayed_field_resolver
-                    .get_reads_needing_exchange(&delayed_write_set_ids, &HashSet::new())?
-            },
-            group_reads_needing_exchange: if delayed_write_set_ids.is_empty() {
-                BTreeMap::new()
-            } else {
-                self.delayed_field_resolver
-                    .get_group_reads_needing_exchange(&delayed_write_set_ids, &HashSet::new())?
-            },
+            reads_needing_exchange,
+            group_reads_needing_exchange,
         })
     }
 

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::executor::MVHashMapView;
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use starcoin_aggregator::delayed_change::DelayedChange;
 use std::{fmt::Debug, hash::Hash};
 
 /// The execution result of a transaction
@@ -52,9 +54,9 @@ pub trait ExecutorTask: Sync {
     /// Type of error when the executor failed to process a transaction and needs to abort.
     type Error: Clone + Send + Sync + 'static;
 
-    /// Type to intialize the single thread transaction executor. Copy and Sync are required because
+    /// Type to initialize the single thread transaction executor. Clone and Sync are required because
     /// we will create an instance of executor on each individual thread.
-    type Argument: Sync + Copy;
+    type Argument: Sync + Clone;
 
     /// Create an instance of the transaction executor.
     fn init(args: Self::Argument) -> Self;
@@ -85,4 +87,8 @@ pub trait TransactionOutput: Send + Sync {
 
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self;
+
+    fn delayed_field_change_set(&self) -> Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)> {
+        Vec::new()
+    }
 }

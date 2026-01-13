@@ -9,6 +9,7 @@ use crate::transaction::Version;
 use arr_macro::arr;
 use bytes::Bytes;
 use move_core_types::move_resource::MoveResource;
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::StatusCode;
 use starcoin_crypto::HashValue;
 use std::{collections::HashMap, ops::Deref};
@@ -42,6 +43,16 @@ pub trait TStateView {
 
     /// Gets the state value for a given state key.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>>;
+
+    /// Gets the state value for a given state key with an optional layout hint.
+    /// Default implementation ignores the layout and calls get_state_value.
+    fn get_state_value_with_layout(
+        &self,
+        state_key: &Self::Key,
+        _maybe_layout: Option<&MoveTypeLayout>,
+    ) -> Result<Option<StateValue>> {
+        self.get_state_value(state_key)
+    }
 
     /// Get state storage usage info at epoch ending.
     fn get_usage(&self) -> Result<StateStorageUsage>;
@@ -92,6 +103,15 @@ where
 
     fn get_state_value(&self, state_key: &K) -> Result<Option<StateValue>> {
         self.deref().get_state_value(state_key)
+    }
+
+    fn get_state_value_with_layout(
+        &self,
+        state_key: &K,
+        maybe_layout: Option<&MoveTypeLayout>,
+    ) -> Result<Option<StateValue>> {
+        self.deref()
+            .get_state_value_with_layout(state_key, maybe_layout)
     }
 
     fn get_usage(&self) -> Result<StateStorageUsage> {
