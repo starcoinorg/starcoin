@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crossbeam::utils::CachePadded;
 use dashmap::DashMap;
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use std::{
     collections::btree_map::BTreeMap,
     hash::Hash,
@@ -10,6 +11,10 @@ use std::{
         Arc,
     },
 };
+use versioned_delayed_fields::VersionedDelayedFields;
+
+pub mod types;
+pub mod versioned_delayed_fields;
 
 #[cfg(test)]
 mod unit_tests;
@@ -61,6 +66,7 @@ impl<V> WriteCell<V> {
 /// with other reader/writers.
 pub struct MVHashMap<K, V> {
     data: DashMap<K, BTreeMap<TxnIndex, CachePadded<WriteCell<V>>>>,
+    delayed_fields: VersionedDelayedFields<DelayedFieldID>,
 }
 
 #[allow(clippy::new_without_default)]
@@ -69,7 +75,16 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     pub fn new() -> MVHashMap<K, V> {
         MVHashMap {
             data: DashMap::new(),
+            delayed_fields: VersionedDelayedFields::empty(),
         }
+    }
+
+    pub fn delayed_fields(&self) -> &VersionedDelayedFields<DelayedFieldID> {
+        &self.delayed_fields
+    }
+
+    pub fn into_delayed_fields(self) -> VersionedDelayedFields<DelayedFieldID> {
+        self.delayed_fields
     }
 
     /// Write a versioned data at a specified key. If the WriteCell entry is overwritten,

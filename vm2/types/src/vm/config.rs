@@ -99,8 +99,8 @@ pub fn starcoin_prod_vm_config(
         type_max_cost,
         type_base_cost,
         type_byte_cost,
-        // todo: support aggregator_v2_type_tagging, set false as default now.
-        aggregator_v2_type_tagging: false,
+        // Enable tagging unconditionally so delayed fields can be serialized during genesis.
+        aggregator_v2_type_tagging: true,
         check_invariant_in_swap_loc: false,
         ty_builder,
     }
