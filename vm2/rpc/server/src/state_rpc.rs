@@ -7,6 +7,8 @@ use bcs_ext::BCSCodec;
 use bytes::Bytes;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use serde_json::Value;
+use starcoin_vm2_abi_decoder::DecodedMoveValue;
 use starcoin_vm2_abi_resolver::ABIResolver;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_dev::playground::view_resource;
@@ -25,7 +27,10 @@ use starcoin_vm2_types::view::{
 };
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm2_vm_types::{
-    account_config::resources::{primary_store, FungibleStoreResource, ObjectGroupResource},
+    account_config::resources::{
+        primary_store, ConcurrentFungibleBalanceResource, FungibleStoreResource,
+        ObjectGroupResource,
+    },
     identifier::Identifier,
     language_storage::{struct_tag_match, ModuleId, StructTag},
     state_store::{state_key::StateKey, table::TableHandle, TStateView},
@@ -265,6 +270,7 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
+            let primary_store_opt = option.primary_fungible_store.clone();
             let data = if let Some(primary_store) = option.primary_fungible_store {
                 ensure_fungible_store_struct(&resource_type.0)?;
                 resolve_primary_store_bytes(&chain_state, addr, primary_store.token_code)?
@@ -277,13 +283,27 @@ where
             Ok(match data {
                 None => None,
                 Some(d) => {
-                    let decoded = if option.decode {
+                    let mut decoded = if option.decode {
+                        let struct_tag = resource_type.0.clone();
                         let value =
-                            view_resource(&chain_state, resource_type.0, d.to_vec().as_slice())?;
+                            view_resource(&chain_state, struct_tag, d.to_vec().as_slice())?;
                         Some(value.into())
                     } else {
                         None
                     };
+                    if let (Some(primary_store), Some(json)) =
+                        (primary_store_opt, decoded.as_mut())
+                    {
+                        if resource_type.0 == FungibleStoreResource::struct_tag() {
+                            apply_primary_store_balance_override(
+                                &chain_state,
+                                addr,
+                                primary_store.token_code,
+                                d.as_slice(),
+                                json,
+                            )?;
+                        }
+                    }
 
                     Some(ResourceView {
                         raw: StrView(d.to_vec()),
@@ -344,11 +364,11 @@ where
                 }
             };
 
-            if let Some(primary_store) = primary_fungible_store {
+            if let Some(primary_store) = &primary_fungible_store {
                 let primary_tag = FungibleStoreResource::struct_tag();
                 if matches_filter(&primary_tag) {
                     if let Some(bytes) =
-                        resolve_primary_store_bytes(&statedb, addr, primary_store.token_code)?
+                        resolve_primary_store_bytes(&statedb, addr, primary_store.token_code.clone())?
                     {
                         collected.push((primary_tag, bytes));
                     }
@@ -360,13 +380,26 @@ where
                 .skip(start_index)
                 .take(max_size)
                 .map(|(struct_tag, bytes)| {
-                    let decoded = if decode {
+                    let mut decoded = if decode {
                         view_resource(&statedb, struct_tag.clone(), bytes.as_slice())
                             .ok()
                             .map(Into::into)
                     } else {
                         None
                     };
+                    if let (Some(primary_store), Some(json)) =
+                        (primary_fungible_store.clone(), decoded.as_mut())
+                    {
+                        if struct_tag == FungibleStoreResource::struct_tag() {
+                            apply_primary_store_balance_override(
+                                &statedb,
+                                addr,
+                                primary_store.token_code,
+                                bytes.as_slice(),
+                                json,
+                            )?;
+                        }
+                    }
 
                     Ok((
                         StrView(struct_tag),
@@ -463,4 +496,40 @@ fn resolve_primary_store_bytes(
             &FungibleStoreResource::struct_tag(),
         )?
         .map(|bytes| bytes.to_vec()))
+}
+
+fn apply_primary_store_balance_override(
+    chain_state: &ChainStateDB,
+    owner: AccountAddress,
+    token_code: Option<String>,
+    _store_bytes: &[u8],
+    json: &mut DecodedMoveValue,
+) -> Result<()> {
+    let token_code = match token_code {
+        Some(code) => TokenCode::from_str(&code)?,
+        None => G_STC_TOKEN_CODE.clone(),
+    };
+    let derived = primary_store(&owner, &token_code.to_canonical_string())?;
+    let group_key = StateKey::resource_group(&derived, &ObjectGroupResource::struct_tag());
+    let bytes = chain_state.get_resource_group_struct_tag_bytes(
+        &owner,
+        &group_key,
+        &ConcurrentFungibleBalanceResource::struct_tag(),
+    )?;
+    let bytes = if let Some(bytes) = bytes {
+        bytes
+    } else {
+        bail!(
+            "ConcurrentFungibleBalance not found for primary store owner={}, token={}",
+            owner,
+            token_code.to_canonical_string()
+        );
+    };
+    let concurrent = bcs_ext::from_bytes::<ConcurrentFungibleBalanceResource>(&bytes)?;
+    let balance = concurrent.balance();
+
+    if let Value::Object(map) = &mut json.0 {
+        map.insert("balance".to_string(), Value::Number(balance.into()));
+    }
+    Ok(())
 }
