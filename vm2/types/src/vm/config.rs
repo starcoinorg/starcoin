@@ -103,5 +103,6 @@ pub fn starcoin_prod_vm_config(
         aggregator_v2_type_tagging: false,
         check_invariant_in_swap_loc: false,
         ty_builder,
+        loader_config: Default::default(),
     }
 }

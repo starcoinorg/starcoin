@@ -1,10 +1,10 @@
 [dependencies]
 either = { workspace = true }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
+move-core-types = { git = "https://github.com/starcoinorg/move", branch = "loader-v2" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", branch = "loader-v2" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", branch = "loader-v2" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", branch = "loader-v2" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", branch = "loader-v2" }
 serde = { workspace = true }
 paste = "1.0"
 starcoin-gas-algebra = { path = "../gas-algebra" }
