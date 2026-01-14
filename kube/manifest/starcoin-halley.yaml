@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:halley24_force_upgrade_v11
+        image: ghcr.io/starcoinorg/starcoin:sha-15ec88d
         imagePullPolicy: Always
         command:
           - bash
@@ -36,7 +36,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n halley -d /sc-data --discover-local=true $node_key_flag;
+            /starcoin/starcoin -n halley -d /sc-data --websocket-apis all --discover-local=true $node_key_flag;
             ret=$?;
             if [ $ret -ne 0 ]; then
               echo "Node start fail, try to remove config and data.";
