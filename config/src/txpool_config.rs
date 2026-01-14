@@ -86,7 +86,7 @@ impl TxPoolConfig {
         self.tx_propagate_interval.unwrap_or(2)
     }
     pub fn cull_interval(&self) -> u64 {
-        self.cull_interval.unwrap_or(1)
+        self.cull_interval.unwrap_or(1).max(1)
     }
     pub fn min_gas_price(&self) -> u64 {
         self.min_gas_price.unwrap_or(1)
