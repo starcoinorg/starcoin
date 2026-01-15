@@ -1964,7 +1964,81 @@ impl BlockChain {
         }
     }
 
-    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+    /// Switch the current chain state to a different block without creating a new BlockChain object.
+    /// This is more efficient than `fork` when you just need to update the state in place.
+    pub fn switch_to_block(&mut self, block_id: HashValue) -> Result<()> {
+        let (storage, storage2) = &self.storage;
+        ensure!(
+            self.has_dag_block(block_id)?,
+            "Block with id {} does not exist in current chain.",
+            block_id
+        );
+        let head_block = storage
+            .get_block_by_hash(block_id)?
+            .ok_or_else(|| format_err!("Cannot find block by hash {:?}", block_id))?;
+
+        let block_info = storage
+            .get_block_info(head_block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
+
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let block_accumulator_info = block_info.get_block_accumulator_info();
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
+
+        self.txn_accumulator = info_2_accumulator(
+            txn_accumulator_info.clone(),
+            AccumulatorStoreType::Transaction,
+            storage.as_ref(),
+        );
+        self.block_accumulator = info_2_accumulator(
+            block_accumulator_info.clone(),
+            AccumulatorStoreType::Block,
+            storage.as_ref(),
+        );
+        self.vm_state_accumulator = info_2_accumulator(
+            vm_state_accumulator_info.clone(),
+            AccumulatorStoreType::VMState,
+            storage.as_ref(),
+        );
+
+        let (state_root1, state_root2) = {
+            assert!(
+                self.vm_state_accumulator.num_leaves() > 1,
+                "vm_state_accumulator must have at least 2 leaves, but has {}",
+                self.vm_state_accumulator.num_leaves()
+            );
+
+            let leaf1_idx = self.vm_state_accumulator.num_leaves() - 2;
+            let leaf2_idx = self.vm_state_accumulator.num_leaves() - 1;
+
+            let state_root1 = self
+                .vm_state_accumulator
+                .get_leaf(leaf1_idx)?
+                .ok_or_else(|| format_err!("Can not find acc leaf at index {}", leaf1_idx))?;
+
+            let state_root2 = self
+                .vm_state_accumulator
+                .get_leaf(leaf2_idx)?
+                .ok_or_else(|| format_err!("Can not find acc leaf at index {}", leaf2_idx))?;
+
+            (state_root1, state_root2)
+        };
+
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
+        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
+        self.epoch = get_epoch_from_statedb(&chain_state2)?;
+
+        self.status = ChainStatusWithBlock {
+            status: ChainStatus::new(head_block.header.clone(), block_info),
+            head: head_block,
+            multi_state: MultiState::new(state_root1, state_root2),
+        };
+        self.statedb = (chain_state, chain_state2);
+
+        Ok(())
+    }
+
+    pub fn select_dag_state(&mut self, header: &BlockHeader) -> Result<()> {
         let new_pruning_point = if header.pruning_point() == HashValue::zero() {
             self.genesis_hash
         } else {
@@ -1976,15 +2050,13 @@ impl BlockChain {
             self.status().head().pruning_point()
         };
 
-        let chain = if current_pruning_point == new_pruning_point
+        let block_id = if current_pruning_point == new_pruning_point
             || current_pruning_point == HashValue::zero()
         {
             let state = self.dag().get_dag_state(new_pruning_point)?;
-            let block_id = self
-                .dag()
+            self.dag()
                 .ghost_dag_manager()
-                .find_selected_parent(state.tips.into_iter())?;
-            self.fork(block_id)?
+                .find_selected_parent(state.tips.into_iter())?
         } else {
             // Handle pruning point change: select best header from both states
             let new_state = self.dag().get_dag_state(new_pruning_point)?;
@@ -1999,15 +2071,12 @@ impl BlockChain {
                 .ghost_dag_manager()
                 .find_selected_parent(current_state.tips.into_iter())?;
 
-            let selected_header = self
-                .dag()
+            self.dag()
                 .ghost_dag_manager()
-                .find_selected_parent([new_header, current_header].into_iter())?;
-
-            self.fork(selected_header)?
+                .find_selected_parent([new_header, current_header].into_iter())?
         };
 
-        Ok(chain)
+        self.switch_to_block(block_id)
     }
 }
 
