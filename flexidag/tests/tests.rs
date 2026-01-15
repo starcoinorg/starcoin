@@ -34,11 +34,11 @@ use std::{
 
 #[test]
 fn test_dag_commit() -> Result<()> {
-    let mut dag = BlockDAG::create_for_testing().unwrap();
     let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     let mut parents_hash = vec![genesis.id()];
     let _origin = dag.init_with_genesis(genesis.clone())?;
@@ -94,7 +94,7 @@ fn test_dag_1() -> Result<()> {
         .build();
     let mut latest_id = block6.id();
     let genesis_id = genesis.id();
-    let mut dag = BlockDAG::create_for_testing().unwrap();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
     let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
     let _origin = dag.init_with_genesis(genesis.clone())?;
 
@@ -147,7 +147,7 @@ async fn test_with_spawn() {
         .with_difficulty(2.into())
         .with_parents_hash(vec![genesis.id()])
         .build();
-    let mut dag = BlockDAG::create_for_testing().unwrap();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
     let _origin = dag.init_with_genesis(genesis.clone()).unwrap();
 
     dag.commit_trusted_block(
@@ -200,11 +200,11 @@ async fn test_with_spawn() {
 
 #[test]
 fn test_write_asynchronization() -> anyhow::Result<()> {
-    let mut dag = BlockDAG::create_for_testing()?;
     let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
+    let mut dag = BlockDAG::create_for_testing(genesis.id())?;
     let _real_origin = dag.init_with_genesis(genesis.clone())?;
 
     let parent = BlockHeaderBuilder::random()
@@ -273,12 +273,12 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
 #[test]
 fn test_dag_genesis_fork() {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random()
         .as_builder()
         .with_difficulty(0.into())
         .build();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
+
     dag.init_with_genesis(genesis.clone()).unwrap();
 
     // normally add the dag blocks
@@ -348,7 +348,7 @@ fn test_dag_genesis_fork() {
 
 #[test]
 fn test_dag_tips_store() {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
 
     let state = DagState {
         tips: vec![Hash::random()],
@@ -372,9 +372,8 @@ fn test_dag_tips_store() {
 #[test]
 fn test_dag_multiple_commits() -> anyhow::Result<()> {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -405,7 +404,7 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
 
 #[test]
 fn test_reachability_abort_add_block() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let mut parent = Hash::random();
@@ -462,7 +461,7 @@ fn test_reachability_abort_add_block() -> anyhow::Result<()> {
 
 #[test]
 fn test_reachability_check_ancestor() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let mut parent = Hash::random();
@@ -588,7 +587,7 @@ fn print_reachability_data(reachability: &DbReachabilityStore, key: &[Hash]) {
 
 #[test]
 fn test_reachability_not_ancestor() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let origin = Hash::random();
@@ -655,7 +654,7 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
 #[test]
 #[ignore = "maxmum data testing for dev"]
 fn test_hint_virtaul_selected_parent() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let origin = Hash::random();
@@ -711,7 +710,7 @@ fn test_hint_virtaul_selected_parent() -> anyhow::Result<()> {
 
 #[test]
 fn test_reachability_algorithm() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing().unwrap();
+    let dag = BlockDAG::create_for_testing(Hash::random()).unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
 
     let origin = Hash::random();
@@ -887,9 +886,8 @@ fn add_and_print(
 #[test]
 fn test_dag_mergeset() -> anyhow::Result<()> {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -925,9 +923,8 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
 #[ignore = "this is the large amount of data testing for performance, dev only"]
 fn test_big_data_commit() -> anyhow::Result<()> {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -979,10 +976,9 @@ fn test_prune() -> anyhow::Result<()> {
     let pruning_depth = 4;
     let pruning_finality = 3;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
-
     let genesis = BlockHeader::random();
     println!("genesis: {}", genesis.id());
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k, genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1144,9 +1140,8 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 5;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k, genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1569,9 +1564,8 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 #[test]
 fn test_check_ancestor_of() -> anyhow::Result<()> {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
@@ -1631,9 +1625,8 @@ fn test_check_ancestor_of() -> anyhow::Result<()> {
 #[test]
 fn test_get_blocks_in_batch() -> anyhow::Result<()> {
     // initialzie the dag firstly
-    let mut dag = BlockDAG::create_for_testing().unwrap();
-
     let genesis = BlockHeader::random();
+    let mut dag = BlockDAG::create_for_testing(genesis.id()).unwrap();
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 

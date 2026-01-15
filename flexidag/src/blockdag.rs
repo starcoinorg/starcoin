@@ -65,15 +65,22 @@ pub struct BlockDAG {
     block_depth_manager: BlockDepthManager,
     max_parents_count: usize,
     commit_lock: Arc<Mutex<FlexiDagStorage>>,
+    genesis: Hash,
 }
 
 impl BlockDAG {
-    pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
+    pub fn create_blockdag(dag_storage: FlexiDagStorage, genesis: Hash) -> Self {
         // Test defaults: k=8, merge_depth=3600, max_parents=8 (k >= max_parents)
-        Self::new(8, 3600, 8, dag_storage)
+        Self::new(8, 3600, 8, dag_storage, genesis)
     }
 
-    pub fn new(k: KType, merge_depth: u64, max_parents_count: usize, db: FlexiDagStorage) -> Self {
+    pub fn new(
+        k: KType,
+        merge_depth: u64,
+        max_parents_count: usize,
+        db: FlexiDagStorage,
+        genesis: Hash,
+    ) -> Self {
         // Ensure k >= max_parents_count to prevent protocol violations
         assert!(
             k as usize >= max_parents_count,
@@ -109,37 +116,36 @@ impl BlockDAG {
             block_depth_manager,
             max_parents_count,
             commit_lock: Arc::new(Mutex::new(db)),
+            genesis,
         }
     }
 
     /// For testing only - do not use in production code
-    pub fn create_for_testing() -> anyhow::Result<Self> {
+    pub fn create_for_testing(genesis: Hash) -> anyhow::Result<Self> {
         let config = FlexiDagStorageConfig {
             cache_size: 1024,
             ..Default::default()
         };
         let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
-        // Test defaults: k=8, merge_depth=3600, max_parents=8 (k >= max_parents)
-        Ok(Self::new(8, 3600, 8, dag_storage))
+        Ok(Self::new(8, 3600, 8, dag_storage, genesis))
     }
 
     /// For testing only - do not use in production code
-    pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
+    pub fn create_for_testing_with_parameters(k: KType, genesis: Hash) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        // Test defaults: merge_depth=3600, max_parents=3
-        Ok(Self::new(k, 3600, 3, dag_storage))
+        Ok(Self::new(k, 3600, 3, dag_storage, genesis))
     }
 
     /// For testing only - do not use in production code
     pub fn create_for_testing_with_k_and_merge_depth(
         k: KType,
         merge_depth: u64,
+        genesis: Hash,
     ) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        // Test default: max_parents=3 (safe for small k values)
-        Ok(Self::new(k, merge_depth, 3, dag_storage))
+        Ok(Self::new(k, merge_depth, 3, dag_storage, genesis))
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
@@ -540,7 +546,24 @@ impl BlockDAG {
     }
 
     pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {
-        Ok(self.storage.state_store.read().get_state_by_hash(hash)?)
+        let query_hash = if hash == Hash::zero() {
+            self.genesis
+        } else {
+            hash
+        };
+        Ok(self
+            .storage
+            .state_store
+            .read()
+            .get_state_by_hash(query_hash)?)
+    }
+
+    pub fn genesis(&self) -> Hash {
+        self.genesis
+    }
+
+    pub fn set_genesis(&mut self, genesis: Hash) {
+        self.genesis = genesis;
     }
 
     pub fn save_dag_state_directly(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
