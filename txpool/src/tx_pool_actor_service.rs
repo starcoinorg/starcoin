@@ -35,9 +35,6 @@ impl std::fmt::Debug for TxPoolActorService {
     }
 }
 
-const MIN_TXN_TO_PROPAGATE: usize = 256;
-const PROPAGATE_FOR_BLOCKS: u64 = 4;
-
 impl TxPoolActorService {
     pub(crate) fn new(inner: Inner) -> Self {
         Self {
