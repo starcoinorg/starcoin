@@ -4,7 +4,9 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use starcoin_parallel_executor::errors::Error;
 use starcoin_parallel_executor::executor::ParallelTransactionExecutor;
-use starcoin_parallel_executor::task::{ExecutionStatus, ExecutorTask, Transaction, TransactionOutput};
+use starcoin_parallel_executor::task::{
+    ExecutionStatus, ExecutorTask, Transaction, TransactionOutput,
+};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -81,9 +83,7 @@ impl ExecutorTask for MockExecutor {
 
         let mut writes = Vec::with_capacity(txn.writes.len());
         for key in &txn.writes {
-            let value = sum
-                .wrapping_add(txn.salt)
-                .wrapping_add(*key);
+            let value = sum.wrapping_add(txn.salt).wrapping_add(*key);
             writes.push((*key, value));
         }
 
@@ -137,10 +137,7 @@ fn gen_transactions(
     txns
 }
 
-fn execute_sequential(
-    txns: &[MockTxn],
-    gas_limit: Option<u64>,
-) -> (HashMap<u64, u64>, usize) {
+fn execute_sequential(txns: &[MockTxn], gas_limit: Option<u64>) -> (HashMap<u64, u64>, usize) {
     let mut state = HashMap::new();
     let mut gas_used = 0u64;
     let mut executed = 0usize;
@@ -159,9 +156,7 @@ fn execute_sequential(
             sum = sum.wrapping_add(*state.get(key).unwrap_or(&0));
         }
         for key in &txn.writes {
-            let value = sum
-                .wrapping_add(txn.salt)
-                .wrapping_add(*key);
+            let value = sum.wrapping_add(txn.salt).wrapping_add(*key);
             state.insert(*key, value);
         }
     }

@@ -2692,8 +2692,7 @@ fn append_vm2_epilogue_for_storage(
             );
         }
     }
-    let total_fee =
-        u64::try_from(total_fee).map_err(|_| format_err!("total fee overflow"))?;
+    let total_fee = u64::try_from(total_fee).map_err(|_| format_err!("total fee overflow"))?;
     let mut txns = transactions2;
     txns.push(Transaction2::BlockEpilogue(block_meta, total_fee));
     Ok(txns)

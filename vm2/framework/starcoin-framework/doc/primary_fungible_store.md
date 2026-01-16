@@ -33,7 +33,9 @@ fungible asset to it. This emits an deposit event.
 -  [Function `is_frozen`](#0x1_primary_fungible_store_is_frozen)
 -  [Function `withdraw`](#0x1_primary_fungible_store_withdraw)
 -  [Function `deposit`](#0x1_primary_fungible_store_deposit)
+-  [Function `burn_from_for_gas`](#0x1_primary_fungible_store_burn_from_for_gas)
 -  [Function `force_deposit`](#0x1_primary_fungible_store_force_deposit)
+-  [Function `deposit_for_gas_fee`](#0x1_primary_fungible_store_deposit_for_gas_fee)
 -  [Function `transfer`](#0x1_primary_fungible_store_transfer)
 -  [Function `transfer_assert_minimum_deposit`](#0x1_primary_fungible_store_transfer_assert_minimum_deposit)
 -  [Function `mint`](#0x1_primary_fungible_store_mint)
@@ -523,6 +525,44 @@ Deposit fungible asset <code>fa</code> to the given account's primary store.
 
 </details>
 
+<a id="0x1_primary_fungible_store_burn_from_for_gas"></a>
+
+## Function `burn_from_for_gas`
+
+Burn fungible asset from the given account's primary store without emitting events.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_burn_from_for_gas">burn_from_for_gas</a>&lt;T: key&gt;(owner: <b>address</b>, metadata: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;, burn_ref: &<a href="fungible_asset.md#0x1_fungible_asset_BurnRef">fungible_asset::BurnRef</a>, amount: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_burn_from_for_gas">burn_from_for_gas</a>&lt;T: key&gt;(
+    owner: <b>address</b>,
+    metadata: Object&lt;T&gt;,
+    burn_ref: &BurnRef,
+    amount: u64,
+) <b>acquires</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_DeriveRefPod">DeriveRefPod</a> {
+    <b>if</b> (amount == 0) {
+        <b>return</b>
+    };
+    <b>let</b> store = <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">ensure_primary_store_exists</a>(owner, metadata);
+    <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">fungible_asset::address_burn_from_for_gas</a>(
+        burn_ref,
+        <a href="object.md#0x1_object_object_address">object::object_address</a>(&store),
+        amount
+    );
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_primary_fungible_store_force_deposit"></a>
 
 ## Function `force_deposit`
@@ -543,6 +583,33 @@ Deposit fungible asset <code>fa</code> to the given account's primary store.
     <b>let</b> metadata = <a href="fungible_asset.md#0x1_fungible_asset_asset_metadata">fungible_asset::asset_metadata</a>(&fa);
     <b>let</b> store = <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">ensure_primary_store_exists</a>(owner, metadata);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal">fungible_asset::deposit_internal</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&store), fa);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_primary_fungible_store_deposit_for_gas_fee"></a>
+
+## Function `deposit_for_gas_fee`
+
+Deposit fungible asset <code>fa</code> to the given account's primary store without emitting events.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit_for_gas_fee">deposit_for_gas_fee</a>(owner: <b>address</b>, fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_deposit_for_gas_fee">deposit_for_gas_fee</a>(owner: <b>address</b>, fa: FungibleAsset) <b>acquires</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store_DeriveRefPod">DeriveRefPod</a> {
+    <b>let</b> metadata = <a href="fungible_asset.md#0x1_fungible_asset_asset_metadata">fungible_asset::asset_metadata</a>(&fa);
+    <b>let</b> store = <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">ensure_primary_store_exists</a>(owner, metadata);
+    <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal_no_events">fungible_asset::deposit_internal_no_events</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&store), fa);
 }
 </code></pre>
 

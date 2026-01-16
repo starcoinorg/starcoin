@@ -87,6 +87,7 @@ metadata object can be any object that equipped with <code><a href="fungible_ass
 -  [Function `burn_internal`](#0x1_fungible_asset_burn_internal)
 -  [Function `burn_from`](#0x1_fungible_asset_burn_from)
 -  [Function `address_burn_from`](#0x1_fungible_asset_address_burn_from)
+-  [Function `address_burn_from_for_gas`](#0x1_fungible_asset_address_burn_from_for_gas)
 -  [Function `withdraw_with_ref`](#0x1_fungible_asset_withdraw_with_ref)
 -  [Function `deposit_with_ref`](#0x1_fungible_asset_deposit_with_ref)
 -  [Function `transfer_with_ref`](#0x1_fungible_asset_transfer_with_ref)
@@ -96,7 +97,9 @@ metadata object can be any object that equipped with <code><a href="fungible_ass
 -  [Function `merge`](#0x1_fungible_asset_merge)
 -  [Function `destroy_zero`](#0x1_fungible_asset_destroy_zero)
 -  [Function `deposit_internal`](#0x1_fungible_asset_deposit_internal)
+-  [Function `deposit_internal_no_events`](#0x1_fungible_asset_deposit_internal_no_events)
 -  [Function `withdraw_internal`](#0x1_fungible_asset_withdraw_internal)
+-  [Function `withdraw_internal_no_events`](#0x1_fungible_asset_withdraw_internal_no_events)
 -  [Function `increase_supply`](#0x1_fungible_asset_increase_supply)
 -  [Function `decrease_supply`](#0x1_fungible_asset_decrease_supply)
 -  [Function `borrow_fungible_metadata`](#0x1_fungible_asset_borrow_fungible_metadata)
@@ -3056,6 +3059,43 @@ Burn the <code>amount</code> of the fungible asset from the given store.
 
 </details>
 
+<a id="0x1_fungible_asset_address_burn_from_for_gas"></a>
+
+## Function `address_burn_from_for_gas`
+
+Burn the <code>amount</code> of the fungible asset from the given store address without emitting events.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">address_burn_from_for_gas</a>(ref: &<a href="fungible_asset.md#0x1_fungible_asset_BurnRef">fungible_asset::BurnRef</a>, store_addr: <b>address</b>, amount: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">address_burn_from_for_gas</a>(
+    ref: &<a href="fungible_asset.md#0x1_fungible_asset_BurnRef">BurnRef</a>,
+    store_addr: <b>address</b>,
+    amount: u64
+) <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_Supply">Supply</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentSupply">ConcurrentSupply</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a> {
+    <b>if</b> (amount == 0) {
+        <b>return</b>
+    };
+    <b>let</b> fa = <a href="fungible_asset.md#0x1_fungible_asset_withdraw_internal_no_events">withdraw_internal_no_events</a>(store_addr, amount);
+    <b>assert</b>!(
+        ref.metadata == <a href="fungible_asset.md#0x1_fungible_asset_metadata_from_asset">metadata_from_asset</a>(&fa),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="fungible_asset.md#0x1_fungible_asset_EBURN_REF_AND_FUNGIBLE_ASSET_MISMATCH">EBURN_REF_AND_FUNGIBLE_ASSET_MISMATCH</a>)
+    );
+    <a href="fungible_asset.md#0x1_fungible_asset_burn_internal">burn_internal</a>(fa);
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_fungible_asset_withdraw_with_ref"></a>
 
 ## Function `withdraw_with_ref`
@@ -3353,6 +3393,46 @@ Destroy an empty fungible asset.
 
 </details>
 
+<a id="0x1_fungible_asset_deposit_internal_no_events"></a>
+
+## Function `deposit_internal_no_events`
+
+Deposit the fungible asset into the store without emitting events or dispatching hooks.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal_no_events">deposit_internal_no_events</a>(store_addr: <b>address</b>, fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal_no_events">deposit_internal_no_events</a>(
+    store_addr: <b>address</b>,
+    fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a>
+) <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a> {
+    <b>let</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a> { metadata, amount } = fa;
+    <b>assert</b>!(<b>exists</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="fungible_asset.md#0x1_fungible_asset_EFUNGIBLE_STORE_EXISTENCE">EFUNGIBLE_STORE_EXISTENCE</a>));
+    <b>let</b> store = <b>borrow_global_mut</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr);
+    <b>assert</b>!(metadata == store.metadata, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="fungible_asset.md#0x1_fungible_asset_EFUNGIBLE_ASSET_AND_STORE_MISMATCH">EFUNGIBLE_ASSET_AND_STORE_MISMATCH</a>));
+
+    <b>if</b> (amount == 0) <b>return</b>;
+
+    <b>if</b> (store.balance == 0 && <a href="fungible_asset.md#0x1_fungible_asset_concurrent_fungible_balance_exists_inline">concurrent_fungible_balance_exists_inline</a>(store_addr)) {
+        <b>let</b> balance_resource = <b>borrow_global_mut</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a>&gt;(store_addr);
+        <a href="aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> balance_resource.balance, amount);
+    } <b>else</b> {
+        store.balance = store.balance + amount;
+    };
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_fungible_asset_withdraw_internal"></a>
 
 ## Function `withdraw_internal`
@@ -3390,6 +3470,50 @@ Extract <code>amount</code> of the fungible asset from <code>store</code>.
         };
 
         <a href="event.md#0x1_event_emit">event::emit</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Withdraw">Withdraw</a>&gt;(<a href="fungible_asset.md#0x1_fungible_asset_Withdraw">Withdraw</a> { store: store_addr, amount });
+    };
+    <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a> { metadata, amount }
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_fungible_asset_withdraw_internal_no_events"></a>
+
+## Function `withdraw_internal_no_events`
+
+Extract <code>amount</code> of the fungible asset from <code>store</code> without emitting events or dispatching hooks.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_withdraw_internal_no_events">withdraw_internal_no_events</a>(store_addr: <b>address</b>, amount: u64): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_withdraw_internal_no_events">withdraw_internal_no_events</a>(
+    store_addr: <b>address</b>,
+    amount: u64,
+): <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a> <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="fungible_asset.md#0x1_fungible_asset_EFUNGIBLE_STORE_EXISTENCE">EFUNGIBLE_STORE_EXISTENCE</a>));
+
+    <b>let</b> store = <b>borrow_global_mut</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr);
+    <b>let</b> metadata = store.metadata;
+    <b>if</b> (amount != 0) {
+        <b>if</b> (store.balance == 0 && <a href="fungible_asset.md#0x1_fungible_asset_concurrent_fungible_balance_exists_inline">concurrent_fungible_balance_exists_inline</a>(store_addr)) {
+            <b>let</b> balance_resource = <b>borrow_global_mut</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a>&gt;(store_addr);
+            <b>assert</b>!(
+                <a href="aggregator_v2.md#0x1_aggregator_v2_try_sub">aggregator_v2::try_sub</a>(&<b>mut</b> balance_resource.balance, amount),
+                <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="fungible_asset.md#0x1_fungible_asset_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
+            );
+        } <b>else</b> {
+            <b>assert</b>!(store.balance &gt;= amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="fungible_asset.md#0x1_fungible_asset_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>));
+            store.balance = store.balance - amount;
+        };
     };
     <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a> { metadata, amount }
 }
