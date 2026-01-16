@@ -15,7 +15,6 @@ use starcoin_parallel_executor::{
     task::{ExecutionStatus, ExecutorTask},
 };
 
-use crate::data_cache::AsMoveResolver;
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::on_chain_config::OnChainConfig;

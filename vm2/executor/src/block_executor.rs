@@ -14,7 +14,6 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
-use starcoin_logger::prelude::*;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
     pub state_root: HashValue,
@@ -40,7 +39,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
-    info!(target:"vm2-blockbench","block execute start");
     debug_assert!(
         !txns
             .iter()
@@ -63,13 +61,11 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
         vm_metrics.clone(),
     )
     .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-    info!(target:"vm2-blockbench","block execute end");
     let mut executed_data = BlockExecutedData::default();
     let last_index = txn_outputs
         .len()
         .checked_sub(1)
         .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
-    info!(target:"vm2-blockbench","bench start process output");
     let mut total_fee: u128 = 0;
     let mut total_gas_used: u64 = 0;
     for (index, (txn, output)) in txns
@@ -119,7 +115,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
     }
-    info!(target:"vm2-blockbench","bench end process output");
 
     if should_execute_epilogue {
         let total_fee = u64::try_from(total_fee)

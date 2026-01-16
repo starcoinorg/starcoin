@@ -399,14 +399,11 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             break;
         }
         for (key, op) in output.output.resource_write_set() {
-            match op {
-                AbstractResourceWriteOp::WriteResourceGroup(_) => {
-                    if !group_keys.insert(key.clone()) {
-                        needs_sequential = true;
-                        break;
-                    }
+            if let AbstractResourceWriteOp::WriteResourceGroup(_) = op {
+                if !group_keys.insert(key.clone()) {
+                    needs_sequential = true;
+                    break;
                 }
-                _ => {}
             }
         }
         if needs_sequential {
