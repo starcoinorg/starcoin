@@ -246,17 +246,14 @@ impl ParallelStarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<(Vec<TransactionOutput>, Option<Error<VMStatus>>), VMStatus> {
-<<<<<<< HEAD
         info!(
             "jacktest ParallelStarcoinVM::execute_block start, txns: {}, concurrency: {}",
             transactions.len(),
             concurrency_level
         );
-=======
         let delayed_fields_enabled = Features::fetch_config(state_view)
             .unwrap_or_default()
             .is_aggregator_v2_delayed_fields_enabled();
->>>>>>> 105bbeede (Add delayed fields core integration)
         let signature_verified_block: Vec<PreprocessedTransaction> = transactions
             .par_iter()
             .map(|txn| preprocess_transaction(txn.clone()))
@@ -266,22 +263,6 @@ impl ParallelStarcoinVM {
             signature_verified_block.len()
         );
 
-<<<<<<< HEAD
-        let executor =
-            ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
-                concurrency_level,
-                block_gas_limit,
-            );
-        info!("jacktest ParallelStarcoinVM::execute_block about to call execute_transactions_parallel");
-        match executor.execute_transactions_parallel(state_view, signature_verified_block) {
-            Ok(results) => Ok((
-                results
-                    .into_iter()
-                    .map(StarcoinTransactionOutput::into)
-                    .collect(),
-                None,
-            )),
-=======
         let delayed_field_cache = Arc::new(DelayedFieldCache::default());
         let exec_start = std::time::Instant::now();
         match ParallelTransactionExecutor::<PreprocessedTransaction, StarcoinVMWrapper<S>>::new(
@@ -321,7 +302,6 @@ impl ParallelStarcoinVM {
                 );
                 Ok((outputs, None))
             }
->>>>>>> 105bbeede (Add delayed fields core integration)
             Err(err @ Error::BlockRestart) => {
                 let output = StarcoinVM::execute_block_and_keep_vm_status(
                     transactions,
