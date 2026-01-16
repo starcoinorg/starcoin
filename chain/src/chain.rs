@@ -54,6 +54,7 @@ use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_types::transaction::Transaction as Vm2Transaction;
 use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfo2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
@@ -65,6 +66,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
+
+fn expected_vm2_txn_count(transactions2: &[Vm2Transaction]) -> usize {
+    let has_block_meta = transactions2
+        .iter()
+        .any(|txn| matches!(txn, Vm2Transaction::BlockMetadata(_)));
+    let has_user_txn = transactions2
+        .iter()
+        .any(|txn| matches!(txn, Vm2Transaction::UserTransaction(_)));
+    transactions2.len() + if has_block_meta && has_user_txn { 1 } else { 0 }
+}
 
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
@@ -658,11 +669,7 @@ impl BlockChain {
             "invalid txn num in the block"
         );
 
-        let expected_vm2_txn_num = if transactions2.len() > 1 {
-            transactions2.len() + 1
-        } else {
-            transactions2.len()
-        };
+        let expected_vm2_txn_num = expected_vm2_txn_count(&transactions2);
         verify_block!(
             VerifyBlockField::State,
             vm2_txn_infos.len() == expected_vm2_txn_num,
@@ -2487,11 +2494,7 @@ impl BlockChain {
         // Verify transaction count
         let total_txn_num = executed_data.txn_infos.len() + executed_data2.txn_infos.len();
         // VM2 epilogue is executed internally (not included in transactions2).
-        let expected_vm2_txn_num = if transactions2.len() > 1 {
-            transactions2.len() + 1
-        } else {
-            transactions2.len()
-        };
+        let expected_vm2_txn_num = expected_vm2_txn_count(&transactions2);
         let expected_txn_num = transactions.len() + expected_vm2_txn_num;
         verify_block!(
             VerifyBlockField::State,
