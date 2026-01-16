@@ -82,16 +82,21 @@ impl DelayedFieldCache {
             .unwrap_or(false)
     }
 
-    pub fn get_or_insert_base_value<F>(&self, key: StateKey, exchanged: bool, build: F) -> WriteOp
+    pub fn get_or_insert_base_value<F>(
+        &self,
+        key: StateKey,
+        exchanged: bool,
+        build: F,
+    ) -> Result<WriteOp, StateviewError>
     where
-        F: FnOnce() -> WriteOp,
+        F: FnOnce() -> Result<WriteOp, StateviewError>,
     {
         match self.base_values.entry(key) {
-            dashmap::mapref::entry::Entry::Occupied(entry) => entry.get().write_op.clone(),
+            dashmap::mapref::entry::Entry::Occupied(entry) => Ok(entry.get().write_op.clone()),
             dashmap::mapref::entry::Entry::Vacant(entry) => {
-                let value = build();
+                let value = build()?;
                 entry.insert(CachedWriteOp::new(value.clone(), exchanged));
-                value
+                Ok(value)
             }
         }
     }
@@ -121,16 +126,16 @@ impl DelayedFieldCache {
         group_key: StateKey,
         tag: StructTag,
         build: F,
-    ) -> Bytes
+    ) -> Result<Bytes, StateviewError>
     where
-        F: FnOnce() -> Bytes,
+        F: FnOnce() -> Result<Bytes, StateviewError>,
     {
         match self.group_member_values.entry((group_key, tag)) {
-            dashmap::mapref::entry::Entry::Occupied(entry) => entry.get().clone(),
+            dashmap::mapref::entry::Entry::Occupied(entry) => Ok(entry.get().clone()),
             dashmap::mapref::entry::Entry::Vacant(entry) => {
-                let value = build();
+                let value = build()?;
                 entry.insert(value.clone());
-                value
+                Ok(value)
             }
         }
     }
@@ -384,9 +389,8 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             let maybe_state_value = write.as_state_value();
             if let (Some(layout), Some(state_value)) = (maybe_layout, maybe_state_value.as_ref()) {
                 if !self.delayed_field_cache.is_base_value_exchanged(state_key) {
-                    let (exchanged, ids) = self
-                        .exchange_state_value(state_key, state_value, layout)
-                        .expect("exchange_state_value should succeed");
+                    let (exchanged, ids) =
+                        self.exchange_state_value(state_key, state_value, layout)?;
                     self.delayed_field_cache.insert_base_value(
                         state_key.clone(),
                         WriteOp::from_state_value(Some(exchanged.clone())),
@@ -403,15 +407,16 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 
         let maybe_state_value = self.base_view.get_state_value(state_key)?;
         if let (Some(layout), Some(state_value)) = (maybe_layout, maybe_state_value.as_ref()) {
-            let exchanged =
-                self.delayed_field_cache
-                    .get_or_insert_base_value(state_key.clone(), true, || {
-                        let (value_with_ids, ids) = self
-                            .exchange_state_value(state_key, state_value, layout)
-                            .expect("exchange_state_value should succeed");
-                        self.record_resource_read(state_key, &value_with_ids, layout, ids);
-                        WriteOp::from_state_value(Some(value_with_ids))
-                    });
+            let exchanged = self.delayed_field_cache.get_or_insert_base_value(
+                state_key.clone(),
+                true,
+                || {
+                    let (value_with_ids, ids) =
+                        self.exchange_state_value(state_key, state_value, layout)?;
+                    self.record_resource_read(state_key, &value_with_ids, layout, ids);
+                    Ok(WriteOp::from_state_value(Some(value_with_ids)))
+                },
+            )?;
             return Ok(exchanged.as_state_value());
         }
 
@@ -424,11 +429,11 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         }
         let maybe_state_value = self.base_view.get_state_value(group_key)?;
         if let Some(state_value) = &maybe_state_value {
-            let _ =
-                self.delayed_field_cache
-                    .get_or_insert_base_value(group_key.clone(), false, || {
-                        WriteOp::from_state_value(Some(state_value.clone()))
-                    });
+            let _ = self.delayed_field_cache.get_or_insert_base_value(
+                group_key.clone(),
+                false,
+                || Ok(WriteOp::from_state_value(Some(state_value.clone()))),
+            )?;
         }
         Ok(maybe_state_value.map(|v| v.bytes().clone()))
     }
@@ -575,9 +580,8 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                 || {
                     let state_value =
                         StateValue::new_with_metadata(raw_bytes.clone(), metadata.clone());
-                    let (value_with_ids, ids) = self
-                        .exchange_state_value(group_key, &state_value, layout)
-                        .expect("exchange_state_value should succeed");
+                    let (value_with_ids, ids) =
+                        self.exchange_state_value(group_key, &state_value, layout)?;
                     self.record_group_read(
                         group_key,
                         metadata,
@@ -586,9 +590,9 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                         layout,
                         ids,
                     );
-                    value_with_ids.bytes().clone()
+                    Ok(value_with_ids.bytes().clone())
                 },
-            );
+            )?;
             return Ok(Some(exchanged));
         }
 
