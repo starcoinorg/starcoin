@@ -285,14 +285,12 @@ where
                 Some(d) => {
                     let mut decoded = if option.decode {
                         let struct_tag = resource_type.0.clone();
-                        let value =
-                            view_resource(&chain_state, struct_tag, d.to_vec().as_slice())?;
+                        let value = view_resource(&chain_state, struct_tag, d.to_vec().as_slice())?;
                         Some(value.into())
                     } else {
                         None
                     };
-                    if let (Some(primary_store), Some(json)) =
-                        (primary_store_opt, decoded.as_mut())
+                    if let (Some(primary_store), Some(json)) = (primary_store_opt, decoded.as_mut())
                     {
                         if resource_type.0 == FungibleStoreResource::struct_tag() {
                             apply_primary_store_balance_override(
@@ -367,9 +365,11 @@ where
             if let Some(primary_store) = &primary_fungible_store {
                 let primary_tag = FungibleStoreResource::struct_tag();
                 if matches_filter(&primary_tag) {
-                    if let Some(bytes) =
-                        resolve_primary_store_bytes(&statedb, addr, primary_store.token_code.clone())?
-                    {
+                    if let Some(bytes) = resolve_primary_store_bytes(
+                        &statedb,
+                        addr,
+                        primary_store.token_code.clone(),
+                    )? {
                         collected.push((primary_tag, bytes));
                     }
                 }

@@ -319,10 +319,9 @@ where
         // VM execution.
         let execute_result = executor.execute_transaction(&state_view, txn);
         let mut prev_write_set: HashSet<T::Key> = last_input_output.write_set(idx_to_execute);
-        let mut prev_delayed_write_set =
-            versioned_data_cache
-                .delayed_fields()
-                .get_txn_ids(idx_to_execute);
+        let mut prev_delayed_write_set = versioned_data_cache
+            .delayed_fields()
+            .get_txn_ids(idx_to_execute);
 
         // For tracking whether the recent execution wrote outside of the previous write set.
         let mut writes_outside = false;
@@ -340,11 +339,11 @@ where
                         writes_outside = true;
                     }
                     let entry = change.into_entry_no_additional_history();
-                    if let Err(err) =
-                        versioned_data_cache
-                            .delayed_fields()
-                            .record_change(id, idx_to_execute, entry)
-                    {
+                    if let Err(err) = versioned_data_cache.delayed_fields().record_change(
+                        id,
+                        idx_to_execute,
+                        entry,
+                    ) {
                         match err {
                             PanicOr::CodeInvariantError(err_msg) => {
                                 error!(
@@ -403,9 +402,10 @@ where
             versioned_data_cache.delete(k, idx_to_execute);
         }
         for id in &prev_delayed_write_set {
-            if let Err(err) = versioned_data_cache
-                .delayed_fields()
-                .remove(id, idx_to_execute, self.blockstm_v2)
+            if let Err(err) =
+                versioned_data_cache
+                    .delayed_fields()
+                    .remove(id, idx_to_execute, self.blockstm_v2)
             {
                 error!(
                     "remove delayed field failed: txn_idx={} id={:?} err={:?}",
@@ -852,7 +852,10 @@ where
         if maybe_err.is_none() && self.delayed_fields_enabled {
             if let Some(coord) = delayed_commit.as_deref() {
                 if coord.is_fatal() {
-                    maybe_err = fatal_error.lock().take().or(Some(Error::InvariantViolation));
+                    maybe_err = fatal_error
+                        .lock()
+                        .take()
+                        .or(Some(Error::InvariantViolation));
                 } else {
                     let delayed_fields = versioned_data_cache.delayed_fields();
                     let start_idx = coord.next_to_commit();
@@ -908,9 +911,7 @@ where
                             let delayed_ids = delayed_fields.take_txn_ids(idx);
                             for id in &delayed_ids {
                                 delayed_fields.mark_estimate(id, idx);
-                                if let Err(err) =
-                                    delayed_fields.remove(id, idx, self.blockstm_v2)
-                                {
+                                if let Err(err) = delayed_fields.remove(id, idx, self.blockstm_v2) {
                                     error!(
                                         "discard delayed field failed: txn_idx={} id={:?} err={:?}",
                                         idx, id, err
@@ -1012,8 +1013,7 @@ mod tests {
         DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr, ReadPosition,
     };
     use starcoin_mvhashmap::{
-        types::MVDelayedFieldsError,
-        versioned_delayed_fields::TVersionedDelayedFieldView,
+        types::MVDelayedFieldsError, versioned_delayed_fields::TVersionedDelayedFieldView,
     };
     use std::collections::HashMap;
     use std::sync::atomic::{AtomicUsize, Ordering};
