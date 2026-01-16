@@ -68,6 +68,55 @@ use crate::parallel_executor::{
 };
 use starcoin_types::delayed_fields::PanicError;
 use starcoin_vm_runtime_types::output::VMOutput;
+use std::sync::atomic::AtomicU64;
+use std::sync::LazyLock;
+use std::time::Instant;
+
+#[derive(Debug, Default, Clone)]
+pub(crate) struct ResourceGroupStatsSnapshot {
+    pub group_accesses: u64,
+    pub group_cache_hits: u64,
+    pub group_member_calls: u64,
+    pub group_member_ns: u64,
+    pub group_size_calls: u64,
+    pub group_size_ns: u64,
+}
+
+#[derive(Debug, Default)]
+struct ResourceGroupStats {
+    group_accesses: AtomicU64,
+    group_cache_hits: AtomicU64,
+    group_member_calls: AtomicU64,
+    group_member_ns: AtomicU64,
+    group_size_calls: AtomicU64,
+    group_size_ns: AtomicU64,
+}
+
+static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
+    LazyLock::new(ResourceGroupStats::default);
+
+pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
+    ResourceGroupStatsSnapshot {
+        group_accesses: RESOURCE_GROUP_STATS
+            .group_accesses
+            .swap(0, Ordering::Relaxed),
+        group_cache_hits: RESOURCE_GROUP_STATS
+            .group_cache_hits
+            .swap(0, Ordering::Relaxed),
+        group_member_calls: RESOURCE_GROUP_STATS
+            .group_member_calls
+            .swap(0, Ordering::Relaxed),
+        group_member_ns: RESOURCE_GROUP_STATS
+            .group_member_ns
+            .swap(0, Ordering::Relaxed),
+        group_size_calls: RESOURCE_GROUP_STATS
+            .group_size_calls
+            .swap(0, Ordering::Relaxed),
+        group_size_ns: RESOURCE_GROUP_STATS
+            .group_size_ns
+            .swap(0, Ordering::Relaxed),
+    }
+}
 
 pub fn get_resource_group_member_from_metadata(
     struct_tag: &StructTag,
@@ -659,19 +708,32 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
         let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
         if let Some(resource_group) = resource_group {
+            RESOURCE_GROUP_STATS
+                .group_accesses
+                .fetch_add(1, Ordering::Relaxed);
             let key = StateKey::resource_group(address, &resource_group);
             let buf = if let Some(layout) = maybe_layout {
                 if let Some(cached) = self
                     .delayed_field_cache
                     .get_group_member_value(&key, struct_tag)
                 {
+                    RESOURCE_GROUP_STATS
+                        .group_cache_hits
+                        .fetch_add(1, Ordering::Relaxed);
                     Some(cached)
                 } else {
+                    RESOURCE_GROUP_STATS
+                        .group_member_calls
+                        .fetch_add(1, Ordering::Relaxed);
+                    let member_start = Instant::now();
                     let raw = self.resource_group_view.get_resource_from_group(
                         &key,
                         struct_tag,
                         maybe_layout,
                     )?;
+                    RESOURCE_GROUP_STATS
+                        .group_member_ns
+                        .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
                     let Some(raw_bytes) = raw else {
                         return Ok((None, 0));
                     };
@@ -709,13 +771,32 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                     Some(exchanged_bytes)
                 }
             } else {
-                self.resource_group_view
-                    .get_resource_from_group(&key, struct_tag, maybe_layout)?
+                RESOURCE_GROUP_STATS
+                    .group_member_calls
+                    .fetch_add(1, Ordering::Relaxed);
+                let member_start = Instant::now();
+                let raw = self.resource_group_view.get_resource_from_group(
+                    &key,
+                    struct_tag,
+                    maybe_layout,
+                )?;
+                RESOURCE_GROUP_STATS
+                    .group_member_ns
+                    .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                raw
             };
 
             let first_access = self.accessed_groups.borrow_mut().insert(key.clone());
             let group_size = if first_access {
-                self.resource_group_view.resource_group_size(&key)?.get()
+                RESOURCE_GROUP_STATS
+                    .group_size_calls
+                    .fetch_add(1, Ordering::Relaxed);
+                let size_start = Instant::now();
+                let size = self.resource_group_view.resource_group_size(&key)?.get();
+                RESOURCE_GROUP_STATS
+                    .group_size_ns
+                    .fetch_add(size_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                size
             } else {
                 0
             };
@@ -768,8 +849,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                     let cached = self.delayed_field_cache.get_or_insert_base_value(
                         state_key.clone(),
                         true,
-                        || WriteOp::from_state_value(Some(exchanged.clone())),
-                    );
+                        || Ok(WriteOp::from_state_value(Some(exchanged.clone()))),
+                    )?;
                     cached.bytes().cloned()
                 }
             } else {

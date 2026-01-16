@@ -33,6 +33,7 @@ use starcoin_vm2_vm_types::{
     },
     identifier::Identifier,
     language_storage::{struct_tag_match, ModuleId, StructTag},
+    on_chain_config::Features,
     state_store::{state_key::StateKey, table::TableHandle, TStateView},
     token::{stc::G_STC_TOKEN_CODE, token_code::TokenCode},
 };
@@ -489,11 +490,16 @@ fn resolve_primary_store_bytes(
     };
     let derived = primary_store(&owner, &token_code.to_canonical_string())?;
     let group_key = StateKey::resource_group(&derived, &ObjectGroupResource::struct_tag());
+    let split_enabled = chain_state
+        .get_on_chain_config::<Features>()
+        .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+        .unwrap_or(false);
     Ok(chain_state
-        .get_resource_group_struct_tag_bytes(
+        .get_resource_group_struct_tag_bytes_with_flag(
             &owner,
             &group_key,
             &FungibleStoreResource::struct_tag(),
+            split_enabled,
         )?
         .map(|bytes| bytes.to_vec()))
 }
@@ -511,10 +517,15 @@ fn apply_primary_store_balance_override(
     };
     let derived = primary_store(&owner, &token_code.to_canonical_string())?;
     let group_key = StateKey::resource_group(&derived, &ObjectGroupResource::struct_tag());
-    let bytes = chain_state.get_resource_group_struct_tag_bytes(
+    let split_enabled = chain_state
+        .get_on_chain_config::<Features>()
+        .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+        .unwrap_or(false);
+    let bytes = chain_state.get_resource_group_struct_tag_bytes_with_flag(
         &owner,
         &group_key,
         &ConcurrentFungibleBalanceResource::struct_tag(),
+        split_enabled,
     )?;
     let bytes = if let Some(bytes) = bytes {
         bytes

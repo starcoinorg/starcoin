@@ -227,15 +227,15 @@ fn expected_after_sequential(
             state.insert(*key, value);
         }
 
-        match txn.op {
+        match &txn.op {
             DelayedOp::Create { id, value } => {
-                delayed_state.insert(id, value);
+                delayed_state.insert(*id, *value);
             }
             DelayedOp::Delta { id, delta, max } => {
                 let entry = delayed_state
-                    .get_mut(&id)
+                    .get_mut(id)
                     .expect("delta should only happen after create");
-                let delta = DeltaWithMax::new(SignedU128::Positive(delta), max);
+                let delta = DeltaWithMax::new(SignedU128::Positive(*delta), *max);
                 *entry = delta.apply_to(*entry).expect("delta should fit");
             }
         }

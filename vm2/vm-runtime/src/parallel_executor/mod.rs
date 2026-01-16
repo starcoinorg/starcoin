@@ -5,7 +5,7 @@ pub(crate) mod storage_wrapper;
 mod vm_wrapper;
 
 use crate::{
-    data_cache::StateViewCache,
+    data_cache::{take_resource_group_stats, StateViewCache},
     parallel_executor::{storage_wrapper::DelayedFieldCache, vm_wrapper::StarcoinVMWrapper},
     preprocess_transaction,
     starcoin_vm::StarcoinVM,
@@ -284,11 +284,18 @@ impl ParallelStarcoinVM {
                     state_view,
                 )?;
                 let materialize_ms = materialize_start.elapsed().as_secs_f64() * 1000.0;
+                let rg_stats = take_resource_group_stats();
                 info!(
                     target: "vm-bench",
-                    "parallel execute done: exec_ms={:.3} materialize_ms={:.3}",
+                    "parallel execute done: exec_ms={:.3} materialize_ms={:.3} rg_accesses={} rg_cache_hits={} rg_member_calls={} rg_member_ms={:.3} rg_size_calls={} rg_size_ms={:.3}",
                     exec_ms,
-                    materialize_ms
+                    materialize_ms,
+                    rg_stats.group_accesses,
+                    rg_stats.group_cache_hits,
+                    rg_stats.group_member_calls,
+                    rg_stats.group_member_ns as f64 / 1_000_000.0,
+                    rg_stats.group_size_calls,
+                    rg_stats.group_size_ns as f64 / 1_000_000.0,
                 );
                 Ok((outputs, None))
             }
@@ -362,16 +369,26 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 ) -> Result<Vec<TransactionOutput>, VMStatus> {
     let mut outputs = outputs;
     let mut needs_sequential = false;
+    let mut has_agg_v1 = false;
+    let mut has_group_dup = false;
+    let mut group_touches = 0u64;
     let mut group_keys = HashSet::new();
     for (_, output) in outputs.iter() {
         if !output.output.aggregator_v1_delta_set().is_empty() {
             needs_sequential = true;
+            has_agg_v1 = true;
             break;
         }
         for (key, op) in output.output.resource_write_set() {
-            if let AbstractResourceWriteOp::WriteResourceGroup(_) = op {
+            if matches!(
+                op,
+                AbstractResourceWriteOp::WriteResourceGroup(_)
+                    | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
+            ) {
+                group_touches += 1;
                 if !group_keys.insert(key.clone()) {
                     needs_sequential = true;
+                    has_group_dup = true;
                     break;
                 }
             }
@@ -458,6 +475,13 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         return Ok(results.into_iter().map(|(_, output)| output).collect());
     }
 
+    info!(
+        target: "vm-bench",
+        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
+        has_agg_v1,
+        has_group_dup,
+        group_touches
+    );
     let mut state_cache = StateViewCache::new(state_view);
     let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
     let mut results = Vec::with_capacity(outputs.len());
