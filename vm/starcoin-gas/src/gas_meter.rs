@@ -20,9 +20,6 @@ use starcoin_gas_algebra_ext::{
     FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule,
 };
 #[cfg(feature = "testing")]
-use starcoin_logger::prelude::*;
-
-#[cfg(feature = "testing")]
 use starcoin_logger::prelude::debug;
 
 use std::collections::BTreeMap;

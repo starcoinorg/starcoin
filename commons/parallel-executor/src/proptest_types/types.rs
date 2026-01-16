@@ -57,6 +57,7 @@ pub struct TransactionGen<V: Arbitrary + Debug + 'static + Clone> {
 /// counter value. Each execution of the transaction increments the incarnation counter, and its
 /// value determines the index for choosing the read & write sets of the particular execution.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Transaction<K, V> {
     Write {
         /// Incarnation counter for dynamic behavior i.e. incarnations differ in reads and writes.
@@ -76,6 +77,7 @@ pub enum Transaction<K, V> {
 }
 
 impl TransactionGenParams {
+    #[allow(dead_code)]
     pub fn new_dynamic() -> Self {
         TransactionGenParams {
             write_size: 5,
