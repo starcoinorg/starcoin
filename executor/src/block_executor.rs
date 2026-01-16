@@ -152,6 +152,12 @@ pub fn block_execute_with_outputs<S: ChainStateReader + ChainStateWriter>(
     txns: Vec<Transaction>,
     outputs: Vec<TransactionOutput>,
 ) -> ExecutorResult<BlockExecutedData> {
+    if txns.len() != outputs.len() {
+        return Err(BlockExecutorError::BlockCacheTransactionCountNotMatch(
+            txns.len(),
+            outputs.len(),
+        ));
+    }
     let mut executed_data = BlockExecutedData::default();
     let last_index = outputs
         .len()

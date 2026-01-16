@@ -33,4 +33,6 @@ pub enum BlockExecutorError {
     BlockExecuteRetryErr,
     #[error("block transaction is zero")]
     BlockTransactionZero,
+    #[error("transaction count {0:?} does not match output count {1:?}")]
+    BlockCacheTransactionCountNotMatch(usize, usize),
 }
