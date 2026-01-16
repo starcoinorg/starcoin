@@ -12,6 +12,7 @@ Then they are distributed in <code>TransactionManager</code>.
 -  [Constants](#@Constants_0)
 -  [Function `store_fee_caps`](#0x1_transaction_fee_store_fee_caps)
 -  [Function `burn_fee`](#0x1_transaction_fee_burn_fee)
+-  [Function `burn_fee_from`](#0x1_transaction_fee_burn_fee_from)
 -  [Function `mint_fee`](#0x1_transaction_fee_mint_fee)
 -  [Function `initialize`](#0x1_transaction_fee_initialize)
 -  [Function `pay_fee`](#0x1_transaction_fee_pay_fee)
@@ -214,9 +215,36 @@ Mint/Burn capabilities for fee accounting.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">burn_fee</a>(fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> {
     <b>let</b> cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a>&gt;(get_starcoin_framework()).burn_cap;
-    <b>let</b> (burn_ref, receipt) = <a href="coin.md#0x1_coin_get_paired_burn_ref">coin::get_paired_burn_ref</a>(cap);
-    <a href="fungible_asset.md#0x1_fungible_asset_burn">fungible_asset::burn</a>(&burn_ref, fa);
-    <a href="coin.md#0x1_coin_return_paired_burn_ref">coin::return_paired_burn_ref</a>(burn_ref, receipt);
+    <a href="coin.md#0x1_coin_burn_fungible_asset_with_cap">coin::burn_fungible_asset_with_cap</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;(fa, cap);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_transaction_fee_burn_fee_from"></a>
+
+## Function `burn_fee_from`
+
+Burn transaction fee directly from the sender's primary store without emitting events.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee_from">burn_fee_from</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, fee: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee_from">burn_fee_from</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, fee: u64) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a> {
+    <b>if</b> (fee == 0) {
+        <b>return</b>
+    };
+    <b>let</b> cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FeeCapStore">FeeCapStore</a>&gt;(get_starcoin_framework()).burn_cap;
+    <a href="coin.md#0x1_coin_burn_from_for_gas">coin::burn_from_for_gas</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;(<a href="account.md#0x1_account">account</a>, fee, cap);
 }
 </code></pre>
 
@@ -305,15 +333,9 @@ Deposit <code>token</code> into the transaction fees bucket
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">pay_fee</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fa: FungibleAsset) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Entered, fa amount:"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&fa));
-
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&account_addr);
 
     <b>let</b> fa_store = <b>if</b> (<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(account_addr)) {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> <b>exists</b>"));
-
         <b>let</b> fee_pod = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a>&gt;(get_starcoin_framework());
         <b>let</b> store_opt = <a href="transaction_fee.md#0x1_transaction_fee_find_asset_store_with_metadata">find_asset_store_with_metadata</a>(
             &fee_pod.fee_stores,
@@ -327,8 +349,6 @@ Deposit <code>token</code> into the transaction fees bucket
             fa_store
         }
     } <b>else</b> {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | <a href="transaction_fee.md#0x1_transaction_fee_TransactionFeePod">TransactionFeePod</a> not <b>exists</b>"));
-
         <b>let</b> fa_store = <a href="transaction_fee.md#0x1_transaction_fee_inner_create_fa_store">Self::inner_create_fa_store</a>(<a href="account.md#0x1_account">account</a>, <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>());
         <b>let</b> fee_stores = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> fee_stores, fa_store);
@@ -337,9 +357,7 @@ Deposit <code>token</code> into the transaction fees bucket
         });
         fa_store
     };
-    <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fa_store, fa);
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&utf8(b"<a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a> | Exited"));
+    <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal_no_events">fungible_asset::deposit_internal_no_events</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&fa_store), fa);
 }
 </code></pre>
 

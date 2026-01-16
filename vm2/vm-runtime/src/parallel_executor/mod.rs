@@ -22,9 +22,9 @@ use move_vm_types::value_serde::{
     ValueToIdentifierMapping,
 };
 use move_vm_types::value_traversal::find_identifiers_in_value;
-use starcoin_logger::prelude::info;
 use rayon::prelude::*;
 use starcoin_aggregator::types::ReadPosition;
+use starcoin_logger::prelude::info;
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_mvhashmap::versioned_delayed_fields::{
     TVersionedDelayedFieldView, VersionedDelayedFields,
@@ -395,9 +395,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                             | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
                     )
                 });
-                if !has_delayed
-                    && vm_output.aggregator_v1_delta_set().is_empty()
-                    && !has_group_ops
+                if !has_delayed && vm_output.aggregator_v1_delta_set().is_empty() && !has_group_ops
                 {
                     let txn_output = vm_output.into_transaction_output().map_err(|err| {
                         VMStatus::error(
@@ -474,10 +472,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
             )
         });
-        if !has_delayed
-            && vm_output.aggregator_v1_delta_set().is_empty()
-            && !has_group_ops
-        {
+        if !has_delayed && vm_output.aggregator_v1_delta_set().is_empty() && !has_group_ops {
             let txn_output = vm_output.into_transaction_output().map_err(|err| {
                 VMStatus::error(
                     StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
@@ -566,11 +561,7 @@ fn materialize_resource_write_set_no_groups(
                 layout,
                 ..
             }) => {
-                delayed_field_cache.insert_base_value(
-                    key.clone(),
-                    write_op.clone(),
-                    true,
-                );
+                delayed_field_cache.insert_base_value(key.clone(), write_op.clone(), true);
                 materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
             }
             AbstractResourceWriteOp::InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
@@ -588,7 +579,9 @@ fn materialize_resource_write_set_no_groups(
             | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_) => {
                 return Err(VMStatus::error(
                     StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                    Some("unexpected resource group write in fast materialization path".to_string()),
+                    Some(
+                        "unexpected resource group write in fast materialization path".to_string(),
+                    ),
                 ));
             }
         };
@@ -620,11 +613,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                 ..
             }) => {
                 if materialize_delayed {
-                    delayed_field_cache.insert_base_value(
-                        key.clone(),
-                        write_op.clone(),
-                        true,
-                    );
+                    delayed_field_cache.insert_base_value(key.clone(), write_op.clone(), true);
                     materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
                 } else {
                     return Err(VMStatus::error(
@@ -658,8 +647,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                 if materialize_delayed {
                     for (tag, (inner_op, _)) in group_write.inner_ops() {
                         match inner_op {
-                            WriteOp::Creation { data, .. }
-                            | WriteOp::Modification { data, .. } => {
+                            WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
                                 delayed_field_cache.insert_group_member_value(
                                     key.clone(),
                                     tag.clone(),
@@ -687,7 +675,10 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                 if !materialize_delayed {
                     return Err(VMStatus::error(
                         StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                        Some("unexpected group delayed field change without delayed fields".to_string()),
+                        Some(
+                            "unexpected group delayed field change without delayed fields"
+                                .to_string(),
+                        ),
                     ));
                 }
                 materialize_group_in_place(

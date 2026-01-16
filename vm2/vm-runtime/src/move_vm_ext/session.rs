@@ -48,8 +48,8 @@ use starcoin_vm_runtime_types::{
 };
 use starcoin_vm_types::{
     block_metadata::BlockMetadata, contract_event::ContractEvent, on_chain_config::Features,
-    state_store::state_key::StateKey,
-    transaction::SignatureCheckedTransaction, transaction_metadata::TransactionMetadata,
+    state_store::state_key::StateKey, transaction::SignatureCheckedTransaction,
+    transaction_metadata::TransactionMetadata,
 };
 use std::{
     borrow::Borrow,
@@ -497,8 +497,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             }
         }
 
-        for (state_key, change) in
-            std::mem::take(&mut aggregator_change_set.aggregator_v1_changes)
+        for (state_key, change) in std::mem::take(&mut aggregator_change_set.aggregator_v1_changes)
         {
             match change {
                 AggregatorChangeV1::Write(value) => {
@@ -516,18 +515,16 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             }
         }
 
-        let reads_needing_exchange = std::mem::take(
-            &mut aggregator_change_set.reads_needing_exchange,
-        )
-        .into_iter()
-        .filter(|(state_key, _)| !resource_write_set.contains_key(state_key))
-        .collect();
-        let group_reads_needing_exchange = std::mem::take(
-            &mut aggregator_change_set.group_reads_needing_exchange,
-        )
-        .into_iter()
-        .filter(|(state_key, _)| !resource_group_write_set.contains_key(state_key))
-        .collect();
+        let reads_needing_exchange =
+            std::mem::take(&mut aggregator_change_set.reads_needing_exchange)
+                .into_iter()
+                .filter(|(state_key, _)| !resource_write_set.contains_key(state_key))
+                .collect();
+        let group_reads_needing_exchange =
+            std::mem::take(&mut aggregator_change_set.group_reads_needing_exchange)
+                .into_iter()
+                .filter(|(state_key, _)| !resource_group_write_set.contains_key(state_key))
+                .collect();
 
         let change_set = VMChangeSet::new_expanded(
             resource_write_set,

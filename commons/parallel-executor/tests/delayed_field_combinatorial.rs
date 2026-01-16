@@ -11,7 +11,9 @@ use starcoin_mvhashmap::types::MVDelayedFieldsError;
 use starcoin_mvhashmap::versioned_delayed_fields::TVersionedDelayedFieldView;
 use starcoin_parallel_executor::errors::Error;
 use starcoin_parallel_executor::executor::ParallelTransactionExecutor;
-use starcoin_parallel_executor::task::{ExecutionStatus, ExecutorTask, Transaction, TransactionOutput};
+use starcoin_parallel_executor::task::{
+    ExecutionStatus, ExecutorTask, Transaction, TransactionOutput,
+};
 use std::collections::{BTreeSet, HashMap};
 
 #[derive(Clone, Debug)]
@@ -23,8 +25,15 @@ struct MockTxn {
 
 #[derive(Clone, Debug)]
 enum DelayedOp {
-    Create { id: DelayedFieldID, value: u128 },
-    Delta { id: DelayedFieldID, delta: u128, max: u128 },
+    Create {
+        id: DelayedFieldID,
+        value: u128,
+    },
+    Delta {
+        id: DelayedFieldID,
+        delta: u128,
+        max: u128,
+    },
 }
 
 impl Transaction for MockTxn {
@@ -192,7 +201,8 @@ fn assert_parallel_matches_expected(
     gas_limit: Option<u64>,
 ) -> usize {
     let executor: ParallelTransactionExecutor<MockTxn, MockExecutor> =
-        ParallelTransactionExecutor::new(num_cpus::get().max(2), gas_limit).with_delayed_fields(true);
+        ParallelTransactionExecutor::new(num_cpus::get().max(2), gas_limit)
+            .with_delayed_fields(true);
 
     const MAX_RESTARTS: usize = 5;
     let (outputs, delayed_fields, restarts) = {

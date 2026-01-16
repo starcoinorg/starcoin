@@ -185,12 +185,11 @@ impl<'r> ResourceGroupAdapter<'r> {
                     BTreeMap::new()
                 } else {
                     bcs::from_bytes(&group_data_blob).map_err(|e| {
-                        PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
-                            format!(
+                        PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR)
+                            .with_message(format!(
                                 "Failed to deserialize the resource group at {:? }: {:?}",
                                 group_key, e
-                            ),
-                    )
+                            ))
                     })?
                 };
                 Ok((group_data, group_data_blob.len() as u64))

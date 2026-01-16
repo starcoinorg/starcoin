@@ -124,11 +124,12 @@ impl<K, T: TransactionOutput, E: Send + Clone> TxnLastInputOutput<K, T, E> {
     // Must be executed after parallel execution is done, grabs outputs. Will panic if
     // other outstanding references to the recorded outputs exist.
     pub fn take_output(&self, txn_idx: TxnIndex) -> ExecutionStatus<T, Error<E>> {
-        let owning_ptr = self.outputs[txn_idx]
-            .swap(None)
-            .unwrap_or_else(|| {
-                panic!("Output must be recorded after execution (txn_idx={})", txn_idx)
-            });
+        let owning_ptr = self.outputs[txn_idx].swap(None).unwrap_or_else(|| {
+            panic!(
+                "Output must be recorded after execution (txn_idx={})",
+                txn_idx
+            )
+        });
 
         match Arc::try_unwrap(owning_ptr) {
             Ok(output) => output,

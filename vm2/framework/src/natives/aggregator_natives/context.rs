@@ -123,18 +123,14 @@ impl<'a> NativeAggregatorContext<'a> {
         let reads_needing_exchange = if delayed_write_set_ids.is_empty() {
             BTreeMap::new()
         } else {
-            delayed_field_resolver.get_reads_needing_exchange(
-                &delayed_write_set_ids,
-                &HashSet::new(),
-            )?
+            delayed_field_resolver
+                .get_reads_needing_exchange(&delayed_write_set_ids, &HashSet::new())?
         };
         let group_reads_needing_exchange = if delayed_write_set_ids.is_empty() {
             BTreeMap::new()
         } else {
-            delayed_field_resolver.get_group_reads_needing_exchange(
-                &delayed_write_set_ids,
-                &HashSet::new(),
-            )?
+            delayed_field_resolver
+                .get_group_reads_needing_exchange(&delayed_write_set_ids, &HashSet::new())?
         };
         Ok(AggregatorChangeSet {
             aggregator_v1_changes,
