@@ -1,4 +1,5 @@
 use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
+use crate::verifier_pool::VerifierPool;
 use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
@@ -18,7 +19,7 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::transaction::{
     CallError as CallError2, TransactionError as TransactionError2,
 };
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, sync::Arc, time::Instant};
 
 /// Cache for state nonces.
 #[derive(Clone)]
@@ -144,6 +145,7 @@ pub struct PoolClient {
     state_root2: HashValue,
     nonce_client: CachedSeqNumberClient,
     vm_metrics: Option<VMMetrics>,
+    verifier_pool: Option<Arc<VerifierPool>>,
 }
 
 impl std::fmt::Debug for PoolClient {
@@ -160,6 +162,7 @@ impl PoolClient {
         storage2: Arc<dyn Store2>,
         cache: NonceCache,
         vm_metrics: Option<VMMetrics>,
+        verifier_pool: Option<Arc<VerifierPool>>,
     ) -> Self {
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let statedb2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
@@ -169,6 +172,7 @@ impl PoolClient {
             state_root2,
             nonce_client,
             vm_metrics,
+            verifier_pool,
         }
     }
 }
@@ -184,10 +188,26 @@ impl crate::pool::Client for PoolClient {
         &self,
         tx: UnverifiedUserTransaction,
     ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
+        let total_start = Instant::now();
+        let tx_hash = tx.hash();
         let txn = MultiSignedUserTransaction::from(tx);
+        let vm_type = match &txn {
+            MultiSignedUserTransaction::VM1(_) => "vm1",
+            MultiSignedUserTransaction::VM2(_) => "vm2",
+        };
+        let sig_start = Instant::now();
         let checked_txn = txn.clone().check_signature().map_err(|e| {
+            debug!(
+                target: "txpool",
+                "verify_transaction failed at signature tx={:?} type={} total_ms={:.3} err={}",
+                tx_hash,
+                vm_type,
+                total_start.elapsed().as_secs_f64() * 1000.0,
+                e
+            );
             MultiTransactionError::VM1(TransactionError::InvalidSignature(e.to_string()))
         })?;
+        let sig_dur = sig_start.elapsed();
         match txn {
             MultiSignedUserTransaction::VM1(txn) => {
                 match starcoin_executor::validate_transaction(
@@ -202,13 +222,47 @@ impl crate::pool::Client for PoolClient {
                 }
             }
             MultiSignedUserTransaction::VM2(txn) => {
-                match starcoin_vm2_executor::validate_transaction(
-                    self.nonce_client.statedb2.as_ref(),
-                    txn,
-                    self.vm_metrics.clone(),
-                ) {
-                    None => Ok(checked_txn),
+                let vm_start = Instant::now();
+                let status = if let Some(pool) = &self.verifier_pool {
+                    let mut entry = pool.checkout(self.state_root1, self.state_root2);
+                    entry.verify_vm2(txn)
+                } else {
+                    starcoin_vm2_executor::validate_transaction(
+                        self.nonce_client.statedb2.as_ref(),
+                        txn,
+                        self.vm_metrics.clone(),
+                    )
+                };
+                match status {
+                    None => {
+                        let vm_dur = vm_start.elapsed();
+                        if vm_type == "vm2" {
+                            debug!(
+                                target: "txpool",
+                                "verify_transaction tx={:?} type={} sig_ms={:.3} vm_ms={:.3} total_ms={:.3}",
+                                tx_hash,
+                                vm_type,
+                                sig_dur.as_secs_f64() * 1000.0,
+                                vm_dur.as_secs_f64() * 1000.0,
+                                total_start.elapsed().as_secs_f64() * 1000.0,
+                            );
+                        }
+                        Ok(checked_txn)
+                    }
                     Some(status) => {
+                        let vm_dur = vm_start.elapsed();
+                        if vm_type == "vm2" {
+                            debug!(
+                                target: "txpool",
+                                "verify_transaction failed tx={:?} type={} sig_ms={:.3} vm_ms={:.3} total_ms={:.3} status={:?}",
+                                tx_hash,
+                                vm_type,
+                                sig_dur.as_secs_f64() * 1000.0,
+                                vm_dur.as_secs_f64() * 1000.0,
+                                total_start.elapsed().as_secs_f64() * 1000.0,
+                                status,
+                            );
+                        }
                         Err(TransactionError2::CallErr(CallError2::ExecutionError(status)).into())
                     }
                 }
