@@ -8,6 +8,7 @@ use crate::{
         UnverifiedUserTransaction, VerifiedTransaction,
     },
     pool_client::{NonceCache, PoolClient},
+    verifier_pool::VerifierPool,
 };
 
 use crate::metrics::TxPoolMetrics;
@@ -54,6 +55,15 @@ impl TxPoolService {
             .and_then(|registry| TxPoolMetrics::register(registry).ok());
 
         let pool_config = &node_config.tx_pool;
+        let verifier_pool = if pool_config.verifier_pool_enabled() {
+            Some(Arc::new(VerifierPool::new(
+                pool_config.verifier_pool_size(),
+                storage2.clone(),
+                vm_metrics.clone(),
+            )))
+        } else {
+            None
+        };
         let verifier_options = pool::VerifierOptions {
             no_early_reject: false,
             min_gas_price: node_config.tx_pool.min_gas_price(),
@@ -81,6 +91,7 @@ impl TxPoolService {
             sequence_number_cache: NonceCache::new(128),
             metrics,
             vm_metrics,
+            verifier_pool,
         };
 
         Self { inner }
@@ -185,6 +196,7 @@ impl TxPoolSyncService for TxPoolService {
             self.inner.storage2.clone(),
             NonceCache::new(0),
             self.inner.vm_metrics.clone(),
+            self.inner.verifier_pool.clone(),
         );
         let r =
             self.inner
@@ -355,6 +367,7 @@ pub struct Inner {
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
     vm_metrics: Option<VMMetrics>,
+    verifier_pool: Option<Arc<VerifierPool>>,
 }
 impl std::fmt::Debug for Inner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -382,6 +395,9 @@ impl Inner {
     pub(crate) fn notify_new_chain_header(&self, header: BlockHeader) {
         *self.chain_header.write() = header;
         self.sequence_number_cache.clear();
+        if let Some(pool) = &self.verifier_pool {
+            pool.invalidate_all();
+        }
     }
 
     pub(crate) fn get_chain_reader(&self) -> Result<ChainStateDB> {
@@ -538,6 +554,7 @@ impl Inner {
             self.storage2.clone(),
             NonceCache::new(0),
             self.vm_metrics.clone(),
+            self.verifier_pool.clone(),
         );
         self.queue
             .next_sequence_number_in_batch(pool_client, addresses)
@@ -616,6 +633,7 @@ impl Inner {
             self.storage2.clone(),
             self.sequence_number_cache.clone(),
             self.vm_metrics.clone(),
+            self.verifier_pool.clone(),
         ))
     }
 }

@@ -12,6 +12,7 @@ use crate::{pool, pool::PoolTransaction};
 use chrono::Utc;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
+use rayon::prelude::*;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionError};
@@ -290,7 +291,7 @@ impl TransactionQueue {
     ) -> Vec<Result<(), MultiTransactionError>>
     where
         T: IntoIterator<Item = PoolTransaction>,
-        C: client::AccountSeqNumberClient + client::Client,
+        C: client::AccountSeqNumberClient + client::Client + Send + Sync,
     {
         // ----- Blacklist check -----
         if !bypass_vm1_limit {
@@ -346,62 +347,74 @@ impl TransactionQueue {
         let replace =
             replace::ReplaceByScoreAndReadiness::new(self.pool.read().scoring().clone(), client);
 
-        let mut results = Vec::new();
+        let transactions: Vec<_> = transactions.into_iter().collect();
+        let verifier = Arc::new(verifier);
+        let verified = if transactions.len() > 1 {
+            sp_utils::thread_pool::RAYON_EXEC_POOL.install(|| {
+                transactions
+                    .par_iter()
+                    .map(|transaction| verifier.verify_transaction(transaction.clone()))
+                    .collect::<Vec<_>>()
+            })
+        } else {
+            transactions
+                .iter()
+                .map(|transaction| verifier.verify_transaction(transaction.clone()))
+                .collect::<Vec<_>>()
+        };
+
+        let mut results = Vec::with_capacity(transactions.len());
         let mut existing_vm1 = if !bypass_vm1_limit {
             self.existing_vm1_txns()
         } else {
             0
         };
-        for transaction in transactions.into_iter() {
-            let is_v1_txn = transaction.signed().is_v1();
-            // ----- VM1 limit and abuse counter logic -----
-            if !bypass_vm1_limit && is_v1_txn && existing_vm1 >= self.max_vm1_txn_count {
-                let now_ts = Utc::now().timestamp() as u64;
-                // Increment rejection count for peer
-                if let Some(peer) = &peer_id {
-                    let mut count_map = self.vm1_reject_count.write();
-                    let c = count_map.entry(peer.clone()).or_default();
-                    *c += 1;
-                    // Blacklist peer if over threshold
-                    if *c >= self.max_vm1_rejections_per_peer {
-                        let mut bl = self.vm1_blacklist.write();
-                        bl.insert(peer.clone(), now_ts + self.vm1_peer_blacklist_duration_secs);
-                        // Reset count to prevent unbounded growth
-                        *c = 0;
-                    }
-                }
-                results.push(Err(TransactionError::LimitReached(
-                    "vm1 txn threshold".to_string(),
-                )
-                .into()));
-                continue;
-            }
 
+        for (transaction, verification) in transactions.into_iter().zip(verified.into_iter()) {
             let hash = transaction.hash();
+            let is_v1_txn = transaction.signed().is_v1();
 
             if self.pool.read().find(&hash).is_some() {
                 results.push(Err(transaction::TransactionError::AlreadyImported.into()));
+                continue;
             }
 
             if let Some(err) = self.recently_rejected.get(&hash) {
                 trace!(target: "txqueue", "[{:?}] Rejecting recently rejected: {:?}", &hash, err);
                 results.push(Err(err));
+                continue;
             }
 
-            let imported = verifier
-                .verify_transaction(transaction)
-                .and_then(|verified| {
-                    self.pool
-                        .write()
-                        .import(verified, &replace)
-                        .map_err(convert_error)
-                });
+            let imported = match verification {
+                Ok(verified_txn) => {
+                    if !bypass_vm1_limit && is_v1_txn && existing_vm1 >= self.max_vm1_txn_count {
+                        let now_ts = Utc::now().timestamp() as u64;
+                        if let Some(peer) = &peer_id {
+                            let mut count_map = self.vm1_reject_count.write();
+                            let c = count_map.entry(peer.clone()).or_default();
+                            *c += 1;
+                            if *c >= self.max_vm1_rejections_per_peer {
+                                let mut bl = self.vm1_blacklist.write();
+                                bl.insert(
+                                    peer.clone(),
+                                    now_ts + self.vm1_peer_blacklist_duration_secs,
+                                );
+                                *c = 0;
+                            }
+                        }
+                        Err(TransactionError::LimitReached("vm1 txn threshold".to_string()).into())
+                    } else {
+                        self.pool
+                            .write()
+                            .import(verified_txn, &replace)
+                            .map_err(convert_error)
+                    }
+                }
+                Err(err) => Err(err),
+            };
 
             results.push(match imported {
                 Ok(_) => {
-                    // TODO: how to tracking VM1 transactions?
-                    // 1. what if a vm1 txn has been replaced?
-                    // 2. concurrent vm1 txns from different peers?
                     if !bypass_vm1_limit && is_v1_txn {
                         existing_vm1 += 1
                     };

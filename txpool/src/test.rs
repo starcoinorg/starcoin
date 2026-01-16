@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::pool::AccountSeqNumberClient;
+use crate::verifier_pool::VerifierPool;
 use crate::TxStatus;
 use anyhow::{format_err, Result};
 use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
@@ -62,6 +63,30 @@ impl AccountSeqNumberClient for MockNonceClient {
             }
         }
     }
+}
+
+#[test]
+fn verifier_pool_refreshes_roots() {
+    let config = NodeConfig::random_for_test();
+    let net = config.net().clone();
+    let (storage, storage2, chain_info, ..) =
+        Genesis::init_storage_for_test(&net).expect("init storage for test");
+    let multi_state = storage
+        .get_vm_multi_state(chain_info.head().id())
+        .expect("multi state from genesis");
+    let root1 = multi_state.state_root1();
+    let root2 = multi_state.state_root2();
+
+    let pool = VerifierPool::new(2, storage2.clone(), None);
+
+    {
+        let guard = pool.checkout(root1, root2);
+        assert_eq!(guard.state_roots(), (Some(root1), Some(root2)));
+    }
+
+    pool.invalidate_all();
+    let guard = pool.checkout(root1, root2);
+    assert_eq!(guard.state_roots(), (Some(root1), Some(root2)));
 }
 
 #[stest::test]
