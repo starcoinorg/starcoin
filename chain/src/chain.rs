@@ -1964,8 +1964,6 @@ impl BlockChain {
         }
     }
 
-    /// Switch the current chain state to a different block without creating a new BlockChain object.
-    /// This is more efficient than `fork` when you just need to update the state in place.
     pub fn switch_to_block(&mut self, block_id: HashValue) -> Result<()> {
         let (storage, storage2) = &self.storage;
         ensure!(
