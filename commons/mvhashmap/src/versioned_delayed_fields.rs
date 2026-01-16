@@ -632,12 +632,15 @@ impl<K: Eq + Hash + Clone + Debug + Copy> VersionedDelayedFields<K> {
                     id
                 ))
             })?;
-            let entry_to_commit = versioned_value.versioned_map.get(&idx_to_commit).ok_or_else(|| {
-                CommitError::CodeInvariantError(format!(
-                    "Value in commit at txn {} needs to be in the HashMap for id {:?}",
-                    idx_to_commit, id
-                ))
-            })?;
+            let entry_to_commit = versioned_value
+                .versioned_map
+                .get(&idx_to_commit)
+                .ok_or_else(|| {
+                    CommitError::CodeInvariantError(format!(
+                        "Value in commit at txn {} needs to be in the HashMap for id {:?}",
+                        idx_to_commit, id
+                    ))
+                })?;
 
             let new_entry = match entry_to_commit.as_ref().deref() {
                 VersionEntry::Value(_, None) => None,

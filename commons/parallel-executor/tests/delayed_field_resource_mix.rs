@@ -10,7 +10,9 @@ use starcoin_aggregator::types::{DelayedFieldValue, ReadPosition};
 use starcoin_mvhashmap::types::MVDelayedFieldsError;
 use starcoin_mvhashmap::versioned_delayed_fields::TVersionedDelayedFieldView;
 use starcoin_parallel_executor::executor::ParallelTransactionExecutor;
-use starcoin_parallel_executor::task::{ExecutionStatus, ExecutorTask, Transaction, TransactionOutput};
+use starcoin_parallel_executor::task::{
+    ExecutionStatus, ExecutorTask, Transaction, TransactionOutput,
+};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -24,8 +26,15 @@ struct MixTxn {
 
 #[derive(Clone, Debug)]
 enum DelayedOp {
-    Create { id: DelayedFieldID, value: u128 },
-    Delta { id: DelayedFieldID, delta: u128, max: u128 },
+    Create {
+        id: DelayedFieldID,
+        value: u128,
+    },
+    Delta {
+        id: DelayedFieldID,
+        delta: u128,
+        max: u128,
+    },
 }
 
 impl Transaction for MixTxn {
@@ -88,9 +97,7 @@ impl ExecutorTask for MixExecutor {
 
         let mut writes = Vec::with_capacity(txn.writes.len());
         for key in &txn.writes {
-            let value = sum
-                .wrapping_add(txn.salt)
-                .wrapping_add(*key);
+            let value = sum.wrapping_add(txn.salt).wrapping_add(*key);
             writes.push((*key, value));
         }
 
@@ -216,9 +223,7 @@ fn expected_after_sequential(
             sum = sum.wrapping_add(*state.get(key).unwrap_or(&0));
         }
         for key in &txn.writes {
-            let value = sum
-                .wrapping_add(txn.salt)
-                .wrapping_add(*key);
+            let value = sum.wrapping_add(txn.salt).wrapping_add(*key);
             state.insert(*key, value);
         }
 
@@ -245,7 +250,8 @@ fn assert_parallel_matches_expected(
     gas_limit: Option<u64>,
 ) {
     let executor: ParallelTransactionExecutor<MixTxn, MixExecutor> =
-        ParallelTransactionExecutor::new(num_cpus::get().max(2), gas_limit).with_delayed_fields(true);
+        ParallelTransactionExecutor::new(num_cpus::get().max(2), gas_limit)
+            .with_delayed_fields(true);
 
     let (mut outputs, delayed_fields) = executor
         .execute_transactions_parallel_with_delayed_fields((), txns.clone())

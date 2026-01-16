@@ -54,6 +54,8 @@ This module provides the foundation for typesafe Coins.
 -  [Function `convert_and_take_paired_burn_ref`](#0x1_coin_convert_and_take_paired_burn_ref)
 -  [Function `return_paired_burn_ref`](#0x1_coin_return_paired_burn_ref)
 -  [Function `borrow_paired_burn_ref`](#0x1_coin_borrow_paired_burn_ref)
+-  [Function `burn_fungible_asset_with_cap`](#0x1_coin_burn_fungible_asset_with_cap)
+-  [Function `burn_from_for_gas`](#0x1_coin_burn_from_for_gas)
 -  [Function `initialize_supply_config`](#0x1_coin_initialize_supply_config)
 -  [Function `allow_supply_upgrades`](#0x1_coin_allow_supply_upgrades)
 -  [Function `initialize_aggregatable_coin`](#0x1_coin_initialize_aggregatable_coin)
@@ -2035,9 +2037,77 @@ Return the <code>BurnRef</code> with the hot potato receipt.
     <b>let</b> metadata = <a href="coin.md#0x1_coin_assert_paired_metadata_exists">assert_paired_metadata_exists</a>&lt;CoinType&gt;();
     <b>let</b> metadata_addr = object_address(&metadata);
     <b>assert</b>!(<b>exists</b>&lt;<a href="coin.md#0x1_coin_PairedFungibleAssetRefs">PairedFungibleAssetRefs</a>&gt;(metadata_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_internal">error::internal</a>(<a href="coin.md#0x1_coin_EPAIRED_FUNGIBLE_ASSET_REFS_NOT_FOUND">EPAIRED_FUNGIBLE_ASSET_REFS_NOT_FOUND</a>));
-    <b>let</b> burn_ref_opt = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_PairedFungibleAssetRefs">PairedFungibleAssetRefs</a>&gt;(metadata_addr).burn_ref_opt;
+    <b>let</b> burn_ref_opt = &<b>borrow_global</b>&lt;<a href="coin.md#0x1_coin_PairedFungibleAssetRefs">PairedFungibleAssetRefs</a>&gt;(metadata_addr).burn_ref_opt;
     <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(burn_ref_opt), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin.md#0x1_coin_EBURN_REF_NOT_FOUND">EBURN_REF_NOT_FOUND</a>));
     <a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(burn_ref_opt)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_coin_burn_fungible_asset_with_cap"></a>
+
+## Function `burn_fungible_asset_with_cap`
+
+Burn a fungible asset using the paired burn ref from the capability.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x1_coin_burn_fungible_asset_with_cap">burn_fungible_asset_with_cap</a>&lt;CoinType&gt;(fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">fungible_asset::FungibleAsset</a>, burn_cap: &<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x1_coin_burn_fungible_asset_with_cap">burn_fungible_asset_with_cap</a>&lt;CoinType&gt;(
+    fa: FungibleAsset,
+    burn_cap: &<a href="coin.md#0x1_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt;,
+) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_PairedFungibleAssetRefs">PairedFungibleAssetRefs</a> {
+    <b>let</b> burn_ref = <a href="coin.md#0x1_coin_borrow_paired_burn_ref">borrow_paired_burn_ref</a>(burn_cap);
+    <a href="fungible_asset.md#0x1_fungible_asset_burn">fungible_asset::burn</a>(burn_ref, fa);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_coin_burn_from_for_gas"></a>
+
+## Function `burn_from_for_gas`
+
+Burn from the sender's primary store for gas using the paired burn ref without
+mutating the paired ref storage.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x1_coin_burn_from_for_gas">burn_from_for_gas</a>&lt;CoinType&gt;(account_addr: <b>address</b>, amount: u64, burn_cap: &<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x1_coin_burn_from_for_gas">burn_from_for_gas</a>&lt;CoinType&gt;(
+    account_addr: <b>address</b>,
+    amount: u64,
+    burn_cap: &<a href="coin.md#0x1_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt;,
+) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_PairedFungibleAssetRefs">PairedFungibleAssetRefs</a> {
+    <b>if</b> (amount == 0) {
+        <b>return</b>
+    };
+    <b>let</b> burn_ref = <a href="coin.md#0x1_coin_borrow_paired_burn_ref">borrow_paired_burn_ref</a>(burn_cap);
+    <b>let</b> metadata = <a href="coin.md#0x1_coin_assert_paired_metadata_exists">assert_paired_metadata_exists</a>&lt;CoinType&gt;();
+    <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">fungible_asset::address_burn_from_for_gas</a>(
+        burn_ref,
+        <a href="primary_fungible_store.md#0x1_primary_fungible_store_primary_store_address">primary_fungible_store::primary_store_address</a>(account_addr, metadata),
+        amount
+    );
 }
 </code></pre>
 

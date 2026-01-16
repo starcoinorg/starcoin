@@ -346,10 +346,7 @@ mod tests {
             .unwrap();
 
         let result = reads.validate_delayed_field_reads(&fields, 0);
-        assert!(matches!(
-            result,
-            Err(DelayedReadValidationError::Invalid)
-        ));
+        assert!(matches!(result, Err(DelayedReadValidationError::Invalid)));
     }
 
     #[test]
@@ -376,9 +373,6 @@ mod tests {
         assert!(reads.is_incorrect_use());
 
         let result = reads.validate_delayed_field_reads(&fields, 0);
-        assert!(matches!(
-            result,
-            Err(DelayedReadValidationError::Fatal)
-        ));
+        assert!(matches!(result, Err(DelayedReadValidationError::Fatal)));
     }
 }

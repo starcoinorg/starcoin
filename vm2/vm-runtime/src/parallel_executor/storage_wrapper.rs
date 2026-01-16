@@ -201,11 +201,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             .and_then(|value| value.as_write_op().cloned())
     }
 
-    fn read_parallel_group_member(
-        &self,
-        group_key: &StateKey,
-        tag: &StructTag,
-    ) -> Option<WriteOp> {
+    fn read_parallel_group_member(&self, group_key: &StateKey, tag: &StructTag) -> Option<WriteOp> {
         self.hashmap_view
             .read(&ParallelStateKey::GroupMember {
                 group_key: group_key.clone(),
@@ -517,8 +513,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                     .map_err(PartialVMError::from)?
                     .map(|v| v.into_metadata())
                     .unwrap_or_else(StateValueMetadata::none);
-                let group_size =
-                    TResourceGroupView::resource_group_size(self, group_key)?;
+                let group_size = TResourceGroupView::resource_group_size(self, group_key)?;
                 self.record_group_read(
                     group_key,
                     metadata,
@@ -545,8 +540,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                     .map_err(PartialVMError::from)?
                     .map(|v| v.into_metadata())
                     .unwrap_or_else(StateValueMetadata::none);
-                let group_size =
-                    TResourceGroupView::resource_group_size(self, group_key)?;
+                let group_size = TResourceGroupView::resource_group_size(self, group_key)?;
                 self.record_group_read(
                     group_key,
                     metadata,
@@ -573,8 +567,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                 .map_err(PartialVMError::from)?
                 .map(|v| v.into_metadata())
                 .unwrap_or_else(StateValueMetadata::none);
-            let group_size =
-                TResourceGroupView::resource_group_size(self, group_key)?;
+            let group_size = TResourceGroupView::resource_group_size(self, group_key)?;
 
             let exchanged = self.delayed_field_cache.get_or_insert_group_member_value(
                 group_key.clone(),
