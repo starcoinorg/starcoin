@@ -52,6 +52,16 @@ pub struct TxPoolConfig {
     #[clap(name = "txpool-vm1-peer-blacklist-duration-secs", long)]
     /// Duration (in seconds) for which a peer remains blacklisted. default to 120.
     vm1_peer_blacklist_duration_secs: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-verifier-pool-size", long)]
+    /// Size of the verifier pool used by txpool validation. default to num_cpus.
+    verifier_pool_size: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "txpool-verifier-pool-enabled", long)]
+    /// Enable pooled VM validators for txpool verification. default to true.
+    verifier_pool_enabled: Option<bool>,
 }
 
 impl TxPoolConfig {
@@ -92,6 +102,12 @@ impl TxPoolConfig {
     pub fn vm1_peer_blacklist_duration_secs(&self) -> u64 {
         self.vm1_peer_blacklist_duration_secs.unwrap_or(120)
     }
+    pub fn verifier_pool_size(&self) -> usize {
+        self.verifier_pool_size.unwrap_or_else(num_cpus::get)
+    }
+    pub fn verifier_pool_enabled(&self) -> bool {
+        self.verifier_pool_enabled.unwrap_or(true)
+    }
 }
 
 impl ConfigModule for TxPoolConfig {
@@ -120,6 +136,12 @@ impl ConfigModule for TxPoolConfig {
         }
         if let Some(m) = txpool_opt.vm1_peer_blacklist_duration_secs.as_ref() {
             self.vm1_peer_blacklist_duration_secs = Some(*m);
+        }
+        if let Some(m) = txpool_opt.verifier_pool_size.as_ref() {
+            self.verifier_pool_size = Some(*m);
+        }
+        if let Some(m) = txpool_opt.verifier_pool_enabled.as_ref() {
+            self.verifier_pool_enabled = Some(*m);
         }
         Ok(())
     }

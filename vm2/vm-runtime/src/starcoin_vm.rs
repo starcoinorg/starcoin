@@ -64,6 +64,7 @@ use starcoin_vm_types::{
 use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
 use std::sync::LazyLock;
+use std::time::{Duration, Instant};
 use std::{borrow::Borrow, cmp::min, collections::BTreeSet, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
@@ -338,6 +339,7 @@ impl StarcoinVM {
         transaction: &SignatureCheckedTransaction,
         remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
+        let impl_start = Instant::now();
         let txn_data = TransactionMetadata::new(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
         let mut session = self
@@ -346,8 +348,12 @@ impl StarcoinVM {
         let gas_params = self.get_gas_parameters()?;
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
+        let check_gas_start = Instant::now();
         self.check_gas(&txn_data)?;
-        match transaction.payload() {
+        let check_gas_dur = check_gas_start.elapsed();
+
+        let verify_args_start = Instant::now();
+        let payload_kind = match transaction.payload() {
             TransactionPayload::Package(package) => {
                 for module in package.modules() {
                     if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
@@ -369,7 +375,7 @@ impl StarcoinVM {
                         }
                         Ok(only_new_module) => only_new_module,
                     };
-                let _ = session
+                session
                     .verify_module_bundle(
                         package
                             .modules()
@@ -384,6 +390,7 @@ impl StarcoinVM {
                         },
                     )
                     .map_err(|e| e.into_vm_status())?;
+                "package"
             }
             TransactionPayload::Script(s) => {
                 if let Ok(s) = CompiledScript::deserialize(s.code()) {
@@ -397,6 +404,7 @@ impl StarcoinVM {
                         txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
+                "script"
             }
             TransactionPayload::EntryFunction(s) => {
                 session
@@ -408,16 +416,34 @@ impl StarcoinVM {
                         txn_data.sender(),
                     )
                     .map_err(|e| e.into_vm_status())?;
+                "entry_function"
             }
-        }
-        self.run_prologue(&mut session, &mut gas_meter, &txn_data)
+        };
+        let verify_args_dur = verify_args_start.elapsed();
+
+        let prologue_start = Instant::now();
+        let prologue_result = self.run_prologue(&mut session, &mut gas_meter, &txn_data);
+        let prologue_dur = prologue_start.elapsed();
+
+        debug!(
+            target: "txpool",
+            "vm2 verify_impl kind={} check_ms={:.3} verify_args_ms={:.3} prologue_ms={:.3} total_ms={:.3}",
+            payload_kind,
+            check_gas_dur.as_secs_f64() * 1000.0,
+            verify_args_dur.as_secs_f64() * 1000.0,
+            prologue_dur.as_secs_f64() * 1000.0,
+            impl_start.elapsed().as_secs_f64() * 1000.0,
+        );
+        prologue_result
     }
 
-    pub fn verify_transaction<S: StateView>(
+    fn verify_transaction_with_options<S: StateView>(
         &mut self,
         state_view: &S,
         txn: SignedUserTransaction,
+        reload_configs: bool,
     ) -> Option<VMStatus> {
+        let total_start = Instant::now();
         #[cfg(feature = "metrics")]
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
@@ -426,15 +452,39 @@ impl StarcoinVM {
                 .start_timer()
         });
         let data_cache = StateViewCache::new(state_view);
+        let sig_start = Instant::now();
         let signature_verified_txn = match txn.check_signature() {
             Ok(t) => t,
-            Err(_) => return Some(VMStatus::error(StatusCode::INVALID_SIGNATURE, None)),
+            Err(_) => {
+                debug!(
+                    target: "txpool",
+                    "vm2 verify_transaction signature failed sig_ms={:.3}",
+                    sig_start.elapsed().as_secs_f64() * 1000.0
+                );
+                return Some(VMStatus::error(StatusCode::INVALID_SIGNATURE, None));
+            }
         };
-        if let Err(err) = self.load_configs(state_view) {
-            warn!("Load config error at verify_transaction: {}", err);
-            return Some(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
+        let sig_dur = sig_start.elapsed();
+
+        let mut cfg_dur = Duration::from_millis(0);
+        if reload_configs || self.vm_config.is_none() || self.gas_schedule.is_none() {
+            let cfg_start = Instant::now();
+            if let Err(err) = self.load_configs(state_view) {
+                warn!("Load config error at verify_transaction: {}", err);
+                debug!(
+                    target: "txpool",
+                    "vm2 verify_transaction load_configs failed sig_ms={:.3} cfg_ms={:.3} total_ms={:.3}",
+                    sig_dur.as_secs_f64() * 1000.0,
+                    cfg_start.elapsed().as_secs_f64() * 1000.0,
+                    total_start.elapsed().as_secs_f64() * 1000.0,
+                );
+                return Some(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None));
+            }
+            cfg_dur = cfg_start.elapsed();
         }
-        match self.verify_transaction_impl(&signature_verified_txn, &data_cache) {
+        let verify_start = Instant::now();
+        let verify_result = match self.verify_transaction_impl(&signature_verified_txn, &data_cache)
+        {
             Ok(_) => None,
             Err(err) => {
                 if err.status_code() == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
@@ -443,7 +493,33 @@ impl StarcoinVM {
                     Some(err)
                 }
             }
-        }
+        };
+        let verify_dur = verify_start.elapsed();
+        debug!(
+            target: "txpool",
+            "vm2 verify_transaction sig_ms={:.3} cfg_ms={:.3} impl_ms={:.3} total_ms={:.3}",
+            sig_dur.as_secs_f64() * 1000.0,
+            cfg_dur.as_secs_f64() * 1000.0,
+            verify_dur.as_secs_f64() * 1000.0,
+            total_start.elapsed().as_secs_f64() * 1000.0,
+        );
+        verify_result
+    }
+
+    pub fn verify_transaction<S: StateView>(
+        &mut self,
+        state_view: &S,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        self.verify_transaction_with_options(state_view, txn, true)
+    }
+
+    pub fn verify_transaction_cached_config<S: StateView>(
+        &mut self,
+        state_view: &S,
+        txn: SignedUserTransaction,
+    ) -> Option<VMStatus> {
+        self.verify_transaction_with_options(state_view, txn, false)
     }
 
     fn only_new_module_strategy<S: StateView>(

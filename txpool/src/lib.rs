@@ -11,7 +11,11 @@ extern crate transaction_pool as tx_pool;
 use anyhow::{format_err, Result};
 use network_api::messages::PeerTransactionsMessage;
 pub use pool::queue::Pool;
+pub use pool::scoring::SeqNumberAndGasPrice;
+pub use pool::verifier::Verifier;
 pub use pool::TxStatus;
+pub use pool::{PoolTransaction, UnverifiedUserTransaction, VerifiedTransaction, VerifierOptions};
+pub use pool_client::{NonceCache, PoolClient};
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -26,6 +30,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tx_pool_service_impl::Inner;
 pub use tx_pool_service_impl::TxPoolService;
+pub use verifier_pool::VerifierPool;
 
 mod metrics;
 mod pending_transaction;
@@ -34,6 +39,7 @@ mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
+mod verifier_pool;
 
 //TODO refactor TxPoolService and rename.
 #[derive(Clone)]
