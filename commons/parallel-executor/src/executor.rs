@@ -1237,7 +1237,7 @@ mod tests {
         let transactions: Vec<SeqTransaction> =
             (0..count).map(|idx| SeqTransaction { idx }).collect();
         let executor: ParallelTransactionExecutor<SeqTransaction, SeqExecutor> =
-            ParallelTransactionExecutor::new(48, None);
+            ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
 
         executor
             .execute_transactions_parallel((), transactions)
