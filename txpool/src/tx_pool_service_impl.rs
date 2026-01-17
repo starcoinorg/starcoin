@@ -426,15 +426,6 @@ impl Inner {
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
     ) -> Result<Vec<Result<(), MultiTransactionError>>> {
-        let import_time = std::time::Instant::now();
-        let txn_count = txns.len();
-        let txn_hashes: Vec<_> = txns.iter().map(|t| t.id()).collect();
-        info!(
-            "[jacktest] txpool import_txns start: count={}, first_hash={:?}",
-            txn_count,
-            txn_hashes.first()
-        );
-
         let now_seconds = self.chain_header.read().timestamp() / 1000;
         let pool_client = self.get_pool_client()?;
         self.queue.cull(pool_client.clone(), now_seconds);
@@ -445,12 +436,6 @@ impl Inner {
         let result = self
             .queue
             .import(pool_client, txns, bypass_vm1_limit, peer_id);
-        info!(
-            "[jacktest] txpool import_txns done: count={}, elapsed_ms={}, first_hash={:?}",
-            txn_count,
-            import_time.elapsed().as_millis(),
-            txn_hashes.first()
-        );
         Ok(result)
     }
     pub(crate) fn remove_txn(
@@ -490,12 +475,6 @@ impl Inner {
         current_timestamp_secs: u64,
         pool_client: PoolClient,
     ) -> Vec<Arc<VerifiedTransaction>> {
-        let start_time = std::time::Instant::now();
-        let pool_status = self.queue.status();
-        info!(
-            "[jacktest] get_pending start: max_len={}, pool_status={:?}",
-            max_len, pool_status
-        );
         let pending_settings = PendingSettings {
             block_number: u64::MAX,
             current_timestamp: current_timestamp_secs,
@@ -505,14 +484,7 @@ impl Inner {
         // why here calls inner_status???
         // self.queue
         //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
-        let result = self.queue.pending(pool_client, pending_settings);
-        info!(
-            "[jacktest] get_pending done: returned={}, elapsed_ms={}, pool_txn_count={}",
-            result.len(),
-            start_time.elapsed().as_millis(),
-            pool_status.status.transaction_count
-        );
-        result
+        self.queue.pending(pool_client, pending_settings)
     }
 
     pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<crate::Pool>> {

@@ -364,7 +364,6 @@ async fn get_balance(
     let multi_state = storage1.get_vm_multi_state(header_id)?;
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
-    info!("jacktest: balance of {} is {}", address, balance);
     Ok(balance)
 }
 
