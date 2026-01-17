@@ -1250,10 +1250,10 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
-        // Time tracking variables for block execution analysis
-        let mut block_prologue_time_ms: u64 = 0;
-        let mut user_txn_time_ms: u64 = 0;
-        let mut block_epilogue_time_ms: u64 = 0;
+        // Time tracking variables for block execution analysis (in microseconds)
+        let mut block_prologue_time_us: u64 = 0;
+        let mut user_txn_time_us: u64 = 0;
+        let mut block_epilogue_time_us: u64 = 0;
         let mut user_txn_count: usize = 0;
         let mut block_id: Option<HashValue> = None;
 
@@ -1290,7 +1290,7 @@ impl StarcoinVM {
                         let move_resolver = data_cache.as_move_resolver();
                         let (status, output) =
                             self.execute_user_transaction(&move_resolver, transaction);
-                        user_txn_time_ms += user_txn_start.elapsed().as_millis() as u64;
+                        user_txn_time_us += user_txn_start.elapsed().as_micros() as u64;
 
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
@@ -1372,7 +1372,7 @@ impl StarcoinVM {
                             Ok(output) => (VMStatus::Executed, output),
                             Err(vm_status) => discard_error_vm_status(vm_status),
                         };
-                    block_prologue_time_ms = prologue_start.elapsed().as_millis() as u64;
+                    block_prologue_time_us = prologue_start.elapsed().as_micros() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1433,7 +1433,7 @@ impl StarcoinVM {
                             Ok(output) => (VMStatus::Executed, output),
                             Err(vm_status) => discard_error_vm_status(vm_status),
                         };
-                    block_epilogue_time_ms = epilogue_start.elapsed().as_millis() as u64;
+                    block_epilogue_time_us = epilogue_start.elapsed().as_micros() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1481,17 +1481,17 @@ impl StarcoinVM {
             }
         }
 
-        // Print block execution time statistics for log analysis
-        // Format: BLOCK_EXEC_STATS | block_id | user_txn_count | prologue_time_ms | user_txn_time_ms | epilogue_time_ms | total_time_ms
-        let total_time_ms = block_prologue_time_ms + user_txn_time_ms + block_epilogue_time_ms;
+        // Print block execution time statistics for log analysis (times in microseconds)
+        // Format: BLOCK_EXEC_STATS | block_id | user_txn_count | prologue_time_us | user_txn_time_us | epilogue_time_us | total_time_us
+        let total_time_us = block_prologue_time_us + user_txn_time_us + block_epilogue_time_us;
         info!(
-            "BLOCK_EXEC_STATS | block_id: {:?} | user_txn_count: {} | prologue_time_ms: {} | user_txn_time_ms: {} | epilogue_time_ms: {} | total_time_ms: {}",
+            "BLOCK_EXEC_STATS | block_id: {:?} | user_txn_count: {} | prologue_time_us: {} | user_txn_time_us: {} | epilogue_time_us: {} | total_time_us: {}",
             block_id.map(|id| id.to_hex()).unwrap_or_else(|| "unknown".to_string()),
             user_txn_count,
-            block_prologue_time_ms,
-            user_txn_time_ms,
-            block_epilogue_time_ms,
-            total_time_ms
+            block_prologue_time_us,
+            user_txn_time_us,
+            block_epilogue_time_us,
+            total_time_us
         );
 
         Ok(result)
