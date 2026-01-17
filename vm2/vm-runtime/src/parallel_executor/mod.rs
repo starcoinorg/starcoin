@@ -246,11 +246,6 @@ impl ParallelStarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<(Vec<TransactionOutput>, Option<Error<VMStatus>>), VMStatus> {
-        info!(
-            "jacktest ParallelStarcoinVM::execute_block start, txns: {}, concurrency: {}",
-            transactions.len(),
-            concurrency_level
-        );
         let delayed_fields_enabled = Features::fetch_config(state_view)
             .unwrap_or_default()
             .is_aggregator_v2_delayed_fields_enabled();
@@ -258,10 +253,6 @@ impl ParallelStarcoinVM {
             .par_iter()
             .map(|txn| preprocess_transaction(txn.clone()))
             .collect();
-        info!(
-            "jacktest ParallelStarcoinVM::execute_block signature verified, count: {}",
-            signature_verified_block.len()
-        );
 
         let delayed_field_cache = Arc::new(DelayedFieldCache::default());
         let exec_start = std::time::Instant::now();

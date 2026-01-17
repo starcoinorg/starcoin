@@ -670,24 +670,12 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
-        let start_time = std::time::Instant::now();
         let header = chain.current_header();
-        info!(
-            "[jacktest] fetch_transactions start: max_txns={}, header_number={}",
-            max_txns,
-            header.number()
-        );
-
         let state_db1 = chain.chain_state_reader();
         let state_db2 = chain.chain_state_reader2();
         let mut state_check = StateCheck::new(state_db1, state_db2);
 
         let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, &header);
-        info!(
-            "[jacktest] fetch_transactions got from txpool: count={}, elapsed_ms={}",
-            pending_multi_transactions.len(),
-            start_time.elapsed().as_millis()
-        );
 
         let mut all_transactions: Vec<MultiSignedUserTransaction> = vec![];
 
@@ -723,13 +711,6 @@ where
             }
         }
 
-        info!(
-            "[jacktest] fetch_transactions done: vm1={}, vm2={}, blue_blocks={}, elapsed_ms={}",
-            pending_transactions.len(),
-            pending_transactions2.len(),
-            blue_blocks.len(),
-            start_time.elapsed().as_millis()
-        );
         Ok((pending_transactions, pending_transactions2))
     }
 

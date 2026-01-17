@@ -15,16 +15,6 @@ pub struct Logger;
 
 impl tx_pool::Listener<Transaction> for Logger {
     fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
-        sl_info!(
-            "{action} {hash} {sender} {nonce} {gas_price} {gas} {expiration_timestamp_secs}",
-            nonce = tx.signed().sequence_number(),
-            gas_price = tx.signed().gas_unit_price(),
-            gas = tx.signed().max_gas_amount(),
-            expiration_timestamp_secs = tx.signed().expiration_timestamp_secs(),
-            sender = tx.sender().to_hex(),
-            hash = tx.hash().to_hex(),
-            action = "txpool_add",
-        );
         if let Some(old) = old {
             debug!(target: "txqueue", "[{:?}] Dropped. Replaced by [{:?}]", old.hash(), tx.hash());
         }
@@ -74,11 +64,7 @@ impl tx_pool::Listener<Transaction> for Logger {
     }
 
     fn culled(&mut self, tx: &Arc<Transaction>) {
-        sl_info!(
-            "{action} {hash}",
-            hash = tx.hash().to_hex(),
-            action = "txpool_cull",
-        );
+        debug!(target: "txqueue", "[{:?}] Culled.", tx.hash());
     }
 }
 

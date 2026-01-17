@@ -1003,8 +1003,6 @@ impl StarcoinVM {
         storage: &S,
         block_metadata: BlockMetadata,
     ) -> Result<VMOutput, VMStatus> {
-        #[cfg(feature = "testing")]
-        info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
@@ -1020,6 +1018,7 @@ impl StarcoinVM {
             red_blocks,
         ) = block_metadata.into_inner();
         let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+
         let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
@@ -1050,8 +1049,6 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
-        #[cfg(feature = "testing")]
-        info!("process_block_meta end");
         get_vm_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
@@ -1856,13 +1853,7 @@ impl VMExecutor for StarcoinVM {
         });
 
         let concurrency_level = Self::get_concurrency_level();
-        info!(
-            "jacktest VMExecutor::execute_block: txn_count={}, concurrency_level={}",
-            transactions.len(),
-            concurrency_level
-        );
         if concurrency_level > 1 {
-            info!("jacktest VMExecutor::execute_block: using parallel executor");
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
                 state_view,
@@ -1870,23 +1861,14 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            info!(
-                "jacktest VMExecutor::execute_block parallel done: output_count={}",
-                result.len()
-            );
             Ok(result)
         } else {
-            info!("jacktest VMExecutor::execute_block: using sequential executor");
             let output = Self::execute_block_and_keep_vm_status(
                 transactions,
                 state_view,
                 block_gas_limit,
                 metrics,
             )?;
-            info!(
-                "jacktest VMExecutor::execute_block sequential done: output_count={}",
-                output.len()
-            );
             Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)

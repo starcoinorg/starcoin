@@ -58,12 +58,6 @@ impl OpenedBlock {
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
     ) -> anyhow::Result<ExcludedTxns> {
-        let start_time = std::time::Instant::now();
-        let input_count = user_txns.len();
-        info!(
-            "jacktest push_txns2 start: input_count={}, gas_used={}, gas_limit={}",
-            input_count, self.gas_used, self.gas_limit
-        );
         let state = &self.state.1;
         let mut txns = user_txns
             .into_iter()
@@ -72,7 +66,6 @@ impl OpenedBlock {
         let mut discarded_txns: Vec<MultiSignedUserTransaction> = Vec::new();
         let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
-        let exec_start = std::time::Instant::now();
         let gas_left = self.gas_limit.checked_sub(self.gas_used).ok_or_else(|| {
             format_err!(
                 "block gas_used {} exceed block gas_limit:{}",
@@ -80,11 +73,6 @@ impl OpenedBlock {
                 self.gas_limit
             )
         })?;
-        info!(
-            "jacktest push_txns2 before exec: txn_count={}, gas_left={}",
-            txns.len(),
-            gas_left
-        );
         let txn_outputs = do_execute_block_transactions(
             state,
             txns.clone(),
@@ -92,11 +80,6 @@ impl OpenedBlock {
             self.vm_metrics.clone(),
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-        info!(
-            "jacktest push_txns2 execution done: outputs={}, exec_elapsed_ms={}",
-            txn_outputs.len(),
-            exec_start.elapsed().as_millis()
-        );
 
         let gas_exceeded_count = txns.len().saturating_sub(txn_outputs.len());
         if txn_outputs.len() < txns.len() {
@@ -116,14 +99,6 @@ impl OpenedBlock {
             match output.status() {
                 TransactionStatus2::Discard(status) => {
                     discard_count += 1;
-                    if index < 5 {
-                        info!(
-                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=discard, reason={:?}",
-                            index,
-                            &txn_hash.to_string()[..6],
-                            status
-                        );
-                    }
                     debug!("discard txn {}, vm status: {:?}", txn_hash, status);
                     discarded_txns.push(txn.try_into().expect("user txn"));
                 }
@@ -140,12 +115,6 @@ impl OpenedBlock {
                     self.total_fee2 = self
                         .total_fee2
                         .saturating_add(u128::from(gas_used) * u128::from(gas_price));
-                    if index < 5 || index % 500 == 0 {
-                        info!(
-                            "[jacktest] push_txns2 tx #{}: hash=0x{}, status=keep, gas_used={}, total_gas={}",
-                            index, &txn_hash.to_string()[..6], gas_used, self.gas_used + gas_used
-                        );
-                    }
                     self.push_txn_and_state2(txn_hash, output, false)?;
                     self.gas_used += gas_used;
                     self.included_user_txns2
@@ -158,17 +127,6 @@ impl OpenedBlock {
                 }
             };
         }
-
-        info!(
-            "[jacktest] push_txns2 done: input={}, keep={}, discard={}, retry={}, gas_exceeded={}, final_gas={}, elapsed_ms={}",
-            input_count,
-            keep_count,
-            discard_count,
-            retry_count,
-            gas_exceeded_count,
-            self.gas_used,
-            start_time.elapsed().as_millis()
-        );
 
         Ok(ExcludedTxns {
             discarded_txns,

@@ -773,10 +773,6 @@ where
         }
 
         let num_txns = signature_verified_block.len();
-        info!(
-            "jacktest execute_transactions_parallel start, num_txns: {}, concurrency: {}",
-            num_txns, self.concurrency_level
-        );
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns, self.gas_limit);
@@ -790,7 +786,6 @@ where
 
         // BlockMetadata is always the first txn of block that modifies fundamental info of block
         // other txns depends on this execution result, execute it first to avoid unnecessary contention
-        info!("jacktest execute_transactions_parallel about to execute_block_prologue");
         self.execute_block_prologue(
             &executor_initial_arguments,
             &signature_verified_block,
@@ -801,9 +796,7 @@ where
             fatal_flag.as_ref(),
             fatal_error.as_ref(),
         );
-        info!("jacktest execute_transactions_parallel execute_block_prologue done");
 
-        info!("jacktest execute_transactions_parallel about to RAYON_EXEC_POOL.scope");
         RAYON_EXEC_POOL.scope(|s| {
             for _ in 0..self.concurrency_level {
                 let delayed_commit = delayed_commit.clone();
@@ -823,10 +816,8 @@ where
                 });
             }
         });
-        info!("jacktest execute_transactions_parallel RAYON_EXEC_POOL.scope done");
 
         // scheduler may skip txns, block epilogue must be explictly executed
-        info!("jacktest execute_transactions_parallel about to execute_block_epilogue");
         self.execute_block_epilogue(
             &executor_initial_arguments,
             &signature_verified_block,
@@ -834,7 +825,6 @@ where
             &versioned_data_cache,
             &scheduler,
         );
-        info!("jacktest execute_transactions_parallel execute_block_epilogue done");
 
         // Get the actual number of transactions to execute (considering gas limit)
         let first_exceeding = scheduler.first_exceeding_index();

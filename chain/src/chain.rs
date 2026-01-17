@@ -2393,21 +2393,12 @@ impl BlockChain {
 
         // If we used cached statedb, we need to flush the cached ones
         // Otherwise, we still need to apply write_sets to self.statedb and flush
-        info!("[jacktest] Applying state changes for block {:?}", block_id);
         if cached_statedb.is_some() && cached_statedb2.is_some() {
             // Flush cached statedbs
             let cached_db = cached_statedb.as_ref().unwrap();
             let cached_db2 = cached_statedb2.as_ref().unwrap();
-            info!(
-                "[jacktest] start Applying state changes for block {:?}",
-                block_id
-            );
             cached_db.flush()?;
             cached_db2.flush()?;
-            info!(
-                "[jacktest] end Applying state changes for block {:?}",
-                block_id
-            );
         } else {
             // Apply write_sets to self.statedb
             for write_set in executed_data.write_sets.clone() {
@@ -2419,16 +2410,8 @@ impl BlockChain {
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
             }
             // Flush self.statedb
-            info!(
-                "[jacktest] start Applying state changes for block no cache {:?}",
-                block_id
-            );
             statedb.flush()?;
             statedb2.flush()?;
-            info!(
-                "[jacktest] end Applying state changes for block no cache {:?}",
-                block_id
-            );
         }
 
         // Remove output cache after use
