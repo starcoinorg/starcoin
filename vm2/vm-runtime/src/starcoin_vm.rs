@@ -1250,13 +1250,6 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
-        // Time tracking variables for block execution analysis (in microseconds)
-        let mut block_prologue_time_us: u64 = 0;
-        let mut user_txn_time_us: u64 = 0;
-        let mut block_epilogue_time_us: u64 = 0;
-        let mut user_txn_count: usize = 0;
-        let mut block_id: Option<HashValue> = None;
-
         // TODO load config by config change event
         self.load_configs(&data_cache).map_err(|err| {
             error!(
@@ -1274,7 +1267,6 @@ impl StarcoinVM {
             let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
-                    user_txn_count += txns.len();
                     for transaction in txns {
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
@@ -1286,11 +1278,9 @@ impl StarcoinVM {
 
                         let gas_unit_price = transaction.gas_unit_price();
 
-                        let user_txn_start = Instant::now();
                         let move_resolver = data_cache.as_move_resolver();
                         let (status, output) =
                             self.execute_user_transaction(&move_resolver, transaction);
-                        user_txn_time_us += user_txn_start.elapsed().as_micros() as u64;
 
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
@@ -1354,9 +1344,6 @@ impl StarcoinVM {
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
-                    // Extract block ID from metadata for logging
-                    block_id = Some(block_metadata.id());
-
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1365,14 +1352,12 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
-                    let prologue_start = Instant::now();
                     let move_resolver = data_cache.as_move_resolver();
                     let (status, output) =
                         match self.process_block_metadata(&move_resolver, block_metadata) {
                             Ok(output) => (VMStatus::Executed, output),
                             Err(vm_status) => discard_error_vm_status(vm_status),
                         };
-                    block_prologue_time_us = prologue_start.elapsed().as_micros() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1426,14 +1411,12 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
-                    let epilogue_start = Instant::now();
                     let move_resolver = data_cache.as_move_resolver();
                     let (status, output) =
                         match self.process_block_epilogue(&move_resolver, total_fee) {
                             Ok(output) => (VMStatus::Executed, output),
                             Err(vm_status) => discard_error_vm_status(vm_status),
                         };
-                    block_epilogue_time_us = epilogue_start.elapsed().as_micros() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1480,19 +1463,6 @@ impl StarcoinVM {
                 }
             }
         }
-
-        // Print block execution time statistics for log analysis (times in microseconds)
-        // Format: BLOCK_EXEC_STATS | block_id | user_txn_count | prologue_time_us | user_txn_time_us | epilogue_time_us | total_time_us
-        let total_time_us = block_prologue_time_us + user_txn_time_us + block_epilogue_time_us;
-        info!(
-            "BLOCK_EXEC_STATS | block_id: {:?} | user_txn_count: {} | prologue_time_us: {} | user_txn_time_us: {} | epilogue_time_us: {} | total_time_us: {}",
-            block_id.map(|id| id.to_hex()).unwrap_or_else(|| "unknown".to_string()),
-            user_txn_count,
-            block_prologue_time_us,
-            user_txn_time_us,
-            block_epilogue_time_us,
-            total_time_us
-        );
 
         Ok(result)
     }
@@ -1896,20 +1866,32 @@ impl StarcoinVM {
         txn: &PreprocessedTransaction,
         data_cache: &S,
     ) -> Result<(VMStatus, VMOutput, Option<String>), VMStatus> {
-        Ok(match txn {
+        let start_time = std::time::Instant::now();
+        let result = match txn {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
                 // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
+                let elapsed_us = start_time.elapsed().as_micros() as u64;
+                info!(
+                    "BLOCK_EXEC_STATS | txn_type: user_txn | sender: {} | elapsed_us: {}",
+                    sender, elapsed_us
+                );
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
+                let block_id = block_meta.id();
                 let (vm_status, output) =
                     match self.process_block_metadata(data_cache, block_meta.clone()) {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
+                let elapsed_us = start_time.elapsed().as_micros() as u64;
+                info!(
+                    "BLOCK_EXEC_STATS | txn_type: block_prologue | block_id: {:?} | elapsed_us: {}",
+                    block_id, elapsed_us
+                );
                 (vm_status, output, Some("block_metadata".to_string()))
             }
             PreprocessedTransaction::BlockEpilogue(_, total_fee) => {
@@ -1918,8 +1900,14 @@ impl StarcoinVM {
                     Ok(output) => (VMStatus::Executed, output),
                     Err(vm_status) => discard_error_vm_status(vm_status),
                 };
+                let elapsed_us = start_time.elapsed().as_micros() as u64;
+                info!(
+                    "BLOCK_EXEC_STATS | txn_type: block_epilogue | total_fee: {} | elapsed_us: {}",
+                    total_fee, elapsed_us
+                );
                 (vm_status, output, Some("block_epilogue".to_string()))
             }
-        })
+        };
+        Ok(result)
     }
 }
