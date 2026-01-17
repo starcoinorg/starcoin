@@ -64,6 +64,7 @@ use starcoin_vm_types::{
 use std::cmp::max;
 use std::sync::atomic::AtomicUsize;
 use std::sync::LazyLock;
+use std::time::Instant;
 use std::{borrow::Borrow, cmp::min, collections::BTreeSet, sync::Arc};
 
 static EXECUTION_CONCURRENCY_LEVEL: LazyLock<AtomicUsize> = LazyLock::new(|| AtomicUsize::new(1));
@@ -1135,6 +1136,13 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
+        // Time tracking variables for block execution analysis
+        let mut block_prologue_time_ms: u64 = 0;
+        let mut user_txn_time_ms: u64 = 0;
+        let mut block_epilogue_time_ms: u64 = 0;
+        let mut user_txn_count: usize = 0;
+        let mut block_id: Option<HashValue> = None;
+
         // TODO load config by config change event
         self.load_configs(&data_cache).map_err(|err| {
             error!(
@@ -1152,6 +1160,7 @@ impl StarcoinVM {
             let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
+                    user_txn_count += txns.len();
                     for transaction in txns {
                         #[cfg(feature = "metrics")]
                         let timer = self.metrics.as_ref().map(|metrics| {
@@ -1163,8 +1172,10 @@ impl StarcoinVM {
 
                         let gas_unit_price = transaction.gas_unit_price();
 
+                        let user_txn_start = Instant::now();
                         let (status, output) = self
                             .execute_user_transaction(&data_cache.as_move_resolver(), transaction);
+                        user_txn_time_ms += user_txn_start.elapsed().as_millis() as u64;
 
                         // only need to check for user transactions.
                         match gas_left.checked_sub(output.gas_used()) {
@@ -1216,6 +1227,9 @@ impl StarcoinVM {
                     }
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
+                    // Extract block ID from metadata for logging
+                    block_id = Some(block_metadata.id());
+
                     #[cfg(feature = "metrics")]
                     let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
@@ -1224,12 +1238,14 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
+                    let prologue_start = Instant::now();
                     let (status, output) = match self
                         .process_block_metadata(&data_cache.as_move_resolver(), block_metadata)
                     {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
+                    block_prologue_time_ms = prologue_start.elapsed().as_millis() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1274,12 +1290,14 @@ impl StarcoinVM {
                             .start_timer()
                     });
 
+                    let epilogue_start = Instant::now();
                     let (status, output) = match self
                         .process_block_epilogue(&data_cache.as_move_resolver(), senders)
                     {
                         Ok(output) => (VMStatus::Executed, output),
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
+                    block_epilogue_time_ms = epilogue_start.elapsed().as_millis() as u64;
 
                     debug_assert_eq!(
                         output.gas_used(),
@@ -1317,6 +1335,20 @@ impl StarcoinVM {
                 }
             }
         }
+
+        // Print block execution time statistics for log analysis
+        // Format: BLOCK_EXEC_STATS | block_id | user_txn_count | prologue_time_ms | user_txn_time_ms | epilogue_time_ms | total_time_ms
+        let total_time_ms = block_prologue_time_ms + user_txn_time_ms + block_epilogue_time_ms;
+        info!(
+            "BLOCK_EXEC_STATS | block_id: {:?} | user_txn_count: {} | prologue_time_ms: {} | user_txn_time_ms: {} | epilogue_time_ms: {} | total_time_ms: {}",
+            block_id.map(|id| id.to_hex()).unwrap_or_else(|| "unknown".to_string()),
+            user_txn_count,
+            block_prologue_time_ms,
+            user_txn_time_ms,
+            block_epilogue_time_ms,
+            total_time_ms
+        );
+
         Ok(result)
     }
 
