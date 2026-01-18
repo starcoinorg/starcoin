@@ -304,7 +304,7 @@ cli-table = "0.3.2"
 coarsetime = "0.1.37"
 codespan = { version = "0.13.1", features = ["serialization"] }
 codespan-reporting = "0.13.1"
-colored = "3.0.0"
+colored = "3.1.1"
 criterion = "0.3"
 curve25519-dalek = { package = "curve25519-dalek-ng", version = "4" }
 crossbeam = "0.8.1"
@@ -631,7 +631,7 @@ test-case = "3.3.1"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
 thiserror = "1.0"
-time = "0.3.44"
+time = "0.3.45"
 timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
