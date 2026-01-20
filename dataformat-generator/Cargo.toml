@@ -1,12 +1,18 @@
+# Starcoin VM1 Data Format Generator
+#
+# This crate generates VM1-only YAML schema files for cross-language SDK generation.
+# It uses starcoin-vm-types directly (pure VM1) to avoid TypeTag conflicts with VM2.
+#
+# Generated files:
+# - etc/starcoin_types.yml      - VM1 types schema
+# - etc/onchain_events.yml      - On-chain event types
+
 [build-dependencies]
 serde-reflection = { workspace = true }
-starcoin-crypto = { workspace = true }
-starcoin-types = { workspace = true }
-anyhow = { workspace = true }
-bcs-ext = { workspace = true }
-serde = { features = ["derive"], workspace = true }
 serde_yaml = { workspace = true }
+# Pure VM1 types only - no VM2 dependencies
 starcoin-vm-types = { workspace = true }
+starcoin-crypto = { workspace = true }
 
 [dependencies]
 

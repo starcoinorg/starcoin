@@ -1,0 +1,20 @@
+[build-dependencies]
+serde-reflection = { workspace = true }
+serde_yaml = { workspace = true }
+# VM2 only - no starcoin-types to avoid VM1/VM2 TypeTag conflicts
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+
+[dependencies]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-dataformat-generator-vm2"
+version = { workspace = true }
+build = "build.rs"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
