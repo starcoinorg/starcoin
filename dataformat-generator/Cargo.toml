@@ -16,14 +16,14 @@ edition = "2021"
 build = "build.rs"
 publish = false
 
-# Empty workspace table marks this as a standalone project
-[workspace]
-
 [build-dependencies]
-serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
+serde-reflection = { workspace = true }
 serde_yaml = "0.8.26"
 # Pure VM1 types only - no VM2 dependencies
 starcoin-vm-types = { path = "../vm/types", package = "starcoin-vm1-vm-types" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "bc3ca2138cf66d646f14a0f673ae5d853743f50a" }
+starcoin-crypto = { workspace = true }
+bcs-ext = { workspace = true }
+move-core-types = { workspace = true }
+bcs = "0.1.5"
 
 [dependencies]

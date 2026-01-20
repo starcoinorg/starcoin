@@ -7,6 +7,17 @@ AccountAddress:
 ChainId:
   STRUCT:
     - id: U8
+EntryFunction:
+  STRUCT:
+    - module:
+        TYPENAME: ModuleId
+    - function:
+        TYPENAME: Identifier
+    - ty_args:
+        SEQ:
+          TYPENAME: TypeTag
+    - args:
+        SEQ: BYTES
 EventKey:
   STRUCT:
     - creation_number: U64
@@ -25,6 +36,49 @@ ModuleId:
         TYPENAME: AccountAddress
     - name:
         TYPENAME: Identifier
+Package:
+  STRUCT:
+    - package_address:
+        TYPENAME: AccountAddress
+    - modules:
+        SEQ:
+          TYPENAME: Module
+    - init_script:
+        OPTION:
+          TYPENAME: EntryFunction
+Script:
+  STRUCT:
+    - code: BYTES
+    - ty_args:
+        SEQ:
+          TYPENAME: TypeTag
+    - args:
+        SEQ:
+          TYPENAME: TransactionArgument
+StateValueMetadata:
+  ENUM:
+    0:
+      V0:
+        STRUCT:
+          - deposit: U64
+          - creation_time_usecs: U64
+    1:
+      V1:
+        STRUCT:
+          - slot_deposit: U64
+          - bytes_deposit: U64
+          - creation_time_usecs: U64
+StructTag:
+  STRUCT:
+    - address:
+        TYPENAME: AccountAddress
+    - module:
+        TYPENAME: Identifier
+    - name:
+        TYPENAME: Identifier
+    - type_args:
+        SEQ:
+          TYPENAME: TypeTag
 TransactionArgument:
   ENUM:
     0:
@@ -58,14 +112,20 @@ TransactionArgument:
           TUPLEARRAY:
             CONTENT: U8
             SIZE: 32
-
-WriteOp:
+TransactionPayload:
   ENUM:
     0:
-      Deletion: UNIT
+      Script:
+        NEWTYPE:
+          TYPENAME: Script
     1:
-      Value:
-        NEWTYPE: BYTES
+      Package:
+        NEWTYPE:
+          TYPENAME: Package
+    2:
+      EntryFunction:
+        NEWTYPE:
+          TYPENAME: EntryFunction
 TypeTag:
   ENUM:
     0:
@@ -94,31 +154,30 @@ TypeTag:
       U32: UNIT
     10:
       U256: UNIT
-StructTag:
-  STRUCT:
-    - address:
-        TYPENAME: AccountAddress
-    - module:
-        TYPENAME: Identifier
-    - name:
-        TYPENAME: Identifier
-    - type_params:
-        SEQ:
-          TYPENAME: TypeTag
-EntryFunction:
-  STRUCT:
-    - module:
-        TYPENAME: ModuleId
-    - function:
-        TYPENAME: Identifier
-    - ty_args:
-        SEQ:
-          TYPENAME: TypeTag
-    - args:
-        SEQ: BYTES
-TransactionPayload:
+WriteOp:
   ENUM:
     0:
-      EntryFunction:
-        NEWTYPE:
-          TYPENAME: EntryFunction
+      Creation:
+        NEWTYPE: BYTES
+    1:
+      Modification:
+        NEWTYPE: BYTES
+    2:
+      Deletion: UNIT
+    3:
+      CreationWithMetadata:
+        STRUCT:
+          - data: BYTES
+          - metadata:
+              TYPENAME: StateValueMetadata
+    4:
+      ModificationWithMetadata:
+        STRUCT:
+          - data: BYTES
+          - metadata:
+              TYPENAME: StateValueMetadata
+    5:
+      DeletionWithMetadata:
+        STRUCT:
+          - metadata:
+              TYPENAME: StateValueMetadata
