@@ -55,9 +55,13 @@ fn generate_vm1_types() -> Result<(), Error> {
     tracer.trace_value(&mut samples, &EventKey::new([0u8; 24]))?;
 
     // Language types
+    // Note: TypeTag/StructTag cannot be traced due to VM1/VM2 variant conflicts in workspace
+    // Error: "invalid value: integer 11, expected variant index 0 <= i < 11"
+    // TypeTag has 11 variants in VM1 but VM2 presence causes serde-reflection to fail
     tracer.trace_type::<ModuleId>(&samples)?;
 
     // Transaction types - only those that don't recursively include TypeTag
+    // Script, ScriptFunction, TransactionPayload depend on TypeTag and cannot be traced
     tracer.trace_type::<TransactionArgument>(&samples)?;
     tracer.trace_type::<Module>(&samples)?;
 
@@ -74,8 +78,8 @@ fn generate_vm1_types() -> Result<(), Error> {
 /// Generate on-chain events schema
 fn generate_onchain_events() -> Result<(), Error> {
     use starcoin_vm_types::account_config::{
-        accept_token_payment::AcceptTokenEvent, BlockRewardEvent, BurnEvent, DepositEvent,
-        MintEvent, ProposalCreatedEvent, VoteChangedEvent, WithdrawEvent,
+        accept_token_payment::AcceptTokenEvent, block::NewBlockEvent, BlockRewardEvent, BurnEvent,
+        DepositEvent, MintEvent, ProposalCreatedEvent, VoteChangedEvent, WithdrawEvent,
     };
 
     let mut tracer = Tracer::new(TracerConfig::default());
@@ -87,6 +91,7 @@ fn generate_onchain_events() -> Result<(), Error> {
     tracer.trace_type::<BurnEvent>(&samples)?;
     tracer.trace_type::<DepositEvent>(&samples)?;
     tracer.trace_type::<MintEvent>(&samples)?;
+    tracer.trace_type::<NewBlockEvent>(&samples)?;
     tracer.trace_type::<ProposalCreatedEvent>(&samples)?;
     tracer.trace_type::<VoteChangedEvent>(&samples)?;
     tracer.trace_type::<WithdrawEvent>(&samples)?;

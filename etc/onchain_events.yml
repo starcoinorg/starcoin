@@ -32,6 +32,13 @@ MintEvent:
     - amount: U128
     - token_code:
         TYPENAME: TokenCode
+NewBlockEvent:
+  STRUCT:
+    - number: U64
+    - author:
+        TYPENAME: AccountAddress
+    - timestamp: U64
+    - uncles: U64
 ProposalCreatedEvent:
   STRUCT:
     - proposal_id: U64
