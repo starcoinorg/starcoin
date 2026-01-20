@@ -24,17 +24,11 @@ use starcoin_vm2_vm_types::transaction::{
 use starcoin_vm2_crypto::HashValue as HashValue2;
 
 fn main() {
-    println!("cargo:warning=Starting data format generation...");
-
     // Generate VM2 types schema
     match generate_vm2_types() {
-        Ok(_) => println!("cargo:warning=starcoin_types_vm2.yml generated successfully"),
+        Ok(_) => (),
         Err(e) => println!("cargo:warning=VM2 generation failed: {:?}", e),
     }
-
-    // Note: VM1 schema files (starcoin_types.yml, onchain_events.yml) require manual maintenance
-    // because starcoin-vm1-types depends on VM2, causing serde-reflection TypeTag conflicts
-    println!("cargo:warning=VM1 schemas (starcoin_types.yml, onchain_events.yml) require manual maintenance");
 }
 
 /// Generate VM2 types schema

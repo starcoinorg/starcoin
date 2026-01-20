@@ -20,17 +20,15 @@ use starcoin_vm_types::{
 };
 
 fn main() {
-    println!("cargo:warning=Starting VM1 data format generation...");
-
     // Generate VM1 types schema
     match generate_vm1_types() {
-        Ok(_) => println!("cargo:warning=starcoin_types.yml generated successfully"),
+        Ok(_) => (),
         Err(e) => println!("cargo:warning=VM1 types generation failed: {:?}", e),
     }
 
     // Generate on-chain events schema
     match generate_onchain_events() {
-        Ok(_) => println!("cargo:warning=onchain_events.yml generated successfully"),
+        Ok(_) => (),
         Err(e) => println!("cargo:warning=onchain_events generation failed: {:?}", e),
     }
 }
