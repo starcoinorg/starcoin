@@ -1,29 +1,29 @@
 # Starcoin VM1 Data Format Generator
 #
-# This crate generates VM1-only YAML schema files for cross-language SDK generation.
-# It uses starcoin-vm-types directly (pure VM1) to avoid TypeTag conflicts with VM2.
+# This crate is EXCLUDED from the main workspace to isolate VM1 dependencies.
+# This allows TypeTag and other types to be properly traced without VM2 conflicts.
+#
+# Build separately: cargo build --manifest-path dataformat-generator/Cargo.toml
 #
 # Generated files:
 # - etc/starcoin_types.yml      - VM1 types schema
 # - etc/onchain_events.yml      - On-chain event types
 
+[package]
+name = "starcoin-dataformat-generator"
+version = "2.1.1"
+edition = "2021"
+build = "build.rs"
+publish = false
+
+# Empty workspace table marks this as a standalone project
+[workspace]
+
 [build-dependencies]
-serde-reflection = { workspace = true }
-serde_yaml = { workspace = true }
+serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
+serde_yaml = "0.8.26"
 # Pure VM1 types only - no VM2 dependencies
-starcoin-vm-types = { workspace = true }
-starcoin-crypto = { workspace = true }
+starcoin-vm-types = { path = "../vm/types", package = "starcoin-vm1-vm-types" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "bc3ca2138cf66d646f14a0f673ae5d853743f50a" }
 
 [dependencies]
-
-[package]
-authors = { workspace = true }
-edition = { workspace = true }
-name = "starcoin-dataformat-generator"
-version = { workspace = true }
-build = "build.rs"
-homepage = { workspace = true }
-license = { workspace = true }
-publish = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }

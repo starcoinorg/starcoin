@@ -122,7 +122,9 @@ members = [
     "cmd/tx-factory",
     "cmd/miner_client",
     "cmd/generator",
-    "dataformat-generator",
+    # dataformat-generator is excluded from workspace to isolate VM1 dependencies
+    # and enable TypeTag schema generation without VM2 interference
+    # Build it separately: cargo build --manifest-path dataformat-generator/Cargo.toml
     "dataformat-generator-vm2",
     "cmd/resource-exporter",
     "cmd/resource-code-exporter",
@@ -241,8 +243,6 @@ default-members = [
     "cmd/tx-factory",
     "cmd/miner_client",
     "cmd/generator",
-    "dataformat-generator",
-    "dataformat-generator-vm2",
     "cmd/resource-exporter",
     "cmd/resource-code-exporter",
     "cmd/merkle-generator",

@@ -4,14 +4,14 @@ AccountAddress:
     TUPLEARRAY:
       CONTENT: U8
       SIZE: 16
-BalanceResource:
-  STRUCT:
-    - token: U128
 ChainId:
   STRUCT:
     - id: U8
 EventKey:
-  NEWTYPESTRUCT: BYTES
+  STRUCT:
+    - creation_number: U64
+    - account_address:
+        TYPENAME: AccountAddress
 HashValue:
   NEWTYPESTRUCT: BYTES
 Identifier:
@@ -58,6 +58,7 @@ TransactionArgument:
           TUPLEARRAY:
             CONTENT: U8
             SIZE: 32
+
 WriteOp:
   ENUM:
     0:
@@ -65,7 +66,6 @@ WriteOp:
     1:
       Value:
         NEWTYPE: BYTES
-
 TypeTag:
   ENUM:
     0:
@@ -105,16 +105,7 @@ StructTag:
     - type_params:
         SEQ:
           TYPENAME: TypeTag
-Script:
-  STRUCT:
-    - code: BYTES
-    - ty_args:
-        SEQ:
-          TYPENAME: TypeTag
-    - args:
-        SEQ:
-          TYPENAME: TransactionArgument
-ScriptFunction:
+EntryFunction:
   STRUCT:
     - module:
         TYPENAME: ModuleId
@@ -128,14 +119,6 @@ ScriptFunction:
 TransactionPayload:
   ENUM:
     0:
-      Script:
+      EntryFunction:
         NEWTYPE:
-          TYPENAME: Script
-    1:
-      Package:
-        NEWTYPE:
-          TYPENAME: Package
-    2:
-      ScriptFunction:
-        NEWTYPE:
-          TYPENAME: ScriptFunction
+          TYPENAME: EntryFunction

@@ -1,20 +1,24 @@
-[build-dependencies]
-serde-reflection = { workspace = true }
-serde_yaml = { workspace = true }
-# VM2 only - no starcoin-types to avoid VM1/VM2 TypeTag conflicts
-starcoin-vm2-vm-types = { workspace = true }
-starcoin-vm2-crypto = { workspace = true }
-
-[dependencies]
+# Starcoin VM2 Data Format Generator
+#
+# This crate generates BCS schema for VM2 types.
+# TypeTag and related types are manually defined in build.rs due to
+# serde-reflection issues with recursive enum types.
+#
+# Generated files:
+# - etc/starcoin_vm2_types.yml  - VM2 types schema
 
 [package]
-authors = { workspace = true }
-edition = { workspace = true }
 name = "starcoin-dataformat-generator-vm2"
-version = { workspace = true }
+version.workspace = true
+edition.workspace = true
 build = "build.rs"
-homepage = { workspace = true }
-license = { workspace = true }
-publish = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
+publish = false
+
+[build-dependencies]
+serde-reflection = { workspace = true }
+serde_yaml = { version = "0.8.26" }
+# VM2 types
+starcoin-vm2-vm-types = { path = "../vm2/vm-types", package = "starcoin-vm-types" }
+starcoin-crypto = { workspace = true }
+
+[dependencies]
