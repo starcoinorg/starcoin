@@ -105,40 +105,37 @@ mod tests {
         StateWithProof, StateWithTableItemProof,
     };
     use starcoin_types::{
+        access_path::AccessPath as AccessPath1,
         account::peer_to_peer_txn as peer_to_peer_txn1,
         account::Account as Account1,
         account::DEFAULT_EXPIRATION_TIME as DEFAULT_EXPIRATION_TIME1,
         account_address::AccountAddress,
         account_state::AccountState,
-        access_path::AccessPath as AccessPath1,
         event::EventHandle as EventHandle1,
         multi_transaction::MultiSignedUserTransaction,
         state_set::{AccountStateSet, ChainStateSet},
         transaction::SignedUserTransaction as SignedUserTransaction1,
     };
     use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
-    use starcoin_vm2_state_api::{StateWithProof as StateWithProof2, StateWithTableItemProof as StateWithTableItemProof2};
+    use starcoin_vm2_state_api::{
+        StateWithProof as StateWithProof2, StateWithTableItemProof as StateWithTableItemProof2,
+    };
     use starcoin_vm2_types::{
-        account::peer_to_peer_txn as peer_to_peer_txn2,
-        account::Account as Account2,
+        account::peer_to_peer_txn as peer_to_peer_txn2, account::Account as Account2,
         account::DEFAULT_EXPIRATION_TIME as DEFAULT_EXPIRATION_TIME2,
         account_address::AccountAddress as AccountAddress2,
         account_state::AccountState as AccountState2,
     };
     use starcoin_vm2_vm_types::{
-        access_path::DataPath as DataPath2,
-        account_config::AccountResource as AccountResource2,
-        move_resource::MoveStructType,
-        on_chain_resource::ChainId as ChainId2,
-        state_store::state_key::inner::StateKeyInner,
+        access_path::DataPath as DataPath2, account_config::AccountResource as AccountResource2,
+        event::EventKey as EventKey2, move_resource::MoveStructType,
+        on_chain_resource::ChainId as ChainId2, state_store::state_key::inner::StateKeyInner,
         state_store::state_key::StateKey as StateKey2,
-        state_store::{StateStorageUsage, TStateView},
+        state_store::state_storage_usage::StateStorageUsage, state_store::TStateView,
     };
     use starcoin_vm_types::{
-        account_config::AccountResource as AccountResource1,
-        genesis_config::ChainId as ChainId1,
-        move_resource::MoveResource,
-        state_store::state_key::StateKey as StateKey1,
+        account_config::AccountResource as AccountResource1, genesis_config::ChainId as ChainId1,
+        move_resource::MoveResource, state_store::state_key::StateKey as StateKey1,
         state_store::table::TableHandle as TableHandle1,
     };
     use std::collections::HashMap;
@@ -250,7 +247,10 @@ mod tests {
             let Some(seq) = self.seqs.get(&access_path.address) else {
                 return Ok(None);
             };
-            let handle = starcoin_vm2_vm_types::event::EventHandle::random(0);
+            let handle = starcoin_vm2_vm_types::event::EventHandle::new(
+                EventKey2::new(0, AccountAddress2::ZERO),
+                0,
+            );
             let resource = AccountResource2::new(
                 *seq,
                 AccountResource2::DUMMY_AUTH_KEY.to_vec(),
@@ -260,9 +260,7 @@ mod tests {
             Ok(Some(bcs_ext::to_bytes(&resource)?.into()))
         }
 
-        fn get_usage(
-            &self,
-        ) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
+        fn get_usage(&self) -> starcoin_vm2_vm_types::state_store::Result<StateStorageUsage> {
             Ok(StateStorageUsage::zero())
         }
 
@@ -320,7 +318,10 @@ mod tests {
         )
     }
 
-    fn make_vm2_txn(sender: &Account2, seq: u64) -> starcoin_vm2_vm_types::transaction::SignedUserTransaction {
+    fn make_vm2_txn(
+        sender: &Account2,
+        seq: u64,
+    ) -> starcoin_vm2_vm_types::transaction::SignedUserTransaction {
         let receiver = Account2::new();
         peer_to_peer_txn2(
             sender,
@@ -332,7 +333,7 @@ mod tests {
         )
     }
 
-    fn sort_transactions(transactions: &mut Vec<MultiSignedUserTransaction>) {
+    fn sort_transactions(transactions: &mut [MultiSignedUserTransaction]) {
         transactions.sort_by(|a, b| match a.sender().to_hex().cmp(&b.sender().to_hex()) {
             std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
             other => other,

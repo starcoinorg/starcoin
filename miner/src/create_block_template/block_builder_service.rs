@@ -708,11 +708,9 @@ where
             })
         });
 
-        all_transactions.sort_by(|a, b| {
-            match a.sender().to_hex().cmp(&b.sender().to_hex()) {
-                std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-                other => other,
-            }
+        all_transactions.sort_by(|a, b| match a.sender().to_hex().cmp(&b.sender().to_hex()) {
+            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+            other => other,
         });
 
         let filtered_transactions = state_check.filter_continuous_transactions(all_transactions)?;
