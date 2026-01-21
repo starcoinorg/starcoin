@@ -1,8 +1,5 @@
 //! Starcoin VM1 Data Format Generator
 //!
-//! This crate is EXCLUDED from the main workspace to isolate VM1 dependencies.
-//! This allows TypeTag and other types to be properly traced without VM2 conflicts.
-//!
 //! Generated files:
 //! - etc/starcoin_types.yml      - VM1 types schema
 //! - etc/onchain_events.yml      - On-chain event types

@@ -252,6 +252,8 @@ default-members = [
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/cmd-utils",
+    "dataformat-generator",
+    "dataformat-generator-vm2",
 ]
 
 [profile.dev]
