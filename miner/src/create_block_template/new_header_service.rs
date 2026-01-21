@@ -8,7 +8,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::{
     block::BlockHeader,
-    system_events::{DeterminedDagBlock, NewDagBlock, NewDagBlockFromPeer, SystemStarted},
+    system_events::{NewDagBlock, NewDagBlockFromPeer, SystemStarted},
 };
 
 #[derive(Clone, Debug)]
@@ -166,7 +166,7 @@ impl NewHeaderService {
     fn determine_header(
         &mut self,
         header: &BlockHeader,
-        ctx: &mut ServiceContext<Self>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> anyhow::Result<()> {
         if self.resolve_header(header)? {
             info!(
@@ -191,8 +191,6 @@ impl NewHeaderService {
         } else {
             info!("resolve header returns false");
         }
-
-        ctx.broadcast(DeterminedDagBlock);
 
         Ok(())
     }
