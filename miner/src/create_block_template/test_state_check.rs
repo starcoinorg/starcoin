@@ -88,10 +88,7 @@ impl ChainStateReader1 for TestStateReader1 {
         Ok(None)
     }
 
-    fn get_account_state_set(
-        &self,
-        _address: &AccountAddress,
-    ) -> Result<Option<AccountStateSet>> {
+    fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
         Ok(None)
     }
 
