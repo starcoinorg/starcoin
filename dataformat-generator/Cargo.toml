@@ -1,23 +1,24 @@
-[build-dependencies]
-serde-reflection = { workspace = true }
-starcoin-crypto = { workspace = true }
-starcoin-types = { workspace = true }
-anyhow = { workspace = true }
-bcs-ext = { workspace = true }
-serde = { features = ["derive"], workspace = true }
-serde_yaml = { workspace = true }
-starcoin-vm-types = { workspace = true }
-
-[dependencies]
+# Starcoin VM1 Data Format Generator
+#
+# Generated files:
+# - etc/starcoin_types.yml      - VM1 types schema
+# - etc/onchain_events.yml      - On-chain event types
 
 [package]
-authors = { workspace = true }
-edition = { workspace = true }
 name = "starcoin-dataformat-generator"
-version = { workspace = true }
+version = "2.1.1"
+edition = "2021"
 build = "build.rs"
-homepage = { workspace = true }
-license = { workspace = true }
-publish = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
+publish = false
+
+[build-dependencies]
+serde-reflection = { workspace = true }
+serde_yaml = "0.8.26"
+# Pure VM1 types only - no VM2 dependencies
+starcoin-vm-types = { path = "../vm/types", package = "starcoin-vm1-vm-types" }
+starcoin-crypto = { workspace = true }
+bcs-ext = { workspace = true }
+move-core-types = { workspace = true }
+bcs = "0.1.5"
+
+[dependencies]

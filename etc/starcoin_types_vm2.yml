@@ -1,0 +1,68 @@
+---
+AccountAddress:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 16
+BlockMetadata:
+  STRUCT:
+    - parent_hash:
+        TYPENAME: HashValue
+    - timestamp: U64
+    - author:
+        TYPENAME: AccountAddress
+    - uncles: U64
+    - number: U64
+    - chain_id:
+        TYPENAME: ChainId
+    - parent_gas_used: U64
+    - parents_hash:
+        SEQ:
+          TYPENAME: HashValue
+    - red_blocks: U64
+ChainId:
+  STRUCT:
+    - id: U8
+EventKey:
+  STRUCT:
+    - creation_number: U64
+    - account_address:
+        TYPENAME: AccountAddress
+HashValue:
+  NEWTYPESTRUCT: BYTES
+Module:
+  STRUCT:
+    - code: BYTES
+TransactionArgument:
+  ENUM:
+    0:
+      U8:
+        NEWTYPE: U8
+    1:
+      U64:
+        NEWTYPE: U64
+    2:
+      U128:
+        NEWTYPE: U128
+    3:
+      Address:
+        NEWTYPE:
+          TYPENAME: AccountAddress
+    4:
+      U8Vector:
+        NEWTYPE: BYTES
+    5:
+      Bool:
+        NEWTYPE: BOOL
+    6:
+      U16:
+        NEWTYPE: U16
+    7:
+      U32:
+        NEWTYPE: U32
+    8:
+      U256:
+        NEWTYPE:
+          TUPLEARRAY:
+            CONTENT: U8
+            SIZE: 32

@@ -1,0 +1,23 @@
+# Starcoin VM2 Data Format Generator
+#
+# This crate generates BCS schema for VM2 types.
+# Generated files:
+# - etc/starcoin_vm2_types.yml  - VM2 types schema
+
+[package]
+name = "starcoin-dataformat-generator-vm2"
+version.workspace = true
+edition.workspace = true
+build = "build.rs"
+publish = false
+
+[build-dependencies]
+serde-reflection = { workspace = true }
+serde_yaml = "0.8.26"
+# VM2 types
+starcoin-vm2-vm-types = { path = "../vm2/vm-types", package = "starcoin-vm-types" }
+starcoin-crypto = { workspace = true }
+bcs = "0.1.5"
+bytes = { workspace = true }
+
+[dependencies]
