@@ -24,9 +24,6 @@ pub struct NewDagBlockFromPeer {
     pub executed_block: Arc<BlockHeader>,
 }
 
-#[derive(Clone, Debug)]
-pub struct DeterminedDagBlock;
-
 /// may be uncle block
 #[derive(Clone, Debug)]
 pub struct NewBranch(pub Arc<ExecutedBlock>);

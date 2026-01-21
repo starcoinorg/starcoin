@@ -670,6 +670,17 @@ impl SyncService {
 
         Ok(())
     }
+
+    fn store_sync_status(&self, ctx: &mut ServiceContext<Self>) {
+        if let Err(e) = ctx.put_shared(self.sync_status.clone()) {
+            error!("[sync] Put shared SyncStatus error: {:?}", e);
+        }
+    }
+
+    fn publish_sync_status(&self, ctx: &mut ServiceContext<Self>) {
+        self.store_sync_status(ctx);
+        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+    }
 }
 
 impl ServiceFactory<Self> for SyncService {
@@ -679,7 +690,9 @@ impl ServiceFactory<Self> for SyncService {
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, storage, storage2, dag, vm_metrics)
+        let service = Self::new(config, storage, storage2, dag, vm_metrics)?;
+        service.store_sync_status(ctx);
+        Ok(service)
     }
 }
 
@@ -799,7 +812,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                         BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
                     self.sync_status
                         .sync_begin(target_id_number, target.block_info.total_difficulty);
-                    ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                    self.publish_sync_status(ctx);
                 }
             }
             SyncStage::Synchronizing(previous_handle) => {
@@ -857,7 +870,7 @@ impl EventHandler<Self, SystemStarted> for SyncService {
         }
         // self.sync_status.sync_done();
         ctx.notify(CheckSyncEvent::default());
-        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+        self.publish_sync_status(ctx);
     }
 }
 
@@ -877,7 +890,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
             SyncStage::Checking => {
                 debug!("[sync] Sync task is Done in checking stage.");
                 self.sync_status.sync_done();
-                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                self.publish_sync_status(ctx);
             }
             SyncStage::Synchronizing(task_handle) => {
                 if !task_handle.task_handle.is_done() {
@@ -894,7 +907,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                         )
                     });
                 self.sync_status.sync_done();
-                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                self.publish_sync_status(ctx);
                 // check sync again
                 //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
                 ctx.notify(CheckSyncEvent::default());
@@ -902,7 +915,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
             SyncStage::Canceling => {
                 //continue
                 self.sync_status.sync_done();
-                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                self.publish_sync_status(ctx);
             }
         }
     }

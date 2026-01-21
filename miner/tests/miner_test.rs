@@ -13,6 +13,7 @@ use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::info;
 use starcoin_miner::create_block_template::block_builder_service::{BlockTemplateCallBack, Inner};
+use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::{
     BlockBuilderService, BlockHeaderExtra, BlockTemplateRequest, MinerService, MintBlockEvent,
     NewHeaderChannel, NewHeaderService, SubmitSealRequest,
@@ -27,16 +28,17 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{BlockHeader, BlockTemplate};
-use starcoin_types::{system_events::GenerateBlockEvent, U256};
+use starcoin_types::{sync_status::SyncStatus, system_events::GenerateBlockEvent, U256};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm2_types::transaction::SignedUserTransaction;
 use starcoin_vm2_types::{account_address, account_config};
 use starcoin_vm2_vm_types::state_view::StateReaderExt;
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{mpsc::Sender, Arc, Mutex};
 use std::time::Duration;
+use tokio::sync::oneshot;
 
 struct TestMinerService {
     pub wait_result_sender: Option<futures::channel::mpsc::UnboundedSender<()>>,
@@ -132,6 +134,54 @@ impl EventHandler<Self, MintBlockEvent> for TestMinerService {
     }
 }
 
+#[derive(Clone)]
+struct GenerateEventTestContext {
+    ready: Arc<AtomicBool>,
+    sender: Arc<Mutex<Option<oneshot::Sender<()>>>>,
+}
+
+struct GenerateEventListener {
+    context: GenerateEventTestContext,
+}
+
+impl ServiceFactory<Self> for GenerateEventListener {
+    fn create(ctx: &mut starcoin_service_registry::ServiceContext<Self>) -> anyhow::Result<Self> {
+        let context = ctx.get_shared::<GenerateEventTestContext>()?;
+        Ok(Self { context })
+    }
+}
+
+impl ActorService for GenerateEventListener {
+    fn started(
+        &mut self,
+        ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) -> anyhow::Result<()> {
+        ctx.subscribe::<GenerateBlockEvent>();
+        self.context.ready.store(true, Ordering::SeqCst);
+        Ok(())
+    }
+
+    fn stopped(
+        &mut self,
+        ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) -> anyhow::Result<()> {
+        ctx.unsubscribe::<GenerateBlockEvent>();
+        Ok(())
+    }
+}
+
+impl EventHandler<Self, GenerateBlockEvent> for GenerateEventListener {
+    fn handle_event(
+        &mut self,
+        _msg: GenerateBlockEvent,
+        _ctx: &mut starcoin_service_registry::ServiceContext<Self>,
+    ) {
+        if let Some(sender) = self.context.sender.lock().unwrap().take() {
+            let _ = sender.send(());
+        }
+    }
+}
+
 #[stest::test]
 async fn test_miner_service() {
     let mut config = NodeConfig::random_for_dag_test();
@@ -192,6 +242,49 @@ async fn test_miner_service() {
         .shutdown_system()
         .await
         .expect("failed to stop registry service");
+}
+
+#[stest::test(timeout = 30)]
+async fn test_generate_event_pacemaker_init_from_shared_sync_status() -> Result<()> {
+    let mut config = NodeConfig::random_for_test();
+    config.miner.disable_mint_empty_block = Some(false);
+    let registry = RegistryService::launch();
+    let node_config = Arc::new(config.clone());
+    registry.put_shared(node_config.clone()).await?;
+
+    let (_storage, _storage2, chain_info, _genesis, _dag) =
+        Genesis::init_storage_for_test(config.net())?;
+    let mut sync_status = SyncStatus::new(chain_info.status().clone());
+    sync_status.sync_done();
+    registry.put_shared(sync_status).await?;
+    registry.put_shared(NewHeaderChannel::new()).await?;
+
+    let ready = Arc::new(AtomicBool::new(false));
+    let (sender, receiver) = oneshot::channel();
+    let context = GenerateEventTestContext {
+        ready: ready.clone(),
+        sender: Arc::new(Mutex::new(Some(sender))),
+    };
+    registry.put_shared(context.clone()).await?;
+
+    registry.register::<GenerateEventListener>().await?;
+
+    for _ in 0..50 {
+        if ready.load(Ordering::SeqCst) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert!(ready.load(Ordering::SeqCst));
+
+    registry.register::<GenerateBlockEventPacemaker>().await?;
+
+    tokio::time::timeout(Duration::from_secs(5), receiver)
+        .await
+        .map_err(|_| anyhow::anyhow!("GenerateBlockEvent not received"))??;
+
+    registry.shutdown_system().await?;
+    Ok(())
 }
 
 struct TestTemplateNotify {

@@ -145,6 +145,59 @@ fn gen_fork_dag_block_chain(
     }
 }
 
+fn gen_fork_dag_block_chain_with_sleep(
+    fork_number: u64,
+    node_config: Arc<NodeConfig>,
+    times: u64,
+    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+) -> Option<HashValue> {
+    let miner_account = AccountInfo::random();
+    let dag = writeable_block_chain_service.get_dag();
+    if let Some(block_header) = writeable_block_chain_service
+        .get_main()
+        .get_header_by_number(fork_number)
+        .unwrap()
+    {
+        let mut parent_id = block_header.id();
+        let net = node_config.net();
+        for i in 0..times {
+            let block_chain = BlockChain::new(
+                net.time_service(),
+                parent_id,
+                writeable_block_chain_service.get_main().get_storage(),
+                writeable_block_chain_service.get_storage2(),
+                None,
+                dag.clone(),
+            )
+            .unwrap();
+            let (block_template, _) = block_chain
+                .create_block_template(
+                    *miner_account.address(),
+                    None, // No specific parent header
+                    Vec::new(),
+                    None,                  // uncles
+                    None,                  // block_gas_limit
+                    Some(vec![parent_id]), // tips
+                    HashValue::zero(),
+                )
+                .unwrap();
+            let block = block_chain
+                .consensus()
+                .create_block(block_template, net.time_service().as_ref())
+                .unwrap();
+            parent_id = block.id();
+
+            writeable_block_chain_service.try_connect(block).unwrap();
+            if (i + 1) % 3 == 0 {
+                writeable_block_chain_service.time_sleep(5000);
+            }
+        }
+        Some(parent_id)
+    } else {
+        None
+    }
+}
+
 #[stest::test(timeout = 120)]
 async fn test_block_dag_chain_switch_main() -> anyhow::Result<()> {
     let times = 12;
@@ -210,5 +263,60 @@ async fn test_block_chain_reset() -> anyhow::Result<()> {
         .get_main()
         .get_block_by_number(2)?
         .is_some());
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_equal_difficulty_branch_still_produce_block() -> anyhow::Result<()> {
+    let times = 9;
+    let (mut writeable_block_chain_service, node_config, _, _) =
+        create_writeable_dag_block_chain().await;
+    let net = node_config.net();
+
+    let main_tip = gen_dag_blocks(times, &mut writeable_block_chain_service, net)?;
+    let main_head = writeable_block_chain_service
+        .get_main()
+        .current_header()
+        .id();
+    assert_eq!(main_tip, main_head);
+
+    let fork_tip = gen_fork_dag_block_chain_with_sleep(
+        0,
+        node_config.clone(),
+        times,
+        &mut writeable_block_chain_service,
+    )
+    .ok_or_else(|| anyhow::anyhow!("failed to generate fork tip"))?;
+
+    let main_after_fork = writeable_block_chain_service
+        .get_main()
+        .current_header()
+        .id();
+    assert_eq!(main_after_fork, main_head);
+
+    let main_total_difficulty = writeable_block_chain_service
+        .get_main()
+        .get_total_difficulty()?;
+    let fork_chain = BlockChain::new(
+        net.time_service(),
+        fork_tip,
+        writeable_block_chain_service.get_main().get_storage(),
+        writeable_block_chain_service.get_storage2(),
+        None,
+        writeable_block_chain_service.get_dag().clone(),
+    )?;
+    let fork_total_difficulty = fork_chain.get_total_difficulty()?;
+    assert_eq!(fork_total_difficulty, main_total_difficulty);
+
+    let block = new_dag_block(None, &mut writeable_block_chain_service, net)?;
+    writeable_block_chain_service.try_connect(block.clone())?;
+    assert_eq!(
+        writeable_block_chain_service
+            .get_main()
+            .current_header()
+            .id(),
+        block.id()
+    );
+
     Ok(())
 }
