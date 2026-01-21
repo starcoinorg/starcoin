@@ -82,6 +82,18 @@ impl CachedSeqNumberClient {
         }
     }
 
+    pub fn new_with_state_dbs(
+        statedb: Arc<ChainStateDB>,
+        statedb2: Arc<ChainStateDB2>,
+        cache: NonceCache,
+    ) -> Self {
+        Self {
+            statedb,
+            statedb2,
+            cache,
+        }
+    }
+
     fn latest_sequence_number(&self, address: &MultiAccountAddress) -> u64 {
         match address {
             MultiAccountAddress::VM1(address) => {
@@ -173,6 +185,24 @@ impl PoolClient {
             nonce_client,
             vm_metrics,
             verifier_pool,
+        }
+    }
+
+    pub fn new_with_state_dbs(
+        state_root1: HashValue,
+        state_root2: HashValue,
+        statedb: Arc<ChainStateDB>,
+        statedb2: Arc<ChainStateDB2>,
+        cache: NonceCache,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Self {
+        let nonce_client = CachedSeqNumberClient::new_with_state_dbs(statedb, statedb2, cache);
+        Self {
+            state_root1,
+            state_root2,
+            nonce_client,
+            vm_metrics,
+            verifier_pool: None,
         }
     }
 }

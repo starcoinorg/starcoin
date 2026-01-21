@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use starcoin_account_api::AccountInfo as Vm1AccountInfo;
 use starcoin_account_service::AccountService;
 use starcoin_chain::verifier::VerifyWithoutConsensus;
-use starcoin_chain::{BlockChain, ChainReader};
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -28,8 +29,10 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{BlockHeader, BlockTemplate};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{sync_status::SyncStatus, system_events::GenerateBlockEvent, U256};
 use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_crypto::HashValue as Vm2HashValue;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm2_types::transaction::SignedUserTransaction;
@@ -355,6 +358,49 @@ impl BlockTemplateCallBack for TestTemplateNotify {
     }
 }
 
+struct TestTemplateTxpoolCheck {
+    finish_sender: Sender<Result<()>>,
+    expected_blue: Vm2HashValue,
+    expected_excluded: Vm2HashValue,
+}
+
+impl TestTemplateTxpoolCheck {
+    fn new(
+        finish_sender: Sender<Result<()>>,
+        expected_blue: Vm2HashValue,
+        expected_excluded: Vm2HashValue,
+    ) -> Self {
+        Self {
+            finish_sender,
+            expected_blue,
+            expected_excluded,
+        }
+    }
+}
+
+impl BlockTemplateCallBack for TestTemplateTxpoolCheck {
+    fn block_template_callback(
+        &mut self,
+        _parent: BlockHeader,
+        block_template: BlockTemplate,
+    ) -> Result<()> {
+        let ids = block_template
+            .body
+            .transactions2
+            .iter()
+            .map(|txn| txn.id())
+            .collect::<Vec<_>>();
+        if !ids.contains(&self.expected_blue) {
+            bail!("expected blue txn missing from block template");
+        }
+        if ids.contains(&self.expected_excluded) {
+            bail!("txpool txn should be filtered after blue apply");
+        }
+        self.finish_sender.send(Ok(()))?;
+        Ok(())
+    }
+}
+
 #[stest::test]
 pub fn test_open_block_and_execute() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
@@ -429,6 +475,137 @@ pub fn test_open_block_and_execute() -> Result<()> {
 
     if let Err(e) = receiver.recv_timeout(std::time::Duration::from_secs(10))? {
         bail!("failed to create and execute a block for: {:?}", e);
+    }
+
+    Ok(())
+}
+
+#[stest::test]
+pub fn test_block_template_filters_txpool_after_blue() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_dag_test());
+    let (storage, storage2, chain_info, _genesis, dag) =
+        Genesis::init_storage_for_test(config.net())?;
+    let mut chain = BlockChain::new(
+        config.net().time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        storage2.clone(),
+        None,
+        dag.clone(),
+    )?;
+
+    let vm1_miner = Vm1AccountInfo::random();
+    let miner_address = *vm1_miner.address();
+
+    let (template1, _) = chain.create_block_template_simple(miner_address)?;
+    let block1 = chain
+        .consensus()
+        .create_block(template1, config.net().time_service().as_ref())?;
+    let main1_header = block1.header().clone();
+    chain.apply(block1)?;
+
+    let (template2, _) = chain.create_block_template_simple(miner_address)?;
+    let block2 = chain
+        .consensus()
+        .create_block(template2, config.net().time_service().as_ref())?;
+    chain.apply(block2)?;
+
+    let (template3, _) = chain.create_block_template_simple(miner_address)?;
+    let block3 = chain
+        .consensus()
+        .create_block(template3, config.net().time_service().as_ref())?;
+    let main3_header = block3.header().clone();
+    chain.apply(block3)?;
+
+    let association_sequence_num = chain
+        .chain_state_reader2()
+        .get_sequence_number(account_config::association_address())?;
+    let expiration = config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+
+    let (_blue_prikey, blue_public_key) = KeyGen::from_os_rng().generate_keypair();
+    let blue_receiver = account_address::from_public_key(&blue_public_key);
+    let blue_txn: SignedUserTransaction = build_transfer_from_association(
+        blue_receiver,
+        association_sequence_num,
+        50_000_000,
+        expiration,
+        config.net().chain_id().id().into(),
+        config.net().genesis_config2(),
+    )
+    .try_into()?;
+
+    let side_chain = BlockChain::new(
+        config.net().time_service(),
+        main1_header.id(),
+        storage.clone(),
+        storage2.clone(),
+        None,
+        dag.clone(),
+    )?;
+    let (blue_template, _) = side_chain.create_block_template(
+        miner_address,
+        Some(main1_header.clone()),
+        vec![MultiSignedUserTransaction::VM2(blue_txn.clone())],
+        None,
+        None,
+        Some(vec![main1_header.id()]),
+        HashValue::zero(),
+    )?;
+    let blue_block = side_chain
+        .consensus()
+        .create_block(blue_template, config.net().time_service().as_ref())?;
+    chain.apply(blue_block)?;
+
+    let (_pool_prikey, pool_public_key) = KeyGen::from_os_rng().generate_keypair();
+    let pool_receiver = account_address::from_public_key(&pool_public_key);
+    let pool_txn: SignedUserTransaction = build_transfer_from_association(
+        pool_receiver,
+        association_sequence_num,
+        50_000_000,
+        expiration,
+        config.net().chain_id().id().into(),
+        config.net().genesis_config2(),
+    )
+    .try_into()?;
+
+    let txpool = TxPoolService::new(
+        config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        main3_header.clone(),
+        None,
+    );
+    let add_results = txpool.add_txns_multi_signed(
+        vec![MultiSignedUserTransaction::VM2(pool_txn.clone())],
+        false,
+        None,
+    )?;
+    assert!(add_results
+        .first()
+        .expect("missing txpool add result")
+        .is_ok());
+
+    let miner_account_info = AccountInfo::random();
+    let mut create_block_template_service = Inner::new(
+        main3_header,
+        storage.clone(),
+        storage2.clone(),
+        txpool,
+        config.miner.block_gas_limit,
+        miner_account_info,
+        dag,
+        config.clone(),
+        None,
+        None,
+    )?;
+
+    let (sender, receiver) = std::sync::mpsc::channel::<Result<()>>();
+    let callback = TestTemplateTxpoolCheck::new(sender, blue_txn.id(), pool_txn.id());
+
+    create_block_template_service.create_block_template(1, Box::new(callback))?;
+
+    if let Err(e) = receiver.recv_timeout(Duration::from_secs(10))? {
+        bail!("failed to create block template: {:?}", e);
     }
 
     Ok(())
