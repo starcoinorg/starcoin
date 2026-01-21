@@ -22,10 +22,11 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
+use starcoin_state_api::ChainStateReader;
+use starcoin_statedb::ChainStateDB;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_storage::{Storage2, Store2};
-use starcoin_statedb::ChainStateDB;
 use starcoin_txpool::{NonceCache, PoolClient, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
@@ -40,7 +41,6 @@ use starcoin_vm2_account_service::AccountService;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
-use starcoin_state_api::ChainStateReader;
 use std::sync::RwLock;
 
 use crate::{MinerService, NewHeaderChannel};
@@ -1021,11 +1021,7 @@ fn collect_blue_transactions(
     (pending_transactions, pending_transactions2, seen_hashes)
 }
 
-fn round_robin_by_sender<T, K, FSender, FSeq>(
-    txns: Vec<T>,
-    sender: FSender,
-    seq: FSeq,
-) -> Vec<T>
+fn round_robin_by_sender<T, K, FSender, FSeq>(txns: Vec<T>, sender: FSender, seq: FSeq) -> Vec<T>
 where
     K: Ord,
     FSender: Fn(&T) -> K,
