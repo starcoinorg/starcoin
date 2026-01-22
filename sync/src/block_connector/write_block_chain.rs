@@ -111,6 +111,11 @@ impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
+    pub fn apply_new_head_from_dag(&mut self, executed_block: ExecutedBlock) -> Result<()> {
+        let enacted_blocks = vec![executed_block.block().clone()];
+        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])
+    }
+
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,

@@ -240,20 +240,30 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        let block_header = match self
-            .chain_service
-            .switch_header(msg.executed_block.header())
-        {
+        let executed_block = msg.executed_block;
+        let block_header = match self.chain_service.switch_header(executed_block.header()) {
             std::result::Result::Ok(block_header) => block_header,
             Err(e) => {
                 error!(
                     "failed to switch header when processing NewDagBlock, error: {:?}, id: {:?}",
                     e,
-                    msg.executed_block.header().id()
+                    executed_block.header().id()
                 );
                 return;
             }
         };
+        if block_header.id() == executed_block.header().id() {
+            if let Err(e) = self
+                .chain_service
+                .apply_new_head_from_dag((*executed_block).clone())
+            {
+                error!(
+                    "failed to apply new head when processing NewDagBlock, error: {:?}, id: {:?}",
+                    e,
+                    executed_block.header().id()
+                );
+            }
+        }
 
         let _consume = self
             .pruning_point_channel
