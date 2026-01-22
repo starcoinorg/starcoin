@@ -673,47 +673,41 @@ where
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
-        let start_time = std::time::Instant::now();
         let header = chain.current_header();
-        info!(
-            "[jacktest] fetch_transactions start: max_txns={}, header_number={}",
-            max_txns,
-            header.number()
-        );
 
         let state_db1 = chain.chain_state_reader();
         let state_db2 = chain.chain_state_reader2();
         let mut state_check = StateCheck::new(state_db1, state_db2);
 
         let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, &header);
-        info!(
-            "[jacktest] fetch_transactions got from txpool: count={}, elapsed_ms={}",
-            pending_multi_transactions.len(),
-            start_time.elapsed().as_millis()
-        );
 
-        let mut all_transactions: Vec<MultiSignedUserTransaction> = vec![];
-
-        for txn in pending_multi_transactions {
-            all_transactions.push(txn);
-        }
-
+        let mut blue_transactions: Vec<MultiSignedUserTransaction> = vec![];
         blue_blocks.iter().for_each(|block| {
             block.transactions().iter().for_each(|transaction| {
-                all_transactions.push(MultiSignedUserTransaction::VM1(transaction.clone()));
+                blue_transactions.push(MultiSignedUserTransaction::VM1(transaction.clone()));
             });
 
             block.transactions2().iter().for_each(|transaction| {
-                all_transactions.push(MultiSignedUserTransaction::VM2(transaction.clone()));
+                blue_transactions.push(MultiSignedUserTransaction::VM2(transaction.clone()));
             })
         });
 
-        all_transactions.sort_by(|a, b| match a.sender().to_hex().cmp(&b.sender().to_hex()) {
+        blue_transactions.sort_by(|a, b| match a.sender().to_hex().cmp(&b.sender().to_hex()) {
             std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
             other => other,
         });
+        let _ = state_check.filter_continuous_transactions(blue_transactions)?;
 
-        let filtered_transactions = state_check.filter_continuous_transactions(all_transactions)?;
+        let mut pending_multi_transactions = pending_multi_transactions;
+        pending_multi_transactions.sort_by(|a, b| {
+            match a.sender().to_hex().cmp(&b.sender().to_hex()) {
+                std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+                other => other,
+            }
+        });
+
+        let filtered_transactions =
+            state_check.filter_continuous_transactions(pending_multi_transactions)?;
 
         let mut pending_transactions = vec![];
         let mut pending_transactions2 = vec![];
@@ -723,14 +717,6 @@ where
                 MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
             }
         }
-
-        info!(
-            "[jacktest] fetch_transactions done: vm1={}, vm2={}, blue_blocks={}, elapsed_ms={}",
-            pending_transactions.len(),
-            pending_transactions2.len(),
-            blue_blocks.len(),
-            start_time.elapsed().as_millis()
-        );
         Ok((pending_transactions, pending_transactions2))
     }
 
