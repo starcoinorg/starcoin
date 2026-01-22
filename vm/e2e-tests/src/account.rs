@@ -371,12 +371,14 @@ impl CoinStore {
 //---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Default)]
 pub enum AccountRoleSpecifier {
     AptosRoot,
     TreasuryCompliance,
     DesignatedDealer,
     Validator,
     ValidatorOperator,
+    #[default]
     ParentVASP,
     ChildVASP,
 }
@@ -419,11 +421,6 @@ impl FromStr for AccountRoleSpecifier {
     }
 }
 
-impl Default for AccountRoleSpecifier {
-    fn default() -> Self {
-        AccountRoleSpecifier::ParentVASP
-    }
-}
 
 //---------------------------------------------------------------------------
 // Account type resource representation

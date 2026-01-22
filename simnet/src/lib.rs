@@ -50,7 +50,7 @@ impl PartialEq for ProduceEvent {
 impl Eq for ProduceEvent {}
 impl PartialOrd for ProduceEvent {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.time.partial_cmp(&self.time)
+        Some(self.cmp(other))
     }
 }
 impl Ord for ProduceEvent {
