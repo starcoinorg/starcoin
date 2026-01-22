@@ -370,8 +370,7 @@ impl CoinStore {
 // Account type representation
 //---------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
 pub enum AccountRoleSpecifier {
     AptosRoot,
     TreasuryCompliance,
@@ -420,7 +419,6 @@ impl FromStr for AccountRoleSpecifier {
         }
     }
 }
-
 
 //---------------------------------------------------------------------------
 // Account type resource representation
