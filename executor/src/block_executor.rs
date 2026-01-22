@@ -10,7 +10,7 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
+use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
 use starcoin_vm_types::account_config::{BalanceEvent, STCUnit, G_STC_TOKEN_CODE};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -142,6 +142,68 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
+    executed_data.state_root = chain_state.state_root();
+    Ok(executed_data)
+}
+
+/// Execute block with pre-computed outputs (from cache)
+pub fn block_execute_with_outputs<S: ChainStateReader + ChainStateWriter>(
+    chain_state: &S,
+    txns: Vec<Transaction>,
+    outputs: Vec<TransactionOutput>,
+) -> ExecutorResult<BlockExecutedData> {
+    if txns.len() != outputs.len() {
+        return Err(BlockExecutorError::BlockCacheTransactionCountNotMatch(
+            txns.len(),
+            outputs.len(),
+        ));
+    }
+    let mut executed_data = BlockExecutedData::default();
+    let last_index = outputs
+        .len()
+        .checked_sub(1)
+        .ok_or_else(|| BlockExecutorError::BlockTransactionZero)?;
+    for (index, (txn, output)) in txns
+        .iter()
+        .take(outputs.len())
+        .zip(outputs.into_iter())
+        .enumerate()
+    {
+        let txn_hash = txn.id();
+        let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
+        match status {
+            TransactionStatus::Discard(status) => {
+                return Err(BlockExecutorError::BlockTransactionDiscard(
+                    status, txn_hash,
+                ));
+            }
+            TransactionStatus::Keep(status) => {
+                chain_state
+                    .apply_write_set(write_set.clone())
+                    .map_err(BlockExecutorError::BlockChainStateErr)?;
+                let txn_state_root = if index == last_index || index == 0 {
+                    Some(
+                        chain_state
+                            .commit()
+                            .map_err(BlockExecutorError::BlockChainStateErr)?,
+                    )
+                } else {
+                    None
+                };
+                executed_data.txn_infos.push(TransactionInfo::new(
+                    txn_hash,
+                    txn_state_root,
+                    events.as_slice(),
+                    gas_used,
+                    status,
+                ));
+                executed_data.txn_events.push(events);
+                executed_data.txn_table_infos.append(&mut table_infos);
+                executed_data.write_sets.push(write_set);
+            }
+            TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
+        };
+    }
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
 }
