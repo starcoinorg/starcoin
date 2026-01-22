@@ -25,6 +25,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 
+pub use slog;
+
 pub mod structured_log;
 
 /// Logger prelude which includes all logging macros.
@@ -32,7 +34,10 @@ pub mod prelude {
     pub use crate::stacktrace;
     pub use crate::{sl_crit, sl_debug, sl_error, sl_info, sl_trace, sl_warn};
     pub use log::{debug, error, info, log, log_enabled, trace, warn, Level, LevelFilter};
-    pub use slog::{slog_crit, slog_debug, slog_error, slog_info, slog_trace, slog_warn};
+    pub use slog::{
+        crit as slog_crit, debug as slog_debug, error as slog_error, info as slog_info,
+        trace as slog_trace, warn as slog_warn,
+    };
 }
 
 pub fn stacktrace(err: anyhow::Error) {
@@ -446,32 +451,32 @@ fn parse_spec(spec: &str) -> LogLevelSpec {
 /// Log a critical level message using current logger
 #[macro_export]
 macro_rules! sl_crit( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_crit![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::crit!(logger, $($args)+))
 };);
 /// Log a error level message using current logger
 #[macro_export]
 macro_rules! sl_error( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_error![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::error!(logger, $($args)+))
 };);
 /// Log a warning level message using current logger
 #[macro_export]
 macro_rules! sl_warn( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_warn![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::warn!(logger, $($args)+))
 };);
 /// Log a info level message using current logger
 #[macro_export]
 macro_rules! sl_info( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_info![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::info!(logger, $($args)+))
 };);
 /// Log a debug level message using current logger
 #[macro_export]
 macro_rules! sl_debug( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_debug![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::debug!(logger, $($args)+))
 };);
 /// Log a trace level message using current logger
 #[macro_export]
 macro_rules! sl_trace( ($($args:tt)+) => {
-    $crate::structured_log::with_logger(|logger| slog_trace![logger, $($args)+])
+    $crate::structured_log::with_logger(|logger| $crate::slog::trace!(logger, $($args)+))
 };);
 
 #[cfg(test)]

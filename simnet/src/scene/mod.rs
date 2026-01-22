@@ -80,7 +80,7 @@ impl GhostAdpter {
         Ok(self
             .dag
             .ghostdata_by_hash(hash)?
-            .map(|data| (data.blue_score, data.blue_work.clone())))
+            .map(|data| (data.blue_score, data.blue_work)))
     }
 
     pub fn ghostdata(&self, hash: HashValue) -> Result<Option<Arc<GhostdagData>>> {

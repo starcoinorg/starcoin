@@ -19,7 +19,7 @@ use starcoin_types::state_set::ChainStateSet;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
 
-/// Dummy genesis ChangeSet for testing
+// Dummy genesis ChangeSet for testing
 // TODO(BobOng): e2e-test
 // pub static GENESIS_CHANGE_SET: Lazy<ChangeSet> =
 //     Lazy::new(|| generate_genesis_change_set_for_testing(GenesisOptions::Compiled));
