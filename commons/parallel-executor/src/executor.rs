@@ -231,7 +231,7 @@ impl<K: PartialOrd + Send + Clone + Hash + Eq, V: Send + Sync> MVHashMapView<'_,
                 }
                 true
             }
-            None => true,
+            None => false,
         }
     }
 }

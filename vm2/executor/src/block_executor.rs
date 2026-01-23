@@ -39,6 +39,15 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
+    if txns
+        .iter()
+        .any(|txn| matches!(txn, Transaction::BlockEpilogue(..)))
+    {
+        return Err(BlockExecutorError::OtherError(
+            anyhow!("block_execute expects no BlockEpilogue in input").into(),
+        ));
+    }
+
     debug_assert!(
         !txns
             .iter()

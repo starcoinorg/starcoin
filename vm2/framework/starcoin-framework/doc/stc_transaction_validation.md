@@ -21,11 +21,13 @@
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
 <b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
+<b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
+<b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
@@ -431,7 +433,11 @@ Migration from old StarcoinFramework Account::txn_prologue
         );
 
         <b>assert</b>!(
-            <a href="coin.md#0x1_coin_is_balance_at_least">coin::is_balance_at_least</a>&lt;TokenType&gt;(txn_sender, max_transaction_fee),
+            <a href="primary_fungible_store.md#0x1_primary_fungible_store_is_balance_at_least">primary_fungible_store::is_balance_at_least</a>(
+                txn_sender,
+                <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
+                max_transaction_fee
+            ),
             <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
         );
 
@@ -491,7 +497,11 @@ It collects gas and bumps the sequence number
     <b>let</b> transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
     <b>let</b> transaction_fee_amount_u64 = (transaction_fee_amount <b>as</b> u64);
     <b>assert</b>!(
-        <a href="coin.md#0x1_coin_is_balance_at_least">coin::is_balance_at_least</a>&lt;STC&gt;(txn_sender, transaction_fee_amount_u64),
+        <a href="primary_fungible_store.md#0x1_primary_fungible_store_is_balance_at_least">primary_fungible_store::is_balance_at_least</a>(
+            txn_sender,
+            <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
+            transaction_fee_amount_u64
+        ),
         <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
     );
 

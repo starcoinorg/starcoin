@@ -2233,7 +2233,6 @@ fn execute_block_transactions(
 
     Ok((executed_data, executed_data2))
 }
-
 impl BlockChain {
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.block.header().id());
