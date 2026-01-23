@@ -1061,7 +1061,7 @@ impl StarcoinVM {
         total_fee: u64,
     ) -> Result<VMOutput, VMStatus> {
         #[cfg(feature = "testing")]
-        info!(target:"vm2-blockbench","process_block_epilogue begin");
+        debug!(target:"vm2-blockbench","process_block_epilogue begin");
         let txn_sender = account_config::genesis_address();
         let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::void();
@@ -1082,7 +1082,7 @@ impl StarcoinVM {
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
         #[cfg(feature = "testing")]
-        info!(target:"vm2-blockbench","process_block_epilogue end");
+        debug!(target:"vm2-blockbench","process_block_epilogue end");
         get_vm_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 

@@ -84,7 +84,7 @@ impl TxPoolService {
             storage,
             storage2,
             chain_header: Arc::new(RwLock::new(chain_header)),
-            sequence_number_cache: NonceCache::new(128),
+            sequence_number_cache: NonceCache::new(1280),
             metrics,
             vm_metrics,
             verifier_pool,

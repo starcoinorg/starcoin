@@ -14266,6 +14266,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "parking_lot 0.12.1",
  "quick_cache",
+ "rayon",
  "serde 1.0.228",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
@@ -15933,6 +15934,48 @@ dependencies = [
  "serde 1.0.228",
  "starcoin-move-explain",
  "starcoin-vm1-vm-types",
+]
+
+[[package]]
+name = "vm2-blockbench"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "clap 4.5.47",
+ "futures 0.3.31",
+ "num_cpus",
+ "rayon",
+ "starcoin-chain-api",
+ "starcoin-chain-service",
+ "starcoin-config",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-metrics",
+ "starcoin-miner",
+ "starcoin-node",
+ "starcoin-node-api",
+ "starcoin-service-registry",
+ "starcoin-storage",
+ "starcoin-transaction-builder",
+ "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "starcoin-vm1-types",
+ "starcoin-vm1-vm-types",
+ "starcoin-vm2-account-api",
+ "starcoin-vm2-account-service",
+ "starcoin-vm2-executor",
+ "starcoin-vm2-state-api",
+ "starcoin-vm2-statedb",
+ "tempfile",
+ "test-helper",
+ "tokio",
 ]
 
 [[package]]

@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_aggregator::types::{DelayedFieldsSpeculativeError, PanicOr};
 use starcoin_infallible::Mutex;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{error, info, log_enabled, Level};
 use starcoin_mvhashmap::{
     versioned_delayed_fields::{CommitError, VersionedDelayedFields},
     MVHashMap,
@@ -247,6 +247,39 @@ pub struct ParallelTransactionExecutor<T: Transaction, E: ExecutorTask> {
     delayed_field_id_counter: AtomicU32,
 }
 
+struct ExecStats {
+    exec_tasks: AtomicUsize,
+    validate_tasks: AtomicUsize,
+    aborts: AtomicUsize,
+    execs_per_txn: Vec<AtomicUsize>,
+}
+
+impl ExecStats {
+    fn new(num_txns: usize) -> Self {
+        Self {
+            exec_tasks: AtomicUsize::new(0),
+            validate_tasks: AtomicUsize::new(0),
+            aborts: AtomicUsize::new(0),
+            execs_per_txn: (0..num_txns).map(|_| AtomicUsize::new(0)).collect(),
+        }
+    }
+
+    fn record_exec(&self, idx: TxnIndex) {
+        self.exec_tasks.fetch_add(1, Ordering::Relaxed);
+        if let Some(slot) = self.execs_per_txn.get(idx) {
+            slot.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn record_validate(&self) {
+        self.validate_tasks.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn record_abort(&self) {
+        self.aborts.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
 impl<T, E> ParallelTransactionExecutor<T, E>
 where
     T: Transaction,
@@ -298,11 +331,15 @@ where
         delayed_commit: Option<&DelayedFieldCommitCoordinator>,
         fatal_flag: &AtomicBool,
         fatal_error: &Mutex<Option<Error<E::Error>>>,
+        stats: Option<&ExecStats>,
     ) -> SchedulerTask<'a> {
         let (idx_to_execute, incarnation) = version;
         let txn = &signature_verified_block[idx_to_execute];
         if txn.is_block_epilogue() {
             return scheduler.finish_execution(idx_to_execute, incarnation, false, guard);
+        }
+        if let Some(stats) = stats {
+            stats.record_exec(idx_to_execute);
         }
 
         let state_view = MVHashMapView {
@@ -443,12 +480,16 @@ where
         _delayed_commit: Option<&DelayedFieldCommitCoordinator>,
         fatal_flag: &AtomicBool,
         fatal_error: &Mutex<Option<Error<E::Error>>>,
+        stats: Option<&ExecStats>,
     ) -> SchedulerTask<'a> {
         if fatal_flag.load(Ordering::Acquire) {
             scheduler.force_done();
             return SchedulerTask::Done;
         }
         let (idx_to_validate, incarnation) = version_to_validate;
+        if let Some(stats) = stats {
+            stats.record_validate();
+        }
         if signature_verified_block[idx_to_validate].is_block_epilogue() {
             return SchedulerTask::NoTask;
         }
@@ -517,6 +558,9 @@ where
                 idx_to_validate,
                 incarnation
             );
+            if let Some(stats) = stats {
+                stats.record_abort();
+            }
             // Not valid and successfully aborted, mark the latest write-set as estimates.
             for k in &last_input_output.write_set(idx_to_validate) {
                 versioned_data_cache.mark_estimate(k, idx_to_validate);
@@ -552,9 +596,11 @@ where
         delayed_commit: Option<Arc<DelayedFieldCommitCoordinator>>,
         fatal_flag: Arc<AtomicBool>,
         fatal_error: Arc<Mutex<Option<Error<E::Error>>>>,
+        stats: Option<Arc<ExecStats>>,
     ) {
         // Make executor for each task. TODO: fast concurrent executor.
         let executor = E::init(executor_arguments.clone());
+        let stats = stats.as_deref();
 
         let mut scheduler_task = SchedulerTask::NoTask;
         loop {
@@ -573,6 +619,7 @@ where
                     delayed_commit.as_deref(),
                     fatal_flag.as_ref(),
                     fatal_error.as_ref(),
+                    stats,
                 ),
                 SchedulerTask::ExecutionTask(version_to_execute, None, guard) => self.execute(
                     version_to_execute,
@@ -585,6 +632,7 @@ where
                     delayed_commit.as_deref(),
                     fatal_flag.as_ref(),
                     fatal_error.as_ref(),
+                    stats,
                 ),
                 SchedulerTask::ExecutionTask(_, Some(condvar), _guard) => {
                     let (lock, cvar) = &*condvar;
@@ -617,6 +665,7 @@ where
         delayed_commit: Option<&DelayedFieldCommitCoordinator>,
         fatal_flag: &AtomicBool,
         fatal_error: &Mutex<Option<Error<E::Error>>>,
+        stats: Option<&ExecStats>,
     ) {
         if block.is_empty() || !block[0].is_block_prologue() {
             return;
@@ -638,6 +687,7 @@ where
                     delayed_commit,
                     fatal_flag,
                     fatal_error,
+                    stats,
                 );
             }
             _ => {
@@ -659,6 +709,7 @@ where
                     delayed_commit,
                     fatal_flag,
                     fatal_error,
+                    stats,
                 );
             }
             _ => {
@@ -678,6 +729,7 @@ where
         >,
         versioned_data_cache: &MVHashMap<<T as Transaction>::Key, <T as Transaction>::Value>,
         scheduler: &Scheduler,
+        stats: Option<&ExecStats>,
     ) {
         // Check if block has epilogue
         if block.is_empty() || !block[block.len() - 1].is_block_epilogue() {
@@ -686,6 +738,9 @@ where
 
         // Get the first index that exceeds gas limit
         let epilogue_idx = block.len() - 1;
+        if let Some(stats) = stats {
+            stats.record_exec(epilogue_idx);
+        }
         let view_index = scheduler.first_exceeding_index().min(epilogue_idx);
         let state_view = MVHashMapView {
             versioned_map: versioned_data_cache,
@@ -772,6 +827,11 @@ where
         }
 
         let num_txns = signature_verified_block.len();
+        let stats = if log_enabled!(target: "vm2-blockbench", Level::Info) {
+            Some(Arc::new(ExecStats::new(num_txns)))
+        } else {
+            None
+        };
         let versioned_data_cache = MVHashMap::new();
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns, self.gas_limit);
@@ -794,6 +854,7 @@ where
             delayed_commit.as_deref(),
             fatal_flag.as_ref(),
             fatal_error.as_ref(),
+            stats.as_deref(),
         );
 
         RAYON_EXEC_POOL.scope(|s| {
@@ -801,6 +862,7 @@ where
                 let delayed_commit = delayed_commit.clone();
                 let fatal_flag = fatal_flag.clone();
                 let fatal_error = fatal_error.clone();
+                let stats = stats.clone();
                 s.spawn(|_| {
                     self.work_task_with_scope(
                         &executor_initial_arguments,
@@ -811,6 +873,7 @@ where
                         delayed_commit,
                         fatal_flag,
                         fatal_error,
+                        stats,
                     );
                 });
             }
@@ -823,6 +886,7 @@ where
             &last_input_output,
             &versioned_data_cache,
             &scheduler,
+            stats.as_deref(),
         );
 
         // Get the actual number of transactions to execute (considering gas limit)
@@ -985,6 +1049,40 @@ where
             drop(signature_verified_block);
             drop(scheduler);
         });
+
+        if let Some(stats) = stats.as_ref() {
+            let exec_tasks = stats.exec_tasks.load(Ordering::Relaxed);
+            let validate_tasks = stats.validate_tasks.load(Ordering::Relaxed);
+            let aborts = stats.aborts.load(Ordering::Relaxed);
+            let mut unique_exec_txns = 0usize;
+            let mut reexec_txns = 0usize;
+            let mut reexec_total = 0usize;
+            let mut max_execs = 0usize;
+            for counter in &stats.execs_per_txn {
+                let count = counter.load(Ordering::Relaxed);
+                if count > 0 {
+                    unique_exec_txns += 1;
+                    if count > 1 {
+                        reexec_txns += 1;
+                        reexec_total += count - 1;
+                    }
+                    if count > max_execs {
+                        max_execs = count;
+                    }
+                }
+            }
+            info!(
+                target: "vm2-blockbench",
+                "parallel_exec.stats exec_tasks={} validate_tasks={} aborts={} unique_exec_txns={} reexec_txns={} reexec_total={} max_execs={}",
+                exec_tasks,
+                validate_tasks,
+                aborts,
+                unique_exec_txns,
+                reexec_txns,
+                reexec_total,
+                max_execs
+            );
+        }
 
         match maybe_err {
             Some(err) => Err(err),

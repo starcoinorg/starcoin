@@ -14,72 +14,22 @@ use tx_pool::VerifiedTransaction;
 pub struct Logger;
 
 impl tx_pool::Listener<Transaction> for Logger {
-    fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
-        sl_info!(
-            "{action} {hash} {sender} {nonce} {gas_price} {gas} {expiration_timestamp_secs}",
-            nonce = tx.signed().sequence_number(),
-            gas_price = tx.signed().gas_unit_price(),
-            gas = tx.signed().max_gas_amount(),
-            expiration_timestamp_secs = tx.signed().expiration_timestamp_secs(),
-            sender = tx.sender().to_hex(),
-            hash = tx.hash().to_hex(),
-            action = "txpool_add",
-        );
-        if let Some(old) = old {
-            debug!(target: "txqueue", "[{:?}] Dropped. Replaced by [{:?}]", old.hash(), tx.hash());
-        }
-    }
+    fn added(&mut self, _tx: &Arc<Transaction>, _old: Option<&Arc<Transaction>>) {}
 
     fn rejected<H: fmt::Debug + fmt::LowerHex>(
         &mut self,
-        tx: &Arc<Transaction>,
-        reason: &tx_pool::Error<H>,
+        _tx: &Arc<Transaction>,
+        _reason: &tx_pool::Error<H>,
     ) {
-        sl_info!(
-            "{action} {hash} {reason}",
-            reason = format!("{}", reason),
-            hash = tx.hash().to_hex(),
-            action = "txpool_reject",
-        );
     }
 
-    fn dropped(&mut self, tx: &Arc<Transaction>, new: Option<&Transaction>) {
-        match new {
-            Some(new) => {
-                sl_info!(
-                    "{action} {hash} {new_hash}",
-                    new_hash = new.hash().to_hex(),
-                    hash = tx.hash().to_hex(),
-                    action = "txpool_drop",
-                )
-            }
-            None => sl_info!(
-                "{action} {hash}",
-                hash = tx.hash().to_hex(),
-                action = "txpool_drop",
-            ),
-        }
-    }
+    fn dropped(&mut self, _tx: &Arc<Transaction>, _new: Option<&Transaction>) {}
 
-    fn invalid(&mut self, tx: &Arc<Transaction>) {
-        debug!(target: "txqueue", "[{:?}] Marked as invalid by executor.", tx.hash());
-    }
+    fn invalid(&mut self, _tx: &Arc<Transaction>) {}
 
-    fn canceled(&mut self, tx: &Arc<Transaction>) {
-        sl_info!(
-            "{action} {hash}",
-            hash = tx.hash().to_hex(),
-            action = "txpool_cancel",
-        );
-    }
+    fn canceled(&mut self, _tx: &Arc<Transaction>) {}
 
-    fn culled(&mut self, tx: &Arc<Transaction>) {
-        sl_info!(
-            "{action} {hash}",
-            hash = tx.hash().to_hex(),
-            action = "txpool_cull",
-        );
-    }
+    fn culled(&mut self, _tx: &Arc<Transaction>) {}
 }
 
 /// Transaction status logger.

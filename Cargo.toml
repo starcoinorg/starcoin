@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     #"benchmarks",
+    "benchmarks/vm2-blockbench",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -139,6 +140,7 @@ members = [
 
 default-members = [
     #"benchmarks",
+    "benchmarks/vm2-blockbench",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",

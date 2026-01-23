@@ -59,10 +59,12 @@ use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfo2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
+use std::collections::BTreeMap;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
@@ -2190,52 +2192,15 @@ impl ChainWriter for BlockChain {
 }
 
 use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
-
-/// Helper function to execute block transactions
-fn execute_block_transactions(
-    statedb: &ChainStateDB,
-    statedb2: &ChainStateDB2,
-    transactions: &[Transaction],
-    transactions2: &[starcoin_vm2_types::transaction::Transaction],
-    epoch: &Epoch,
-    vm_metrics: Option<VMMetrics>,
-) -> Result<(BlockExecutedData, BlockExecutedData2)> {
-    // Execute VM1 transactions
-    let executed_data = if !transactions.is_empty() {
-        starcoin_executor::block_execute(
-            statedb,
-            transactions.to_vec(),
-            epoch.block_gas_limit(),
-            vm_metrics.clone(),
-        )?
-    } else {
-        BlockExecutedData {
-            state_root: statedb.state_root(),
-            txn_infos: vec![],
-            txn_events: vec![],
-            txn_table_infos: Default::default(),
-            write_sets: vec![],
-        }
-    };
-
-    let vm1_gas_used = executed_data
-        .txn_infos
-        .iter()
-        .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
-
-    // Execute VM2 transactions
-    let executed_data2 = starcoin_vm2_chain::execute_transactions(
-        statedb2,
-        transactions2.to_vec(),
-        epoch.block_gas_limit().saturating_sub(vm1_gas_used),
-        vm_metrics,
-    )?;
-
-    Ok((executed_data, executed_data2))
-}
 impl BlockChain {
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.block.header().id());
+        let stats_enabled = log_enabled!(target: "vm2-blockbench", Level::Info);
+        let total_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
@@ -2252,6 +2217,11 @@ impl BlockChain {
                 format_err!("Can not find selected block by hash {:?}", selected_parent)
             })?;
 
+        let prep_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         // Prepare transactions for VM1
         let vm1_offline = header.number() >= vm1_offline_height(header.chain_id().id().into());
         let transactions = if !vm1_offline {
@@ -2275,6 +2245,13 @@ impl BlockChain {
         let block_metadata2 =
             block.to_metadata(selected_head.header().gas_used(), red_blocks_count);
         let transactions2 = build_block_transactions(block.transactions2(), Some(block_metadata2));
+        if let Some(start) = prep_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.txn_prepare_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
 
         // Fork statedb from selected parent's state root
         // Get MultiState from storage using block hash
@@ -2296,6 +2273,66 @@ impl BlockChain {
         // If cache hit, we can skip execution and apply_write_set entirely
         let state_cache = global_block_state_cache();
         let cached_state = state_cache.remove(header.txn_accumulator_root());
+        let mut vm1_exec_elapsed = std::time::Duration::from_secs(0);
+        let mut vm2_exec_elapsed = std::time::Duration::from_secs(0);
+        let used_cache = false;
+
+        let mut exec_transactions = || -> Result<(
+            BlockExecutedData,
+            BlockExecutedData2,
+            Option<Arc<ChainStateDB>>,
+            Option<Arc<ChainStateDB2>>,
+        )> {
+            // Execute VM1 transactions
+            let vm1_exec_start = if stats_enabled && !transactions.is_empty() {
+                Some(Instant::now())
+            } else {
+                None
+            };
+            let executed_data = if !transactions.is_empty() {
+                starcoin_executor::block_execute(
+                    statedb,
+                    transactions.clone(),
+                    epoch.block_gas_limit(),
+                    self.vm_metrics.clone(),
+                )?
+            } else {
+                BlockExecutedData {
+                    state_root: statedb.state_root(),
+                    txn_infos: vec![],
+                    txn_events: vec![],
+                    txn_table_infos: BTreeMap::new(),
+                    write_sets: vec![],
+                }
+            };
+            if let Some(start) = vm1_exec_start {
+                vm1_exec_elapsed = start.elapsed();
+            }
+
+            // Execute VM2 transactions
+            // Calculate gas used from VM1 transactions
+            let vm1_gas_used = executed_data
+                .txn_infos
+                .iter()
+                .fold(0u64, |acc, info| acc.saturating_add(info.gas_used()));
+
+            let vm2_exec_start = if stats_enabled {
+                Some(Instant::now())
+            } else {
+                None
+            };
+            let executed_data2 = starcoin_vm2_chain::execute_transactions(
+                statedb2,
+                transactions2.clone(),
+                epoch.block_gas_limit() - vm1_gas_used,
+                self.vm_metrics.clone(),
+            )?;
+            if let Some(start) = vm2_exec_start {
+                vm2_exec_elapsed = start.elapsed();
+            }
+
+            Ok((executed_data, executed_data2, None, None))
+        };
         // Execute or use cached data
         let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
             if let Some(cached) = cached_state {
@@ -2312,44 +2349,40 @@ impl BlockChain {
                     )
                 } else {
                     // Partial cache - fall back to execution
-                    let (data, data2) = execute_block_transactions(
-                        statedb,
-                        statedb2,
-                        &transactions,
-                        &transactions2,
-                        &epoch,
-                        self.vm_metrics.clone(),
-                    )?;
-                    (data, data2, None, None)
+                    exec_transactions()?
                 }
             } else {
                 // No cache - execute normally
-                let (data, data2) = execute_block_transactions(
-                    statedb,
-                    statedb2,
-                    &transactions,
-                    &transactions2,
-                    &epoch,
-                    self.vm_metrics.clone(),
-                )?;
-                (data, data2, None, None)
+                exec_transactions()?
             };
-
-        // If we used cached statedb, we need to flush the cached ones
-        // Otherwise, we only need to flush self.statedb (executor already applied write_sets)
-        if cached_statedb.is_some() && cached_statedb2.is_some() {
-            // Flush cached statedbs
-            let cached_db = cached_statedb.as_ref().unwrap();
-            let cached_db2 = cached_statedb2.as_ref().unwrap();
-            cached_db.flush()?;
-            cached_db2.flush()?;
-        } else {
-            // Note: write_sets are already applied and committed by executor functions
-            // (block_execute / execute_transactions), we only need to flush here
-            statedb.flush()?;
-            statedb2.flush()?;
+        if stats_enabled && !used_cache {
+            if !transactions.is_empty() {
+                info!(
+                    target: "vm2-blockbench",
+                    "execute_dag.vm1_exec_ms={:.3}",
+                    vm1_exec_elapsed.as_secs_f64() * 1000.0
+                );
+                info!(
+                    target: "vm2-blockbench",
+                    "execute_dag.vm1_write_ms=0.000"
+                );
+                info!(
+                    target: "vm2-blockbench",
+                    "execute_dag.state_commit_ms=0.000"
+                );
+            }
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.vm2_exec_ms={:.3}",
+                vm2_exec_elapsed.as_secs_f64() * 1000.0
+            );
         }
 
+        let verify_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         // Update state roots
         let (state_root, multi_state, vm_state_accumulator) = {
             let state_root1 = executed_data.state_root;
@@ -2497,6 +2530,43 @@ impl BlockChain {
             executed_accumulator_root,
             header.txn_accumulator_root(),
         );
+        if let Some(start) = verify_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.verify_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
+
+        // Flush state to ensure state tree nodes are persisted
+        // This is critical for dual-VM: both VM1 and VM2 states must be flushed
+        let flush_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
+        if cached_statedb.is_some() && cached_statedb2.is_some() {
+            let cached_db = cached_statedb.as_ref().unwrap();
+            let cached_db2 = cached_statedb2.as_ref().unwrap();
+            cached_db.flush()?;
+            debug!(target:"vm2-blockbench","statedb2 flush start");
+            cached_db2.flush()?;
+            debug!(target:"vm2-blockbench","statedb2 flush end");
+        } else {
+            statedb.flush()?;
+            debug!(target:"vm2-blockbench","statedb2 flush start");
+            statedb2.flush()?;
+            debug!(target:"vm2-blockbench","statedb2 flush end");
+        }
+        if let Some(start) = flush_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.flush_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
+
+        // Create local block_accumulator from parent's accumulator info
         let parent_block_accumulator_info = parent_block_info.get_block_accumulator_info();
         let block_accumulator = MerkleAccumulator::new_with_info(
             parent_block_accumulator_info.clone(),
@@ -2509,10 +2579,28 @@ impl BlockChain {
         block_accumulator.append(&[block_id])?;
 
         // Flush accumulators
+        let acc_flush_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         txn_accumulator.flush()?;
         vm_state_accumulator.flush()?;
         block_accumulator.flush()?;
+        if let Some(start) = acc_flush_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.acc_flush_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
 
+        let mut block_process_elapsed = std::time::Duration::from_secs(0);
+        let block_commit_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let block_info = BlockInfo::new(
             block_id,
             total_difficulty,
@@ -2525,10 +2613,24 @@ impl BlockChain {
         let (storage, _storage2) = &self.storage;
         storage.save_block_info(block_info.clone())?;
         storage.commit_block(block.clone())?;
+        if let Some(start) = block_commit_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_commit_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
 
         // DAG specific saves
         // Update k parameter for DAG
         // TODO: The k should be reload or update only on new epoch.
+        let dag_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         self.dag()
             .ghost_dag_manager()
             .update_k(epoch.max_uncles_per_block().try_into().unwrap());
@@ -2536,6 +2638,13 @@ impl BlockChain {
         // Commit the DAG block
         self.dag()
             .commit_trusted_block(header.to_owned(), Arc::new(verified_block.ghostdata))?;
+        if let Some(start) = dag_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.dag_process_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
 
         // Save events, table infos and transaction infos
         let txn_infos = executed_data.txn_infos;
@@ -2556,7 +2665,12 @@ impl BlockChain {
             )
             .collect::<Vec<_>>();
 
-        // Save events for VM1
+        // Save events for VM1/VM2
+        let events_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
         for (info_id, events) in txn_info_ids.iter().zip(
             txn_events
@@ -2577,8 +2691,22 @@ impl BlockChain {
         }
         let transactions2_for_storage =
             append_vm2_epilogue_for_storage(transactions2, &vm2_txn_infos)?;
+        if let Some(start) = events_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_events_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
 
         // Save transaction infos
+        let txn_info_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         if txn_infos.is_empty() {
             storage.save_transaction_infos(
                 vm2_txn_infos
@@ -2624,7 +2752,21 @@ impl BlockChain {
                 .collect(),
             )?;
         }
+        if let Some(start) = txn_info_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_txn_info_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
         // Save transactions
+        let txn_batch_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let all_transactions: Vec<StcTransaction> = transactions
             .into_iter()
             .map(Into::into)
@@ -2635,8 +2777,22 @@ impl BlockChain {
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         storage.save_transaction_batch(all_transactions)?;
+        if let Some(start) = txn_batch_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_txn_batch_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
 
         // Save block's transaction ids and info ids
+        let block_ids_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
         let ordered_ids = if txn_info_ids.is_empty() {
             vm2_txn_info_ids
@@ -2647,10 +2803,47 @@ impl BlockChain {
                 .collect()
         };
         storage.save_block_txn_info_ids(block_id, ordered_ids)?;
+        if let Some(start) = block_ids_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_txn_ids_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
 
         // Save table infos
+        let table_infos_start = if stats_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         storage.save_table_infos(txn_table_infos)?;
+        if let Some(start) = table_infos_start {
+            let elapsed = start.elapsed();
+            block_process_elapsed += elapsed;
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_table_infos_ms={:.3}",
+                elapsed.as_secs_f64() * 1000.0
+            );
+        }
+        if stats_enabled {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.block_process_ms={:.3}",
+                block_process_elapsed.as_secs_f64() * 1000.0
+            );
+        }
 
+        if let Some(start) = total_start {
+            info!(
+                target: "vm2-blockbench",
+                "execute_dag.total_ms={:.3}",
+                start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
         Ok(ExecutedBlock::new(block, block_info, multi_state))
     }
 }

@@ -791,7 +791,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_block_time_target: G_MIN_BLOCK_TIME_TARGET,
             max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: G_BASE_MAX_UNCLES_PER_BLOCK,
-            base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
+            base_block_gas_limit: 20_000_000_000,
             strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (

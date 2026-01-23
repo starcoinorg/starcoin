@@ -1,13 +1,20 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_genesis::vm2::{build_genesis_transaction, execute_genesis_transaction};
+use clap::ValueEnum;
+use starcoin_config::{
+    temp_dir, BuiltinNetworkID, ChainNetwork, DataDirPath, RocksdbConfig, DEFAULT_CACHE_SIZE,
+};
+use starcoin_genesis::vm2::{build_genesis_transaction_with_package, execute_genesis_transaction};
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_metrics::Registry;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::vm2::{self as transaction_builder2, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_transaction_builder::StdLibOptions;
+use starcoin_types::stdlib::StdlibVersion;
 use starcoin_vm2_cached_packages::starcoin_framework_sdk_builder::transfer_scripts_batch_peer_to_peer_v2;
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_executor::block_executor;
@@ -24,6 +31,10 @@ use std::cmp::min;
 use std::sync::Arc;
 
 const INIT_ACCOUNT_BALANCE: u64 = 40_000_000_000;
+// Keep account creation batches small to avoid overwhelming caches.
+const CREATE_BATCH_SIZE: usize = 500;
+// Give generated transactions ample TTL to avoid expiration during generation/execution.
+const TXN_TTL_SECS: u64 = 3600;
 
 struct AccountData {
     private_key: AccountPrivateKey,
@@ -36,6 +47,12 @@ pub struct BenchmarkReport {
     txns: usize,
     exec_milliseconds: f64,
     tps: f64,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum VmStorage {
+    Memory,
+    Db,
 }
 
 struct TransactionGenerator {
@@ -66,33 +83,36 @@ impl TransactionGenerator {
     }
 
     fn gen_create_account_transactions(&mut self) -> Vec<SignedUserTransaction> {
-        self.net.time_service().sleep(1000);
-        let mut txns = vec![];
-        for (sequence_number, receiver) in self.accounts.iter().enumerate() {
-            let payload = transfer_scripts_batch_peer_to_peer_v2(
-                stc_type_tag(),
-                vec![receiver.address],
-                vec![INIT_ACCOUNT_BALANCE as u128],
-            );
+        // Generate creation txns in chunks to avoid exceeding association account sequence window.
+        let mut all_txns = Vec::with_capacity(self.accounts.len());
+        let chunk_size = CREATE_BATCH_SIZE; // stay within reasonable batch size
+        for (chunk_idx, chunk) in self.accounts.chunks(chunk_size).enumerate() {
+            for (offset, receiver) in chunk.iter().enumerate() {
+                let seq = (chunk_idx * chunk_size + offset) as u64;
+                let payload = transfer_scripts_batch_peer_to_peer_v2(
+                    stc_type_tag(),
+                    vec![receiver.address],
+                    vec![INIT_ACCOUNT_BALANCE as u128],
+                );
 
-            let txn = transaction_builder2::create_signed_txn_with_association_account(
-                payload,
-                sequence_number as u64, // The first transaction from the association account should have sequence number 0
-                DEFAULT_MAX_GAS_AMOUNT,
-                1,
-                self.net.time_service().now_secs() + sequence_number as u64,
-                self.net.chain_id().id().into(),
-                self.net.genesis_config2(),
-            );
+                let txn = transaction_builder2::create_signed_txn_with_association_account(
+                    payload,
+                    seq, // The first transaction from the association account should have sequence number 0
+                    DEFAULT_MAX_GAS_AMOUNT,
+                    1,
+                    self.net.time_service().now_secs() + TXN_TTL_SECS,
+                    self.net.chain_id().id().into(),
+                    self.net.genesis_config2(),
+                );
 
-            txns.push(txn);
+                all_txns.push(txn);
+            }
         }
 
-        txns
+        all_txns
     }
 
     fn gen_transfer_transactions(&mut self, txns_num: usize) -> Vec<SignedUserTransaction> {
-        self.net.time_service().sleep(1000);
         let mut txns = Vec::with_capacity(txns_num);
         self.accounts.iter_mut().for_each(|account| {
             account.sequence_number = 0;
@@ -112,9 +132,7 @@ impl TransactionGenerator {
                     sender,
                     self.accounts[sender_idx].sequence_number,
                     payload,
-                    self.net.time_service().now_secs()
-                        + self.accounts[sender_idx].sequence_number
-                        + 1,
+                    self.net.time_service().now_secs() + TXN_TTL_SECS,
                     &self.net,
                 );
                 self.accounts[sender_idx].sequence_number += 1;
@@ -215,28 +233,76 @@ impl<
 pub struct BenchmarkManager {
     chain_state: ChainStateDB,
     net: ChainNetwork,
+    _data_dir: Option<DataDirPath>,
 }
 
 impl BenchmarkManager {
-    pub fn new() -> Self {
-        let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance()).expect("new storage should be ok"),
+    pub fn new(storage_mode: VmStorage) -> Self {
+        // Default: in-memory cache storage; can switch to RocksDB via CLI.
+        let (storage, data_dir) = match storage_mode {
+            VmStorage::Memory => {
+                // Default cache is small; enlarge to avoid eviction when creating many accounts.
+                let cache_size = DEFAULT_CACHE_SIZE * 100;
+                (
+                    Arc::new(
+                        Storage::new(StorageInstance::new_cache_instance_with_capacity(
+                            cache_size,
+                        ))
+                        .expect("new cache storage should be ok"),
+                    ),
+                    None,
+                )
+            }
+            VmStorage::Db => {
+                let data_dir = temp_dir();
+                let db = DBStorage::new(data_dir.path(), RocksdbConfig::default(), None)
+                    .expect("new db storage should be ok");
+                // Use a larger in-memory cache in front of RocksDB to avoid state node evictions
+                // when creating many accounts.
+                let cache = CacheStorage::new_with_capacity(
+                    DEFAULT_CACHE_SIZE * 100,
+                    /* metrics */ None,
+                );
+                (
+                    Arc::new(
+                        Storage::new(StorageInstance::new_cache_and_db_instance(cache, db))
+                            .expect("new storage ok"),
+                    ),
+                    Some(data_dir),
+                )
+            }
+        };
+        let builtin = BuiltinNetworkID::Dev;
+        let mut genesis_config2 = builtin.genesis_config2().clone();
+        genesis_config2.stdlib_version = StdlibVersion::Latest;
+        let net: ChainNetwork = ChainNetwork::new(
+            builtin.into(),
+            builtin.genesis_config().clone(),
+            genesis_config2,
         );
-        let net: ChainNetwork = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
         let chain_state = ChainStateDB::new(storage.clone(), None);
 
         // Initialize genesis
-        let genesis_txn = build_genesis_transaction(&net).unwrap();
+        let package = transaction_builder2::build_stdlib_package(&net, StdLibOptions::Fresh)
+            .expect("build fresh stdlib package");
+        let genesis_txn =
+            build_genesis_transaction_with_package(net.chain_id().id(), package).unwrap();
         let _ =
             execute_genesis_transaction(&chain_state, Transaction::UserTransaction(genesis_txn))
                 .unwrap();
-        Self { chain_state, net }
+        Self {
+            chain_state,
+            net,
+            _data_dir: data_dir,
+        }
     }
 
     pub fn run(
         &mut self,
         serialize_bench_txns: &[usize],
         parallel_bench_txns: &[usize],
+        account_override: Option<usize>,
+        concurrency_override: Option<usize>,
     ) -> Vec<BenchmarkReport> {
         let mut reports = Vec::new();
 
@@ -247,13 +313,19 @@ impl BenchmarkManager {
             .max()
             .copied()
             .unwrap_or(0);
-        // 200 account is enough to avoid conflict in parallel execution.
-        let account_num = min(max_txns_once * 2, 200);
+        // Default accounts: 2x max txns (cap 20000) to reduce conflicts; CLI can override.
+        let mut account_num = account_override.unwrap_or_else(|| min(max_txns_once * 2, 20000));
+        if account_num == 0 {
+            account_num = 1;
+        }
 
         let mut generator = TransactionGenerator::new(account_num, self.net.clone());
-        let txns = generator.gen_create_account_transactions();
         let mut executor = TransactionExecutor::new(&self.chain_state);
-        let _ = executor.run(txns, true);
+        let create_txns = generator.gen_create_account_transactions();
+        // Persist creation txns in batches to avoid huge single-block state and eviction issues.
+        for chunk in create_txns.chunks(CREATE_BATCH_SIZE) {
+            let _ = executor.run(chunk.to_vec(), true);
+        }
 
         // run serialize txns
         for txns_num in serialize_bench_txns.iter() {
@@ -262,8 +334,11 @@ impl BenchmarkManager {
         }
 
         // this variable could only be set once, default is serialize, so we run serialize first.
-        StarcoinVM::set_concurrency_level(num_cpus::get());
-        assert_eq!(StarcoinVM::get_concurrency_level(), num_cpus::get());
+        let desired_parallel = concurrency_override
+            .unwrap_or_else(num_cpus::get)
+            .clamp(1, num_cpus::get());
+        StarcoinVM::set_concurrency_level(desired_parallel);
+        assert_eq!(StarcoinVM::get_concurrency_level(), desired_parallel);
 
         // run parallel txns
         for txns_num in parallel_bench_txns.iter() {
@@ -292,6 +367,6 @@ impl BenchmarkManager {
 
 impl Default for BenchmarkManager {
     fn default() -> Self {
-        Self::new()
+        Self::new(VmStorage::Memory)
     }
 }

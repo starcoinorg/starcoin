@@ -1,0 +1,49 @@
+[package]
+name = "vm2-blockbench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+chrono = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+futures = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-miner = { workspace = true }
+starcoin-node = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-vm2-account-service = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-chain-service = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-txpool = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-vm2-vm-runtime = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-executor = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-metrics = { workspace = true }
+starcoin-genesis = { workspace = true }
+starcoin-node-api = { workspace = true }
+starcoin-vm-types = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+async-trait = { workspace = true }
+num_cpus = { workspace = true }
+rayon = { workspace = true }
+test-helper = { workspace = true }
+starcoin-txpool-api = { workspace = true }
+
+[dev-dependencies]
+
+[[bin]]
+name = "vm2-blockbench"
+path = "src/main.rs"

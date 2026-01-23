@@ -68,11 +68,18 @@ impl TxPoolConfig {
     pub fn set_max_count(&mut self, max_count: u64) {
         self.max_count = Some(max_count);
     }
+    pub fn set_max_per_sender(&mut self, max_per_sender: u64) {
+        self.max_per_sender = Some(max_per_sender);
+    }
+    pub fn set_tx_propagate_interval(&mut self, interval: u64) {
+        self.tx_propagate_interval = Some(interval);
+    }
     pub fn max_count(&self) -> u64 {
-        self.max_count.unwrap_or(4096)
+        // Higher default to better support stress/bench workloads.
+        self.max_count.unwrap_or(40_960_000)
     }
     pub fn max_per_sender(&self) -> u64 {
-        self.max_per_sender.unwrap_or(128)
+        self.max_per_sender.unwrap_or(40_960)
     }
     pub fn max_mem_usage(&self) -> u64 {
         self.max_mem_usage

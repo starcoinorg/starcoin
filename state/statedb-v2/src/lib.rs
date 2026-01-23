@@ -8,6 +8,7 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use parking_lot::RwLock;
 use quick_cache::sync::Cache;
+use rayon::prelude::*;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -293,7 +294,12 @@ pub struct ChainStateDB {
     update_table_handle_idx_list: RwLock<HashSet<usize>>,
 }
 
-static G_DEFAULT_CACHE_SIZE: usize = 10240;
+static G_DEFAULT_CACHE_SIZE: usize = 102400;
+const PARALLEL_COMMIT_THRESHOLD: usize = 256;
+
+fn should_parallel_commit(len: usize) -> bool {
+    len >= PARALLEL_COMMIT_THRESHOLD
+}
 
 impl ChainStateDB {
     pub fn mock() -> Self {
@@ -779,45 +785,120 @@ impl ChainStateWriter for ChainStateDB {
     }
     /// Commit
     fn commit(&self) -> Result<HashValue> {
-        // cache commit
-        for handle in self.updates_table_handle.read().iter() {
-            let table_handle_state_object = self.get_table_handle_state_object(handle)?;
-            table_handle_state_object.commit()?;
-            let idx = handle.get_idx()?;
-            self.update_table_handle_idx_list.write().insert(idx);
-            // put table_handle_state_object commit
-            self.get_state_tree_table_handles(idx)?
-                .put(*handle, table_handle_state_object.root_hash().to_vec());
+        let table_handles: Vec<TableHandle> =
+            self.updates_table_handle.read().iter().copied().collect();
+        if !table_handles.is_empty() {
+            struct HandleCommit {
+                handle: TableHandle,
+                idx: usize,
+                root: HashValue,
+            }
+
+            let handle_commits: Vec<HandleCommit> = if should_parallel_commit(table_handles.len()) {
+                table_handles
+                    .par_iter()
+                    .map(|handle| -> Result<HandleCommit> {
+                        let table_handle_state_object =
+                            self.get_table_handle_state_object(handle)?;
+                        table_handle_state_object.commit()?;
+                        let idx = handle.get_idx()?;
+                        Ok(HandleCommit {
+                            handle: *handle,
+                            idx,
+                            root: table_handle_state_object.root_hash(),
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()?
+            } else {
+                table_handles
+                    .iter()
+                    .map(|handle| -> Result<HandleCommit> {
+                        let table_handle_state_object =
+                            self.get_table_handle_state_object(handle)?;
+                        table_handle_state_object.commit()?;
+                        let idx = handle.get_idx()?;
+                        Ok(HandleCommit {
+                            handle: *handle,
+                            idx,
+                            root: table_handle_state_object.root_hash(),
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()?
+            };
+
+            let mut handles_by_idx: Vec<Vec<(TableHandle, HashValue)>> =
+                vec![Vec::new(); TABLE_HANDLE_ADDRESS_LIST.len()];
+            let mut idx_set = HashSet::new();
+            for commit in handle_commits {
+                idx_set.insert(commit.idx);
+                handles_by_idx[commit.idx].push((commit.handle, commit.root));
+            }
+
+            if !idx_set.is_empty() {
+                let mut idx_list = self.update_table_handle_idx_list.write();
+                for idx in idx_set.iter() {
+                    idx_list.insert(*idx);
+                }
+            }
+
+            let mut handle_addresses = Vec::new();
+            for (idx, entries) in handles_by_idx.iter().enumerate() {
+                if entries.is_empty() {
+                    continue;
+                }
+                let state_tree_table_handle = self.get_state_tree_table_handles(idx)?;
+                for (handle, root) in entries.iter() {
+                    state_tree_table_handle.put(*handle, root.to_vec());
+                }
+                state_tree_table_handle.commit()?;
+
+                let handle_address = TABLE_HANDLE_ADDRESS_LIST
+                    .get(idx)
+                    .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
+                let table_path: &DataPath = TABLE_PATH_LIST
+                    .get(idx)
+                    .expect("get TABLE_PATH_LIST should always succeed");
+                let table_handle_account_state_object =
+                    self.get_account_state_object(handle_address, true)?;
+                table_handle_account_state_object.set(
+                    table_path.clone(),
+                    state_tree_table_handle.root_hash().to_vec(),
+                );
+                handle_addresses.push(*handle_address);
+            }
+
+            if !handle_addresses.is_empty() {
+                let mut locks = self.updates.write();
+                for address in handle_addresses {
+                    locks.insert(address);
+                }
+            }
         }
-        for idx in self.update_table_handle_idx_list.write().iter() {
-            let state_tree_table_handle = self
-                .state_tree_table_handles_list
-                .get(*idx)
-                .expect("get state_tree_table_handles index should success");
-            state_tree_table_handle.commit()?;
 
-            // update table_handle_address state
-            let handle_address = TABLE_HANDLE_ADDRESS_LIST
-                .get(*idx)
-                .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
-            let table_path: &DataPath = TABLE_PATH_LIST
-                .get(*idx)
-                .expect("get TABLE_PATH_LIST should always succeed");
+        let addresses: Vec<AccountAddress> = self.updates.read().iter().copied().collect();
+        let account_states: Vec<(AccountAddress, AccountState)> =
+            if should_parallel_commit(addresses.len()) {
+                addresses
+                    .par_iter()
+                    .map(|address| -> Result<(AccountAddress, AccountState)> {
+                        let account_state_object = self.get_account_state_object(address, false)?;
+                        let state = account_state_object.commit()?;
+                        Ok((*address, state))
+                    })
+                    .collect::<Result<Vec<_>>>()?
+            } else {
+                addresses
+                    .iter()
+                    .map(|address| -> Result<(AccountAddress, AccountState)> {
+                        let account_state_object = self.get_account_state_object(address, false)?;
+                        let state = account_state_object.commit()?;
+                        Ok((*address, state))
+                    })
+                    .collect::<Result<Vec<_>>>()?
+            };
 
-            let mut locks = self.updates.write();
-            locks.insert(*handle_address);
-            let table_handle_account_state_object =
-                self.get_account_state_object(handle_address, true)?;
-            table_handle_account_state_object.set(
-                table_path.clone(),
-                state_tree_table_handle.root_hash().to_vec(),
-            );
-        }
-
-        for address in self.updates.read().iter() {
-            let account_state_object = self.get_account_state_object(address, false)?;
-            let state = account_state_object.commit()?;
-            self.state_tree.put(*address, state.try_into()?);
+        for (address, state) in account_states {
+            self.state_tree.put(address, state.try_into()?);
         }
         self.state_tree.commit()
     }
