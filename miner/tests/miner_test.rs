@@ -534,7 +534,7 @@ pub fn test_block_template_filters_txpool_after_blue() -> Result<()> {
     )
     .try_into()?;
 
-    let side_chain = BlockChain::new(
+    let mut side_chain = BlockChain::new(
         config.net().time_service(),
         main1_header.id(),
         storage.clone(),
@@ -554,7 +554,7 @@ pub fn test_block_template_filters_txpool_after_blue() -> Result<()> {
     let blue_block = side_chain
         .consensus()
         .create_block(blue_template, config.net().time_service().as_ref())?;
-    chain.apply(blue_block)?;
+    side_chain.apply(blue_block)?;
 
     let (_pool_prikey, pool_public_key) = KeyGen::from_os_rng().generate_keypair();
     let pool_receiver = account_address::from_public_key(&pool_public_key);

@@ -619,9 +619,9 @@ where
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.get_main().has_dag_block(block_id)?
         {
-            let executed_block = self.main.apply(block)?;
-            let enacted_blocks = vec![executed_block.block().clone()];
-            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+            let mut branch = self.main.fork(block.header().parent_hash())?;
+            let _ = branch.apply(block)?;
+            self.select_head(branch)?;
             return Ok(ConnectOk::ExeConnectMain);
         }
         let (block_info_with_state, fork) = self.find_or_fork(block.header())?;
@@ -652,7 +652,7 @@ where
             }
             // the block is not processed but its parent branch exists
             (None, Some(mut branch)) => {
-                let _executed_block = branch.apply(block)?;
+                let _ = branch.apply(block)?;
                 self.select_head(branch)?;
                 Ok(ConnectOk::ExeConnectBranch)
             }
