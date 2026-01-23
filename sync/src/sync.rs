@@ -28,9 +28,9 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
-    SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
-    SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort, SyncCancelRequest,
+    SyncProgressReport, SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest,
+    SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
@@ -40,8 +40,8 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::panic::AssertUnwindSafe;
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 use tokio::runtime::Runtime;
 
@@ -57,6 +57,16 @@ fn global_sync_runtime() -> &'static Runtime {
 }
 
 const REPUTATION_THRESHOLD: i32 = -1000;
+const SYNC_WATCHDOG_INTERVAL: Duration = Duration::from_secs(30);
+const SYNC_WATCHDOG_STALL_SECS: u64 = 120;
+
+#[derive(Clone, Debug)]
+struct SyncWatchdogSnapshot {
+    task_name: String,
+    processed: u64,
+    ok: u64,
+    last_change: Instant,
+}
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -715,6 +725,81 @@ impl ActorService for SyncService {
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<PeerEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        let sync_ref = ctx.self_ref();
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+        let watchdog_state_clone = watchdog_state.clone();
+        ctx.run_interval(SYNC_WATCHDOG_INTERVAL, move |ctx| {
+            let sync_ref = sync_ref.clone();
+            let watchdog_state = watchdog_state_clone.clone();
+            ctx.spawn(async move {
+                let report = match sync_ref.progress().await {
+                    Ok(report) => report,
+                    Err(e) => {
+                        warn!("[sync] Watchdog failed to get progress: {:?}", e);
+                        return;
+                    }
+                };
+                let Some(report) = report else {
+                    return;
+                };
+                let now = Instant::now();
+                let task_name = report.current.task_name.clone();
+                let processed = report.current.processed_items;
+                let ok = report.current.ok;
+
+                let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
+                match state.as_mut() {
+                    Some(snapshot)
+                        if snapshot.task_name != task_name
+                            || processed < snapshot.processed
+                            || ok < snapshot.ok =>
+                    {
+                        *snapshot = SyncWatchdogSnapshot {
+                            task_name,
+                            processed,
+                            ok,
+                            last_change: now,
+                        };
+                    }
+                    Some(snapshot) => {
+                        if processed > snapshot.processed || ok > snapshot.ok {
+                            snapshot.processed = processed;
+                            snapshot.ok = ok;
+                            snapshot.last_change = now;
+                            return;
+                        }
+                        if now.duration_since(snapshot.last_change).as_secs()
+                            >= SYNC_WATCHDOG_STALL_SECS
+                        {
+                            warn!(
+                                "[sync] Watchdog detected stalled sync (task: {}, processed: {}, ok: {}, stalled: {}s).",
+                                snapshot.task_name,
+                                snapshot.processed,
+                                snapshot.ok,
+                                SYNC_WATCHDOG_STALL_SECS
+                            );
+                            snapshot.last_change = now;
+                            snapshot.processed = processed;
+                            snapshot.ok = ok;
+                            if let Err(e) = sync_ref.cancel().await {
+                                warn!("[sync] Watchdog cancel sync failed: {:?}", e);
+                            }
+                            if let Err(e) = sync_ref.start(true, vec![], false, None).await {
+                                warn!("[sync] Watchdog restart sync failed: {:?}", e);
+                            }
+                        }
+                    }
+                    None => {
+                        *state = Some(SyncWatchdogSnapshot {
+                            task_name,
+                            processed,
+                            ok,
+                            last_change: now,
+                        });
+                    }
+                }
+            });
+        });
         Ok(())
     }
 
