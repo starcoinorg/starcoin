@@ -39,6 +39,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
+use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
@@ -554,10 +555,11 @@ impl SyncService {
             .as_ref()
             .map(|metrics| metrics.sync_task_break_total.clone());
 
-        global_sync_runtime().spawn(fut.then(
-            |result: Result<Option<BlockChain>, anyhow::Error>| async move {
-                let mut chain_status: Option<ChainStatus> = None;
-                let cancel = match result {
+        let sync_task = async move {
+            let result = AssertUnwindSafe(fut).catch_unwind().await;
+            let mut chain_status: Option<ChainStatus> = None;
+            let cancel = match result {
+                Ok(result) => match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
@@ -597,8 +599,12 @@ impl SyncService {
                                     } else {
                                         "other_err"
                                     };
-                                    if let Some(sync_task_break_total) = sync_task_break_total.as_ref() {
-                                        sync_task_break_total.with_label_values(&[reason]).inc();
+                                    if let Some(sync_task_break_total) =
+                                        sync_task_break_total.as_ref()
+                                    {
+                                        sync_task_break_total
+                                            .with_label_values(&[reason])
+                                            .inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
@@ -626,12 +632,20 @@ impl SyncService {
                             false
                         }
                     }
-                };
-                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
-                    error!("[sync] Broadcast SyncDone event error: {:?}", e);
+                },
+                Err(panic) => {
+                    error!("[sync] Sync task panic: {:?}", panic);
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["panic"]).inc();
+                    }
+                    true
                 }
-            },
-        ));
+            };
+            if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
+                error!("[sync] Broadcast SyncDone event error: {:?}", e);
+            }
+        };
+        global_sync_runtime().spawn(sync_task);
         Ok(())
     }
 
