@@ -14,6 +14,8 @@ module starcoin_framework::stc_transaction_validation {
     use starcoin_framework::chain_id;
     use starcoin_framework::coin;
     use starcoin_framework::create_signer;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout;
@@ -207,7 +209,11 @@ module starcoin_framework::stc_transaction_validation {
             );
 
             assert!(
-                coin::is_balance_at_least<TokenType>(txn_sender, max_transaction_fee),
+                primary_fungible_store::is_balance_at_least(
+                    txn_sender,
+                    starcoin_coin::get_stc_fa_metadata(),
+                    max_transaction_fee
+                ),
                 error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT)
             );
 
@@ -247,7 +253,11 @@ module starcoin_framework::stc_transaction_validation {
         let transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         let transaction_fee_amount_u64 = (transaction_fee_amount as u64);
         assert!(
-            coin::is_balance_at_least<STC>(txn_sender, transaction_fee_amount_u64),
+            primary_fungible_store::is_balance_at_least(
+                txn_sender,
+                starcoin_coin::get_stc_fa_metadata(),
+                transaction_fee_amount_u64
+            ),
             error::out_of_range(EINSUFFICIENT_BALANCE)
         );
 

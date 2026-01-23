@@ -1427,5 +1427,54 @@ mod test {
         assert!(matches!(err, CommitError::CodeInvariantError(_)));
     }
 
-    // TODO[agg_v2](tests): add tests for try-commit
+    #[test]
+    fn try_commit_empty_advances_index() {
+        let fields = VersionedDelayedFields::<DelayedFieldID>::empty();
+        assert_ok_eq!(fields.try_commit(0, std::iter::empty()), ());
+        assert_ok_eq!(fields.try_commit(1, std::iter::empty()), ());
+    }
+
+    #[test]
+    fn try_commit_applies_aggregator_delta() {
+        let fields = VersionedDelayedFields::empty();
+        let id = DelayedFieldID::new_for_test_for_u64(1);
+        fields.set_base_value(id, DelayedFieldValue::Aggregator(10));
+        fields
+            .record_change(
+                id,
+                0,
+                DelayedEntry::Apply(DelayedApplyEntry::AggregatorDelta {
+                    delta: test_delta(),
+                }),
+            )
+            .unwrap();
+
+        let ids = fields.take_txn_ids(0);
+        fields.try_commit(0, ids.into_iter()).unwrap();
+
+        assert_ok_eq!(fields.read(&id, 1), DelayedFieldValue::Aggregator(40));
+    }
+
+    #[test]
+    fn try_commit_rejects_estimate_entry() {
+        let fields = VersionedDelayedFields::empty();
+        let id = DelayedFieldID::new_for_test_for_u64(2);
+        fields.set_base_value(id, DelayedFieldValue::Aggregator(10));
+        fields
+            .record_change(
+                id,
+                0,
+                DelayedEntry::Apply(DelayedApplyEntry::AggregatorDelta {
+                    delta: test_delta(),
+                }),
+            )
+            .unwrap();
+        fields.mark_estimate(&id, 0);
+
+        let ids = fields.take_txn_ids(0);
+        let err = fields
+            .try_commit(0, ids.into_iter())
+            .expect_err("estimate entry should fail to commit");
+        assert!(matches!(err, CommitError::CodeInvariantError(_)));
+    }
 }

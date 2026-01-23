@@ -110,12 +110,15 @@ pub trait StateReaderExt: StateView {
         // Read primary fungible store from user
         let primary_fungible_store_address =
             primary_store(&address, &type_tag.to_canonical_string())?;
-        let split_enabled = StateKey::on_chain_config::<Features>()
-            .ok()
-            .and_then(|state_key| self.get_state_value_bytes(&state_key).ok().flatten())
-            .and_then(|bytes| Features::deserialize_into_config(&bytes).ok())
-            .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
-            .unwrap_or(false);
+        let split_enabled = match StateKey::on_chain_config::<Features>() {
+            Ok(state_key) => self
+                .get_state_value_bytes(&state_key)?
+                .map(|bytes| Features::deserialize_into_config(&bytes))
+                .transpose()?
+                .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+                .unwrap_or(false),
+            Err(_) => false,
+        };
 
         let tag_bytes = self.get_resource_group_struct_tag_bytes_with_flag(
             &address,
@@ -155,12 +158,15 @@ pub trait StateReaderExt: StateView {
         group_key: &StateKey,
         struct_tag: &StructTag,
     ) -> Result<Option<Bytes>> {
-        let split_enabled = StateKey::on_chain_config::<Features>()
-            .ok()
-            .and_then(|state_key| self.get_state_value_bytes(&state_key).ok().flatten())
-            .and_then(|bytes| Features::deserialize_into_config(&bytes).ok())
-            .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
-            .unwrap_or(false);
+        let split_enabled = match StateKey::on_chain_config::<Features>() {
+            Ok(state_key) => self
+                .get_state_value_bytes(&state_key)?
+                .map(|bytes| Features::deserialize_into_config(&bytes))
+                .transpose()?
+                .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+                .unwrap_or(false),
+            Err(_) => false,
+        };
         self.get_resource_group_struct_tag_bytes_with_flag(
             address,
             group_key,

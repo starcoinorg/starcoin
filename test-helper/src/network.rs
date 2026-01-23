@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use futures_timer::Delay;
 use network_api::messages::PeerMessage;
 use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
@@ -125,7 +124,7 @@ async fn wait_connected(a: &TestNetworkService, b: &TestNetworkService) -> Resul
             {
                 break;
             }
-            Delay::new(Duration::from_millis(50)).await;
+            tokio::time::sleep(Duration::from_millis(50)).await;
         }
     };
     tokio::time::timeout(Duration::from_secs(5), wait)
@@ -171,7 +170,7 @@ pub async fn build_network_with_config(
     registry
         .register_by_factory::<NetworkActorService, MockNetworkServiceFactory>()
         .await?;
-    Delay::new(Duration::from_millis(200)).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
     let service_ref = registry.get_shared::<NetworkServiceRef>().await?;
     let message_handler = registry.get_shared::<MockPeerMessageHandler>().await?;
     Ok(TestNetworkService {

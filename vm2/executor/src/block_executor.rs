@@ -39,12 +39,14 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     block_gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
 ) -> ExecutorResult<BlockExecutedData> {
-    debug_assert!(
-        !txns
-            .iter()
-            .any(|txn| matches!(txn, Transaction::BlockEpilogue(..))),
-        "block_execute expects no BlockEpilogue in input"
-    );
+    if txns
+        .iter()
+        .any(|txn| matches!(txn, Transaction::BlockEpilogue(..)))
+    {
+        return Err(BlockExecutorError::OtherError(
+            anyhow!("block_execute expects no BlockEpilogue in input").into(),
+        ));
+    }
 
     let block_meta = txns.iter().find_map(|txn| match txn {
         Transaction::BlockMetadata(meta) => Some(meta.clone()),
