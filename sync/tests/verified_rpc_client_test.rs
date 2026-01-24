@@ -12,6 +12,7 @@ use starcoin_types::block::Block;
 use std::borrow::Cow;
 use std::sync::Arc;
 use std::sync::Mutex;
+use tokio::runtime::Runtime;
 
 struct MockRpcClient {
     peer_id1: PeerId, // This peer will always fail
@@ -58,6 +59,19 @@ impl RawRpcClient for MockRpcClient {
     }
 }
 
+struct TimeoutRpcClient;
+
+impl RawRpcClient for TimeoutRpcClient {
+    fn send_raw_request(
+        &self,
+        _peer_id: PeerId,
+        _rpc_path: Cow<'static, str>,
+        _message: Vec<u8>,
+    ) -> BoxFuture<Result<Vec<u8>>> {
+        futures::future::pending().boxed()
+    }
+}
+
 #[stest::test]
 fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     let node = test_helper::run_test_node()?;
@@ -99,7 +113,8 @@ fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
 
     let verified_client = VerifiedRpcClient::new(peer_selector, mock_client, 5);
 
-    let result = block_on(async {
+    let rt = Runtime::new()?;
+    let result = rt.block_on(async {
         verified_client
             .get_blocks(vec![head_block.id(), parent_block.id()])
             .await
@@ -137,5 +152,26 @@ fn test_get_blocks_multiple_blocks_with_retry() -> Result<()> {
     );
 
     node.stop()?;
+    Ok(())
+}
+
+#[stest::test]
+fn test_get_blocks_timeout() -> Result<()> {
+    let peer_selector = PeerSelector::new(vec![], PeerStrategy::default(), None);
+    let peer_id = PeerId::random();
+    let mut peer_info = PeerInfo::random();
+    peer_info.peer_id = peer_id.clone();
+    peer_selector.add_or_update_peer(peer_info);
+    peer_selector.peer_score(&peer_id, 100);
+
+    let verified_client = VerifiedRpcClient::new(peer_selector, TimeoutRpcClient, 1);
+    let rt = Runtime::new()?;
+    let result = rt.block_on(async {
+        verified_client
+            .get_blocks(vec![HashValue::random()])
+            .await
+    });
+
+    assert!(result.is_err(), "get_blocks should timeout and return error");
     Ok(())
 }

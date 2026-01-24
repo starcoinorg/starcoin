@@ -102,8 +102,15 @@ static G_BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
 static G_BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
     |block_id, block_info| -> bool { *block_id == block_info.block_id };
 
+#[cfg(not(test))]
 static G_RPC_RETRY_COUNT: i32 = 20;
+#[cfg(test)]
+static G_RPC_RETRY_COUNT: i32 = 2;
+
+#[cfg(not(test))]
 const RPC_TIMEOUT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+const RPC_TIMEOUT: Duration = Duration::from_millis(50);
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
 pub struct VerifiedRpcClient {
