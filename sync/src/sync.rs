@@ -4,6 +4,10 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
+use crate::sync_watchdog::{
+    update_watchdog_state, SyncWatchdogSnapshot, SYNC_WATCHDOG_INTERVAL,
+    SYNC_WATCHDOG_STALL_SECS,
+};
 use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -57,64 +61,6 @@ fn global_sync_runtime() -> &'static Runtime {
 }
 
 const REPUTATION_THRESHOLD: i32 = -1000;
-const SYNC_WATCHDOG_INTERVAL: Duration = Duration::from_secs(30);
-const SYNC_WATCHDOG_STALL_SECS: u64 = 120;
-
-#[derive(Clone, Debug)]
-struct SyncWatchdogSnapshot {
-    task_name: String,
-    processed: u64,
-    ok: u64,
-    last_change: Instant,
-}
-
-fn update_watchdog_state(
-    state: &mut Option<SyncWatchdogSnapshot>,
-    task_name: String,
-    processed: u64,
-    ok: u64,
-    now: Instant,
-) -> bool {
-    match state.as_mut() {
-        Some(snapshot)
-            if snapshot.task_name != task_name
-                || processed < snapshot.processed
-                || ok < snapshot.ok =>
-        {
-            *snapshot = SyncWatchdogSnapshot {
-                task_name,
-                processed,
-                ok,
-                last_change: now,
-            };
-            false
-        }
-        Some(snapshot) => {
-            if processed > snapshot.processed || ok > snapshot.ok {
-                snapshot.processed = processed;
-                snapshot.ok = ok;
-                snapshot.last_change = now;
-                return false;
-            }
-            if now.duration_since(snapshot.last_change).as_secs() >= SYNC_WATCHDOG_STALL_SECS {
-                snapshot.last_change = now;
-                snapshot.processed = processed;
-                snapshot.ok = ok;
-                return true;
-            }
-            false
-        }
-        None => {
-            *state = Some(SyncWatchdogSnapshot {
-                task_name,
-                processed,
-                ok,
-                last_change: now,
-            });
-            false
-        }
-    }
-}
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -1134,44 +1080,3 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService {
 }
 
 impl SyncServiceHandler for SyncService {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_watchdog_progress_updates_snapshot() {
-        let now = Instant::now();
-        let mut state = Some(SyncWatchdogSnapshot {
-            task_name: "task".to_string(),
-            processed: 1,
-            ok: 1,
-            last_change: now,
-        });
-
-        let should_restart =
-            update_watchdog_state(&mut state, "task".to_string(), 2, 1, now);
-        assert!(!should_restart);
-        let snapshot = state.expect("snapshot should exist");
-        assert_eq!(snapshot.processed, 2);
-        assert_eq!(snapshot.ok, 1);
-    }
-
-    #[test]
-    fn test_watchdog_detects_stall() {
-        let now = Instant::now();
-        let last_change = now
-            .checked_sub(Duration::from_secs(SYNC_WATCHDOG_STALL_SECS + 1))
-            .expect("Instant checked_sub failed");
-        let mut state = Some(SyncWatchdogSnapshot {
-            task_name: "task".to_string(),
-            processed: 10,
-            ok: 5,
-            last_change,
-        });
-
-        let should_restart =
-            update_watchdog_state(&mut state, "task".to_string(), 10, 5, now);
-        assert!(should_restart);
-    }
-}
