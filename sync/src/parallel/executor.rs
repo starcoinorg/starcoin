@@ -16,6 +16,7 @@ use tokio::{
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+const EXECUTE_TIMEOUT_MS: u64 = 300000; // 5 minutes
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -204,55 +205,87 @@ impl DagBlockExecutor {
                             &self,
                             block.header().id()
                         );
-                        match chain
-                            .as_mut()
-                            .expect("it cannot be none!")
-                            .apply_with_verifier::<FullVerifier>(block)
+                        let mut local_chain = chain.take().expect("it cannot be none!");
+                        let mut execute_handle = tokio::task::spawn_blocking(move || {
+                            let result = local_chain.apply_with_verifier::<FullVerifier>(block);
+                            (local_chain, result)
+                        });
+
+                        match tokio::time::timeout(
+                            tokio::time::Duration::from_millis(EXECUTE_TIMEOUT_MS),
+                            &mut execute_handle,
+                        )
+                        .await
                         {
-                            Ok(executed_block) => {
-                                info!(
-                                    "succeed to execute block: number: {:?}, id: {:?}",
-                                    executed_block.header().number(),
-                                    executed_block.header().id()
-                                );
-                                // Adjust time after successful block execution to ensure proper time synchronization
-                                // This is important for validating subsequent blocks in the parallel execution pipeline
-                                self.time_service
-                                    .adjust(executed_block.header().timestamp());
-                                match self
-                                    .sender
-                                    .send(ExecuteState::Executed(Box::new(executed_block)))
-                                    .await
-                                {
-                                    Ok(_) => tokio::task::yield_now().await,
+                            Ok(Ok((updated_chain, result))) => {
+                                chain = Some(updated_chain);
+                                match result {
+                                    Ok(executed_block) => {
+                                        info!(
+                                            "succeed to execute block: number: {:?}, id: {:?}",
+                                            executed_block.header().number(),
+                                            executed_block.header().id()
+                                        );
+                                        // Adjust time after successful block execution to ensure proper time synchronization
+                                        // This is important for validating subsequent blocks in the parallel execution pipeline
+                                        self.time_service
+                                            .adjust(executed_block.header().timestamp());
+                                        match self
+                                            .sender
+                                            .send(ExecuteState::Executed(Box::new(executed_block)))
+                                            .await
+                                        {
+                                            Ok(_) => tokio::task::yield_now().await,
+                                            Err(e) => {
+                                                error!(
+                                                    "failed to send waiting state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                                return;
+                                            }
+                                        }
+                                    }
                                     Err(e) => {
                                         error!(
-                                            "failed to send waiting state: {:?}, for reason: {:?}",
+                                            "failed to execute block: {:?}, for reason: {:?}",
                                             header, e
                                         );
+                                        match self
+                                            .sender
+                                            .send(ExecuteState::Error(Box::new(header.clone())))
+                                            .await
+                                        {
+                                            Ok(_) => (),
+                                            Err(e) => {
+                                                error!(
+                                                    "failed to send error state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                                return;
+                                            }
+                                        }
                                         return;
                                     }
                                 }
                             }
-                            Err(e) => {
+                            Ok(Err(e)) => {
                                 error!(
-                                    "failed to execute block: {:?}, for reason: {:?}",
-                                    header, e
+                                    "sync parallel worker join error: {:?}, header: {:?}",
+                                    e, header
                                 );
-                                match self
+                                let _ = self
                                     .sender
                                     .send(ExecuteState::Error(Box::new(header.clone())))
-                                    .await
-                                {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        error!(
-                                            "failed to send error state: {:?}, for reason: {:?}",
-                                            header, e
-                                        );
-                                        return;
-                                    }
-                                }
+                                    .await;
+                                return;
+                            }
+                            Err(_) => {
+                                error!("sync parallel worker execute timeout: {:?}", header);
+                                execute_handle.abort();
+                                let _ = self
+                                    .sender
+                                    .send(ExecuteState::Error(Box::new(header.clone())))
+                                    .await;
                                 return;
                             }
                         }
