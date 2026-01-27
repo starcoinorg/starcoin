@@ -4,9 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
-use crate::sync_watchdog::{
-    update_watchdog_state, SyncWatchdogSnapshot, SYNC_WATCHDOG_INTERVAL, SYNC_WATCHDOG_STALL_SECS,
-};
+use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
 use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -529,6 +527,7 @@ impl SyncService {
                     dag,
                     sync_dag_store,
                     range_locate,
+                    config.sync.execute_timeout_ms(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -724,9 +723,12 @@ impl ActorService for SyncService {
         let sync_ref = ctx.self_ref();
         let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
         let watchdog_state_clone = watchdog_state.clone();
-        ctx.run_interval(SYNC_WATCHDOG_INTERVAL, move |ctx| {
+        let watchdog_interval = Duration::from_secs(self.config.sync.watchdog_interval_secs());
+        let watchdog_stall_secs = self.config.sync.watchdog_stall_secs();
+        ctx.run_interval(watchdog_interval, move |ctx| {
             let sync_ref = sync_ref.clone();
             let watchdog_state = watchdog_state_clone.clone();
+            let watchdog_stall_secs = watchdog_stall_secs;
             ctx.spawn(async move {
                 let report = match sync_ref.progress().await {
                     Ok(report) => report,
@@ -745,8 +747,14 @@ impl ActorService for SyncService {
 
                 let snapshot = {
                     let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
-                    let should_restart =
-                        update_watchdog_state(&mut state, task_name, processed, ok, now);
+                    let should_restart = update_watchdog_state(
+                        &mut state,
+                        task_name,
+                        processed,
+                        ok,
+                        now,
+                        watchdog_stall_secs,
+                    );
                     if should_restart {
                         state.as_ref().map(|snapshot| {
                             (
@@ -765,7 +773,7 @@ impl ActorService for SyncService {
                         task_name,
                         processed,
                         ok,
-                        SYNC_WATCHDOG_STALL_SECS
+                        watchdog_stall_secs
                     );
                     if let Err(e) = sync_ref.cancel().await {
                         warn!("[sync] Watchdog cancel sync failed: {:?}", e);

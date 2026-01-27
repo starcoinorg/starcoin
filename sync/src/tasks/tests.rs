@@ -38,6 +38,8 @@ use starcoin_types::{
     U256,
 };
 use std::collections::{HashMap, HashSet};
+
+const EXECUTE_TIMEOUT_MS: u64 = 300_000;
 use std::sync::{Arc, Mutex};
 use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
@@ -85,6 +87,7 @@ pub async fn test_failed_block() -> Result<()> {
         storage2,
         Arc::new(fetcher),
         sync_dag_store,
+        EXECUTE_TIMEOUT_MS,
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -135,6 +138,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         dag.clone(),
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -173,6 +177,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -227,6 +232,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -283,6 +289,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         dag.clone(),
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -325,6 +332,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -382,6 +390,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -911,6 +920,7 @@ async fn test_net_rpc_err() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -1050,6 +1060,7 @@ fn sync_block_in_async_connection(
         dag,
         local_node.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
     )?;
     let branch = futures::executor::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());

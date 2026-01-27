@@ -46,6 +46,33 @@ pub struct SyncConfig {
     /// the range location will be used if it is true
     /// the range location is to find the common ancestor by log(n) time complexity
     pub range_locate: Option<bool>,
+
+    /// watchdog interval for sync progress check (seconds)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-watchdog-interval",
+        long,
+        help = "sync watchdog interval in seconds, default 30."
+    )]
+    watchdog_interval_secs: Option<u64>,
+
+    /// watchdog stall threshold before cancel/restart (seconds)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-watchdog-stall-secs",
+        long,
+        help = "sync watchdog stall threshold in seconds, default 900."
+    )]
+    watchdog_stall_secs: Option<u64>,
+
+    /// timeout for parallel block execute (milliseconds)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-execute-timeout-ms",
+        long,
+        help = "sync execute timeout in milliseconds, default 300000."
+    )]
+    execute_timeout_ms: Option<u64>,
 }
 
 impl SyncConfig {
@@ -63,6 +90,18 @@ impl SyncConfig {
 
     pub fn range_locate(&self) -> bool {
         self.range_locate.unwrap_or(false)
+    }
+
+    pub fn watchdog_interval_secs(&self) -> u64 {
+        self.watchdog_interval_secs.unwrap_or(30)
+    }
+
+    pub fn watchdog_stall_secs(&self) -> u64 {
+        self.watchdog_stall_secs.unwrap_or(15 * 60)
+    }
+
+    pub fn execute_timeout_ms(&self) -> u64 {
+        self.execute_timeout_ms.unwrap_or(300_000)
     }
 }
 
@@ -82,6 +121,18 @@ impl ConfigModule for SyncConfig {
 
         if opt.sync.range_locate.is_some() {
             self.range_locate = opt.sync.range_locate;
+        }
+
+        if opt.sync.watchdog_interval_secs.is_some() {
+            self.watchdog_interval_secs = opt.sync.watchdog_interval_secs;
+        }
+
+        if opt.sync.watchdog_stall_secs.is_some() {
+            self.watchdog_stall_secs = opt.sync.watchdog_stall_secs;
+        }
+
+        if opt.sync.execute_timeout_ms.is_some() {
+            self.execute_timeout_ms = opt.sync.execute_timeout_ms;
         }
 
         Ok(())

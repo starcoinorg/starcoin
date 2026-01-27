@@ -34,6 +34,7 @@ pub struct DagBlockSender<'a> {
     storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    execute_timeout_ms: u64,
     notifier: &'a mut dyn ContinueChainOperator,
 }
 
@@ -46,6 +47,7 @@ impl<'a> DagBlockSender<'a> {
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        execute_timeout_ms: u64,
         notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
         Self {
@@ -57,6 +59,7 @@ impl<'a> DagBlockSender<'a> {
             storage2,
             vm_metrics,
             dag,
+            execute_timeout_ms,
             notifier,
         }
     }
@@ -145,6 +148,7 @@ impl<'a> DagBlockSender<'a> {
                 self.storage2.clone(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
+                self.execute_timeout_ms,
             )?;
 
             self.executors.push(DagBlockWorker {

@@ -1,6 +1,4 @@
-use starcoin_sync::sync_watchdog::{
-    update_watchdog_state, SyncWatchdogSnapshot, SYNC_WATCHDOG_STALL_SECS,
-};
+use starcoin_sync::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
 use std::time::{Duration, Instant};
 
 #[test]
@@ -13,7 +11,7 @@ fn test_watchdog_progress_updates_snapshot() {
         last_change: now,
     });
 
-    let should_restart = update_watchdog_state(&mut state, "task".to_string(), 2, 1, now);
+    let should_restart = update_watchdog_state(&mut state, "task".to_string(), 2, 1, now, 10);
     assert!(!should_restart);
     let snapshot = state.expect("snapshot should exist");
     assert_eq!(snapshot.processed, 2);
@@ -24,7 +22,7 @@ fn test_watchdog_progress_updates_snapshot() {
 fn test_watchdog_detects_stall() {
     let now = Instant::now();
     let last_change = now
-        .checked_sub(Duration::from_secs(SYNC_WATCHDOG_STALL_SECS + 1))
+        .checked_sub(Duration::from_secs(11))
         .expect("Instant checked_sub failed");
     let mut state = Some(SyncWatchdogSnapshot {
         task_name: "task".to_string(),
@@ -33,6 +31,6 @@ fn test_watchdog_detects_stall() {
         last_change,
     });
 
-    let should_restart = update_watchdog_state(&mut state, "task".to_string(), 10, 5, now);
+    let should_restart = update_watchdog_state(&mut state, "task".to_string(), 10, 5, now, 10);
     assert!(should_restart);
 }

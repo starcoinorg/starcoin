@@ -750,6 +750,7 @@ pub fn full_sync_task<H, A, F, N>(
     dag: BlockDAG,
     sync_dag_store: Arc<SyncDagStore>,
     range_locate: bool,
+    execute_timeout_ms: u64,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -855,6 +856,7 @@ where
                 ext_error_handle.clone(),
                 dag.clone(),
                 sync_dag_store.clone(),
+                execute_timeout_ms,
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner

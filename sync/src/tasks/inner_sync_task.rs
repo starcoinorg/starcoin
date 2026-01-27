@@ -41,6 +41,7 @@ where
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
     sync_dag_store: Arc<SyncDagStore>,
+    execute_timeout_ms: u64,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -62,6 +63,7 @@ where
         custom_error_handle: Arc<dyn CustomErrorHandle>,
         dag: BlockDAG,
         sync_dag_store: Arc<SyncDagStore>,
+        execute_timeout_ms: u64,
     ) -> Self {
         Self {
             ancestor,
@@ -76,6 +78,7 @@ where
             custom_error_handle,
             dag,
             sync_dag_store,
+            execute_timeout_ms,
         }
     }
 
@@ -161,6 +164,7 @@ where
                 self.storage2.clone(),
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
+                self.execute_timeout_ms,
             );
 
             Ok(TaskGenerator::new(

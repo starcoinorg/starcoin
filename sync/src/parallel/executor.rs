@@ -16,7 +16,6 @@ use tokio::{
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
-const EXECUTE_TIMEOUT_MS: u64 = 300000; // 5 minutes
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -35,6 +34,7 @@ pub struct DagBlockExecutor {
     storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    execute_timeout_ms: u64,
 }
 
 impl DagBlockExecutor {
@@ -46,6 +46,7 @@ impl DagBlockExecutor {
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        execute_timeout_ms: u64,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
@@ -56,6 +57,7 @@ impl DagBlockExecutor {
             storage2,
             vm_metrics,
             dag,
+            execute_timeout_ms,
         };
         anyhow::Ok((sender_for_main, executor))
     }
@@ -212,7 +214,7 @@ impl DagBlockExecutor {
                         });
 
                         match tokio::time::timeout(
-                            tokio::time::Duration::from_millis(EXECUTE_TIMEOUT_MS),
+                            tokio::time::Duration::from_millis(self.execute_timeout_ms),
                             &mut execute_handle,
                         )
                         .await

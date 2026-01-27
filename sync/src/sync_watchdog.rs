@@ -1,10 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::time::{Duration, Instant};
-
-pub const SYNC_WATCHDOG_INTERVAL: Duration = Duration::from_secs(30);
-pub const SYNC_WATCHDOG_STALL_SECS: u64 = 120;
+use std::time::Instant;
 
 #[derive(Clone, Debug)]
 pub struct SyncWatchdogSnapshot {
@@ -20,6 +17,7 @@ pub fn update_watchdog_state(
     processed: u64,
     ok: u64,
     now: Instant,
+    stall_secs: u64,
 ) -> bool {
     match state.as_mut() {
         Some(snapshot)
@@ -42,7 +40,7 @@ pub fn update_watchdog_state(
                 snapshot.last_change = now;
                 return false;
             }
-            if now.duration_since(snapshot.last_change).as_secs() >= SYNC_WATCHDOG_STALL_SECS {
+            if now.duration_since(snapshot.last_change).as_secs() >= stall_secs {
                 snapshot.last_change = now;
                 snapshot.processed = processed;
                 snapshot.ok = ok;

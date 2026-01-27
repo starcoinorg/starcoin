@@ -217,6 +217,7 @@ pub struct BlockCollector<N, H> {
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
+    execute_timeout_ms: u64,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -273,6 +274,7 @@ where
         storage2: Arc<dyn Store2>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
+        execute_timeout_ms: u64,
     ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
@@ -287,6 +289,7 @@ where
             fetcher,
             latest_block_id,
             sync_dag_store,
+            execute_timeout_ms,
         }
     }
 
@@ -489,6 +492,7 @@ where
                     self.storage2.clone(),
                     None,
                     self.chain.dag(),
+                    self.execute_timeout_ms,
                     self,
                 );
                 parallel_execute.process_absent_blocks().await?;
