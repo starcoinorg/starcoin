@@ -1,9 +1,10 @@
 use super::executor::{DagBlockExecutor, ExecuteState};
 use super::sender::DagBlockSender;
-use super::set_test_execute_delay_ms;
+use super::{set_test_assume_parents_ready, set_test_execute_delay_ms};
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueChainOperator;
 use anyhow::Result;
+use starcoin_chain::ChainReader;
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
@@ -28,6 +29,21 @@ impl Drop for ExecuteDelayGuard {
     }
 }
 
+struct AssumeParentsReadyGuard;
+
+impl AssumeParentsReadyGuard {
+    fn new(ready: bool) -> Self {
+        set_test_assume_parents_ready(ready);
+        Self
+    }
+}
+
+impl Drop for AssumeParentsReadyGuard {
+    fn drop(&mut self) {
+        set_test_assume_parents_ready(false);
+    }
+}
+
 struct CountingOperator {
     notify_count: Arc<AtomicUsize>,
 }
@@ -49,12 +65,19 @@ impl ContinueChainOperator for CountingOperator {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_execute_timeout_returns_error() -> Result<()> {
     let _guard = ExecuteDelayGuard::new(50);
+    let _parents_guard = AssumeParentsReadyGuard::new(true);
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let chain = MockChain::new(net.clone())?;
-    let block = chain.produce()?;
+    let mut chain = MockChain::new(net.clone())?;
+    chain.produce_and_apply()?;
+    let parent_header = chain.head().current_header().clone();
+    let block = chain.produce_block_by_params(
+        parent_header.clone(),
+        vec![parent_header.id()],
+        parent_header.pruning_point(),
+    )?;
 
     let (sender_to_main, mut receiver_from_executor) = mpsc::channel(1);
     let (sender_to_worker, executor) = DagBlockExecutor::new(
@@ -84,12 +107,19 @@ async fn test_execute_timeout_returns_error() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
     let _guard = ExecuteDelayGuard::new(50);
+    let _parents_guard = AssumeParentsReadyGuard::new(true);
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
-    let chain = MockChain::new(net.clone())?;
-    let block = chain.produce()?;
+    let mut chain = MockChain::new(net.clone())?;
+    chain.produce_and_apply()?;
+    let parent_header = chain.head().current_header().clone();
+    let block = chain.produce_block_by_params(
+        parent_header.clone(),
+        vec![parent_header.id()],
+        parent_header.pruning_point(),
+    )?;
 
     let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
     sync_dag_store.save_block(block)?;

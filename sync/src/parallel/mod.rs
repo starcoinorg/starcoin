@@ -8,3 +8,8 @@ pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) fn set_test_assume_parents_ready(ready: bool) {
+    executor::set_test_assume_parents_ready(ready);
+}

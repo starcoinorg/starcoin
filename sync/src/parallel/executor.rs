@@ -11,6 +11,8 @@ use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
 #[cfg(test)]
+use std::sync::atomic::AtomicBool;
+#[cfg(test)]
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
@@ -20,10 +22,17 @@ use tokio::{
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
 #[cfg(test)]
 static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
+#[cfg(test)]
+static TEST_ASSUME_PARENTS_READY: AtomicBool = AtomicBool::new(false);
 
 #[cfg(test)]
 pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
     TEST_EXECUTE_DELAY_MS.store(delay_ms, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn set_test_assume_parents_ready(ready: bool) {
+    TEST_ASSUME_PARENTS_READY.store(ready, Ordering::Relaxed);
 }
 
 #[allow(dead_code)]
@@ -76,6 +85,10 @@ impl DagBlockExecutor {
         storage: Arc<dyn Store>,
         parents_hash: &[HashValue],
     ) -> anyhow::Result<bool> {
+        #[cfg(test)]
+        if TEST_ASSUME_PARENTS_READY.load(Ordering::Relaxed) {
+            return Ok(true);
+        }
         for parent_id in parents_hash {
             let header = match storage.get_block_header_by_hash(*parent_id)? {
                 Some(header) => header,
