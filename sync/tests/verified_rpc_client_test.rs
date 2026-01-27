@@ -12,6 +12,7 @@ use starcoin_types::block::Block;
 use std::borrow::Cow;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 
 struct MockRpcClient {
@@ -164,7 +165,8 @@ fn test_get_blocks_timeout() -> Result<()> {
     peer_selector.add_or_update_peer(peer_info);
     peer_selector.peer_score(&peer_id, 100);
 
-    let verified_client = VerifiedRpcClient::new(peer_selector, TimeoutRpcClient, 1);
+    let verified_client = VerifiedRpcClient::new(peer_selector, TimeoutRpcClient, 1)
+        .with_rpc_config(Duration::from_millis(50), 2);
     let rt = Runtime::new()?;
     let result = rt.block_on(async { verified_client.get_blocks(vec![HashValue::random()]).await });
 

@@ -10,12 +10,21 @@ use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
+#[cfg(test)]
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+#[cfg(test)]
+static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(test)]
+pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
+    TEST_EXECUTE_DELAY_MS.store(delay_ms, Ordering::Relaxed);
+}
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -209,6 +218,13 @@ impl DagBlockExecutor {
                         );
                         let mut local_chain = chain.take().expect("it cannot be none!");
                         let mut execute_handle = tokio::task::spawn_blocking(move || {
+                            #[cfg(test)]
+                            {
+                                let delay_ms = TEST_EXECUTE_DELAY_MS.load(Ordering::Relaxed);
+                                if delay_ms > 0 {
+                                    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+                                }
+                            }
                             let result = local_chain.apply_with_verifier::<FullVerifier>(block);
                             (local_chain, result)
                         });
