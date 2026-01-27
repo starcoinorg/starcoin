@@ -228,10 +228,19 @@ impl<'a> DagBlockSender<'a> {
             }
         }
 
-        for worker in self.executors {
+        for worker in std::mem::take(&mut self.executors) {
             worker.handle.await?;
         }
 
         anyhow::Ok(())
+    }
+}
+
+impl Drop for DagBlockSender<'_> {
+    fn drop(&mut self) {
+        for worker in &self.executors {
+            let _ = worker.sender_to_executor.try_send(None);
+            worker.handle.abort();
+        }
     }
 }
