@@ -5,8 +5,7 @@ use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{
-    update_watchdog_state, SyncWatchdogSnapshot, SYNC_WATCHDOG_INTERVAL,
-    SYNC_WATCHDOG_STALL_SECS,
+    update_watchdog_state, SyncWatchdogSnapshot, SYNC_WATCHDOG_INTERVAL, SYNC_WATCHDOG_STALL_SECS,
 };
 use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -42,8 +41,8 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
-use std::result::Result::Ok;
 use std::panic::AssertUnwindSafe;
+use std::result::Result::Ok;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
@@ -541,7 +540,7 @@ impl SyncService {
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
                 }
-                Ok(Some(fut.await?))
+                Ok::<Option<BlockChain>, anyhow::Error>(Some(fut.await?))
             } else {
                 info!("[sync]No best peer to request, current is best.");
                 Ok(None)
@@ -597,7 +596,9 @@ impl SyncService {
                                             )
                                         }
                                         "verify_err"
-                                    } else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>() {
+                                    } else if let Some(bcs_err) =
+                                        err.downcast_ref::<bcs_ext::Error>()
+                                    {
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                         "bcs_err"
                                     } else {
@@ -606,9 +607,7 @@ impl SyncService {
                                     if let Some(sync_task_break_total) =
                                         sync_task_break_total.as_ref()
                                     {
-                                        sync_task_break_total
-                                            .with_label_values(&[reason])
-                                            .inc();
+                                        sync_task_break_total.with_label_values(&[reason]).inc();
                                     }
                                     warn!(
                                         "[sync] Sync task is interrupted by {:?}, cause:{:?} ",
@@ -645,7 +644,10 @@ impl SyncService {
                     true
                 }
             };
-            if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
+            if let Err(e) = self_ref.notify(SyncDoneEvent {
+                cancel,
+                chain_status,
+            }) {
                 error!("[sync] Broadcast SyncDone event error: {:?}", e);
             }
         };
@@ -741,18 +743,28 @@ impl ActorService for SyncService {
                 let processed = report.current.processed_items;
                 let ok = report.current.ok;
 
-                let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
-                let should_restart =
-                    update_watchdog_state(&mut *state, task_name, processed, ok, now);
-                if should_restart {
-                    let snapshot = state
-                        .as_ref()
-                        .expect("watchdog snapshot should exist after update");
+                let snapshot = {
+                    let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
+                    let should_restart =
+                        update_watchdog_state(&mut state, task_name, processed, ok, now);
+                    if should_restart {
+                        state.as_ref().map(|snapshot| {
+                            (
+                                snapshot.task_name.clone(),
+                                snapshot.processed,
+                                snapshot.ok,
+                            )
+                        })
+                    } else {
+                        None
+                    }
+                };
+                if let Some((task_name, processed, ok)) = snapshot {
                     warn!(
                         "[sync] Watchdog detected stalled sync (task: {}, processed: {}, ok: {}, stalled: {}s).",
-                        snapshot.task_name,
-                        snapshot.processed,
-                        snapshot.ok,
+                        task_name,
+                        processed,
+                        ok,
                         SYNC_WATCHDOG_STALL_SECS
                     );
                     if let Err(e) = sync_ref.cancel().await {

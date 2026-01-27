@@ -166,12 +166,11 @@ fn test_get_blocks_timeout() -> Result<()> {
 
     let verified_client = VerifiedRpcClient::new(peer_selector, TimeoutRpcClient, 1);
     let rt = Runtime::new()?;
-    let result = rt.block_on(async {
-        verified_client
-            .get_blocks(vec![HashValue::random()])
-            .await
-    });
+    let result = rt.block_on(async { verified_client.get_blocks(vec![HashValue::random()]).await });
 
-    assert!(result.is_err(), "get_blocks should timeout and return error");
+    assert!(
+        result.is_err(),
+        "get_blocks should timeout and return error"
+    );
     Ok(())
 }

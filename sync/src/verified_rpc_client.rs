@@ -26,8 +26,8 @@ use starcoin_types::{
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
-use tokio::time::timeout;
 use thiserror::Error;
+use tokio::time::timeout;
 
 #[derive(Clone, Debug, Error)]
 #[error("Peer {peers:?} return valid rpc response: {msg:?}")]
@@ -747,7 +747,12 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<Block>>> {
         let mut count = 0;
         while count < G_RPC_RETRY_COUNT {
-            match timeout(RPC_TIMEOUT, self.client.get_blocks(peer_id.clone(), ids.clone())).await {
+            match timeout(
+                RPC_TIMEOUT,
+                self.client.get_blocks(peer_id.clone(), ids.clone()),
+            )
+            .await
+            {
                 Ok(Ok(result)) => return Ok(result),
                 Ok(Err(e)) => {
                     count = count.saturating_add(1);
