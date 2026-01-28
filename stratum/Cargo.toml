@@ -17,6 +17,8 @@ starcoin-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+once_cell = { workspace = true }
 
 [package]
 authors = { workspace = true }
