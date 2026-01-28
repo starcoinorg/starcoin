@@ -28,6 +28,9 @@ use starcoin_abi_decoder::{
 use starcoin_abi_types::ModuleABI;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::proof::AccumulatorProof;
+use starcoin_chain_api::message::{
+    BlockColor as ChainBlockColor, BlockColorInfo as ChainBlockColorInfo,
+};
 use starcoin_chain_api::{
     EventWithProof, EventWithProof2, MultiEventWithProof, MultiStateProof, TransactionInfoWithProof,
 };
@@ -1422,6 +1425,37 @@ impl From<ChainInfo> for ChainInfoView {
             genesis_hash,
             head: head.into(),
             block_info: block_info.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub enum BlockColor {
+    Blue,
+    Red,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct BlockColorView {
+    pub color: BlockColor,
+    #[serde(rename = "comfiredblock")]
+    pub comfired_block: HashValue,
+}
+
+impl From<ChainBlockColor> for BlockColor {
+    fn from(color: ChainBlockColor) -> Self {
+        match color {
+            ChainBlockColor::Blue => BlockColor::Blue,
+            ChainBlockColor::Red => BlockColor::Red,
+        }
+    }
+}
+
+impl From<ChainBlockColorInfo> for BlockColorView {
+    fn from(info: ChainBlockColorInfo) -> Self {
+        Self {
+            color: info.color.into(),
+            comfired_block: info.comfired_block,
         }
     }
 }

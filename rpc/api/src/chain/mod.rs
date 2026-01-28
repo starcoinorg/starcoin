@@ -4,9 +4,9 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, MultiStateView, StrView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoViewEnum,
-    TransactionInfoWithProofView, TransactionView,
+    BlockColorView, BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView,
+    MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
+    TransactionInfoViewEnum, TransactionInfoWithProofView, TransactionView,
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
@@ -213,6 +213,13 @@ pub trait ChainApi {
     /// Get block ghostdag data
     #[rpc(name = "chain.get_ghostdagdata")]
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>>;
+
+    /// Get block color based on the current main chain selection.
+    #[rpc(name = "chain.get_current_block_color")]
+    fn get_current_block_color(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Option<BlockColorView>>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
