@@ -1438,8 +1438,8 @@ pub enum BlockColor {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct BlockColorView {
     pub color: BlockColor,
-    #[serde(rename = "comfiredblock")]
-    pub comfired_block: HashValue,
+    #[serde(rename = "confirmedblock")]
+    pub confirmed_block: HashValue,
 }
 
 impl From<ChainBlockColor> for BlockColor {
@@ -1455,7 +1455,7 @@ impl From<ChainBlockColorInfo> for BlockColorView {
     fn from(info: ChainBlockColorInfo) -> Self {
         Self {
             color: info.color.into(),
-            comfired_block: info.comfired_block,
+            confirmed_block: info.confirmed_block,
         }
     }
 }

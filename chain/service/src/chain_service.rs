@@ -609,7 +609,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         if block_id == chain_head {
             return Ok(Some(BlockColorInfo {
                 color: BlockColor::Blue,
-                comfired_block: chain_head,
+                confirmed_block: chain_head,
             }));
         }
 
@@ -644,13 +644,13 @@ impl ReadableChainService for ChainReaderServiceInner {
                 if ghostdata.mergeset_blues.contains(&block_id) {
                     return Ok(Some(BlockColorInfo {
                         color: BlockColor::Blue,
-                        comfired_block: descendant,
+                        confirmed_block: descendant,
                     }));
                 }
                 if ghostdata.mergeset_reds.contains(&block_id) {
                     return Ok(Some(BlockColorInfo {
                         color: BlockColor::Red,
-                        comfired_block: descendant,
+                        confirmed_block: descendant,
                     }));
                 }
                 return Ok(None);
@@ -831,7 +831,7 @@ mod tests {
             .get_current_block_color(c1.id())?
             .expect("c1 should be colored by merge block");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, merge.id());
+        assert_eq!(info.confirmed_block, merge.id());
         Ok(())
     }
 
@@ -878,7 +878,7 @@ mod tests {
             .get_current_block_color(b1.id())?
             .expect("b1 should be colored by b2");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, b2.id());
+        assert_eq!(info.confirmed_block, b2.id());
 
         let none = service_inner.get_current_block_color(c1.id())?;
         assert!(none.is_none());
@@ -930,7 +930,7 @@ mod tests {
             .get_current_block_color(b5.id())?
             .expect("b5 should be colored by head");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, head.id());
+        assert_eq!(info.confirmed_block, head.id());
 
         let none = service_inner.get_current_block_color(c2.id())?;
         assert!(none.is_none());
@@ -981,7 +981,7 @@ mod tests {
             .get_current_block_color(a1.id())?
             .expect("a1 should be colored on new main chain");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, b1.id());
+        assert_eq!(info.confirmed_block, b1.id());
 
         let none = service_inner.get_current_block_color(a3.id())?;
         assert!(none.is_none());
@@ -1029,13 +1029,13 @@ mod tests {
             .get_current_block_color(b2.id())?
             .expect("b2 should be colored by its selected-parent child");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, b3.id());
+        assert_eq!(info.confirmed_block, b3.id());
 
         let info = service_inner
             .get_current_block_color(b4.id())?
             .expect("b4 should be colored by b5");
         assert!(matches!(info.color, BlockColor::Blue));
-        assert_eq!(info.comfired_block, b5.id());
+        assert_eq!(info.confirmed_block, b5.id());
         Ok(())
     }
 }

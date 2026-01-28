@@ -28,7 +28,7 @@ pub enum BlockColor {
 #[derive(Clone, Debug)]
 pub struct BlockColorInfo {
     pub color: BlockColor,
-    pub comfired_block: HashValue,
+    pub confirmed_block: HashValue,
 }
 
 #[allow(clippy::large_enum_variant)]
