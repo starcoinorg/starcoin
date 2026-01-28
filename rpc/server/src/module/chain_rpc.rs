@@ -16,8 +16,8 @@ use starcoin_rpc_api::chain::{
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
+    BlockColorView, BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId,
+    ChainInfoView, MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -811,6 +811,19 @@ where
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
         let service = self.service.clone();
         let fut = async move { service.get_ghostdagdata(ids).await }.map_err(map_err);
+        Box::pin(fut.boxed())
+    }
+
+    fn get_current_block_color(
+        &self,
+        block_hash: HashValue,
+    ) -> FutureResult<Option<BlockColorView>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let color = service.get_current_block_color(block_hash).await?;
+            Ok(color.map(Into::into))
+        }
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 }
