@@ -430,15 +430,15 @@ impl ReadableChainService for ChainReaderServiceInner {
             .storage
             .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            let txn_info = self
+            let txn_info = match self
                 .storage
-                .get_transaction_info_by_rich_info_id(txn_info_id)?;
-            if let Some(txn_info) = txn_info {
-                if self
-                    .storage
-                    .get_block_by_hash(txn_info.block_id())?
-                    .is_some()
-                {
+                .get_transaction_info_by_rich_info_id(txn_info_id)?
+            {
+                Some(info) => info,
+                None => continue,
+            };
+            if let Some(color) = self.get_current_block_color(txn_info.block_id())? {
+                if matches!(color.color, BlockColor::Blue) {
                     return Ok(Some(txn_info));
                 }
             }

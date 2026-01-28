@@ -81,13 +81,13 @@ pub trait ChainApi {
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
     ) -> FutureResult<Option<TransactionView2>>;
-    /// Get chain transaction info
+    /// Get confirmed transaction info based on current main chain selection.
     #[rpc(name = "chain.get_transaction_info")]
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
     ) -> FutureResult<Option<TransactionInfoView>>;
-    /// Get chain vm2 transaction info
+    /// Get confirmed VM2 transaction info based on current main chain selection.
     #[rpc(name = "chain.get_transaction_info2")]
     fn get_transaction_info2(
         &self,
