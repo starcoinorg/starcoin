@@ -644,6 +644,21 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    /// Fetches GhostdagData entries for the given block IDs.
+    ///
+    /// Each element in the returned vector corresponds to the ID at the same index:
+    /// `Some(GhostdagData)` when data exists for that block ID, or `None` when it does not.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use futures::executor::block_on;
+    /// // `api` is any value implementing the ChainApi method `get_ghostdagdata`.
+    /// let api = /* obtain ChainApi implementation */ ;
+    /// let ids = vec![/* Vec<HashValue> */];
+    /// let result = block_on(api.get_ghostdagdata(ids));
+    /// // `result` is a Result<Vec<Option<GhostdagData>>, _>
+    /// ```
     fn get_ghostdagdata(
         &self,
         _ids: Vec<HashValue>,
@@ -654,6 +669,18 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    /// Retrieve the current block color for the given block hash.
+    ///
+    /// Currently unimplemented; the returned future will error with `"not implemented."`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // `api` implements the ChainApi (e.g., MockChainApi) and `hash` is a `HashValue`.
+    /// let fut = api.get_current_block_color(hash);
+    /// // The future will resolve to an error indicating the method is not implemented.
+    /// let _ = futures::executor::block_on(fut);
+    /// ```
     fn get_current_block_color(
         &self,
         _block_hash: HashValue,
@@ -662,6 +689,21 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    /// Returns the block info view for the block with the given hash.
+    ///
+    /// # Returns
+    ///
+    /// `Some(BlockInfoView)` when the block is available, `None` when no block with the given hash exists.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Example usage (async context):
+    /// // let info = api.get_block_info_by_hash(hash).await?;
+    /// // if let Some(block_info) = info {
+    /// //     println!("{}", block_info.number);
+    /// // }
+    /// ```
     fn get_block_info_by_hash(&self, _id: HashValue) -> FutureResult<Option<BlockInfoView>> {
         let fut = async move {
             bail!("not implemented.");

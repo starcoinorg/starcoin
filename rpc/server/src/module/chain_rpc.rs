@@ -808,12 +808,44 @@ where
         Box::pin(fut.boxed())
     }
 
+    /// Fetches GhostDAG data for the given block IDs.
+    ///
+    /// `ids` is the list of block hashes to query; the returned vector corresponds element-wise to this list.
+    ///
+    /// # Returns
+    ///
+    /// `Vec<Option<GhostdagData>>` where each entry contains the GhostDAG data for the corresponding block ID or `None` if no data is available.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // let rpc: ChainRpcImpl<_> = /* obtain instance */;
+    /// // let hashes: Vec<HashValue> = vec![hash1, hash2];
+    /// // let res = futures::executor::block_on(rpc.get_ghostdagdata(hashes));
+    /// // assert!(res.is_ok());
+    /// ```
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
         let service = self.service.clone();
         let fut = async move { service.get_ghostdagdata(ids).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
 
+    /// Retrieves the current color associated with the specified block hash.
+    ///
+    /// # Returns
+    ///
+    /// `Some(BlockColorView)` containing the block's current color if the block is found, `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use futures::executor::block_on;
+    /// # use starcoin_types::U256 as HashValue; // placeholder import for example
+    /// # // `rpc` here represents an instance implementing the same API as ChainRpcImpl.
+    /// let block_hash = HashValue::default();
+    /// let result = block_on(rpc.get_current_block_color(block_hash));
+    /// let color = result.unwrap(); // `Option<BlockColorView>`
+    /// ```
     fn get_current_block_color(
         &self,
         block_hash: HashValue,
@@ -828,6 +860,17 @@ where
     }
 }
 
+/// Decodes transaction payloads in `block` using the provided VM state views.
+///
+/// If `block.body` is `BlockTransactionsView::Full`, attempts to decode each transaction payload
+/// in place using `state` and `state2`. Leaves the block unchanged when the body is not `Full`.
+///
+/// # Examples
+///
+/// ```ignore
+/// // Provided `state` and `state2` implement the VM state view traits and `block` is mutable:
+/// try_decode_block_txns(&state, &state2, &mut block)?;
+/// ```
 fn try_decode_block_txns(
     state: &dyn StateView,
     state2: &dyn StateView2,

@@ -600,6 +600,23 @@ where
         }
     }
 
+    /// Fetches GhostdagData entries for the specified block ids.
+    ///
+    /// # Returns
+    ///
+    /// `Ok` with a vector of optional `GhostdagData` entries corresponding to the provided ids, `Err` if the request fails or an unexpected response is received.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # async fn example<S: ChainAsyncService>(service: &S) -> anyhow::Result<()> {
+    /// let ids: Vec<starcoin_types::HashValue> = Vec::new();
+    /// let ghostdag = service.get_ghostdagdata(ids).await?;
+    /// // result contains one entry per requested id (may be `None`)
+    /// assert!(ghostdag.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn get_ghostdagdata(
         &self,
         ids: Vec<HashValue>,
@@ -612,6 +629,28 @@ where
         }
     }
 
+    /// Returns the current color information for the specified block, if available.
+    ///
+    /// # Returns
+    ///
+    /// `Some(BlockColorInfo)` if a color is available for the block, `None` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the underlying service request fails or the response has an unexpected shape.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use anyhow::Result;
+    /// # async fn example<S: chain::api::ChainAsyncService>(service: &S, block_id: HashValue) -> Result<()> {
+    /// let color_opt = service.get_current_block_color(block_id).await?;
+    /// if let Some(color) = color_opt {
+    ///     // use `color`
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     async fn get_current_block_color(&self, block_id: HashValue) -> Result<Option<BlockColorInfo>> {
         let response = self
             .send(ChainRequest::GetCurrentBlockColor(block_id))
@@ -623,6 +662,27 @@ where
         }
     }
 
+    /// Locate a range between two block IDs and return how that range maps into the selected chain.
+    ///
+    /// The request's `start_id` and `end_id` are used to find the range; the response's `range` field
+    /// is either `NotInSelectedChain` when the range cannot be found in the selected chain, or
+    /// `InSelectedChain(start_hash, hashes)` when the sequence of hashes within the selected chain is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use starcoin_network_rpc_api::{GetRangeInLocationRequest, RangeInLocation};
+    /// // `service` is any value implementing the async method `get_range_in_location`.
+    /// let req = GetRangeInLocationRequest { start_id: /* ... */, end_id: /* ... */ };
+    /// let resp = futures::executor::block_on(service.get_range_in_location(req)).expect("request failed");
+    /// match resp.range {
+    ///     RangeInLocation::NotInSelectedChain => { /* range not present */ }
+    ///     RangeInLocation::InSelectedChain(start_hash, hashes) => {
+    ///         assert_eq!(start_hash, /* expected start */);
+    ///         assert!(!hashes.is_empty());
+    ///     }
+    /// }
+    /// ```
     async fn get_range_in_location(
         &self,
         req: starcoin_network_rpc_api::GetRangeInLocationRequest,

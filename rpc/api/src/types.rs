@@ -1417,6 +1417,14 @@ pub struct ChainInfoView {
 }
 
 impl From<ChainInfo> for ChainInfoView {
+    /// Constructs a ChainInfoView from a ChainInfo.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Convert a ChainInfo into its view representation.
+    /// let view = ChainInfoView::from(chain_info);
+    /// ```
     fn from(info: ChainInfo) -> Self {
         let (chain_id, genesis_hash, status) = info.into_inner();
         let (head, block_info) = status.into_inner();
@@ -1443,6 +1451,18 @@ pub struct BlockColorView {
 }
 
 impl From<ChainBlockColor> for BlockColor {
+    /// Convert a `ChainBlockColor` into the corresponding `BlockColor` view.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rpc::types::BlockColor;
+    /// use starcoin_chain::ChainBlockColor;
+    ///
+    /// let c = ChainBlockColor::Blue;
+    /// let view: BlockColor = c.into();
+    /// assert_eq!(view, BlockColor::Blue);
+    /// ```
     fn from(color: ChainBlockColor) -> Self {
         match color {
             ChainBlockColor::Blue => BlockColor::Blue,
@@ -1452,6 +1472,18 @@ impl From<ChainBlockColor> for BlockColor {
 }
 
 impl From<ChainBlockColorInfo> for BlockColorView {
+    /// Convert a `ChainBlockColorInfo` into a `BlockColorView`.
+    ///
+    /// The resulting view copies the `comfired_block` field and converts the inner `color` to `BlockColor`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Construct a ChainBlockColorInfo and convert it into a BlockColorView.
+    /// let info = ChainBlockColorInfo { color: ChainBlockColor::Blue, comfired_block: HashValue::zero() };
+    /// let view: BlockColorView = info.into();
+    /// assert_eq!(view.color, BlockColor::Blue);
+    /// ```
     fn from(info: ChainBlockColorInfo) -> Self {
         Self {
             color: info.color.into(),

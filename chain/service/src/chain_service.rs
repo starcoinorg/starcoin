@@ -136,6 +136,33 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
 }
 
 impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
+    /// Dispatches a `ChainRequest` to the chain reader and returns the corresponding `ChainResponse`.
+    ///
+    /// This method pattern-matches on all `ChainRequest` variants, delegates work to the inner
+    /// `ChainReaderServiceInner` (reading from the chain, DAG, and storages), and converts results
+    /// into the appropriate `ChainResponse` variant. Errors from underlying operations are propagated.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the matched `ChainResponse` on success, or an error if any underlying
+    /// storage, DAG, or chain operation fails.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use starcoin_chain_api::ChainRequest;
+    /// use starcoin_service_registry::ServiceContext;
+    ///
+    /// // `svc` and `ctx` are placeholders for a real ChainReaderService instance and context.
+    /// let mut svc = unimplemented!();
+    /// let mut ctx: ServiceContext<_> = unimplemented!();
+    ///
+    /// let resp = svc.handle(ChainRequest::CurrentHeader(), &mut ctx).unwrap();
+    /// match resp {
+    ///     starcoin_chain_api::ChainResponse::BlockHeader(_) => { /* handled */ }
+    ///     _ => { /* other responses */ }
+    /// }
+    /// ```
     fn handle(
         &mut self,
         msg: ChainRequest,
@@ -576,6 +603,20 @@ impl ReadableChainService for ChainReaderServiceInner {
         })
     }
 
+    /// Fetches ghostdag data for the given block hashes, preserving the input order.
+    ///
+    /// For each hash in `ids`, returns `Some(GhostdagData)` when the ghostdag data exists or `None` when it is absent.
+    /// The returned vector has the same length and ordering as `ids`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assume `svc` is a ChainReaderServiceInner and `id` is a HashValue.
+    /// let ids = vec![id];
+    /// let ghost_data = svc.get_ghostdagdata(ids.clone()).unwrap();
+    /// assert_eq!(ghost_data.len(), ids.len());
+    /// // `ghost_data[0]` is `Some(_)` if the DAG contains data for `id`, otherwise `None`.
+    /// ```
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
         let arc_results = self.dag.ghostdata_by_hashes(&ids)?;
 
@@ -589,6 +630,27 @@ impl ReadableChainService for ChainReaderServiceInner {
         Ok(results)
     }
 
+    /// Determines the color (Blue or Red) of a block relative to the current chain head, if a color can be established.
+    ///
+    /// The method returns `Some(BlockColorInfo)` when a descendant of `block_id` that is an ancestor of the current chain head
+    /// confirms `block_id` as either blue or red; it returns `None` when the block has no header or ghostdag data, is not a DAG
+    /// ancestor of the current chain head, or no confirming descendant can be found.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Assume `inner` is a `ChainReaderServiceInner` and `block_id` is a valid HashValue.
+    /// let color_opt = inner.get_current_block_color(block_id).unwrap();
+    /// match color_opt {
+    ///     Some(info) => {
+    ///         // info.color is BlockColor::Blue or BlockColor::Red
+    ///         // info.comfired_block is the descendant that confirms the color
+    ///     }
+    ///     None => {
+    ///         // No color could be determined for `block_id`
+    ///     }
+    /// }
+    /// ```
     fn get_current_block_color(&self, block_id: HashValue) -> Result<Option<BlockColorInfo>> {
         if self.storage.get_block_header_by_hash(block_id)?.is_none() {
             return Ok(None);
@@ -674,6 +736,18 @@ impl ReadableChainService for ChainReaderServiceInner {
         Ok(None)
     }
 
+    /// Locates the sequence of blocks between a starting block and an optional ending block on the current main chain.
+    ///
+    /// If `end_id` is `None`, the range extends from `start_id` to the current chain head.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // given `service` is a initialized ChainReaderServiceInner and `start` is a block hash:
+    /// let range = service.get_range_in_location(start, None).unwrap();
+    /// // `range` contains the located block range between `start` and the head
+    /// assert_eq!(range.start, start);
+    /// ```
     fn get_range_in_location(
         &self,
         start_id: HashValue,
@@ -737,6 +811,22 @@ mod tests {
         Ok(())
     }
 
+    /// Create a new block authored by `author` that builds on the given DAG `tips`.
+    ///
+    /// The function selects the appropriate parent from the provided tips and returns a block
+    /// constructed with that parent and the provided tips as references.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // given `chain: BlockChain`, `author: AccountInfo`, `tips: Vec<HashValue>`, `net: &ChainNetwork`
+    /// let block = create_block_with_tips(&chain, author, tips, net).unwrap();
+    /// assert!(!block.header().id().is_zero());
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// `Ok(Block)` containing the newly created block, `Err` on failure.
     fn create_block_with_tips(
         chain: &BlockChain,
         author: AccountInfo,
@@ -764,6 +854,26 @@ mod tests {
             .create_block(template, net.time_service().as_ref())
     }
 
+    /// Creates a block from a simple template authored by `author`.
+    ///
+    /// The function requests a simple block template from `chain` and then asks the chain's
+    /// consensus engine to instantiate a block using the network time service.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use starcoin_chain::BlockChain;
+    /// # use starcoin_config::ChainNetwork;
+    /// # use starcoin_types::account::AccountInfo;
+    /// # use starcoin_chain_service::create_block_simple;
+    /// let chain: BlockChain = unimplemented!();
+    /// let net: ChainNetwork = unimplemented!();
+    /// let author: AccountInfo = unimplemented!();
+    /// let block = create_block_simple(&chain, author, &net).unwrap();
+    /// ```
+    ///
+    /// @returns `Ok(Block)` with the newly created block on success, `Err` if template creation
+    /// or block instantiation fails.
     fn create_block_simple(
         chain: &BlockChain,
         author: AccountInfo,
@@ -775,6 +885,29 @@ mod tests {
             .create_block(template, net.time_service().as_ref())
     }
 
+    /// Creates a new block on a forked chain rooted at `parent`, applies it to that fork, and returns the created block.
+    ///
+    /// The function forks `base` at `parent`, builds a block with the provided `author` and `tips` using `net` for network parameters/time, applies the created block to the fork, and returns the applied `Block`.
+    ///
+    /// # Parameters
+    ///
+    /// - `base`: the blockchain to fork from.
+    /// - `author`: account information used as the block proposer/author.
+    /// - `parent`: the parent block id where the fork is created.
+    /// - `tips`: DAG tip block ids to include in the new block header.
+    /// - `net`: network configuration used when creating the block (time service and network-specific params).
+    ///
+    /// # Returns
+    ///
+    /// The newly created `Block` that was applied to the fork.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // assume `base`, `author`, `parent`, `tips`, and `net` are available in scope
+    /// let block = apply_block_on_parent(&base, author, parent, tips, &net).unwrap();
+    /// assert_eq!(block.header().parent_hash(), &parent);
+    /// ```
     fn apply_block_on_parent(
         base: &BlockChain,
         author: AccountInfo,

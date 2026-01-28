@@ -665,6 +665,26 @@ impl ChainApi for MockChainApi {
         todo!()
     }
 
+    /// Requests GhostDAG data for the given block IDs.
+    ///
+    /// The method is currently unimplemented and will return an error.
+    ///
+    /// # Returns
+    ///
+    /// A vector where each element is the `GhostdagData` for the corresponding input hash or `None` if
+    /// data for that hash is not available.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use futures::executor;
+    /// # use starcoin_types::block::HashValue;
+    /// # // `api` would be an instance implementing the method; this is illustrative only.
+    /// # let api = unimplemented!();
+    /// let ids: Vec<HashValue> = vec![];
+    /// let fut = api.get_ghostdagdata(ids);
+    /// let _result = executor::block_on(fut);
+    /// ```
     fn get_ghostdagdata(
         &self,
         _ids: Vec<HashValue>,
@@ -675,6 +695,34 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    /// Retrieves the block color for the block identified by `block_hash`.
+    ///
+    /// # Returns
+    ///
+    /// `Some(BlockColorView)` if the block's color is available, `None` if the block exists but has no color information.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use starcoin_types::U256;
+    /// # use starcoin_rpc_api::types::BlockColorView;
+    /// # use std::sync::Arc;
+    /// # async fn _example(api: &crate::MockChainApi, hash: starcoin_types::HashValue) {
+    /// let color_opt = api.get_current_block_color(hash).await;
+    /// match color_opt {
+    ///     Ok(Some(color)) => {
+    ///         // use color (BlockColorView)
+    ///         let _ = color;
+    ///     }
+    ///     Ok(None) => {
+    ///         // block has no color information
+    ///     }
+    ///     Err(_) => {
+    ///         // handle RPC / internal error
+    ///     }
+    /// }
+    /// # }
+    /// ```
     fn get_current_block_color(
         &self,
         _block_hash: HashValue,
@@ -684,6 +732,21 @@ impl ChainApi for MockChainApi {
     }
 }
 
+/// Attempts to decode payloads of all transactions in a block when the block body contains full transactions.
+///
+/// If the block body is `Full`, iterates each transaction and tries to decode its payload using the provided
+/// `StateView`. Decoding errors are propagated; if the block body is not `Full`, the function is a no-op.
+///
+/// # Examples
+///
+/// ```ignore
+/// // Prepare a state implementing `StateView` and a mutable BlockView with a Full body.
+/// let state: Box<dyn StateView> = /* obtain or mock a StateView */ unimplemented!();
+/// let mut block: BlockView = /* construct a BlockView whose body is BlockTransactionsView::Full */ unimplemented!();
+///
+/// // Attempt to decode each transaction payload in-place.
+/// try_decode_block_txns(state.as_ref(), &mut block)?;
+/// ```
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
     if let BlockTransactionsView::Full(txns) = &mut block.body {
         for txn in txns.iter_mut() {
