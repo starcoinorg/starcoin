@@ -473,7 +473,8 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         }
 
         let has_delayed = output.contains_delayed_fields();
-        if has_delayed {
+        let has_agg_v1 = !output.aggregator_v1_delta_set().is_empty();
+        if has_delayed || has_agg_v1 {
             output.try_materialize(self)?;
         }
 

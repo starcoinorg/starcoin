@@ -489,6 +489,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     for (txn_idx, output) in outputs.into_iter() {
         let (mut vm_output, group_read_layouts) = output.into_inner();
         let has_delayed = vm_output.contains_delayed_fields();
+        let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
         let has_group_ops = vm_output.resource_write_set().values().any(|op| {
             matches!(
                 op,
@@ -515,7 +516,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             continue;
         }
 
-        if has_delayed {
+        if has_delayed || has_agg_v1 {
             vm_output.try_materialize(&state_cache)?;
         }
         let mapping = DelayedFieldValueMapping {

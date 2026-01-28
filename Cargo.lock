@@ -12676,13 +12676,18 @@ name = "starcoin-mvhashmap"
 version = "2.1.1"
 dependencies = [
  "arc-swap",
+ "claims",
  "crossbeam",
  "dashmap",
+ "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=2a1550807cd28cdc04e3bf19576c9a2958864243)",
  "num_cpus",
  "once_cell",
  "proptest",
  "proptest-derive 0.7.0",
  "rayon",
+ "starcoin-aggregator",
+ "starcoin-types",
+ "test-case",
 ]
 
 [[package]]
@@ -12953,11 +12958,14 @@ dependencies = [
  "criterion",
  "crossbeam",
  "dashmap",
+ "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=2a1550807cd28cdc04e3bf19576c9a2958864243)",
  "num_cpus",
  "once_cell",
  "proptest",
  "proptest-derive 0.7.0",
+ "rand 0.9.2",
  "rayon",
+ "starcoin-aggregator",
  "starcoin-infallible",
  "starcoin-logger",
  "starcoin-mvhashmap",
@@ -13514,6 +13522,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-transaction-builder",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "starcoin-vm2-executor",
  "starcoin-vm2-move-compiler",
@@ -13735,9 +13744,11 @@ name = "starcoin-vm-runtime"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "bcs 0.1.5",
  "bcs-ext",
  "bytes 1.6.1",
  "claims",
+ "dashmap",
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=2a1550807cd28cdc04e3bf19576c9a2958864243)",
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=2a1550807cd28cdc04e3bf19576c9a2958864243)",
@@ -13766,6 +13777,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-move-stdlib",
+ "starcoin-mvhashmap",
  "starcoin-native-interface",
  "starcoin-parallel-executor",
  "starcoin-table-natives",
