@@ -5076,17 +5076,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-derive"
-version = "18.0.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19#e895b6cc5897f3813a953a9a6bb4718b4856ab19"
-dependencies = [
- "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.101",
- "quote 1.0.36",
- "syn 1.0.107",
-]
-
-[[package]]
 name = "jsonrpc-http-server"
 version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5190,18 +5179,6 @@ checksum = "60a0a0d35558123e93743d467285196905da1368500378cb5352b71856377874"
 dependencies = [
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.27",
- "parking_lot 0.11.2",
- "tower-service",
-]
-
-[[package]]
-name = "jsonrpc-tcp-server"
-version = "18.0.0"
-source = "git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19#e895b6cc5897f3813a953a9a6bb4718b4856ab19"
-dependencies = [
- "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "jsonrpc-server-utils 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "log 0.4.27",
  "parking_lot 0.11.2",
  "tower-service",
@@ -8317,7 +8294,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/openrpc-rs?rev=1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e#1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e"
 dependencies = [
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "openrpc-schema",
  "proc-macro-crate 0.1.5",
  "proc-macro2 1.0.101",
@@ -12996,7 +12973,7 @@ dependencies = [
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
@@ -13047,7 +13024,7 @@ dependencies = [
  "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.27",
@@ -13123,12 +13100,12 @@ dependencies = [
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
  "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-tcp-server 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
  "log 0.4.27",
  "network-api",
@@ -13369,13 +13346,9 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "byteorder",
+ "bytes 1.6.1",
  "futures 0.3.31",
  "hex",
- "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "jsonrpc-core-client 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "jsonrpc-derive 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "jsonrpc-pubsub 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "jsonrpc-tcp-server 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "serde 1.0.228",
  "serde_json",
  "starcoin-config",
@@ -13385,6 +13358,8 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-vm1-types",
  "stest",
+ "tokio",
+ "tokio-util 0.7.18",
 ]
 
 [[package]]
@@ -14154,7 +14129,7 @@ dependencies = [
  "clap 4.5.47",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "openrpc-derive",
  "openrpc-schema",
  "schemars",
@@ -14182,7 +14157,7 @@ dependencies = [
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive",
  "openrpc-derive",
  "openrpc-schema",
  "schemars",

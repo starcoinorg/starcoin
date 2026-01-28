@@ -1,8 +1,6 @@
 use crate::{rpc::*, target_hex_to_difficulty};
 use anyhow::Result;
 use futures::channel::mpsc;
-use futures::StreamExt;
-use jsonrpc_pubsub::SubscriptionId;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{
     MinerService, SubmitSealRequest as MinerSubmitSealRequest, UpdateSubscriberNumRequest,
@@ -103,46 +101,27 @@ impl EventHandler<Self, MintBlockEvent> for Stratum {
 }
 
 impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
-    fn handle(&mut self, msg: SubscribeJobEvent, ctx: &mut ServiceContext<Self>) {
-        let SubscribeJobEvent(subscriber, login) = msg;
+    fn handle(
+        &mut self,
+        msg: SubscribeJobEvent,
+        _ctx: &mut ServiceContext<Self>,
+    ) -> anyhow::Result<mpsc::UnboundedReceiver<StratumJobResponse>> {
+        let SubscribeJobEvent(login) = msg;
         let (sender, receiver) = mpsc::unbounded();
         let sub_id = self.next_id();
         info!(target: "stratum", "receive subscribe event {:?},sub_id:{}", login, sub_id);
-        ctx.spawn(async move {
-            if let Ok(sink) = subscriber
-                .assign_id_async(SubscriptionId::Number(sub_id as u64))
-                .await
-            {
-                let forward = receiver
-                    .flat_map(move |m| {
-                        let r = vec![Ok(m)];
-                        futures::stream::iter(
-                            r.into_iter().map(Ok::<_, jsonrpc_pubsub::TransportError>),
-                        )
-                    })
-                    .forward(sink)
-                    .await;
-                if let Err(e) = forward {
-                    warn!(target: "stratum", "Unable to send notification: {}", e);
-                }
-            } else {
-                error!(target: "stratum", "Subscriber assign is failed");
-            }
-        });
-        if let Ok(Some(event)) = self.sync_upstream_job() {
-            let miner_worker = MinerWorker::new(sub_id, login);
-            let downstream_job = Self::get_downstream_job(&miner_worker, true, &event);
-            self.mint_block_subscribers
-                .insert(miner_worker.worker_id, (sender.clone(), miner_worker));
-            ctx.spawn(async move {
-                info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
-                if let Err(err) = sender.unbounded_send(downstream_job) {
-                    error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
-                }
-            });
-        } else {
-            warn!(target: "stratum", "current mint job is empty");
+        let event = self
+            .sync_upstream_job()?
+            .ok_or_else(|| anyhow::anyhow!("current mint job is empty"))?;
+        let miner_worker = MinerWorker::new(sub_id, login);
+        let downstream_job = Self::get_downstream_job(&miner_worker, true, &event);
+        self.mint_block_subscribers
+            .insert(miner_worker.worker_id, (sender.clone(), miner_worker));
+        info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
+        if let Err(err) = sender.unbounded_send(downstream_job) {
+            error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
         }
+        Ok(receiver)
     }
 }
 
