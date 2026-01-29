@@ -83,6 +83,6 @@ impl<TxnType: Clone, E: Error> Executor for MultiExecutor<TxnType, E> {
                 }
             }
         }
-        Ok(results.into_iter().map(|(_, v)| v).collect())
+        Ok(results.into_values().collect())
     }
 }

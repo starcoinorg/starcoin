@@ -75,14 +75,14 @@ pub struct FakeExecutor {
 }
 
 impl FakeExecutor {
-    /// Creates an executor from a genesis [`WriteSet`].
+    // Creates an executor from a genesis [`WriteSet`].
     // pub fn from_genesis(write_set: &WriteSet) -> Self {
     //     let mut executor = Self::no_genesis();
     //     executor.apply_write_set(write_set);
     //     executor
     // }
 
-    /// Create an executor from a saved genesis blob
+    // Create an executor from a saved genesis blob
     // TODO(BobOng): e2e-test
     // pub fn from_saved_genesis(saved_genesis_blob: &[u8]) -> Self {
     //     let change_set = bcs::from_bytes::<ChangeSet>(saved_genesis_blob).unwrap();
@@ -480,7 +480,7 @@ impl FakeExecutor {
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             self.block_time,
-            minter_account.address().clone(),
+            *minter_account.address(),
             Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,
@@ -528,7 +528,7 @@ impl FakeExecutor {
             let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
             let remote_view = RemoteStorage::new(&self.data_store);
 
-            let balance = gas_params.txn.maximum_number_of_gas_units.clone();
+            let balance = gas_params.txn.maximum_number_of_gas_units;
             let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
             gas_meter.set_metering(false);
 
@@ -586,7 +586,7 @@ impl FakeExecutor {
         let vm = MoveVmExt::new(gas_params.natives.clone()).unwrap();
         let remote_view = RemoteStorage::new(&self.data_store);
 
-        let balance = gas_params.txn.maximum_number_of_gas_units.clone();
+        let balance = gas_params.txn.maximum_number_of_gas_units;
         let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
         gas_meter.set_metering(false);
 

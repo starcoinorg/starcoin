@@ -19,6 +19,18 @@ use starcoin_types::{
     transaction::Transaction,
 };
 
+#[derive(Clone, Debug)]
+pub enum BlockColor {
+    Blue,
+    Red,
+}
+
+#[derive(Clone, Debug)]
+pub struct BlockColorInfo {
+    pub color: BlockColor,
+    pub confirmed_block: HashValue,
+}
+
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum ChainRequest {
@@ -73,6 +85,7 @@ pub enum ChainRequest {
     },
     GetDagStateView,
     GetGhostdagData(Vec<HashValue>),
+    GetCurrentBlockColor(HashValue),
     IsAncestorOfCommand {
         ancestor: HashValue,
         descendants: Vec<HashValue>,
@@ -117,6 +130,7 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
+    BlockColorOption(Box<Option<BlockColorInfo>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     MultiStateResp(Option<MultiState>),
     GetRangeInLocation { range: RangeInLocation },

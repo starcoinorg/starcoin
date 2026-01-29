@@ -39,10 +39,9 @@ where
     S: Strategy,
     S::Value: AUTransactionGen,
 {
-    /// The number of accounts created by default.
-    //pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
-
-    /// The number of transactions created by default.
+    // The number of accounts created by default.
+    // pub const DEFAULT_NUM_ACCOUNTS: usize = 1000;
+    // The number of transactions created by default.
     // pub const DEFAULT_NUM_TRANSACTIONS: usize = 1000;
 
     /// Creates a new transaction bencher with default settings.
@@ -145,7 +144,7 @@ impl TransactionBenchState {
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             0,
-            minter_account.address().clone(),
+            *minter_account.address(),
             Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,

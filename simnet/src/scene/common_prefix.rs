@@ -399,7 +399,7 @@ fn dag_cfg_for_attacker(attacker_ratio: f64) -> DAGGenCfg {
                 hide_blocks_plan: vec![HideBlocksBurst {
                     start_time_sec: 3,
                     block_count: hide_count,
-                    release_time_sec: release_time_sec as u64,
+                    release_time_sec,
                     release_interval_ms: 15,
                 }],
             },

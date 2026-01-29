@@ -13,6 +13,7 @@ use futures::executor::block_on;
 use futures_timer::Delay;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
+use starcoin_chain::{clear_global_block_state_cache, reset_node_shutdown_flag};
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
@@ -188,6 +189,7 @@ impl NodeService {
         config: Arc<NodeConfig>,
         logger_handle: Arc<LoggerHandle>,
     ) -> Result<NodeHandle, NodeStartError> {
+        reset_node_shutdown_flag();
         info!("Final data-dir is : {:?}", config.data_dir());
         if let Some(log_path) = config.logger.get_log_path() {
             info!("Write log to file: {:?}", log_path);
@@ -443,10 +445,11 @@ impl NodeService {
     }
 
     fn shutdown_system(&self) {
+        clear_global_block_state_cache();
+
         if let Err(e) = self.registry.shutdown_system_sync() {
             error!("Shutdown registry error: {}", e);
         };
-        //wait a seconds for registry shutdown, then stop System.
         std::thread::sleep(Duration::from_millis(2000));
         System::current().stop();
     }

@@ -3,7 +3,7 @@
 
 use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::message::{ChainRequest, ChainResponse};
+use starcoin_chain_api::message::{BlockColor, BlockColorInfo, ChainRequest, ChainResponse};
 use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
@@ -12,7 +12,10 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consensus_state::DagStateView;
+use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
+use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_dag::types::ordering::SortableBlock;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
@@ -31,6 +34,8 @@ use starcoin_types::{
     contract_event::ContractEvent,
     startup_info::StartupInfo,
 };
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -295,6 +300,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetGhostdagData(ids) => Ok(ChainResponse::GhostdagDataOption(Box::new(
                 self.inner.get_ghostdagdata(ids)?,
             ))),
+            ChainRequest::GetCurrentBlockColor(block_id) => Ok(ChainResponse::BlockColorOption(
+                Box::new(self.inner.get_current_block_color(block_id)?),
+            )),
             ChainRequest::IsAncestorOfCommand {
                 ancestor,
                 descendants,
@@ -422,15 +430,15 @@ impl ReadableChainService for ChainReaderServiceInner {
             .storage
             .get_rich_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            let txn_info = self
+            let txn_info = match self
                 .storage
-                .get_transaction_info_by_rich_info_id(txn_info_id)?;
-            if let Some(txn_info) = txn_info {
-                if self
-                    .storage
-                    .get_block_by_hash(txn_info.block_id())?
-                    .is_some()
-                {
+                .get_transaction_info_by_rich_info_id(txn_info_id)?
+            {
+                Some(info) => info,
+                None => continue,
+            };
+            if let Some(color) = self.get_current_block_color(txn_info.block_id())? {
+                if matches!(color.color, BlockColor::Blue) {
                     return Ok(Some(txn_info));
                 }
             }
@@ -581,6 +589,91 @@ impl ReadableChainService for ChainReaderServiceInner {
         Ok(results)
     }
 
+    fn get_current_block_color(&self, block_id: HashValue) -> Result<Option<BlockColorInfo>> {
+        if self.storage.get_block_header_by_hash(block_id)?.is_none() {
+            return Ok(None);
+        }
+        if self.dag.ghostdata_by_hash(block_id)?.is_none() {
+            return Ok(None);
+        }
+
+        let chain_head = self.main.current_header().id();
+        if !self
+            .dag
+            .reachability_service()
+            .is_dag_ancestor_of(block_id, chain_head)
+        {
+            return Ok(None);
+        }
+
+        if block_id == chain_head {
+            return Ok(Some(BlockColorInfo {
+                color: BlockColor::Blue,
+                confirmed_block: chain_head,
+            }));
+        }
+
+        let mut heap: BinaryHeap<Reverse<SortableBlock>> = BinaryHeap::new();
+        let mut visited: HashSet<HashValue> = HashSet::new();
+
+        for child in self.dag.get_children(block_id)? {
+            if visited.insert(child) {
+                let blue_work = self
+                    .dag
+                    .storage
+                    .ghost_dag_store
+                    .get_blue_work(child)
+                    .map_err(|e| format_err!("failed to get blue work for {:?}: {}", child, e))?;
+                heap.push(Reverse(SortableBlock::new(child, blue_work)));
+            }
+        }
+
+        while let Some(Reverse(SortableBlock {
+            hash: descendant, ..
+        })) = heap.pop()
+        {
+            if self
+                .dag
+                .reachability_service()
+                .is_chain_ancestor_of(descendant, chain_head)
+            {
+                let ghostdata = self
+                    .dag
+                    .ghostdata_by_hash(descendant)?
+                    .ok_or_else(|| format_err!("missing ghostdag data for {:?}", descendant))?;
+                if ghostdata.mergeset_blues.contains(&block_id) {
+                    return Ok(Some(BlockColorInfo {
+                        color: BlockColor::Blue,
+                        confirmed_block: descendant,
+                    }));
+                }
+                if ghostdata.mergeset_reds.contains(&block_id) {
+                    return Ok(Some(BlockColorInfo {
+                        color: BlockColor::Red,
+                        confirmed_block: descendant,
+                    }));
+                }
+                return Ok(None);
+            }
+
+            for child in self.dag.get_children(descendant)? {
+                if visited.insert(child) {
+                    let blue_work = self
+                        .dag
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(child)
+                        .map_err(|e| {
+                            format_err!("failed to get blue work for {:?}: {}", child, e)
+                        })?;
+                    heap.push(Reverse(SortableBlock::new(child, blue_work)));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
     fn get_range_in_location(
         &self,
         start_id: HashValue,
@@ -621,9 +714,12 @@ impl ReadableChainService for ChainReaderServiceInner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_account_api::AccountInfo;
     use starcoin_chain_api::ChainAsyncService;
     use starcoin_config::NodeConfig;
+    use starcoin_consensus::Consensus;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+    use starcoin_types::startup_info::StartupInfo;
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
@@ -638,6 +734,308 @@ mod tests {
         let service_ref = registry.register::<ChainReaderService>().await?;
         let chain_status = service_ref.main_status().await?;
         assert_eq!(&chain_status, chain_info.status());
+        Ok(())
+    }
+
+    fn create_block_with_tips(
+        chain: &BlockChain,
+        author: AccountInfo,
+        tips: Vec<HashValue>,
+        net: &starcoin_config::ChainNetwork,
+    ) -> Result<Block> {
+        let ghostdata = chain.dag().ghost_dag_manager().ghostdag(&tips)?;
+        let parent_header = chain
+            .get_storage()
+            .get_block_header_by_hash(ghostdata.selected_parent)?
+            .ok_or_else(|| {
+                format_err!("cannot find parent header {:?}", ghostdata.selected_parent)
+            })?;
+        let (template, _) = chain.create_block_template(
+            *author.address(),
+            Some(parent_header),
+            Vec::new(),
+            None,
+            None,
+            Some(tips),
+            HashValue::zero(),
+        )?;
+        chain
+            .consensus()
+            .create_block(template, net.time_service().as_ref())
+    }
+
+    fn create_block_simple(
+        chain: &BlockChain,
+        author: AccountInfo,
+        net: &starcoin_config::ChainNetwork,
+    ) -> Result<Block> {
+        let (template, _) = chain.create_block_template_simple(*author.address())?;
+        chain
+            .consensus()
+            .create_block(template, net.time_service().as_ref())
+    }
+
+    fn apply_block_on_parent(
+        base: &BlockChain,
+        author: AccountInfo,
+        parent: HashValue,
+        tips: Vec<HashValue>,
+        net: &starcoin_config::ChainNetwork,
+    ) -> Result<Block> {
+        let mut branch = base.fork(parent)?;
+        let block = create_block_with_tips(&branch, author, tips, net)?;
+        branch.apply(block.clone())?;
+        Ok(block)
+    }
+
+    #[stest::test]
+    fn test_get_current_block_color_merge_blue() -> Result<()> {
+        let config = Arc::new(NodeConfig::random_for_test());
+        let net = config.net().clone();
+        let (storage, storage2, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(&net)?;
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            storage2.clone(),
+            None,
+            dag.clone(),
+        )?;
+
+        let miner = AccountInfo::random();
+        let genesis_id = chain.current_header().id();
+
+        let b1 = create_block_with_tips(&chain, miner.clone(), vec![genesis_id], &net)?;
+        chain.apply(b1.clone())?;
+
+        let mut fork_chain = chain.fork(genesis_id)?;
+        let c1 = create_block_with_tips(&fork_chain, miner.clone(), vec![genesis_id], &net)?;
+        fork_chain.apply(c1.clone())?;
+
+        let merge = create_block_with_tips(&chain, miner, vec![b1.id(), c1.id()], &net)?;
+        chain.apply(merge.clone())?;
+
+        assert_eq!(chain.current_header().id(), merge.id());
+
+        let service_inner = ChainReaderServiceInner::new(
+            config.clone(),
+            StartupInfo::new(merge.id()),
+            storage,
+            storage2,
+            dag,
+            None,
+        )?;
+
+        let info = service_inner
+            .get_current_block_color(c1.id())?
+            .expect("c1 should be colored by merge block");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, merge.id());
+        Ok(())
+    }
+
+    #[stest::test]
+    fn test_get_current_block_color_no_merge() -> Result<()> {
+        let config = Arc::new(NodeConfig::random_for_test());
+        let net = config.net().clone();
+        let (storage, storage2, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(&net)?;
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            storage2.clone(),
+            None,
+            dag.clone(),
+        )?;
+
+        let miner = AccountInfo::random();
+        let genesis_id = chain.current_header().id();
+
+        let b1 = create_block_with_tips(&chain, miner.clone(), vec![genesis_id], &net)?;
+        chain.apply(b1.clone())?;
+
+        let mut fork_chain = chain.fork(genesis_id)?;
+        let c1 = create_block_with_tips(&fork_chain, miner.clone(), vec![genesis_id], &net)?;
+        fork_chain.apply(c1.clone())?;
+
+        let b2 = create_block_with_tips(&chain, miner, vec![b1.id()], &net)?;
+        chain.apply(b2.clone())?;
+
+        assert_eq!(chain.current_header().id(), b2.id());
+
+        let service_inner = ChainReaderServiceInner::new(
+            config,
+            StartupInfo::new(b2.id()),
+            storage,
+            storage2,
+            dag,
+            None,
+        )?;
+
+        let info = service_inner
+            .get_current_block_color(b1.id())?
+            .expect("b1 should be colored by b2");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, b2.id());
+
+        let none = service_inner.get_current_block_color(c1.id())?;
+        assert!(none.is_none());
+        Ok(())
+    }
+
+    #[stest::test]
+    fn test_get_current_block_color_no_merge_long_fork() -> Result<()> {
+        let config = Arc::new(NodeConfig::random_for_test());
+        let net = config.net().clone();
+        let (storage, storage2, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(&net)?;
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            storage2.clone(),
+            None,
+            dag.clone(),
+        )?;
+
+        let miner = AccountInfo::random();
+        let mut main_blocks = Vec::new();
+        for _ in 0..6 {
+            let block = create_block_simple(&chain, miner.clone(), &net)?;
+            chain.apply(block.clone())?;
+            main_blocks.push(block);
+        }
+        let fork_point = main_blocks[1].id();
+        let b5 = main_blocks[4].clone();
+        let head = main_blocks[5].clone();
+
+        let c1 = apply_block_on_parent(&chain, miner.clone(), fork_point, vec![fork_point], &net)?;
+        let c2 = apply_block_on_parent(&chain, miner.clone(), c1.id(), vec![c1.id()], &net)?;
+        let _c3 = apply_block_on_parent(&chain, miner.clone(), c2.id(), vec![c2.id()], &net)?;
+
+        assert_eq!(chain.current_header().id(), head.id());
+
+        let service_inner = ChainReaderServiceInner::new(
+            config,
+            StartupInfo::new(head.id()),
+            storage,
+            storage2,
+            dag,
+            None,
+        )?;
+
+        let info = service_inner
+            .get_current_block_color(b5.id())?
+            .expect("b5 should be colored by head");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, head.id());
+
+        let none = service_inner.get_current_block_color(c2.id())?;
+        assert!(none.is_none());
+        Ok(())
+    }
+
+    #[stest::test]
+    fn test_get_current_block_color_reorg() -> Result<()> {
+        let config = Arc::new(NodeConfig::random_for_test());
+        let net = config.net().clone();
+        let (storage, storage2, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(&net)?;
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            storage2.clone(),
+            None,
+            dag.clone(),
+        )?;
+
+        let miner = AccountInfo::random();
+
+        let a1 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(a1.clone())?;
+        let a2 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(a2.clone())?;
+        let a3 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(a3.clone())?;
+        let a4 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(a4.clone())?;
+
+        let b1 = apply_block_on_parent(&chain, miner.clone(), a1.id(), vec![a1.id()], &net)?;
+        let b2 = apply_block_on_parent(&chain, miner.clone(), b1.id(), vec![b1.id()], &net)?;
+        let b3 = apply_block_on_parent(&chain, miner.clone(), b2.id(), vec![b2.id()], &net)?;
+        let b4 = apply_block_on_parent(&chain, miner.clone(), b3.id(), vec![b3.id()], &net)?;
+
+        let service_inner = ChainReaderServiceInner::new(
+            config,
+            StartupInfo::new(b4.id()),
+            storage,
+            storage2,
+            dag,
+            None,
+        )?;
+
+        let info = service_inner
+            .get_current_block_color(a1.id())?
+            .expect("a1 should be colored on new main chain");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, b1.id());
+
+        let none = service_inner.get_current_block_color(a3.id())?;
+        assert!(none.is_none());
+        Ok(())
+    }
+
+    #[stest::test]
+    fn test_get_current_block_color_nearest_confirm() -> Result<()> {
+        let config = Arc::new(NodeConfig::random_for_test());
+        let net = config.net().clone();
+        let (storage, storage2, chain_info, _, dag) =
+            test_helper::Genesis::init_storage_for_test(&net)?;
+        let mut chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            storage2.clone(),
+            None,
+            dag.clone(),
+        )?;
+
+        let miner = AccountInfo::random();
+
+        let b1 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(b1.clone())?;
+        let b2 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(b2.clone())?;
+        let b3 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(b3.clone())?;
+        let b4 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(b4.clone())?;
+        let b5 = create_block_simple(&chain, miner.clone(), &net)?;
+        chain.apply(b5.clone())?;
+
+        let service_inner = ChainReaderServiceInner::new(
+            config,
+            StartupInfo::new(b5.id()),
+            storage,
+            storage2,
+            dag,
+            None,
+        )?;
+
+        let info = service_inner
+            .get_current_block_color(b2.id())?
+            .expect("b2 should be colored by its selected-parent child");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, b3.id());
+
+        let info = service_inner
+            .get_current_block_color(b4.id())?
+            .expect("b4 should be colored by b5");
+        assert!(matches!(info.color, BlockColor::Blue));
+        assert_eq!(info.confirmed_block, b5.id());
         Ok(())
     }
 }

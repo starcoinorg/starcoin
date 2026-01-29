@@ -172,6 +172,9 @@ impl OpenedBlock {
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
+
+        // VM2 doesn't need to track write_sets (no write_sets field in BlockExecutedData2)
+
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -192,6 +195,11 @@ impl OpenedBlock {
             gas_used,
             status,
         );
+
+        // Track txn_info and events for VM2
+        self.vm2_txn_infos.push(txn_info.clone());
+        self.vm2_txn_events.push(events);
+
         self.txn_accumulator.append(&[txn_info.id()])?;
 
         info!(

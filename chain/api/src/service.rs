@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::message::{ChainRequest, ChainResponse};
+use crate::message::{BlockColorInfo, ChainRequest, ChainResponse};
 use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
@@ -90,6 +90,8 @@ pub trait ReadableChainService {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>;
+
+    fn get_current_block_color(&self, block_id: HashValue) -> Result<Option<BlockColorInfo>>;
 
     fn get_range_in_location(
         &self,
@@ -230,6 +232,11 @@ pub trait ChainAsyncService:
     ) -> impl std::future::Future<
         Output = Result<Vec<Option<starcoin_dag::types::ghostdata::GhostdagData>>>,
     > + Send;
+
+    fn get_current_block_color(
+        &self,
+        block_id: HashValue,
+    ) -> impl std::future::Future<Output = Result<Option<BlockColorInfo>>> + Send;
 
     fn get_range_in_location(
         &self,
@@ -602,6 +609,17 @@ where
             Ok(*ghostdag_data)
         } else {
             bail!("failed to get ghostdag data")
+        }
+    }
+
+    async fn get_current_block_color(&self, block_id: HashValue) -> Result<Option<BlockColorInfo>> {
+        let response = self
+            .send(ChainRequest::GetCurrentBlockColor(block_id))
+            .await??;
+        if let ChainResponse::BlockColorOption(color) = response {
+            Ok(*color)
+        } else {
+            bail!("failed to get current block color")
         }
     }
 

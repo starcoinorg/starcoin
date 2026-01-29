@@ -7,13 +7,16 @@ use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
+use starcoin_executor::BlockExecutedData as BlockExecutedData1;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Version;
+use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
@@ -26,13 +29,30 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
+use starcoin_vm2_executor::block_executor::BlockExecutedData as BlockExecutedData2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
+use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use std::collections::BTreeMap;
 use std::{convert::TryInto, sync::Arc};
+
+/// Result of OpenedBlock::finalize(), containing all data needed for caching.
+/// This includes the StateDB (with write_sets applied) and BlockExecutedData,
+/// which allows skipping re-execution entirely when the mined block is received.
+pub struct FinalizedBlock {
+    pub template: BlockTemplate,
+    pub statedb: Arc<ChainStateDB>,
+    pub statedb2: Arc<ChainStateDB2>,
+    /// Executed data for VM1 (txn_infos, events, table_infos, write_sets)
+    pub executed_data: BlockExecutedData1,
+    /// Executed data for VM2 (txn_infos, events, table_infos)
+    pub executed_data2: BlockExecutedData2,
+}
 
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
@@ -55,6 +75,15 @@ pub struct OpenedBlock {
     version: Version,
     pruning_point: HashValue,
     parents_hash: Vec<HashValue>,
+    // Tracked execution data for VM1
+    vm1_txn_infos: Vec<TransactionInfo>,
+    vm1_txn_events: Vec<Vec<ContractEvent>>,
+    vm1_write_sets: Vec<WriteSet>,
+    vm1_table_infos: BTreeMap<TableHandle, TableInfo>,
+    // Tracked execution data for VM2
+    vm2_txn_infos: Vec<starcoin_vm2_types::transaction::TransactionInfo>,
+    vm2_txn_events: Vec<Vec<ContractEvent2>>,
+    // Note: VM2 doesn't track table_infos in its output (TransactionAuxiliaryData instead)
 }
 
 impl OpenedBlock {
@@ -122,6 +151,12 @@ impl OpenedBlock {
             version,
             pruning_point,
             parents_hash: tips_hash.clone(),
+            vm1_txn_infos: vec![],
+            vm1_txn_events: vec![],
+            vm1_write_sets: vec![],
+            vm1_table_infos: BTreeMap::new(),
+            vm2_txn_infos: vec![],
+            vm2_txn_events: vec![],
         };
 
         opened_block.initialize()?;
@@ -295,14 +330,19 @@ impl OpenedBlock {
         root_state_calc: bool,
     ) -> Result<(Option<HashValue>, HashValue)> {
         let (state, _state2) = &mut self.state;
-        // Ignore the newly created table_infos.
-        // Because they are not needed to calculate state_root, or included to TransactionInfo.
-        // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
-        let (_table_infos, write_set, events, gas_used, status) = output.into_inner();
+        // Extract table_infos and merge them into vm1_table_infos
+        let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
+
+        // Track table_infos (merge into existing, keeping latest for same TableHandle)
+        self.vm1_table_infos.append(&mut table_infos);
+
+        // Track write_set for later use
+        self.vm1_write_sets.push(write_set.clone());
+
         state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -322,6 +362,11 @@ impl OpenedBlock {
             gas_used,
             status,
         );
+
+        // Track txn_info and events
+        self.vm1_txn_infos.push(txn_info.clone());
+        self.vm1_txn_events.push(events);
+
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
     }
@@ -331,7 +376,8 @@ impl OpenedBlock {
     }
 
     /// Construct a block template for mining.
-    pub fn finalize(self) -> Result<BlockTemplate> {
+    /// Returns FinalizedBlock containing the template, outputs, and StateDBs for caching.
+    pub fn finalize(self) -> Result<FinalizedBlock> {
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
         let (state_root, state_root1, state_root2) = {
@@ -367,7 +413,32 @@ impl OpenedBlock {
             self.pruning_point,
             self.parents_hash.clone(),
         );
-        Ok(block_template)
+
+        // Build BlockExecutedData for VM1
+        let executed_data = BlockExecutedData1 {
+            state_root: state_root1,
+            txn_infos: self.vm1_txn_infos,
+            txn_events: self.vm1_txn_events,
+            txn_table_infos: self.vm1_table_infos,
+            write_sets: self.vm1_write_sets,
+        };
+
+        // Build BlockExecutedData for VM2 (no write_sets field in VM2)
+        // Note: VM2 doesn't track table_infos in its TransactionOutput (uses TransactionAuxiliaryData instead)
+        let executed_data2 = BlockExecutedData2 {
+            state_root: state_root2,
+            txn_infos: self.vm2_txn_infos,
+            txn_events: self.vm2_txn_events,
+            txn_table_infos: BTreeMap::new(),
+        };
+
+        Ok(FinalizedBlock {
+            template: block_template,
+            statedb: self.state.0,
+            statedb2: self.state.1,
+            executed_data,
+            executed_data2,
+        })
     }
 }
 

@@ -39,7 +39,7 @@ pub fn empty_txn(
     _gas_unit_price: u64,
 ) -> SignedUserTransaction {
     build_signed_empty_txn(
-        sender.address().clone(),
+        *sender.address(),
         &sender.privkey.clone().into(),
         seq_num,
         now_time() + DEFAULT_EXPIRATION_TIME,
@@ -63,7 +63,7 @@ pub fn create_account_txn(
     let starcoin_acc = StarcoinAccount::with_keypair(
         new_account.privkey.clone().into(),
         new_account.pubkey.clone().into(),
-        Some(new_account.address().clone()),
+        Some(*new_account.address()),
     );
     create_account_txn_sent_as_association(
         &starcoin_acc,
@@ -101,7 +101,7 @@ pub fn peer_to_peer_txn(
     let starcoin_acc = StarcoinAccount::with_keypair(
         sender.privkey.clone().into(),
         sender.pubkey.clone().into(),
-        Some(sender.address().clone()),
+        Some(*sender.address()),
     );
     peer_to_peer_v2(
         &starcoin_acc,
