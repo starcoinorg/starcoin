@@ -19,8 +19,9 @@ use starcoin_rpc_api::{
     },
     multi_types::MultiSignedUserTransactionView,
     types::{
-        BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, MultiStateView,
-        StrView, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
+        BlockColorView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+        MultiStateView, StrView, TransactionInfoView, TransactionInfoWithProofView,
+        TransactionView,
     },
     FutureResult,
 };
@@ -650,6 +651,14 @@ impl ChainApi for MockChainApi {
         let fut = async move {
             bail!("not implemented.");
         };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_current_block_color(
+        &self,
+        _block_hash: HashValue,
+    ) -> FutureResult<Option<BlockColorView>> {
+        let fut = async move { bail!("not implemented.") };
         Box::pin(fut.boxed().map_err(map_err))
     }
 
