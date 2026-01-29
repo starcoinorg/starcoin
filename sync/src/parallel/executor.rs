@@ -269,7 +269,7 @@ impl DagBlockExecutor {
                                             Ok(_) => tokio::task::yield_now().await,
                                             Err(e) => {
                                                 error!(
-                                                    "failed to send waiting state: {:?}, for reason: {:?}",
+                                                    "failed to send executed state: {:?}, for reason: {:?}",
                                                     header, e
                                                 );
                                                 return;

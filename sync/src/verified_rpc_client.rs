@@ -110,7 +110,14 @@ const DEFAULT_RPC_RETRY_COUNT: i32 = 2;
 #[cfg(not(test))]
 const DEFAULT_RPC_TIMEOUT: Duration = Duration::from_secs(15);
 #[cfg(test)]
-const DEFAULT_RPC_TIMEOUT: Duration = Duration::from_millis(50);
+fn default_rpc_timeout() -> Duration {
+    if let Ok(value) = std::env::var("TEST_RPC_TIMEOUT_MS") {
+        if let Ok(ms) = value.parse::<u64>() {
+            return Duration::from_millis(ms);
+        }
+    }
+    Duration::from_millis(500)
+}
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
 pub struct VerifiedRpcClient {
@@ -139,12 +146,22 @@ impl VerifiedRpcClient {
         client: NetworkRpcClient,
         max_retry_times: u64,
     ) -> Self {
+        let rpc_timeout = {
+            #[cfg(not(test))]
+            {
+                DEFAULT_RPC_TIMEOUT
+            }
+            #[cfg(test)]
+            {
+                default_rpc_timeout()
+            }
+        };
         Self {
             peer_selector,
             client,
             score_handler: InverseScore::new(100, 60),
             max_retry_times,
-            rpc_timeout: DEFAULT_RPC_TIMEOUT,
+            rpc_timeout,
             rpc_retry_count: DEFAULT_RPC_RETRY_COUNT,
         }
     }
@@ -993,18 +1010,39 @@ impl VerifiedRpcClient {
                         .map(|block| (block, Some(peer_id.clone())))
                         .collect())
                 }
-                Ok(Err(_)) | Err(_) => {
+                Ok(Err(e)) => {
                     count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get absent blocks from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+                Err(_) => {
+                    count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get absent blocks from peer : {:?}. error: timeout",
+                                peer_id
+                            ),
+                        )
+                        .into());
+                    }
                     continue;
                 }
             }
         }
         Err(RpcVerifyError::new(
             peer_id.clone(),
-            format!(
-                "failed to get dag block children from peer : {:?}.",
-                peer_id
-            ),
+            format!("failed to get absent blocks from peer : {:?}.", peer_id),
         )
         .into())
     }

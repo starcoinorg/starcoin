@@ -182,7 +182,19 @@ fn wait_for_txn_infos_in_seq(
     let deadline = Instant::now() + timeout;
     loop {
         match client.chain_get_block_txn_infos_in_seq(block_hash) {
-            Ok(infos) => return Ok(infos),
+            Ok(infos) => {
+                if infos.is_empty() {
+                    if Instant::now() >= deadline {
+                        return Err(anyhow::format_err!(
+                            "timeout waiting for txn infos in seq for block {}",
+                            block_hash
+                        ));
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                    continue;
+                }
+                return Ok(infos);
+            }
             Err(err) => {
                 if Instant::now() >= deadline {
                     return Err(err);
