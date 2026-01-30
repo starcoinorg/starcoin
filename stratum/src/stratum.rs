@@ -3,8 +3,7 @@ use anyhow::Result;
 use futures::channel::mpsc;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{
-    DelayGenerateBlockEvent, MinerService, SubmitSealRequest as MinerSubmitSealRequest,
-    UpdateSubscriberNumRequest,
+    MinerService, SubmitSealRequest as MinerSubmitSealRequest, UpdateSubscriberNumRequest,
 };
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -128,9 +127,6 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
             }
         } else {
             warn!(target: "stratum", "current mint job is empty");
-            let _ = self
-                .miner_service
-                .try_send(DelayGenerateBlockEvent { delay_secs: 0 });
         }
         Ok(receiver)
     }
