@@ -6,3 +6,7 @@ pub mod new_header_service;
 //#[cfg(test)]
 //mod test_create_block_template;
 pub mod block_builder_service;
+pub mod state_check;
+
+#[cfg(test)]
+mod test_state_check;

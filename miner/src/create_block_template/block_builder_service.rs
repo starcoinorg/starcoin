@@ -42,6 +42,7 @@ use std::sync::RwLock;
 use crate::{MinerService, NewHeaderChannel};
 
 use super::metrics::BlockBuilderMetrics;
+use super::state_check::StateCheck;
 use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
@@ -522,7 +523,7 @@ where
             now_millis,
         );
 
-        let (txns, txns2) = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        let (txns, txns2) = self.fetch_transactions(&main, &blue_blocks, max_txns)?;
         info!(
             "[BlockProcess] VM1 txns len: {}, VM2 txns len: {}",
             txns.len(),
@@ -668,46 +669,54 @@ where
 
     fn fetch_transactions(
         &self,
-        header: &BlockHeader,
+        chain: &BlockChain,
         blue_blocks: &[Block],
         max_txns: u64,
     ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
-        let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, header);
+        let header = chain.current_header();
 
-        // Separate VM1 and VM2 transactions
-        let mut pending_transactions = vec![];
-        let mut pending_transactions2 = vec![];
-        pending_multi_transactions
-            .into_iter()
-            .for_each(|txn| match txn {
-                MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
-                MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
-            });
+        let state_db1 = chain.chain_state_reader();
+        let state_db2 = chain.chain_state_reader2();
+        let mut state_check = StateCheck::new(state_db1, state_db2);
 
-        if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
-            return Ok((pending_transactions, pending_transactions2));
-        }
+        let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, &header);
 
+        let mut blue_transactions: Vec<MultiSignedUserTransaction> = vec![];
         blue_blocks.iter().for_each(|block| {
             block.transactions().iter().for_each(|transaction| {
-                pending_transactions.push(transaction.clone());
+                blue_transactions.push(MultiSignedUserTransaction::VM1(transaction.clone()));
             });
 
             block.transactions2().iter().for_each(|transaction| {
-                pending_transactions2.push(transaction.clone());
+                blue_transactions.push(MultiSignedUserTransaction::VM2(transaction.clone()));
             })
         });
 
-        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
+        blue_transactions.sort_by(|a, b| match a.sender().to_hex().cmp(&b.sender().to_hex()) {
             std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
             other => other,
         });
+        let _ = state_check.filter_continuous_transactions(blue_transactions)?;
 
-        pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
-            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-            other => other,
+        let mut pending_multi_transactions = pending_multi_transactions;
+        pending_multi_transactions.sort_by(|a, b| {
+            match a.sender().to_hex().cmp(&b.sender().to_hex()) {
+                std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
+                other => other,
+            }
         });
 
+        let filtered_transactions =
+            state_check.filter_continuous_transactions(pending_multi_transactions)?;
+
+        let mut pending_transactions = vec![];
+        let mut pending_transactions2 = vec![];
+        for txn in filtered_transactions {
+            match txn {
+                MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
+                MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
+            }
+        }
         Ok((pending_transactions, pending_transactions2))
     }
 
