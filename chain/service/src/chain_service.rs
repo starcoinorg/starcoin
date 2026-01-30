@@ -12,7 +12,6 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockColorError, BlockDAG, DagBlockColor};
 use starcoin_dag::consensusdb::consensus_state::DagStateView;
-use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;

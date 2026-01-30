@@ -1003,7 +1003,7 @@ impl BlockDAG {
             {
                 let ghostdata = self
                     .ghostdata_by_hash(descendant)?
-                    .ok_or_else(|| BlockColorError::MissingGhostData(descendant))?;
+                    .ok_or(BlockColorError::MissingGhostData(descendant))?;
                 if ghostdata.mergeset_blues.contains(&block_id) {
                     return Ok(DagBlockColorInfo {
                         color: DagBlockColor::Blue,
@@ -1025,13 +1025,13 @@ impl BlockDAG {
 
             for child in self.get_children(descendant)? {
                 if visited.insert(child) {
-                    let blue_work = self
-                        .storage
-                        .ghost_dag_store
-                        .get_blue_work(child)
-                        .map_err(|e| {
-                            format_err!("failed to get blue work for {:?}: {}", child, e)
-                        })?;
+                    let blue_work =
+                        self.storage
+                            .ghost_dag_store
+                            .get_blue_work(child)
+                            .map_err(|e| {
+                                format_err!("failed to get blue work for {:?}: {}", child, e)
+                            })?;
                     heap.push(Reverse(SortableBlock::new(child, blue_work)));
                 }
             }
@@ -1122,21 +1122,25 @@ impl BlockDAG {
             },
         };
 
-        let previous_pruning_point = if current_pruning_point_info.pruning_point == HashValue::zero()
-        {
-            genesis_id
-        } else {
-            current_pruning_point_info.pruning_point
-        };
-        let previous_ghostdata = self.ghostdata_by_hash(previous_pruning_point)?.ok_or_else(|| {
-            format_err!(
+        let previous_pruning_point =
+            if current_pruning_point_info.pruning_point == HashValue::zero() {
+                genesis_id
+            } else {
+                current_pruning_point_info.pruning_point
+            };
+        let previous_ghostdata =
+            self.ghostdata_by_hash(previous_pruning_point)?
+                .ok_or_else(|| {
+                    format_err!(
                 "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
                 header.id()
             )
-        })?;
+                })?;
 
-        let current_pruning_point_ghostdata =
-            self.storage.ghost_dag_store.get_data(previous_pruning_point)?;
+        let current_pruning_point_ghostdata = self
+            .storage
+            .ghost_dag_store
+            .get_data(previous_pruning_point)?;
 
         let new_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,

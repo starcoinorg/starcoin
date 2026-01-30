@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
+use starcoin_config::temp_dir;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, DagBlockColor, MineNewDagBlockInfo},
@@ -19,7 +20,6 @@ use starcoin_dag::{
     GetAbsentBlock,
 };
 use starcoin_logger::prelude::debug;
-use starcoin_config::temp_dir;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
@@ -888,7 +888,6 @@ fn add_and_print(
 
 fn add_and_print_with_difficulty(
     number: BlockNumber,
-    parent: Hash,
     parents: Vec<Hash>,
     difficulty: u64,
     dag: &mut BlockDAG,
@@ -1249,36 +1248,16 @@ fn test_dag_get_block_color_red_k1_topology() -> anyhow::Result<()> {
         .build();
     dag.init_with_genesis(genesis.clone()).unwrap();
 
-    let block1 = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 1, &mut dag)?;
-    let block2 = add_and_print_with_difficulty(2, block1.id(), vec![block1.id()], 10, &mut dag)?;
-    let block3 = add_and_print_with_difficulty(3, block2.id(), vec![block2.id()], 10, &mut dag)?;
+    let block1 = add_and_print_with_difficulty(1, vec![genesis.id()], 1, &mut dag)?;
+    let block2 = add_and_print_with_difficulty(2, vec![block1.id()], 10, &mut dag)?;
+    let block3 = add_and_print_with_difficulty(3, vec![block2.id()], 10, &mut dag)?;
 
-    let t = add_and_print_with_difficulty(2, block1.id(), vec![block1.id()], 1, &mut dag)?;
-    let input = add_and_print_with_difficulty(3, t.id(), vec![t.id()], 1, &mut dag)?;
-    let mid = add_and_print_with_difficulty(2, block1.id(), vec![block1.id()], 1, &mut dag)?;
+    let t = add_and_print_with_difficulty(2, vec![block1.id()], 1, &mut dag)?;
+    let input = add_and_print_with_difficulty(3, vec![t.id()], 1, &mut dag)?;
+    let mid = add_and_print_with_difficulty(2, vec![block1.id()], 1, &mut dag)?;
 
-    let red = add_and_print_with_difficulty(4, input.id(), vec![mid.id(), input.id()], 1, &mut dag)?;
-    println!("red block id: {}", red.id());
-    let head = add_and_print_with_difficulty(4, block3.id(), vec![block3.id(), red.id()], 1, &mut dag)?;
-
-    let head_ghostdata = dag
-        .ghostdata_by_hash(head.id())?
-        .expect("ghostdata must exist for head");
-
-    println!(
-        "head ghostdata blues: {:?}, reds: {:?}",
-        head_ghostdata.mergeset_blues, head_ghostdata.mergeset_reds
-
-    );
-
-    let head_ghostdata_red = dag
-        .ghostdata_by_hash(red.id())?
-        .expect("ghostdata must exist for head");
-
-    println!(
-        "head ghostdata red_block blues: {:?}, reds: {:?}",
-        head_ghostdata_red.mergeset_blues, head_ghostdata_red.mergeset_reds
-    );
+    let red = add_and_print_with_difficulty(4, vec![mid.id(), input.id()], 1, &mut dag)?;
+    let head = add_and_print_with_difficulty(4, vec![block3.id(), red.id()], 1, &mut dag)?;
 
     let info = dag.get_block_color(input.id(), head.id())?;
     assert_eq!(info.color, DagBlockColor::Red);
