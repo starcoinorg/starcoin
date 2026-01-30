@@ -1260,14 +1260,6 @@ fn test_dag_get_block_color_red_k1_topology() -> anyhow::Result<()> {
     let red = add_and_print_with_difficulty(4, input.id(), vec![mid.id(), input.id()], 1, &mut dag)?;
     let head = add_and_print_with_difficulty(5, c.id(), vec![c.id(), red.id()], 1, &mut dag)?;
 
-    // let head_ghostdata = dag
-    //     .ghostdata_by_hash(head.id())?
-    //     .expect("ghostdata must exist for head");
-    // assert!(
-    //     head_ghostdata.mergeset_reds.contains(&input.id()),
-    //     "input should be red in head mergeset"
-    // );
-
     let info = dag.get_block_color(input.id(), head.id())?;
     assert_eq!(info.color, DagBlockColor::Red);
     assert_eq!(info.confirmed_block, head.id());
