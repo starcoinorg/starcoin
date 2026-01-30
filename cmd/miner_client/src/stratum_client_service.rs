@@ -262,11 +262,12 @@ impl Inner {
 
 impl ActorService for StratumClientService {
     fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        let tcp_stream = TcpStream::from_std(
-            self.tcp_stream
-                .take()
-                .ok_or_else(|| anyhow!("stratum client not got a tcp stream"))?,
-        )?;
+        let std_stream = self
+            .tcp_stream
+            .take()
+            .ok_or_else(|| anyhow!("stratum client not got a tcp stream"))?;
+        std_stream.set_nonblocking(true)?;
+        let tcp_stream = TcpStream::from_std(std_stream)?;
         let (inner, sender) = Inner::new(tcp_stream);
         self.sender = Some(sender);
         std::thread::spawn(move || futures::executor::block_on(inner.start()));
