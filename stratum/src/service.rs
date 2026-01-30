@@ -196,6 +196,11 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                     }
                 }
             }
+            "logout" => {
+                if let Err(err) = handle_logout(request_id, request.params, &out_tx).await {
+                    debug!(target: "stratum", "handle logout failed: {}", err);
+                }
+            }
             other => {
                 if let Some(id) = request_id {
                     let _ = send_failure(&out_tx, id, -1, format!("unknown method {}", other));
@@ -309,6 +314,18 @@ async fn handle_submit(
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
         }
+    }
+    Ok(())
+}
+
+async fn handle_logout(
+    request_id: Option<u32>,
+    params: serde_json::Value,
+    out_tx: &futures::channel::mpsc::UnboundedSender<String>,
+) -> Result<()> {
+    info!(target: "stratum", "receive logout request params: {}", params);
+    if let Some(id) = request_id {
+        let _ = send_output(out_tx, id, false);
     }
     Ok(())
 }
