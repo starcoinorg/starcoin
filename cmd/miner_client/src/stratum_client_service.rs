@@ -3,23 +3,22 @@ use anyhow::Result;
 use futures::{select, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 use futures_channel::mpsc;
 use futures_channel::oneshot;
-use jsonrpc_core::{Params, Version};
-use jsonrpc_server_utils::codecs::StreamCodec;
-use jsonrpc_server_utils::tokio::net::TcpStream;
-use jsonrpc_server_utils::tokio_util::codec::Decoder;
 use serde::{Deserialize, Serialize};
 use starcoin_config::MinerClientConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
+use starcoin_stratum::codec::JsonStreamCodec;
 pub use starcoin_stratum::rpc::{
-    KeepalivedResult, LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
+    LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
 };
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::convert::TryInto;
 use std::pin::Pin;
+use tokio::net::TcpStream;
+use tokio::runtime::Runtime;
+use tokio_util::codec::Framed;
 
 #[derive(Debug)]
 pub enum Request {
@@ -52,7 +51,7 @@ pub enum Response {
 #[serde(deny_unknown_fields)]
 pub struct JobNotification {
     /// A String specifying the version of the JSON-RPC protocol.
-    pub jsonrpc: Option<Version>,
+    pub jsonrpc: Option<String>,
     /// A String containing the name of the method to be invoked.
     pub method: String,
     /// StratumJob
@@ -74,7 +73,7 @@ pub enum OutputResponse {
 pub struct Output {
     /// Protocol version
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub jsonrpc: Option<Version>,
+    pub jsonrpc: Option<String>,
     /// Result
     pub result: OutputResponse,
     /// Correlation id
@@ -88,7 +87,7 @@ pub struct Output {
 pub struct Failure {
     pub id: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub jsonrpc: Option<Version>,
+    pub jsonrpc: Option<String>,
     pub error: ResponseError,
 }
 
@@ -102,7 +101,7 @@ pub struct ResponseError {
 impl TryFrom<String> for Response {
     type Error = anyhow::Error;
     fn try_from(resp: String) -> std::result::Result<Self, Self::Error> {
-        jsonrpc_core::serde_from_str::<Response>(&resp)
+        serde_json::from_str::<Response>(&resp)
             .map_err(|e| anyhow!(format!("parse response failed: {}", e)))
     }
 }
@@ -112,11 +111,11 @@ impl TryFrom<String> for Response {
 pub struct MethodCall {
     /// A String specifying the version of the JSON-RPC protocol.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub jsonrpc: Option<Version>,
+    pub jsonrpc: Option<String>,
     /// A String containing the name of the method to be invoked.
     pub method: String,
     /// A Structured value that holds the parameter values to be used
-    pub params: Params,
+    pub params: serde_json::Value,
     /// An identifier established by the Client
     pub id: u32,
 }
@@ -134,7 +133,7 @@ fn build_request_string<T: ?Sized + Serialize>(
     id: u32,
 ) -> Result<String> {
     let str = serde_json::to_string(argument)?;
-    let params: Params = serde_json::from_str(&str)?;
+    let params = serde_json::from_str(&str)?;
     let call = MethodCall {
         jsonrpc: None,
         method: method.into(),
@@ -161,7 +160,7 @@ struct Inner {
 impl Inner {
     pub fn new(tcp_stream: TcpStream) -> (Inner, mpsc::UnboundedSender<Request>) {
         let (s, channel) = mpsc::unbounded::<Request>();
-        let (sink, stream) = StreamCodec::stream_incoming().framed(tcp_stream).split();
+        let (sink, stream) = Framed::new(tcp_stream, JsonStreamCodec::stream_incoming()).split();
         let sink = Box::pin(sink.sink_map_err(|e| anyhow!(format!("{}", e))));
         let stream = Box::pin(
             stream
@@ -262,15 +261,18 @@ impl Inner {
 
 impl ActorService for StratumClientService {
     fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        let std_stream = self
+        let tcp_stream = self
             .tcp_stream
             .take()
             .ok_or_else(|| anyhow!("stratum client not got a tcp stream"))?;
-        std_stream.set_nonblocking(true)?;
-        let tcp_stream = TcpStream::from_std(std_stream)?;
+        tcp_stream.set_nonblocking(true)?;
+        let tcp_stream = TcpStream::from_std(tcp_stream)?;
         let (inner, sender) = Inner::new(tcp_stream);
         self.sender = Some(sender);
-        std::thread::spawn(move || futures::executor::block_on(inner.start()));
+        std::thread::spawn(move || {
+            let runtime = Runtime::new().expect("create stratum client tokio runtime");
+            runtime.block_on(inner.start());
+        });
         Ok(())
     }
 }
