@@ -1,4 +1,5 @@
-use crate::rpc::{LoginRequest, ShareRequest, Status, SubscribeJobEvent, SubmitShareEvent};
+use crate::codec::JsonStreamCodec;
+use crate::rpc::{LoginRequest, ShareRequest, Status, SubmitShareEvent, SubscribeJobEvent};
 use crate::stratum::Stratum;
 use anyhow::Result;
 use futures::{SinkExt, StreamExt};
@@ -13,7 +14,6 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 use tokio_util::codec::Framed;
-use crate::codec::JsonStreamCodec;
 
 pub struct StratumService {
     config: Arc<NodeConfig>,
@@ -89,6 +89,7 @@ struct JsonRpcOutput<T> {
     jsonrpc: Option<&'static str>,
     result: T,
     id: u32,
+    error: Option<JsonRpcError>,
 }
 
 #[derive(Debug, Serialize)]
@@ -174,15 +175,13 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
         let request_id = parse_request_id(request.id);
         match request.method.as_str() {
             "login" => {
-                if let Err(err) =
-                    handle_login(request_id, request.params, &stratum, &out_tx).await
+                if let Err(err) = handle_login(request_id, request.params, &stratum, &out_tx).await
                 {
                     debug!(target: "stratum", "handle login failed: {}", err);
                 }
             }
             "submit" => {
-                if let Err(err) =
-                    handle_submit(request_id, request.params, &stratum, &out_tx).await
+                if let Err(err) = handle_submit(request_id, request.params, &stratum, &out_tx).await
                 {
                     debug!(target: "stratum", "handle submit failed: {}", err);
                 }
@@ -240,13 +239,14 @@ async fn handle_login(
     };
 
     if let Some(id) = request_id {
-        let first_job = match job_rx.next().await {
+        let mut first_job = match job_rx.next().await {
             Some(job) => job,
             None => {
                 let _ = send_failure(out_tx, id, -1, "no job".to_string());
                 return Ok(());
             }
         };
+        first_job.login = None;
         send_output(out_tx, id, first_job)?;
     }
 
@@ -334,6 +334,7 @@ fn send_output<T: Serialize>(
         jsonrpc: Some("2.0"),
         result,
         id,
+        error: None,
     };
     let msg = serde_json::to_string(&output)?;
     out_tx

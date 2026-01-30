@@ -3,7 +3,8 @@ use anyhow::Result;
 use futures::channel::mpsc;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{
-    MinerService, SubmitSealRequest as MinerSubmitSealRequest, UpdateSubscriberNumRequest,
+    DelayGenerateBlockEvent, MinerService, SubmitSealRequest as MinerSubmitSealRequest,
+    UpdateSubscriberNumRequest,
 };
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -110,16 +111,26 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
         let (sender, receiver) = mpsc::unbounded();
         let sub_id = self.next_id();
         info!(target: "stratum", "receive subscribe event {:?},sub_id:{}", login, sub_id);
-        let event = self
-            .sync_upstream_job()?
-            .ok_or_else(|| anyhow::anyhow!("current mint job is empty"))?;
         let miner_worker = MinerWorker::new(sub_id, login);
-        let downstream_job = Self::get_downstream_job(&miner_worker, true, &event);
+        let worker_id = miner_worker.worker_id;
         self.mint_block_subscribers
-            .insert(miner_worker.worker_id, (sender.clone(), miner_worker));
-        info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
-        if let Err(err) = sender.unbounded_send(downstream_job) {
-            error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
+            .insert(worker_id, (sender.clone(), miner_worker));
+        let event = self.sync_upstream_job()?;
+        let downstream_job = event.as_ref().and_then(|event| {
+            self.mint_block_subscribers
+                .get(&worker_id)
+                .map(|(_, worker)| Self::get_downstream_job(worker, true, event))
+        });
+        if let Some(downstream_job) = downstream_job {
+            info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
+            if let Err(err) = sender.unbounded_send(downstream_job) {
+                error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
+            }
+        } else {
+            warn!(target: "stratum", "current mint job is empty");
+            let _ = self
+                .miner_service
+                .try_send(DelayGenerateBlockEvent { delay_secs: 0 });
         }
         Ok(receiver)
     }
