@@ -10,7 +10,7 @@ use starcoin_chain_api::{
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::{BlockDAG, DagBlockColor};
+use starcoin_dag::blockdag::{BlockColorError, BlockDAG, DagBlockColor};
 use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_dag::types::ghostdata::GhostdagData;
@@ -590,16 +590,25 @@ impl ReadableChainService for ChainReaderServiceInner {
             return Ok(None);
         }
         let chain_head = self.main.current_header().id();
-        Ok(self.dag.get_block_color(block_id, chain_head)?.map(|info| {
-            let color = match info.color {
-                DagBlockColor::Blue => BlockColor::Blue,
-                DagBlockColor::Red => BlockColor::Red,
-            };
-            BlockColorInfo {
-                color,
-                confirmed_block: info.confirmed_block,
+        match self.dag.get_block_color(block_id, chain_head) {
+            Ok(info) => {
+                let color = match info.color {
+                    DagBlockColor::Blue => BlockColor::Blue,
+                    DagBlockColor::Red => BlockColor::Red,
+                };
+                Ok(Some(BlockColorInfo {
+                    color,
+                    confirmed_block: info.confirmed_block,
+                }))
             }
-        }))
+            Err(err) => {
+                if err.downcast_ref::<BlockColorError>().is_some() {
+                    debug!("get_block_color returned none reason: {:?}", err);
+                    return Ok(None);
+                }
+                Err(err)
+            }
+        }
     }
 
     fn get_range_in_location(

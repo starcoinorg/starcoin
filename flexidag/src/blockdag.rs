@@ -41,6 +41,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use thiserror::Error;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -57,6 +58,27 @@ pub struct MineNewDagBlockInfo {
     pub selected_parents: Vec<HashValue>,
     pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Error)]
+pub enum BlockColorError {
+    #[error("missing ghostdag data for block {0}")]
+    MissingGhostData(HashValue),
+    #[error("block {block_id} is not a dag ancestor of chain head {chain_head}")]
+    NotDagAncestor {
+        block_id: HashValue,
+        chain_head: HashValue,
+    },
+    #[error("no confirmed block found for {block_id} on chain head {chain_head}")]
+    NoConfirmedBlock {
+        block_id: HashValue,
+        chain_head: HashValue,
+    },
+    #[error("block {block_id} is not in mergeset of confirmed block {confirmed_block}")]
+    NotInMergeset {
+        block_id: HashValue,
+        confirmed_block: HashValue,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -934,23 +956,27 @@ impl BlockDAG {
         &self,
         block_id: HashValue,
         chain_head: HashValue,
-    ) -> anyhow::Result<Option<DagBlockColorInfo>> {
+    ) -> anyhow::Result<DagBlockColorInfo> {
         if self.ghostdata_by_hash(block_id)?.is_none() {
-            return Ok(None);
+            return Err(BlockColorError::MissingGhostData(block_id).into());
         }
 
         if !self
             .reachability_service()
             .is_dag_ancestor_of(block_id, chain_head)
         {
-            return Ok(None);
+            return Err(BlockColorError::NotDagAncestor {
+                block_id,
+                chain_head,
+            }
+            .into());
         }
 
         if block_id == chain_head {
-            return Ok(Some(DagBlockColorInfo {
+            return Ok(DagBlockColorInfo {
                 color: DagBlockColor::Blue,
                 confirmed_block: chain_head,
-            }));
+            });
         }
 
         let mut heap: BinaryHeap<Reverse<SortableBlock>> = BinaryHeap::new();
@@ -977,20 +1003,24 @@ impl BlockDAG {
             {
                 let ghostdata = self
                     .ghostdata_by_hash(descendant)?
-                    .ok_or_else(|| format_err!("missing ghostdag data for {:?}", descendant))?;
+                    .ok_or_else(|| BlockColorError::MissingGhostData(descendant))?;
                 if ghostdata.mergeset_blues.contains(&block_id) {
-                    return Ok(Some(DagBlockColorInfo {
+                    return Ok(DagBlockColorInfo {
                         color: DagBlockColor::Blue,
                         confirmed_block: descendant,
-                    }));
+                    });
                 }
                 if ghostdata.mergeset_reds.contains(&block_id) {
-                    return Ok(Some(DagBlockColorInfo {
+                    return Ok(DagBlockColorInfo {
                         color: DagBlockColor::Red,
                         confirmed_block: descendant,
-                    }));
+                    });
                 }
-                return Ok(None);
+                return Err(BlockColorError::NotInMergeset {
+                    block_id,
+                    confirmed_block: descendant,
+                }
+                .into());
             }
 
             for child in self.get_children(descendant)? {
@@ -1007,7 +1037,11 @@ impl BlockDAG {
             }
         }
 
-        Ok(None)
+        Err(BlockColorError::NoConfirmedBlock {
+            block_id,
+            chain_head,
+        }
+        .into())
     }
 
     pub fn get_absent_blocks(&self, req: GetAbsentBlock) -> anyhow::Result<GetAbsentBlockResult> {

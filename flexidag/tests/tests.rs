@@ -8,6 +8,7 @@ use starcoin_dag::{
     consensusdb::{
         consensus_pruning_info::PruningPointInfoReader,
         consensus_state::{DagState, DagStateReader, DagStateStore},
+        prelude::{FlexiDagStorage, FlexiDagStorageConfig},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
             RelationsStore, RelationsStoreReader,
@@ -18,6 +19,7 @@ use starcoin_dag::{
     GetAbsentBlock,
 };
 use starcoin_logger::prelude::debug;
+use starcoin_config::temp_dir;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
@@ -884,6 +886,35 @@ fn add_and_print(
     add_and_print_with_pruning_point(number, parent, parents, Hash::zero(), dag)
 }
 
+fn add_and_print_with_difficulty(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    difficulty: u64,
+    dag: &mut BlockDAG,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents)
+        .with_number(number)
+        .with_difficulty(difficulty.into())
+        .with_pruning_point(Hash::zero())
+        .build();
+    let start = Instant::now();
+    let ghostdata = dag.ghostdata(&header.parents())?;
+    dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))?;
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    Ok(header)
+}
+
 #[test]
 fn test_dag_mergeset() -> anyhow::Result<()> {
     // initialzie the dag firstly
@@ -1196,11 +1227,50 @@ fn test_dag_get_block_color_merge() -> anyhow::Result<()> {
         bail!("c1 should be in merge mergeset");
     };
 
-    let info = dag
-        .get_block_color(c1.id(), merge.id())?
-        .expect("c1 should be colored by merge block");
+    let info = dag.get_block_color(c1.id(), merge.id())?;
     assert_eq!(info.color, expected_color);
     assert_eq!(info.confirmed_block, merge.id());
+
+    anyhow::Result::Ok(())
+}
+
+#[test]
+fn test_dag_get_block_color_red_k1_topology() -> anyhow::Result<()> {
+    let config = FlexiDagStorageConfig {
+        cache_size: 1024,
+        ..Default::default()
+    };
+    let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
+    let mut dag = BlockDAG::new(1, 3600, 1, dag_storage);
+
+    let genesis = BlockHeader::random()
+        .as_builder()
+        .with_difficulty(1.into())
+        .build();
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let a = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 10, &mut dag)?;
+    let b = add_and_print_with_difficulty(2, a.id(), vec![a.id()], 10, &mut dag)?;
+    let c = add_and_print_with_difficulty(3, b.id(), vec![b.id()], 10, &mut dag)?;
+
+    let t = add_and_print_with_difficulty(2, a.id(), vec![a.id()], 1, &mut dag)?;
+    let input = add_and_print_with_difficulty(3, t.id(), vec![t.id()], 10, &mut dag)?;
+    let mid = add_and_print_with_difficulty(2, a.id(), vec![a.id()], 1, &mut dag)?;
+
+    let red = add_and_print_with_difficulty(4, input.id(), vec![mid.id(), input.id()], 1, &mut dag)?;
+    let head = add_and_print_with_difficulty(5, c.id(), vec![c.id(), red.id()], 1, &mut dag)?;
+
+    // let head_ghostdata = dag
+    //     .ghostdata_by_hash(head.id())?
+    //     .expect("ghostdata must exist for head");
+    // assert!(
+    //     head_ghostdata.mergeset_reds.contains(&input.id()),
+    //     "input should be red in head mergeset"
+    // );
+
+    let info = dag.get_block_color(input.id(), head.id())?;
+    assert_eq!(info.color, DagBlockColor::Red);
+    assert_eq!(info.confirmed_block, head.id());
 
     anyhow::Result::Ok(())
 }
