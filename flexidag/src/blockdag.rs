@@ -946,11 +946,6 @@ impl BlockDAG {
         pruning_finality: u64,
         genesis_id: Hash,
     ) -> anyhow::Result<()> {
-        let previous_ghostdata = if header.pruning_point() == HashValue::zero() {
-            self.ghostdata_by_hash(genesis_id)?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
-        } else {
-            self.ghostdata_by_hash(header.pruning_point())?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
-        };
         let next_ghostdata = self.ghostdata_by_hash(header.id())?.ok_or_else(|| {
             format_err!(
                 "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
@@ -999,13 +994,24 @@ impl BlockDAG {
             },
         };
 
-        let current_pruning_point_ghostdata = self
-            .storage
-            .ghost_dag_store
-            .get_data(current_pruning_point_info.pruning_point)?;
+        let previous_pruning_point = if current_pruning_point_info.pruning_point == HashValue::zero()
+        {
+            genesis_id
+        } else {
+            current_pruning_point_info.pruning_point
+        };
+        let previous_ghostdata = self.ghostdata_by_hash(previous_pruning_point)?.ok_or_else(|| {
+            format_err!(
+                "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
+                header.id()
+            )
+        })?;
+
+        let current_pruning_point_ghostdata =
+            self.storage.ghost_dag_store.get_data(previous_pruning_point)?;
 
         let new_pruning_point = self.pruning_point_manager().next_pruning_point(
-            current_pruning_point_info.pruning_point,
+            previous_pruning_point,
             previous_ghostdata.as_ref(),
             next_ghostdata.as_ref(),
             pruning_depth,

@@ -1140,6 +1140,40 @@ fn test_prune() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_pruning_point_non_chain_ancestor_rejected() -> anyhow::Result<()> {
+    let k = 3;
+    let pruning_depth = 4;
+    let pruning_finality = 3;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let genesis = BlockHeader::random();
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+    let block2 = add_and_print(2, genesis.id(), vec![genesis.id()], &mut dag)?;
+
+    let previous_pruning_point = block1.id();
+    let previous_ghostdata = dag
+        .ghostdata_by_hash(previous_pruning_point)?
+        .expect("ghostdata must exist for previous pruning point");
+    let next_ghostdata = dag
+        .ghostdata_by_hash(block2.id())?
+        .expect("ghostdata must exist for next block");
+
+    let result = dag.pruning_point_manager().next_pruning_point(
+        previous_pruning_point,
+        previous_ghostdata.as_ref(),
+        next_ghostdata.as_ref(),
+        pruning_depth,
+        pruning_finality,
+    );
+    assert!(result.is_err());
+
+    anyhow::Result::Ok(())
+}
+
+#[test]
 fn test_verification_blue_block() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 5;
