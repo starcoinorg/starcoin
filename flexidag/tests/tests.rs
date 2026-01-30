@@ -1267,6 +1267,61 @@ fn test_dag_get_block_color_red_k1_topology() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_dag_get_block_color_confirmed_by_main_skips_offchain() -> anyhow::Result<()> {
+    use starcoin_dag::reachability::reachability_service::ReachabilityService;
+
+    let config = FlexiDagStorageConfig {
+        cache_size: 1024,
+        ..Default::default()
+    };
+    let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
+    let mut dag = BlockDAG::new(2, 3600, 1, dag_storage);
+
+    let genesis = BlockHeader::random()
+        .as_builder()
+        .with_difficulty(1.into())
+        .build();
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let main = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 1000, &mut dag)?;
+    let main_tip = add_and_print_with_difficulty(2, main.id(), vec![main.id()], 1, &mut dag)?;
+    let input = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 1, &mut dag)?;
+    let offchain =
+        add_and_print_with_difficulty(2, input.id(), vec![input.id()], 1, &mut dag)?;
+
+    let head = add_and_print_with_difficulty(
+        3,
+        main_tip.id(),
+        vec![main_tip.id(), offchain.id()],
+        1,
+        &mut dag,
+    )?;
+
+    let head_ghostdata = dag
+        .ghostdata_by_hash(head.id())?
+        .expect("ghostdata must exist for head");
+    assert_eq!(
+        head_ghostdata.selected_parent,
+        main_tip.id(),
+        "head should select main chain tip as parent"
+    );
+    assert!(
+        !dag.reachability_service().is_chain_ancestor_of(offchain.id(), head.id()),
+        "offchain should not be on selected parent chain"
+    );
+    assert!(
+        head_ghostdata.mergeset_blues.contains(&input.id()),
+        "input should be blue in head mergeset"
+    );
+
+    let info = dag.get_block_color(input.id(), head.id())?;
+    assert_eq!(info.color, DagBlockColor::Blue);
+    assert_eq!(info.confirmed_block, head.id());
+
+    anyhow::Result::Ok(())
+}
+
+#[test]
 fn test_verification_blue_block() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 5;
