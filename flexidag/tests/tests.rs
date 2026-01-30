@@ -4,7 +4,7 @@
 use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::{BlockDAG, MineNewDagBlockInfo},
+    blockdag::{BlockDAG, DagBlockColor, MineNewDagBlockInfo},
     consensusdb::{
         consensus_pruning_info::PruningPointInfoReader,
         consensus_state::{DagState, DagStateReader, DagStateStore},
@@ -1169,6 +1169,38 @@ fn test_pruning_point_non_chain_ancestor_rejected() -> anyhow::Result<()> {
         pruning_finality,
     );
     assert!(result.is_err());
+
+    anyhow::Result::Ok(())
+}
+
+#[test]
+fn test_dag_get_block_color_merge() -> anyhow::Result<()> {
+    let k = 3;
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let genesis = BlockHeader::random();
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let b1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+    let c1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+    let merge = add_and_print(2, b1.id(), vec![b1.id(), c1.id()], &mut dag)?;
+
+    let merge_ghostdata = dag
+        .ghostdata_by_hash(merge.id())?
+        .expect("ghostdata must exist for merge");
+    let expected_color = if merge_ghostdata.mergeset_blues.contains(&c1.id()) {
+        DagBlockColor::Blue
+    } else if merge_ghostdata.mergeset_reds.contains(&c1.id()) {
+        DagBlockColor::Red
+    } else {
+        bail!("c1 should be in merge mergeset");
+    };
+
+    let info = dag
+        .get_block_color(c1.id(), merge.id())?
+        .expect("c1 should be colored by merge block");
+    assert_eq!(info.color, expected_color);
+    assert_eq!(info.confirmed_block, merge.id());
 
     anyhow::Result::Ok(())
 }

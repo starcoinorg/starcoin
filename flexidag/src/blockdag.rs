@@ -23,6 +23,7 @@ use crate::ghostdag::protocol::{GhostdagManager, KStore};
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
+use crate::types::ordering::SortableBlock;
 use crate::{process_key_already_error, GetAbsentBlock, GetAbsentBlockResult};
 use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
@@ -36,7 +37,8 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::collections::HashSet;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -55,6 +57,18 @@ pub struct MineNewDagBlockInfo {
     pub selected_parents: Vec<HashValue>,
     pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DagBlockColor {
+    Blue,
+    Red,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DagBlockColorInfo {
+    pub color: DagBlockColor,
+    pub confirmed_block: HashValue,
 }
 
 #[derive(Clone)]
@@ -914,6 +928,86 @@ impl BlockDAG {
             ancestor,
             descendants: de,
         })
+    }
+
+    pub fn get_block_color(
+        &self,
+        block_id: HashValue,
+        chain_head: HashValue,
+    ) -> anyhow::Result<Option<DagBlockColorInfo>> {
+        if self.ghostdata_by_hash(block_id)?.is_none() {
+            return Ok(None);
+        }
+
+        if !self
+            .reachability_service()
+            .is_dag_ancestor_of(block_id, chain_head)
+        {
+            return Ok(None);
+        }
+
+        if block_id == chain_head {
+            return Ok(Some(DagBlockColorInfo {
+                color: DagBlockColor::Blue,
+                confirmed_block: chain_head,
+            }));
+        }
+
+        let mut heap: BinaryHeap<Reverse<SortableBlock>> = BinaryHeap::new();
+        let mut visited: HashSet<HashValue> = HashSet::new();
+
+        for child in self.get_children(block_id)? {
+            if visited.insert(child) {
+                let blue_work = self
+                    .storage
+                    .ghost_dag_store
+                    .get_blue_work(child)
+                    .map_err(|e| format_err!("failed to get blue work for {:?}: {}", child, e))?;
+                heap.push(Reverse(SortableBlock::new(child, blue_work)));
+            }
+        }
+
+        while let Some(Reverse(SortableBlock {
+            hash: descendant, ..
+        })) = heap.pop()
+        {
+            if self
+                .reachability_service()
+                .is_chain_ancestor_of(descendant, chain_head)
+            {
+                let ghostdata = self
+                    .ghostdata_by_hash(descendant)?
+                    .ok_or_else(|| format_err!("missing ghostdag data for {:?}", descendant))?;
+                if ghostdata.mergeset_blues.contains(&block_id) {
+                    return Ok(Some(DagBlockColorInfo {
+                        color: DagBlockColor::Blue,
+                        confirmed_block: descendant,
+                    }));
+                }
+                if ghostdata.mergeset_reds.contains(&block_id) {
+                    return Ok(Some(DagBlockColorInfo {
+                        color: DagBlockColor::Red,
+                        confirmed_block: descendant,
+                    }));
+                }
+                return Ok(None);
+            }
+
+            for child in self.get_children(descendant)? {
+                if visited.insert(child) {
+                    let blue_work = self
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(child)
+                        .map_err(|e| {
+                            format_err!("failed to get blue work for {:?}: {}", child, e)
+                        })?;
+                    heap.push(Reverse(SortableBlock::new(child, blue_work)));
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     pub fn get_absent_blocks(&self, req: GetAbsentBlock) -> anyhow::Result<GetAbsentBlockResult> {
