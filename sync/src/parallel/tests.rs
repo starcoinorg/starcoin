@@ -9,7 +9,7 @@ use starcoin_chain_api::ExecutedBlock;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use stream_task::CollectorState;
 use tokio::sync::mpsc;
@@ -138,6 +138,7 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
         None,
         chain.head().dag(),
         1,
+        Arc::new(AtomicBool::new(false)),
         &mut operator,
     );
 

@@ -751,6 +751,7 @@ pub fn full_sync_task<H, A, F, N>(
     sync_dag_store: Arc<SyncDagStore>,
     range_locate: bool,
     execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -857,6 +858,7 @@ where
                 dag.clone(),
                 sync_dag_store.clone(),
                 execute_timeout_ms,
+                cancel_flag.clone(),
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner

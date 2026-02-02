@@ -218,6 +218,7 @@ pub struct BlockCollector<N, H> {
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
     execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -275,6 +276,7 @@ where
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
         execute_timeout_ms: u64,
+        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
@@ -290,6 +292,7 @@ where
             latest_block_id,
             sync_dag_store,
             execute_timeout_ms,
+            cancel_flag,
         }
     }
 
@@ -450,6 +453,9 @@ where
             block_headers.first().map(|h| (h.id(), h.number()))
         );
         loop {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                return Ok(());
+            }
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
@@ -461,6 +467,12 @@ where
     }
 
     fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
+        if self
+            .cancel_flag
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
+            return Ok(ParallelSign::NeedMoreBlocks);
+        }
         let block_header = &block.header().clone();
         if self.chain.has_dag_block(block_header.id())? {
             info!(
@@ -477,12 +489,25 @@ where
             block_header.parents_hash()
         );
         let fut = async {
+            if self
+                .cancel_flag
+                .load(std::sync::atomic::Ordering::SeqCst)
+            {
+                return anyhow::Ok(ParallelSign::NeedMoreBlocks);
+            }
             if block_header.number() % ASYNC_BLOCK_COUNT == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 self.sync_dag_store.delete_all_dag_sync_block()?;
                 self.find_absent_ancestor(vec![block_header.clone()])
                     .await?;
+
+                if self
+                    .cancel_flag
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                {
+                    return anyhow::Ok(ParallelSign::NeedMoreBlocks);
+                }
 
                 let parallel_execute = DagBlockSender::new(
                     self.sync_dag_store.clone(),
@@ -493,6 +518,7 @@ where
                     None,
                     self.chain.dag(),
                     self.execute_timeout_ms,
+                    self.cancel_flag.clone(),
                     self,
                 );
                 parallel_execute.process_absent_blocks().await?;
@@ -708,6 +734,12 @@ where
     type Output = BlockChain;
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
+        if self
+            .cancel_flag
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
+            return Ok(CollectorState::Need);
+        }
         let (block, block_info, peer_id) = item.into();
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.

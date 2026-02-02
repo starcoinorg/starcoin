@@ -41,7 +41,10 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::collections::{BTreeSet, HashSet};
 use std::panic::AssertUnwindSafe;
 use std::result::Result::Ok;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex, OnceLock,
+};
 use std::time::{Duration, Instant};
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 use tokio::runtime::Runtime;
@@ -66,6 +69,7 @@ pub struct SyncTaskHandle {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    cancel_flag: Arc<AtomicBool>,
 }
 
 pub enum SyncStage {
@@ -510,6 +514,7 @@ impl SyncService {
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
+                let cancel_flag = Arc::new(AtomicBool::new(false));
                 let (fut, task_handle, task_event_handle) = full_sync_task(
                     current_block_id,
                     target.clone(),
@@ -528,6 +533,7 @@ impl SyncService {
                     sync_dag_store,
                     range_locate,
                     config.sync.execute_timeout_ms(),
+                    cancel_flag.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -535,6 +541,7 @@ impl SyncService {
                     task_handle,
                     task_event_handle,
                     peer_selector: rpc_client.selector().clone(),
+                    cancel_flag,
                 })?;
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
@@ -663,7 +670,10 @@ impl SyncService {
 
     fn cancel_task(&mut self) {
         match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
-            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            SyncStage::Synchronizing(handle) => {
+                handle.cancel_flag.store(true, Ordering::SeqCst);
+                handle.task_handle.cancel();
+            }
             stage => {
                 //restore state machine state.
                 self.stage = stage;
@@ -855,6 +865,7 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    cancel_flag: Arc<AtomicBool>,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService {
@@ -865,12 +876,14 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             msg.task_event_handle,
             msg.peer_selector,
         );
+        let cancel_flag = msg.cancel_flag.clone();
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
             peer_selector,
+            cancel_flag: msg.cancel_flag,
         };
         match std::mem::replace(
             &mut self.stage,
@@ -889,6 +902,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
+                    cancel_flag.store(true, Ordering::SeqCst);
                     task_handle.cancel();
                 } else {
                     let target_id_number =
@@ -906,10 +920,12 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 );
                 //restore to previous and cancel new handle.
                 self.stage = SyncStage::Synchronizing(previous_handle);
+                cancel_flag.store(true, Ordering::SeqCst);
                 task_handle.cancel();
             }
             SyncStage::Canceling => {
                 self.stage = SyncStage::Canceling;
+                cancel_flag.store(true, Ordering::SeqCst);
                 task_handle.cancel();
             }
         }
@@ -966,7 +982,14 @@ pub struct SyncDoneEvent {
 
 impl EventHandler<Self, SyncDoneEvent> for SyncService {
     fn handle_event(&mut self, msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
-        match std::mem::replace(&mut self.stage, SyncStage::Done) {
+        let previous_stage = std::mem::replace(&mut self.stage, SyncStage::Done);
+        if msg.cancel {
+            self.sync_status.sync_cancel();
+            ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+            ctx.notify(CheckSyncEvent::default());
+            return;
+        }
+        match previous_stage {
             SyncStage::NotStart | SyncStage::Done => {
                 warn!("[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent")
             }
@@ -996,7 +1019,6 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                 ctx.notify(CheckSyncEvent::default());
             }
             SyncStage::Canceling => {
-                //continue
                 self.sync_status.sync_done();
                 self.publish_sync_status(ctx);
             }

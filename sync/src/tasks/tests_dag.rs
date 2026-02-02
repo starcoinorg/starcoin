@@ -55,7 +55,8 @@ async fn sync_block_process(
             local_node.sync_dag_store.clone(),
             false,
             EXECUTE_TIMEOUT_MS,
-        )?;
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    )?;
         let branch = sync_task.await?;
         info!("checking branch in sync service is the same as target's branch");
         assert_eq!(branch.current_header().id(), target.target_id.id());

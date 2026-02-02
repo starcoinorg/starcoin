@@ -42,6 +42,7 @@ where
     dag: BlockDAG,
     sync_dag_store: Arc<SyncDagStore>,
     execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -64,6 +65,7 @@ where
         dag: BlockDAG,
         sync_dag_store: Arc<SyncDagStore>,
         execute_timeout_ms: u64,
+        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     ) -> Self {
         Self {
             ancestor,
@@ -79,6 +81,7 @@ where
             dag,
             sync_dag_store,
             execute_timeout_ms,
+            cancel_flag,
         }
     }
 
@@ -165,6 +168,7 @@ where
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
                 self.execute_timeout_ms,
+                self.cancel_flag.clone(),
             );
 
             Ok(TaskGenerator::new(

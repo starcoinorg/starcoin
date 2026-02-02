@@ -178,6 +178,7 @@ pub(crate) async fn full_sync_new_node() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -214,6 +215,7 @@ pub(crate) async fn full_sync_new_node() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;

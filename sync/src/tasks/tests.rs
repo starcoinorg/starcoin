@@ -88,6 +88,7 @@ pub async fn test_failed_block() -> Result<()> {
         Arc::new(fetcher),
         sync_dag_store,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     );
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
@@ -139,6 +140,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -178,6 +180,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -233,6 +236,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -290,6 +294,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -333,6 +338,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -391,6 +397,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -921,6 +928,7 @@ async fn test_net_rpc_err() -> Result<()> {
         node2.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -1061,6 +1069,7 @@ fn sync_block_in_async_connection(
         local_node.sync_dag_store.clone(),
         false,
         EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let branch = futures::executor::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());

@@ -68,6 +68,10 @@ impl SyncStatus {
         self.state = SyncState::Synchronized;
     }
 
+    pub fn sync_cancel(&mut self) {
+        self.state = SyncState::Prepare;
+    }
+
     pub fn update_chain_status(&mut self, chain_status: ChainStatus) -> bool {
         if self.chain_status != chain_status {
             self.chain_status = chain_status;
