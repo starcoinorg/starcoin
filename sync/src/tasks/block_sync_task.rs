@@ -231,7 +231,10 @@ where
     }
 
     fn apply(&mut self, block: Block) -> anyhow::Result<ExecutedBlock> {
-        self.chain.apply(block)
+        let mut branch = self.chain.fork(block.parent_hash())?;
+        let executed_block = branch.apply(block)?;
+        self.chain = branch;
+        Ok(executed_block)
     }
 
     fn notify(&mut self, executed_block: ExecutedBlock) -> anyhow::Result<CollectorState> {
@@ -352,14 +355,11 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if self.chain.status().head().id() != block.parent_hash() {
-            self.chain = self.chain.fork(block.parent_hash())?;
-        }
+        let mut branch = self.chain.fork(block.parent_hash())?;
         let apply_result = if self.skip_pow_verify {
-            self.chain
-                .apply_with_verifier::<BasicVerifier>(block.clone())
+            branch.apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            self.chain.apply_for_sync(block.clone())
+            branch.apply_for_sync(block.clone())
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -390,6 +390,8 @@ where
                 Err(e) => Err(e),
             }
         } else {
+            let _ = apply_result.expect("checked Ok above");
+            self.chain = branch;
             Ok(())
         }
     }

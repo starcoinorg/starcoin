@@ -202,6 +202,14 @@ impl OpenedBlock {
         self.state.1.clone()
     }
 
+    pub fn state_db(&self) -> Arc<ChainStateDB> {
+        self.state.0.clone()
+    }
+
+    pub fn state_db2(&self) -> Arc<ChainStateDB2> {
+        self.state.1.clone()
+    }
+
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
     }

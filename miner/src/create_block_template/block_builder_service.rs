@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::{cmp::min, sync::Arc};
 
 use anyhow::{format_err, Result};
@@ -22,10 +22,12 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
+use starcoin_state_api::ChainStateReader;
+use starcoin_statedb::ChainStateDB;
 use starcoin_storage::BlockStore;
 use starcoin_storage::{Storage, Store};
 use starcoin_storage::{Storage2, Store2};
-use starcoin_txpool::TxPoolService;
+use starcoin_txpool::{NonceCache, PoolClient, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -36,6 +38,8 @@ use starcoin_types::{
 };
 use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_vm2_account_service::AccountService;
+use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use std::sync::RwLock;
 
@@ -257,6 +261,15 @@ pub trait TemplateTxProvider {
         max: u64,
         header: &BlockHeader,
     ) -> Vec<MultiSignedUserTransaction>;
+    fn get_pending_with_state_dbs(
+        &self,
+        max: u64,
+        current_timestamp_secs: u64,
+        state_root1: HashValue,
+        state_root2: HashValue,
+        statedb: Arc<ChainStateDB>,
+        statedb2: Arc<ChainStateDB2>,
+    ) -> Vec<MultiSignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
@@ -267,6 +280,18 @@ impl TemplateTxProvider for EmptyProvider {
         &self,
         _max: u64,
         _header: &BlockHeader,
+    ) -> Vec<MultiSignedUserTransaction> {
+        vec![]
+    }
+
+    fn get_pending_with_state_dbs(
+        &self,
+        _max: u64,
+        _current_timestamp_secs: u64,
+        _state_root1: HashValue,
+        _state_root2: HashValue,
+        _statedb: Arc<ChainStateDB>,
+        _statedb2: Arc<ChainStateDB2>,
     ) -> Vec<MultiSignedUserTransaction> {
         vec![]
     }
@@ -297,6 +322,30 @@ impl TemplateTxProvider for TxPoolService {
                 );
                 vec![]
             })
+    }
+
+    fn get_pending_with_state_dbs(
+        &self,
+        max: u64,
+        current_timestamp_secs: u64,
+        state_root1: HashValue,
+        state_root2: HashValue,
+        statedb: Arc<ChainStateDB>,
+        statedb2: Arc<ChainStateDB2>,
+    ) -> Vec<MultiSignedUserTransaction> {
+        let pool_client = PoolClient::new_with_state_dbs(
+            state_root1,
+            state_root2,
+            statedb,
+            statedb2,
+            NonceCache::new(0),
+            None,
+        );
+        self.inner
+            .get_pending_with_pool_client(max, current_timestamp_secs, pool_client)
+            .into_iter()
+            .map(|t| t.signed().clone())
+            .collect()
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
@@ -522,11 +571,11 @@ where
             now_millis,
         );
 
-        let (txns, txns2) = self.fetch_transactions(&previous_header, &blue_blocks, max_txns)?;
+        let (blue_txns, blue_txns2, seen_hashes) = collect_blue_transactions(&blue_blocks);
         info!(
-            "[BlockProcess] VM1 txns len: {}, VM2 txns len: {}",
-            txns.len(),
-            txns2.len()
+            "[BlockProcess] Blue VM1 txns len: {}, Blue VM2 txns len: {}",
+            blue_txns.len(),
+            blue_txns2.len()
         );
 
         let storage = self.storage.clone();
@@ -549,7 +598,7 @@ where
                 block_gas_limit,
                 author,
                 now_millis,
-                uncles,
+                uncles.clone(),
                 difficulty,
                 strategy,
                 vm_metrics.clone(),
@@ -570,9 +619,13 @@ where
                 return;
             }
 
-            // Process VM1 transactions
+            let mut seen_hashes = seen_hashes;
+            let mut included_blue = 0usize;
+
+            // Process blue VM1 transactions (includes VM1 block metadata)
             if !vm1_offline {
-                let excluded_txns = match opened_block.process_vm1_transactions(txns) {
+                let blue_vm1_len = blue_txns.len();
+                let excluded_txns = match opened_block.process_vm1_transactions(blue_txns) {
                     Ok(excluded_txns) => excluded_txns,
                     Err(e) => {
                         error!("[BlockProcess] process vm1 transactions error: {}", e);
@@ -582,8 +635,13 @@ where
                 for invalid_txn in &excluded_txns.discarded_txns {
                     tx_provider.remove_invalid_txn(invalid_txn.id());
                 }
+                let included_vm1 = blue_vm1_len
+                    .saturating_sub(excluded_txns.discarded_txns.len())
+                    .saturating_sub(excluded_txns.untouched_txns.len());
+                included_blue += included_vm1;
                 info!(
-                    "[BlockProcess] VM1 discarded: {}, VM1 untouched: {}",
+                    "[BlockProcess] Blue VM1 included: {}, discarded: {}, untouched: {}",
+                    included_vm1,
                     excluded_txns.discarded_txns.len(),
                     excluded_txns.untouched_txns.len(),
                 );
@@ -593,23 +651,137 @@ where
                 return;
             }
 
-            // Process VM2 transactions
-            let excluded_txns2 = match opened_block.push_txns2(txns2) {
-                Ok(excluded_txns) => excluded_txns,
-                Err(e) => {
-                    error!("[BlockProcess] push txns2 error: {}", e);
-                    return;
+            // Process blue VM2 transactions
+            let blue_vm2_len = blue_txns2.len();
+            if blue_vm2_len > 0 {
+                let excluded_txns2 = match opened_block.push_txns2(blue_txns2) {
+                    Ok(excluded_txns) => excluded_txns,
+                    Err(e) => {
+                        error!("[BlockProcess] push txns2 error: {}", e);
+                        return;
+                    }
+                };
+                for invalid_txn in &excluded_txns2.discarded_txns {
+                    tx_provider.remove_invalid_txn(invalid_txn.id());
                 }
-            };
-            for invalid_txn in &excluded_txns2.discarded_txns {
-                tx_provider.remove_invalid_txn(invalid_txn.id());
+                let included_vm2 = blue_vm2_len
+                    .saturating_sub(excluded_txns2.discarded_txns.len())
+                    .saturating_sub(excluded_txns2.untouched_txns.len());
+                included_blue += included_vm2;
+                info!(
+                    "[BlockProcess] Blue VM2 included: {}, discarded: {}, untouched: {}",
+                    included_vm2,
+                    excluded_txns2.discarded_txns.len(),
+                    excluded_txns2.untouched_txns.len()
+                );
             }
 
-            info!(
-                "[BlockProcess] VM2 discarded: {}, VM2 untouched: {}",
-                excluded_txns2.discarded_txns.len(),
-                excluded_txns2.untouched_txns.len()
+            if is_node_shutting_down() {
+                return;
+            }
+
+            let remaining_max = max_txns.saturating_sub(included_blue as u64);
+            let mut pending_transactions = Vec::new();
+            let mut pending_transactions2 = Vec::new();
+            if remaining_max > 0 && opened_block.gas_left() > 0 {
+                let statedb = opened_block.state_db();
+                let statedb2 = opened_block.state_db2();
+                let state_root1 = statedb.state_root();
+                let state_root2 = statedb2.state_root();
+                let current_timestamp_secs = now_millis / 1000;
+                let pending_multi_transactions = tx_provider.get_pending_with_state_dbs(
+                    remaining_max,
+                    current_timestamp_secs,
+                    state_root1,
+                    state_root2,
+                    statedb,
+                    statedb2,
+                );
+                for txn in pending_multi_transactions {
+                    match txn {
+                        MultiSignedUserTransaction::VM1(txn) => {
+                            if vm1_offline {
+                                continue;
+                            }
+                            if seen_hashes.insert(txn.id()) {
+                                pending_transactions.push(txn);
+                            }
+                        }
+                        MultiSignedUserTransaction::VM2(txn) => {
+                            let hash = HashValue::new(txn.id().to_inner());
+                            if seen_hashes.insert(hash) {
+                                pending_transactions2.push(txn);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Post-process ordering for txpool only.
+            let pending_transactions = round_robin_by_sender(
+                pending_transactions,
+                |txn: &SignedUserTransaction| txn.sender(),
+                |txn: &SignedUserTransaction| txn.sequence_number(),
             );
+            let pending_transactions2 = round_robin_by_sender(
+                pending_transactions2,
+                |txn: &SignedUserTransaction2| txn.sender(),
+                |txn: &SignedUserTransaction2| txn.sequence_number(),
+            );
+            info!(
+                "[BlockProcess] TxPool VM1 txns len: {}, TxPool VM2 txns len: {}",
+                pending_transactions.len(),
+                pending_transactions2.len()
+            );
+            let pending_vm1_len = pending_transactions.len();
+            let pending_vm2_len = pending_transactions2.len();
+
+            // Process txpool VM1 transactions
+            if !vm1_offline && !pending_transactions.is_empty() {
+                let excluded_txns = match opened_block.push_txns(pending_transactions) {
+                    Ok(excluded_txns) => excluded_txns,
+                    Err(e) => {
+                        error!("[BlockProcess] push vm1 txns error: {}", e);
+                        return;
+                    }
+                };
+                for invalid_txn in &excluded_txns.discarded_txns {
+                    tx_provider.remove_invalid_txn(invalid_txn.id());
+                }
+                let included_vm1 = pending_vm1_len
+                    .saturating_sub(excluded_txns.discarded_txns.len())
+                    .saturating_sub(excluded_txns.untouched_txns.len());
+                info!(
+                    "[BlockProcess] TxPool VM1 included: {}, discarded: {}, untouched: {}",
+                    included_vm1,
+                    excluded_txns.discarded_txns.len(),
+                    excluded_txns.untouched_txns.len(),
+                );
+            }
+
+            // Process txpool VM2 transactions
+            if !pending_transactions2.is_empty() {
+                let excluded_txns2 = match opened_block.push_txns2(pending_transactions2) {
+                    Ok(excluded_txns) => excluded_txns,
+                    Err(e) => {
+                        error!("[BlockProcess] push txns2 error: {}", e);
+                        return;
+                    }
+                };
+                for invalid_txn in &excluded_txns2.discarded_txns {
+                    tx_provider.remove_invalid_txn(invalid_txn.id());
+                }
+
+                let included_vm2 = pending_vm2_len
+                    .saturating_sub(excluded_txns2.discarded_txns.len())
+                    .saturating_sub(excluded_txns2.untouched_txns.len());
+                info!(
+                    "[BlockProcess] TxPool VM2 included: {}, discarded: {}, untouched: {}",
+                    included_vm2,
+                    excluded_txns2.discarded_txns.len(),
+                    excluded_txns2.untouched_txns.len()
+                );
+            }
 
             if is_node_shutting_down() {
                 return;
@@ -664,51 +836,6 @@ where
             }
         });
         Ok(())
-    }
-
-    fn fetch_transactions(
-        &self,
-        header: &BlockHeader,
-        blue_blocks: &[Block],
-        max_txns: u64,
-    ) -> Result<(Vec<SignedUserTransaction>, Vec<SignedUserTransaction2>)> {
-        let pending_multi_transactions = self.tx_provider.get_txns_with_header(max_txns, header);
-
-        // Separate VM1 and VM2 transactions
-        let mut pending_transactions = vec![];
-        let mut pending_transactions2 = vec![];
-        pending_multi_transactions
-            .into_iter()
-            .for_each(|txn| match txn {
-                MultiSignedUserTransaction::VM1(txn) => pending_transactions.push(txn),
-                MultiSignedUserTransaction::VM2(txn) => pending_transactions2.push(txn),
-            });
-
-        if pending_transactions.len() + pending_transactions2.len() >= max_txns as usize {
-            return Ok((pending_transactions, pending_transactions2));
-        }
-
-        blue_blocks.iter().for_each(|block| {
-            block.transactions().iter().for_each(|transaction| {
-                pending_transactions.push(transaction.clone());
-            });
-
-            block.transactions2().iter().for_each(|transaction| {
-                pending_transactions2.push(transaction.clone());
-            })
-        });
-
-        pending_transactions.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
-            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-            other => other,
-        });
-
-        pending_transactions2.sort_by(|a, b| match a.sender().cmp(&b.sender()) {
-            std::cmp::Ordering::Equal => a.sequence_number().cmp(&b.sequence_number()),
-            other => other,
-        });
-
-        Ok((pending_transactions, pending_transactions2))
     }
 
     pub fn set_current_block_header(&mut self, header: BlockHeader) -> Result<()> {
@@ -864,4 +991,71 @@ where
         }
         Ok(())
     }
+}
+
+fn collect_blue_transactions(
+    blue_blocks: &[Block],
+) -> (
+    Vec<SignedUserTransaction>,
+    Vec<SignedUserTransaction2>,
+    HashSet<HashValue>,
+) {
+    let mut pending_transactions = Vec::new();
+    let mut pending_transactions2 = Vec::new();
+    let mut seen_hashes = HashSet::new();
+
+    for block in blue_blocks {
+        for transaction in block.transactions() {
+            if seen_hashes.insert(transaction.id()) {
+                pending_transactions.push(transaction.clone());
+            }
+        }
+        for transaction in block.transactions2() {
+            let hash = HashValue::new(transaction.id().to_inner());
+            if seen_hashes.insert(hash) {
+                pending_transactions2.push(transaction.clone());
+            }
+        }
+    }
+
+    (pending_transactions, pending_transactions2, seen_hashes)
+}
+
+fn round_robin_by_sender<T, K, FSender, FSeq>(txns: Vec<T>, sender: FSender, seq: FSeq) -> Vec<T>
+where
+    K: Ord,
+    FSender: Fn(&T) -> K,
+    FSeq: Fn(&T) -> u64,
+{
+    if txns.len() <= 1 {
+        return txns;
+    }
+
+    let total = txns.len();
+    let mut buckets: BTreeMap<K, Vec<T>> = BTreeMap::new();
+    for txn in txns {
+        buckets.entry(sender(&txn)).or_default().push(txn);
+    }
+
+    let mut queues: BTreeMap<K, VecDeque<T>> = BTreeMap::new();
+    for (key, mut bucket) in buckets {
+        bucket.sort_by_key(|txn| seq(txn));
+        queues.insert(key, VecDeque::from(bucket));
+    }
+
+    let mut ordered = Vec::with_capacity(total);
+    loop {
+        let mut pushed = false;
+        for queue in queues.values_mut() {
+            if let Some(txn) = queue.pop_front() {
+                ordered.push(txn);
+                pushed = true;
+            }
+        }
+        if !pushed {
+            break;
+        }
+    }
+
+    ordered
 }

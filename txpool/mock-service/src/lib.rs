@@ -5,11 +5,13 @@ use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
 use starcoin_miner::create_block_template::block_builder_service::TemplateTxProvider;
+use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
 };
 use starcoin_types::{account_address::AccountAddress, block::Block};
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::{
     iter::Iterator,
@@ -39,6 +41,24 @@ impl TemplateTxProvider for MockTxPoolService {
         max: u64,
         _header: &starcoin_types::block::BlockHeader,
     ) -> Vec<starcoin_types::multi_transaction::MultiSignedUserTransaction> {
+        self.pool
+            .lock()
+            .unwrap()
+            .iter()
+            .take(max as usize)
+            .cloned()
+            .collect::<Vec<_>>()
+    }
+
+    fn get_pending_with_state_dbs(
+        &self,
+        max: u64,
+        _current_timestamp_secs: u64,
+        _state_root1: HashValue,
+        _state_root2: HashValue,
+        _statedb: Arc<ChainStateDB>,
+        _statedb2: Arc<ChainStateDB2>,
+    ) -> Vec<MultiSignedUserTransaction> {
         self.pool
             .lock()
             .unwrap()

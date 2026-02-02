@@ -57,7 +57,6 @@ use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
-use std::collections::BTreeMap;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -2150,6 +2149,15 @@ impl ChainWriter for BlockChain {
     }
 
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock> {
+        if !block.header().is_genesis() {
+            let head_id = self.current_header().id();
+            ensure!(
+                head_id == block.parent_hash(),
+                "apply expects parent == current head, head: {}, parent: {}",
+                head_id,
+                block.parent_hash()
+            );
+        }
         self.apply_with_verifier::<FullVerifier>(block)
     }
 
@@ -2190,7 +2198,7 @@ fn execute_block_transactions(
             state_root: statedb.state_root(),
             txn_infos: vec![],
             txn_events: vec![],
-            txn_table_infos: BTreeMap::new(),
+            txn_table_infos: Default::default(),
             write_sets: vec![],
         }
     };
@@ -2204,7 +2212,7 @@ fn execute_block_transactions(
     let executed_data2 = starcoin_vm2_chain::execute_transactions(
         statedb2,
         transactions2.to_vec(),
-        epoch.block_gas_limit() - vm1_gas_used,
+        epoch.block_gas_limit().saturating_sub(vm1_gas_used),
         vm_metrics,
     )?;
 
@@ -2274,7 +2282,6 @@ impl BlockChain {
         // If cache hit, we can skip execution and apply_write_set entirely
         let state_cache = global_block_state_cache();
         let cached_state = state_cache.remove(header.txn_accumulator_root());
-
         // Execute or use cached data
         let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
             if let Some(cached) = cached_state {

@@ -79,7 +79,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 } else {
                     None
                 };
-
                 let t = TransactionInfo::new(
                     txn_hash,
                     txn_state_root,
