@@ -1,45 +1,14 @@
 use crate::diff_manager::DifficultyManager;
-use crate::stratum::Stratum;
 use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
-use futures::FutureExt;
-use futures::TryFutureExt;
-use jsonrpc_core::serde::{Deserialize, Serialize};
-use jsonrpc_core::{BoxFuture, ErrorCode, Params, Result};
-use jsonrpc_derive::rpc;
-use jsonrpc_pubsub::typed::Subscriber;
-use jsonrpc_pubsub::{typed, PubSubMetadata, Session, SubscriptionId};
+use futures::channel::mpsc;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::DefaultHasher;
-use starcoin_logger::prelude::*;
 use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
-use starcoin_service_registry::{ServiceRef, ServiceRequest};
+use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
-use std::sync::Arc;
-use std::sync::RwLock;
-
-#[derive(Clone, Default, Debug)]
-pub struct Metadata {
-    pub session: Option<Arc<Session>>,
-    pub user: Option<String>,
-}
-
-impl Metadata {
-    pub fn new(session: Arc<Session>) -> Self {
-        Self {
-            session: Some(session),
-            user: None,
-        }
-    }
-}
-
-impl jsonrpc_core::Metadata for Metadata {}
-
-impl PubSubMetadata for Metadata {
-    fn session(&self) -> Option<Arc<Session>> {
-        self.session.clone()
-    }
-}
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShareRequest {
@@ -83,48 +52,11 @@ pub struct Status {
     pub status: String,
 }
 
-#[allow(clippy::needless_return)]
-#[rpc]
-pub trait StratumRpc {
-    type Metadata;
-    #[rpc(name = "keepalived", raw_params)]
-    fn keepalived(&self, id: Params) -> Result<KeepalivedResult>;
-
-    #[rpc(name = "submit", raw_params)]
-    fn submit(&self, share: Params) -> BoxFuture<Result<SubmitResult>>;
-
-    #[pubsub(subscription = "job", subscribe, name = "login", raw_params)]
-    fn subscribe(
-        &self,
-        meta: Self::Metadata,
-        subscriber: typed::Subscriber<StratumJobResponse>,
-        login: Params,
-    );
-
-    #[pubsub(subscription = "job", unsubscribe, name = "logout")]
-    fn unsubscribe(
-        &self,
-        meta: Option<Self::Metadata>,
-        id: SubscriptionId,
-    ) -> jsonrpc_core::Result<bool>;
-}
-
-#[derive(Debug)]
-pub(crate) struct SubscribeJobEvent(
-    pub(crate) Subscriber<StratumJobResponse>,
-    pub(crate) LoginRequest,
-);
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub(crate) struct Unsubscribe(pub(crate) SubscriptionId);
-
-impl ServiceRequest for Unsubscribe {
-    type Response = ();
-}
+#[derive(Debug, Clone)]
+pub struct SubscribeJobEvent(pub LoginRequest);
 
 impl ServiceRequest for SubscribeJobEvent {
-    type Response = ();
+    type Response = anyhow::Result<mpsc::UnboundedReceiver<StratumJobResponse>>;
 }
 
 #[derive(Debug, Clone)]
@@ -132,16 +64,6 @@ pub struct SubmitShareEvent(pub ShareRequest);
 
 impl ServiceRequest for SubmitShareEvent {
     type Response = anyhow::Result<()>;
-}
-
-pub struct StratumRpcImpl {
-    service: ServiceRef<Stratum>,
-}
-
-impl StratumRpcImpl {
-    pub fn new(s: ServiceRef<Stratum>) -> Self {
-        Self { service: s }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -286,63 +208,5 @@ impl StratumJobResponse {
                 blob: hex::encode(&minting_blob),
             },
         }
-    }
-}
-
-impl StratumRpc for StratumRpcImpl {
-    type Metadata = Metadata;
-
-    fn keepalived(&self, _id: Params) -> Result<KeepalivedResult> {
-        //TODO: update active time for id
-        Ok(KeepalivedResult {
-            result: Status {
-                status: "KEEPALIVED".to_string(),
-            },
-        })
-    }
-
-    fn submit(&self, share_req: Params) -> BoxFuture<Result<SubmitResult>> {
-        let service = self.service.clone();
-        let fut = async move {
-            let share_params = share_req.parse::<ShareRequest>()?;
-            service.send(SubmitShareEvent(share_params)).await??;
-            Ok(SubmitResult {
-                result: Status {
-                    status: "OK".to_string(),
-                },
-            })
-        }
-        .map_err(|e: anyhow::Error| jsonrpc_core::Error {
-            code: ErrorCode::InvalidParams,
-            message: e.to_string(),
-            data: None,
-        });
-        Box::pin(fut.boxed())
-    }
-
-    fn subscribe(
-        &self,
-        _meta: Self::Metadata,
-        subscriber: Subscriber<StratumJobResponse>,
-        login: Params,
-    ) {
-        match login.parse::<LoginRequest>() {
-            Ok(req) => {
-                if let Err(e) = self.service.try_send(SubscribeJobEvent(subscriber, req)) {
-                    error!(target: "stratum", "subscribe failed:{}", e)
-                }
-            }
-            Err(e) => {
-                let _ = subscriber.reject(e);
-            }
-        }
-    }
-    fn unsubscribe(
-        &self,
-        _meta: Option<Self::Metadata>,
-        _id: SubscriptionId,
-    ) -> jsonrpc_core::Result<bool> {
-        // Not need to implement it
-        Ok(false)
     }
 }

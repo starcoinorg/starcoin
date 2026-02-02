@@ -1,10 +1,10 @@
 use starcoin_types::U256;
 
+pub mod codec;
 pub mod diff_manager;
 pub mod rpc;
 pub mod service;
 pub mod stratum;
-pub use crate::rpc::gen_client::Client as StratumRpcClient;
 pub use anyhow::Result;
 
 pub fn difficulty_to_target_hex(difficulty: U256) -> String {
