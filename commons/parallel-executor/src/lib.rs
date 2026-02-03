@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod delayed_field;
 pub mod errors;
 pub mod executor;
 mod gas_tracker;

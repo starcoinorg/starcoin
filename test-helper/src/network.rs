@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use futures_timer::Delay;
 use network_api::messages::PeerMessage;
 use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
@@ -115,10 +114,30 @@ impl TestNetworkService {
     }
 }
 
+async fn wait_connected(a: &TestNetworkService, b: &TestNetworkService) -> Result<()> {
+    let a_peer = a.peer_id();
+    let b_peer = b.peer_id();
+    let wait = async {
+        loop {
+            if a.service_ref.is_connected(b_peer.clone()).await
+                && b.service_ref.is_connected(a_peer.clone()).await
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    };
+    tokio::time::timeout(Duration::from_secs(5), wait)
+        .await
+        .map_err(|_| format_err!("wait peer connect timeout"))?;
+    Ok(())
+}
+
 pub async fn build_network_pair() -> Result<(TestNetworkService, TestNetworkService)> {
     let mut nodes = build_network_cluster(2).await?;
     let second = nodes.pop().unwrap();
     let first = nodes.pop().unwrap();
+    wait_connected(&first, &second).await?;
     Ok((first, second))
 }
 
@@ -128,6 +147,7 @@ pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> 
     let mut nodes = vec![seed_service];
     for _i in 1..n {
         let service = build_network(Some(seed.clone()), None).await?;
+        wait_connected(&nodes[0], &service).await?;
         nodes.push(service);
     }
     Ok(nodes)
@@ -150,7 +170,7 @@ pub async fn build_network_with_config(
     registry
         .register_by_factory::<NetworkActorService, MockNetworkServiceFactory>()
         .await?;
-    Delay::new(Duration::from_millis(200)).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
     let service_ref = registry.get_shared::<NetworkServiceRef>().await?;
     let message_handler = registry.get_shared::<MockPeerMessageHandler>().await?;
     Ok(TestNetworkService {

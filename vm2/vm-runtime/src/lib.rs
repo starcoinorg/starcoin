@@ -8,15 +8,11 @@ pub mod starcoin_vm;
 #[macro_use]
 pub mod counters;
 
-use move_core_types::{
-    account_address::AccountAddress,
-    vm_status::{StatusCode, VMStatus},
-};
+use move_core_types::vm_status::{StatusCode, VMStatus};
 pub use move_vm_runtime::{move_vm, session};
 use starcoin_gas_schedule::{
     InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
 };
-use std::collections::BTreeSet;
 
 mod access_path_cache;
 mod errors;
@@ -25,12 +21,10 @@ pub mod parallel_executor;
 mod verifier;
 
 use starcoin_metrics::metrics::VMMetrics;
+use starcoin_vm_runtime_types::output::VMOutput;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::on_chain_config::GasSchedule;
-use starcoin_vm_types::transaction::{
-    SignedUserTransaction, TransactionAuxiliaryData, TransactionStatus,
-};
-use starcoin_vm_types::write_set::WriteSet;
+use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
 use starcoin_vm_types::{
     state_store::StateView,
     transaction::{Transaction, TransactionOutput},
@@ -56,7 +50,7 @@ pub trait VMExecutor: Send + Sync {
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
-    BlockEpilogue(BlockMetadata, BTreeSet<AccountAddress>),
+    BlockEpilogue(BlockMetadata, u64),
 }
 
 #[inline]
@@ -66,13 +60,13 @@ pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
-        Transaction::BlockEpilogue(b, senders) => {
-            PreprocessedTransaction::BlockEpilogue(b, senders)
+        Transaction::BlockEpilogue(b, total_fee) => {
+            PreprocessedTransaction::BlockEpilogue(b, total_fee)
         }
     }
 }
 
-pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOutput) {
+pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, VMOutput) {
     let vm_status = err.clone();
     let error_code = match err.keep_or_discard() {
         Ok(_) => {
@@ -84,15 +78,9 @@ pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOu
     (vm_status, discard_error_output(error_code))
 }
 
-pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
+pub(crate) fn discard_error_output(err: StatusCode) -> VMOutput {
     // Since this transaction will be discarded, no writeset will be included.
-    TransactionOutput::new(
-        WriteSet::default(),
-        vec![],
-        0,
-        TransactionStatus::Discard(err),
-        TransactionAuxiliaryData::None,
-    )
+    VMOutput::empty_with_status(TransactionStatus::Discard(err))
 }
 
 pub(crate) fn default_gas_schedule() -> GasSchedule {

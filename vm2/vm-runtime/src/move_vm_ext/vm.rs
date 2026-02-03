@@ -153,7 +153,7 @@ impl MoveVmExt {
             native_gas_params,
             misc_gas_parameters,
             TimedFeaturesBuilder::enable_all().build(),
-            Default::default(),
+            self.features.as_ref().clone(),
         );
         self.inner.update_native_functions(native_functions)
     }

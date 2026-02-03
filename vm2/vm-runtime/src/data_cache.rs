@@ -12,7 +12,24 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
+use move_vm_types::delayed_values::delayed_field_id::{
+    DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
+};
+use move_vm_types::value_serde::{
+    deserialize_and_allow_delayed_values, deserialize_and_replace_values_with_ids,
+    serialize_and_allow_delayed_values, ValueToIdentifierMapping,
+};
+use move_vm_types::value_traversal::find_identifiers_in_value;
+use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
+use starcoin_aggregator::resolver::TDelayedFieldView;
+use starcoin_aggregator::types::{
+    code_invariant_error, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr, ReadPosition,
+};
 use starcoin_logger::prelude::*;
+use starcoin_mvhashmap::types::MVDelayedFieldsError;
+use starcoin_mvhashmap::versioned_delayed_fields::{
+    TVersionedDelayedFieldView, VersionedDelayedFields,
+};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
 use starcoin_vm_runtime_types::resolver::{
@@ -21,17 +38,85 @@ use starcoin_vm_runtime_types::resolver::{
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
-    errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
-    state_value::StateValue, StateView, TStateView,
+    errors::StateviewError,
+    state_key::StateKey,
+    state_storage_usage::StateStorageUsage,
+    state_value::{StateValue, StateValueMetadata},
+    StateView, TStateView,
 };
 use starcoin_vm_types::{
     errors::*,
     language_storage::{ModuleId, StructTag},
-    vm_status::StatusCode,
-    write_set::{WriteOp, WriteSet},
+    transaction::TransactionOutput,
+    vm_status::{StatusCode, VMStatus},
+    write_set::{TransactionWrite, WriteOp, WriteSet},
 };
 use std::collections::HashMap;
-use std::{cell::RefCell, collections::btree_map::BTreeMap, collections::HashSet, ops::Deref};
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc,
+};
+use std::{
+    cell::RefCell,
+    collections::btree_map::BTreeMap,
+    collections::HashSet,
+    ops::{Deref, DerefMut},
+};
+
+use crate::parallel_executor::{
+    materialize_events, materialize_resource_write_set, storage_wrapper::DelayedFieldCache,
+};
+use starcoin_types::delayed_fields::PanicError;
+use starcoin_vm_runtime_types::output::VMOutput;
+use std::sync::atomic::AtomicU64;
+use std::sync::LazyLock;
+use std::time::Instant;
+
+#[derive(Debug, Default, Clone)]
+pub(crate) struct ResourceGroupStatsSnapshot {
+    pub group_accesses: u64,
+    pub group_cache_hits: u64,
+    pub group_member_calls: u64,
+    pub group_member_ns: u64,
+    pub group_size_calls: u64,
+    pub group_size_ns: u64,
+}
+
+#[derive(Debug, Default)]
+struct ResourceGroupStats {
+    group_accesses: AtomicU64,
+    group_cache_hits: AtomicU64,
+    group_member_calls: AtomicU64,
+    group_member_ns: AtomicU64,
+    group_size_calls: AtomicU64,
+    group_size_ns: AtomicU64,
+}
+
+static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
+    LazyLock::new(ResourceGroupStats::default);
+
+pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
+    ResourceGroupStatsSnapshot {
+        group_accesses: RESOURCE_GROUP_STATS
+            .group_accesses
+            .swap(0, Ordering::Relaxed),
+        group_cache_hits: RESOURCE_GROUP_STATS
+            .group_cache_hits
+            .swap(0, Ordering::Relaxed),
+        group_member_calls: RESOURCE_GROUP_STATS
+            .group_member_calls
+            .swap(0, Ordering::Relaxed),
+        group_member_ns: RESOURCE_GROUP_STATS
+            .group_member_ns
+            .swap(0, Ordering::Relaxed),
+        group_size_calls: RESOURCE_GROUP_STATS
+            .group_size_calls
+            .swap(0, Ordering::Relaxed),
+        group_size_ns: RESOURCE_GROUP_STATS
+            .group_size_ns
+            .swap(0, Ordering::Relaxed),
+    }
+}
 
 pub fn get_resource_group_member_from_metadata(
     struct_tag: &StructTag,
@@ -45,6 +130,22 @@ pub fn get_resource_group_member_from_metadata(
         .find_map(|attr| attr.get_resource_group_member())
 }
 
+#[derive(Clone)]
+struct ResourceReadInfo {
+    metadata: StateValueMetadata,
+    size: u64,
+    layout: Arc<MoveTypeLayout>,
+    delayed_ids: HashSet<DelayedFieldID>,
+}
+
+#[derive(Clone)]
+struct GroupReadInfo {
+    metadata: StateValueMetadata,
+    size: u64,
+    delayed_ids: HashSet<DelayedFieldID>,
+    layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
+}
+
 /// Adapter to convert a `ExecutorView` into a `AptosMoveResolver`.
 ///
 /// Resources in groups are handled either through dedicated interfaces of executor_view
@@ -54,7 +155,14 @@ pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
     deserializer_config: DeserializerConfig,
     resource_group_view: ResourceGroupAdapter<'e>,
+    delayed_fields_enabled: bool,
     accessed_groups: RefCell<HashSet<StateKey>>,
+    delayed_field_cache: DelayedFieldCache,
+    delayed_fields: VersionedDelayedFields<DelayedFieldID>,
+    resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
+    group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
+    delayed_field_id_start: u32,
+    delayed_field_id_counter: AtomicU32,
 }
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
@@ -140,12 +248,21 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_store: &'a S,
         deserializer_config: DeserializerConfig,
         resource_group_view: ResourceGroupAdapter<'a>,
+        delayed_fields_enabled: bool,
     ) -> Self {
+        let delayed_field_id_start = 0;
         Self {
             executor_view: state_store,
             deserializer_config,
             resource_group_view,
+            delayed_fields_enabled,
             accessed_groups: RefCell::new(HashSet::new()),
+            delayed_field_cache: DelayedFieldCache::default(),
+            delayed_fields: VersionedDelayedFields::empty(),
+            resource_reads: RefCell::new(HashMap::new()),
+            group_reads: RefCell::new(HashMap::new()),
+            delayed_field_id_start,
+            delayed_field_id_counter: AtomicU32::new(delayed_field_id_start),
         }
     }
 
@@ -153,6 +270,404 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         self.executor_view
             .get_state_value(key)
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn delayed_field_cache(&self) -> &DelayedFieldCache {
+        &self.delayed_field_cache
+    }
+
+    pub fn delayed_fields(&self) -> &VersionedDelayedFields<DelayedFieldID> {
+        &self.delayed_fields
+    }
+
+    pub fn take_group_read_layouts(
+        &self,
+    ) -> HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>> {
+        self.group_reads
+            .borrow_mut()
+            .drain()
+            .map(|(k, v)| (k, v.layouts))
+            .collect()
+    }
+
+    fn generate_delayed_field_id(&self, width: u32) -> DelayedFieldID {
+        let index = self.delayed_field_id_counter.fetch_add(1, Ordering::SeqCst);
+        DelayedFieldID::new_with_width(index, width)
+    }
+
+    #[allow(dead_code)]
+    fn delayed_ids_from_bytes(
+        &self,
+        bytes: &Bytes,
+        layout: &MoveTypeLayout,
+    ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
+        let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
+            StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
+        })?;
+        let mut ids: HashSet<u64> = HashSet::new();
+        find_identifiers_in_value(&value, &mut ids).map_err(|e| {
+            StateviewError::Other(format!("Failed to scan delayed field identifiers: {:?}", e))
+        })?;
+        Ok(ids.into_iter().map(DelayedFieldID::from).collect())
+    }
+
+    fn record_resource_read(
+        &self,
+        key: &StateKey,
+        state_value: &StateValue,
+        layout: &MoveTypeLayout,
+        delayed_ids: HashSet<DelayedFieldID>,
+    ) {
+        if delayed_ids.is_empty() {
+            return;
+        }
+        let info = ResourceReadInfo {
+            metadata: state_value.clone().into_metadata(),
+            size: state_value.size() as u64,
+            layout: Arc::new(layout.clone()),
+            delayed_ids,
+        };
+        self.resource_reads
+            .borrow_mut()
+            .entry(key.clone())
+            .and_modify(|existing| {
+                existing
+                    .delayed_ids
+                    .extend(info.delayed_ids.iter().cloned());
+            })
+            .or_insert(info);
+    }
+
+    fn record_group_read(
+        &self,
+        group_key: &StateKey,
+        metadata: StateValueMetadata,
+        size: u64,
+        tag: StructTag,
+        layout: &MoveTypeLayout,
+        delayed_ids: HashSet<DelayedFieldID>,
+    ) {
+        if delayed_ids.is_empty() {
+            return;
+        }
+        self.group_reads
+            .borrow_mut()
+            .entry(group_key.clone())
+            .and_modify(|existing| {
+                existing.delayed_ids.extend(delayed_ids.iter().cloned());
+                existing
+                    .layouts
+                    .insert(tag.clone(), Arc::new(layout.clone()));
+            })
+            .or_insert_with(|| {
+                let mut layouts = BTreeMap::new();
+                layouts.insert(tag.clone(), Arc::new(layout.clone()));
+                GroupReadInfo {
+                    metadata,
+                    size,
+                    delayed_ids,
+                    layouts,
+                }
+            });
+    }
+
+    fn exchange_state_value(
+        &self,
+        state_value: &StateValue,
+        layout: &MoveTypeLayout,
+    ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
+        struct Mapping<'a, S: StateView> {
+            adapter: &'a StorageAdapter<'a, S>,
+            delayed_ids: RefCell<HashSet<DelayedFieldID>>,
+        }
+
+        impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
+            type Identifier = DelayedFieldID;
+
+            fn value_to_identifier(
+                &self,
+                kind: &move_core_types::value::IdentifierMappingKind,
+                layout: &MoveTypeLayout,
+                value: move_vm_types::values::Value,
+            ) -> Result<Self::Identifier, PartialVMError> {
+                let (base_value, width) =
+                    DelayedFieldValue::try_from_move_value(layout, value, kind)?;
+                let id = self.adapter.generate_delayed_field_id(width);
+                self.adapter.delayed_fields.set_base_value(id, base_value);
+                self.delayed_ids.borrow_mut().insert(id);
+                Ok(id)
+            }
+
+            fn identifier_to_value(
+                &self,
+                _layout: &MoveTypeLayout,
+                _identifier: Self::Identifier,
+            ) -> Result<move_vm_types::values::Value, PartialVMError> {
+                Err(PartialVMError::new(
+                    StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                ))
+            }
+        }
+
+        let mapping = Mapping {
+            adapter: self,
+            delayed_ids: RefCell::new(HashSet::new()),
+        };
+
+        let value = deserialize_and_replace_values_with_ids(state_value.bytes(), layout, &mapping)
+            .ok_or_else(|| {
+                StateviewError::Other("Failed to replace delayed values with ids".to_string())
+            })?;
+        let serialized = serialize_and_allow_delayed_values(&value, layout)
+            .map_err(|e| StateviewError::Other(e.to_string()))?
+            .ok_or_else(|| {
+                StateviewError::Other("Failed to serialize value with delayed ids".to_string())
+            })?;
+
+        let exchanged = StateValue::new_with_metadata(
+            Bytes::from(serialized),
+            state_value.clone().into_metadata(),
+        );
+        Ok((exchanged, mapping.delayed_ids.into_inner()))
+    }
+
+    pub fn materialize_output(&self, mut output: VMOutput) -> Result<TransactionOutput, VMStatus> {
+        if !self.delayed_fields_enabled && output.contains_delayed_fields() {
+            return Err(VMStatus::error(
+                StatusCode::FEATURE_UNDER_GATING,
+                Some("delayed fields feature disabled".to_string()),
+            ));
+        }
+
+        let delayed_changes: Vec<_> = output
+            .delayed_field_change_set()
+            .iter()
+            .map(|(id, change)| (*id, change.clone()))
+            .collect();
+
+        for (id, change) in &delayed_changes {
+            let entry = change.clone().into_entry_no_additional_history();
+            self.delayed_fields
+                .record_change(*id, 0, entry)
+                .map_err(|err| {
+                    VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some(format!(
+                            "Delayed field record failed for {:?}: {:?}",
+                            id, err
+                        )),
+                    )
+                })?;
+        }
+
+        if !delayed_changes.is_empty() {
+            self.delayed_fields
+                .try_commit(0, delayed_changes.iter().map(|(id, _)| *id))
+                .map_err(|err| {
+                    VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some(format!("Delayed field commit failed: {:?}", err)),
+                    )
+                })?;
+        }
+
+        let has_delayed = output.contains_delayed_fields();
+        let has_agg_v1 = !output.aggregator_v1_delta_set().is_empty();
+        if has_delayed || has_agg_v1 {
+            output.try_materialize(self)?;
+        }
+
+        let mapping = DelayedFieldValueMapping {
+            delayed_fields: &self.delayed_fields,
+            txn_idx: 0,
+        };
+        let group_read_layouts = self.take_group_read_layouts();
+        let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
+        let patched_resource_write_set = materialize_resource_write_set(
+            &output,
+            &mapping,
+            &self.delayed_field_cache,
+            &group_read_layouts,
+            self.executor_view,
+            &mut group_cache,
+            has_delayed,
+        )?;
+        let patched_events = if has_delayed {
+            materialize_events(&output, &mapping)?
+        } else {
+            output
+                .events()
+                .iter()
+                .map(|(event, _)| event.clone())
+                .collect()
+        };
+
+        output
+            .into_transaction_output_with_materialized_write_set(
+                Vec::new(),
+                patched_resource_write_set,
+                patched_events,
+            )
+            .map_err(|err| {
+                VMStatus::error(
+                    StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                    Some(err.to_string()),
+                )
+            })
+    }
+}
+
+struct DelayedFieldValueMapping<'a> {
+    delayed_fields: &'a VersionedDelayedFields<DelayedFieldID>,
+    txn_idx: usize,
+}
+
+impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
+    type Identifier = DelayedFieldID;
+
+    fn value_to_identifier(
+        &self,
+        _kind: &move_core_types::value::IdentifierMappingKind,
+        _layout: &MoveTypeLayout,
+        _value: move_vm_types::values::Value,
+    ) -> Result<Self::Identifier, PartialVMError> {
+        Err(PartialVMError::new(
+            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+        ))
+    }
+
+    fn identifier_to_value(
+        &self,
+        layout: &MoveTypeLayout,
+        identifier: Self::Identifier,
+    ) -> Result<move_vm_types::values::Value, PartialVMError> {
+        let value = self
+            .delayed_fields
+            .read_latest_predicted_value(&identifier, self.txn_idx, ReadPosition::AfterCurrentTxn)
+            .map_err(|err| {
+                PartialVMError::new(StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR)
+                    .with_message(format!(
+                        "Failed to read delayed field {:?} at txn {}: {:?}",
+                        identifier, self.txn_idx, err
+                    ))
+            })?;
+        value.try_into_move_value(layout, identifier.extract_width())
+    }
+}
+
+impl<S: StateView> TDelayedFieldView for StorageAdapter<'_, S> {
+    type Identifier = DelayedFieldID;
+    type ResourceKey = StateKey;
+    type ResourceGroupTag = StructTag;
+
+    fn is_delayed_field_optimization_capable(&self) -> bool {
+        self.delayed_fields_enabled
+    }
+
+    fn get_delayed_field_value(
+        &self,
+        id: &Self::Identifier,
+    ) -> Result<DelayedFieldValue, PanicOr<DelayedFieldsSpeculativeError>> {
+        match self.delayed_fields.read(id, 0) {
+            Ok(value) => Ok(value),
+            Err(PanicOr::CodeInvariantError(err)) => Err(PanicOr::CodeInvariantError(err)),
+            Err(PanicOr::Or(err)) => match err {
+                MVDelayedFieldsError::NotFound => {
+                    Err(PanicOr::Or(DelayedFieldsSpeculativeError::NotFound(*id)))
+                }
+                MVDelayedFieldsError::Dependency(_)
+                | MVDelayedFieldsError::DeltaApplicationFailure => {
+                    Err(PanicOr::Or(DelayedFieldsSpeculativeError::InconsistentRead))
+                }
+            },
+        }
+    }
+
+    fn delayed_field_try_add_delta_outcome(
+        &self,
+        id: &Self::Identifier,
+        base_delta: &SignedU128,
+        delta: &SignedU128,
+        max_value: u128,
+    ) -> Result<bool, PanicOr<DelayedFieldsSpeculativeError>> {
+        if delta.abs() > max_value {
+            return Ok(false);
+        }
+
+        let base_value = self
+            .get_delayed_field_value(id)?
+            .into_aggregator_value()
+            .map_err(PanicOr::from)?;
+        let math = BoundedMath::new(max_value);
+        let before = math
+            .unsigned_add_delta(base_value, base_delta)
+            .map_err(|e| PanicOr::from(code_invariant_error(e)))?;
+        Ok(math.unsigned_add_delta(before, delta).is_ok())
+    }
+
+    fn generate_delayed_field_id(&self, width: u32) -> Self::Identifier {
+        StorageAdapter::generate_delayed_field_id(self, width)
+    }
+
+    fn validate_delayed_field_id(&self, id: &Self::Identifier) -> Result<(), PanicError> {
+        let unique_index = id.extract_unique_index();
+        let current = self.delayed_field_id_counter.load(Ordering::SeqCst);
+        if unique_index < self.delayed_field_id_start || unique_index >= current {
+            return Err(code_invariant_error(format!(
+                "Invalid delayed field id: {:?} with index: {} (started from {} and reached {})",
+                id, unique_index, self.delayed_field_id_start, current
+            )));
+        }
+        Ok(())
+    }
+
+    fn get_reads_needing_exchange(
+        &self,
+        delayed_write_set_ids: &HashSet<Self::Identifier>,
+        skip: &HashSet<Self::ResourceKey>,
+    ) -> Result<
+        BTreeMap<Self::ResourceKey, (StateValueMetadata, u64, Arc<MoveTypeLayout>)>,
+        PanicError,
+    > {
+        let mut result = BTreeMap::new();
+        for (key, info) in self.resource_reads.borrow().iter() {
+            if skip.contains(key) {
+                continue;
+            }
+            if info
+                .delayed_ids
+                .iter()
+                .any(|id| delayed_write_set_ids.contains(id))
+            {
+                result.insert(
+                    key.clone(),
+                    (info.metadata.clone(), info.size, info.layout.clone()),
+                );
+            }
+        }
+        Ok(result)
+    }
+
+    fn get_group_reads_needing_exchange(
+        &self,
+        delayed_write_set_ids: &HashSet<Self::Identifier>,
+        skip: &HashSet<Self::ResourceKey>,
+    ) -> PartialVMResult<BTreeMap<Self::ResourceKey, (StateValueMetadata, u64)>> {
+        let mut result = BTreeMap::new();
+        for (key, info) in self.group_reads.borrow().iter() {
+            if skip.contains(key) {
+                continue;
+            }
+            if info
+                .delayed_ids
+                .iter()
+                .any(|id| delayed_write_set_ids.contains(id))
+            {
+                result.insert(key.clone(), (info.metadata.clone(), info.size));
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -194,14 +709,95 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
         let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
         if let Some(resource_group) = resource_group {
+            RESOURCE_GROUP_STATS
+                .group_accesses
+                .fetch_add(1, Ordering::Relaxed);
             let key = StateKey::resource_group(address, &resource_group);
-            let buf =
-                self.resource_group_view
-                    .get_resource_from_group(&key, struct_tag, maybe_layout)?;
+            let buf = if let Some(layout) = maybe_layout {
+                if let Some(cached) = self
+                    .delayed_field_cache
+                    .get_group_member_value(&key, struct_tag)
+                {
+                    RESOURCE_GROUP_STATS
+                        .group_cache_hits
+                        .fetch_add(1, Ordering::Relaxed);
+                    Some(cached)
+                } else {
+                    RESOURCE_GROUP_STATS
+                        .group_member_calls
+                        .fetch_add(1, Ordering::Relaxed);
+                    let member_start = Instant::now();
+                    let raw = self.resource_group_view.get_resource_from_group(
+                        &key,
+                        struct_tag,
+                        maybe_layout,
+                    )?;
+                    RESOURCE_GROUP_STATS
+                        .group_member_ns
+                        .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                    let Some(raw_bytes) = raw else {
+                        return Ok((None, 0));
+                    };
+                    let metadata = self
+                        .executor_view
+                        .get_state_value(&key)
+                        .map_err(|e| {
+                            PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                .with_message(format!("{:?}", e))
+                        })?
+                        .map(|v| v.into_metadata())
+                        .unwrap_or_else(StateValueMetadata::none);
+                    let group_size = self.resource_group_view.resource_group_size(&key)?.get();
+                    let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
+                    let (exchanged, ids) = self
+                        .exchange_state_value(&state_value, layout)
+                        .map_err(|e| {
+                            PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                .with_message(format!("{:?}", e))
+                        })?;
+                    self.record_group_read(
+                        &key,
+                        exchanged.clone().into_metadata(),
+                        group_size,
+                        struct_tag.clone(),
+                        layout,
+                        ids,
+                    );
+                    let exchanged_bytes = exchanged.bytes().clone();
+                    self.delayed_field_cache.insert_group_member_value(
+                        key.clone(),
+                        struct_tag.clone(),
+                        exchanged_bytes.clone(),
+                    );
+                    Some(exchanged_bytes)
+                }
+            } else {
+                RESOURCE_GROUP_STATS
+                    .group_member_calls
+                    .fetch_add(1, Ordering::Relaxed);
+                let member_start = Instant::now();
+                let raw = self.resource_group_view.get_resource_from_group(
+                    &key,
+                    struct_tag,
+                    maybe_layout,
+                )?;
+                RESOURCE_GROUP_STATS
+                    .group_member_ns
+                    .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                raw
+            };
 
             let first_access = self.accessed_groups.borrow_mut().insert(key.clone());
             let group_size = if first_access {
-                self.resource_group_view.resource_group_size(&key)?.get()
+                RESOURCE_GROUP_STATS
+                    .group_size_calls
+                    .fetch_add(1, Ordering::Relaxed);
+                let size_start = Instant::now();
+                let size = self.resource_group_view.resource_group_size(&key)?.get();
+                RESOURCE_GROUP_STATS
+                    .group_size_ns
+                    .fetch_add(size_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                size
             } else {
                 0
             };
@@ -210,9 +806,58 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
             Ok((buf, buf_size + group_size as usize))
         } else {
             let state_key = resource_state_key(address, struct_tag)?;
-            let buf = self
-                .executor_view
-                .get_resource_bytes(&state_key, maybe_layout)?;
+            let buf = if let Some(layout) = maybe_layout {
+                if let Some(cached) = self.delayed_field_cache.get_base_value(&state_key) {
+                    if !self.delayed_field_cache.is_base_value_exchanged(&state_key) {
+                        let state_value = cached.as_state_value().ok_or_else(|| {
+                            PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                .with_message("Cached base value missing bytes".to_string())
+                        })?;
+                        let (exchanged, ids) = self
+                            .exchange_state_value(&state_value, layout)
+                            .map_err(|e| {
+                                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                    .with_message(format!("{:?}", e))
+                            })?;
+                        self.record_resource_read(&state_key, &exchanged, layout, ids);
+                        self.delayed_field_cache.insert_base_value(
+                            state_key.clone(),
+                            WriteOp::from_state_value(Some(exchanged.clone())),
+                            true,
+                        );
+                        Some(exchanged.bytes().clone())
+                    } else {
+                        cached.bytes().cloned()
+                    }
+                } else {
+                    let state_value =
+                        self.executor_view
+                            .get_state_value(&state_key)
+                            .map_err(|e| {
+                                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                    .with_message(format!("{:?}", e))
+                            })?;
+                    let Some(state_value) = state_value else {
+                        return Ok((None, 0));
+                    };
+                    let (exchanged, ids) = self
+                        .exchange_state_value(&state_value, layout)
+                        .map_err(|e| {
+                            PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                .with_message(format!("{:?}", e))
+                        })?;
+                    self.record_resource_read(&state_key, &exchanged, layout, ids);
+                    let cached = self.delayed_field_cache.get_or_insert_base_value(
+                        state_key.clone(),
+                        true,
+                        || Ok(WriteOp::from_state_value(Some(exchanged.clone()))),
+                    )?;
+                    cached.bytes().cloned()
+                }
+            } else {
+                self.executor_view
+                    .get_resource_bytes(&state_key, maybe_layout)?
+            };
             let buf_size = resource_size(&buf);
             Ok((buf, buf_size))
         }
@@ -292,7 +937,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
     fn as_move_resolver(&self) -> StorageAdapter<S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
-        assert!(!features.is_resource_groups_split_in_vm_change_set_enabled());
+        let delayed_fields_enabled = features.is_aggregator_v2_delayed_fields_enabled();
 
         let gas_feature_version = VMConfig::fetch_config(self)
             .map(|config| config.gas_schedule)
@@ -304,17 +949,125 @@ impl<S: StateView> AsMoveResolver<S> for S {
             gas_feature_version,
             // todo(simon): Currently it is disabled, make it real.
             features.is_resource_groups_split_in_vm_change_set_enabled(),
+            delayed_fields_enabled,
         );
-        StorageAdapter::new(self, deserializer_config, resource_group_adapter)
+        StorageAdapter::new(
+            self,
+            deserializer_config,
+            resource_group_adapter,
+            delayed_fields_enabled,
+        )
     }
 }
 
 impl<S: StateView> AsExecutorView for StorageAdapter<'_, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
-        self.executor_view
+        self
     }
 }
 
+pub struct RemoteStorageOwned<S> {
+    state_view: S,
+}
+
+impl<S> Deref for RemoteStorageOwned<S> {
+    type Target = S;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state_view
+    }
+}
+
+impl<S> DerefMut for RemoteStorageOwned<S> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state_view
+    }
+}
+
+impl<S: StateView> ModuleResolver for RemoteStorageOwned<S> {
+    type Error = PartialVMError;
+
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        self.as_move_resolver().get_module_metadata(module_id)
+    }
+
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
+        self.as_move_resolver().get_module(module_id)
+    }
+}
+
+impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
+    type Error = PartialVMError;
+
+    fn get_resource_bytes_with_metadata_and_layout(
+        &self,
+        address: &AccountAddress,
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> Result<(Option<Bytes>, usize), Self::Error> {
+        self.as_move_resolver()
+            .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
+    }
+}
+
+impl<S: StateView> ResourceGroupResolver for RemoteStorageOwned<S> {
+    fn release_resource_group_cache(
+        &self,
+    ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
+        self.as_move_resolver().release_resource_group_cache()
+    }
+
+    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
+        self.as_move_resolver().resource_group_size(group_key)
+    }
+
+    fn resource_size_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<usize> {
+        self.as_move_resolver()
+            .resource_size_in_group(group_key, resource_tag)
+    }
+
+    fn resource_exists_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<bool> {
+        self.as_move_resolver()
+            .resource_exists_in_group(group_key, resource_tag)
+    }
+}
+
+impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
+    fn resolve_table_entry_bytes_with_layout(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+        maybe_layout: Option<&MoveTypeLayout>,
+    ) -> Result<Option<Bytes>, PartialVMError> {
+        self.as_move_resolver()
+            .resolve_table_entry_bytes_with_layout(handle, key, maybe_layout)
+    }
+}
+
+impl<S: ExecutorView> AsExecutorView for RemoteStorageOwned<S> {
+    fn as_executor_view(&self) -> &dyn ExecutorView {
+        &self.state_view
+    }
+}
+
+pub trait IntoMoveResolver<S> {
+    fn into_move_resolver(self) -> RemoteStorageOwned<S>;
+}
+
+impl<S: StateView> IntoMoveResolver<S> for S {
+    fn into_move_resolver(self) -> RemoteStorageOwned<S> {
+        RemoteStorageOwned { state_view: self }
+    }
+}
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -342,6 +1095,7 @@ pub(crate) mod tests {
             state_view,
             gas_feature_version,
             resource_groups_split_in_vm_change_set_enabled,
+            false,
         );
 
         state_view.as_move_resolver()

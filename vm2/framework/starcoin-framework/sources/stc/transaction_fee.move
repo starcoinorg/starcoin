@@ -1,15 +1,22 @@
 /// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
 /// Then they are distributed in `TransactionManager`.
 module starcoin_framework::transaction_fee {
+    friend starcoin_framework::stc_block;
+    friend starcoin_framework::stc_genesis;
+    friend starcoin_framework::stc_transaction_validation;
+
     use std::error;
     use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, utf8};
     use std::vector;
 
+    use starcoin_framework::coin;
+    use starcoin_framework::coin::{BurnCapability, MintCapability};
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata};
     use starcoin_framework::object::{Self, Object};
+    use starcoin_framework::primary_fungible_store;
     use starcoin_framework::starcoin_coin;
     use starcoin_framework::system_addresses::{Self, get_starcoin_framework};
     use starcoin_std::debug;
@@ -24,12 +31,54 @@ module starcoin_framework::transaction_fee {
     const ETXN_FEE_FA_METADATA_NOT_FOUND: u64 = 3;
     const ETXN_FEE_FA_STORE_NOT_FOUND: u64 = 4;
     const ETXN_FEE_STORES_IS_EMPTY: u64 = 5;
+    const ETXN_FEE_CAPS_ALREADY_INIT: u64 = 6;
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The `TransactionFee` resource holds a preburn resource for each
     /// fiat `TokenType` that can be collected as a transaction fee.
     struct TransactionFeePod has key {
         fee_stores: vector<Object<FungibleStore>>,
+    }
+
+    /// Mint/Burn capabilities for fee accounting.
+    struct FeeCapStore has key {
+        mint_cap: MintCapability<starcoin_coin::STC>,
+        burn_cap: BurnCapability<starcoin_coin::STC>,
+    }
+
+    public(friend) fun store_fee_caps(
+        framework: &signer,
+        burn_cap: BurnCapability<starcoin_coin::STC>,
+        mint_cap: MintCapability<starcoin_coin::STC>,
+    ) {
+        system_addresses::assert_starcoin_framework(framework);
+        assert!(
+            !exists<FeeCapStore>(signer::address_of(framework)),
+            error::already_exists(ETXN_FEE_CAPS_ALREADY_INIT)
+        );
+        move_to(framework, FeeCapStore { mint_cap, burn_cap });
+    }
+
+    public(friend) fun burn_fee(fa: FungibleAsset) acquires FeeCapStore {
+        let cap = &borrow_global<FeeCapStore>(get_starcoin_framework()).burn_cap;
+        coin::burn_fungible_asset_with_cap<starcoin_coin::STC>(fa, cap);
+    }
+
+    /// Burn transaction fee directly from the sender's primary store without emitting events.
+    public(friend) fun burn_fee_from(account: address, fee: u64) acquires FeeCapStore {
+        if (fee == 0) {
+            return
+        };
+        let cap = &borrow_global<FeeCapStore>(get_starcoin_framework()).burn_cap;
+        coin::burn_from_for_gas<starcoin_coin::STC>(account, fee, cap);
+    }
+
+    public(friend) fun mint_fee(amount: u64): FungibleAsset acquires FeeCapStore {
+        let cap = &borrow_global<FeeCapStore>(get_starcoin_framework()).mint_cap;
+        let (mint_ref, receipt) = coin::get_paired_mint_ref(cap);
+        let fa = fungible_asset::mint(&mint_ref, amount);
+        coin::return_paired_mint_ref(mint_ref, receipt);
+        fa
     }
 
     public fun initialize(framework: &signer) {
@@ -50,15 +99,9 @@ module starcoin_framework::transaction_fee {
 
     /// Deposit `token` into the transaction fees bucket
     public fun pay_fee(account: &signer, fa: FungibleAsset) acquires TransactionFeePod {
-        debug::print(&utf8(b"transaction_fee::pay_fee | Entered, fa amount:"));
-        debug::print(&fungible_asset::amount(&fa));
-
         let account_addr = signer::address_of(account);
-        debug::print(&account_addr);
 
         let fa_store = if (exists<TransactionFeePod>(account_addr)) {
-            debug::print(&utf8(b"transaction_fee::pay_fee | TransactionFeePod exists"));
-
             let fee_pod = borrow_global_mut<TransactionFeePod>(get_starcoin_framework());
             let store_opt = find_asset_store_with_metadata(
                 &fee_pod.fee_stores,
@@ -72,8 +115,6 @@ module starcoin_framework::transaction_fee {
                 fa_store
             }
         } else {
-            debug::print(&utf8(b"transaction_fee::pay_fee | TransactionFeePod not exists"));
-
             let fa_store = Self::inner_create_fa_store(account, starcoin_coin::get_stc_fa_metadata());
             let fee_stores = vector::empty();
             vector::push_back(&mut fee_stores, fa_store);
@@ -82,9 +123,7 @@ module starcoin_framework::transaction_fee {
             });
             fa_store
         };
-        fungible_asset::deposit(fa_store, fa);
-
-        debug::print(&utf8(b"transaction_fee::pay_fee | Exited"));
+        fungible_asset::deposit_internal_no_events(object::object_address(&fa_store), fa);
     }
 
     spec pay_fee {
@@ -221,5 +260,29 @@ module starcoin_framework::transaction_fee {
         assert!(fungible_asset::amount(&distributed_fa) == amount * 2, 1);
 
         primary_fungible_store::deposit(signer::address_of(framework), distributed_fa);
+    }
+
+    #[test(framework = @0x1)]
+    fun test_fee_burn_and_mint(framework: &signer) acquires TransactionFeePod, FeeCapStore {
+        use starcoin_framework::fungible_asset;
+        use starcoin_framework::starcoin_coin;
+
+        let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(framework);
+        Self::store_fee_caps(framework, burn_cap, mint_cap);
+        Self::initialize(framework);
+
+        let burn_asset = starcoin_coin::mint_stc_fa_for_test(10);
+        Self::burn_fee(burn_asset);
+
+        let total_fee = 1000;
+        let minted_fee = Self::mint_fee(total_fee);
+        Self::pay_fee(framework, minted_fee);
+
+        let fee = Self::withdraw_account_transaction_fees(
+            framework,
+            starcoin_coin::get_stc_fa_metadata(),
+        );
+        assert!(fungible_asset::amount(&fee) == total_fee, 1002);
+        Self::burn_fee(fee);
     }
 }

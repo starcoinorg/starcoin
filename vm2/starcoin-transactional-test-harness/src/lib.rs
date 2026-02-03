@@ -31,7 +31,7 @@ use starcoin_types::account_address::AccountAddress as AccountAddress1;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use starcoin_vm2_vm_types::account_config::{
-    association_address, core_code_address, STC_TOKEN_CODE_STR,
+    association_address, core_code_address, stc_fungible_asset_derive_address,
 };
 
 use move_core_types::vm_status::KeptVMStatus;
@@ -63,6 +63,7 @@ use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_vm2_abi_decoder::decode_txn_payload;
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
 use starcoin_vm2_dev::playground::call_contract;
+use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateReader;
 use starcoin_vm2_types::{
     account::{Account, AccountData},
@@ -78,10 +79,9 @@ use starcoin_vm2_types::{
 use starcoin_vm2_vm_runtime::{
     data_cache::{AsMoveResolver, StorageAdapter},
     session::SerializedReturnValues,
-    starcoin_vm::StarcoinVM as StarcoinVM2,
 };
 use starcoin_vm2_vm_types::{
-    account_config::{genesis_address, stc_type_tag, AccountResource},
+    account_config::{genesis_address, stc_type_tag, AccountResource, CoinStoreResource},
     block_metadata::BlockMetadata,
     on_chain_config::VMConfig,
     on_chain_resource,
@@ -518,8 +518,12 @@ impl StarcoinTestAdapter<'_> {
     fn hack_genesis_account(&self) -> Result<()> {
         let genesis_account = self.fetch_account_resource(&genesis_address())?;
 
-        let balance =
-            self.fetch_balance_resource(&genesis_address(), STC_TOKEN_CODE_STR.to_string())?;
+        let balance = self
+            .context
+            .storage
+            .get_resource_type::<CoinStoreResource>(genesis_address())
+            .map(|store| store.coin() as u128)
+            .unwrap_or(0);
         let genesis_account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(genesis_address()),
             balance,
@@ -538,13 +542,21 @@ impl StarcoinTestAdapter<'_> {
         if self.debug {
             eprintln!("Hack account {}", address);
         }
-        let account = self.fetch_account_resource(&address)?;
+        let account_sequence = self
+            .fetch_account_resource(&address)
+            .map(|account| account.sequence_number())
+            .unwrap_or(0);
 
-        let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
+        let balance = self
+            .context
+            .storage
+            .get_resource_type::<CoinStoreResource>(address)
+            .map(|store| store.coin() as u128)
+            .unwrap_or(0);
         let account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(address),
             balance,
-            account.sequence_number(),
+            account_sequence,
             0,
             0,
         );
@@ -601,27 +613,29 @@ impl StarcoinTestAdapter<'_> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
-        let mut vm = StarcoinVM2::new(None, &self.context.storage);
-        let mut outputs = vm.execute_block_transactions(
+        let mut outputs = do_execute_block_transactions(
             &self.context.storage,
             vec![Transaction::BlockMetadata(meta.clone())],
+            None,
             None,
         )?;
         assert_eq!(outputs.len(), 1);
 
-        let (status, output) = outputs.pop().unwrap();
+        let output = outputs.pop().unwrap();
         match output.status() {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
-                    self.context
-                        .apply_write_set(output.clone().into_inner().0)?;
+                    self.context.apply_write_set(output.write_set().clone())?;
                 }
                 _ => {
-                    bail!("Failed to execute transaction. VMStatus: {}", status)
+                    bail!(
+                        "Failed to execute transaction. status: {:?}",
+                        output.status()
+                    )
                 }
             },
             TransactionStatus::Discard(_) => {
-                bail!("Transaction discarded. VMStatus: {}", status)
+                bail!("Transaction discarded. status: {:?}", output.status())
             }
             TransactionStatus::Retry => {
                 bail!("Transaction Retry never happen")
@@ -638,21 +652,19 @@ impl StarcoinTestAdapter<'_> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_transaction(&mut self, txn: RawUserTransaction2) -> Result<TransactionWithOutput> {
-        let mut vm = StarcoinVM2::new(None, &self.context.storage);
         let signed_txn = self.sign(txn)?;
 
-        let (_status, output) = vm
-            .execute_block_transactions(
-                &self.context.storage,
-                vec![Transaction::UserTransaction(signed_txn.clone())],
-                None,
-            )?
-            .pop()
-            .unwrap();
+        let output = do_execute_block_transactions(
+            &self.context.storage,
+            vec![Transaction::UserTransaction(signed_txn.clone())],
+            None,
+            None,
+        )?
+        .pop()
+        .unwrap();
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
-                self.context
-                    .apply_write_set(output.clone().into_inner().0)?;
+                self.context.apply_write_set(output.write_set().clone())?;
                 let mut chain = self.context.chain.lock().unwrap();
                 chain.add_new_txn(
                     Transaction::UserTransaction(signed_txn.clone()),
@@ -740,16 +752,28 @@ impl StarcoinTestAdapter<'_> {
         }
 
         let addr = self.compiled_state.resolve_address(&addr);
+        let metadata_type = TypeTag::Struct(Box::new(StructTag {
+            address: core_code_address(),
+            module: Identifier::new("fungible_asset")?,
+            name: Identifier::new("Metadata")?,
+            type_args: vec![],
+        }));
+        let amount_u64 = u64::try_from(initial_balance)
+            .map_err(|_| format_err!("faucet amount {} exceeds u64", initial_balance))?;
         let txn = RawUserTransaction2::new_script_function(
             sender,
             params.sequence_number,
             EntryFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("transfer_scripts")?),
-                Identifier::new("peer_to_peer_v2")?,
-                vec![stc_type_tag()],
+                ModuleId::new(
+                    core_code_address(),
+                    Identifier::new("primary_fungible_store")?,
+                ),
+                Identifier::new("transfer")?,
+                vec![metadata_type],
                 vec![
+                    bcs_ext::to_bytes(&stc_fungible_asset_derive_address()).unwrap(),
                     bcs_ext::to_bytes(&addr).unwrap(),
-                    bcs_ext::to_bytes(&initial_balance).unwrap(),
+                    bcs_ext::to_bytes(&amount_u64).unwrap(),
                 ],
             ),
             params.max_gas_amount,

@@ -7,7 +7,6 @@ use crate::transaction_argument::convert_txn_args;
 use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::u256;
 use starcoin_crypto::HashValue;
-use std::collections::BTreeSet;
 
 #[test]
 fn test_transaction_argument_to_json() {
@@ -35,7 +34,7 @@ fn test_transaction_argument_to_json() {
 }
 
 #[test]
-fn block_epilogue_id_depends_on_senders() {
+fn block_epilogue_id_depends_on_total_fee() {
     let metadata = BlockMetadata::new(
         HashValue::zero(),
         1,
@@ -48,14 +47,8 @@ fn block_epilogue_id_depends_on_senders() {
         0,
     );
 
-    let mut senders_one = BTreeSet::new();
-    senders_one.insert(AccountAddress::from_hex_literal("0x1").unwrap());
-
-    let mut senders_two = senders_one.clone();
-    senders_two.insert(AccountAddress::from_hex_literal("0x2").unwrap());
-
-    let epilogue_one = Transaction::BlockEpilogue(metadata.clone(), senders_one);
-    let epilogue_two = Transaction::BlockEpilogue(metadata, senders_two);
+    let epilogue_one = Transaction::BlockEpilogue(metadata.clone(), 1);
+    let epilogue_two = Transaction::BlockEpilogue(metadata, 2);
 
     assert_ne!(epilogue_one.id(), epilogue_two.id());
 }

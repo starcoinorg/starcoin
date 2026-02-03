@@ -21,7 +21,6 @@
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
@@ -433,8 +432,14 @@ Migration from old StarcoinFramework Account::txn_prologue
             <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EBAD_TRANSACTION_FEE_TOKEN">EBAD_TRANSACTION_FEE_TOKEN</a>)
         );
 
-        <b>let</b> balance_amount = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;TokenType&gt;(txn_sender);
-        <b>assert</b>!(balance_amount &gt;= max_transaction_fee, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>));
+        <b>assert</b>!(
+            <a href="primary_fungible_store.md#0x1_primary_fungible_store_is_balance_at_least">primary_fungible_store::is_balance_at_least</a>(
+                txn_sender,
+                <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
+                max_transaction_fee
+            ),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
+        );
 
         <b>assert</b>!(
             (txn_sequence_number <b>as</b> u128) &lt; <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_MAX_U64">MAX_U64</a>,
@@ -490,8 +495,13 @@ It collects gas and bumps the sequence number
 
     // Charge for gas
     <b>let</b> transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
+    <b>let</b> transaction_fee_amount_u64 = (transaction_fee_amount <b>as</b> u64);
     <b>assert</b>!(
-        <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;STC&gt;(txn_sender) &gt;= (transaction_fee_amount <b>as</b> u64),
+        <a href="primary_fungible_store.md#0x1_primary_fungible_store_is_balance_at_least">primary_fungible_store::is_balance_at_least</a>(
+            txn_sender,
+            <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
+            transaction_fee_amount_u64
+        ),
         <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
     );
 
@@ -507,14 +517,8 @@ It collects gas and bumps the sequence number
         )
     };
 
-    <b>if</b> (transaction_fee_amount &gt; 0) {
-        <b>let</b> sender_signer = &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender);
-        <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a> = <a href="primary_fungible_store.md#0x1_primary_fungible_store_withdraw">primary_fungible_store::withdraw</a>(
-            sender_signer,
-            <a href="starcoin_coin.md#0x1_starcoin_coin_get_stc_fa_metadata">starcoin_coin::get_stc_fa_metadata</a>(),
-            (transaction_fee_amount <b>as</b> u64)
-        );
-        <a href="transaction_fee.md#0x1_transaction_fee_pay_fee">transaction_fee::pay_fee</a>(sender_signer, <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
+    <b>if</b> (transaction_fee_amount_u64 &gt; 0) {
+        <a href="transaction_fee.md#0x1_transaction_fee_burn_fee_from">transaction_fee::burn_fee_from</a>(txn_sender, transaction_fee_amount_u64);
     };
 }
 </code></pre>

@@ -8,17 +8,17 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::state_store::state_key::StateKey;
+use crate::state_store::state_key::{inner::StateKeyInner, StateKey};
 use crate::state_store::StateView;
 use crate::{
     account_config::{
         genesis_address,
-        resources::{primary_store, FungibleStoreResource},
+        resources::{primary_store, ConcurrentFungibleBalanceResource, FungibleStoreResource},
         token_code::TokenCode,
         AccountResource, CoinStoreResource, ObjectGroupResource, TokenInfo, G_STC_TOKEN_CODE,
     },
     move_resource::MoveResource,
-    on_chain_config::{GlobalTimeOnChain, OnChainConfig},
+    on_chain_config::{Features, GlobalTimeOnChain, OnChainConfig},
     on_chain_resource::{
         dao::{Proposal, ProposalAction},
         BlockMetadata, ChainId, Epoch, EpochData, EpochInfo, Treasury,
@@ -110,17 +110,41 @@ pub trait StateReaderExt: StateView {
         // Read primary fungible store from user
         let primary_fungible_store_address =
             primary_store(&address, &type_tag.to_canonical_string())?;
+        let split_enabled = match StateKey::on_chain_config::<Features>() {
+            Ok(state_key) => self
+                .get_state_value_bytes(&state_key)?
+                .map(|bytes| Features::deserialize_into_config(&bytes))
+                .transpose()?
+                .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+                .unwrap_or(false),
+            Err(_) => false,
+        };
 
-        let tag_bytes = self.get_resource_group_struct_tag_bytes(
+        let tag_bytes = self.get_resource_group_struct_tag_bytes_with_flag(
             &address,
             &StateKey::resource_group(
                 &primary_fungible_store_address,
                 &ObjectGroupResource::struct_tag(),
             ),
             &FungibleStoreResource::struct_tag(),
+            split_enabled,
         )?;
 
-        if let Some(bytes) = tag_bytes {
+        let concurrent_balance_bytes = self.get_resource_group_struct_tag_bytes_with_flag(
+            &address,
+            &StateKey::resource_group(
+                &primary_fungible_store_address,
+                &ObjectGroupResource::struct_tag(),
+            ),
+            &ConcurrentFungibleBalanceResource::struct_tag(),
+            split_enabled,
+        )?;
+
+        if let Some(bytes) = concurrent_balance_bytes {
+            let concurrent_balance =
+                bcs_ext::from_bytes::<ConcurrentFungibleBalanceResource>(&bytes)?;
+            total_balance += concurrent_balance.balance() as u128;
+        } else if let Some(bytes) = tag_bytes {
             let fungible_store = bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?;
             total_balance += fungible_store.balance() as u128;
         }
@@ -130,13 +154,52 @@ pub trait StateReaderExt: StateView {
 
     fn get_resource_group_struct_tag_bytes(
         &self,
-        _address: &AccountAddress,
+        address: &AccountAddress,
         group_key: &StateKey,
         struct_tag: &StructTag,
     ) -> Result<Option<Bytes>> {
+        let split_enabled = match StateKey::on_chain_config::<Features>() {
+            Ok(state_key) => self
+                .get_state_value_bytes(&state_key)?
+                .map(|bytes| Features::deserialize_into_config(&bytes))
+                .transpose()?
+                .map(|features| features.is_resource_groups_split_in_vm_change_set_enabled())
+                .unwrap_or(false),
+            Err(_) => false,
+        };
+        self.get_resource_group_struct_tag_bytes_with_flag(
+            address,
+            group_key,
+            struct_tag,
+            split_enabled,
+        )
+    }
+
+    fn get_resource_group_struct_tag_bytes_with_flag(
+        &self,
+        address: &AccountAddress,
+        group_key: &StateKey,
+        struct_tag: &StructTag,
+        split_enabled: bool,
+    ) -> Result<Option<Bytes>> {
+        let group_address = match group_key.inner() {
+            StateKeyInner::AccessPath(access_path) => &access_path.address,
+            _ => address,
+        };
+        let member_key = StateKey::resource_group(group_address, struct_tag);
+        if split_enabled {
+            if let Some(bytes) = self.get_state_value_bytes(&member_key)? {
+                return Ok(Some(bytes));
+            }
+        }
+
         let group_data = match self.get_state_value_bytes(group_key)? {
             Some(data) => data,
-            None => return Ok(None),
+            None => {
+                // When resource groups are split in the VM change set, members are stored
+                // directly under their own resource group keys instead of a single map blob.
+                return Ok(self.get_state_value_bytes(&member_key)?);
+            }
         };
 
         let group_data_map: BTreeMap<StructTag, Bytes> = bcs::from_bytes::<
@@ -149,7 +212,13 @@ pub trait StateReaderExt: StateView {
             ))
         })?;
 
-        Ok(group_data_map.get(struct_tag).cloned())
+        if let Some(bytes) = group_data_map.get(struct_tag) {
+            return Ok(Some(bytes.clone()));
+        }
+
+        // If the group blob doesn't contain the member, fall back to a direct lookup.
+        // This covers the split resource group storage layout.
+        Ok(self.get_state_value_bytes(&member_key)?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {

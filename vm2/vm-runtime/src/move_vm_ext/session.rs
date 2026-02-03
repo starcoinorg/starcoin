@@ -152,7 +152,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                 // temporarily store native values (via encoding to ensure deterministic
                 // gas charging) in block storage.
                 serialize_and_allow_delayed_values(&value, &layout)?
-                    .map(|bytes| (bytes.into(), Some(Arc::new(layout))))
+                    .map(|bytes| (bytes.into(), Some(Arc::new(layout.clone()))))
             } else {
                 // Otherwise, there should be no native values so ensure
                 // serialization fails here if there are any.
@@ -162,7 +162,10 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             };
             serialization_result.ok_or_else(|| {
                 PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
-                    .with_message(format!("Error when serializing resource {}.", value))
+                    .with_message(format!(
+                        "Error when serializing resource {} with layout {:?} (has_aggregator_lifting={}).",
+                        value, layout, has_aggregator_lifting
+                    ))
             })
         };
 
@@ -210,9 +213,8 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         mut source_data: BTreeMap<StructTag, Bytes>,
         resources: BTreeMap<StructTag, MoveStorageOp<BytesWithResourceLayout>>,
     ) -> PartialVMResult<()> {
-        let common_error = || {
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                .with_message("populate v0 resource group change set error".to_string())
+        let common_error = |msg: String| {
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(msg)
         };
 
         let create = source_data.is_empty();
@@ -220,17 +222,38 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         for (struct_tag, current_op) in resources {
             match current_op {
                 MoveStorageOp::Delete => {
-                    source_data.remove(&struct_tag).ok_or_else(common_error)?;
+                    if source_data.remove(&struct_tag).is_none() {
+                        return Err(common_error(format!(
+                            "populate v0 resource group change set error: delete missing entry, group_key={:?}, struct_tag={:?}, source_len={}",
+                            state_key,
+                            struct_tag,
+                            source_data.len()
+                        )));
+                    }
                 }
                 MoveStorageOp::Modify((new_data, _)) => {
-                    let data = source_data.get_mut(&struct_tag).ok_or_else(common_error)?;
+                    let source_len = source_data.len();
+                    let data = source_data.get_mut(&struct_tag).ok_or_else(|| {
+                        common_error(format!(
+                            "populate v0 resource group change set error: modify missing entry, group_key={:?}, struct_tag={:?}, source_len={}",
+                            state_key,
+                            struct_tag,
+                            source_len
+                        ))
+                    })?;
                     *data = new_data;
                 }
                 MoveStorageOp::New((data, _)) => {
-                    let data = source_data.insert(struct_tag, data);
-                    if data.is_some() {
-                        return Err(common_error());
+                    let source_len = source_data.len();
+                    if source_data.contains_key(&struct_tag) {
+                        return Err(common_error(format!(
+                            "populate v0 resource group change set error: new already exists, group_key={:?}, struct_tag={:?}, source_len={}",
+                            state_key,
+                            struct_tag,
+                            source_len
+                        )));
                     }
+                    source_data.insert(struct_tag, data);
                 }
             }
         }
@@ -240,14 +263,24 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         } else if create {
             MoveStorageOp::New((
                 bcs_ext::to_bytes(&source_data)
-                    .map_err(|_| common_error())?
+                    .map_err(|_| {
+                        common_error(
+                            "populate v0 resource group change set error: bcs serialize failed"
+                                .to_string(),
+                        )
+                    })?
                     .into(),
                 None,
             ))
         } else {
             MoveStorageOp::Modify((
                 bcs_ext::to_bytes(&source_data)
-                    .map_err(|_| common_error())?
+                    .map_err(|_| {
+                        common_error(
+                            "populate v0 resource group change set error: bcs serialize failed"
+                                .to_string(),
+                        )
+                    })?
                     .into(),
                 None,
             ))
@@ -344,11 +377,33 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                 let state_key = StateKey::resource_group(&addr, &resource_group_tag);
                 match &mut resource_group_change_set {
                     ResourceGroupChangeSet::V0(v0_changes) => {
-                        let source_data = maybe_resource_group_cache
+                        let source_data = if let Some(data) = maybe_resource_group_cache
                             .as_mut()
                             .expect("V0 cache must be set")
                             .remove(&state_key)
-                            .unwrap_or_default();
+                        {
+                            data
+                        } else {
+                            let bytes = resolver
+                                .as_executor_view()
+                                .get_resource_bytes(&state_key, None)?;
+                            match bytes {
+                                Some(bytes) if bytes.is_empty() => BTreeMap::new(),
+                                Some(bytes) => bcs_ext::from_bytes::<BTreeMap<StructTag, Bytes>>(
+                                    bytes.as_ref(),
+                                )
+                                .map_err(|e| {
+                                    PartialVMError::new(
+                                        StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                                    )
+                                    .with_message(format!(
+                                        "populate v0 resource group change set error: bcs deserialize failed, group_key={:?}, err={:?}",
+                                        state_key, e
+                                    ))
+                                })?,
+                                None => BTreeMap::new(),
+                            }
+                        };
                         Self::populate_v0_resource_group_change_set(
                             v0_changes,
                             state_key,
@@ -388,6 +443,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
     ) -> PartialVMResult<(VMChangeSet, ModuleWriteSet)> {
         let mut resource_write_set = BTreeMap::new();
         let mut resource_group_write_set = BTreeMap::new();
+        let mut aggregator_change_set = aggregator_change_set;
 
         let mut has_modules_published_to_special_address = false;
         let mut module_write_ops = BTreeMap::new();
@@ -441,7 +497,8 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             }
         }
 
-        for (state_key, change) in aggregator_change_set.aggregator_v1_changes {
+        for (state_key, change) in std::mem::take(&mut aggregator_change_set.aggregator_v1_changes)
+        {
             match change {
                 AggregatorChangeV1::Write(value) => {
                     let write_op = woc.convert_aggregator_modification(&state_key, value)?;
@@ -458,18 +515,16 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             }
         }
 
-        // We need to remove values that are already in the writes.
-        let reads_needing_exchange = aggregator_change_set
-            .reads_needing_exchange
-            .into_iter()
-            .filter(|(state_key, _)| !resource_write_set.contains_key(state_key))
-            .collect();
-
-        let group_reads_needing_change = aggregator_change_set
-            .group_reads_needing_exchange
-            .into_iter()
-            .filter(|(state_key, _)| !resource_group_write_set.contains_key(state_key))
-            .collect();
+        let reads_needing_exchange =
+            std::mem::take(&mut aggregator_change_set.reads_needing_exchange)
+                .into_iter()
+                .filter(|(state_key, _)| !resource_write_set.contains_key(state_key))
+                .collect();
+        let group_reads_needing_exchange =
+            std::mem::take(&mut aggregator_change_set.group_reads_needing_exchange)
+                .into_iter()
+                .filter(|(state_key, _)| !resource_group_write_set.contains_key(state_key))
+                .collect();
 
         let change_set = VMChangeSet::new_expanded(
             resource_write_set,
@@ -478,7 +533,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             aggregator_v1_delta_set,
             aggregator_change_set.delayed_field_changes,
             reads_needing_exchange,
-            group_reads_needing_change,
+            group_reads_needing_exchange,
             events,
         )?;
         let module_write_set =

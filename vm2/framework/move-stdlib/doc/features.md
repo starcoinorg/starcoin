@@ -78,6 +78,8 @@ return true.
 -  [Function `aggregator_snapshots_enabled`](#0x1_features_aggregator_snapshots_enabled)
 -  [Function `get_sponsored_automatic_account_creation`](#0x1_features_get_sponsored_automatic_account_creation)
 -  [Function `sponsored_automatic_account_creation_enabled`](#0x1_features_sponsored_automatic_account_creation_enabled)
+-  [Function `get_aggregator_v2_delayed_fields_feature`](#0x1_features_get_aggregator_v2_delayed_fields_feature)
+-  [Function `aggregator_v2_delayed_fields_enabled`](#0x1_features_aggregator_v2_delayed_fields_enabled)
 -  [Function `get_concurrent_token_v2_feature`](#0x1_features_get_concurrent_token_v2_feature)
 -  [Function `concurrent_token_v2_enabled`](#0x1_features_concurrent_token_v2_enabled)
 -  [Function `get_concurrent_assets_feature`](#0x1_features_get_concurrent_assets_feature)
@@ -238,6 +240,17 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_ABORT_IF_MULTISIG_PAYLOAD_MISMATCH">ABORT_IF_MULTISIG_PAYLOAD_MISMATCH</a>: u64 = 70;
+</code></pre>
+
+
+
+<a id="0x1_features_AGGREGATOR_V2_DELAYED_FIELDS"></a>
+
+Whether the Aggregator V2 delayed fields optimization is enabled.
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_AGGREGATOR_V2_DELAYED_FIELDS">AGGREGATOR_V2_DELAYED_FIELDS</a>: u64 = 36;
 </code></pre>
 
 
@@ -1996,6 +2009,52 @@ Initialized from parameters
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_sponsored_automatic_account_creation_enabled">sponsored_automatic_account_creation_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
     <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_SPONSORED_AUTOMATIC_ACCOUNT_CREATION">SPONSORED_AUTOMATIC_ACCOUNT_CREATION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_aggregator_v2_delayed_fields_feature"></a>
+
+## Function `get_aggregator_v2_delayed_fields_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_aggregator_v2_delayed_fields_feature">get_aggregator_v2_delayed_fields_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_aggregator_v2_delayed_fields_feature">get_aggregator_v2_delayed_fields_feature</a>(): u64 { <a href="features.md#0x1_features_AGGREGATOR_V2_DELAYED_FIELDS">AGGREGATOR_V2_DELAYED_FIELDS</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_aggregator_v2_delayed_fields_enabled"></a>
+
+## Function `aggregator_v2_delayed_fields_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_aggregator_v2_delayed_fields_enabled">aggregator_v2_delayed_fields_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_aggregator_v2_delayed_fields_enabled">aggregator_v2_delayed_fields_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_AGGREGATOR_V2_DELAYED_FIELDS">AGGREGATOR_V2_DELAYED_FIELDS</a>)
 }
 </code></pre>
 
