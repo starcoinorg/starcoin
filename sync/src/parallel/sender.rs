@@ -129,10 +129,7 @@ impl<'a> DagBlockSender<'a> {
         let sync_dag_store = self.sync_dag_store.clone();
         let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
-            if self
-                .cancel_flag
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                 self.abort_workers();
                 return Ok(());
             }
@@ -215,10 +212,7 @@ impl<'a> DagBlockSender<'a> {
         }
 
         loop {
-            if self
-                .cancel_flag
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                 self.abort_workers();
                 break;
             }

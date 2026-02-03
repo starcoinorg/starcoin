@@ -45,28 +45,46 @@ where
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 }
 
+pub struct InnerSyncTaskParams<H, F, N> {
+    pub ancestor: BlockIdAndNumber,
+    pub target: SyncTarget,
+    pub storage: Arc<dyn Store>,
+    pub storage2: Arc<dyn Store2>,
+    pub block_event_handle: H,
+    pub fetcher: Arc<F>,
+    pub event_handle: Arc<dyn TaskEventHandle>,
+    pub time_service: Arc<dyn TimeService>,
+    pub peer_provider: N,
+    pub custom_error_handle: Arc<dyn CustomErrorHandle>,
+    pub dag: BlockDAG,
+    pub sync_dag_store: Arc<SyncDagStore>,
+    pub execute_timeout_ms: u64,
+    pub cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+}
+
 impl<H, F, N> InnerSyncTask<H, F, N>
 where
     H: BlockConnectedEventHandle + Sync + 'static,
     F: BlockIdFetcher + BlockFetcher + PeerOperator + 'static,
     N: PeerProvider + Clone + 'static,
 {
-    pub fn new(
-        ancestor: BlockIdAndNumber,
-        target: SyncTarget,
-        storage: Arc<dyn Store>,
-        storage2: Arc<dyn Store2>,
-        block_event_handle: H,
-        fetcher: Arc<F>,
-        event_handle: Arc<dyn TaskEventHandle>,
-        time_service: Arc<dyn TimeService>,
-        peer_provider: N,
-        custom_error_handle: Arc<dyn CustomErrorHandle>,
-        dag: BlockDAG,
-        sync_dag_store: Arc<SyncDagStore>,
-        execute_timeout_ms: u64,
-        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
-    ) -> Self {
+    pub fn new(params: InnerSyncTaskParams<H, F, N>) -> Self {
+        let InnerSyncTaskParams {
+            ancestor,
+            target,
+            storage,
+            storage2,
+            block_event_handle,
+            fetcher,
+            event_handle,
+            time_service,
+            peer_provider,
+            custom_error_handle,
+            dag,
+            sync_dag_store,
+            execute_timeout_ms,
+            cancel_flag,
+        } = params;
         Self {
             ancestor,
             target,

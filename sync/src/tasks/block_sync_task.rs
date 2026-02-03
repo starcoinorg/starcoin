@@ -467,10 +467,7 @@ where
     }
 
     fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
-        if self
-            .cancel_flag
-            .load(std::sync::atomic::Ordering::SeqCst)
-        {
+        if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
             return Ok(ParallelSign::NeedMoreBlocks);
         }
         let block_header = &block.header().clone();
@@ -489,10 +486,7 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            if self
-                .cancel_flag
-                .load(std::sync::atomic::Ordering::SeqCst)
-            {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                 return anyhow::Ok(ParallelSign::NeedMoreBlocks);
             }
             if block_header.number() % ASYNC_BLOCK_COUNT == 0
@@ -502,10 +496,7 @@ where
                 self.find_absent_ancestor(vec![block_header.clone()])
                     .await?;
 
-                if self
-                    .cancel_flag
-                    .load(std::sync::atomic::Ordering::SeqCst)
-                {
+                if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                     return anyhow::Ok(ParallelSign::NeedMoreBlocks);
                 }
 
@@ -734,10 +725,7 @@ where
     type Output = BlockChain;
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
-        if self
-            .cancel_flag
-            .load(std::sync::atomic::Ordering::SeqCst)
-        {
+        if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
             return Ok(CollectorState::Need);
         }
         let (block, block_info, peer_id) = item.into();
