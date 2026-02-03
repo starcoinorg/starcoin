@@ -11,7 +11,7 @@ version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-rand_chacha = "0.9"
+rand_chacha = "0.10"
 starcoin-crypto = { workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-time-service = { workspace = true }
