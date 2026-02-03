@@ -40,6 +40,7 @@ use starcoin_types::{
 use std::collections::{HashMap, HashSet};
 
 const EXECUTE_TIMEOUT_MS: u64 = 300_000;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
@@ -414,6 +415,69 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     ensure!(
         target.target_id.id() != current_block_header.id(),
         "Sync task cancel test fail."
+    );
+    let reports = task_event_counter.get_reports();
+    reports
+        .iter()
+        .for_each(|report| debug!("reports: {}", report));
+
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_full_sync_cancel_by_flag() -> Result<()> {
+    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
+    node1.produce_block(50)?;
+
+    let arc_node1 = Arc::new(node1);
+
+    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let node2 = SyncNodeMocker::new(net2.clone(), 10, 50)?;
+
+    let target = arc_node1.sync_target();
+    let current_block_header = node2.chain().current_header();
+    let dag = node2.chain().dag();
+    let storage = node2.chain().get_storage();
+    let storage2 = node2.get_storage2();
+    let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let cancel_flag = Arc::new(AtomicBool::new(false));
+    let (sync_task, _task_handle, task_event_counter) = full_sync_task(
+        current_block_header.id(),
+        target.clone(),
+        false,
+        net2.time_service(),
+        storage.clone(),
+        storage2.clone(),
+        sender,
+        arc_node1.clone(),
+        sender_2,
+        DummyNetworkService::default(),
+        15,
+        None,
+        None,
+        dag,
+        node2.sync_dag_store.clone(),
+        false,
+        EXECUTE_TIMEOUT_MS,
+        cancel_flag.clone(),
+    )?;
+    let join_handle = node2.process_block_connect_event(receiver).await;
+    let sync_join_handle = tokio::task::spawn(sync_task);
+
+    Delay::new(Duration::from_millis(10)).await;
+    cancel_flag.store(true, Ordering::SeqCst);
+
+    let sync_result = sync_join_handle.await?;
+    assert!(sync_result.is_err());
+    assert!(sync_result.err().unwrap().is_canceled());
+
+    let node2 = join_handle.await?;
+    let current_block_header = node2.chain().current_header();
+    ensure!(
+        target.target_id.id() != current_block_header.id(),
+        "Sync task cancel by flag test fail."
     );
     let reports = task_event_counter.get_reports();
     reports

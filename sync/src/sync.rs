@@ -61,6 +61,7 @@ fn global_sync_runtime() -> &'static Runtime {
 }
 
 const REPUTATION_THRESHOLD: i32 = -1000;
+const WATCHDOG_RESTART_DELAY: Duration = Duration::from_secs(120); // maybe wait for some time before restart sync.
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -787,7 +788,9 @@ impl ActorService for SyncService {
                     );
                     if let Err(e) = sync_ref.cancel().await {
                         warn!("[sync] Watchdog cancel sync failed: {:?}", e);
+                        return;
                     }
+                    tokio::time::sleep(WATCHDOG_RESTART_DELAY).await;
                     if let Err(e) = sync_ref.start(true, vec![], false, None).await {
                         warn!("[sync] Watchdog restart sync failed: {:?}", e);
                     }

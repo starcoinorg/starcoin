@@ -27,7 +27,7 @@ use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, Blo
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
@@ -726,7 +726,8 @@ where
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-            return Ok(CollectorState::Need);
+            info!("[sync] BlockCollector canceled by flag.");
+            return Err(TaskError::Canceled.into());
         }
         let (block, block_info, peer_id) = item.into();
 

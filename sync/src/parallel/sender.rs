@@ -250,7 +250,11 @@ impl<'a> DagBlockSender<'a> {
         }
 
         for worker in std::mem::take(&mut self.executors) {
-            worker.handle.await?;
+            match worker.handle.await {
+                Ok(()) => {}
+                Err(join_err) if join_err.is_cancelled() => {}
+                Err(join_err) => return Err(join_err.into()),
+            }
         }
 
         anyhow::Ok(())
