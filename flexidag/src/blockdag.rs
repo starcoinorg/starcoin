@@ -199,10 +199,6 @@ impl BlockDAG {
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!(
-                    "failed to get header by hash, the block should be re-executed, hash: {:?}",
-                    block_header.id()
-                );
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
