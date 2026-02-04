@@ -25,9 +25,13 @@ use starcoin_types::{
 };
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 use tokio::time::timeout;
+
+use network_p2p_types::{OutboundFailure, RequestFailure};
 
 #[derive(Clone, Debug, Error)]
 #[error("Peer {peers:?} return valid rpc response: {msg:?}")]
@@ -118,6 +122,91 @@ fn default_rpc_timeout() -> Duration {
     }
     Duration::from_millis(500)
 }
+
+struct AdaptiveBlockIdsSizer {
+    min: u64,
+    max: u64,
+    grow_threshold: u64,
+    size: AtomicU64,
+    success_blocks: AtomicU64,
+}
+
+impl AdaptiveBlockIdsSizer {
+    fn new(start: u64, min: u64, max: u64, grow_threshold: u64) -> Self {
+        let mut initial = start;
+        if initial < min {
+            initial = min;
+        }
+        if initial > max {
+            initial = max;
+        }
+        Self {
+            min,
+            max,
+            grow_threshold,
+            size: AtomicU64::new(initial),
+            success_blocks: AtomicU64::new(0),
+        }
+    }
+
+    fn clamp_request_size(&self, requested: u64) -> u64 {
+        let current = self.size.load(Ordering::Relaxed);
+        std::cmp::min(requested, current)
+    }
+
+    fn on_timeout(&self) {
+        let current = self.size.load(Ordering::Relaxed);
+        let mut next = current / 2;
+        if next < self.min {
+            next = self.min;
+        }
+        if next != current {
+            info!(
+                "[sync] get_block_ids batch size reduced on timeout: {} -> {}",
+                current, next
+            );
+            self.size.store(next, Ordering::Relaxed);
+        }
+        self.success_blocks.store(0, Ordering::Relaxed);
+    }
+
+    fn on_success(&self, blocks: u64) {
+        if blocks == 0 {
+            return;
+        }
+        let total = self
+            .success_blocks
+            .fetch_add(blocks, Ordering::Relaxed)
+            .saturating_add(blocks);
+        if total < self.grow_threshold {
+            return;
+        }
+        let current = self.size.load(Ordering::Relaxed);
+        let mut next = current.saturating_mul(2);
+        if next > self.max {
+            next = self.max;
+        }
+        if next != current {
+            info!(
+                "[sync] get_block_ids batch size increased after stable fetch: {} -> {}",
+                current, next
+            );
+            self.size.store(next, Ordering::Relaxed);
+        }
+        self.success_blocks.store(0, Ordering::Relaxed);
+    }
+}
+
+fn is_timeout_error(err: &anyhow::Error) -> bool {
+    if let Some(req_failure) = err.downcast_ref::<RequestFailure>() {
+        return matches!(
+            req_failure,
+            RequestFailure::Network(OutboundFailure::Timeout)
+        );
+    }
+    // Fallback: match the formatted message from request-response layer.
+    err.to_string().contains("Timeout")
+}
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
 pub struct VerifiedRpcClient {
@@ -127,6 +216,7 @@ pub struct VerifiedRpcClient {
     max_retry_times: u64,
     rpc_timeout: Duration,
     rpc_retry_count: i32,
+    block_ids_sizer: Arc<AdaptiveBlockIdsSizer>,
 }
 
 impl VerifiedRpcClient {
@@ -163,6 +253,7 @@ impl VerifiedRpcClient {
             max_retry_times,
             rpc_timeout,
             rpc_retry_count: DEFAULT_RPC_RETRY_COUNT,
+            block_ids_sizer: Arc::new(AdaptiveBlockIdsSizer::new(1000, 10, 1000, 10_000)),
         }
     }
 
@@ -679,10 +770,11 @@ impl VerifiedRpcClient {
             None => self.select_a_peer()?,
             Some(p) => p,
         };
-        let request = GetBlockIds {
+        let requested_max = max_size;
+        let mut request = GetBlockIds {
             start_number,
             reverse,
-            max_size,
+            max_size: self.block_ids_sizer.clamp_request_size(requested_max),
         };
         let mut count = 0;
         while count < self.rpc_retry_count {
@@ -691,8 +783,15 @@ impl VerifiedRpcClient {
                 .get_block_ids(peer_id.clone(), request.clone())
                 .await
             {
-                Ok(result) => return Ok(result),
+                Ok(result) => {
+                    self.block_ids_sizer.on_success(result.len() as u64);
+                    return Ok(result);
+                }
                 Err(e) => {
+                    if is_timeout_error(&e) {
+                        self.block_ids_sizer.on_timeout();
+                        request.max_size = self.block_ids_sizer.clamp_request_size(requested_max);
+                    }
                     count = count.saturating_add(1);
                     if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
