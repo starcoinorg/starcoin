@@ -1033,12 +1033,6 @@ impl VerifiedRpcClient {
                             .as_millis()) as u32;
                         let score = self.score(time);
                         self.record(&peer_id, score);
-
-                        info!(
-                            "Successfully got blocks from peer {} in {}ms (score: {}, attempt {}/{})",
-                            peer_id, time, score, attempts, max_retries
-                        );
-
                         return Ok(ids
                             .iter()
                             .zip(blocks)
