@@ -3,8 +3,8 @@ use super::{
 };
 use crate::consensusdb::schemadb::ReachabilityStore;
 use crate::types::interval::Interval;
-use starcoin_logger::prelude::info;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_logger::prelude::info;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};

@@ -16,7 +16,7 @@ use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
-        ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
+        RelationsStore, RelationsStoreReader,
     },
 };
 use crate::ghostdag::protocol::{GhostdagManager, KStore};

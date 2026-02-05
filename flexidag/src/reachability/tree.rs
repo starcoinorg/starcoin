@@ -6,8 +6,8 @@ use super::{
     *,
 };
 use crate::{consensusdb::schemadb::ReachabilityStore, process_key_already_error};
-use starcoin_logger::prelude::info;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_logger::prelude::info;
 use std::time::Instant;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
