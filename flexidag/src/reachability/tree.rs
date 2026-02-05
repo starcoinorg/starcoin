@@ -26,6 +26,7 @@ pub fn add_tree_block(
     let parent_height = store.append_child(parent, new_block)?;
 
     if remaining.is_empty() {
+        let debug_enabled = log::log_enabled!(log::Level::Debug);
         // Init with the empty interval.
         // Note: internal logic relies on interval being this specific interval
         //       which comes exactly at the end of current capacity
@@ -38,25 +39,30 @@ pub fn add_tree_block(
 
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
-        let reindex_start = Instant::now();
-        debug!(
-            "block_process reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
-            new_block,
-            parent,
-            parent_height,
-            reindex_root,
-            reindex_depth,
-            reindex_slack,
-            remaining
-        );
+        let reindex_start = if debug_enabled { Some(Instant::now()) } else { None };
+        if debug_enabled {
+            debug!(
+                "block_process reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
+                new_block,
+                parent,
+                parent_height,
+                reindex_root,
+                reindex_depth,
+                reindex_slack,
+                remaining
+            );
+        }
         let mut ctx = ReindexOperationContext::new(store, reindex_depth, reindex_slack);
         ctx.reindex_intervals(new_block, reindex_root)?;
-        debug!(
-            "block_process reachability reindex finished: new_block={:?} reindex_root={:?} duration={:?}",
-            new_block,
-            reindex_root,
-            reindex_start.elapsed()
-        );
+        if debug_enabled {
+            let duration = reindex_start.map(|start| start.elapsed());
+            debug!(
+                "block_process reachability reindex finished: new_block={:?} reindex_root={:?} duration={:?}",
+                new_block,
+                reindex_root,
+                duration.unwrap_or_default()
+            );
+        }
     } else {
         let allocated = remaining.split_half().0;
         process_key_already_error(store.insert(

@@ -2167,22 +2167,29 @@ impl ChainWriter for BlockChain {
 
         // Hint virtual selected parent only when VSP actually changes.
         if selected_block_hash != prev_vsp {
-            let root_before = dag.storage.reachability_store.read().get_reindex_root();
-            let hint_start = Instant::now();
-            let hint_result = inquirer::hint_virtual_selected_parent(
-                dag.storage.reachability_store.write().deref_mut(),
-                selected_block_hash,
-            );
-            let root_after = dag.storage.reachability_store.read().get_reindex_root();
-            debug!(
-                "block_process hint_virtual_selected_parent: vsp_changed prev={:?} new={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
-                prev_vsp,
-                selected_block_hash,
-                root_before,
-                root_after,
-                hint_start.elapsed(),
-                hint_result
-            );
+            if log::log_enabled!(log::Level::Debug) {
+                let root_before = dag.storage.reachability_store.read().get_reindex_root();
+                let hint_start = Instant::now();
+                let hint_result = inquirer::hint_virtual_selected_parent(
+                    dag.storage.reachability_store.write().deref_mut(),
+                    selected_block_hash,
+                );
+                let root_after = dag.storage.reachability_store.read().get_reindex_root();
+                debug!(
+                    "block_process hint_virtual_selected_parent: vsp_changed prev={:?} new={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
+                    prev_vsp,
+                    selected_block_hash,
+                    root_before,
+                    root_after,
+                    hint_start.elapsed(),
+                    hint_result
+                );
+            } else {
+                let _ = inquirer::hint_virtual_selected_parent(
+                    dag.storage.reachability_store.write().deref_mut(),
+                    selected_block_hash,
+                );
+            }
         }
 
         Ok(executed_block)

@@ -42,7 +42,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
     /// tree until it finds a block with an interval size that's greater than
     /// its subtree size. See `propagate_interval` for further details.
     pub(super) fn reindex_intervals(&mut self, new_child: Hash, reindex_root: Hash) -> Result<()> {
-        let start = Instant::now();
+        let debug_enabled = log::log_enabled!(log::Level::Debug);
+        let start = if debug_enabled { Some(Instant::now()) } else { None };
         let mut loop_iters = 0u64;
         let mut count_subtrees_dur = Duration::ZERO;
         let mut current = new_child;
@@ -50,10 +51,14 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         // Search for the first ancestor with sufficient interval space
         loop {
             let current_interval = self.store.get_interval(current)?;
-            let count_start = Instant::now();
-            self.count_subtrees(current)?;
-            count_subtrees_dur = count_subtrees_dur.saturating_add(count_start.elapsed());
-            loop_iters = loop_iters.saturating_add(1);
+            if debug_enabled {
+                let count_start = Instant::now();
+                self.count_subtrees(current)?;
+                count_subtrees_dur = count_subtrees_dur.saturating_add(count_start.elapsed());
+                loop_iters = loop_iters.saturating_add(1);
+            } else {
+                self.count_subtrees(current)?;
+            }
 
             // `current` has sufficient space, break and propagate
             if current_interval.size() >= self.get_subtree_size(current)? {
@@ -94,45 +99,57 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 // 1. we set `required_allocation` = subtree size of current in order to double the
                 // current interval capacity
                 // 2. it might be the case that current is the `new_child` itself
-                let early_start = Instant::now();
-                let result = self.reindex_intervals_earlier_than_root(
+                if debug_enabled {
+                    let early_start = Instant::now();
+                    let result = self.reindex_intervals_earlier_than_root(
+                        current,
+                        reindex_root,
+                        parent,
+                        self.get_subtree_size(current)?,
+                    );
+                    debug!(
+                        "block_process reachability reindex earlier_than_root: new_child={:?} current={:?} parent={:?} reindex_root={:?} iterations={} count_subtrees={:?} duration={:?} ok={}",
+                        new_child,
+                        current,
+                        parent,
+                        reindex_root,
+                        loop_iters,
+                        count_subtrees_dur,
+                        early_start.elapsed(),
+                        result.is_ok()
+                    );
+                    return result;
+                }
+                return self.reindex_intervals_earlier_than_root(
                     current,
                     reindex_root,
                     parent,
                     self.get_subtree_size(current)?,
                 );
-                debug!(
-                    "block_process reachability reindex earlier_than_root: new_child={:?} current={:?} parent={:?} reindex_root={:?} iterations={} count_subtrees={:?} duration={:?} ok={}",
-                    new_child,
-                    current,
-                    parent,
-                    reindex_root,
-                    loop_iters,
-                    count_subtrees_dur,
-                    early_start.elapsed(),
-                    result.is_ok()
-                );
-                return result;
             }
 
             current = parent
         }
 
-        let propagate_start = Instant::now();
-        let result = self.propagate_interval(current);
-        let propagate_dur = propagate_start.elapsed();
-        debug!(
-            "block_process reachability reindex: new_child={:?} anchor={:?} reindex_root={:?} iterations={} count_subtrees={:?} propagate={:?} total={:?} ok={}",
-            new_child,
-            current,
-            reindex_root,
-            loop_iters,
-            count_subtrees_dur,
-            propagate_dur,
-            start.elapsed(),
-            result.is_ok()
-        );
-        result
+        if debug_enabled {
+            let propagate_start = Instant::now();
+            let result = self.propagate_interval(current);
+            let propagate_dur = propagate_start.elapsed();
+            let total_dur = start.map(|start| start.elapsed());
+            debug!(
+                "block_process reachability reindex: new_child={:?} anchor={:?} reindex_root={:?} iterations={} count_subtrees={:?} propagate={:?} total={:?} ok={}",
+                new_child,
+                current,
+                reindex_root,
+                loop_iters,
+                count_subtrees_dur,
+                propagate_dur,
+                total_dur.unwrap_or_default(),
+                result.is_ok()
+            );
+            return result;
+        }
+        self.propagate_interval(current)
     }
 
     ///
@@ -250,7 +267,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         common_ancestor: Hash,
         required_allocation: u64,
     ) -> Result<()> {
-        let start = Instant::now();
+        let debug_enabled = log::log_enabled!(log::Level::Debug);
+        let start = if debug_enabled { Some(Instant::now()) } else { None };
         // The chosen child is: (i) child of `common_ancestor`; (ii) an
         // ancestor of `reindex_root` or `reindex_root` itself
         let chosen_child =
@@ -278,17 +296,20 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 required_allocation,
             )
         };
-        debug!(
-            "block_process reachability reindex earlier_than_root finished: allocation_block={:?} common_ancestor={:?} chosen_child={:?} reindex_root={:?} required_allocation={} branch={} duration={:?} ok={}",
-            allocation_block,
-            common_ancestor,
-            chosen_child,
-            reindex_root,
-            required_allocation,
-            if before { "before" } else { "after" },
-            start.elapsed(),
-            result.is_ok()
-        );
+        if debug_enabled {
+            let duration = start.map(|start| start.elapsed());
+            debug!(
+                "block_process reachability reindex earlier_than_root finished: allocation_block={:?} common_ancestor={:?} chosen_child={:?} reindex_root={:?} required_allocation={} branch={} duration={:?} ok={}",
+                allocation_block,
+                common_ancestor,
+                chosen_child,
+                reindex_root,
+                required_allocation,
+                if before { "before" } else { "after" },
+                duration.unwrap_or_default(),
+                result.is_ok()
+            );
+        }
         result
     }
 
@@ -512,7 +533,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         child: Hash,
         is_final_reindex_root: bool,
     ) -> Result<()> {
-        let start = Instant::now();
+        let debug_enabled = log::log_enabled!(log::Level::Debug);
+        let start = if debug_enabled { Some(Instant::now()) } else { None };
         let children = self.store.get_children(parent)?;
         let children_len = children.len();
 
@@ -532,14 +554,17 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             is_final_reindex_root,
         )?;
 
-        debug!(
-            "block_process reachability concentrate_interval: parent={:?} child={:?} children={} final_root={} duration={:?}",
-            parent,
-            child,
-            children_len,
-            is_final_reindex_root,
-            start.elapsed()
-        );
+        if debug_enabled {
+            let duration = start.map(|start| start.elapsed());
+            debug!(
+                "block_process reachability concentrate_interval: parent={:?} child={:?} children={} final_root={} duration={:?}",
+                parent,
+                child,
+                children_len,
+                is_final_reindex_root,
+                duration.unwrap_or_default()
+            );
+        }
         Ok(())
     }
 

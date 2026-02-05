@@ -59,11 +59,12 @@ fn add_block_with_params(
     reindex_depth: Option<u64>,
     reindex_slack: Option<u64>,
 ) -> Result<()> {
-    let total_start = Instant::now();
+    let debug_enabled = log::log_enabled!(log::Level::Debug);
+    let total_start = if debug_enabled { Some(Instant::now()) } else { None };
     let reindex_depth = reindex_depth.unwrap_or(perf::DEFAULT_REINDEX_DEPTH);
     let reindex_slack = reindex_slack.unwrap_or(perf::DEFAULT_REINDEX_SLACK);
 
-    let tree_start = Instant::now();
+    let tree_start = if debug_enabled { Some(Instant::now()) } else { None };
     add_tree_block(
         store,
         new_block,
@@ -71,22 +72,25 @@ fn add_block_with_params(
         reindex_depth,
         reindex_slack,
     )?;
-    let tree_dur = tree_start.elapsed();
+    let tree_dur = tree_start.map(|start| start.elapsed());
 
-    let dag_start = Instant::now();
+    let dag_start = if debug_enabled { Some(Instant::now()) } else { None };
     add_dag_block(store, new_block, mergeset_iterator)?;
-    let dag_dur = dag_start.elapsed();
+    let dag_dur = dag_start.map(|start| start.elapsed());
 
-    debug!(
-        "block_process reachability add_block: new_block={:?} selected_parent={:?} reindex_depth={} reindex_slack={} tree_dur={:?} dag_dur={:?} total={:?}",
-        new_block,
-        selected_parent,
-        reindex_depth,
-        reindex_slack,
-        tree_dur,
-        dag_dur,
-        total_start.elapsed()
-    );
+    if debug_enabled {
+        let total_dur = total_start.map(|start| start.elapsed());
+        debug!(
+            "block_process reachability add_block: new_block={:?} selected_parent={:?} reindex_depth={} reindex_slack={} tree_dur={:?} dag_dur={:?} total={:?}",
+            new_block,
+            selected_parent,
+            reindex_depth,
+            reindex_slack,
+            tree_dur.unwrap_or_default(),
+            dag_dur.unwrap_or_default(),
+            total_dur.unwrap_or_default()
+        );
+    }
     Ok(())
 }
 
@@ -95,7 +99,8 @@ fn add_dag_block(
     new_block: Hash,
     mergeset_iterator: HashIterator,
 ) -> Result<()> {
-    let start = Instant::now();
+    let debug_enabled = log::log_enabled!(log::Level::Debug);
+    let start = if debug_enabled { Some(Instant::now()) } else { None };
     let mut mergeset_count = 0usize;
     let mut data_inconsistency = 0usize;
     // Update the future covering set for blocks in the mergeset
@@ -114,13 +119,16 @@ fn add_dag_block(
                 Err(ReachabilityError::HashesNotOrdered) => {
                     // This is a hashes not ordered error, which means that the merged block is not in the future covering set
                     // of the new block. This is a serious error, and we should propagate it.
-                    debug!(
-                        "block_process reachability add_dag_block hashes_not_ordered: new_block={:?} merged_block={:?} mergeset_count={} duration={:?}",
-                        new_block,
-                        merged_block,
-                        mergeset_count,
-                        start.elapsed()
-                    );
+                    if debug_enabled {
+                        let duration = start.map(|start| start.elapsed());
+                        debug!(
+                            "block_process reachability add_dag_block hashes_not_ordered: new_block={:?} merged_block={:?} mergeset_count={} duration={:?}",
+                            new_block,
+                            merged_block,
+                            mergeset_count,
+                            duration.unwrap_or_default()
+                        );
+                    }
                     return Err(ReachabilityError::HashesNotOrdered);
                 }
                 _ => {
@@ -133,13 +141,16 @@ fn add_dag_block(
     for result in insert_future_set_result.into_iter() {
         result?;
     }
-    debug!(
-        "block_process reachability add_dag_block: new_block={:?} mergeset_count={} data_inconsistency={} duration={:?}",
-        new_block,
-        mergeset_count,
-        data_inconsistency,
-        start.elapsed()
-    );
+    if debug_enabled {
+        let duration = start.map(|start| start.elapsed());
+        debug!(
+            "block_process reachability add_dag_block: new_block={:?} mergeset_count={} data_inconsistency={} duration={:?}",
+            new_block,
+            mergeset_count,
+            data_inconsistency,
+            duration.unwrap_or_default()
+        );
+    }
     Ok(())
 }
 
