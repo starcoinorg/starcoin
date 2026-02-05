@@ -432,17 +432,29 @@ impl BlockDAG {
         };
 
         if header.pruning_point() == HashValue::zero() {
+            let root_before = self.storage.reachability_store.read().get_reindex_root();
             info!(
                 "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
+                root_before
             );
-            let _ = inquirer::hint_virtual_selected_parent(
+            let hint_start = Instant::now();
+            let hint_result = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
                 header.parent_hash(),
             );
+            let root_after = self.storage.reachability_store.read().get_reindex_root();
             info!(
                 "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
+                root_after
+            );
+            info!(
+                "jacktest hint_virtual_selected_parent: header={:?} parent={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
+                header.id(),
+                header.parent_hash(),
+                root_before,
+                root_after,
+                hint_start.elapsed(),
+                hint_result
             );
         } else if self.storage.reachability_store.read().get_reindex_root()?
             != header.pruning_point()
@@ -452,17 +464,29 @@ impl BlockDAG {
                 .read()
                 .has(header.pruning_point())?
         {
+            let root_before = self.storage.reachability_store.read().get_reindex_root();
             info!(
                 "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
+                root_before
             );
+            let hint_start = Instant::now();
             let hint_result = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
                 header.pruning_point(),
             );
+            let root_after = self.storage.reachability_store.read().get_reindex_root();
             info!(
                 "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(),
+                root_after,
+                hint_result
+            );
+            info!(
+                "jacktest hint_virtual_selected_parent: header={:?} pruning_point={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
+                header.id(),
+                header.pruning_point(),
+                root_before,
+                root_after,
+                hint_start.elapsed(),
                 hint_result
             );
         }
