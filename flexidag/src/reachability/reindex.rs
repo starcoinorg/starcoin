@@ -4,7 +4,7 @@ use super::{
 use crate::consensusdb::schemadb::ReachabilityStore;
 use crate::types::interval::Interval;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::debug;
+use starcoin_logger::prelude::{debug, log_enabled, Level};
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
@@ -42,8 +42,12 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
     /// tree until it finds a block with an interval size that's greater than
     /// its subtree size. See `propagate_interval` for further details.
     pub(super) fn reindex_intervals(&mut self, new_child: Hash, reindex_root: Hash) -> Result<()> {
-        let debug_enabled = log::log_enabled!(log::Level::Debug);
-        let start = if debug_enabled { Some(Instant::now()) } else { None };
+        let debug_enabled = log_enabled!(Level::Debug);
+        let start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let mut loop_iters = 0u64;
         let mut count_subtrees_dur = Duration::ZERO;
         let mut current = new_child;
@@ -267,8 +271,12 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         common_ancestor: Hash,
         required_allocation: u64,
     ) -> Result<()> {
-        let debug_enabled = log::log_enabled!(log::Level::Debug);
-        let start = if debug_enabled { Some(Instant::now()) } else { None };
+        let debug_enabled = log_enabled!(Level::Debug);
+        let start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         // The chosen child is: (i) child of `common_ancestor`; (ii) an
         // ancestor of `reindex_root` or `reindex_root` itself
         let chosen_child =
@@ -533,8 +541,12 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         child: Hash,
         is_final_reindex_root: bool,
     ) -> Result<()> {
-        let debug_enabled = log::log_enabled!(log::Level::Debug);
-        let start = if debug_enabled { Some(Instant::now()) } else { None };
+        let debug_enabled = log_enabled!(Level::Debug);
+        let start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let children = self.store.get_children(parent)?;
         let children_len = children.len();
 

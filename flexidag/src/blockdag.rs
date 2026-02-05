@@ -31,7 +31,7 @@ use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, error, info, warn};
+use starcoin_logger::prelude::{debug, error, info, log_enabled, warn, Level};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -375,8 +375,12 @@ impl BlockDAG {
         header: BlockHeader,
         trusted_ghostdata: Arc<GhostdagData>,
     ) -> anyhow::Result<()> {
-        let debug_enabled = log::log_enabled!(log::Level::Debug);
-        let total_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let debug_enabled = log_enabled!(Level::Debug);
+        let total_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         info!(
             "start to commit header: {:?}, number: {:?}",
             header.id(),
@@ -440,7 +444,11 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let lock_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let lock_guard = self.commit_lock.lock();
         let lock_wait = lock_start.map(|start| start.elapsed());
 
@@ -448,7 +456,11 @@ impl BlockDAG {
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
-        let stage_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let stage_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let mut stage = StagingReachabilityStore::new(
             self.storage.db.clone(),
             self.storage.reachability_store.upgradable_read(),
@@ -456,7 +468,11 @@ impl BlockDAG {
         let stage_init = stage_start.map(|start| start.elapsed());
 
         // Store ghostdata
-        let ghost_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let ghost_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         process_key_already_error(self.storage.ghost_dag_store.insert_batch(
             &mut batch,
             header.id(),
@@ -475,7 +491,11 @@ impl BlockDAG {
         let merge_set_len = ghostdata.mergeset_size().saturating_sub(1);
         let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
 
-        let add_block_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let add_block_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         match inquirer::add_block(
             &mut stage,
             header.id(),
@@ -498,7 +518,11 @@ impl BlockDAG {
         }
         let add_block_dur = add_block_start.map(|start| start.elapsed());
 
-        let relations_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let relations_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let mut relations_write = self.storage.relations_store.write();
         process_key_already_error(relations_write.insert_batch(
             &mut batch,
@@ -509,7 +533,11 @@ impl BlockDAG {
         let relations_dur = relations_start.map(|start| start.elapsed());
 
         // Store header store
-        let header_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let header_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
             header.id(),
@@ -522,14 +550,22 @@ impl BlockDAG {
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
-        let stage_commit_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let stage_commit_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let stage_write = stage
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
         let stage_commit_dur = stage_commit_start.map(|start| start.elapsed());
 
         // write the data just one time
-        let write_batch_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let write_batch_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");

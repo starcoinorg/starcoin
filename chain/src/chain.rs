@@ -2167,7 +2167,7 @@ impl ChainWriter for BlockChain {
 
         // Hint virtual selected parent only when VSP actually changes.
         if selected_block_hash != prev_vsp {
-            if log::log_enabled!(log::Level::Debug) {
+            if log_enabled!(Level::Debug) {
                 let root_before = dag.storage.reachability_store.read().get_reindex_root();
                 let hint_start = Instant::now();
                 let hint_result = inquirer::hint_virtual_selected_parent(

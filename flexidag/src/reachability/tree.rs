@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{consensusdb::schemadb::ReachabilityStore, process_key_already_error};
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::debug;
+use starcoin_logger::prelude::{debug, log_enabled, Level};
 use std::time::Instant;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
@@ -26,7 +26,7 @@ pub fn add_tree_block(
     let parent_height = store.append_child(parent, new_block)?;
 
     if remaining.is_empty() {
-        let debug_enabled = log::log_enabled!(log::Level::Debug);
+        let debug_enabled = log_enabled!(Level::Debug);
         // Init with the empty interval.
         // Note: internal logic relies on interval being this specific interval
         //       which comes exactly at the end of current capacity
@@ -39,7 +39,11 @@ pub fn add_tree_block(
 
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
-        let reindex_start = if debug_enabled { Some(Instant::now()) } else { None };
+        let reindex_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         if debug_enabled {
             debug!(
                 "block_process reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
