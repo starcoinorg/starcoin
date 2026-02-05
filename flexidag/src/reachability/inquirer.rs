@@ -3,7 +3,7 @@ use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
 use crate::process_key_already_error;
 use crate::types::{interval::Interval, perf};
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::debug;
 use std::time::Instant;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
@@ -77,8 +77,8 @@ fn add_block_with_params(
     add_dag_block(store, new_block, mergeset_iterator)?;
     let dag_dur = dag_start.elapsed();
 
-    info!(
-        "jacktest reachability add_block: new_block={:?} selected_parent={:?} reindex_depth={} reindex_slack={} tree_dur={:?} dag_dur={:?} total={:?}",
+    debug!(
+        "block_process reachability add_block: new_block={:?} selected_parent={:?} reindex_depth={} reindex_slack={} tree_dur={:?} dag_dur={:?} total={:?}",
         new_block,
         selected_parent,
         reindex_depth,
@@ -114,8 +114,8 @@ fn add_dag_block(
                 Err(ReachabilityError::HashesNotOrdered) => {
                     // This is a hashes not ordered error, which means that the merged block is not in the future covering set
                     // of the new block. This is a serious error, and we should propagate it.
-                    info!(
-                        "jacktest reachability add_dag_block hashes_not_ordered: new_block={:?} merged_block={:?} mergeset_count={} duration={:?}",
+                    debug!(
+                        "block_process reachability add_dag_block hashes_not_ordered: new_block={:?} merged_block={:?} mergeset_count={} duration={:?}",
                         new_block,
                         merged_block,
                         mergeset_count,
@@ -133,8 +133,8 @@ fn add_dag_block(
     for result in insert_future_set_result.into_iter() {
         result?;
     }
-    info!(
-        "jacktest reachability add_dag_block: new_block={:?} mergeset_count={} data_inconsistency={} duration={:?}",
+    debug!(
+        "block_process reachability add_dag_block: new_block={:?} mergeset_count={} data_inconsistency={} duration={:?}",
         new_block,
         mergeset_count,
         data_inconsistency,

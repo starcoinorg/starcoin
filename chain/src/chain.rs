@@ -2174,8 +2174,8 @@ impl ChainWriter for BlockChain {
                 selected_block_hash,
             );
             let root_after = dag.storage.reachability_store.read().get_reindex_root();
-            info!(
-                "jacktest hint_virtual_selected_parent: vsp_changed prev={:?} new={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
+            debug!(
+                "block_process hint_virtual_selected_parent: vsp_changed prev={:?} new={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
                 prev_vsp,
                 selected_block_hash,
                 root_before,

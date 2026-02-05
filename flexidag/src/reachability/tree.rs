@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{consensusdb::schemadb::ReachabilityStore, process_key_already_error};
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::debug;
 use std::time::Instant;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
@@ -39,8 +39,8 @@ pub fn add_tree_block(
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
         let reindex_start = Instant::now();
-        info!(
-            "jacktest reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
+        debug!(
+            "block_process reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
             new_block,
             parent,
             parent_height,
@@ -51,8 +51,8 @@ pub fn add_tree_block(
         );
         let mut ctx = ReindexOperationContext::new(store, reindex_depth, reindex_slack);
         ctx.reindex_intervals(new_block, reindex_root)?;
-        info!(
-            "jacktest reachability reindex finished: new_block={:?} reindex_root={:?} duration={:?}",
+        debug!(
+            "block_process reachability reindex finished: new_block={:?} reindex_root={:?} duration={:?}",
             new_block,
             reindex_root,
             reindex_start.elapsed()

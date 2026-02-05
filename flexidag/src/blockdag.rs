@@ -535,8 +535,8 @@ impl BlockDAG {
         let write_batch_dur = write_batch_start.elapsed();
 
         info!("finish writing the batch, head id: {:?}", header.id());
-        info!(
-            "jacktest commit via batch timings: header={:?} number={:?} parents={} mergeset={} lock_wait={:?} stage_init={:?} ghost_insert={:?} add_block={:?} relations={:?} header_insert={:?} stage_commit={:?} write_batch={:?} total={:?}",
+        debug!(
+            "block_process commit via batch timings: header={:?} number={:?} parents={} mergeset={} lock_wait={:?} stage_init={:?} ghost_insert={:?} add_block={:?} relations={:?} header_insert={:?} stage_commit={:?} write_batch={:?} total={:?}",
             header.id(),
             header.number(),
             header.parents().len(),

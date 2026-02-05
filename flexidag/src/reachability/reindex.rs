@@ -4,7 +4,7 @@ use super::{
 use crate::consensusdb::schemadb::ReachabilityStore;
 use crate::types::interval::Interval;
 use starcoin_crypto::HashValue as Hash;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::debug;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
@@ -101,8 +101,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                     parent,
                     self.get_subtree_size(current)?,
                 );
-                info!(
-                    "jacktest reachability reindex earlier_than_root: new_child={:?} current={:?} parent={:?} reindex_root={:?} iterations={} count_subtrees={:?} duration={:?} ok={}",
+                debug!(
+                    "block_process reachability reindex earlier_than_root: new_child={:?} current={:?} parent={:?} reindex_root={:?} iterations={} count_subtrees={:?} duration={:?} ok={}",
                     new_child,
                     current,
                     parent,
@@ -121,8 +121,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         let propagate_start = Instant::now();
         let result = self.propagate_interval(current);
         let propagate_dur = propagate_start.elapsed();
-        info!(
-            "jacktest reachability reindex: new_child={:?} anchor={:?} reindex_root={:?} iterations={} count_subtrees={:?} propagate={:?} total={:?} ok={}",
+        debug!(
+            "block_process reachability reindex: new_child={:?} anchor={:?} reindex_root={:?} iterations={} count_subtrees={:?} propagate={:?} total={:?} ok={}",
             new_child,
             current,
             reindex_root,
@@ -278,8 +278,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 required_allocation,
             )
         };
-        info!(
-            "jacktest reachability reindex earlier_than_root finished: allocation_block={:?} common_ancestor={:?} chosen_child={:?} reindex_root={:?} required_allocation={} branch={} duration={:?} ok={}",
+        debug!(
+            "block_process reachability reindex earlier_than_root finished: allocation_block={:?} common_ancestor={:?} chosen_child={:?} reindex_root={:?} required_allocation={} branch={} duration={:?} ok={}",
             allocation_block,
             common_ancestor,
             chosen_child,
@@ -532,8 +532,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             is_final_reindex_root,
         )?;
 
-        info!(
-            "jacktest reachability concentrate_interval: parent={:?} child={:?} children={} final_root={} duration={:?}",
+        debug!(
+            "block_process reachability concentrate_interval: parent={:?} child={:?} children={} final_root={} duration={:?}",
             parent,
             child,
             children_len,
