@@ -26,6 +26,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
+use starcoin_dag::reachability::inquirer;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
@@ -61,8 +62,10 @@ use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
+use std::ops::DerefMut;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
@@ -2039,6 +2042,7 @@ impl ChainWriter for BlockChain {
 
         let (storage, storage2) = &self.storage;
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
+        let prev_vsp = self.status.status.head().id();
 
         // DAG logic: manage tips and select best parent
         let dag = self.dag().clone();
@@ -2159,6 +2163,26 @@ impl ChainWriter for BlockChain {
 
         // Save updated tips to DAG state
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
+
+        // Hint virtual selected parent only when VSP actually changes.
+        if selected_block_hash != prev_vsp {
+            let root_before = dag.storage.reachability_store.read().get_reindex_root();
+            let hint_start = Instant::now();
+            let hint_result = inquirer::hint_virtual_selected_parent(
+                dag.storage.reachability_store.write().deref_mut(),
+                selected_block_hash,
+            );
+            let root_after = dag.storage.reachability_store.read().get_reindex_root();
+            info!(
+                "jacktest hint_virtual_selected_parent: vsp_changed prev={:?} new={:?} root_before={:?} root_after={:?} duration={:?} result={:?}",
+                prev_vsp,
+                selected_block_hash,
+                root_before,
+                root_after,
+                hint_start.elapsed(),
+                hint_result
+            );
+        }
 
         Ok(executed_block)
     }
