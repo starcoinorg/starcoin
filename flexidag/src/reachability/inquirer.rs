@@ -2,7 +2,9 @@ use super::{tree::*, *};
 use crate::consensusdb::schemadb::{ReachabilityStore, ReachabilityStoreReader};
 use crate::process_key_already_error;
 use crate::types::{interval::Interval, perf};
+use starcoin_logger::prelude::info;
 use starcoin_crypto::{HashValue as Hash, HashValue};
+use std::time::Instant;
 
 /// Init the reachability store to match the state required by the algorithmic layer.
 /// The function first checks the store for possibly being initialized already.
@@ -57,14 +59,34 @@ fn add_block_with_params(
     reindex_depth: Option<u64>,
     reindex_slack: Option<u64>,
 ) -> Result<()> {
+    let total_start = Instant::now();
+    let reindex_depth = reindex_depth.unwrap_or(perf::DEFAULT_REINDEX_DEPTH);
+    let reindex_slack = reindex_slack.unwrap_or(perf::DEFAULT_REINDEX_SLACK);
+
+    let tree_start = Instant::now();
     add_tree_block(
         store,
         new_block,
         selected_parent,
-        reindex_depth.unwrap_or(perf::DEFAULT_REINDEX_DEPTH),
-        reindex_slack.unwrap_or(perf::DEFAULT_REINDEX_SLACK),
+        reindex_depth,
+        reindex_slack,
     )?;
+    let tree_dur = tree_start.elapsed();
+
+    let dag_start = Instant::now();
     add_dag_block(store, new_block, mergeset_iterator)?;
+    let dag_dur = dag_start.elapsed();
+
+    info!(
+        "jacktest reachability add_block: new_block={:?} selected_parent={:?} reindex_depth={} reindex_slack={} tree_dur={:?} dag_dur={:?} total={:?}",
+        new_block,
+        selected_parent,
+        reindex_depth,
+        reindex_slack,
+        tree_dur,
+        dag_dur,
+        total_start.elapsed()
+    );
     Ok(())
 }
 
@@ -73,20 +95,32 @@ fn add_dag_block(
     new_block: Hash,
     mergeset_iterator: HashIterator,
 ) -> Result<()> {
+    let start = Instant::now();
+    let mut mergeset_count = 0usize;
+    let mut data_inconsistency = 0usize;
     // Update the future covering set for blocks in the mergeset
     let mut insert_future_set_result: Vec<std::result::Result<(), ReachabilityError>> = Vec::new();
     for merged_block in mergeset_iterator {
+        mergeset_count += 1;
         let result = insert_to_future_covering_set(store, merged_block, new_block);
         if result.is_err() {
             match result {
                 Err(ReachabilityError::DataInconsistency) => {
                     // This is a data inconsistency error, which means that the block is already in the future covering set
                     // of the merged block. This is a serious error, and we should propagate it.
+                    data_inconsistency = data_inconsistency.saturating_add(1);
                     insert_future_set_result.push(Err(ReachabilityError::DataInconsistency));
                 }
                 Err(ReachabilityError::HashesNotOrdered) => {
                     // This is a hashes not ordered error, which means that the merged block is not in the future covering set
                     // of the new block. This is a serious error, and we should propagate it.
+                    info!(
+                        "jacktest reachability add_dag_block hashes_not_ordered: new_block={:?} merged_block={:?} mergeset_count={} duration={:?}",
+                        new_block,
+                        merged_block,
+                        mergeset_count,
+                        start.elapsed()
+                    );
                     return Err(ReachabilityError::HashesNotOrdered);
                 }
                 _ => {
@@ -99,6 +133,13 @@ fn add_dag_block(
     for result in insert_future_set_result.into_iter() {
         result?;
     }
+    info!(
+        "jacktest reachability add_dag_block: new_block={:?} mergeset_count={} data_inconsistency={} duration={:?}",
+        new_block,
+        mergeset_count,
+        data_inconsistency,
+        start.elapsed()
+    );
     Ok(())
 }
 

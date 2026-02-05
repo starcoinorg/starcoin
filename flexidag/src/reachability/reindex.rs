@@ -3,9 +3,11 @@ use super::{
 };
 use crate::consensusdb::schemadb::ReachabilityStore;
 use crate::types::interval::Interval;
+use starcoin_logger::prelude::info;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashExtensions, BlockHashMap};
 use std::collections::VecDeque;
+use std::time::{Duration, Instant};
 
 /// A struct used during reindex operations. It represents a temporary context
 /// for caching subtree information during the *current* reindex operation only
@@ -40,12 +42,18 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
     /// tree until it finds a block with an interval size that's greater than
     /// its subtree size. See `propagate_interval` for further details.
     pub(super) fn reindex_intervals(&mut self, new_child: Hash, reindex_root: Hash) -> Result<()> {
+        let start = Instant::now();
+        let mut loop_iters = 0u64;
+        let mut count_subtrees_dur = Duration::ZERO;
         let mut current = new_child;
 
         // Search for the first ancestor with sufficient interval space
         loop {
             let current_interval = self.store.get_interval(current)?;
+            let count_start = Instant::now();
             self.count_subtrees(current)?;
+            count_subtrees_dur = count_subtrees_dur.saturating_add(count_start.elapsed());
+            loop_iters = loop_iters.saturating_add(1);
 
             // `current` has sufficient space, break and propagate
             if current_interval.size() >= self.get_subtree_size(current)? {
@@ -86,18 +94,45 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 // 1. we set `required_allocation` = subtree size of current in order to double the
                 // current interval capacity
                 // 2. it might be the case that current is the `new_child` itself
-                return self.reindex_intervals_earlier_than_root(
+                let early_start = Instant::now();
+                let result = self.reindex_intervals_earlier_than_root(
                     current,
                     reindex_root,
                     parent,
                     self.get_subtree_size(current)?,
                 );
+                info!(
+                    "jacktest reachability reindex earlier_than_root: new_child={:?} current={:?} parent={:?} reindex_root={:?} iterations={} count_subtrees={:?} duration={:?} ok={}",
+                    new_child,
+                    current,
+                    parent,
+                    reindex_root,
+                    loop_iters,
+                    count_subtrees_dur,
+                    early_start.elapsed(),
+                    result.is_ok()
+                );
+                return result;
             }
 
             current = parent
         }
 
-        self.propagate_interval(current)
+        let propagate_start = Instant::now();
+        let result = self.propagate_interval(current);
+        let propagate_dur = propagate_start.elapsed();
+        info!(
+            "jacktest reachability reindex: new_child={:?} anchor={:?} reindex_root={:?} iterations={} count_subtrees={:?} propagate={:?} total={:?} ok={}",
+            new_child,
+            current,
+            reindex_root,
+            loop_iters,
+            count_subtrees_dur,
+            propagate_dur,
+            start.elapsed(),
+            result.is_ok()
+        );
+        result
     }
 
     ///
@@ -215,6 +250,7 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         common_ancestor: Hash,
         required_allocation: u64,
     ) -> Result<()> {
+        let start = Instant::now();
         // The chosen child is: (i) child of `common_ancestor`; (ii) an
         // ancestor of `reindex_root` or `reindex_root` itself
         let chosen_child =
@@ -222,7 +258,8 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         let block_interval = self.store.get_interval(allocation_block)?;
         let chosen_interval = self.store.get_interval(chosen_child)?;
 
-        if block_interval.start < chosen_interval.start {
+        let before = block_interval.start < chosen_interval.start;
+        let result = if before {
             // `allocation_block` is in the subtree before the chosen child
             self.reclaim_interval_before(
                 allocation_block,
@@ -240,7 +277,19 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
                 reindex_root,
                 required_allocation,
             )
-        }
+        };
+        info!(
+            "jacktest reachability reindex earlier_than_root finished: allocation_block={:?} common_ancestor={:?} chosen_child={:?} reindex_root={:?} required_allocation={} branch={} duration={:?} ok={}",
+            allocation_block,
+            common_ancestor,
+            chosen_child,
+            reindex_root,
+            required_allocation,
+            if before { "before" } else { "after" },
+            start.elapsed(),
+            result.is_ok()
+        );
+        result
     }
 
     fn reclaim_interval_before(
@@ -463,7 +512,9 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
         child: Hash,
         is_final_reindex_root: bool,
     ) -> Result<()> {
+        let start = Instant::now();
         let children = self.store.get_children(parent)?;
+        let children_len = children.len();
 
         // Split the `children` of `parent` to siblings before `child` and siblings after `child`
         let (siblings_before, siblings_after) = split_children(&children, child)?;
@@ -481,6 +532,14 @@ impl<'a, T: ReachabilityStore + ?Sized> ReindexOperationContext<'a, T> {
             is_final_reindex_root,
         )?;
 
+        info!(
+            "jacktest reachability concentrate_interval: parent={:?} child={:?} children={} final_root={} duration={:?}",
+            parent,
+            child,
+            children_len,
+            is_final_reindex_root,
+            start.elapsed()
+        );
         Ok(())
     }
 

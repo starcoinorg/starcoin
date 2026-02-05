@@ -41,6 +41,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use std::time::Instant;
 use thiserror::Error;
 
 pub type DbGhostdagManager = GhostdagManager<
@@ -374,6 +375,7 @@ impl BlockDAG {
         header: BlockHeader,
         trusted_ghostdata: Arc<GhostdagData>,
     ) -> anyhow::Result<()> {
+        let total_start = Instant::now();
         info!(
             "start to commit header: {:?}, number: {:?}",
             header.id(),
@@ -469,24 +471,30 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_start = Instant::now();
         let lock_guard = self.commit_lock.lock();
+        let lock_wait = lock_start.elapsed();
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
+        let stage_start = Instant::now();
         let mut stage = StagingReachabilityStore::new(
             self.storage.db.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
+        let stage_init = stage_start.elapsed();
 
         // Store ghostdata
+        let ghost_start = Instant::now();
         process_key_already_error(self.storage.ghost_dag_store.insert_batch(
             &mut batch,
             header.id(),
             ghostdata.clone(),
         ))
         .expect("failed to ghostdata in batch");
+        let ghost_dur = ghost_start.elapsed();
 
         // Update reachability store
         debug!(
@@ -495,8 +503,10 @@ impl BlockDAG {
             header.number()
         );
 
+        let merge_set_len = ghostdata.mergeset_size().saturating_sub(1);
         let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
 
+        let add_block_start = Instant::now();
         match inquirer::add_block(
             &mut stage,
             header.id(),
@@ -517,7 +527,9 @@ impl BlockDAG {
                 }
             },
         }
+        let add_block_dur = add_block_start.elapsed();
 
+        let relations_start = Instant::now();
         let mut relations_write = self.storage.relations_store.write();
         process_key_already_error(relations_write.insert_batch(
             &mut batch,
@@ -525,8 +537,10 @@ impl BlockDAG {
             BlockHashes::new(parents),
         ))
         .expect("failed to insert relations in batch");
+        let relations_dur = relations_start.elapsed();
 
         // Store header store
+        let header_start = Instant::now();
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
             header.id(),
@@ -534,20 +548,41 @@ impl BlockDAG {
             1,
         ))
         .expect("failed to insert header in batch");
+        let header_dur = header_start.elapsed();
 
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
+        let stage_commit_start = Instant::now();
         let stage_write = stage
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
+        let stage_commit_dur = stage_commit_start.elapsed();
 
         // write the data just one time
+        let write_batch_start = Instant::now();
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");
+        let write_batch_dur = write_batch_start.elapsed();
 
         info!("finish writing the batch, head id: {:?}", header.id());
+        info!(
+            "jacktest commit via batch timings: header={:?} number={:?} parents={} mergeset={} lock_wait={:?} stage_init={:?} ghost_insert={:?} add_block={:?} relations={:?} header_insert={:?} stage_commit={:?} write_batch={:?} total={:?}",
+            header.id(),
+            header.number(),
+            header.parents().len(),
+            merge_set_len,
+            lock_wait,
+            stage_init,
+            ghost_dur,
+            add_block_dur,
+            relations_dur,
+            header_dur,
+            stage_commit_dur,
+            write_batch_dur,
+            total_start.elapsed(),
+        );
 
         drop(stage_write);
         drop(relations_write);

@@ -6,7 +6,9 @@ use super::{
     *,
 };
 use crate::{consensusdb::schemadb::ReachabilityStore, process_key_already_error};
+use starcoin_logger::prelude::info;
 use starcoin_crypto::HashValue as Hash;
+use std::time::Instant;
 
 /// Adds `new_block` as a child of `parent` in the tree structure. If this block
 /// has no remaining interval to allocate, a reindexing is triggered. When a reindexing
@@ -36,8 +38,25 @@ pub fn add_tree_block(
 
         // Start a reindex operation (TODO: add timing)
         let reindex_root = store.get_reindex_root()?;
+        let reindex_start = Instant::now();
+        info!(
+            "jacktest reachability reindex triggered: new_block={:?} parent={:?} parent_height={} reindex_root={:?} depth={} slack={} remaining={:?}",
+            new_block,
+            parent,
+            parent_height,
+            reindex_root,
+            reindex_depth,
+            reindex_slack,
+            remaining
+        );
         let mut ctx = ReindexOperationContext::new(store, reindex_depth, reindex_slack);
         ctx.reindex_intervals(new_block, reindex_root)?;
+        info!(
+            "jacktest reachability reindex finished: new_block={:?} reindex_root={:?} duration={:?}",
+            new_block,
+            reindex_root,
+            reindex_start.elapsed()
+        );
     } else {
         let allocated = remaining.split_half().0;
         process_key_already_error(store.insert(
