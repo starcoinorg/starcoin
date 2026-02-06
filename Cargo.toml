@@ -13,6 +13,7 @@ members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/rpc/ipc",
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
@@ -150,6 +151,7 @@ default-members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/rpc/ipc",
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
@@ -350,10 +352,12 @@ hyper = { version = "0.14.12", features = ["full"] }
 include_dir = { version = "0.6.2", features = ["search"] }
 indicatif = "0.16.2"
 ip_network = "0.3.4"
+interprocess = "2.2.0"
 io-lifetimes = "1.0.5"
 itertools = "0.10.3"
 jpst = "0.1.1"
 jsonpath = "0.1.1"
+jsonrpsee = { version = "0.26.0", default-features = false }
 jsonrpc-client-transports = "18"
 jsonrpc-core = "18"
 jsonrpc-core-client = "18"
@@ -552,6 +556,7 @@ starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
+starcoin-rpc-ipc = { path = "commons/rpc/ipc" }
 starcoin-service-registry = { path = "commons/service-registry" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
@@ -639,11 +644,13 @@ timeout-join-handler = { path = "commons/timeout-join-handler" }
 tiny-keccak = { version = "2", features = ["keccak"] }
 tiny_http = "0.8.2"
 tokio = { version = "^1", features = ["full"] }
+tokio-stream = "0.1.11"
 tokio-util = "0.7.18"
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 toml = "0.5.9"
 trace-time = "0.1"
 tracing = "0.1.34"
+tower = "0.5"
 transaction-pool = "2.0.3"
 uint = "0.9.3"
 unsigned-varint = { version = "0.8.0", features = [
