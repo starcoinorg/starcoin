@@ -13,8 +13,10 @@ use jsonrpc_core_client::{
     RpcChannel, RpcError,
 };
 use jsonrpc_pubsub::Session;
+use jsonrpsee::{types::ErrorCode, Methods, RpcModule};
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
+use serde_json::{json, Value};
 use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::contract_api::ContractApi;
@@ -40,7 +42,7 @@ use std::sync::Arc;
 pub struct RpcService {
     config: Arc<NodeConfig>,
     api_registry: ApiRegistry,
-    ipc: Option<jsonrpc_ipc_server::Server>,
+    ipc: Option<jsonrpsee::server::ServerHandle>,
     http: Option<jsonrpc_http_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
@@ -168,20 +170,21 @@ impl RpcService {
         Self::new(config, api_registry)
     }
 
-    fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
+    fn start_ipc(&self) -> Result<Option<jsonrpsee::server::ServerHandle>> {
         Ok(if self.config.rpc.ipc.disable {
             None
         } else {
             let ipc_file = self.config.rpc.get_ipc_file();
             let apis: HashSet<Api> = self.config.rpc.ipc.apis().list_apis();
             let io_handler = self.api_registry.get_apis(apis);
+            let mut local_io_handler = MetaIoHandler::default();
+            local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
+            let methods = legacy_io_handler_methods(local_io_handler)?;
 
             info!("Ipc rpc server start at :{:?}", ipc_file);
-            Some(
-                jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(RpcExtractor::default())
-                    .start(ipc_file.to_str().expect("Path to string should success."))?,
-            )
+            let server = starcoin_rpc_ipc::server::Builder::default()
+                .build(ipc_file.to_str().expect("Path to string should success.").to_string());
+            Some(futures::executor::block_on(server.start(methods))?)
         })
     }
 
@@ -227,7 +230,7 @@ impl RpcService {
 
     pub fn close(&mut self) {
         if let Some(ipc) = self.ipc.take() {
-            ipc.close();
+            drop(ipc);
         }
         if let Some(http) = self.http.take() {
             http.close();
@@ -237,6 +240,75 @@ impl RpcService {
         }
         info!("Rpc Sever is closed.");
     }
+}
+
+fn legacy_io_handler_methods(
+    io_handler: MetaIoHandler<Metadata>,
+) -> std::result::Result<Methods, jsonrpsee::core::RegisterMethodError> {
+    let method_names: Vec<String> = io_handler.iter().map(|(name, _)| name.clone()).collect();
+    let mut module = RpcModule::new(Arc::new(io_handler));
+
+    for method_name in method_names {
+        let rpc_method = method_name.clone();
+        let method_name: &'static str = Box::leak(method_name.into_boxed_str());
+        module.register_async_method(method_name, move |params, io_handler, _| {
+            let rpc_method = rpc_method.clone();
+            async move {
+                let params = params
+                    .parse::<Value>()
+                    .unwrap_or_else(|_| Value::Array(Vec::new()));
+                let req = json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": rpc_method,
+                    "params": params
+                })
+                .to_string();
+
+                let rsp = io_handler
+                    .handle_request(&req, Metadata::default())
+                    .await
+                    .ok_or_else(|| {
+                        jsonrpsee::types::ErrorObjectOwned::owned(
+                            ErrorCode::InternalError.code(),
+                            "Empty response from legacy jsonrpc handler",
+                            None::<()>,
+                        )
+                    })?;
+                let rsp: Value = serde_json::from_str(&rsp).map_err(|e| {
+                    jsonrpsee::types::ErrorObjectOwned::owned(
+                        ErrorCode::ParseError.code(),
+                        format!("Invalid legacy jsonrpc response: {e}"),
+                        None::<()>,
+                    )
+                })?;
+                if let Some(result) = rsp.get("result") {
+                    Ok(result.clone())
+                } else if let Some(err) = rsp.get("error") {
+                    let code = err
+                        .get("code")
+                        .and_then(Value::as_i64)
+                        .and_then(|v| i32::try_from(v).ok())
+                        .unwrap_or(-32603);
+                    let message = err
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .unwrap_or("Legacy jsonrpc method error")
+                        .to_string();
+                    let data = err.get("data").cloned();
+                    Err(jsonrpsee::types::ErrorObjectOwned::owned(code, message, data))
+                } else {
+                    Err(jsonrpsee::types::ErrorObjectOwned::owned(
+                        ErrorCode::InternalError.code(),
+                        "Missing result/error in legacy jsonrpc response",
+                        Some(rsp),
+                    ))
+                }
+            }
+        })?;
+    }
+
+    Ok(module.into())
 }
 
 struct IoHandlerWrap(MetaIoHandler<Metadata>);

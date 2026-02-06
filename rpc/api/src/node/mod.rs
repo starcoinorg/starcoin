@@ -5,12 +5,17 @@ pub use self::gen_client::Client as NodeClient;
 use crate::types::PeerInfoView;
 use crate::FutureResult;
 use jsonrpc_core::Result;
+use jsonrpsee::{
+    core::RegisterMethodError,
+    Methods, RpcModule,
+};
 use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct NodeInfo {
@@ -56,6 +61,31 @@ pub trait NodeApi {
 
     #[rpc(name = "node.metrics")]
     fn metrics(&self) -> Result<HashMap<String, String>>;
+}
+
+/// Build jsonrpsee methods from legacy `NodeApi`.
+///
+/// This helper allows migration to jsonrpsee runtime while keeping the current
+/// `NodeApi` interface and implementations unchanged.
+pub fn node_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: NodeApi + Send + Sync + 'static,
+{
+    let mut module = RpcModule::new(Arc::new(api));
+
+    module.register_method("node.status", |_, api, _| api.status().map_err(crate::map_jsonrpc_err))?;
+
+    module.register_async_method("node.info", |_, api, _| async move {
+        api.info().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("node.peers", |_, api, _| async move {
+        api.peers().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_method("node.metrics", |_, api, _| api.metrics().map_err(crate::map_jsonrpc_err))?;
+
+    Ok(module.into())
 }
 #[test]
 fn test() {

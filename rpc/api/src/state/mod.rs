@@ -7,6 +7,7 @@ use crate::types::{
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
+use jsonrpsee::{core::RegisterMethodError, Methods, RpcModule};
 use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -17,6 +18,7 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 use starcoin_vm_types::state_store::table::TableHandle;
+use std::sync::Arc;
 #[openrpc]
 pub trait StateApi {
     #[rpc(name = "state.get")]
@@ -112,6 +114,123 @@ pub trait StateApi {
         addr: AccountAddress,
         option: Option<ListCodeOption>,
     ) -> FutureResult<ListCodeView>;
+}
+
+/// Build jsonrpsee methods from legacy `StateApi`.
+///
+/// This keeps the existing `StateApi` trait unchanged and enables incremental
+/// server runtime migration to jsonrpsee.
+pub fn state_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: StateApi + Send + Sync + 'static,
+{
+    let mut module = RpcModule::new(Arc::new(api));
+
+    module.register_async_method("state.get", |params, api, _| async move {
+        let access_path: AccessPath = params.one()?;
+        api.get(access_path).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_state_node_by_node_hash", |params, api, _| async move {
+        let key_hash: HashValue = params.one()?;
+        api.get_state_node_by_node_hash(key_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_with_proof", |params, api, _| async move {
+        let access_path: AccessPath = params.one()?;
+        api.get_with_proof(access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_with_proof_raw", |params, api, _| async move {
+        let access_path: AccessPath = params.one()?;
+        api.get_with_proof_raw(access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_account_state", |params, api, _| async move {
+        let address: AccountAddress = params.one()?;
+        api.get_account_state(address)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_account_state_set", |params, api, _| async move {
+        let (address, state_root): (AccountAddress, Option<HashValue>) = params.parse()?;
+        api.get_account_state_set(address, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_state_root", |_, api, _| async move {
+        api.get_state_root().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_with_proof_by_root", |params, api, _| async move {
+        let (access_path, state_root): (AccessPath, HashValue) = params.parse()?;
+        api.get_with_proof_by_root(access_path, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_with_proof_by_root_raw", |params, api, _| async move {
+        let (access_path, state_root): (AccessPath, HashValue) = params.parse()?;
+        api.get_with_proof_by_root_raw(access_path, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_with_table_item_proof", |params, api, _| async move {
+        let (handle, key): (TableHandle, Vec<u8>) = params.parse()?;
+        api.get_with_table_item_proof(handle, key)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method(
+        "state.get_with_table_item_proof_by_root",
+        |params, api, _| async move {
+            let (handle, key, state_root): (TableHandle, Vec<u8>, HashValue) = params.parse()?;
+            api.get_with_table_item_proof_by_root(handle, key, state_root)
+                .await
+                .map_err(crate::map_jsonrpc_err)
+        },
+    )?;
+
+    module.register_async_method("state.get_code", |params, api, _| async move {
+        let (module_id, option): (StrView<ModuleId>, Option<GetCodeOption>) = params.parse()?;
+        api.get_code(module_id, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.get_resource", |params, api, _| async move {
+        let (addr, resource_type, option): (AccountAddress, StrView<StructTag>, Option<GetResourceOption>) =
+            params.parse()?;
+        api.get_resource(addr, resource_type, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.list_resource", |params, api, _| async move {
+        let (addr, option): (AccountAddress, Option<ListResourceOption>) = params.parse()?;
+        api.list_resource(addr, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("state.list_code", |params, api, _| async move {
+        let (addr, option): (AccountAddress, Option<ListCodeOption>) = params.parse()?;
+        api.list_code(addr, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    Ok(module.into())
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]

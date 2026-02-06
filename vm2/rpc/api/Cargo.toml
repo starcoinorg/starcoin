@@ -21,6 +21,7 @@ jsonrpc-core-client = { features = [
     "arbitrary_precision",
     "tls",
 ], workspace = true }
+jsonrpsee = { workspace = true, features = ["server"] }
 jsonrpc-derive = { workspace = true }
 openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }

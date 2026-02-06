@@ -16,6 +16,7 @@ jsonrpc-core-client = { features = [
     "arbitrary_precision",
     "tls",
 ], workspace = true }
+jsonrpsee = { workspace = true, features = ["server"] }
 jsonrpc-derive = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-server-utils = { workspace = true }

@@ -5,6 +5,7 @@ pub use self::gen_client::Client as StateClient;
 use crate::FutureResult;
 // copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/state/mod.rs#L14 etc
 use bytes::Bytes;
+use jsonrpsee::{core::RegisterMethodError, Methods, RpcModule};
 use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -20,6 +21,7 @@ use starcoin_vm2_vm_types::{
     language_storage::{ModuleId, StructTag},
     state_store::{state_key::StateKey, table::TableHandle},
 };
+use std::sync::Arc;
 #[openrpc]
 pub trait StateApi {
     #[rpc(name = "state2.get")]
@@ -115,6 +117,106 @@ pub trait StateApi {
         addr: AccountAddress,
         option: Option<ListCodeOption>,
     ) -> FutureResult<ListCodeView>;
+}
+
+/// Build jsonrpsee methods from legacy `StateApi`.
+pub fn state_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: StateApi + Send + Sync + 'static,
+{
+    let mut module = RpcModule::new(Arc::new(api));
+
+    module.register_async_method("state2.get", |params, api, _| async move {
+        let state_key: StateKey = params.one()?;
+        api.get(state_key).await.map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_state_node_by_node_hash", |params, api, _| async move {
+        let key_hash: HashValue = params.one()?;
+        api.get_state_node_by_node_hash(key_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_with_proof", |params, api, _| async move {
+        let state_key: StateKey = params.one()?;
+        api.get_with_proof(state_key)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_with_proof_raw", |params, api, _| async move {
+        let state_key: StateKey = params.one()?;
+        api.get_with_proof_raw(state_key)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_account_state", |params, api, _| async move {
+        let address: AccountAddress = params.one()?;
+        api.get_account_state(address)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_account_state_set", |params, api, _| async move {
+        let (address, state_root): (AccountAddress, Option<HashValue>) = params.parse()?;
+        api.get_account_state_set(address, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_state_root", |_, api, _| async move {
+        api.get_state_root().await.map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_with_proof_by_root", |params, api, _| async move {
+        let (state_key, state_root): (StateKey, HashValue) = params.parse()?;
+        api.get_with_proof_by_root(state_key, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_with_proof_by_root_raw", |params, api, _| async move {
+        let (state_key, state_root): (StateKey, HashValue) = params.parse()?;
+        api.get_with_proof_by_root_raw(state_key, state_root)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_with_table_item_proof", |params, api, _| async move {
+        let (handle, key): (TableHandle, Vec<u8>) = params.parse()?;
+        api.get_with_table_item_proof(handle, key)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method(
+        "state2.get_with_table_item_proof_by_root",
+        |params, api, _| async move {
+            let (handle, key, state_root): (TableHandle, Vec<u8>, HashValue) = params.parse()?;
+            api.get_with_table_item_proof_by_root(handle, key, state_root)
+                .await
+                .map_err(crate::map_jsonrpc_err)
+        },
+    )?;
+    module.register_async_method("state2.get_code", |params, api, _| async move {
+        let (module_id, option): (StrView<ModuleId>, Option<GetCodeOption>) = params.parse()?;
+        api.get_code(module_id, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.get_resource", |params, api, _| async move {
+        let (addr, resource_type, option): (AccountAddress, StrView<StructTag>, Option<GetResourceOption>) =
+            params.parse()?;
+        api.get_resource(addr, resource_type, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.list_resource", |params, api, _| async move {
+        let (addr, option): (AccountAddress, Option<ListResourceOption>) = params.parse()?;
+        api.list_resource(addr, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+    module.register_async_method("state2.list_code", |params, api, _| async move {
+        let (addr, option): (AccountAddress, Option<ListCodeOption>) = params.parse()?;
+        api.list_code(addr, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    Ok(module.into())
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]

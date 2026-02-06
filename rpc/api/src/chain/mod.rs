@@ -10,6 +10,10 @@ use crate::types::{
 };
 use crate::FutureResult;
 use jsonrpc_core::Result;
+use jsonrpsee::{
+    core::RegisterMethodError,
+    Methods, RpcModule,
+};
 use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
@@ -23,6 +27,7 @@ use starcoin_vm2_types::view::{
     TransactionInfoView as TransactionInfoView2,
 };
 use starcoin_vm_types::access_path::AccessPath;
+use std::sync::Arc;
 
 #[openrpc]
 pub trait ChainApi {
@@ -220,6 +225,238 @@ pub trait ChainApi {
         &self,
         block_hash: HashValue,
     ) -> FutureResult<Option<BlockColorView>>;
+}
+
+/// Build jsonrpsee methods from legacy `ChainApi`.
+///
+/// This keeps the existing `ChainApi` trait unchanged and enables incremental
+/// server runtime migration to jsonrpsee.
+pub fn chain_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: ChainApi + Send + Sync + 'static,
+{
+    let mut module = RpcModule::new(Arc::new(api));
+
+    module.register_method("chain.id", |_, api, _| api.id().map_err(crate::map_jsonrpc_err))?;
+
+    module.register_async_method("chain.info", |_, api, _| async move {
+        api.info().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_by_hash", |params, api, _| async move {
+        let (block_hash, option): (HashValue, Option<GetBlockOption>) = params.parse()?;
+        api.get_block_by_hash(block_hash, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_by_number", |params, api, _| async move {
+        let (number, option): (BlockNumber, Option<GetBlockOption>) = params.parse()?;
+        api.get_block_by_number(number, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_blocks_by_number", |params, api, _| async move {
+        let (number, count, option): (Option<BlockNumber>, u64, Option<GetBlocksOption>) =
+            params.parse()?;
+        api.get_blocks_by_number(number, count, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_info_by_number", |params, api, _| async move {
+        let number: BlockNumber = params.one()?;
+        api.get_block_info_by_number(number)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_info_by_hash", |params, api, _| async move {
+        let id: HashValue = params.one()?;
+        api.get_block_info_by_hash(id).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_info_by_number2", |params, api, _| async move {
+        let number: BlockNumber = params.one()?;
+        api.get_block_info_by_number2(number)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction", |params, api, _| async move {
+        let (transaction_hash, option): (HashValue, Option<GetTransactionOption>) = params.parse()?;
+        api.get_transaction(transaction_hash, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction2", |params, api, _| async move {
+        let (transaction_hash, option): (HashValue, Option<GetTransactionOption>) = params.parse()?;
+        api.get_transaction2(transaction_hash, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_info", |params, api, _| async move {
+        let transaction_hash: HashValue = params.one()?;
+        api.get_transaction_info(transaction_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_info2", |params, api, _| async move {
+        let transaction_hash: HashValue = params.one()?;
+        api.get_transaction_info2(transaction_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_txn_infos", |params, api, _| async move {
+        let block_hash: HashValue = params.one()?;
+        api.get_block_txn_infos(block_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_txn_infos2", |params, api, _| async move {
+        let block_hash: HashValue = params.one()?;
+        api.get_block_txn_infos2(block_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_block_txn_infos_in_seq", |params, api, _| async move {
+        let block_hash: HashValue = params.one()?;
+        api.get_block_txn_infos_in_seq(block_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_txn_info_by_block_and_index", |params, api, _| async move {
+        let (block_hash, idx): (HashValue, u64) = params.parse()?;
+        api.get_txn_info_by_block_and_index(block_hash, idx)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_txn_info_by_block_and_index2", |params, api, _| async move {
+        let (block_hash, idx): (HashValue, u64) = params.parse()?;
+        api.get_txn_info_by_block_and_index2(block_hash, idx)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_events_by_txn_hash", |params, api, _| async move {
+        let (txn_hash, option): (HashValue, Option<GetEventOption>) = params.parse()?;
+        api.get_events_by_txn_hash(txn_hash, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_events_by_txn_hash2", |params, api, _| async move {
+        let (txn_hash, option): (HashValue, Option<GetEventOption>) = params.parse()?;
+        api.get_events_by_txn_hash2(txn_hash, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_events", |params, api, _| async move {
+        let (filter, option): (EventFilter, Option<GetEventOption>) = params.parse()?;
+        api.get_events(filter, option)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_headers", |params, api, _| async move {
+        let ids: Vec<HashValue> = params.one()?;
+        api.get_headers(ids).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_infos", |params, api, _| async move {
+        let (start_global_index, reverse, max_size): (u64, bool, u64) = params.parse()?;
+        api.get_transaction_infos(start_global_index, reverse, max_size)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_infos2", |params, api, _| async move {
+        let (start_global_index, reverse, max_size): (u64, bool, u64) = params.parse()?;
+        api.get_transaction_infos2(start_global_index, reverse, max_size)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_proof", |params, api, _| async move {
+        let (block_hash, transaction_global_index, event_index, access_path): (
+            HashValue,
+            u64,
+            Option<u64>,
+            Option<StrView<AccessPath>>,
+        ) = params.parse()?;
+        api.get_transaction_proof(block_hash, transaction_global_index, event_index, access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_proof_raw", |params, api, _| async move {
+        let (block_hash, transaction_global_index, event_index, access_path): (
+            HashValue,
+            u64,
+            Option<u64>,
+            Option<StrView<AccessPath>>,
+        ) = params.parse()?;
+        api.get_transaction_proof_raw(block_hash, transaction_global_index, event_index, access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_proof2", |params, api, _| async move {
+        let (block_hash, transaction_global_index, event_index, access_path): (
+            HashValue,
+            u64,
+            Option<u64>,
+            Option<MultiAccessPath>,
+        ) = params.parse()?;
+        api.get_transaction_proof2(block_hash, transaction_global_index, event_index, access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_transaction_proof2_raw", |params, api, _| async move {
+        let (block_hash, transaction_global_index, event_index, access_path): (
+            HashValue,
+            u64,
+            Option<u64>,
+            Option<MultiAccessPath>,
+        ) = params.parse()?;
+        api.get_transaction_proof2_raw(block_hash, transaction_global_index, event_index, access_path)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_vm_multi_state", |params, api, _| async move {
+        let block_hash: HashValue = params.one()?;
+        api.get_vm_multi_state(block_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_ghostdagdata", |params, api, _| async move {
+        let ids: Vec<HashValue> = params.one()?;
+        api.get_ghostdagdata(ids)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("chain.get_current_block_color", |params, api, _| async move {
+        let block_hash: HashValue = params.one()?;
+        api.get_current_block_color(block_hash)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    Ok(module.into())
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

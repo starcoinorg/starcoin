@@ -4,12 +4,14 @@
 pub use self::gen_client::Client as AccountClient;
 use crate::types::{SignedMessageView, StrView, TransactionRequest};
 use crate::FutureResult;
+use jsonrpsee::{core::RegisterMethodError, Methods, RpcModule};
 use openrpc_derive::openrpc;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::token::token_code::TokenCode;
+use std::sync::Arc;
 
 #[openrpc]
 pub trait AccountApi {
@@ -108,6 +110,129 @@ pub trait AccountApi {
         address: AccountAddress,
         password: Option<String>,
     ) -> FutureResult<AccountInfo>;
+}
+
+/// Build jsonrpsee methods from legacy `AccountApi`.
+pub fn account_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: AccountApi + Send + Sync + 'static,
+{
+    let mut module = RpcModule::new(Arc::new(api));
+
+    module.register_async_method("account.default", |_, api, _| async move {
+        api.default().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.set_default_account", |params, api, _| async move {
+        let addr: AccountAddress = params.one()?;
+        api.set_default_account(addr)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.create", |params, api, _| async move {
+        let password: String = params.one()?;
+        api.create(password).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.list", |_, api, _| async move {
+        api.list().await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.get", |params, api, _| async move {
+        let address: AccountAddress = params.one()?;
+        api.get(address).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.sign", |params, api, _| async move {
+        let (address, data): (AccountAddress, SigningMessage) = params.parse()?;
+        api.sign(address, data).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.sign_txn_request", |params, api, _| async move {
+        let txn_request: TransactionRequest = params.one()?;
+        api.sign_txn_request(txn_request)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.sign_txn", |params, api, _| async move {
+        let (raw_txn, signer): (RawUserTransaction, AccountAddress) = params.parse()?;
+        api.sign_txn(raw_txn, signer)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.sign_txn_in_batch", |params, api, _| async move {
+        let raw_txn: Vec<RawUserTransaction> = params.one()?;
+        api.sign_txn_in_batch(raw_txn)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.unlock", |params, api, _| async move {
+        let (address, password, duration): (AccountAddress, String, Option<u32>) = params.parse()?;
+        api.unlock(address, password, duration)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.unlock_in_batch", |params, api, _| async move {
+        let (batch, duration): (Vec<(AccountAddress, String)>, Option<u32>) = params.parse()?;
+        api.unlock_in_batch(batch, duration)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.lock", |params, api, _| async move {
+        let address: AccountAddress = params.one()?;
+        api.lock(address).await.map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.import", |params, api, _| async move {
+        let (address, private_key, password): (AccountAddress, StrView<Vec<u8>>, String) =
+            params.parse()?;
+        api.import(address, private_key, password)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.import_readonly", |params, api, _| async move {
+        let (address, public_key): (AccountAddress, StrView<Vec<u8>>) = params.parse()?;
+        api.import_readonly(address, public_key)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.export", |params, api, _| async move {
+        let (address, password): (AccountAddress, String) = params.parse()?;
+        api.export(address, password)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.change_password", |params, api, _| async move {
+        let (address, new_password): (AccountAddress, String) = params.parse()?;
+        api.change_account_password(address, new_password)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.accepted_tokens", |params, api, _| async move {
+        let address: AccountAddress = params.one()?;
+        api.accepted_tokens(address)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    module.register_async_method("account.remove", |params, api, _| async move {
+        let (address, password): (AccountAddress, Option<String>) = params.parse()?;
+        api.remove(address, password)
+            .await
+            .map_err(crate::map_jsonrpc_err)
+    })?;
+
+    Ok(module.into())
 }
 
 #[test]

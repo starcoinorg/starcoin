@@ -17,9 +17,9 @@ jsonrpc-core-client = { features = [
     "ws",
     "arbitrary_precision",
 ], workspace = true }
+jsonrpsee = { workspace = true, features = ["server"] }
 jsonrpc-derive = { workspace = true }
 jsonrpc-http-server = { workspace = true }
-jsonrpc-ipc-server = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-server-utils = { workspace = true }
 jsonrpc-ws-server = { workspace = true }
@@ -52,6 +52,7 @@ starcoin-network = { workspace = true }
 starcoin-node-api = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-rpc-api = { workspace = true }
+starcoin-rpc-ipc = { workspace = true }
 starcoin-rpc-middleware = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
