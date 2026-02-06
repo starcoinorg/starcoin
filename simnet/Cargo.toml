@@ -19,4 +19,4 @@ starcoin-types = { workspace = true }
 tempfile.workspace = true
 
 [dev-dependencies]
-proptest = "1.9"
+proptest = "1.10"
