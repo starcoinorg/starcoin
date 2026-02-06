@@ -7,7 +7,7 @@ use starcoin_rpc_api::metadata::Metadata;
 use std::net::IpAddr;
 use std::sync::Arc;
 
-/// Common HTTP & IPC & TCP metadata extractor.
+/// Common HTTP & IPC metadata extractor.
 #[derive(Default)]
 pub struct RpcExtractor {
     pub http_ip_headers: Vec<String>,
@@ -41,15 +41,6 @@ impl jsonrpc_ipc_server::MetaExtractor<Metadata> for RpcExtractor {
         }
     }
 }
-impl jsonrpc_tcp_server::MetaExtractor<Metadata> for RpcExtractor {
-    fn extract(&self, context: &jsonrpc_tcp_server::RequestContext) -> Metadata {
-        Metadata {
-            session: Some(Arc::new(Session::new(context.sender.clone()))),
-            user: Some(context.peer_addr.ip().to_string()),
-        }
-    }
-}
-
 pub struct WsExtractor;
 impl jsonrpc_ws_server::MetaExtractor<Metadata> for WsExtractor {
     fn extract(&self, req: &jsonrpc_ws_server::RequestContext) -> Metadata {

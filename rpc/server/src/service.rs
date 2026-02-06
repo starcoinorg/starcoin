@@ -42,7 +42,6 @@ pub struct RpcService {
     api_registry: ApiRegistry,
     ipc: Option<jsonrpc_ipc_server::Server>,
     http: Option<jsonrpc_http_server::Server>,
-    tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
 
@@ -50,7 +49,6 @@ impl ActorService for RpcService {
     fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.ipc = self.start_ipc()?;
         self.http = self.start_http()?;
-        self.tcp = self.start_tcp()?;
         self.ws = self.start_ws()?;
         Ok(())
     }
@@ -68,7 +66,6 @@ impl RpcService {
             api_registry,
             ipc: None,
             http: None,
-            tcp: None,
             ws: None,
         }
     }
@@ -212,22 +209,6 @@ impl RpcService {
         })
     }
 
-    fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
-        Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.tcp.apis().list_apis();
-
-            let io_handler = self.api_registry.get_apis(apis);
-            let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(RpcExtractor::default())
-                .start(&address)?;
-            info!("Rpc: tcp server start at: {}", address);
-            Some(tcp_server)
-        } else {
-            None
-        })
-    }
-
     fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
         Ok(if let Some(addr) = self.config.rpc.get_ws_address() {
             let address = addr.into();
@@ -250,9 +231,6 @@ impl RpcService {
         }
         if let Some(http) = self.http.take() {
             http.close();
-        }
-        if let Some(tcp) = self.tcp.take() {
-            tcp.close();
         }
         if let Some(ws) = self.ws.take() {
             ws.close();

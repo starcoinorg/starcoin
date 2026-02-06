@@ -22,7 +22,6 @@ jsonrpc-http-server = { workspace = true }
 jsonrpc-ipc-server = { workspace = true }
 jsonrpc-pubsub = { workspace = true }
 jsonrpc-server-utils = { workspace = true }
-jsonrpc-tcp-server = { workspace = true }
 jsonrpc-ws-server = { workspace = true }
 log = { workspace = true }
 network-api = { workspace = true }
