@@ -8943,7 +8943,7 @@ checksum = "6e918e4ff8c4549eb882f14b3a4bc8c8bc93de829416eacf579f1207a8fbf861"
 dependencies = [
  "proc-macro2 1.0.101",
  "quote 1.0.36",
- "syn 2.0.108",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -10002,7 +10002,7 @@ version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
 dependencies = [
- "bitflags 2.9.1",
+ "bitflags 2.10.0",
 ]
 
 [[package]]
@@ -13234,6 +13234,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-rpc-local"
+version = "2.1.1"
+dependencies = [
+ "jsonrpsee",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "starcoin-rpc-middleware"
 version = "2.1.1"
 dependencies = [
@@ -15146,7 +15155,7 @@ checksum = "ebc4ee7f67670e9b64d05fa4253e753e016c6c95ff35b89b7941d6b856dec1d5"
 dependencies = [
  "proc-macro2 1.0.101",
  "quote 1.0.36",
- "syn 2.0.108",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -16272,7 +16281,7 @@ dependencies = [
  "bumpalo",
  "proc-macro2 1.0.101",
  "quote 1.0.36",
- "syn 2.0.108",
+ "syn 2.0.114",
  "wasm-bindgen-shared",
 ]
 

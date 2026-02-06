@@ -13,6 +13,7 @@ members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/rpc/local",
     "commons/rpc/ipc",
     "commons/api-limiter",
     "commons/accumulator",
@@ -151,6 +152,7 @@ default-members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/rpc/local",
     "commons/rpc/ipc",
     "commons/api-limiter",
     "commons/accumulator",
@@ -554,6 +556,7 @@ starcoin-open-block = { path = "chain/open-block" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
 starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
+starcoin-rpc-local = { path = "commons/rpc/local" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
 starcoin-rpc-ipc = { path = "commons/rpc/ipc" }
