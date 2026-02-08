@@ -30,7 +30,6 @@ use starcoin_network::NetworkActorService;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
-use starcoin_rpc_server::module::{PubSubService, PubSubServiceFactory};
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
@@ -422,9 +421,6 @@ impl NodeService {
 
         bus.broadcast(SystemStarted)?;
 
-        registry
-            .register_by_factory::<PubSubService, PubSubServiceFactory>()
-            .await?;
         registry
             .register_by_factory::<RpcService, RpcServiceFactory>()
             .await?;

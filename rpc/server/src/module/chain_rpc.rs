@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::map_err;
+use anyhow::Result;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
@@ -81,7 +82,7 @@ impl<S> ChainApi for ChainRpcImpl<S>
 where
     S: ChainAsyncService,
 {
-    fn id(&self) -> jsonrpc_core::Result<ChainId> {
+    fn id(&self) -> Result<ChainId> {
         Ok(self.config.net().id().into())
     }
 
@@ -586,7 +587,7 @@ where
                 .filter(|r| *r > max_block_range)
                 .is_some()
             {
-                return Err(jsonrpc_core::Error::invalid_params(format!(
+                return Err(anyhow::anyhow!(format!(
                     "from_block is too far, max block range is {} ",
                     max_block_range
                 ))

@@ -3,7 +3,7 @@
 
 use crate::module::to_invalid_param_err;
 use crate::module::txfactory_rpc::TxFactoryStatusHandle;
-use jsonrpc_core::Result;
+use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
 use starcoin_logger::structured_log::set_slog_level;
@@ -64,19 +64,19 @@ impl DebugApi for DebugRpcImpl {
 
     fn panic(&self) -> Result<()> {
         if !self.config.net().is_test() || self.config.net().is_dev() {
-            return Err(jsonrpc_core::Error::invalid_request());
+            return Err(anyhow::anyhow!("invalid request"));
         }
         panic!("DebugApi.panic")
     }
 
     fn sleep(&self, time: u64) -> Result<()> {
         if !self.config.net().is_test() && !self.config.net().is_dev() {
-            return Err(jsonrpc_core::Error::invalid_request());
+            return Err(anyhow::anyhow!("invalid request"));
         }
         self.config.net().time_service().sleep(time);
         self.bus
             .broadcast(GenerateBlockEvent::new(true, true))
-            .map_err(|_e| jsonrpc_core::Error::internal_error())?;
+            .map_err(|_e| anyhow::anyhow!("internal error"))?;
         Ok(())
     }
 

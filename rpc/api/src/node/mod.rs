@@ -1,15 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as NodeClient;
+pub type NodeClient = jsonrpsee::async_client::Client;
 use crate::types::PeerInfoView;
 use crate::FutureResult;
-use jsonrpc_core::Result;
+use anyhow::Result;
 use jsonrpsee::{
     core::RegisterMethodError,
     Methods, RpcModule,
 };
-use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
@@ -44,22 +43,15 @@ impl NodeInfo {
         }
     }
 }
-
-#[openrpc]
 pub trait NodeApi {
     /// Get node run status, just for api available check.
-    #[rpc(name = "node.status")]
     fn status(&self) -> Result<bool>;
 
     /// Get node self info.
-    #[rpc(name = "node.info")]
     fn info(&self) -> FutureResult<NodeInfo>;
 
     /// Get current node connect peers.
-    #[rpc(name = "node.peers")]
     fn peers(&self) -> FutureResult<Vec<PeerInfoView>>;
-
-    #[rpc(name = "node.metrics")]
     fn metrics(&self) -> Result<HashMap<String, String>>;
 }
 
@@ -86,10 +78,4 @@ where
     module.register_method("node.metrics", |_, api, _| api.metrics().map_err(crate::map_jsonrpc_err))?;
 
     Ok(module.into())
-}
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
 }

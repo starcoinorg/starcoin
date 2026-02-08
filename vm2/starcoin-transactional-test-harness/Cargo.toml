@@ -10,18 +10,6 @@ dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }
 itertools = { workspace = true }
-jsonrpc-client-transports = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-], workspace = true }
-jsonrpc-core-client = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-], workspace = true }
 log = { workspace = true }
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
 move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "2a1550807cd28cdc04e3bf19576c9a2958864243" }
@@ -38,8 +26,9 @@ tempfile = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-http-server = { workspace = true }
+bytes = { workspace = true }
+jsonrpsee = { workspace = true, features = ["async-client", "client-core"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 starcoin-accumulator = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
@@ -47,6 +36,7 @@ starcoin-dag = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-rpc-server = { workspace = true }
+starcoin-rpc-local = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-storage = { workspace = true }

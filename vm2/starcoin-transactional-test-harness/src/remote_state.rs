@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
-use jsonrpc_client_transports::RpcChannel;
+use bytes::Bytes;
 use move_binary_format::errors::VMError;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde_json::json;
 use starcoin_crypto::HashValue;
 
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_rpc_api::{chain::ChainApiClient, types::BlockView};
+use starcoin_rpc_api::chain::{GetBlockOption, GetTransactionOption};
+use starcoin_rpc_api::types::{BlockInfoView, BlockView, ChainInfoView};
 use starcoin_vm2_state_api::ChainStateWriter;
 
-use jsonrpc_http_server::hyper::body::Bytes;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, metadata::Metadata,
     value::MoveTypeLayout, vm_status::StatusCode,
@@ -20,7 +23,9 @@ use move_core_types::{
 use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 use tokio::runtime::Runtime;
 
-use starcoin_vm2_rpc_api::state_api::StateApiClient as StateApiClient2;
+use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
+use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
+use starcoin_vm2_types::view::TransactionInfoView as TransactionInfoView2;
 use starcoin_vm2_types::state_set::ChainStateSet;
 use starcoin_vm2_vm_types::{
     access_path::{AccessPath, DataPath},
@@ -237,25 +242,58 @@ where
 //TODO migrate this to rpc client crate.
 #[derive(Clone)]
 pub struct RemoteRpcAsyncClient {
-    state_client: StateApiClient2,
-    chain_client: ChainApiClient,
+    rpc_client: reqwest::Client,
+    rpc_url: String,
     state_root: HashValue,
     fork_number: u64,
     fork_block_hash: HashValue,
 }
 
+#[derive(Debug, Deserialize)]
+struct RpcErrorObj {
+    code: i64,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RpcResponse<T> {
+    result: Option<T>,
+    error: Option<RpcErrorObj>,
+}
+
+async fn rpc_call<T: DeserializeOwned>(
+    client: &reqwest::Client,
+    url: &str,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<T> {
+    let resp: RpcResponse<T> = client
+        .post(url)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        }))
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    match (resp.result, resp.error) {
+        (Some(result), None) => Ok(result),
+        (None, Some(err)) => Err(anyhow!("rpc error {}: {}", err.code, err.message)),
+        _ => Err(anyhow!("invalid rpc response for method {}", method)),
+    }
+}
+
 impl RemoteRpcAsyncClient {
     pub async fn from_url(rpc_url: &str, block_number: Option<u64>) -> Result<Self> {
-        let rpc_channel: RpcChannel = jsonrpc_client_transports::transports::http::connect(rpc_url)
-            .await
-            .map_err(|e| anyhow!(format!("{}", e)))?;
-        let chain_client: ChainApiClient = rpc_channel.clone().into();
+        let rpc_client = reqwest::Client::new();
         let (state_root, fork_number, fork_block_hash) = match block_number {
             None => {
-                let chain_info = chain_client
-                    .info()
-                    .await
-                    .map_err(|e| anyhow!(format!("{}", e)))?;
+                let chain_info: ChainInfoView =
+                    rpc_call(&rpc_client, rpc_url, "chain.info", json!([])).await?;
                 (
                     chain_info.head.state_root,
                     chain_info.head.number.0,
@@ -263,18 +301,16 @@ impl RemoteRpcAsyncClient {
                 )
             }
             Some(n) => {
-                let b: Option<BlockView> = chain_client
-                    .get_block_by_number(n, None)
-                    .await
-                    .map_err(|e| anyhow!(format!("{}", e)))?;
+                let b: Option<BlockView> =
+                    rpc_call(&rpc_client, rpc_url, "chain.get_block_by_number", json!([n, null]))
+                        .await?;
                 let b = b.ok_or_else(|| anyhow::anyhow!("cannot found block of height {}", n))?;
                 (b.header.state_root, n, b.header.block_hash)
             }
         };
-        let state_client: StateApiClient2 = rpc_channel.clone().into();
         Ok(Self {
-            state_client,
-            chain_client,
+            rpc_client,
+            rpc_url: rpc_url.to_string(),
             state_root,
             fork_number,
             fork_block_hash,
@@ -286,11 +322,7 @@ impl RemoteRpcAsyncClient {
         addr: AccountAddress,
     ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
         let state = self
-            .state_client
-            .get_account_state_set(
-                AccountAddress::from_bytes(addr.into_bytes()).unwrap(),
-                Some(self.state_root),
-            )
+            .state_get_account_state_set(AccountAddress::from_bytes(addr.into_bytes()).unwrap(), Some(self.state_root))
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -313,8 +345,7 @@ impl RemoteRpcAsyncClient {
             IdentStr::new(module_id.name().as_str()).unwrap(),
         );
         let state_with_proof = self
-            .state_client
-            .get_with_proof_by_root(state_key, self.state_root)
+            .state_get_with_proof_by_root(state_key, self.state_root)
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -333,8 +364,7 @@ impl RemoteRpcAsyncClient {
         )
         .unwrap();
         let state_with_proof = self
-            .state_client
-            .get_with_proof_by_root(state_key, self.state_root)
+            .state_get_with_proof_by_root(state_key, self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
@@ -346,18 +376,137 @@ impl RemoteRpcAsyncClient {
     ) -> Result<Option<Vec<u8>>> {
         let handle = TableHandle2(AccountAddress::from_bytes(handle.0.into_bytes())?);
         let state_table_item_proof = self
-            .state_client
-            .get_with_table_item_proof_by_root(handle, key.to_vec(), self.state_root)
+            .state_get_with_table_item_proof_by_root(handle, key.to_vec(), self.state_root)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_table_item_proof.key_proof.0.map(|v| v.0))
     }
-    pub fn get_chain_client(&self) -> &ChainApiClient {
-        &self.chain_client
+    pub async fn chain_info(&self) -> Result<ChainInfoView> {
+        rpc_call(&self.rpc_client, &self.rpc_url, "chain.info", json!([])).await
     }
-
-    pub fn get_state_client(&self) -> &StateApiClient2 {
-        &self.state_client
+    pub async fn chain_get_block_by_hash(
+        &self,
+        hash: HashValue,
+        option: Option<GetBlockOption>,
+    ) -> Result<Option<BlockView>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_block_by_hash",
+            json!([hash, option]),
+        )
+        .await
+    }
+    pub async fn chain_get_block_by_number(
+        &self,
+        number: u64,
+        option: Option<GetBlockOption>,
+    ) -> Result<Option<BlockView>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_block_by_number",
+            json!([number, option]),
+        )
+        .await
+    }
+    pub async fn chain_get_block_info_by_number(
+        &self,
+        number: u64,
+    ) -> Result<Option<BlockInfoView>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_block_info_by_number",
+            json!([number]),
+        )
+        .await
+    }
+    pub async fn chain_get_block_info_by_number2(
+        &self,
+        number: u64,
+    ) -> Result<Option<BlockInfoView2>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_block_info_by_number2",
+            json!([number]),
+        )
+        .await
+    }
+    pub async fn chain_get_transaction2(
+        &self,
+        transaction_hash: HashValue,
+        option: Option<GetTransactionOption>,
+    ) -> Result<Option<TransactionView2>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_transaction2",
+            json!([transaction_hash, option]),
+        )
+        .await
+    }
+    pub async fn chain_get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> Result<Option<TransactionInfoView2>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "chain.get_transaction_info2",
+            json!([transaction_hash]),
+        )
+        .await
+    }
+    pub async fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> Result<Option<Vec<u8>>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "state2.get_state_node_by_node_hash",
+            json!([key_hash]),
+        )
+        .await
+    }
+    pub async fn state_get_account_state_set(
+        &self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<Option<starcoin_vm2_types::view::AccountStateSetView>> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "state2.get_account_state_set",
+            json!([address, state_root]),
+        )
+        .await
+    }
+    pub async fn state_get_with_proof_by_root(
+        &self,
+        state_key: StateKey,
+        state_root: HashValue,
+    ) -> Result<starcoin_vm2_types::view::StateWithProofView> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "state2.get_with_proof_by_root",
+            json!([state_key, state_root]),
+        )
+        .await
+    }
+    pub async fn state_get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle2,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<starcoin_vm2_types::view::StateWithTableItemProofView> {
+        rpc_call(
+            &self.rpc_client,
+            &self.rpc_url,
+            "state2.get_with_table_item_proof_by_root",
+            json!([handle, key, state_root]),
+        )
+        .await
     }
 
     pub fn get_fork_block_number(&self) -> u64 {

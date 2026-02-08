@@ -4,8 +4,7 @@
 use crate::remote_state::RemoteRpcAsyncClient;
 use anyhow::{anyhow, bail, Result};
 use dashmap::DashMap;
-use futures::executor::block_on;
-use jsonrpc_core::futures_util::{FutureExt, TryFutureExt};
+use futures::{executor::block_on, FutureExt, TryFutureExt};
 use log::debug;
 use starcoin_vm2_abi_decoder::decode_txn_payload;
 
@@ -14,8 +13,7 @@ use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::{
     chain::{
-        ChainApi, ChainApiClient, GetBlockOption, GetBlocksOption, GetEventOption,
-        GetTransactionOption,
+        ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
     },
     multi_types::MultiSignedUserTransactionView,
     types::{
@@ -103,11 +101,8 @@ impl ForkBlockChain {
         let accumulator_store = storage.get_accumulator_store(AccumulatorStoreType::Transaction);
         let txn_accumulator = match remote_client.clone() {
             Some(client) => {
-                let block_info: Option<BlockInfo> = block_on(
-                    client
-                        .get_chain_client()
-                        .get_block_info_by_number(fork_number),
-                )
+                let block_info: Option<BlockInfo> =
+                    block_on(client.chain_get_block_info_by_number(fork_number))
                 .map_err(|e| anyhow!("{}", e))?
                 .map(|view| view.into_info());
                 match block_info {
@@ -197,10 +192,8 @@ impl ForkBlockChain {
         self.head_block_hash
     }
 
-    fn remote_chain_client(&self) -> Option<ChainApiClient> {
-        self.remote_client
-            .clone()
-            .map(|client| client.get_chain_client().clone())
+    fn remote_chain_client(&self) -> Option<Arc<RemoteRpcAsyncClient>> {
+        self.remote_client.clone()
     }
 }
 
@@ -215,7 +208,7 @@ impl MockChainApi {
 }
 
 impl ChainApi for MockChainApi {
-    fn id(&self) -> jsonrpc_core::Result<ChainId> {
+    fn id(&self) -> anyhow::Result<ChainId> {
         Ok(ChainId::from(&ChainNetworkID::Builtin(
             BuiltinNetworkID::Dev,
         )))
@@ -233,7 +226,7 @@ impl ChainApi for MockChainApi {
                     status.status,
                 ))),
                 None => match client {
-                    Some(client) => client.info().await.map_err(|e| anyhow!("{}", e)),
+                    Some(client) => client.chain_info().await.map_err(|e| anyhow!("{}", e)),
                     None => bail!("No block generated."),
                 },
             }
@@ -268,7 +261,7 @@ impl ChainApi for MockChainApi {
                 }
                 None => match client {
                     Some(client) => client
-                        .get_block_by_hash(hash, option)
+                        .chain_get_block_by_hash(hash, option)
                         .await
                         .map_err(|e| anyhow!("{}", e)),
                     None => Ok(None),
@@ -297,7 +290,7 @@ impl ChainApi for MockChainApi {
                 debug_assert!(client.is_some());
                 client
                     .unwrap()
-                    .get_block_by_number(number, option)
+                    .chain_get_block_by_number(number, option)
                     .await
                     .map_err(|e| anyhow!("{}", e))
             } else if number <= current_number {
@@ -362,7 +355,7 @@ impl ChainApi for MockChainApi {
                 debug_assert!(client.is_some());
                 client
                     .unwrap()
-                    .get_block_info_by_number2(number)
+                    .chain_get_block_info_by_number2(number)
                     .await
                     .map_err(|e| anyhow!("{}", e))
             } else if number <= current_number {
@@ -421,7 +414,7 @@ impl ChainApi for MockChainApi {
                 }
                 None => match client {
                     Some(client) => client
-                        .get_transaction2(transaction_hash, option)
+                        .chain_get_transaction2(transaction_hash, option)
                         .await
                         .map_err(|e| anyhow!("{}", e)),
                     None => Ok(None),
@@ -453,7 +446,7 @@ impl ChainApi for MockChainApi {
                 }
                 None => match client {
                     Some(client) => client
-                        .get_transaction_info2(transaction_hash)
+                        .chain_get_transaction_info2(transaction_hash)
                         .await
                         .map_err(|e| anyhow!("{}", e)),
                     None => Ok(None),

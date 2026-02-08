@@ -1,25 +1,10 @@
-[[bin]]
-name = "starcoin-rpc-schema-generate"
-path = "src/generate_schema.rs"
-
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-core-client = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-    "tls",
-], workspace = true }
-jsonrpsee = { workspace = true, features = ["server"] }
-jsonrpc-derive = { workspace = true }
-jsonrpc-pubsub = { workspace = true }
-jsonrpc-server-utils = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server", "async-client"] }
 network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }

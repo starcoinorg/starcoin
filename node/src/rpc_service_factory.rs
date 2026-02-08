@@ -14,8 +14,8 @@ use starcoin_miner::MinerService;
 use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_server::module::{
     AccountRpcImpl, ChainRpcImpl, ContractRpcImpl, DebugRpcImpl, MinerRpcImpl,
-    NetworkManagerRpcImpl, NodeManagerRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService,
-    StateRpcImpl, SyncManagerRpcImpl, TxPoolRpcImpl,
+    NetworkManagerRpcImpl, NodeManagerRpcImpl, NodeRpcImpl, StateRpcImpl, SyncManagerRpcImpl,
+    TxPoolRpcImpl,
 };
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
@@ -92,8 +92,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                 chain_state_service2.clone(),
             )
         });
-        let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();
-        let pubsub_api = Some(PubSubImpl::new(pubsub_service));
+        let pubsub_api = None;
         let debug_api = Some(DebugRpcImpl::new(
             config.clone(),
             log_handler,

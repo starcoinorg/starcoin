@@ -9,10 +9,6 @@ use std::sync::{
 
 // Third-party crates
 use futures::{TryStream, TryStreamExt};
-use jsonrpc_client_transports::{
-    transports::{ipc, ws},
-    RpcChannel, RpcError,
-};
 use log::error;
 use parking_lot::Mutex;
 
@@ -35,7 +31,8 @@ use starcoin_vm2_vm_types::{
 };
 
 // Local crate
-use crate::{map_err, ConnSource, RpcClientInner};
+use crate::{map_err, rpc_clients::RpcChannel, rpc_clients::RpcError, ConnSource, RpcClientInner};
+use crate::rpc_clients::{connect_ipc, connect_ws};
 
 pub struct AsyncRpcClient {
     inner: Arc<Mutex<Option<Arc<RpcClientInner>>>>,
@@ -53,9 +50,9 @@ impl AsyncConnProvider {
     }
     pub async fn get_rpc_channel_async(&self) -> anyhow::Result<RpcChannel, RpcError> {
         match self.conn_source.clone() {
-            ConnSource::Ipc(sock_path) => ipc::connect(sock_path).await,
-            ConnSource::WebSocket(url) => ws::try_connect(url.as_str())?.await,
-            ConnSource::Local(channel) => Ok(*channel),
+            ConnSource::Ipc(sock_path) => connect_ipc(sock_path).await,
+            ConnSource::WebSocket(url) => connect_ws(url.as_str()).await,
+            ConnSource::Local(channel) => Ok(channel),
         }
     }
 }
@@ -77,7 +74,7 @@ impl AsyncRpcClient {
     }
     async fn call_rpc_async<F, T>(
         &self,
-        f: impl FnOnce(Arc<RpcClientInner>) -> F + Send,
+        f: impl FnOnce(RpcClientInner) -> F + Send,
     ) -> Result<T, RpcError>
     where
         F: std::future::Future<Output = Result<T, RpcError>> + Send,
@@ -88,7 +85,7 @@ impl AsyncRpcClient {
                 Some(inner.clone())
             } else if self.connecting.load(Ordering::SeqCst) {
                 // quick failing if someone is trying to connect
-                return Err(RpcError::Client("re-connecting to RPC server...".into()));
+                return Err(anyhow::anyhow!("re-connecting to RPC server..."));
             } else {
                 // no other client is re-connecting, so we can try to connect and stop following clients
                 self.connecting.store(true, Ordering::SeqCst);
@@ -114,8 +111,8 @@ impl AsyncRpcClient {
                 new_inner
             }
         };
-        let result = f(inner_client).await;
-        if let Err(RpcError::Other(e)) = &result {
+        let result = f(inner_client.as_ref().clone()).await;
+        if let Err(e) = &result {
             error!("rpc error due to {}", e);
             {
                 let mut inner_opt = self.inner.lock();

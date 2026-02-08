@@ -4,7 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use jsonrpc_core::Result;
+use anyhow::Result;
 use network_api::PeerProvider;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkServiceRef;

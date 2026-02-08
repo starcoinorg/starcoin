@@ -2,10 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
-use futures::executor::block_on;
+use jsonrpsee::{
+    core::{
+        client::ClientT,
+        params::{ArrayParams, ObjectParams},
+    },
+    rpc_params,
+};
+use serde_json::Value;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::{chain::chain_methods, Params};
 use starcoin_vm2_rpc_server::state_rpc::StateRpcImpl;
+use starcoin_vm2_rpc_api::state_api::state_methods;
 use starcoin_vm2_types::write_set::WriteSet;
 use std::{
     sync::{Arc, Mutex},
@@ -18,13 +27,9 @@ use crate::{
     fork_state::{MockChainStateAsyncService, MockStateNodeStore},
     remote_state::RemoteRpcAsyncClient,
 };
-use jsonrpc_client_transports::RawClient;
-use jsonrpc_core::{IoHandler, Params, Value};
-use jsonrpc_core_client::transports::local;
 use starcoin_genesis::vm2::{
     build_genesis_transaction, build_genesis_transaction_with_package, execute_genesis_transaction,
 };
-use starcoin_rpc_api::chain::ChainApi;
 use starcoin_vm2_rpc_api::state_api::StateApi;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 
@@ -39,20 +44,22 @@ pub struct MockServer {
 impl MockServer {
     pub fn create_and_start(
         chain_api: MockChainApi,
-        state_api: impl StateApi,
-    ) -> Result<(Self, RawClient)> {
-        let mut io = IoHandler::new();
-        io.extend_with(ChainApi::to_delegate(chain_api));
-        io.extend_with(StateApi::to_delegate(state_api));
+        state_api: impl StateApi + Send + Sync + 'static,
+    ) -> Result<(Self, Arc<jsonrpsee::async_client::Client>)> {
+        let mut methods = chain_methods(chain_api)?;
+        methods.merge(state_methods(state_api)?)?;
 
-        let (client, server) = local::connect::<RawClient, _, _>(io);
-        let server_handle = thread::spawn(move || block_on(server).unwrap());
+        let (client, server) = starcoin_rpc_local::connect_local(methods);
+        let server_handle = thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().expect("start local rpc runtime");
+            let _ = rt.block_on(server);
+        });
 
         Ok((
             Self {
                 _server_handle: server_handle,
             },
-            client,
+            Arc::new(client),
         ))
     }
 }
@@ -61,7 +68,7 @@ pub struct ForkContext {
     pub chain: Arc<Mutex<ForkBlockChain>>,
     pub storage: ChainStateDB,
     _server: MockServer,
-    client: RawClient,
+    client: Arc<jsonrpsee::async_client::Client>,
     rt: Arc<Runtime>,
     state_root: Arc<Mutex<HashValue>>,
 }
@@ -111,9 +118,8 @@ impl ForkContext {
         let remote_async_client = Arc::new(
             rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc, block_number).await })?,
         );
-        let state_api_client = Arc::new(remote_async_client.get_state_client().clone());
         let root_hash = remote_async_client.get_fork_state_root();
-        let data_store = Arc::new(MockStateNodeStore::new(state_api_client, rt.clone()));
+        let data_store = Arc::new(MockStateNodeStore::new(remote_async_client.clone(), rt.clone()));
         let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
@@ -154,7 +160,7 @@ impl ForkContext {
         let handle = self.rt.handle().clone();
         let client = self.client.clone();
         handle
-            .block_on(async move { client.call_method(method, params).await })
+            .block_on(async move { call_method(client, method, params).await })
             .map_err(|e| anyhow!(format!("{}", e)))
     }
 
@@ -164,5 +170,30 @@ impl ForkContext {
         *self.state_root.lock().unwrap() = state_root;
         self.storage.flush()?;
         Ok(())
+    }
+}
+
+async fn call_method(
+    client: Arc<jsonrpsee::async_client::Client>,
+    method: &str,
+    params: Value,
+) -> Result<Value> {
+    match params {
+        Value::Null => Ok(client.as_ref().request(method, rpc_params![]).await?),
+        Value::Array(values) => {
+            let mut array = ArrayParams::new();
+            for v in values {
+                array.insert(v)?;
+            }
+            Ok(client.as_ref().request(method, array).await?)
+        }
+        Value::Object(values) => {
+            let mut object = ObjectParams::new();
+            for (k, v) in values {
+                object.insert(&k, v)?;
+            }
+            Ok(client.as_ref().request(method, object).await?)
+        }
+        other => Ok(client.as_ref().request(method, rpc_params![other]).await?),
     }
 }

@@ -1,19 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use jsonrpc_core::{BoxFuture, Error};
+use futures::future::BoxFuture;
 use jsonrpsee::types::ErrorObjectOwned;
 
-pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
-pub use jsonrpc_core::Params;
+pub type FutureResult<T> = BoxFuture<'static, anyhow::Result<T>>;
+pub type Params = serde_json::Value;
 
-pub(crate) fn map_jsonrpc_err(err: jsonrpc_core::Error) -> ErrorObjectOwned {
-    let code = i32::try_from(err.code.code()).unwrap_or(jsonrpsee::types::error::INTERNAL_ERROR_CODE);
-    let data = err
-        .data
-        .as_ref()
-        .and_then(|v| serde_json::value::to_raw_value(v).ok());
-    ErrorObjectOwned::owned(code, err.message, data)
+pub(crate) fn map_jsonrpc_err(err: anyhow::Error) -> ErrorObjectOwned {
+    ErrorObjectOwned::owned(
+        jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+        err.to_string(),
+        None::<()>,
+    )
 }
 
 pub mod account;

@@ -4,7 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use jsonrpc_core::Result;
+use anyhow::Result;
 use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
 use network_p2p_core::RawRpcClient;
 use network_p2p_types::network_state::NetworkState;

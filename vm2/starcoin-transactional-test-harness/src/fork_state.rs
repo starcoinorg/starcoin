@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::HashValue;
+use crate::remote_state::RemoteRpcAsyncClient;
 use anyhow::{anyhow, format_err, Result};
-use jsonrpc_http_server::hyper::body::Bytes;
+use bytes::Bytes;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::{
     state_node::StateStorage,
@@ -12,7 +13,6 @@ use starcoin_storage::{
 };
 
 use starcoin_types::table::{StcTableHandle, StcTableInfo};
-use starcoin_vm2_rpc_api::state_api::StateApiClient;
 use starcoin_vm2_state_api::{
     ChainStateAsyncService, ChainStateReader, StateNodeStore, StateWithProof,
     StateWithTableItemProof,
@@ -30,12 +30,12 @@ use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
     local_storage: StateStorage,
-    remote: Arc<StateApiClient>,
+    remote: Arc<RemoteRpcAsyncClient>,
     rt: Arc<Runtime>,
 }
 
 impl MockStateNodeStore {
-    pub fn new(remote: Arc<StateApiClient>, rt: Arc<Runtime>) -> Self {
+    pub fn new(remote: Arc<RemoteRpcAsyncClient>, rt: Arc<Runtime>) -> Self {
         let storage_instance = StorageInstance::new_cache_instance();
         let storage = StateStorage::new(storage_instance);
 

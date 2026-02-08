@@ -13,16 +13,8 @@ version.workspace = true
 anyhow = { workspace = true }
 bytes = { workspace = true }
 clap = { features = ["derive"], workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-core-client = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-    "tls",
-], workspace = true }
-jsonrpsee = { workspace = true, features = ["server"] }
-jsonrpc-derive = { workspace = true }
+futures = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server", "async-client"] }
 openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }
 serde = { features = ["derive"], workspace = true }
@@ -37,8 +29,3 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-account-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
-
-
-[[bin]]
-name = "starcoin-rpc2-schema-generate"
-path = "src/generate_schema.rs"

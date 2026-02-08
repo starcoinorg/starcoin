@@ -2,56 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::api_registry::ApiRegistry;
-use crate::extractors::{RpcExtractor, WsExtractor};
 use anyhow::Result;
-use futures::stream::*;
-use futures::{FutureExt, StreamExt};
-use jsonrpc_core::futures::channel::mpsc;
-use jsonrpc_core::MetaIoHandler;
-use jsonrpc_core_client::{
-    transports::{duplex, local::LocalRpc},
-    RpcChannel, RpcError,
-};
-use jsonrpc_pubsub::Session;
-use jsonrpsee::{types::ErrorCode, Methods, RpcModule};
-use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
-use jsonrpc_server_utils::hosts::DomainsValidation;
-use serde_json::{json, Value};
+use futures::FutureExt;
+use jsonrpsee::async_client::Client;
 use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::contract_api::ContractApi;
-use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::network_manager::NetworkManagerApi;
-use starcoin_rpc_api::node_manager::NodeManagerApi;
-use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
-    account::AccountApi, chain::ChainApi, debug::DebugApi, miner::MinerApi, node::NodeApi,
-    pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
+    account::{account_methods, AccountApi},
+    chain::{chain_methods, ChainApi},
+    contract_api::{contract_methods, ContractApi},
+    debug::{debug_methods, DebugApi},
+    miner::{miner_methods, MinerApi},
+    network_manager::{network_manager_methods, NetworkManagerApi},
+    node::{node_methods, NodeApi},
+    node_manager::{node_manager_methods, NodeManagerApi},
+    state::{state_methods, StateApi},
+    sync_manager::{sync_manager_methods, SyncManagerApi},
+    txpool::{txpool_methods, TxPoolApi},
 };
 use starcoin_rpc_middleware::RpcMetrics;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
 use starcoin_vm2_rpc_api::{
-    account_api::AccountApi as AccountApi2, contract_api::ContractApi as ContractApi2,
-    state_api::StateApi as StateApi2,
+    account_api::{account_methods as account2_methods, AccountApi as AccountApi2},
+    contract_api::{contract_methods as contract2_methods, ContractApi as ContractApi2},
+    state_api::{state_methods as state2_methods, StateApi as StateApi2},
 };
 use std::collections::HashSet;
-use std::ops::Deref;
 use std::sync::Arc;
 
 pub struct RpcService {
     config: Arc<NodeConfig>,
     api_registry: ApiRegistry,
     ipc: Option<jsonrpsee::server::ServerHandle>,
-    http: Option<jsonrpc_http_server::Server>,
-    ws: Option<jsonrpc_ws_server::Server>,
 }
 
 impl ActorService for RpcService {
     fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.ipc = self.start_ipc()?;
-        self.http = self.start_http()?;
-        self.ws = self.start_ws()?;
         Ok(())
     }
 
@@ -67,13 +55,11 @@ impl RpcService {
             config,
             api_registry,
             ipc: None,
-            http: None,
-            ws: None,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn new_with_api<C, N, NM, SM, NWM, T, A, A2, S, S2, D, P, M, Contract, Contract2>(
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, A2, S, S2, D, M, Contract, Contract2>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
@@ -83,7 +69,7 @@ impl RpcService {
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
-        pubsub_api: Option<P>,
+        _pubsub_api: Option<()>,
         debug_api: Option<D>,
         miner_api: Option<M>,
         contract_api: Option<Contract>,
@@ -92,21 +78,20 @@ impl RpcService {
         contract_api2: Option<Contract2>,
     ) -> Self
     where
-        N: NodeApi,
-        NM: NodeManagerApi,
-        SM: SyncManagerApi,
-        NWM: NetworkManagerApi,
-        C: ChainApi,
-        T: TxPoolApi,
-        A: AccountApi,
-        A2: AccountApi2,
-        S: StateApi,
-        S2: StateApi2,
-        P: StarcoinPubSub<Metadata = Metadata>,
-        D: DebugApi,
-        M: MinerApi,
-        Contract: ContractApi,
-        Contract2: ContractApi2,
+        N: NodeApi + Send + Sync + 'static,
+        NM: NodeManagerApi + Send + Sync + 'static,
+        SM: SyncManagerApi + Send + Sync + 'static,
+        NWM: NetworkManagerApi + Send + Sync + 'static,
+        C: ChainApi + Send + Sync + 'static,
+        T: TxPoolApi + Send + Sync + 'static,
+        A: AccountApi + Send + Sync + 'static,
+        A2: AccountApi2 + Send + Sync + 'static,
+        S: StateApi + Send + Sync + 'static,
+        S2: StateApi2 + Send + Sync + 'static,
+        D: DebugApi + Send + Sync + 'static,
+        M: MinerApi + Send + Sync + 'static,
+        Contract: ContractApi + Send + Sync + 'static,
+        Contract2: ContractApi2 + Send + Sync + 'static,
     {
         let metrics = config
             .metrics
@@ -115,58 +100,91 @@ impl RpcService {
 
         let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone(), metrics);
 
-        api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
-        if let Some(node_manager_api) = node_manager_api {
-            api_registry.register(
-                Api::NodeManager,
-                NodeManagerApi::to_delegate(node_manager_api),
-            );
+        api_registry
+            .register(Api::Node, node_methods(node_api).expect("register node methods"))
+            .expect("merge node methods");
+
+        if let Some(api) = node_manager_api {
+            api_registry
+                .register(
+                    Api::NodeManager,
+                    node_manager_methods(api).expect("register node_manager methods"),
+                )
+                .expect("merge node_manager methods");
         }
-        if let Some(sync_manager_api) = sync_manager_api {
-            api_registry.register(
-                Api::SyncManager,
-                SyncManagerApi::to_delegate(sync_manager_api),
-            )
+        if let Some(api) = sync_manager_api {
+            api_registry
+                .register(
+                    Api::SyncManager,
+                    sync_manager_methods(api).expect("register sync methods"),
+                )
+                .expect("merge sync methods");
         }
-        if let Some(network_manager_api) = network_manager_api {
-            api_registry.register(
-                Api::NetworkManager,
-                NetworkManagerApi::to_delegate(network_manager_api),
-            )
+        if let Some(api) = network_manager_api {
+            api_registry
+                .register(
+                    Api::NetworkManager,
+                    network_manager_methods(api).expect("register network_manager methods"),
+                )
+                .expect("merge network_manager methods");
         }
-        if let Some(chain_api) = chain_api {
-            api_registry.register(Api::Chain, ChainApi::to_delegate(chain_api));
+        if let Some(api) = chain_api {
+            api_registry
+                .register(Api::Chain, chain_methods(api).expect("register chain methods"))
+                .expect("merge chain methods");
         }
-        if let Some(txpool_api) = txpool_api {
-            api_registry.register(Api::TxPool, TxPoolApi::to_delegate(txpool_api));
+        if let Some(api) = txpool_api {
+            api_registry
+                .register(Api::TxPool, txpool_methods(api).expect("register txpool methods"))
+                .expect("merge txpool methods");
         }
-        if let Some(account_api) = account_api {
-            api_registry.register(Api::Account, AccountApi::to_delegate(account_api));
+        if let Some(api) = account_api {
+            api_registry
+                .register(Api::Account, account_methods(api).expect("register account methods"))
+                .expect("merge account methods");
         }
-        if let Some(state_api) = state_api {
-            api_registry.register(Api::State, StateApi::to_delegate(state_api));
+        if let Some(api) = state_api {
+            api_registry
+                .register(Api::State, state_methods(api).expect("register state methods"))
+                .expect("merge state methods");
         }
-        if let Some(pubsub_api) = pubsub_api {
-            api_registry.register(Api::PubSub, StarcoinPubSub::to_delegate(pubsub_api));
+        if let Some(api) = debug_api {
+            api_registry
+                .register(Api::Debug, debug_methods(api).expect("register debug methods"))
+                .expect("merge debug methods");
         }
-        if let Some(debug_api) = debug_api {
-            api_registry.register(Api::Debug, DebugApi::to_delegate(debug_api));
+        if let Some(api) = miner_api {
+            api_registry
+                .register(Api::Miner, miner_methods(api).expect("register miner methods"))
+                .expect("merge miner methods");
         }
-        if let Some(miner_api) = miner_api {
-            api_registry.register(Api::Miner, MinerApi::to_delegate(miner_api));
+        if let Some(api) = contract_api {
+            api_registry
+                .register(
+                    Api::Contract,
+                    contract_methods(api).expect("register contract methods"),
+                )
+                .expect("merge contract methods");
         }
-        if let Some(contract_api) = contract_api {
-            api_registry.register(Api::Contract, ContractApi::to_delegate(contract_api));
+        if let Some(api) = account_api2 {
+            api_registry
+                .register(Api::Account2, account2_methods(api).expect("register account2 methods"))
+                .expect("merge account2 methods");
         }
-        if let Some(account_api) = account_api2 {
-            api_registry.register(Api::Account2, AccountApi2::to_delegate(account_api));
+        if let Some(api) = state_api2 {
+            api_registry
+                .register(Api::State2, state2_methods(api).expect("register state2 methods"))
+                .expect("merge state2 methods");
         }
-        if let Some(state_api) = state_api2 {
-            api_registry.register(Api::State2, StateApi2::to_delegate(state_api));
+        if let Some(api) = contract_api2 {
+            api_registry
+                .register(
+                    Api::Contract2,
+                    contract2_methods(api).expect("register contract2 methods"),
+                )
+                .expect("merge contract2 methods");
         }
-        if let Some(contract_api) = contract_api2 {
-            api_registry.register(Api::Contract2, ContractApi2::to_delegate(contract_api));
-        }
+
         Self::new(config, api_registry)
     }
 
@@ -176,10 +194,7 @@ impl RpcService {
         } else {
             let ipc_file = self.config.rpc.get_ipc_file();
             let apis: HashSet<Api> = self.config.rpc.ipc.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
-            let mut local_io_handler = MetaIoHandler::default();
-            local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
-            let methods = legacy_io_handler_methods(local_io_handler)?;
+            let methods = self.api_registry.get_apis(apis)?;
 
             info!("Ipc rpc server start at :{:?}", ipc_file);
             let server = starcoin_rpc_ipc::server::Builder::default()
@@ -188,167 +203,27 @@ impl RpcService {
         })
     }
 
-    fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
-        Ok(if let Some(addr) = self.config.rpc.get_http_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.http.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
-            let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-                .meta_extractor(RpcExtractor {
-                    http_ip_headers: self.config.rpc.http.ip_headers(),
-                })
-                .cors(DomainsValidation::AllowOnly(vec![
-                    AccessControlAllowOrigin::Null,
-                    AccessControlAllowOrigin::Any,
-                ]))
-                .threads(self.config.rpc.http.threads())
-                .max_request_body_size(self.config.rpc.http.max_request_body_size())
-                .health_api(("/status", "status"))
-                .start_http(&address)?;
-            info!("Rpc: http server start at :{}", address);
-            Some(http)
-        } else {
-            None
-        })
-    }
-
-    fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
-        Ok(if let Some(addr) = self.config.rpc.get_ws_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.ws.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
-            let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(WsExtractor)
-                .max_payload(self.config.rpc.ws.max_request_body_size())
-                .start(&address)?;
-            info!("Rpc: websocket server start at: {}", address);
-            Some(ws_server)
-        } else {
-            None
-        })
-    }
-
     pub fn close(&mut self) {
         if let Some(ipc) = self.ipc.take() {
             drop(ipc);
-        }
-        if let Some(http) = self.http.take() {
-            http.close();
-        }
-        if let Some(ws) = self.ws.take() {
-            ws.close();
         }
         info!("Rpc Sever is closed.");
     }
 }
 
-fn legacy_io_handler_methods(
-    io_handler: MetaIoHandler<Metadata>,
-) -> std::result::Result<Methods, jsonrpsee::core::RegisterMethodError> {
-    let method_names: Vec<String> = io_handler.iter().map(|(name, _)| name.clone()).collect();
-    let mut module = RpcModule::new(Arc::new(io_handler));
-
-    for method_name in method_names {
-        let rpc_method = method_name.clone();
-        let method_name: &'static str = Box::leak(method_name.into_boxed_str());
-        module.register_async_method(method_name, move |params, io_handler, _| {
-            let rpc_method = rpc_method.clone();
-            async move {
-                let params = params
-                    .parse::<Value>()
-                    .unwrap_or_else(|_| Value::Array(Vec::new()));
-                let req = json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": rpc_method,
-                    "params": params
-                })
-                .to_string();
-
-                let rsp = io_handler
-                    .handle_request(&req, Metadata::default())
-                    .await
-                    .ok_or_else(|| {
-                        jsonrpsee::types::ErrorObjectOwned::owned(
-                            ErrorCode::InternalError.code(),
-                            "Empty response from legacy jsonrpc handler",
-                            None::<()>,
-                        )
-                    })?;
-                let rsp: Value = serde_json::from_str(&rsp).map_err(|e| {
-                    jsonrpsee::types::ErrorObjectOwned::owned(
-                        ErrorCode::ParseError.code(),
-                        format!("Invalid legacy jsonrpc response: {e}"),
-                        None::<()>,
-                    )
-                })?;
-                if let Some(result) = rsp.get("result") {
-                    Ok(result.clone())
-                } else if let Some(err) = rsp.get("error") {
-                    let code = err
-                        .get("code")
-                        .and_then(Value::as_i64)
-                        .and_then(|v| i32::try_from(v).ok())
-                        .unwrap_or(-32603);
-                    let message = err
-                        .get("message")
-                        .and_then(Value::as_str)
-                        .unwrap_or("Legacy jsonrpc method error")
-                        .to_string();
-                    let data = err.get("data").cloned();
-                    Err(jsonrpsee::types::ErrorObjectOwned::owned(code, message, data))
-                } else {
-                    Err(jsonrpsee::types::ErrorObjectOwned::owned(
-                        ErrorCode::InternalError.code(),
-                        "Missing result/error in legacy jsonrpc response",
-                        Some(rsp),
-                    ))
-                }
-            }
-        })?;
-    }
-
-    Ok(module.into())
-}
-
-struct IoHandlerWrap(MetaIoHandler<Metadata>);
-
-impl Deref for IoHandlerWrap {
-    type Target = MetaIoHandler<Metadata>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-/// Connects with pubsub.
-pub fn connect_local(
-    handler: MetaIoHandler<Metadata>,
-) -> (
-    RpcChannel,
-    impl jsonrpc_core::futures::Future<Output = Result<(), RpcError>>,
-) {
-    let (tx, rx) = mpsc::unbounded();
-    let meta = Metadata::new(Arc::new(Session::new(tx)));
-    let (sink, stream) = LocalRpc::with_metadata(IoHandlerWrap(handler), meta).split();
-    let stream = select(stream, rx);
-    let (rpc_client, sender) = duplex(Box::pin(sink), Box::pin(stream));
-    (sender, rpc_client)
-}
-
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
-    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> RpcChannel {
+    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> Client {
         let apis = ApiSet::All.list_apis();
-        let io_handler = self.api_registry.get_apis(apis);
-        //remove middleware.
-        let mut local_io_handler = MetaIoHandler::default();
-        local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
-        let (rpc_channel, fut) = connect_local(local_io_handler);
+        let methods = self
+            .api_registry
+            .get_apis(apis)
+            .expect("collect local rpc methods");
+        let (client, fut) = starcoin_rpc_local::connect_local(methods);
         ctx.spawn(fut.map(|rs| {
             if let Err(e) = rs {
                 error!("Local connect rpc error: {:?}", e);
             }
         }));
-        rpc_channel
+        client
     }
 }

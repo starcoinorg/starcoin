@@ -1,14 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as StateClient;
+pub type StateClient = jsonrpsee::async_client::Client;
 use crate::types::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
 };
 use crate::FutureResult;
 use jsonrpsee::{core::RegisterMethodError, Methods, RpcModule};
-use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -19,38 +18,26 @@ use starcoin_types::{
 };
 use starcoin_vm_types::state_store::table::TableHandle;
 use std::sync::Arc;
-#[openrpc]
 pub trait StateApi {
-    #[rpc(name = "state.get")]
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return state from StateTree storage directly by tree node key.
-    #[rpc(name = "state.get_state_node_by_node_hash")]
     fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
-    #[rpc(name = "state.get_with_proof")]
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView>;
 
     /// Same as `state.get_with_proof` but return `StateWithProof` in BCS serialize bytes.
-    #[rpc(name = "state.get_with_proof_raw")]
     fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>>;
-
-    #[rpc(name = "state.get_account_state")]
     fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
-
-    #[rpc(name = "state.get_account_state_set")]
     fn get_account_state_set(
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
     ) -> FutureResult<Option<AccountStateSetView>>;
-
-    #[rpc(name = "state.get_state_root")]
     fn get_state_root(&self) -> FutureResult<HashValue>;
 
     /// Return the Resource Or Code at the `access_path` and provide a State Proof at `state_root`
-    #[rpc(name = "state.get_with_proof_by_root")]
     fn get_with_proof_by_root(
         &self,
         access_path: AccessPath,
@@ -58,7 +45,6 @@ pub trait StateApi {
     ) -> FutureResult<StateWithProofView>;
 
     /// Same as `state.get_with_proof_by_root` but return `StateWithProof` in BCS serialize bytes.
-    #[rpc(name = "state.get_with_proof_by_root_raw")]
     fn get_with_proof_by_root_raw(
         &self,
         access_path: AccessPath,
@@ -66,7 +52,6 @@ pub trait StateApi {
     ) -> FutureResult<StrView<Vec<u8>>>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
-    #[rpc(name = "state.get_with_table_item_proof")]
     fn get_with_table_item_proof(
         &self,
         handle: TableHandle,
@@ -74,7 +59,6 @@ pub trait StateApi {
     ) -> FutureResult<StateWithTableItemProofView>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
-    #[rpc(name = "state.get_with_table_item_proof_by_root")]
     fn get_with_table_item_proof_by_root(
         &self,
         handle: TableHandle,
@@ -83,7 +67,6 @@ pub trait StateApi {
     ) -> FutureResult<StateWithTableItemProofView>;
 
     /// get code of module
-    #[rpc(name = "state.get_code")]
     fn get_code(
         &self,
         module_id: StrView<ModuleId>,
@@ -91,7 +74,6 @@ pub trait StateApi {
     ) -> FutureResult<Option<CodeView>>;
 
     /// get resource data of `addr`
-    #[rpc(name = "state.get_resource")]
     fn get_resource(
         &self,
         addr: AccountAddress,
@@ -100,7 +82,6 @@ pub trait StateApi {
     ) -> FutureResult<Option<ResourceView>>;
 
     /// list resources data of `addr`
-    #[rpc(name = "state.list_resource")]
     fn list_resource(
         &self,
         addr: AccountAddress,
@@ -108,7 +89,6 @@ pub trait StateApi {
     ) -> FutureResult<ListResourceView>;
 
     /// list resources data of `addr`
-    #[rpc(name = "state.list_code")]
     fn list_code(
         &self,
         addr: AccountAddress,
@@ -277,10 +257,4 @@ pub struct ListCodeOption {
     /// The state tree root, default is the latest block state root
     pub state_root: Option<HashValue>,
     //TODO support filter by type and pagination
-}
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
 }

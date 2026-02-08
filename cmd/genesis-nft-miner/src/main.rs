@@ -1,11 +1,12 @@
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use clap::Parser;
-use jsonrpc_core_client::{RpcChannel, RpcError};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_rpc_api::types::{TransactionInfoView, TransactionStatusView};
-use starcoin_rpc_api::{chain::ChainClient, state::StateClient, txpool::TxPoolClient};
+use starcoin_rpc_api::types::ChainId as RpcChainId;
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{account_struct_tag, genesis_address, AccountResource};
@@ -33,8 +34,42 @@ struct DataProof {
     proof: Vec<String>,
 }
 
-fn map_rpc_error(err: RpcError) -> anyhow::Error {
-    anyhow::anyhow!(format!("{}", err))
+#[derive(Debug, Deserialize)]
+struct RpcErrorObj {
+    code: i64,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct RpcResponse<T> {
+    result: Option<T>,
+    error: Option<RpcErrorObj>,
+}
+
+async fn rpc_call<T: DeserializeOwned>(
+    client: &reqwest::Client,
+    url: &str,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<T> {
+    let resp: RpcResponse<T> = client
+        .post(url)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        }))
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    match (resp.result, resp.error) {
+        (Some(result), None) => Ok(result),
+        (None, Some(err)) => Err(anyhow::anyhow!("rpc error {}: {}", err.code, err.message)),
+        _ => Err(anyhow::anyhow!("invalid rpc response for method {}", method)),
+    }
 }
 
 fn get_index_proofs(address: AccountAddress) -> Result<(Vec<u8>, Vec<u8>)> {
@@ -63,9 +98,7 @@ fn get_index_proofs(address: AccountAddress) -> Result<(Vec<u8>, Vec<u8>)> {
 async fn main() -> Result<()> {
     let options: Options = Options::parse();
     let node_url = options.node_url.clone();
-    let channel: RpcChannel = jsonrpc_core_client::transports::http::connect(node_url.as_str())
-        .await
-        .map_err(map_rpc_error)?;
+    let client = reqwest::Client::new();
     let private_key: AccountPrivateKey = {
         let pass = rpassword::prompt_password_stdout("Please Input Private Key: ")?;
         AccountPrivateKey::from_encoded_string(pass.trim())?
@@ -82,13 +115,13 @@ async fn main() -> Result<()> {
             AccountAddress::from_str(address.as_str())?
         }
     };
-    let chain_client = ChainClient::from(channel.clone());
-    let state_client = StateClient::from(channel.clone());
-    let txpool_client = TxPoolClient::from(channel.clone());
-    let chain_id: u8 = chain_client.id().await.map_err(map_rpc_error)?.id;
+    let chain_id: u8 = rpc_call::<RpcChainId>(&client, node_url.as_str(), "chain.id", json!([]))
+        .await?
+        .id;
     let account_sequence_number = {
         let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
-        let account_data: Option<Vec<u8>> = state_client.get(ap).await.map_err(map_rpc_error)?;
+        let account_data: Option<Vec<u8>> =
+            rpc_call(&client, node_url.as_str(), "state.get", json!([ap])).await?;
         account_data
             .map(|account_data| AccountResource::decode(&account_data))
             .transpose()?
@@ -121,15 +154,21 @@ async fn main() -> Result<()> {
     let signature = private_key.sign(&txn);
     let signed_txn = SignedUserTransaction::new(txn, signature);
     let signed_txn_hex = hex::encode(signed_txn.encode()?);
-    let txn_hash: HashValue = txpool_client
-        .submit_hex_transaction(signed_txn_hex)
-        .await
-        .map_err(map_rpc_error)?;
+    let txn_hash: HashValue = rpc_call(
+        &client,
+        node_url.as_str(),
+        "txpool.submit_hex_transaction",
+        json!([signed_txn_hex]),
+    )
+    .await?;
     let txn_info: TransactionInfoView = loop {
-        let txn_info = chain_client
-            .get_transaction_info(txn_hash)
-            .await
-            .map_err(map_rpc_error)?;
+        let txn_info: Option<TransactionInfoView> = rpc_call(
+            &client,
+            node_url.as_str(),
+            "chain.get_transaction_info",
+            json!([txn_hash]),
+        )
+        .await?;
         match txn_info {
             None => {
                 println!("wait txn to be mined, {}", txn_hash);

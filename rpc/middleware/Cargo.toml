@@ -1,18 +1,5 @@
 [dependencies]
-anyhow = { workspace = true }
-futures = { workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-once_cell = { workspace = true }
-serde_json = { features = ["arbitrary_precision"], workspace = true }
-starcoin-config = { workspace = true }
-starcoin-logger = { workspace = true }
 starcoin-metrics = { workspace = true }
-starcoin-rpc-api = { workspace = true }
-thiserror = { workspace = true }
-
-[dev-dependencies]
-rand = { workspace = true }
-stest = { workspace = true }
 
 [package]
 authors = { workspace = true }
