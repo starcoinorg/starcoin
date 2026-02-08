@@ -29,6 +29,7 @@ use crate::sync::CheckSyncEvent;
 #[derive(Debug, Clone)]
 enum ExecuteResult {
     Executed(Box<ExecutedBlock>),
+    AlreadyExecuted,
     TryLater,
 }
 
@@ -100,6 +101,19 @@ impl ExecuteService {
         dag.has_block_connected(&header)
     }
 
+    fn has_dag_block(block_id: HashValue, storage: Arc<Storage>, dag: BlockDAG) -> Result<bool> {
+        let header = match storage.get_block_header_by_hash(block_id)? {
+            Some(header) => header,
+            None => return Ok(false),
+        };
+
+        if storage.get_block_info(header.id())?.is_none() {
+            return Ok(false);
+        }
+
+        dag.has_block_connected(&header)
+    }
+
     fn execute(
         new_block: Block,
         time_service: Arc<dyn TimeService>,
@@ -107,6 +121,14 @@ impl ExecuteService {
         storage2: Arc<Storage2>,
         dag: BlockDAG,
     ) -> Result<ExecuteResult> {
+        if Self::has_dag_block(new_block.id(), storage.clone(), dag.clone())? {
+            info!(
+                "skip duplicated dag block execution, block id: {:?}",
+                new_block.id()
+            );
+            return Ok(ExecuteResult::AlreadyExecuted);
+        }
+
         for parent_id in new_block.header().parents_hash() {
             if !Self::check_parent_ready(*parent_id, storage.clone(), dag.clone())? {
                 return Ok(ExecuteResult::TryLater);
@@ -307,6 +329,7 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                                 ),
                             })
                             .map_err(anyhow::Error::from),
+                        ExecuteResult::AlreadyExecuted => Ok(()),
                         ExecuteResult::TryLater => self_ref
                             .notify(PeerBlockTryLater {
                                 peer_id: msg.get_peer_id(),
@@ -366,6 +389,7 @@ impl EventHandler<Self, MinedBlock> for ExecuteService {
                                 from: ExecuteBlockFrom::LocalMinedBlock(block_id),
                             })
                             .map_err(anyhow::Error::from),
+                        ExecuteResult::AlreadyExecuted => Ok(()),
                         ExecuteResult::TryLater => self_ref
                             .notify(MinedBlock(new_block))
                             .map_err(anyhow::Error::from),
