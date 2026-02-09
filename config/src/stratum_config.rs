@@ -31,6 +31,50 @@ pub struct StratumConfig {
     #[clap(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub share_dedup_window_secs: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub stale_window_secs: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub share_rate_window_secs: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub max_shares_per_window: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub max_invalid_shares: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub max_job_misses: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub max_stale_shares: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(skip)]
+    pub max_workers_per_account: Option<usize>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StratumLimits {
+    pub share_dedup_window_secs: u64,
+    pub stale_window_secs: u64,
+    pub share_rate_window_secs: u64,
+    pub max_shares_per_window: u32,
+    pub max_invalid_shares: u32,
+    pub max_job_misses: u32,
+    pub max_stale_shares: u32,
+    pub max_workers_per_account: usize,
 }
 
 impl StratumConfig {
@@ -53,6 +97,19 @@ impl StratumConfig {
             }
         });
         format!("{}:{}", address, port).parse::<SocketAddr>().ok()
+    }
+
+    pub fn limits(&self) -> StratumLimits {
+        StratumLimits {
+            share_dedup_window_secs: self.share_dedup_window_secs.unwrap_or(600),
+            stale_window_secs: self.stale_window_secs.unwrap_or(120),
+            share_rate_window_secs: self.share_rate_window_secs.unwrap_or(10),
+            max_shares_per_window: self.max_shares_per_window.unwrap_or(200),
+            max_invalid_shares: self.max_invalid_shares.unwrap_or(20),
+            max_job_misses: self.max_job_misses.unwrap_or(20),
+            max_stale_shares: self.max_stale_shares.unwrap_or(20),
+            max_workers_per_account: self.max_workers_per_account.unwrap_or(1024),
+        }
     }
 }
 

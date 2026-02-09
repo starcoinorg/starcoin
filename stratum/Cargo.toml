@@ -10,6 +10,7 @@ tokio = { features = ["full"], workspace = true }
 tokio-util = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-consensus = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-service-registry = { workspace = true }

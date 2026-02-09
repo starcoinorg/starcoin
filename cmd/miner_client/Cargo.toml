@@ -42,6 +42,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 starcoin-miner = { workspace = true }
+once_cell = { workspace = true }
 
 [package]
 authors = { workspace = true }

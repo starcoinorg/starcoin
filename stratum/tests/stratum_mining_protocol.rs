@@ -87,7 +87,7 @@ fn build_block_template(number: u64, timestamp: u64) -> BlockTemplate {
         BlockBody::new_empty(),
         ChainId::test(),
         U256::from(1u64),
-        ConsensusStrategy::CryptoNight,
+        ConsensusStrategy::Dummy,
         metadata,
         0,
         HashValue::zero(),

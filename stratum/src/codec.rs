@@ -2,6 +2,8 @@ use bytes::BytesMut;
 use std::{io, str};
 use tokio_util::codec::{Decoder, Encoder};
 
+const MAX_INBOUND_BYTES: usize = 256 * 1024;
+
 /// Separator for enveloping messages in streaming codecs.
 #[derive(Debug, Clone)]
 pub enum Separator {
@@ -50,6 +52,12 @@ impl Decoder for JsonStreamCodec {
     type Error = io::Error;
 
     fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Self::Item>> {
+        if buf.len() > MAX_INBOUND_BYTES {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "jsonrpc message too large",
+            ));
+        }
         if let Separator::Byte(separator) = self.incoming_separator {
             if let Some(i) = buf.as_ref().iter().position(|&b| b == separator) {
                 let line = buf.split_to(i);

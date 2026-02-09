@@ -56,14 +56,33 @@ pub struct Status {
 pub struct SubscribeJobEvent(pub LoginRequest);
 
 impl ServiceRequest for SubscribeJobEvent {
-    type Response = anyhow::Result<mpsc::UnboundedReceiver<StratumJobResponse>>;
+    type Response = anyhow::Result<mpsc::Receiver<StratumJobResponse>>;
 }
 
 #[derive(Debug, Clone)]
 pub struct SubmitShareEvent(pub ShareRequest);
 
 impl ServiceRequest for SubmitShareEvent {
+    type Response = anyhow::Result<SubmitShareResponse>;
+}
+
+#[derive(Debug, Clone)]
+pub struct UnsubscribeWorkerEvent {
+    pub worker_id: WorkerId,
+}
+
+impl ServiceRequest for UnsubscribeWorkerEvent {
     type Response = anyhow::Result<()>;
+}
+
+#[derive(Debug, Clone)]
+pub enum SubmitShareResponse {
+    Accepted,
+    Rejected {
+        code: i32,
+        message: String,
+        disconnect: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -94,6 +113,9 @@ impl WorkerId {
     }
     pub fn to_hex(&self) -> String {
         hex::encode(self.buff)
+    }
+    pub fn as_bytes(&self) -> &[u8; 4] {
+        &self.buff
     }
 }
 pub struct MinerWorker {
