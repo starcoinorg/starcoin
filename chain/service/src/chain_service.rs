@@ -10,12 +10,9 @@ use starcoin_chain_api::{
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::{BlockColorError, BlockDAG, DagBlockColor};
 use starcoin_dag::consensusdb::consensus_state::DagStateView;
-use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
-use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_dag::types::ordering::SortableBlock;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;
 use starcoin_metrics::metrics::VMMetrics;
@@ -34,8 +31,6 @@ use starcoin_types::{
     contract_event::ContractEvent,
     startup_info::StartupInfo,
 };
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet};
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -593,85 +588,26 @@ impl ReadableChainService for ChainReaderServiceInner {
         if self.storage.get_block_header_by_hash(block_id)?.is_none() {
             return Ok(None);
         }
-        if self.dag.ghostdata_by_hash(block_id)?.is_none() {
-            return Ok(None);
-        }
-
         let chain_head = self.main.current_header().id();
-        if !self
-            .dag
-            .reachability_service()
-            .is_dag_ancestor_of(block_id, chain_head)
-        {
-            return Ok(None);
-        }
-
-        if block_id == chain_head {
-            return Ok(Some(BlockColorInfo {
-                color: BlockColor::Blue,
-                confirmed_block: chain_head,
-            }));
-        }
-
-        let mut heap: BinaryHeap<Reverse<SortableBlock>> = BinaryHeap::new();
-        let mut visited: HashSet<HashValue> = HashSet::new();
-
-        for child in self.dag.get_children(block_id)? {
-            if visited.insert(child) {
-                let blue_work = self
-                    .dag
-                    .storage
-                    .ghost_dag_store
-                    .get_blue_work(child)
-                    .map_err(|e| format_err!("failed to get blue work for {:?}: {}", child, e))?;
-                heap.push(Reverse(SortableBlock::new(child, blue_work)));
+        match self.dag.get_block_color(block_id, chain_head) {
+            Ok(info) => {
+                let color = match info.color {
+                    DagBlockColor::Blue => BlockColor::Blue,
+                    DagBlockColor::Red => BlockColor::Red,
+                };
+                Ok(Some(BlockColorInfo {
+                    color,
+                    confirmed_block: info.confirmed_block,
+                }))
+            }
+            Err(err) => {
+                if err.downcast_ref::<BlockColorError>().is_some() {
+                    debug!("get_block_color returned none reason: {:?}", err);
+                    return Ok(None);
+                }
+                Err(err)
             }
         }
-
-        while let Some(Reverse(SortableBlock {
-            hash: descendant, ..
-        })) = heap.pop()
-        {
-            if self
-                .dag
-                .reachability_service()
-                .is_chain_ancestor_of(descendant, chain_head)
-            {
-                let ghostdata = self
-                    .dag
-                    .ghostdata_by_hash(descendant)?
-                    .ok_or_else(|| format_err!("missing ghostdag data for {:?}", descendant))?;
-                if ghostdata.mergeset_blues.contains(&block_id) {
-                    return Ok(Some(BlockColorInfo {
-                        color: BlockColor::Blue,
-                        confirmed_block: descendant,
-                    }));
-                }
-                if ghostdata.mergeset_reds.contains(&block_id) {
-                    return Ok(Some(BlockColorInfo {
-                        color: BlockColor::Red,
-                        confirmed_block: descendant,
-                    }));
-                }
-                return Ok(None);
-            }
-
-            for child in self.dag.get_children(descendant)? {
-                if visited.insert(child) {
-                    let blue_work = self
-                        .dag
-                        .storage
-                        .ghost_dag_store
-                        .get_blue_work(child)
-                        .map_err(|e| {
-                            format_err!("failed to get blue work for {:?}: {}", child, e)
-                        })?;
-                    heap.push(Reverse(SortableBlock::new(child, blue_work)));
-                }
-            }
-        }
-
-        Ok(None)
     }
 
     fn get_range_in_location(

@@ -23,6 +23,7 @@ use crate::ghostdag::protocol::{GhostdagManager, KStore};
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
+use crate::types::ordering::SortableBlock;
 use crate::{process_key_already_error, GetAbsentBlock, GetAbsentBlockResult};
 use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
@@ -36,9 +37,11 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::collections::HashSet;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use thiserror::Error;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -55,6 +58,39 @@ pub struct MineNewDagBlockInfo {
     pub selected_parents: Vec<HashValue>,
     pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Error)]
+pub enum BlockColorError {
+    #[error("missing ghostdag data for block {0}")]
+    MissingGhostData(HashValue),
+    #[error("block {block_id} is not a dag ancestor of chain head {chain_head}")]
+    NotDagAncestor {
+        block_id: HashValue,
+        chain_head: HashValue,
+    },
+    #[error("no confirmed block found for {block_id} on chain head {chain_head}")]
+    NoConfirmedBlock {
+        block_id: HashValue,
+        chain_head: HashValue,
+    },
+    #[error("block {block_id} is not in mergeset of confirmed block {confirmed_block}")]
+    NotInMergeset {
+        block_id: HashValue,
+        confirmed_block: HashValue,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DagBlockColor {
+    Blue,
+    Red,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DagBlockColorInfo {
+    pub color: DagBlockColor,
+    pub confirmed_block: HashValue,
 }
 
 #[derive(Clone)]
@@ -916,6 +952,98 @@ impl BlockDAG {
         })
     }
 
+    pub fn get_block_color(
+        &self,
+        block_id: HashValue,
+        chain_head: HashValue,
+    ) -> anyhow::Result<DagBlockColorInfo> {
+        if self.ghostdata_by_hash(block_id)?.is_none() {
+            return Err(BlockColorError::MissingGhostData(block_id).into());
+        }
+
+        if !self
+            .reachability_service()
+            .is_dag_ancestor_of(block_id, chain_head)
+        {
+            return Err(BlockColorError::NotDagAncestor {
+                block_id,
+                chain_head,
+            }
+            .into());
+        }
+
+        if block_id == chain_head {
+            return Ok(DagBlockColorInfo {
+                color: DagBlockColor::Blue,
+                confirmed_block: chain_head,
+            });
+        }
+
+        let mut heap: BinaryHeap<Reverse<SortableBlock>> = BinaryHeap::new();
+        let mut visited: HashSet<HashValue> = HashSet::new();
+
+        for child in self.get_children(block_id)? {
+            if visited.insert(child) {
+                let blue_work = self
+                    .storage
+                    .ghost_dag_store
+                    .get_blue_work(child)
+                    .map_err(|e| format_err!("failed to get blue work for {:?}: {}", child, e))?;
+                heap.push(Reverse(SortableBlock::new(child, blue_work)));
+            }
+        }
+
+        while let Some(Reverse(SortableBlock {
+            hash: descendant, ..
+        })) = heap.pop()
+        {
+            if self
+                .reachability_service()
+                .is_chain_ancestor_of(descendant, chain_head)
+            {
+                let ghostdata = self
+                    .ghostdata_by_hash(descendant)?
+                    .ok_or(BlockColorError::MissingGhostData(descendant))?;
+                if ghostdata.mergeset_blues.contains(&block_id) {
+                    return Ok(DagBlockColorInfo {
+                        color: DagBlockColor::Blue,
+                        confirmed_block: descendant,
+                    });
+                }
+                if ghostdata.mergeset_reds.contains(&block_id) {
+                    return Ok(DagBlockColorInfo {
+                        color: DagBlockColor::Red,
+                        confirmed_block: descendant,
+                    });
+                }
+                return Err(BlockColorError::NotInMergeset {
+                    block_id,
+                    confirmed_block: descendant,
+                }
+                .into());
+            }
+
+            for child in self.get_children(descendant)? {
+                if visited.insert(child) {
+                    let blue_work =
+                        self.storage
+                            .ghost_dag_store
+                            .get_blue_work(child)
+                            .map_err(|e| {
+                                format_err!("failed to get blue work for {:?}: {}", child, e)
+                            })?;
+                    heap.push(Reverse(SortableBlock::new(child, blue_work)));
+                }
+            }
+        }
+
+        Err(BlockColorError::NoConfirmedBlock {
+            block_id,
+            chain_head,
+        }
+        .into())
+    }
+
     pub fn get_absent_blocks(&self, req: GetAbsentBlock) -> anyhow::Result<GetAbsentBlockResult> {
         let relation = self.storage.relations_store.read();
         let mut result = HashSet::from_iter(req.absent_id.clone());
@@ -946,11 +1074,6 @@ impl BlockDAG {
         pruning_finality: u64,
         genesis_id: Hash,
     ) -> anyhow::Result<()> {
-        let previous_ghostdata = if header.pruning_point() == HashValue::zero() {
-            self.ghostdata_by_hash(genesis_id)?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
-        } else {
-            self.ghostdata_by_hash(header.pruning_point())?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
-        };
         let next_ghostdata = self.ghostdata_by_hash(header.id())?.ok_or_else(|| {
             format_err!(
                 "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
@@ -999,13 +1122,28 @@ impl BlockDAG {
             },
         };
 
+        let previous_pruning_point =
+            if current_pruning_point_info.pruning_point == HashValue::zero() {
+                genesis_id
+            } else {
+                current_pruning_point_info.pruning_point
+            };
+        let previous_ghostdata =
+            self.ghostdata_by_hash(previous_pruning_point)?
+                .ok_or_else(|| {
+                    format_err!(
+                "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
+                header.id()
+            )
+                })?;
+
         let current_pruning_point_ghostdata = self
             .storage
             .ghost_dag_store
-            .get_data(current_pruning_point_info.pruning_point)?;
+            .get_data(previous_pruning_point)?;
 
         let new_pruning_point = self.pruning_point_manager().next_pruning_point(
-            current_pruning_point_info.pruning_point,
+            previous_pruning_point,
             previous_ghostdata.as_ref(),
             next_ghostdata.as_ref(),
             pruning_depth,

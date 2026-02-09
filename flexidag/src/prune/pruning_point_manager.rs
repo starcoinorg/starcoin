@@ -73,6 +73,16 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
             "previous_pruning_point: {:?}, previous_ghostdata: {:?}, next_ghostdata: {:?}, pruning_depth: {}, pruning_finality: {}",
             previous_pruning_point, previous_ghostdata.to_compact(), next_ghostdata.to_compact(), pruning_depth, pruning_finality
         );
+        if !self
+            .reachability_service
+            .is_chain_ancestor_of(previous_pruning_point, next_ghostdata.selected_parent)
+        {
+            return Err(anyhow::anyhow!(
+                "previous pruning point {:?} is not a chain ancestor of selected parent {:?}",
+                previous_pruning_point,
+                next_ghostdata.selected_parent
+            ));
+        }
         let min_required_blue_score_for_next_pruning_point =
             (self.finality_score(previous_ghostdata.blue_score, pruning_finality) + 1)
                 * pruning_finality;
