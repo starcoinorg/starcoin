@@ -1283,19 +1283,12 @@ fn test_dag_get_block_color_confirmed_by_main_skips_offchain() -> anyhow::Result
         .build();
     dag.init_with_genesis(genesis.clone()).unwrap();
 
-    let main = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 1000, &mut dag)?;
-    let main_tip = add_and_print_with_difficulty(2, main.id(), vec![main.id()], 1, &mut dag)?;
-    let input = add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], 1, &mut dag)?;
-    let offchain =
-        add_and_print_with_difficulty(2, input.id(), vec![input.id()], 1, &mut dag)?;
+    let main = add_and_print_with_difficulty(1, vec![genesis.id()], 1000, &mut dag)?;
+    let main_tip = add_and_print_with_difficulty(2, vec![main.id()], 1, &mut dag)?;
+    let input = add_and_print_with_difficulty(1, vec![genesis.id()], 1, &mut dag)?;
+    let offchain = add_and_print_with_difficulty(2, vec![input.id()], 1, &mut dag)?;
 
-    let head = add_and_print_with_difficulty(
-        3,
-        main_tip.id(),
-        vec![main_tip.id(), offchain.id()],
-        1,
-        &mut dag,
-    )?;
+    let head = add_and_print_with_difficulty(3, vec![main_tip.id(), offchain.id()], 1, &mut dag)?;
 
     let head_ghostdata = dag
         .ghostdata_by_hash(head.id())?
@@ -1306,7 +1299,8 @@ fn test_dag_get_block_color_confirmed_by_main_skips_offchain() -> anyhow::Result
         "head should select main chain tip as parent"
     );
     assert!(
-        !dag.reachability_service().is_chain_ancestor_of(offchain.id(), head.id()),
+        !dag.reachability_service()
+            .is_chain_ancestor_of(offchain.id(), head.id()),
         "offchain should not be on selected parent chain"
     );
     assert!(
