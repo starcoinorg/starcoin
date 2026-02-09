@@ -38,7 +38,7 @@ use asynchronous_codec::Framed;
 ///
 use bytes::BytesMut;
 use futures::prelude::*;
-use libp2p::core::{upgrade, InboundUpgrade, OutboundUpgrade, UpgradeInfo};
+use libp2p::core::{InboundUpgrade, OutboundUpgrade, UpgradeInfo};
 use log::error;
 use std::{
     borrow::Cow,
@@ -120,15 +120,11 @@ impl NotificationsIn {
 }
 
 impl UpgradeInfo for NotificationsIn {
-    type Info = Cow<'static, [u8]>;
+    type Info = Cow<'static, str>;
     type InfoIter = iter::Once<Self::Info>;
 
     fn protocol_info(&self) -> Self::InfoIter {
-        let bytes: Cow<'static, [u8]> = match &self.protocol_name {
-            Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
-            Cow::Owned(s) => Cow::Owned(s.as_bytes().to_vec()),
-        };
-        iter::once(bytes)
+        iter::once(self.protocol_name.clone())
     }
 }
 
@@ -331,15 +327,11 @@ impl NotificationsOut {
 }
 
 impl UpgradeInfo for NotificationsOut {
-    type Info = Cow<'static, [u8]>;
+    type Info = Cow<'static, str>;
     type InfoIter = iter::Once<Self::Info>;
 
     fn protocol_info(&self) -> Self::InfoIter {
-        let bytes: Cow<'static, [u8]> = match &self.protocol_name {
-            Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
-            Cow::Owned(s) => Cow::Owned(s.as_bytes().to_vec()),
-        };
-        iter::once(bytes)
+        iter::once(self.protocol_name.clone())
     }
 }
 
@@ -353,7 +345,18 @@ where
 
     fn upgrade_outbound(self, mut socket: TSubstream, _: Self::Info) -> Self::Future {
         Box::pin(async move {
-            upgrade::write_length_prefixed(&mut socket, &self.initial_message).await?;
+            {
+                let mut len = unsigned_varint::encode::usize_buffer();
+                socket
+                    .write_all(unsigned_varint::encode::usize(
+                        self.initial_message.len(),
+                        &mut len,
+                    ))
+                    .await?;
+            }
+            if !self.initial_message.is_empty() {
+                socket.write_all(&self.initial_message).await?;
+            }
 
             // Reading handshake.
             let handshake_len = unsigned_varint::aio::read_usize(&mut socket).await?;

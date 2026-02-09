@@ -7,7 +7,6 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
-use network_types::peer_info::Multiaddr;
 use openrpc_derive::openrpc;
 use std::borrow::Cow;
 
@@ -20,7 +19,7 @@ pub trait NetworkManagerApi {
     fn known_peers(&self) -> FutureResult<Vec<PeerId>>;
 
     #[rpc(name = "network_manager.get_address")]
-    fn get_address(&self, peer_id: String) -> FutureResult<Vec<Multiaddr>>;
+    fn get_address(&self, peer_id: String) -> FutureResult<Vec<String>>;
 
     #[rpc(name = "network_manager.add_peer")]
     fn add_peer(&self, peer: String) -> FutureResult<()>;

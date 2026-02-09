@@ -9,10 +9,12 @@ use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bytes::Bytes;
 use futures::prelude::*;
-use libp2p::core::connection::ConnectionId;
+use libp2p::core::{transport::PortUse, Endpoint};
 use libp2p::swarm::behaviour::FromSwarm;
-use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
-use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
+use libp2p::swarm::{
+    ConnectionDenied, ConnectionId, NetworkBehaviour, THandler, THandlerInEvent, THandlerOutEvent,
+    ToSwarm,
+};
 use libp2p::PeerId;
 use log::{debug, error, log, trace, warn, Level};
 use sc_peerset::{peersstate::PeersState, SetId};
@@ -131,16 +133,41 @@ pub struct Protocol<T: 'static + BusinessLayerHandle + Send> {
 
 impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
     type ConnectionHandler = <GenericProto as NetworkBehaviour>::ConnectionHandler;
-    type OutEvent = CustomMessageOutcome;
+    type ToSwarm = CustomMessageOutcome;
 
-    fn new_handler(&mut self) -> Self::ConnectionHandler {
-        self.behaviour.new_handler()
+    fn handle_established_inbound_connection(
+        &mut self,
+        connection_id: ConnectionId,
+        peer: PeerId,
+        local_addr: &Multiaddr,
+        remote_addr: &Multiaddr,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        self.behaviour.handle_established_inbound_connection(
+            connection_id,
+            peer,
+            local_addr,
+            remote_addr,
+        )
     }
 
-    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
-        self.behaviour.addresses_of_peer(peer_id)
+    fn handle_established_outbound_connection(
+        &mut self,
+        connection_id: ConnectionId,
+        peer: PeerId,
+        addr: &Multiaddr,
+        role_override: Endpoint,
+        port_use: PortUse,
+    ) -> Result<THandler<Self>, ConnectionDenied> {
+        self.behaviour.handle_established_outbound_connection(
+            connection_id,
+            peer,
+            addr,
+            role_override,
+            port_use,
+        )
     }
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+
+    fn on_swarm_event(&mut self, event: FromSwarm) {
         self.behaviour.on_swarm_event(event);
     }
 
@@ -148,50 +175,24 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
         &mut self,
         peer_id: PeerId,
         connection_id: ConnectionId,
-        event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as
-        ConnectionHandler>::OutEvent,
+        event: THandlerOutEvent<Self>,
     ) {
         self.behaviour
             .on_connection_handler_event(peer_id, connection_id, event);
     }
 
-    fn poll(
-        &mut self,
-        cx: &mut std::task::Context,
-        params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
+    fn poll(&mut self, cx: &mut std::task::Context) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         while let Poll::Ready(Some(())) = self.tick_timeout.poll_next_unpin(cx) {
             self.tick();
         }
 
-        let event = match self.behaviour.poll(cx, params) {
+        let event = match self.behaviour.poll(cx) {
             Poll::Pending => return Poll::Pending,
-            Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev)) => ev,
-            Poll::Ready(NetworkBehaviourAction::Dial { opts, handler }) => {
-                return Poll::Ready(NetworkBehaviourAction::Dial { opts, handler });
-            }
-            Poll::Ready(NetworkBehaviourAction::NotifyHandler {
-                peer_id,
-                handler,
-                event,
-            }) => {
-                return Poll::Ready(NetworkBehaviourAction::NotifyHandler {
-                    peer_id,
-                    handler,
-                    event,
-                });
-            }
-            Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score }) => {
-                return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score });
-            }
-            Poll::Ready(NetworkBehaviourAction::CloseConnection {
-                peer_id,
-                connection,
-            }) => {
-                return Poll::Ready(NetworkBehaviourAction::CloseConnection {
-                    peer_id,
-                    connection,
-                });
+            Poll::Ready(ToSwarm::GenerateEvent(ev)) => ev,
+            Poll::Ready(other) => {
+                return Poll::Ready(
+                    other.map_out(|_| unreachable!("handled GenerateEvent branch above")),
+                );
             }
         };
 
@@ -300,7 +301,7 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
         };
 
         if !matches!(outcome, CustomMessageOutcome::None) {
-            return Poll::Ready(NetworkBehaviourAction::GenerateEvent(outcome));
+            return Poll::Ready(ToSwarm::GenerateEvent(outcome));
         }
         // This block can only be reached if an event was pulled from the behaviour and that
         // resulted in `CustomMessageOutcome::None`. Since there might be another pending

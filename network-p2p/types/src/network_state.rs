@@ -39,8 +39,10 @@ pub struct NetworkState {
     /// PeerId of the local node.
     pub peer_id: String,
     /// List of addresses the node is currently listening on.
+    #[schemars(with = "HashSet<String>")]
     pub listened_addresses: HashSet<Multiaddr>,
     /// List of addresses the node knows it can be reached as.
+    #[schemars(with = "HashSet<String>")]
     pub external_addresses: HashSet<Multiaddr>,
     /// List of node we're connected to.
     pub connected_peers: HashMap<String, Peer>,
@@ -61,6 +63,7 @@ pub struct Peer {
     /// Latest ping duration with this node.
     pub latest_ping_time: Option<Duration>,
     /// List of addresses known for this node.
+    #[schemars(with = "HashSet<String>")]
     pub known_addresses: HashSet<Multiaddr>,
 }
 
@@ -69,6 +72,7 @@ pub struct Peer {
 #[serde(rename_all = "camelCase")]
 pub struct NotConnectedPeer {
     /// List of addresses known for this node.
+    #[schemars(with = "HashSet<String>")]
     pub known_addresses: HashSet<Multiaddr>,
     /// Node information, as provided by the node itself, if we were ever connected to this node.
     pub version_string: Option<String>,
@@ -81,12 +85,14 @@ pub struct NotConnectedPeer {
 #[serde(rename_all = "camelCase")]
 pub enum PeerEndpoint {
     /// We are dialing the given address.
-    Dialing(Multiaddr),
+    Dialing(#[schemars(with = "String")] Multiaddr),
     /// We are listening.
     Listening {
         /// Local address of the connection.
+        #[schemars(with = "String")]
         local_addr: Multiaddr,
         /// Address data is sent back to.
+        #[schemars(with = "String")]
         send_back_addr: Multiaddr,
     },
 }
@@ -97,6 +103,7 @@ impl From<ConnectedPoint> for PeerEndpoint {
             ConnectedPoint::Dialer {
                 address,
                 role_override: _,
+                ..
             } => PeerEndpoint::Dialing(address),
             ConnectedPoint::Listener {
                 local_addr,

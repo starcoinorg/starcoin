@@ -9,7 +9,6 @@ use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
 use network_p2p_core::RawRpcClient;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
-use network_types::peer_info::Multiaddr;
 use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::types::StrView;
@@ -44,11 +43,16 @@ impl NetworkManagerApi for NetworkManagerRpcImpl {
         Box::pin(fut.boxed())
     }
 
-    fn get_address(&self, peer_id: String) -> FutureResult<Vec<Multiaddr>> {
+    fn get_address(&self, peer_id: String) -> FutureResult<Vec<String>> {
         let service = self.service.clone();
         let fut = async move {
             let peer_id = PeerId::from_str(peer_id.as_str())?;
-            let result = service.get_address(peer_id).await;
+            let result = service
+                .get_address(peer_id)
+                .await
+                .into_iter()
+                .map(|addr| addr.to_string())
+                .collect();
             Ok(result)
         }
         .map_err(map_err);

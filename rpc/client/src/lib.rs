@@ -19,7 +19,6 @@ use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
-use network_types::peer_info::Multiaddr;
 use parking_lot::Mutex;
 use serde_json::Value;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
@@ -1180,7 +1179,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn network_get_address(&self, peer_id: String) -> anyhow::Result<Vec<Multiaddr>> {
+    pub fn network_get_address(&self, peer_id: String) -> anyhow::Result<Vec<String>> {
         self.call_rpc_blocking(|inner| inner.network_client.get_address(peer_id))
             .map_err(map_err)
     }

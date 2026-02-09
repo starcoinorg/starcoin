@@ -17,17 +17,17 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::protocol::generic_proto::handler::{
-    NotificationsSink, NotifsHandlerIn, NotifsHandlerOut, NotifsHandlerProto,
+    NotificationsSink, NotifsHandler, NotifsHandlerIn, NotifsHandlerOut, NotifsHandlerProto,
 };
 use bytes::BytesMut;
 use fnv::FnvHashMap;
 use futures::prelude::*;
-use libp2p::core::{connection::ConnectionId, Multiaddr, PeerId};
+use libp2p::core::{transport::PortUse, ConnectedPoint, Endpoint, Multiaddr, PeerId};
 use libp2p::swarm::behaviour::{ConnectionClosed, ConnectionEstablished, FromSwarm};
 use libp2p::swarm::dial_opts::DialOpts;
 use libp2p::swarm::{
-    dial_opts::PeerCondition, NetworkBehaviour, NetworkBehaviourAction, NotifyHandler,
-    PollParameters,
+    dial_opts::PeerCondition, ConnectionDenied, ConnectionId, NetworkBehaviour, NotifyHandler,
+    THandlerInEvent, ToSwarm,
 };
 use log::{debug, error, trace, warn};
 use parking_lot::RwLock;
@@ -132,7 +132,7 @@ pub struct GenericProto {
     next_incoming_index: sc_peerset::IncomingIndex,
 
     /// Events to produce from `poll()`.
-    events: VecDeque<NetworkBehaviourAction<GenericProtoOut, NotifsHandlerProto>>,
+    events: VecDeque<ToSwarm<GenericProtoOut, NotifsHandlerIn>>,
 }
 
 /// Identifier for a delay firing.
@@ -433,7 +433,6 @@ impl GenericProto {
         set_id: sc_peerset::SetId,
         ban: Option<Duration>,
     ) {
-        let handler = self.new_handler();
         let mut entry = if let Entry::Occupied(entry) = self.peers.entry((*peer_id, set_id)) {
             entry
         } else {
@@ -483,7 +482,7 @@ impl GenericProto {
                         set_id,
                     };
                     self.events
-                        .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                        .push_back(ToSwarm::GenerateEvent(event));
                 }
 
                 for (connec_id, connec_state) in connections
@@ -492,7 +491,7 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: *peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -508,7 +507,7 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: *peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -558,7 +557,7 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: *peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -586,11 +585,10 @@ impl GenericProto {
 
             PeerState::Poisoned => {
                 warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
-                self.events.push_back(NetworkBehaviourAction::Dial {
+                self.events.push_back(ToSwarm::Dial {
                     opts: DialOpts::peer_id(entry.key().0)
                         .condition(PeerCondition::Disconnected)
                         .build(),
-                    handler,
                 });
                 *entry.into_mut() = PeerState::Requested;
             }
@@ -658,7 +656,6 @@ impl GenericProto {
     }
     /// Function that is called when the peerset wants us to connect to a peer.
     fn peerset_report_connect(&mut self, peer_id: PeerId, set_id: sc_peerset::SetId) {
-        let handler = self.new_handler();
         // If `PeerId` is unknown to us, insert an entry, start dialing, and return early.
         let mut occ_entry = match self.peers.entry((peer_id, set_id)) {
             Entry::Occupied(entry) => entry,
@@ -668,11 +665,10 @@ impl GenericProto {
                        entry.key().0, set_id);
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {}", entry.key().0);
                 // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                self.events.push_back(NetworkBehaviourAction::Dial {
+                self.events.push_back(ToSwarm::Dial {
                     opts: DialOpts::peer_id(entry.key().0)
                         .condition(PeerCondition::Disconnected)
                         .build(),
-                    handler,
                 });
                 entry.insert(PeerState::Requested);
                 return;
@@ -702,11 +698,10 @@ impl GenericProto {
                        occ_entry.key().0, set_id);
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {:?}", occ_entry.key());
                 // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                self.events.push_back(NetworkBehaviourAction::Dial {
+                self.events.push_back(ToSwarm::Dial {
                     opts: DialOpts::peer_id(occ_entry.key().0)
                         .condition(PeerCondition::Disconnected)
                         .build(),
-                    handler,
                 });
                 *occ_entry.into_mut() = PeerState::Requested;
             }
@@ -756,7 +751,7 @@ impl GenericProto {
                            occ_entry.key().0, set_id);
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Open {
@@ -836,7 +831,7 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                            occ_entry.key(), *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: occ_entry.key().0,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Open {
@@ -874,11 +869,10 @@ impl GenericProto {
 
             PeerState::Poisoned => {
                 warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", occ_entry.key());
-                self.events.push_back(NetworkBehaviourAction::Dial {
+                self.events.push_back(ToSwarm::Dial {
                     opts: DialOpts::peer_id(occ_entry.key().0)
                         .condition(PeerCondition::Disconnected)
                         .build(),
-                    handler,
                 });
                 *occ_entry.into_mut() = PeerState::Requested;
             }
@@ -887,7 +881,6 @@ impl GenericProto {
 
     /// Function that is called when the peerset wants us to disconnect from a peer.
     fn peerset_report_disconnect(&mut self, peer_id: PeerId, set_id: sc_peerset::SetId) {
-        let handler = self.new_handler();
         let mut entry = match self.peers.entry((peer_id, set_id)) {
             Entry::Occupied(entry) => entry,
             Entry::Vacant(entry) => {
@@ -940,7 +933,7 @@ impl GenericProto {
                         set_id,
                     };
                     self.events
-                        .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                        .push_back(ToSwarm::GenerateEvent(event));
                 }
 
                 for (connec_id, connec_state) in connections
@@ -950,7 +943,7 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            entry.key(), *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: entry.key().0,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -967,7 +960,7 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            entry.key(), *connec_id, set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: entry.key().0,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -1015,11 +1008,10 @@ impl GenericProto {
             }
             PeerState::Poisoned => {
                 warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
-                self.events.push_back(NetworkBehaviourAction::Dial {
+                self.events.push_back(ToSwarm::Dial {
                     opts: DialOpts::peer_id(entry.key().0)
                         .condition(PeerCondition::Disconnected)
                         .build(),
-                    handler,
                 });
                 *entry.into_mut() = PeerState::Requested;
             }
@@ -1082,7 +1074,7 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                            incoming.peer_id, *connec_id, incoming.set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: incoming.peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Open {
@@ -1148,7 +1140,7 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            incoming.peer_id, connec_id, incoming.set_id);
                     self.events
-                        .push_back(NetworkBehaviourAction::NotifyHandler {
+                        .push_back(ToSwarm::NotifyHandler {
                             peer_id: incoming.peer_id,
                             handler: NotifyHandler::One(*connec_id),
                             event: NotifsHandlerIn::Close {
@@ -1171,18 +1163,44 @@ impl GenericProto {
 }
 
 impl NetworkBehaviour for GenericProto {
-    type ConnectionHandler = NotifsHandlerProto;
-    type OutEvent = GenericProtoOut;
+    type ConnectionHandler = NotifsHandler;
+    type ToSwarm = GenericProtoOut;
 
-    fn new_handler(&mut self) -> Self::ConnectionHandler {
-        NotifsHandlerProto::new(self.notif_protocols.clone())
+    fn handle_established_inbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        peer: PeerId,
+        local_addr: &Multiaddr,
+        remote_addr: &Multiaddr,
+    ) -> Result<Self::ConnectionHandler, ConnectionDenied> {
+        Ok(NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
+            peer,
+            ConnectedPoint::Listener {
+                local_addr: local_addr.clone(),
+                send_back_addr: remote_addr.clone(),
+            },
+        ))
     }
 
-    fn addresses_of_peer(&mut self, _: &PeerId) -> Vec<Multiaddr> {
-        Vec::new()
+    fn handle_established_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        peer: PeerId,
+        addr: &Multiaddr,
+        role_override: Endpoint,
+        port_use: PortUse,
+    ) -> Result<Self::ConnectionHandler, ConnectionDenied> {
+        Ok(NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
+            peer,
+            ConnectedPoint::Dialer {
+                address: addr.clone(),
+                role_override,
+                port_use,
+            },
+        ))
     }
 
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
+    fn on_swarm_event(&mut self, event: FromSwarm) {
         match event {
             FromSwarm::ConnectionEstablished(ConnectionEstablished {
                 peer_id,
@@ -1205,7 +1223,7 @@ impl NetworkBehaviour for GenericProto {
                             );
                             debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, connection_id, set_id);
                             self.events
-                                .push_back(NetworkBehaviourAction::NotifyHandler {
+                                .push_back(ToSwarm::NotifyHandler {
                                     peer_id,
                                     handler: NotifyHandler::One(connection_id),
                                     event: NotifsHandlerIn::Open {
@@ -1258,7 +1276,6 @@ impl NetworkBehaviour for GenericProto {
                 connection_id,
                 ..
             }) => {
-                let handler = self.new_handler();
                 for set_id in (0..self.notif_protocols.len()).map(sc_peerset::SetId::from) {
                     let mut entry =
                         if let Entry::Occupied(entry) = self.peers.entry((peer_id, set_id)) {
@@ -1486,7 +1503,7 @@ impl NetworkBehaviour for GenericProto {
                                                 notifications_sink: replacement_sink,
                                             };
                                             self.events.push_back(
-                                                NetworkBehaviourAction::GenerateEvent(event),
+                                                ToSwarm::GenerateEvent(event),
                                             );
                                         } else {
                                             warn!(target: "sub-libp2p",
@@ -1504,7 +1521,7 @@ impl NetworkBehaviour for GenericProto {
                                             set_id,
                                         };
                                         self.events.push_back(
-                                            NetworkBehaviourAction::GenerateEvent(event),
+                                            ToSwarm::GenerateEvent(event),
                                         );
                                     }
                                 }
@@ -1569,11 +1586,10 @@ impl NetworkBehaviour for GenericProto {
                         }
                         PeerState::Poisoned => {
                             warn!(target: "sub-libp2p", "State of {:?} is poisoned reconnected", entry.key());
-                            self.events.push_back(NetworkBehaviourAction::Dial {
+                            self.events.push_back(ToSwarm::Dial {
                                 opts: DialOpts::peer_id(entry.key().0)
                                     .condition(PeerCondition::Disconnected)
                                     .build(),
-                                handler: handler.clone(),
                             });
                             *entry.into_mut() = PeerState::Requested;
                         }
@@ -1588,8 +1604,11 @@ impl NetworkBehaviour for GenericProto {
             FromSwarm::ExpiredListenAddr(_) => {}
             FromSwarm::ListenerError(_) => {}
             FromSwarm::ListenerClosed(_) => {}
-            FromSwarm::NewExternalAddr(_) => {}
-            FromSwarm::ExpiredExternalAddr(_) => {}
+            FromSwarm::NewExternalAddrCandidate(_) => {}
+            FromSwarm::ExternalAddrConfirmed(_) => {}
+            FromSwarm::ExternalAddrExpired(_) => {}
+            FromSwarm::NewExternalAddrOfPeer(_) => {}
+            _ => {}
         }
     }
 
@@ -1667,7 +1686,7 @@ impl NetworkBehaviour for GenericProto {
                                 debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                                        source, connection, set_id);
                                 self.events
-                                    .push_back(NetworkBehaviourAction::NotifyHandler {
+                                    .push_back(ToSwarm::NotifyHandler {
                                         peer_id: source,
                                         handler: NotifyHandler::One(connection),
                                         event: NotifsHandlerIn::Open {
@@ -1763,7 +1782,7 @@ impl NetworkBehaviour for GenericProto {
                                 debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                                        source, connection, set_id);
                                 self.events
-                                    .push_back(NetworkBehaviourAction::NotifyHandler {
+                                    .push_back(ToSwarm::NotifyHandler {
                                         peer_id: source,
                                         handler: NotifyHandler::One(connection),
                                         event: NotifsHandlerIn::Open {
@@ -1850,7 +1869,7 @@ impl NetworkBehaviour for GenericProto {
 
                         debug!(target: "sub-libp2p", "Handler({}, {:?}) <= Close({:?})", source, connection, set_id);
                         self.events
-                            .push_back(NetworkBehaviourAction::NotifyHandler {
+                            .push_back(ToSwarm::NotifyHandler {
                                 peer_id: source,
                                 handler: NotifyHandler::One(connection),
                                 event: NotifsHandlerIn::Close {
@@ -1875,7 +1894,7 @@ impl NetworkBehaviour for GenericProto {
                                     notifications_sink: replacement_sink,
                                 };
                                 self.events
-                                    .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                                    .push_back(ToSwarm::GenerateEvent(event));
                             }
 
                             *entry.into_mut() = PeerState::Enabled { connections };
@@ -1905,7 +1924,7 @@ impl NetworkBehaviour for GenericProto {
                                 set_id,
                             };
                             self.events
-                                .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                                .push_back(ToSwarm::GenerateEvent(event));
                         }
                     }
 
@@ -1988,7 +2007,7 @@ impl NetworkBehaviour for GenericProto {
                                     notifications_sink: notifications_sink.clone(),
                                 };
                                 self.events
-                                    .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                                    .push_back(ToSwarm::GenerateEvent(event));
                             }
                             *connec_state = ConnectionState::Open(notifications_sink);
                         } else if let Some((_, connec_state)) =
@@ -2140,7 +2159,7 @@ impl NetworkBehaviour for GenericProto {
                     };
 
                     self.events
-                        .push_back(NetworkBehaviourAction::GenerateEvent(event));
+                        .push_back(ToSwarm::GenerateEvent(event));
                 } else {
                     trace!(
                         target: "sub-libp2p",
@@ -2158,8 +2177,7 @@ impl NetworkBehaviour for GenericProto {
     fn poll(
         &mut self,
         cx: &mut Context,
-        _params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
+    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(event);
         }
@@ -2185,7 +2203,7 @@ impl NetworkBehaviour for GenericProto {
                     self.peerset_report_disconnect(peer_id, set_id);
                 }
                 Poll::Ready(Some(sc_peerset::Message::Banned(peer_id, duration))) => {
-                    self.events.push_back(NetworkBehaviourAction::GenerateEvent(
+                    self.events.push_back(ToSwarm::GenerateEvent(
                         GenericProtoOut::Banned(peer_id, duration),
                     ))
                 }
@@ -2200,7 +2218,6 @@ impl NetworkBehaviour for GenericProto {
         while let Poll::Ready(Some((delay_id, peer_id, set_id))) =
             Pin::new(&mut self.delays).poll_next(cx)
         {
-            let handler = self.new_handler();
             let peer_state = match self.peers.get_mut(&(peer_id, set_id)) {
                 Some(s) => s,
                 // We intentionally never remove elements from `delays`, and it may
@@ -2217,11 +2234,10 @@ impl NetworkBehaviour for GenericProto {
                 PeerState::PendingRequest { timer, .. } if *timer == delay_id => {
                     debug!(target: "sub-libp2p", "Libp2p <= Dial {:?} now that ban has expired", peer_id);
                     // The `DialPeerCondition` ensures that dial attempts are de-duplicated
-                    self.events.push_back(NetworkBehaviourAction::Dial {
+                    self.events.push_back(ToSwarm::Dial {
                         opts: DialOpts::peer_id(peer_id)
                             .condition(PeerCondition::Disconnected)
                             .build(),
-                        handler,
                     });
                     *peer_state = PeerState::Requested;
                 }
@@ -2239,7 +2255,7 @@ impl NetworkBehaviour for GenericProto {
                         debug!(target: "sub-libp2p", "Handler({}, {:?}) <= Open({:?}) (ban expired)",
                                peer_id, *connec_id, set_id);
                         self.events
-                            .push_back(NetworkBehaviourAction::NotifyHandler {
+                            .push_back(ToSwarm::NotifyHandler {
                                 peer_id,
                                 handler: NotifyHandler::One(*connec_id),
                                 event: NotifsHandlerIn::Open {

@@ -90,7 +90,7 @@ pub fn build_network_worker(
         listen_addresses: vec![network_config.listen()],
         boot_nodes,
         node_key: {
-            let secret = identity::ed25519::SecretKey::from_bytes(
+            let secret = identity::ed25519::SecretKey::try_from_bytes(
                 &mut network_config.network_keypair().0.to_bytes(),
             )
             .expect("decode network node key should success.");

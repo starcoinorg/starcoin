@@ -23,7 +23,7 @@ use std::{
 use zeroize::Zeroize;
 
 pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
-pub use libp2p::{build_multiaddr, core::PublicKey, identity};
+pub use libp2p::{build_multiaddr, identity, identity::PublicKey};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
 
 /// Name of a protocol, transmitted on the wire. Should be unique for each chain. Always UTF-8.
@@ -274,16 +274,16 @@ impl NodeKeyConfig {
         match self {
             Ed25519(Secret::New) => Ok(Keypair::generate_ed25519()),
 
-            Ed25519(Secret::Input(k)) => Ok(Keypair::Ed25519(k.into())),
+            Ed25519(Secret::Input(k)) => Ok(Keypair::from(ed25519::Keypair::from(k))),
 
             Ed25519(Secret::File(f)) => get_secret(
                 f,
-                |b| ed25519::SecretKey::from_bytes(b),
+                |b| ed25519::SecretKey::try_from_bytes(b),
                 ed25519::SecretKey::generate,
                 |b| b.as_ref().to_vec(),
             )
             .map(ed25519::Keypair::from)
-            .map(Keypair::Ed25519),
+            .map(Keypair::from),
         }
     }
 }
