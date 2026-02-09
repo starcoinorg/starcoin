@@ -1,6 +1,7 @@
 use std::sync::Arc;
+use std::time::Duration;
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
 use network_api::PeerId;
 use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_chain::{verifier::FullVerifier, BlockChain};
@@ -18,7 +19,10 @@ use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{PeerNewBlock, SelectHeaderState};
 use starcoin_types::block::Block;
-use starcoin_types::system_events::{MinedBlock, NewDagBlock, NewDagBlockFromPeer};
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::{
+    MinedBlock, NewDagBlock, NewDagBlockFromPeer, SyncStatusChangeEvent,
+};
 
 use crate::sync::CheckSyncEvent;
 
@@ -45,6 +49,15 @@ pub struct ExecuteService {
     storage: Arc<Storage>,
     storage2: Arc<Storage2>,
     dag: BlockDAG,
+    sync_status: Option<SyncStatus>,
+}
+
+const PEER_BLOCK_RETRY_DELAY_MS: u64 = 200;
+
+#[derive(Debug, Clone)]
+struct PeerBlockTryLater {
+    peer_id: PeerId,
+    block: Block,
 }
 
 impl ExecuteService {
@@ -59,6 +72,14 @@ impl ExecuteService {
             storage,
             storage2,
             dag,
+            sync_status: None,
+        }
+    }
+
+    fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_nearly_synced(),
+            None => false,
         }
     }
 
@@ -158,7 +179,11 @@ impl ServiceFactory<Self> for ExecuteService {
         let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
 
-        Ok(Self::new(time_service, storage, storage2, dag))
+        let mut service = Self::new(time_service, storage, storage2, dag);
+        if let Ok(Some(sync_status)) = ctx.get_shared_opt::<SyncStatus>() {
+            service.sync_status = Some(sync_status);
+        }
+        Ok(service)
     }
 }
 
@@ -167,6 +192,7 @@ impl ActorService for ExecuteService {
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<PeerNewBlock>();
         ctx.subscribe::<ExecutedBlockInfo>();
+        ctx.subscribe::<SyncStatusChangeEvent>();
 
         Ok(())
     }
@@ -175,6 +201,7 @@ impl ActorService for ExecuteService {
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<PeerNewBlock>();
         ctx.unsubscribe::<ExecutedBlockInfo>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
 
         Ok(())
     }
@@ -223,8 +250,38 @@ impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
     }
 }
 
+impl EventHandler<Self, SyncStatusChangeEvent> for ExecuteService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.sync_status = Some(msg.0);
+    }
+}
+
+impl EventHandler<Self, PeerBlockTryLater> for ExecuteService {
+    fn handle_event(&mut self, msg: PeerBlockTryLater, ctx: &mut ServiceContext<Self>) {
+        let PeerBlockTryLater { peer_id, block } = msg;
+        ctx.run_later(
+            Duration::from_millis(PEER_BLOCK_RETRY_DELAY_MS),
+            move |service_ctx| {
+                if let Err(e) = service_ctx
+                    .self_ref()
+                    .notify(PeerNewBlock::new(peer_id.clone(), block.clone()))
+                {
+                    error!("retry notify peer block error: {:?}", e);
+                }
+            },
+        );
+    }
+}
+
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
+        if !self.is_synced() {
+            debug!(
+                "[execute] Ignore PeerNewBlock event because the node has not been synchronized yet."
+            );
+            return;
+        }
+
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let storage2 = self.storage2.clone();
@@ -251,10 +308,10 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                             })
                             .map_err(anyhow::Error::from),
                         ExecuteResult::TryLater => self_ref
-                            .notify(PeerNewBlock::new(
-                                msg.get_peer_id(),
-                                msg.get_block().clone(),
-                            ))
+                            .notify(PeerBlockTryLater {
+                                peer_id: msg.get_peer_id(),
+                                block: msg.get_block().clone(),
+                            })
                             .map_err(anyhow::Error::from),
                     } {
                         error!(
