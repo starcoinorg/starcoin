@@ -554,9 +554,54 @@ where
         anyhow::Result::Ok(())
     }
 
-    async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    async fn fetch_blocks(&self, block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let mut result = vec![];
-        block_ids.retain(|id| {
+        let mut deduped_block_ids = Vec::with_capacity(block_ids.len());
+        let mut seen = HashSet::with_capacity(block_ids.len());
+        for block_id in block_ids {
+            if seen.insert(block_id) {
+                deduped_block_ids.push(block_id);
+            }
+        }
+
+        deduped_block_ids.retain(|id| {
+            match self.chain.has_dag_block(*id) {
+                Ok(true) => return false, // already connected, no need to fetch
+                Ok(false) => (),
+                Err(e) => debug!("failed to check dag block existence for {:?}: {:?}", id, e),
+            }
+
+            match self.local_store.get_block(*id) {
+                Ok(Some(block)) => {
+                    if let Err(e) = self.local_store.save_dag_sync_block(
+                        starcoin_storage::block::DagSyncBlock {
+                            block: block.clone(),
+                            children: vec![],
+                        },
+                    ) {
+                        debug!(
+                            "failed to cache local block {:?} into dag sync store: {:?}",
+                            id, e
+                        );
+                    }
+                    match self.sync_dag_store.save_block(block.clone()) {
+                        Ok(_) => {
+                            result.push(block.header().clone());
+                            return false; // read from local store, remove from p2p request
+                        }
+                        Err(e) => {
+                            debug!(
+                                "failed to save local block {:?} into sync dag store: {:?}",
+                                id, e
+                            );
+                            return true; // need retaining
+                        }
+                    }
+                }
+                Ok(None) => (),
+                Err(e) => debug!("failed to read local block {:?}: {:?}", id, e),
+            }
+
             match self.local_store.get_dag_sync_block(*id) {
                 Ok(op_dag_sync_block) => {
                     if let Some(dag_sync_block) = op_dag_sync_block {
@@ -566,7 +611,7 @@ where
                                 false // read from local store, remove from p2p request
                             }
                             Err(e) => {
-                                debug!("failed to save block for: {:?}", e);
+                                debug!("failed to save block {:?} for: {:?}", id, e);
                                 true // need retaining
                             }
                         }
@@ -574,10 +619,13 @@ where
                         true // need retaining
                     }
                 }
-                Err(_) => true, // need retaining
+                Err(e) => {
+                    debug!("failed to read dag sync block {:?}: {:?}", id, e);
+                    true // need retaining
+                }
             }
         });
-        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
+        for chunk in deduped_block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
             let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
             for (block, _) in remote_dag_sync_blocks {
                 self.local_store
