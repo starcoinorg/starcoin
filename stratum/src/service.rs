@@ -28,6 +28,8 @@ const MAX_AGENT_LEN: usize = 128;
 const READ_IDLE_TIMEOUT_SECS: u64 = 600;
 const REQ_WINDOW_SECS: u64 = 10;
 const MAX_REQS_PER_WINDOW: u32 = 100;
+const PROTOCOL_ERROR_WINDOW_SECS: u64 = 120;
+const MAX_PROTOCOL_ERRORS: u32 = 60;
 
 struct RequestRate {
     first: Instant,
@@ -51,6 +53,31 @@ impl RequestRate {
         }
         self.count = self.count.saturating_add(1);
         self.count > MAX_REQS_PER_WINDOW
+    }
+}
+
+struct ProtocolErrorCounter {
+    first: Instant,
+    count: u32,
+}
+
+impl ProtocolErrorCounter {
+    fn new() -> Self {
+        Self {
+            first: Instant::now(),
+            count: 0,
+        }
+    }
+
+    fn record_and_exceeded(&mut self) -> bool {
+        let now = Instant::now();
+        if now.duration_since(self.first) > Duration::from_secs(PROTOCOL_ERROR_WINDOW_SECS) {
+            self.first = now;
+            self.count = 1;
+            return false;
+        }
+        self.count = self.count.saturating_add(1);
+        self.count >= MAX_PROTOCOL_ERRORS
     }
 }
 
@@ -187,6 +214,7 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
     let mut logged_in = false;
     let mut worker_id: Option<String> = None;
     let mut req_rate = RequestRate::new();
+    let mut protocol_errors = ProtocolErrorCounter::new();
 
     let writer = tokio::spawn(async move {
         while let Some(msg) = out_rx.next().await {
@@ -273,6 +301,7 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                     &stratum,
                     &out_tx,
                     worker_id.as_deref(),
+                    &mut protocol_errors,
                 )
                 .await
                 {
@@ -412,6 +441,7 @@ async fn handle_submit(
     stratum: &ServiceRef<Stratum>,
     out_tx: &mpsc::Sender<String>,
     expected_worker_id: Option<&str>,
+    protocol_errors: &mut ProtocolErrorCounter,
 ) -> Result<SubmitAction> {
     let share: ShareRequest = match parse_params(params) {
         Ok(share) => share,
@@ -419,7 +449,14 @@ async fn handle_submit(
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            return Ok(SubmitAction::Disconnect);
+            if protocol_errors.record_and_exceeded() {
+                warn!(
+                    target: "stratum",
+                    "disconnect client: protocol error threshold exceeded (invalid params)"
+                );
+                return Ok(SubmitAction::Disconnect);
+            }
+            return Ok(SubmitAction::Continue);
         }
     };
     if let Some(expected) = expected_worker_id {
@@ -427,7 +464,14 @@ async fn handle_submit(
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, "worker mismatch".to_string());
             }
-            return Ok(SubmitAction::Disconnect);
+            if protocol_errors.record_and_exceeded() {
+                warn!(
+                    target: "stratum",
+                    "disconnect client: protocol error threshold exceeded (worker mismatch)"
+                );
+                return Ok(SubmitAction::Disconnect);
+            }
+            return Ok(SubmitAction::Continue);
         }
     }
     let submit_result = stratum.send(SubmitShareEvent(share)).await;

@@ -20,7 +20,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 const ERROR_WINDOW_SECS: u64 = 300;
-const MAX_RECENT_JOBS: usize = 64;
+const MAX_RECENT_JOBS: usize = 512;
 const STATS_LOG_INTERVAL_SECS: u64 = 60;
 const MAX_NONCE_HEX_LEN: usize = 8;
 const JOB_ID_HEX_LEN: usize = 16;
@@ -146,6 +146,11 @@ impl Stratum {
         self.cache_job(&event);
         let mut remove_outdated = vec![];
         for (id, (ch, worker)) in self.mint_block_subscribers.iter() {
+            let _ = worker
+                .diff_manager
+                .write()
+                .unwrap()
+                .maybe_decay(&worker.base_info.login);
             let job = Self::get_downstream_job(worker, false, &event);
             info!(target: "stratum", "dispatch startum job:{:?}", job);
             let mut ch = ch.clone();
@@ -317,6 +322,15 @@ impl Stratum {
         s.bytes().all(|b| b.is_ascii_hexdigit())
     }
 
+    fn log_disconnect(&self, worker_id: WorkerId, reason: &str) {
+        warn!(
+            target: "stratum",
+            "disconnect worker {}: {}",
+            worker_id.to_hex(),
+            reason
+        );
+    }
+
     fn validate_share_params(
         &mut self,
         worker_id: WorkerId,
@@ -326,6 +340,7 @@ impl Stratum {
         if share.id.len() != WORKER_ID_HEX_LEN || !Self::is_hex(&share.id) {
             let disconnect = self.record_invalid_share(worker_id, now);
             if disconnect {
+                self.log_disconnect(worker_id, "invalid worker id");
                 self.drop_worker_state(worker_id);
             }
             return Self::reject(-1, "invalid worker id", disconnect);
@@ -333,6 +348,7 @@ impl Stratum {
         if share.job_id.len() != JOB_ID_HEX_LEN || !Self::is_hex(&share.job_id) {
             let disconnect = self.record_invalid_share(worker_id, now);
             if disconnect {
+                self.log_disconnect(worker_id, "invalid job id");
                 self.drop_worker_state(worker_id);
             }
             return Self::reject(-1, "invalid job id", disconnect);
@@ -343,6 +359,7 @@ impl Stratum {
         {
             let disconnect = self.record_invalid_share(worker_id, now);
             if disconnect {
+                self.log_disconnect(worker_id, "invalid nonce");
                 self.drop_worker_state(worker_id);
             }
             return Self::reject(-1, "invalid nonce", disconnect);
@@ -491,6 +508,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 self.stats.job_miss = self.stats.job_miss.saturating_add(1);
                 self.note_stat(now);
                 if disconnect {
+                    self.log_disconnect(worker_id, "job not found");
                     self.drop_worker_state(worker_id);
                 }
                 return Ok(Self::reject(-1, "job not found", disconnect));
@@ -505,6 +523,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 self.stats.invalid = self.stats.invalid.saturating_add(1);
                 self.note_stat(now);
                 if disconnect {
+                    self.log_disconnect(worker_id, "invalid job id");
                     self.drop_worker_state(worker_id);
                 }
                 return Ok(Self::reject(-1, "invalid job id", disconnect));
@@ -518,6 +537,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 self.note_stat(now);
                 let disconnect = self.record_stale_share(worker_id, now);
                 if disconnect {
+                    self.log_disconnect(worker_id, "stale share");
                     self.drop_worker_state(worker_id);
                 }
                 return Ok(Self::reject(-1, "stale share", disconnect));
@@ -532,6 +552,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             self.stats.job_miss = self.stats.job_miss.saturating_add(1);
             self.note_stat(now);
             if disconnect {
+                self.log_disconnect(worker_id, "job not found");
                 self.drop_worker_state(worker_id);
             }
             return Ok(Self::reject(-1, "job not found", disconnect));
@@ -542,6 +563,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             None => {
                 let disconnect = self.record_job_miss(worker_id, now);
                 if disconnect {
+                    self.log_disconnect(worker_id, "worker not found");
                     self.drop_worker_state(worker_id);
                 }
                 return Ok(Self::reject(-1, "worker not found", disconnect));
@@ -556,6 +578,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 self.stats.invalid = self.stats.invalid.saturating_add(1);
                 self.note_stat(now);
                 if disconnect {
+                    self.log_disconnect(worker_id, "invalid share");
                     self.drop_worker_state(worker_id);
                 }
                 return Ok(Self::reject(-1, "invalid share", disconnect));
@@ -572,6 +595,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             self.stats.duplicate = self.stats.duplicate.saturating_add(1);
             self.note_stat(now);
             if disconnect {
+                self.log_disconnect(worker_id, "duplicate share");
                 self.drop_worker_state(worker_id);
             }
             return Ok(Self::reject(-1, "duplicate share", disconnect));
@@ -591,6 +615,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             self.stats.invalid = self.stats.invalid.saturating_add(1);
             self.note_stat(now);
             if disconnect {
+                self.log_disconnect(worker_id, "low difficulty share");
                 self.drop_worker_state(worker_id);
             }
             return Ok(Self::reject(-1, "low difficulty share", disconnect));
@@ -600,9 +625,18 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
 
         let network_target = difficult_to_target(current_mint_event.difficulty)?;
         if job_id == submit_job_id && pow_hash_u256 <= network_target {
-            let mut forward_seal = seal;
-            forward_seal.minting_blob = current_mint_event.minting_blob;
-            self.miner_service.try_send(forward_seal)?;
+            if let Err(err) = current_mint_event.strategy.verify_blob(
+                current_mint_event.minting_blob.clone(),
+                seal.nonce,
+                seal.extra,
+                current_mint_event.difficulty,
+            ) {
+                warn!(target: "stratum", "verify blob failed: {}", err);
+            } else {
+                let mut forward_seal = seal;
+                forward_seal.minting_blob = current_mint_event.minting_blob;
+                self.miner_service.try_send(forward_seal)?;
+            }
         }
 
         self.stats.accepted = self.stats.accepted.saturating_add(1);

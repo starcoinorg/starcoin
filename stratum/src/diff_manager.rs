@@ -3,12 +3,12 @@ use starcoin_logger::prelude::*;
 use starcoin_types::U256;
 
 pub const TARGET_SHARE_TIME_SECS: u64 = 10;
-pub const MIN_UPDATE_PERIOD_SECS: u64 = 30;
-pub const MIN_DIFFICULTY: u64 = 1_000;
+pub const MIN_UPDATE_PERIOD_SECS: u64 = 10;
+pub const MIN_DIFFICULTY: u64 = 64;
 pub const MAX_DIFFICULTY: u64 = 10_000_000_000;
 pub const MAX_ADJUST_FACTOR_NUM: u64 = 2;
 pub const MAX_ADJUST_FACTOR_DEN: u64 = 1;
-pub const MIN_SAMPLES_PER_UPDATE: u32 = 3;
+pub const MIN_SAMPLES_PER_UPDATE: u32 = 1;
 pub const EMA_ALPHA_NUM: u64 = 3;
 pub const EMA_ALPHA_DEN: u64 = 10;
 pub const DRIFT_LOWER_NUM: u64 = 7;
@@ -19,6 +19,8 @@ pub struct DifficultyManager {
     pub submits_since_last_update: u32,
     pub difficulty: U256,
     pub avg_share_time: f64,
+    pub last_share_ts: u64,
+    pub last_decay_ts: u64,
 }
 impl Default for DifficultyManager {
     fn default() -> Self {
@@ -32,16 +34,20 @@ impl DifficultyManager {
 
     pub fn new() -> Self {
         let initial_difficulty = MIN_DIFFICULTY.max(1);
+        let now = Self::current_timestamp();
         Self {
-            timestamp_since_last_update: Self::current_timestamp(),
+            timestamp_since_last_update: now,
             submits_since_last_update: 0,
             difficulty: U256::from(initial_difficulty),
             avg_share_time: TARGET_SHARE_TIME_SECS as f64,
+            last_share_ts: now,
+            last_decay_ts: now,
         }
     }
 
     pub fn find_seal(&mut self) {
         self.submits_since_last_update += 1;
+        self.last_share_ts = Self::current_timestamp();
     }
 
     pub fn try_update(&mut self, worker: String) -> bool {
@@ -96,6 +102,33 @@ impl DifficultyManager {
         );
         self.timestamp_since_last_update = current_timestamp;
         self.submits_since_last_update = 0;
+        true
+    }
+
+    pub fn maybe_decay(&mut self, worker: &str) -> bool {
+        let now = Self::current_timestamp();
+        let decay_window = TARGET_SHARE_TIME_SECS.saturating_mul(3);
+        if now.saturating_sub(self.last_share_ts) < decay_window {
+            return false;
+        }
+        if now.saturating_sub(self.last_decay_ts) < decay_window {
+            return false;
+        }
+        let current = self.difficulty.as_u64();
+        let mut new_diff = current.saturating_div(2).max(MIN_DIFFICULTY);
+        if new_diff == 0 {
+            new_diff = MIN_DIFFICULTY;
+        }
+        if new_diff == current {
+            self.last_decay_ts = now;
+            return false;
+        }
+        self.difficulty = U256::from(new_diff);
+        self.last_decay_ts = now;
+        info!(
+            "Miner:{} no-share decay difficulty:{} -> {}",
+            worker, current, new_diff
+        );
         true
     }
 

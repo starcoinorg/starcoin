@@ -154,14 +154,14 @@ struct Inner {
     connections: HashMap<String, mpsc::UnboundedSender<StratumJob>>,
     stream: Option<Pin<Box<dyn Stream<Item = String> + Send>>>,
     pending_requests: HashMap<u32, PendingRequest>,
-    sink: Pin<Box<dyn Sink<String, Error = anyhow::Error> + Send>>,
+    sink: Pin<Box<dyn Sink<String, Error = std::io::Error> + Send>>,
 }
 
 impl Inner {
     pub fn new(tcp_stream: TcpStream) -> (Inner, mpsc::UnboundedSender<Request>) {
         let (s, channel) = mpsc::unbounded::<Request>();
         let (sink, stream) = Framed::new(tcp_stream, JsonStreamCodec::stream_incoming()).split();
-        let sink = Box::pin(sink.sink_map_err(|e| anyhow!(format!("{}", e))));
+        let sink = Box::pin(sink);
         let stream = Box::pin(
             stream
                 .map_err(|e| error!("stratum tcp stream error: {}", e))
@@ -222,11 +222,13 @@ impl Inner {
 
     pub async fn start(mut self) {
         let mut stream_fuse = self.stream.take().expect("stream must exist").fuse();
-        //move out
         let mut request_id: u32 = 0;
         loop {
             select! {
-                req = self.request_channel.select_next_some() =>{
+                req = self.request_channel.next() =>{
+                    let Some(req) = req else {
+                        break;
+                    };
                     request_id+=1;
                     match req {
                         Request::LoginRequest(login_req, s)=>{
@@ -234,22 +236,25 @@ impl Inner {
                             debug!("stratum client send request:{}",message);
                             if let Err(err) = self.sink.send(message).await{
                                 error!("stratum send request failed: {}", err);
-                                continue
+                                break;
                             }
                             self.pending_requests.insert(request_id, PendingRequest::LoginRequest(s));
                         }
                         Request::SubmitSealRequest(seal_req)=>{
                             let message = build_request_string("submit", &seal_req, request_id).expect("build stratum login request failed never happen");
-                            debug!("stratum send request:{}",message);
+                            debug!("stratum client send request:{}",message);
                             if let Err(err) = self.sink.send(message).await{
                                 error!("stratum send request failed: {}", err);
-                                continue
+                                break;
                             }
                         }
                     }
                 },
 
-                resp = stream_fuse.select_next_some() => {
+                resp = stream_fuse.next() => {
+                    let Some(resp) = resp else {
+                        break;
+                    };
                     if let Err(err) = self.process_output(resp).await{
                         debug!("process output error:{:?}", err);
                     }

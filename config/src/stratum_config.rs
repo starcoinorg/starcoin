@@ -102,12 +102,12 @@ impl StratumConfig {
     pub fn limits(&self) -> StratumLimits {
         StratumLimits {
             share_dedup_window_secs: self.share_dedup_window_secs.unwrap_or(600),
-            stale_window_secs: self.stale_window_secs.unwrap_or(120),
+            stale_window_secs: self.stale_window_secs.unwrap_or(300),
             share_rate_window_secs: self.share_rate_window_secs.unwrap_or(10),
             max_shares_per_window: self.max_shares_per_window.unwrap_or(200),
             max_invalid_shares: self.max_invalid_shares.unwrap_or(20),
-            max_job_misses: self.max_job_misses.unwrap_or(20),
-            max_stale_shares: self.max_stale_shares.unwrap_or(20),
+            max_job_misses: self.max_job_misses.unwrap_or(100),
+            max_stale_shares: self.max_stale_shares.unwrap_or(1000),
             max_workers_per_account: self.max_workers_per_account.unwrap_or(1024),
         }
     }

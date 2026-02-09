@@ -3,6 +3,7 @@ use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use futures::channel::mpsc;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::DefaultHasher;
+use starcoin_crypto::HashValue;
 use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockHeaderExtra;
@@ -188,15 +189,16 @@ pub struct JobId {
 }
 impl JobId {
     pub fn from_bob(minting_bob: &[u8]) -> JobId {
+        let hash = HashValue::sha3_256_of(minting_bob);
         let mut job_id = [0u8; 8];
-        job_id.copy_from_slice(&minting_bob[0..8]);
+        job_id.copy_from_slice(&hash.to_vec()[0..8]);
         Self { job_id }
     }
     pub fn encode(&self) -> String {
         hex::encode(self.job_id)
     }
     pub fn equal_with(&self, minting_bob: &[u8]) -> bool {
-        self.job_id[..] == minting_bob[0..8]
+        self.job_id == JobId::from_bob(minting_bob).job_id
     }
     pub fn new(job_id: &String) -> anyhow::Result<Self> {
         let job_id: [u8; 8] = hex::decode(job_id)
