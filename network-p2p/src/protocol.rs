@@ -181,7 +181,10 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
             .on_connection_handler_event(peer_id, connection_id, event);
     }
 
-    fn poll(&mut self, cx: &mut std::task::Context) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
+    fn poll(
+        &mut self,
+        cx: &mut std::task::Context,
+    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         while let Poll::Ready(Some(())) = self.tick_timeout.poll_next_unpin(cx) {
             self.tick();
         }

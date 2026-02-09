@@ -10,9 +10,9 @@ pub mod network_state;
 pub mod peer_id;
 
 pub use libp2p::identity::PublicKey;
-pub use libp2p::{identity, multiaddr, Multiaddr, PeerId};
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
 pub use libp2p::{build_multiaddr, multihash};
+pub use libp2p::{identity, multiaddr, Multiaddr, PeerId};
 pub use multi_address_with_peer_id::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
 pub use sc_peerset::{ReputationChange, BANNED_THRESHOLD};
 

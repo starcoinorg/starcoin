@@ -60,9 +60,7 @@ use libp2p::{
     core::ConnectedPoint,
     identify::Info as IdentifyInfo,
     kad::RecordKey as KademliaKey,
-    swarm::{
-        Config as SwarmConfig, ConnectionError, DialError, Swarm, SwarmEvent,
-    },
+    swarm::{Config as SwarmConfig, ConnectionError, DialError, Swarm, SwarmEvent},
     PeerId,
 };
 use log::{debug, error, info, trace, warn};
@@ -278,7 +276,10 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             let swarm_config = SwarmConfig::with_tokio_executor()
                 .with_notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
                 .with_per_connection_event_buffer_size(1024);
-            (Swarm::new(transport, behaviour, local_peer_id, swarm_config), bandwidth)
+            (
+                Swarm::new(transport, behaviour, local_peer_id, swarm_config),
+                bandwidth,
+            )
         };
 
         // Listen on multiaddresses.
@@ -438,10 +439,7 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
         NetworkState {
             peer_id: swarm.local_peer_id().to_base58(),
             listened_addresses: swarm.listeners().cloned().collect(),
-            external_addresses: swarm
-                .external_addresses()
-                .cloned()
-                .collect(),
+            external_addresses: swarm.external_addresses().cloned().collect(),
             connected_peers,
             not_connected_peers,
             peerset: swarm
@@ -1168,9 +1166,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                                     ResponseFailure::Network(InboundFailure::ResponseOmission) => {
                                         "busy-omitted"
                                     }
-                                    ResponseFailure::Network(InboundFailure::Io(_)) => {
-                                        "io-error"
-                                    }
+                                    ResponseFailure::Network(InboundFailure::Io(_)) => "io-error",
                                 };
 
                                 metrics

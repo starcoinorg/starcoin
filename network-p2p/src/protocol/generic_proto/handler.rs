@@ -68,13 +68,9 @@ use futures::{
     lock::{Mutex as FuturesMutex, MutexGuard as FuturesMutexGuard},
     prelude::*,
 };
-use libp2p::core::{
-    ConnectedPoint, PeerId,
-};
+use libp2p::core::{ConnectedPoint, PeerId};
 use libp2p::swarm::{
-    handler::{
-        ConnectionEvent, DialUpgradeError, FullyNegotiatedInbound, FullyNegotiatedOutbound,
-    },
+    handler::{ConnectionEvent, DialUpgradeError, FullyNegotiatedInbound, FullyNegotiatedOutbound},
     ConnectionHandler, ConnectionHandlerEvent, Stream as SwarmStream, StreamUpgradeError,
     SubstreamProtocol,
 };
@@ -144,9 +140,7 @@ pub struct NotifsHandler {
     peer_id: PeerId,
 
     /// Events to return in priority from `poll`.
-    events_queue: VecDeque<
-        ConnectionHandlerEvent<NotificationsOut, usize, NotifsHandlerOut>,
-    >,
+    events_queue: VecDeque<ConnectionHandlerEvent<NotificationsOut, usize, NotifsHandlerOut>>,
 }
 
 /// Fields specific for each individual protocol.
@@ -473,9 +467,7 @@ impl ConnectionHandler for NotifsHandler {
     type OutboundOpenInfo = usize;
     type InboundOpenInfo = ();
 
-    fn listen_protocol(
-        &self,
-    ) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
+    fn listen_protocol(&self) -> SubstreamProtocol<Self::InboundProtocol, Self::InboundOpenInfo> {
         let protocols = self
             .protocols
             .iter()
@@ -566,8 +558,8 @@ impl ConnectionHandler for NotifsHandler {
 
                         self.events_queue
                             .push_back(ConnectionHandlerEvent::NotifyBehaviour(
-                            NotifsHandlerOut::OpenResultErr { protocol_index },
-                        ));
+                                NotifsHandlerOut::OpenResultErr { protocol_index },
+                            ));
                     }
                     State::OpenDesiredByRemote {
                         pending_opening, ..
@@ -743,11 +735,7 @@ impl ConnectionHandler for NotifsHandler {
         &mut self,
         cx: &mut Context,
     ) -> Poll<
-        ConnectionHandlerEvent<
-            Self::OutboundProtocol,
-            Self::OutboundOpenInfo,
-            Self::ToBehaviour,
-        >,
+        ConnectionHandlerEvent<Self::OutboundProtocol, Self::OutboundOpenInfo, Self::ToBehaviour>,
     > {
         if let Some(ev) = self.events_queue.pop_front() {
             return Poll::Ready(ev);
@@ -767,7 +755,8 @@ impl ConnectionHandler for NotifsHandler {
                 State::Open {
                     in_substream: in_substream @ Some(_),
                     ..
-                } => match futures::Stream::poll_next(Pin::new(in_substream.as_mut().unwrap()), cx) {
+                } => match futures::Stream::poll_next(Pin::new(in_substream.as_mut().unwrap()), cx)
+                {
                     Poll::Pending => {}
                     Poll::Ready(Some(Ok(message))) => {
                         let event = NotifsHandlerOut::Notification {

@@ -25,11 +25,11 @@ use crate::{
 };
 use bytes::Bytes;
 use futures::channel::oneshot;
-use libp2p::identity::PublicKey;
-use libp2p::{Multiaddr, PeerId};
 use libp2p::identify::Info;
+use libp2p::identity::PublicKey;
 use libp2p::kad::RecordKey;
 use libp2p::swarm::NetworkBehaviour;
+use libp2p::{Multiaddr, PeerId};
 use sc_peerset::ReputationChange;
 use std::borrow::Cow;
 use std::collections::HashSet;

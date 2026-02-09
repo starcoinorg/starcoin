@@ -42,9 +42,8 @@ use libp2p::{
     core::{transport::PortUse, Endpoint, Multiaddr},
     request_response::{
         Behaviour as RequestResponse, Codec as RequestResponseCodec,
-        Config as RequestResponseConfig, Event as RequestResponseEvent,
-        InboundRequestId, Message as RequestResponseMessage, OutboundRequestId, ProtocolSupport,
-        ResponseChannel,
+        Config as RequestResponseConfig, Event as RequestResponseEvent, InboundRequestId,
+        Message as RequestResponseMessage, OutboundRequestId, ProtocolSupport, ResponseChannel,
     },
     swarm::{
         handler::multi::MultiHandler, ConnectionDenied, ConnectionId, NetworkBehaviour, THandler,
@@ -236,7 +235,8 @@ impl RequestResponsesBehaviour {
     pub fn new(list: impl Iterator<Item = ProtocolConfig>) -> Result<Self, RegisterError> {
         let mut protocols = HashMap::new();
         for protocol in list {
-            let cfg = RequestResponseConfig::default().with_request_timeout(protocol.request_timeout);
+            let cfg =
+                RequestResponseConfig::default().with_request_timeout(protocol.request_timeout);
 
             let protocol_support = if protocol.inbound_queue.is_some() {
                 ProtocolSupport::Full
@@ -462,12 +462,10 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                 }
 
                 if !reputation_changes.is_empty() {
-                    return Poll::Ready(ToSwarm::GenerateEvent(
-                        Event::ReputationChanges {
-                            peer,
-                            changes: reputation_changes,
-                        },
-                    ));
+                    return Poll::Ready(ToSwarm::GenerateEvent(Event::ReputationChanges {
+                        peer,
+                        changes: reputation_changes,
+                    }));
                 }
             }
 
@@ -490,7 +488,9 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                             return Poll::Ready(
                                 other
                                     .map_in(|event| ((*protocol).to_string(), event))
-                                    .map_out(|_| unreachable!("handled GenerateEvent branch above")),
+                                    .map_out(|_| {
+                                        unreachable!("handled GenerateEvent branch above")
+                                    }),
                             );
                         }
                     };
@@ -508,11 +508,10 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 },
                             ..
                         } => {
-                            self.pending_responses_arrival_time
-                                .insert(
-                                    (protocol.clone(), RequestId::Inbound(request_id)).into(),
-                                    Instant::now(),
-                                );
+                            self.pending_responses_arrival_time.insert(
+                                (protocol.clone(), RequestId::Inbound(request_id)).into(),
+                                Instant::now(),
+                            );
 
                             let (tx, rx) = oneshot::channel();
 
@@ -674,7 +673,9 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                         }
 
                         // A response to an inbound request has been sent.
-                        RequestResponseEvent::ResponseSent { request_id, peer, .. } => {
+                        RequestResponseEvent::ResponseSent {
+                            request_id, peer, ..
+                        } => {
                             let arrival_time = self
                                 .pending_responses_arrival_time
                                 .remove(&(protocol.clone(), RequestId::Inbound(request_id)).into())
@@ -856,7 +857,7 @@ mod tests {
     use libp2p::core::upgrade;
     use libp2p::identity::Keypair;
     use libp2p::noise;
-    use libp2p::swarm::{Swarm, SwarmEvent};
+    use libp2p::swarm::{Config as SwarmConfig, Swarm, SwarmEvent};
     use libp2p::Multiaddr;
     use std::{iter, time::Duration};
 
@@ -865,20 +866,20 @@ mod tests {
     ) -> (Swarm<RequestResponsesBehaviour>, Multiaddr) {
         let keypair = Keypair::generate_ed25519();
 
-        let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-            .into_authentic(&keypair)
-            .unwrap();
-
         let transport = MemoryTransport::new()
             .upgrade(upgrade::Version::V1)
-            .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-            .multiplex(libp2p::yamux::YamuxConfig::default())
+            .authenticate(noise::Config::new(&keypair).unwrap())
+            .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
         let behaviour = RequestResponsesBehaviour::new(list).unwrap();
 
-        let mut swarm =
-            Swarm::with_threadpool_executor(transport, behaviour, keypair.public().to_peer_id());
+        let mut swarm = Swarm::new(
+            transport,
+            behaviour,
+            keypair.public().to_peer_id(),
+            SwarmConfig::with_executor(futures::executor::ThreadPool::new().unwrap()),
+        );
         let listen_addr: Multiaddr = format!("/memory/{}", rand::random::<u64>())
             .parse()
             .unwrap();

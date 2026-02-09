@@ -380,7 +380,8 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                     .on_swarm_event(FromSwarm::ExpiredListenAddr(e));
             }
             FromSwarm::NewExternalAddrCandidate(e) => {
-                self.ping.on_swarm_event(FromSwarm::NewExternalAddrCandidate(e));
+                self.ping
+                    .on_swarm_event(FromSwarm::NewExternalAddrCandidate(e));
                 self.identify
                     .on_swarm_event(FromSwarm::NewExternalAddrCandidate(e));
             }
@@ -409,12 +410,16 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                 self.identify.on_swarm_event(FromSwarm::NewListenAddr(e));
             }
             FromSwarm::ExternalAddrConfirmed(e) => {
-                self.ping.on_swarm_event(FromSwarm::ExternalAddrConfirmed(e));
-                self.identify.on_swarm_event(FromSwarm::ExternalAddrConfirmed(e));
+                self.ping
+                    .on_swarm_event(FromSwarm::ExternalAddrConfirmed(e));
+                self.identify
+                    .on_swarm_event(FromSwarm::ExternalAddrConfirmed(e));
             }
             FromSwarm::NewExternalAddrOfPeer(e) => {
-                self.ping.on_swarm_event(FromSwarm::NewExternalAddrOfPeer(e));
-                self.identify.on_swarm_event(FromSwarm::NewExternalAddrOfPeer(e));
+                self.ping
+                    .on_swarm_event(FromSwarm::NewExternalAddrOfPeer(e));
+                self.identify
+                    .on_swarm_event(FromSwarm::NewExternalAddrOfPeer(e));
             }
             _ => {}
         }
@@ -476,7 +481,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                     IdentifyEvent::Pushed { .. } => {
                         //TODO::process it
                     }
-                }
+                },
                 Poll::Ready(other) => {
                     return Poll::Ready(
                         other

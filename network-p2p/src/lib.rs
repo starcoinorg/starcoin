@@ -12,8 +12,7 @@ pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret
 pub use libp2p::{
     core::ConnectedPoint,
     identity::{self, PublicKey},
-    multiaddr, Multiaddr, PeerId,
-    multiaddr as build_multiaddr,
+    multiaddr, multiaddr as build_multiaddr, Multiaddr, PeerId,
 };
 
 //TODO change to private

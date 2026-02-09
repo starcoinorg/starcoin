@@ -481,8 +481,7 @@ impl GenericProto {
                         peer_id: *peer_id,
                         set_id,
                     };
-                    self.events
-                        .push_back(ToSwarm::GenerateEvent(event));
+                    self.events.push_back(ToSwarm::GenerateEvent(event));
                 }
 
                 for (connec_id, connec_state) in connections
@@ -490,14 +489,13 @@ impl GenericProto {
                     .filter(|(_, s)| matches!(s, ConnectionState::Open(_)))
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: *peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: *peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Closing;
                 }
 
@@ -506,14 +504,13 @@ impl GenericProto {
                     .filter(|(_, s)| matches!(s, ConnectionState::Opening))
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: *peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: *peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::OpeningThenClosing;
                 }
 
@@ -556,14 +553,13 @@ impl GenericProto {
                     .filter(|(_, s)| matches!(s, ConnectionState::OpenDesiredByRemote))
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})", peer_id, *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: *peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: *peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Closing;
                 }
 
@@ -750,14 +746,13 @@ impl GenericProto {
                     debug!(target: "sub-libp2p", "PSM => Connect({}, {:?}): Enabling connections.",
                            occ_entry.key().0, set_id);
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Open {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Open {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Opening;
                     *occ_entry.into_mut() = PeerState::Enabled { connections };
                 } else {
@@ -830,14 +825,13 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                            occ_entry.key(), *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: occ_entry.key().0,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Open {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: occ_entry.key().0,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Open {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Opening;
                 }
 
@@ -932,8 +926,7 @@ impl GenericProto {
                         peer_id: entry.key().0,
                         set_id,
                     };
-                    self.events
-                        .push_back(ToSwarm::GenerateEvent(event));
+                    self.events.push_back(ToSwarm::GenerateEvent(event));
                 }
 
                 for (connec_id, connec_state) in connections
@@ -942,14 +935,13 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            entry.key(), *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: entry.key().0,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: entry.key().0,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::OpeningThenClosing;
                 }
 
@@ -959,14 +951,13 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            entry.key(), *connec_id, set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: entry.key().0,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: entry.key().0,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Closing;
                 }
 
@@ -1073,14 +1064,13 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                            incoming.peer_id, *connec_id, incoming.set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: incoming.peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Open {
-                                protocol_index: incoming.set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: incoming.peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Open {
+                            protocol_index: incoming.set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Opening;
                 }
 
@@ -1139,14 +1129,13 @@ impl GenericProto {
                 {
                     debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Close({:?})",
                            incoming.peer_id, connec_id, incoming.set_id);
-                    self.events
-                        .push_back(ToSwarm::NotifyHandler {
-                            peer_id: incoming.peer_id,
-                            handler: NotifyHandler::One(*connec_id),
-                            event: NotifsHandlerIn::Close {
-                                protocol_index: incoming.set_id.into(),
-                            },
-                        });
+                    self.events.push_back(ToSwarm::NotifyHandler {
+                        peer_id: incoming.peer_id,
+                        handler: NotifyHandler::One(*connec_id),
+                        event: NotifsHandlerIn::Close {
+                            protocol_index: incoming.set_id.into(),
+                        },
+                    });
                     *connec_state = ConnectionState::Closing;
                 }
 
@@ -1173,13 +1162,15 @@ impl NetworkBehaviour for GenericProto {
         local_addr: &Multiaddr,
         remote_addr: &Multiaddr,
     ) -> Result<Self::ConnectionHandler, ConnectionDenied> {
-        Ok(NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
-            peer,
-            ConnectedPoint::Listener {
-                local_addr: local_addr.clone(),
-                send_back_addr: remote_addr.clone(),
-            },
-        ))
+        Ok(
+            NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
+                peer,
+                ConnectedPoint::Listener {
+                    local_addr: local_addr.clone(),
+                    send_back_addr: remote_addr.clone(),
+                },
+            ),
+        )
     }
 
     fn handle_established_outbound_connection(
@@ -1190,14 +1181,16 @@ impl NetworkBehaviour for GenericProto {
         role_override: Endpoint,
         port_use: PortUse,
     ) -> Result<Self::ConnectionHandler, ConnectionDenied> {
-        Ok(NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
-            peer,
-            ConnectedPoint::Dialer {
-                address: addr.clone(),
-                role_override,
-                port_use,
-            },
-        ))
+        Ok(
+            NotifsHandlerProto::new(self.notif_protocols.clone()).into_handler(
+                peer,
+                ConnectedPoint::Dialer {
+                    address: addr.clone(),
+                    role_override,
+                    port_use,
+                },
+            ),
+        )
     }
 
     fn on_swarm_event(&mut self, event: FromSwarm) {
@@ -1222,14 +1215,13 @@ impl NetworkBehaviour for GenericProto {
                                    peer_id, set_id, endpoint
                             );
                             debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})", peer_id, connection_id, set_id);
-                            self.events
-                                .push_back(ToSwarm::NotifyHandler {
-                                    peer_id,
-                                    handler: NotifyHandler::One(connection_id),
-                                    event: NotifsHandlerIn::Open {
-                                        protocol_index: set_id.into(),
-                                    },
-                                });
+                            self.events.push_back(ToSwarm::NotifyHandler {
+                                peer_id,
+                                handler: NotifyHandler::One(connection_id),
+                                event: NotifsHandlerIn::Open {
+                                    protocol_index: set_id.into(),
+                                },
+                            });
 
                             let mut connections = SmallVec::new();
                             connections.push((connection_id, ConnectionState::Opening));
@@ -1502,9 +1494,7 @@ impl NetworkBehaviour for GenericProto {
                                                 set_id,
                                                 notifications_sink: replacement_sink,
                                             };
-                                            self.events.push_back(
-                                                ToSwarm::GenerateEvent(event),
-                                            );
+                                            self.events.push_back(ToSwarm::GenerateEvent(event));
                                         } else {
                                             warn!(target: "sub-libp2p",
                                                             "No replacement sink found for disconnected connection of {} {:?}",
@@ -1520,9 +1510,7 @@ impl NetworkBehaviour for GenericProto {
                                             peer_id,
                                             set_id,
                                         };
-                                        self.events.push_back(
-                                            ToSwarm::GenerateEvent(event),
-                                        );
+                                        self.events.push_back(ToSwarm::GenerateEvent(event));
                                     }
                                 }
                             } else {
@@ -1685,14 +1673,13 @@ impl NetworkBehaviour for GenericProto {
                             if let ConnectionState::Closed = *connec_state {
                                 debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                                        source, connection, set_id);
-                                self.events
-                                    .push_back(ToSwarm::NotifyHandler {
-                                        peer_id: source,
-                                        handler: NotifyHandler::One(connection),
-                                        event: NotifsHandlerIn::Open {
-                                            protocol_index: set_id.into(),
-                                        },
-                                    });
+                                self.events.push_back(ToSwarm::NotifyHandler {
+                                    peer_id: source,
+                                    handler: NotifyHandler::One(connection),
+                                    event: NotifsHandlerIn::Open {
+                                        protocol_index: set_id.into(),
+                                    },
+                                });
                                 *connec_state = ConnectionState::Opening;
                             } else {
                                 // Connections in `OpeningThenClosing`, `Opening`, and `Closing`
@@ -1781,14 +1768,13 @@ impl NetworkBehaviour for GenericProto {
                             if let ConnectionState::Closed = *connec_state {
                                 debug!(target: "sub-libp2p", "Handler({:?}, {:?}) <= Open({:?})",
                                        source, connection, set_id);
-                                self.events
-                                    .push_back(ToSwarm::NotifyHandler {
-                                        peer_id: source,
-                                        handler: NotifyHandler::One(connection),
-                                        event: NotifsHandlerIn::Open {
-                                            protocol_index: set_id.into(),
-                                        },
-                                    });
+                                self.events.push_back(ToSwarm::NotifyHandler {
+                                    peer_id: source,
+                                    handler: NotifyHandler::One(connection),
+                                    event: NotifsHandlerIn::Open {
+                                        protocol_index: set_id.into(),
+                                    },
+                                });
                                 *connec_state = ConnectionState::Opening;
 
                                 *entry.into_mut() = PeerState::Enabled { connections };
@@ -1868,14 +1854,13 @@ impl NetworkBehaviour for GenericProto {
                         connections[pos].1 = ConnectionState::Closing;
 
                         debug!(target: "sub-libp2p", "Handler({}, {:?}) <= Close({:?})", source, connection, set_id);
-                        self.events
-                            .push_back(ToSwarm::NotifyHandler {
-                                peer_id: source,
-                                handler: NotifyHandler::One(connection),
-                                event: NotifsHandlerIn::Close {
-                                    protocol_index: set_id.into(),
-                                },
-                            });
+                        self.events.push_back(ToSwarm::NotifyHandler {
+                            peer_id: source,
+                            handler: NotifyHandler::One(connection),
+                            event: NotifsHandlerIn::Close {
+                                protocol_index: set_id.into(),
+                            },
+                        });
 
                         if let Some((replacement_pos, replacement_sink)) = connections
                             .iter()
@@ -1893,8 +1878,7 @@ impl NetworkBehaviour for GenericProto {
                                     set_id,
                                     notifications_sink: replacement_sink,
                                 };
-                                self.events
-                                    .push_back(ToSwarm::GenerateEvent(event));
+                                self.events.push_back(ToSwarm::GenerateEvent(event));
                             }
 
                             *entry.into_mut() = PeerState::Enabled { connections };
@@ -1923,8 +1907,7 @@ impl NetworkBehaviour for GenericProto {
                                 peer_id: source,
                                 set_id,
                             };
-                            self.events
-                                .push_back(ToSwarm::GenerateEvent(event));
+                            self.events.push_back(ToSwarm::GenerateEvent(event));
                         }
                     }
 
@@ -2006,8 +1989,7 @@ impl NetworkBehaviour for GenericProto {
                                     received_handshake,
                                     notifications_sink: notifications_sink.clone(),
                                 };
-                                self.events
-                                    .push_back(ToSwarm::GenerateEvent(event));
+                                self.events.push_back(ToSwarm::GenerateEvent(event));
                             }
                             *connec_state = ConnectionState::Open(notifications_sink);
                         } else if let Some((_, connec_state)) =
@@ -2158,8 +2140,7 @@ impl NetworkBehaviour for GenericProto {
                         message,
                     };
 
-                    self.events
-                        .push_back(ToSwarm::GenerateEvent(event));
+                    self.events.push_back(ToSwarm::GenerateEvent(event));
                 } else {
                     trace!(
                         target: "sub-libp2p",
@@ -2174,10 +2155,7 @@ impl NetworkBehaviour for GenericProto {
         }
     }
 
-    fn poll(
-        &mut self,
-        cx: &mut Context,
-    ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
+    fn poll(&mut self, cx: &mut Context) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         if let Some(event) = self.events.pop_front() {
             return Poll::Ready(event);
         }
@@ -2202,11 +2180,11 @@ impl NetworkBehaviour for GenericProto {
                 })) => {
                     self.peerset_report_disconnect(peer_id, set_id);
                 }
-                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id, duration))) => {
-                    self.events.push_back(ToSwarm::GenerateEvent(
-                        GenericProtoOut::Banned(peer_id, duration),
-                    ))
-                }
+                Poll::Ready(Some(sc_peerset::Message::Banned(peer_id, duration))) => self
+                    .events
+                    .push_back(ToSwarm::GenerateEvent(GenericProtoOut::Banned(
+                        peer_id, duration,
+                    ))),
                 Poll::Ready(None) => {
                     error!(target: "sub-libp2p", "Peerset receiver stream has returned None");
                     break;
@@ -2254,14 +2232,13 @@ impl NetworkBehaviour for GenericProto {
                     {
                         debug!(target: "sub-libp2p", "Handler({}, {:?}) <= Open({:?}) (ban expired)",
                                peer_id, *connec_id, set_id);
-                        self.events
-                            .push_back(ToSwarm::NotifyHandler {
-                                peer_id,
-                                handler: NotifyHandler::One(*connec_id),
-                                event: NotifsHandlerIn::Open {
-                                    protocol_index: set_id.into(),
-                                },
-                            });
+                        self.events.push_back(ToSwarm::NotifyHandler {
+                            peer_id,
+                            handler: NotifyHandler::One(*connec_id),
+                            event: NotifsHandlerIn::Open {
+                                protocol_index: set_id.into(),
+                            },
+                        });
                         *connec_state = ConnectionState::Opening;
                         *peer_state = PeerState::Enabled {
                             connections: mem::take(connections),

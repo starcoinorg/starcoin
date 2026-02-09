@@ -67,9 +67,8 @@ use libp2p::{
             toggle::{Toggle, ToggleConnectionHandler},
             DialFailure, FromSwarm,
         },
-        StreamProtocol,
-        ConnectionDenied, ConnectionId, DialError, NetworkBehaviour, THandler, THandlerInEvent,
-        THandlerOutEvent, ToSwarm,
+        ConnectionDenied, ConnectionId, DialError, NetworkBehaviour, StreamProtocol, THandler,
+        THandlerInEvent, THandlerOutEvent, ToSwarm,
     },
     PeerId,
 };
@@ -958,7 +957,7 @@ mod tests {
         },
         identity::Keypair,
         noise,
-        swarm::{Swarm, SwarmEvent},
+        swarm::{Config as SwarmConfig, Swarm, SwarmEvent},
         yamux, Multiaddr, PeerId,
     };
     use std::{collections::HashSet, task::Poll};
@@ -976,14 +975,10 @@ mod tests {
             .map(|i| {
                 let keypair = Keypair::generate_ed25519();
 
-                let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-                    .into_authentic(&keypair)
-                    .unwrap();
-
                 let transport = MemoryTransport::new()
                     .upgrade(upgrade::Version::V1)
-                    .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-                    .multiplex(yamux::YamuxConfig::default())
+                    .authenticate(noise::Config::new(&keypair).unwrap())
+                    .multiplex(yamux::Config::default())
                     .boxed();
 
                 let behaviour = {
@@ -998,7 +993,12 @@ mod tests {
                     config.finish()
                 };
 
-                let mut swarm = Swarm::new(transport, behaviour, keypair.public().to_peer_id());
+                let mut swarm = Swarm::new(
+                    transport,
+                    behaviour,
+                    keypair.public().to_peer_id(),
+                    SwarmConfig::with_executor(futures::executor::ThreadPool::new().unwrap()),
+                );
                 let listen_addr: Multiaddr = format!("/memory/{}", rand::random::<u64>())
                     .parse()
                     .unwrap();
