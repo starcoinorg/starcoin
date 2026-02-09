@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use log::info;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
@@ -88,6 +89,12 @@ pub trait BlockVerifier {
     {
         watch(CHAIN_WATCH_NAME, "n11");
         //verify header
+        info!(
+            "verify block id: {}, number: {}",
+            new_block.id(),
+            new_block.header().number()
+        );
+        let current_chain = current_chain;
         let new_block_header = new_block.header();
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
@@ -95,11 +102,23 @@ pub trait BlockVerifier {
         StaticVerifier::verify_vm1_offline(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
+        info!(
+            "generate ghost data for block id: {}, number: {}",
+            new_block.id(),
+            new_block.header().number()
+        );
         let ghostdata = Self::verify_uncles(
             current_chain,
             new_block.uncles().unwrap_or_default(),
             new_block_header,
         )?;
+        info!(
+            "ghost data: block id: {}, blue score: {}, count: {}, red count: {}",
+            new_block.id(),
+            ghostdata.blue_score,
+            ghostdata.mergeset_blues.len(),
+            ghostdata.mergeset_reds.len(),
+        );
         watch(CHAIN_WATCH_NAME, "n14");
         Ok(VerifiedBlock {
             block: new_block,
