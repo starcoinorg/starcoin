@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{Ok, Result};
+use anyhow::Result;
 use network_api::PeerId;
 use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_chain::{verifier::FullVerifier, BlockChain};
@@ -202,7 +202,7 @@ impl ServiceFactory<Self> for ExecuteService {
         let dag = ctx.get_shared::<BlockDAG>()?;
 
         let mut service = Self::new(time_service, storage, storage2, dag);
-        if let Ok(Some(sync_status)) = ctx.get_shared_opt::<SyncStatus>() {
+        if let Some(sync_status) = ctx.get_shared_opt::<SyncStatus>()? {
             service.sync_status = Some(sync_status);
         }
         Ok(service)
