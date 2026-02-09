@@ -15,7 +15,7 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-resolver = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-types = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
 starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
