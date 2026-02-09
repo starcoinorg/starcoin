@@ -53,11 +53,20 @@ pub struct ExecuteService {
 }
 
 const PEER_BLOCK_RETRY_DELAY_MS: u64 = 200;
+const PEER_BLOCK_RETRY_MAX: u32 = 10;
+
+#[derive(Debug, Clone)]
+struct PeerBlockExecute {
+    peer_id: PeerId,
+    block: Block,
+    retries_remaining: u32,
+}
 
 #[derive(Debug, Clone)]
 struct PeerBlockTryLater {
     peer_id: PeerId,
     block: Block,
+    retries_remaining: u32,
 }
 
 impl ExecuteService {
@@ -256,16 +265,91 @@ impl EventHandler<Self, SyncStatusChangeEvent> for ExecuteService {
     }
 }
 
+impl EventHandler<Self, PeerBlockExecute> for ExecuteService {
+    fn handle_event(&mut self, msg: PeerBlockExecute, ctx: &mut ServiceContext<Self>) {
+        if !self.is_synced() {
+            debug!(
+                "[execute] Ignore PeerNewBlock event because the node has not been synchronized yet."
+            );
+            return;
+        }
+
+        let PeerBlockExecute {
+            peer_id,
+            block,
+            retries_remaining,
+        } = msg;
+        let block_id = block.id();
+        let time_service = self.time_service.clone();
+        let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
+        let dag = self.dag.clone();
+        let self_ref = ctx.self_ref();
+        let bus = ctx.bus_ref().clone();
+
+        RAYON_EXEC_POOL.spawn(move || {
+            match Self::execute(block.clone(), time_service, storage, storage2, dag) {
+                std::result::Result::Ok(execute_result) => {
+                    if let Err(e) = match execute_result {
+                        ExecuteResult::Executed(executed_block) => self_ref
+                            .notify(ExecutedBlockInfo {
+                                executed_block: Some(executed_block),
+                                from: ExecuteBlockFrom::PeerMinedBlock(block_id, peer_id),
+                            })
+                            .map_err(anyhow::Error::from),
+                        ExecuteResult::TryLater => {
+                            if retries_remaining > 0 {
+                                self_ref
+                                    .notify(PeerBlockTryLater {
+                                        peer_id,
+                                        block,
+                                        retries_remaining: retries_remaining.saturating_sub(1),
+                                    })
+                                    .map_err(anyhow::Error::from)
+                            } else {
+                                warn!(
+                                    "drop peer block retry: attempts exceeded, block: {:?}",
+                                    block_id
+                                );
+                                if let Err(e) = bus.broadcast(CheckSyncEvent::default()) {
+                                    error!("broadcast CheckSyncEvent error: {:?}", e);
+                                }
+                                Ok(())
+                            }
+                        }
+                    } {
+                        error!("execute a peer block {:?} error: {:?}", block_id, e);
+                    }
+                }
+                Err(e) => {
+                    error!("execute a peer block {:?} error: {:?}", block_id, e);
+                    if let Err(e) = self_ref.notify(ExecutedBlockInfo {
+                        executed_block: None, // force to star sync
+                        from: ExecuteBlockFrom::PeerMinedBlock(block_id, peer_id),
+                    }) {
+                        error!("notify error: {:?}", e);
+                    }
+                }
+            }
+        });
+    }
+}
+
 impl EventHandler<Self, PeerBlockTryLater> for ExecuteService {
     fn handle_event(&mut self, msg: PeerBlockTryLater, ctx: &mut ServiceContext<Self>) {
-        let PeerBlockTryLater { peer_id, block } = msg;
+        let PeerBlockTryLater {
+            peer_id,
+            block,
+            retries_remaining,
+        } = msg;
         ctx.run_later(
             Duration::from_millis(PEER_BLOCK_RETRY_DELAY_MS),
             move |service_ctx| {
-                if let Err(e) = service_ctx
-                    .self_ref()
-                    .notify(PeerNewBlock::new(peer_id.clone(), block.clone()))
-                {
+                if let Err(e) = service_ctx.self_ref().notify(PeerBlockExecute {
+                    peer_id: peer_id.clone(),
+                    block: block.clone(),
+                    retries_remaining,
+                }) {
                     error!("retry notify peer block error: {:?}", e);
                 }
             },
@@ -275,70 +359,13 @@ impl EventHandler<Self, PeerBlockTryLater> for ExecuteService {
 
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        if !self.is_synced() {
-            debug!(
-                "[execute] Ignore PeerNewBlock event because the node has not been synchronized yet."
-            );
-            return;
+        if let Err(e) = ctx.self_ref().notify(PeerBlockExecute {
+            peer_id: msg.get_peer_id(),
+            block: msg.get_block().clone(),
+            retries_remaining: PEER_BLOCK_RETRY_MAX,
+        }) {
+            error!("notify peer block execute error: {:?}", e);
         }
-
-        let time_service = self.time_service.clone();
-        let storage = self.storage.clone();
-        let storage2 = self.storage2.clone();
-        let dag = self.dag.clone();
-        let self_ref = ctx.self_ref();
-
-        RAYON_EXEC_POOL.spawn(move || {
-            match Self::execute(
-                msg.get_block().clone(),
-                time_service,
-                storage,
-                storage2,
-                dag,
-            ) {
-                std::result::Result::Ok(execute_result) => {
-                    if let Err(e) = match execute_result {
-                        ExecuteResult::Executed(executed_block) => self_ref
-                            .notify(ExecutedBlockInfo {
-                                executed_block: Some(executed_block),
-                                from: ExecuteBlockFrom::PeerMinedBlock(
-                                    msg.get_block().id(),
-                                    msg.get_peer_id(),
-                                ),
-                            })
-                            .map_err(anyhow::Error::from),
-                        ExecuteResult::TryLater => self_ref
-                            .notify(PeerBlockTryLater {
-                                peer_id: msg.get_peer_id(),
-                                block: msg.get_block().clone(),
-                            })
-                            .map_err(anyhow::Error::from),
-                    } {
-                        error!(
-                            "execute a peer block {:?} error: {:?}",
-                            msg.get_block().id(),
-                            e
-                        );
-                    }
-                }
-                Err(e) => {
-                    error!(
-                        "execute a peer block {:?} error: {:?}",
-                        msg.get_block().id(),
-                        e
-                    );
-                    if let Err(e) = self_ref.notify(ExecutedBlockInfo {
-                        executed_block: None, // force to star sync
-                        from: ExecuteBlockFrom::PeerMinedBlock(
-                            msg.get_block().id(),
-                            msg.get_peer_id(),
-                        ),
-                    }) {
-                        error!("notify error: {:?}", e);
-                    }
-                }
-            }
-        });
     }
 }
 
