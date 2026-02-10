@@ -120,6 +120,8 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
         vec![parent_header.id()],
         parent_header.pruning_point(),
     )?;
+    let block_id = block.id();
+    let block_number = block.header().number();
 
     let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
     sync_dag_store.save_block(block)?;
@@ -130,7 +132,7 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
     };
 
     let sender = DagBlockSender::new(
-        sync_dag_store,
+        sync_dag_store.clone(),
         16,
         net.time_service(),
         chain.get_storage(),
@@ -142,12 +144,16 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
         &mut operator,
     );
 
-    tokio::time::timeout(
+    let result = tokio::time::timeout(
         tokio::time::Duration::from_secs(5),
         sender.process_absent_blocks(),
     )
-    .await??;
+    .await?;
 
+    assert!(result.is_err());
     assert_eq!(notify_count.load(Ordering::Relaxed), 0);
+    assert!(sync_dag_store
+        .get_dag_sync_block(block_number, block_id)
+        .is_ok());
     Ok(())
 }

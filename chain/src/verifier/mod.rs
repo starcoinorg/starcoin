@@ -94,7 +94,6 @@ pub trait BlockVerifier {
             new_block.id(),
             new_block.header().number()
         );
-        let current_chain = current_chain;
         let new_block_header = new_block.header();
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");

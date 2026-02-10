@@ -182,9 +182,11 @@ impl<'a> DagBlockSender<'a> {
                         info!("finish to execute block {:?}", executed_block.header());
                         self.notifier.notify((*executed_block).clone())?;
                         worker.state = ExecuteState::Executed(executed_block);
-                    } else if let ExecuteState::Error(_) = state {
-                        worker.handle.abort();
-                        worker.state = ExecuteState::Closed;
+                    } else if let ExecuteState::Error(header) = state {
+                        return Err(anyhow::format_err!(
+                            "parallel worker failed while executing block: {:?}",
+                            header
+                        ));
                     }
                 }
                 Err(e) => match e {
@@ -226,9 +228,11 @@ impl<'a> DagBlockSender<'a> {
                         if let ExecuteState::Executed(executed_block) = state {
                             info!("finish to execute block {:?}", executed_block.header());
                             self.notifier.notify(*executed_block)?;
-                        } else if let ExecuteState::Error(_) = state {
-                            worker.handle.abort();
-                            worker.state = ExecuteState::Closed;
+                        } else if let ExecuteState::Error(header) = state {
+                            return Err(anyhow::format_err!(
+                                "parallel worker failed while finishing block execution: {:?}",
+                                header
+                            ));
                         }
                     }
                     Err(e) => match e {
