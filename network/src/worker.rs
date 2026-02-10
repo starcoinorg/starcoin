@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::*;
-use std::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
 use log::{debug, error, info};
@@ -18,6 +17,7 @@ use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
+use std::time::Duration;
 
 use crate::network_p2p_handle::Networkp2pHandle;
 
