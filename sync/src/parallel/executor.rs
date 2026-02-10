@@ -6,7 +6,7 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
@@ -242,13 +242,34 @@ impl DagBlockExecutor {
                             (local_chain, result)
                         });
 
-                        match tokio::time::timeout(
+                        let mut execute_timed_out = false;
+                        let execute_result = match tokio::time::timeout(
                             tokio::time::Duration::from_millis(self.execute_timeout_ms),
                             &mut execute_handle,
                         )
                         .await
                         {
-                            Ok(Ok((updated_chain, result))) => {
+                            Ok(result) => result,
+                            Err(_) => {
+                                execute_timed_out = true;
+                                warn!(
+                                    "sync parallel worker execute exceeded timeout ({}ms), wait for completion before reporting failure: {:?}",
+                                    self.execute_timeout_ms,
+                                    header
+                                );
+                                execute_handle.await
+                            }
+                        };
+                        if execute_timed_out {
+                            error!("sync parallel worker execute timeout: {:?}", header);
+                            let _ = self
+                                .sender
+                                .send(ExecuteState::Error(Box::new(header.clone())))
+                                .await;
+                            return;
+                        }
+                        match execute_result {
+                            Ok((updated_chain, result)) => {
                                 chain = Some(updated_chain);
                                 match result {
                                     Ok(executed_block) => {
@@ -299,20 +320,11 @@ impl DagBlockExecutor {
                                     }
                                 }
                             }
-                            Ok(Err(e)) => {
+                            Err(e) => {
                                 error!(
                                     "sync parallel worker join error: {:?}, header: {:?}",
                                     e, header
                                 );
-                                let _ = self
-                                    .sender
-                                    .send(ExecuteState::Error(Box::new(header.clone())))
-                                    .await;
-                                return;
-                            }
-                            Err(_) => {
-                                error!("sync parallel worker execute timeout: {:?}", header);
-                                execute_handle.abort();
                                 let _ = self
                                     .sender
                                     .send(ExecuteState::Error(Box::new(header.clone())))
