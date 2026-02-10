@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::*;
-use bitflags::_core::time::Duration;
+use std::time::Duration;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
 use log::{debug, error, info};
