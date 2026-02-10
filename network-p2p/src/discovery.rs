@@ -57,8 +57,8 @@ use libp2p::{
     kad::{
         store::{MemoryStore, RecordStore},
         Behaviour as Kademlia, BucketInserts as KademliaBucketInserts, Config as KademliaConfig,
-        Event as KademliaEvent, GetClosestPeersError, GetRecordOk, QueryId, QueryResult, Quorum,
-        Record, RecordKey,
+        Event as KademliaEvent, GetClosestPeersError, GetRecordOk, Mode as KademliaMode, QueryId,
+        QueryResult, Quorum, Record, RecordKey,
     },
     mdns::{self, tokio::Behaviour as TokioMdns},
     multiaddr::Protocol,
@@ -205,6 +205,9 @@ impl DiscoveryConfig {
 
             let store = MemoryStore::new(local_peer_id);
             let mut kad = Kademlia::with_config(local_peer_id, store, config);
+            // libp2p-kad >= 0.48 defaults to client mode until an external address is confirmed.
+            // In our setup (e.g. memory transport tests), nodes still need to serve DHT queries.
+            kad.set_mode(Some(KademliaMode::Server));
 
             for (peer_id, addr) in &permanent_addresses {
                 kad.add_address(peer_id, addr.clone());
@@ -557,19 +560,20 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         addresses: &[Multiaddr],
         effective_role: Endpoint,
     ) -> Result<Vec<Multiaddr>, ConnectionDenied> {
-        let Some(peer_id) = maybe_peer else {
-            return Ok(Vec::new());
+        let mut list = if let Some(peer_id) = maybe_peer {
+            let mut list = self
+                .permanent_addresses
+                .iter()
+                .filter_map(|(p, a)| if p == &peer_id { Some(a.clone()) } else { None })
+                .collect::<Vec<_>>();
+
+            if let Some(ephemeral_addresses) = self.ephemeral_addresses.get(&peer_id) {
+                list.extend(ephemeral_addresses.clone());
+            }
+            list
+        } else {
+            Vec::new()
         };
-
-        let mut list = self
-            .permanent_addresses
-            .iter()
-            .filter_map(|(p, a)| if p == &peer_id { Some(a.clone()) } else { None })
-            .collect::<Vec<_>>();
-
-        if let Some(ephemeral_addresses) = self.ephemeral_addresses.get(&peer_id) {
-            list.extend(ephemeral_addresses.clone());
-        }
 
         let mut list_to_filter = self.kademlia.handle_pending_outbound_connection(
             connection_id,
@@ -596,7 +600,12 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         }
 
         list.extend(list_to_filter);
-        trace!(target: "sub-libp2p", "Addresses of {:?}: {:?}", peer_id, list);
+        trace!(
+            target: "sub-libp2p",
+            "Addresses for outbound dial {:?}: {:?}",
+            maybe_peer,
+            list
+        );
         Ok(list)
     }
 
