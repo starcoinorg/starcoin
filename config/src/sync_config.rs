@@ -93,15 +93,24 @@ impl SyncConfig {
     }
 
     pub fn watchdog_interval_secs(&self) -> u64 {
-        self.watchdog_interval_secs.unwrap_or(30)
+        match self.watchdog_interval_secs {
+            Some(value) if value > 0 => value,
+            _ => 30,
+        }
     }
 
     pub fn watchdog_stall_secs(&self) -> u64 {
-        self.watchdog_stall_secs.unwrap_or(15 * 60)
+        match self.watchdog_stall_secs {
+            Some(value) if value > 0 => value,
+            _ => 15 * 60,
+        }
     }
 
     pub fn execute_timeout_ms(&self) -> u64 {
-        self.execute_timeout_ms.unwrap_or(300_000)
+        match self.execute_timeout_ms {
+            Some(value) if value > 0 => value,
+            _ => 300_000,
+        }
     }
 }
 
