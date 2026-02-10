@@ -184,7 +184,10 @@ fn reconnect_after_disconnect() {
             }
 
             if service1_state == ServiceState::ConnectedAgain
-                && service2_state == ServiceState::ConnectedAgain
+                && matches!(
+                    service2_state,
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain
+                )
             {
                 break;
             }

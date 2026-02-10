@@ -106,6 +106,8 @@ pub struct GenericProto {
     /// Receiver for instructions about who to connect to or disconnect from.
     peerset: sc_peerset::Peerset,
 
+    peer_addresses: FnvHashMap<PeerId, Vec<Multiaddr>>,
+
     /// List of peers in our state.
     peers: FnvHashMap<(PeerId, sc_peerset::SetId), PeerState>,
 
@@ -375,6 +377,7 @@ impl GenericProto {
         GenericProto {
             notif_protocols,
             peerset,
+            peer_addresses: FnvHashMap::default(),
             peers: FnvHashMap::default(),
             delays: Default::default(),
             next_delay_id: DelayId(0),
@@ -1155,6 +1158,33 @@ impl NetworkBehaviour for GenericProto {
     type ConnectionHandler = NotifsHandler;
     type ToSwarm = GenericProtoOut;
 
+    fn handle_pending_outbound_connection(
+        &mut self,
+        _connection_id: ConnectionId,
+        maybe_peer: Option<PeerId>,
+        addresses: &[Multiaddr],
+        _effective_role: Endpoint,
+    ) -> Result<Vec<Multiaddr>, ConnectionDenied> {
+        let Some(peer_id) = maybe_peer else {
+            return Ok(addresses.to_vec());
+        };
+
+        if !addresses.is_empty() {
+            return Ok(addresses.to_vec());
+        }
+
+        let mut out = Vec::new();
+        if let Some(extra) = self.peer_addresses.get(&peer_id) {
+            for addr in extra {
+                if !out.iter().any(|a| a == addr) {
+                    out.push(addr.clone());
+                }
+            }
+        }
+
+        Ok(out)
+    }
+
     fn handle_established_inbound_connection(
         &mut self,
         _connection_id: ConnectionId,
@@ -1595,7 +1625,12 @@ impl NetworkBehaviour for GenericProto {
             FromSwarm::NewExternalAddrCandidate(_) => {}
             FromSwarm::ExternalAddrConfirmed(_) => {}
             FromSwarm::ExternalAddrExpired(_) => {}
-            FromSwarm::NewExternalAddrOfPeer(_) => {}
+            FromSwarm::NewExternalAddrOfPeer(event) => {
+                let list = self.peer_addresses.entry(event.peer_id).or_default();
+                if !list.iter().any(|a| a == event.addr) {
+                    list.push(event.addr.clone());
+                }
+            }
             _ => {}
         }
     }
