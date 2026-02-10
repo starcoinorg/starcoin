@@ -100,6 +100,7 @@ pub struct DiscoveryConfig {
     enable_mdns: bool,
     kademlia_disjoint_query_paths: bool,
     kademlia_protocols: Vec<String>,
+    force_kademlia_server_mode: bool,
 }
 
 impl DiscoveryConfig {
@@ -115,6 +116,7 @@ impl DiscoveryConfig {
             enable_mdns: false,
             kademlia_disjoint_query_paths: false,
             kademlia_protocols: Vec::new(),
+            force_kademlia_server_mode: false,
         }
     }
 
@@ -176,6 +178,13 @@ impl DiscoveryConfig {
         self
     }
 
+    // Force Kademlia into server mode instead of relying on automatic mode transitions.
+    #[cfg(test)]
+    fn force_kademlia_server_mode(&mut self, value: bool) -> &mut Self {
+        self.force_kademlia_server_mode = value;
+        self
+    }
+
     /// Create a `DiscoveryBehaviour` from this config.
     pub fn finish(self) -> DiscoveryBehaviour {
         let Self {
@@ -188,6 +197,7 @@ impl DiscoveryConfig {
             enable_mdns,
             kademlia_disjoint_query_paths,
             kademlia_protocols,
+            force_kademlia_server_mode,
         } = self;
 
         let kademlia = if !kademlia_protocols.is_empty() {
@@ -205,9 +215,9 @@ impl DiscoveryConfig {
 
             let store = MemoryStore::new(local_peer_id);
             let mut kad = Kademlia::with_config(local_peer_id, store, config);
-            // libp2p-kad >= 0.48 defaults to client mode until an external address is confirmed.
-            // In our setup (e.g. memory transport tests), nodes still need to serve DHT queries.
-            kad.set_mode(Some(KademliaMode::Server));
+            if force_kademlia_server_mode {
+                kad.set_mode(Some(KademliaMode::Server));
+            }
 
             for (peer_id, addr) in &permanent_addresses {
                 kad.add_address(peer_id, addr.clone());
@@ -997,7 +1007,8 @@ mod tests {
                         .allow_private_ip(true)
                         .allow_non_globals_in_dht(true)
                         .discovery_limit(50)
-                        .with_kademlia(&protocol_id);
+                        .with_kademlia(&protocol_id)
+                        .force_kademlia_server_mode(true);
 
                     config.finish()
                 };
