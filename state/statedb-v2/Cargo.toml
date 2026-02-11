@@ -4,7 +4,7 @@ bcs-ext = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 parking_lot = { workspace = true }
 serde = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d0fdd821687a8ca814608e69d15724deb4989314" }
 starcoin-logger = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }

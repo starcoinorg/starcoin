@@ -9,7 +9,7 @@ schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d0fdd821687a8ca814608e69d15724deb4989314" }
 starcoin-service-registry = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 thiserror = { workspace = true }
