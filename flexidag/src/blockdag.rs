@@ -16,7 +16,7 @@ use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, GhostdagStore,
-        ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
+        RelationsStore, RelationsStoreReader,
     },
 };
 use crate::ghostdag::protocol::{GhostdagManager, KStore};
@@ -31,7 +31,7 @@ use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, error, info, warn};
+use starcoin_logger::prelude::{debug, error, info, log_enabled, warn, Level};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -41,6 +41,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
+use std::time::Instant;
 use thiserror::Error;
 
 pub type DbGhostdagManager = GhostdagManager<
@@ -199,7 +200,6 @@ impl BlockDAG {
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!("failed to get header by hash, the block should be re-executed");
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -375,6 +375,12 @@ impl BlockDAG {
         header: BlockHeader,
         trusted_ghostdata: Arc<GhostdagData>,
     ) -> anyhow::Result<()> {
+        let debug_enabled = log_enabled!(Level::Debug);
+        let total_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         info!(
             "start to commit header: {:?}, number: {:?}",
             header.id(),
@@ -430,64 +436,50 @@ impl BlockDAG {
             }
         };
 
-        if header.pruning_point() == HashValue::zero() {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            let _ = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.parent_hash(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-        } else if self.storage.reachability_store.read().get_reindex_root()?
-            != header.pruning_point()
-            && self
-                .storage
-                .reachability_store
-                .read()
-                .has(header.pruning_point())?
-        {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            let hint_result = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.pruning_point(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(),
-                hint_result
-            );
-        }
+        // Hinting the virtual selected parent is handled at the Chain layer
+        // when VSP actually changes. Doing it here causes heavy redundant reindexing
+        // during sync when tips are not yet updated.
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let lock_guard = self.commit_lock.lock();
+        let lock_wait = lock_start.map(|start| start.elapsed());
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
+        let stage_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let mut stage = StagingReachabilityStore::new(
             self.storage.db.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
+        let stage_init = stage_start.map(|start| start.elapsed());
 
         // Store ghostdata
+        let ghost_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         process_key_already_error(self.storage.ghost_dag_store.insert_batch(
             &mut batch,
             header.id(),
             ghostdata.clone(),
         ))
         .expect("failed to ghostdata in batch");
+        let ghost_dur = ghost_start.map(|start| start.elapsed());
 
         // Update reachability store
         debug!(
@@ -496,8 +488,14 @@ impl BlockDAG {
             header.number()
         );
 
+        let merge_set_len = ghostdata.mergeset_size().saturating_sub(1);
         let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
 
+        let add_block_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         match inquirer::add_block(
             &mut stage,
             header.id(),
@@ -518,7 +516,13 @@ impl BlockDAG {
                 }
             },
         }
+        let add_block_dur = add_block_start.map(|start| start.elapsed());
 
+        let relations_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let mut relations_write = self.storage.relations_store.write();
         process_key_already_error(relations_write.insert_batch(
             &mut batch,
@@ -526,8 +530,14 @@ impl BlockDAG {
             BlockHashes::new(parents),
         ))
         .expect("failed to insert relations in batch");
+        let relations_dur = relations_start.map(|start| start.elapsed());
 
         // Store header store
+        let header_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
             header.id(),
@@ -535,20 +545,52 @@ impl BlockDAG {
             1,
         ))
         .expect("failed to insert header in batch");
+        let header_dur = header_start.map(|start| start.elapsed());
 
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
+        let stage_commit_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         let stage_write = stage
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
+        let stage_commit_dur = stage_commit_start.map(|start| start.elapsed());
 
         // write the data just one time
+        let write_batch_start = if debug_enabled {
+            Some(Instant::now())
+        } else {
+            None
+        };
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");
+        let write_batch_dur = write_batch_start.map(|start| start.elapsed());
 
         info!("finish writing the batch, head id: {:?}", header.id());
+        if debug_enabled {
+            let total_dur = total_start.map(|start| start.elapsed());
+            debug!(
+                "block_process commit via batch timings: header={:?} number={:?} parents={} mergeset={} lock_wait={:?} stage_init={:?} ghost_insert={:?} add_block={:?} relations={:?} header_insert={:?} stage_commit={:?} write_batch={:?} total={:?}",
+                header.id(),
+                header.number(),
+                header.parents().len(),
+                merge_set_len,
+                lock_wait.unwrap_or_default(),
+                stage_init.unwrap_or_default(),
+                ghost_dur.unwrap_or_default(),
+                add_block_dur.unwrap_or_default(),
+                relations_dur.unwrap_or_default(),
+                header_dur.unwrap_or_default(),
+                stage_commit_dur.unwrap_or_default(),
+                write_batch_dur.unwrap_or_default(),
+                total_dur.unwrap_or_default(),
+            );
+        }
 
         drop(stage_write);
         drop(relations_write);

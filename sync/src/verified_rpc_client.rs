@@ -25,8 +25,13 @@ use starcoin_types::{
 };
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::time::timeout;
+
+use network_p2p_types::{OutboundFailure, RequestFailure};
 
 #[derive(Clone, Debug, Error)]
 #[error("Peer {peers:?} return valid rpc response: {msg:?}")]
@@ -101,7 +106,107 @@ static G_BLOCK_BODY_VERIFIER: fn(&HashValue, &BlockBody) -> bool =
 static G_BLOCK_INFO_VERIFIER: fn(&HashValue, &BlockInfo) -> bool =
     |block_id, block_info| -> bool { *block_id == block_info.block_id };
 
-static G_RPC_RETRY_COUNT: i32 = 20;
+#[cfg(not(test))]
+const DEFAULT_RPC_RETRY_COUNT: i32 = 20;
+#[cfg(test)]
+const DEFAULT_RPC_RETRY_COUNT: i32 = 2;
+
+#[cfg(not(test))]
+const DEFAULT_RPC_TIMEOUT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+fn default_rpc_timeout() -> Duration {
+    if let Ok(value) = std::env::var("TEST_RPC_TIMEOUT_MS") {
+        if let Ok(ms) = value.parse::<u64>() {
+            return Duration::from_millis(ms);
+        }
+    }
+    Duration::from_millis(500)
+}
+
+struct AdaptiveBlockIdsSizer {
+    min: u64,
+    max: u64,
+    grow_threshold: u64,
+    size: AtomicU64,
+    success_blocks: AtomicU64,
+}
+
+impl AdaptiveBlockIdsSizer {
+    fn new(start: u64, min: u64, max: u64, grow_threshold: u64) -> Self {
+        let mut initial = start;
+        if initial < min {
+            initial = min;
+        }
+        if initial > max {
+            initial = max;
+        }
+        Self {
+            min,
+            max,
+            grow_threshold,
+            size: AtomicU64::new(initial),
+            success_blocks: AtomicU64::new(0),
+        }
+    }
+
+    fn clamp_request_size(&self, requested: u64) -> u64 {
+        let current = self.size.load(Ordering::Relaxed);
+        std::cmp::min(requested, current)
+    }
+
+    fn on_timeout(&self) {
+        let current = self.size.load(Ordering::Relaxed);
+        let mut next = current / 2;
+        if next < self.min {
+            next = self.min;
+        }
+        if next != current {
+            info!(
+                "[sync] get_block_ids batch size reduced on timeout: {} -> {}",
+                current, next
+            );
+            self.size.store(next, Ordering::Relaxed);
+        }
+        self.success_blocks.store(0, Ordering::Relaxed);
+    }
+
+    fn on_success(&self, blocks: u64) {
+        if blocks == 0 {
+            return;
+        }
+        let total = self
+            .success_blocks
+            .fetch_add(blocks, Ordering::Relaxed)
+            .saturating_add(blocks);
+        if total < self.grow_threshold {
+            return;
+        }
+        let current = self.size.load(Ordering::Relaxed);
+        let mut next = current.saturating_mul(2);
+        if next > self.max {
+            next = self.max;
+        }
+        if next != current {
+            info!(
+                "[sync] get_block_ids batch size increased after stable fetch: {} -> {}",
+                current, next
+            );
+            self.size.store(next, Ordering::Relaxed);
+        }
+        self.success_blocks.store(0, Ordering::Relaxed);
+    }
+}
+
+fn is_timeout_error(err: &anyhow::Error) -> bool {
+    if let Some(req_failure) = err.downcast_ref::<RequestFailure>() {
+        return matches!(
+            req_failure,
+            RequestFailure::Network(OutboundFailure::Timeout)
+        );
+    }
+    // Fallback: match the formatted message from request-response layer.
+    err.to_string().contains("Timeout")
+}
 /// Enhancement RpcClient, for verify rpc response by request and auto select peer.
 #[derive(Clone)]
 pub struct VerifiedRpcClient {
@@ -109,6 +214,9 @@ pub struct VerifiedRpcClient {
     client: NetworkRpcClient,
     score_handler: InverseScore,
     max_retry_times: u64,
+    rpc_timeout: Duration,
+    rpc_retry_count: i32,
+    block_ids_sizer: Arc<AdaptiveBlockIdsSizer>,
 }
 
 impl VerifiedRpcClient {
@@ -128,12 +236,31 @@ impl VerifiedRpcClient {
         client: NetworkRpcClient,
         max_retry_times: u64,
     ) -> Self {
+        let rpc_timeout = {
+            #[cfg(not(test))]
+            {
+                DEFAULT_RPC_TIMEOUT
+            }
+            #[cfg(test)]
+            {
+                default_rpc_timeout()
+            }
+        };
         Self {
             peer_selector,
             client,
             score_handler: InverseScore::new(100, 60),
             max_retry_times,
+            rpc_timeout,
+            rpc_retry_count: DEFAULT_RPC_RETRY_COUNT,
+            block_ids_sizer: Arc::new(AdaptiveBlockIdsSizer::new(1000, 10, 1000, 10_000)),
         }
+    }
+
+    pub fn with_rpc_config(mut self, rpc_timeout: Duration, rpc_retry_count: i32) -> Self {
+        self.rpc_timeout = rpc_timeout;
+        self.rpc_retry_count = rpc_retry_count;
+        self
     }
 
     pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
@@ -168,7 +295,7 @@ impl VerifiedRpcClient {
         req: GetTxnsWithHash,
     ) -> Result<Vec<Option<MultiSignedUserTransaction>>> {
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_txns_with_hash_from_pool(peer_id.clone(), req.clone())
@@ -177,7 +304,7 @@ impl VerifiedRpcClient {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -256,12 +383,12 @@ impl VerifiedRpcClient {
         req: GetTxnsWithHash,
     ) -> Result<Vec<Option<StcTransaction>>> {
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self.client.get_txns(peer_id.clone(), req.clone()).await {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -331,12 +458,12 @@ impl VerifiedRpcClient {
     ) -> Result<(PeerId, Option<Vec<StcTransactionInfo>>)> {
         let peer_id = self.select_a_peer()?;
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self.client.get_txn_infos(peer_id.clone(), block_id).await {
                 Ok(result) => return Ok((peer_id, result)),
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -363,7 +490,7 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_headers_by_number(peer_id.clone(), req.clone())
@@ -374,7 +501,7 @@ impl VerifiedRpcClient {
                 }
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -401,7 +528,7 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<Option<BlockHeader>>> {
         let peer_id = self.select_a_peer()?;
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_headers_by_hash(peer_id.clone(), req.clone())
@@ -412,7 +539,7 @@ impl VerifiedRpcClient {
                 }
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -440,7 +567,7 @@ impl VerifiedRpcClient {
         let peer_id = self.select_a_peer()?;
         debug!("rpc select peer {}", &peer_id);
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_bodies_by_hash(peer_id.clone(), req.clone())
@@ -454,7 +581,7 @@ impl VerifiedRpcClient {
                 }
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -490,7 +617,7 @@ impl VerifiedRpcClient {
         };
 
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_block_infos(peer_id.clone(), req.clone())
@@ -501,7 +628,7 @@ impl VerifiedRpcClient {
                 }
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -529,7 +656,7 @@ impl VerifiedRpcClient {
     // ) -> Result<(PeerId, Option<StateNode>)> {
     //     let peer_id = self.select_a_peer()?;
     //     let mut count = 0;
-    //     while count < G_RPC_RETRY_COUNT {
+    //     while count < self.rpc_retry_count {
     //         match self
     //             .client
     //             .get_state_node_by_node_hash(peer_id.clone(), node_key)
@@ -538,7 +665,7 @@ impl VerifiedRpcClient {
     //             Ok(result) => return Ok((peer_id, result)),
     //             Err(e) => {
     //                 count = count.saturating_add(1);
-    //                 if count == G_RPC_RETRY_COUNT {
+    //                 if count == self.rpc_retry_count {
     //                     return Err(RpcVerifyError::new(
     //                         peer_id.clone(),
     //                         format!(
@@ -568,7 +695,7 @@ impl VerifiedRpcClient {
         req: GetAccumulatorNodeByNodeHash,
     ) -> Result<Option<AccumulatorNode>> {
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_accumulator_node_by_node_hash(peer_id.clone(), req.clone())
@@ -577,7 +704,7 @@ impl VerifiedRpcClient {
                 Ok(result) => return Ok(result),
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!("failed to get accumulator node by node hash inner from peer : {:?}. error: {:?}", peer_id, e),
@@ -643,22 +770,30 @@ impl VerifiedRpcClient {
             None => self.select_a_peer()?,
             Some(p) => p,
         };
-        let request = GetBlockIds {
+        let requested_max = max_size;
+        let mut request = GetBlockIds {
             start_number,
             reverse,
-            max_size,
+            max_size: self.block_ids_sizer.clamp_request_size(requested_max),
         };
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_block_ids(peer_id.clone(), request.clone())
                 .await
             {
-                Ok(result) => return Ok(result),
+                Ok(result) => {
+                    self.block_ids_sizer.on_success(result.len() as u64);
+                    return Ok(result);
+                }
                 Err(e) => {
+                    if is_timeout_error(&e) {
+                        self.block_ids_sizer.on_timeout();
+                        request.max_size = self.block_ids_sizer.clamp_request_size(requested_max);
+                    }
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
@@ -685,21 +820,37 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<(HashValue, Option<BlockHeader>)>> {
         let mut count = 0;
         let peer_id = self.select_a_peer()?;
-        while count < G_RPC_RETRY_COUNT {
-            match self
-                .client
-                .get_headers_by_hash(peer_id.clone(), ids.clone())
-                .await
+        while count < self.rpc_retry_count {
+            match timeout(
+                self.rpc_timeout,
+                self.client
+                    .get_headers_by_hash(peer_id.clone(), ids.clone()),
+            )
+            .await
             {
-                Ok(result) => return Ok(ids.into_iter().zip(result.into_iter()).collect()),
-                Err(e) => {
+                Ok(Ok(result)) => return Ok(ids.into_iter().zip(result.into_iter()).collect()),
+                Ok(Err(e)) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
                                 "failed to get block headers from peer : {:?}., error: {:?}",
                                 peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+                Err(_) => {
+                    count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get block headers from peer : {:?}., error: timeout",
+                                peer_id
                             ),
                         )
                         .into());
@@ -721,17 +872,36 @@ impl VerifiedRpcClient {
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<Block>>> {
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
-            match self.client.get_blocks(peer_id.clone(), ids.clone()).await {
-                Ok(result) => return Ok(result),
-                Err(e) => {
+        while count < self.rpc_retry_count {
+            match timeout(
+                self.rpc_timeout,
+                self.client.get_blocks(peer_id.clone(), ids.clone()),
+            )
+            .await
+            {
+                Ok(Ok(result)) => return Ok(result),
+                Ok(Err(e)) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
                                 "failed to get blocks v1 from peer : {:?}. error: {:?}",
                                 peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+                Err(_) => {
+                    count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get blocks v1 from peer : {:?}. error: timeout",
+                                peer_id
                             ),
                         )
                         .into());
@@ -863,12 +1033,6 @@ impl VerifiedRpcClient {
                             .as_millis()) as u32;
                         let score = self.score(time);
                         self.record(&peer_id, score);
-
-                        info!(
-                            "Successfully got blocks from peer {} in {}ms (score: {}, attempt {}/{})",
-                            peer_id, time, score, attempts, max_retries
-                        );
-
                         return Ok(ids
                             .iter()
                             .zip(blocks)
@@ -919,37 +1083,59 @@ impl VerifiedRpcClient {
     ) -> Result<Vec<(Block, Option<PeerId>)>> {
         let mut count = 0;
         let peer_id = self.select_a_peer()?;
-        while count < G_RPC_RETRY_COUNT {
-            match self
-                .client
-                .get_absent_blocks(
+        while count < self.rpc_retry_count {
+            match timeout(
+                self.rpc_timeout,
+                self.client.get_absent_blocks(
                     peer_id.clone(),
                     GetAbsentBlockRequest {
                         absent_id: req.clone(),
                         exp,
                     },
-                )
-                .await
+                ),
+            )
+            .await
             {
-                Ok(result) => {
+                Ok(Ok(result)) => {
                     return Ok(result
                         .absent_blocks
                         .into_iter()
                         .map(|block| (block, Some(peer_id.clone())))
                         .collect())
                 }
+                Ok(Err(e)) => {
+                    count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get absent blocks from peer : {:?}. error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
                 Err(_) => {
                     count = count.saturating_add(1);
+                    if count == self.rpc_retry_count {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get absent blocks from peer : {:?}. error: timeout",
+                                peer_id
+                            ),
+                        )
+                        .into());
+                    }
                     continue;
                 }
             }
         }
         Err(RpcVerifyError::new(
             peer_id.clone(),
-            format!(
-                "failed to get dag block children from peer : {:?}.",
-                peer_id
-            ),
+            format!("failed to get absent blocks from peer : {:?}.", peer_id),
         )
         .into())
     }
@@ -957,7 +1143,7 @@ impl VerifiedRpcClient {
     pub async fn get_dag_block_children(&self, req: Vec<HashValue>) -> Result<Vec<HashValue>> {
         let mut count = 0;
         let peer_id = self.select_a_peer()?;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_dag_block_children(peer_id.clone(), req.clone())
@@ -995,7 +1181,7 @@ impl VerifiedRpcClient {
         let req = GetRangeInLocationRequest { start_id, end_id };
 
         let mut count = 0;
-        while count < G_RPC_RETRY_COUNT {
+        while count < self.rpc_retry_count {
             match self
                 .client
                 .get_range_in_location(peer_id.clone(), req.clone())
@@ -1006,7 +1192,7 @@ impl VerifiedRpcClient {
                 }
                 Err(e) => {
                     count = count.saturating_add(1);
-                    if count == G_RPC_RETRY_COUNT {
+                    if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(

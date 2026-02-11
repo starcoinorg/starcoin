@@ -4,6 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
+use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
 use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
@@ -28,9 +29,9 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
-    SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
-    SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort, SyncCancelRequest,
+    SyncProgressReport, SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest,
+    SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
@@ -38,9 +39,13 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::collections::{BTreeSet, HashSet};
+use std::panic::AssertUnwindSafe;
 use std::result::Result::Ok;
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex, OnceLock,
+};
+use std::time::{Duration, Instant};
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 use tokio::runtime::Runtime;
 
@@ -56,6 +61,7 @@ fn global_sync_runtime() -> &'static Runtime {
 }
 
 const REPUTATION_THRESHOLD: i32 = -1000;
+const WATCHDOG_RESTART_DELAY: Duration = Duration::from_secs(120); // maybe wait for some time before restart sync.
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -64,6 +70,7 @@ pub struct SyncTaskHandle {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    cancel_flag: Arc<AtomicBool>,
 }
 
 pub enum SyncStage {
@@ -508,6 +515,7 @@ impl SyncService {
             {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
+                let cancel_flag = Arc::new(AtomicBool::new(false));
                 let (fut, task_handle, task_event_handle) = full_sync_task(
                     current_block_id,
                     target.clone(),
@@ -525,6 +533,8 @@ impl SyncService {
                     dag,
                     sync_dag_store,
                     range_locate,
+                    config.sync.execute_timeout_ms(),
+                    cancel_flag.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -532,11 +542,12 @@ impl SyncService {
                     task_handle,
                     task_event_handle,
                     peer_selector: rpc_client.selector().clone(),
+                    cancel_flag,
                 })?;
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
                 }
-                Ok(Some(fut.await?))
+                Ok::<Option<BlockChain>, anyhow::Error>(Some(fut.await?))
             } else {
                 info!("[sync]No best peer to request, current is best.");
                 Ok(None)
@@ -554,10 +565,11 @@ impl SyncService {
             .as_ref()
             .map(|metrics| metrics.sync_task_break_total.clone());
 
-        global_sync_runtime().spawn(fut.then(
-            |result: Result<Option<BlockChain>, anyhow::Error>| async move {
-                let mut chain_status: Option<ChainStatus> = None;
-                let cancel = match result {
+        let sync_task = async move {
+            let result = AssertUnwindSafe(fut).catch_unwind().await;
+            let mut chain_status: Option<ChainStatus> = None;
+            let cancel = match result {
+                Ok(result) => match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
@@ -591,13 +603,17 @@ impl SyncService {
                                             )
                                         }
                                         "verify_err"
-                                    } else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>() {
+                                    } else if let Some(bcs_err) =
+                                        err.downcast_ref::<bcs_ext::Error>()
+                                    {
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                         "bcs_err"
                                     } else {
                                         "other_err"
                                     };
-                                    if let Some(sync_task_break_total) = sync_task_break_total.as_ref() {
+                                    if let Some(sync_task_break_total) =
+                                        sync_task_break_total.as_ref()
+                                    {
                                         sync_task_break_total.with_label_values(&[reason]).inc();
                                     }
                                     warn!(
@@ -626,12 +642,23 @@ impl SyncService {
                             false
                         }
                     }
-                };
-                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel, chain_status }) {
-                    error!("[sync] Broadcast SyncDone event error: {:?}", e);
+                },
+                Err(panic) => {
+                    error!("[sync] Sync task panic: {:?}", panic);
+                    if let Some(sync_task_total) = sync_task_total.as_ref() {
+                        sync_task_total.with_label_values(&["panic"]).inc();
+                    }
+                    true
                 }
-            },
-        ));
+            };
+            if let Err(e) = self_ref.notify(SyncDoneEvent {
+                cancel,
+                chain_status,
+            }) {
+                error!("[sync] Broadcast SyncDone event error: {:?}", e);
+            }
+        };
+        global_sync_runtime().spawn(sync_task);
         Ok(())
     }
 
@@ -644,7 +671,10 @@ impl SyncService {
 
     fn cancel_task(&mut self) {
         match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
-            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            SyncStage::Synchronizing(handle) => {
+                handle.cancel_flag.store(true, Ordering::SeqCst);
+                handle.task_handle.cancel();
+            }
             stage => {
                 //restore state machine state.
                 self.stage = stage;
@@ -701,6 +731,72 @@ impl ActorService for SyncService {
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<PeerEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        let sync_ref = ctx.self_ref();
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+        let watchdog_state_clone = watchdog_state.clone();
+        let watchdog_interval = Duration::from_secs(self.config.sync.watchdog_interval_secs());
+        let watchdog_stall_secs = self.config.sync.watchdog_stall_secs();
+        ctx.run_interval(watchdog_interval, move |ctx| {
+            let sync_ref = sync_ref.clone();
+            let watchdog_state = watchdog_state_clone.clone();
+            let watchdog_stall_secs = watchdog_stall_secs;
+            ctx.spawn(async move {
+                let report = match sync_ref.progress().await {
+                    Ok(report) => report,
+                    Err(e) => {
+                        warn!("[sync] Watchdog failed to get progress: {:?}", e);
+                        return;
+                    }
+                };
+                let Some(report) = report else {
+                    return;
+                };
+                let now = Instant::now();
+                let task_name = report.current.task_name.clone();
+                let processed = report.current.processed_items;
+                let ok = report.current.ok;
+
+                let snapshot = {
+                    let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
+                    let should_restart = update_watchdog_state(
+                        &mut state,
+                        task_name,
+                        processed,
+                        ok,
+                        now,
+                        watchdog_stall_secs,
+                    );
+                    if should_restart {
+                        state.as_ref().map(|snapshot| {
+                            (
+                                snapshot.task_name.clone(),
+                                snapshot.processed,
+                                snapshot.ok,
+                            )
+                        })
+                    } else {
+                        None
+                    }
+                };
+                if let Some((task_name, processed, ok)) = snapshot {
+                    warn!(
+                        "[sync] Watchdog detected stalled sync (task: {}, processed: {}, ok: {}, stalled: {}s).",
+                        task_name,
+                        processed,
+                        ok,
+                        watchdog_stall_secs
+                    );
+                    if let Err(e) = sync_ref.cancel().await {
+                        warn!("[sync] Watchdog cancel sync failed: {:?}", e);
+                        return;
+                    }
+                    tokio::time::sleep(WATCHDOG_RESTART_DELAY).await;
+                    if let Err(e) = sync_ref.start(true, vec![], false, None).await {
+                        warn!("[sync] Watchdog restart sync failed: {:?}", e);
+                    }
+                }
+            });
+        });
         Ok(())
     }
 
@@ -772,6 +868,7 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    cancel_flag: Arc<AtomicBool>,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService {
@@ -782,12 +879,14 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             msg.task_event_handle,
             msg.peer_selector,
         );
+        let cancel_flag = msg.cancel_flag.clone();
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
             peer_selector,
+            cancel_flag: msg.cancel_flag,
         };
         match std::mem::replace(
             &mut self.stage,
@@ -806,6 +905,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
+                    cancel_flag.store(true, Ordering::SeqCst);
                     task_handle.cancel();
                 } else {
                     let target_id_number =
@@ -823,10 +923,12 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 );
                 //restore to previous and cancel new handle.
                 self.stage = SyncStage::Synchronizing(previous_handle);
+                cancel_flag.store(true, Ordering::SeqCst);
                 task_handle.cancel();
             }
             SyncStage::Canceling => {
                 self.stage = SyncStage::Canceling;
+                cancel_flag.store(true, Ordering::SeqCst);
                 task_handle.cancel();
             }
         }
@@ -883,7 +985,14 @@ pub struct SyncDoneEvent {
 
 impl EventHandler<Self, SyncDoneEvent> for SyncService {
     fn handle_event(&mut self, msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
-        match std::mem::replace(&mut self.stage, SyncStage::Done) {
+        let previous_stage = std::mem::replace(&mut self.stage, SyncStage::Done);
+        if msg.cancel {
+            self.sync_status.sync_cancel();
+            ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+            ctx.notify(CheckSyncEvent::default());
+            return;
+        }
+        match previous_stage {
             SyncStage::NotStart | SyncStage::Done => {
                 warn!("[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent")
             }
@@ -913,7 +1022,6 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                 ctx.notify(CheckSyncEvent::default());
             }
             SyncStage::Canceling => {
-                //continue
                 self.sync_status.sync_done();
                 self.publish_sync_status(ctx);
             }

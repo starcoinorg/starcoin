@@ -27,7 +27,7 @@ use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, Blo
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{CollectorState, TaskResultCollector, TaskState};
+use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use tokio::task;
 
 use super::continue_execute_absent_block::ContinueChainOperator;
@@ -217,6 +217,8 @@ pub struct BlockCollector<N, H> {
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: Arc<SyncDagStore>,
+    execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -273,6 +275,8 @@ where
         storage2: Arc<dyn Store2>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: Arc<SyncDagStore>,
+        execute_timeout_ms: u64,
+        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
@@ -287,6 +291,8 @@ where
             fetcher,
             latest_block_id,
             sync_dag_store,
+            execute_timeout_ms,
+            cancel_flag,
         }
     }
 
@@ -447,6 +453,9 @@ where
             block_headers.first().map(|h| (h.id(), h.number()))
         );
         loop {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                return Ok(());
+            }
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
@@ -458,6 +467,9 @@ where
     }
 
     fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
+        if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            return Ok(ParallelSign::NeedMoreBlocks);
+        }
         let block_header = &block.header().clone();
         if self.chain.has_dag_block(block_header.id())? {
             info!(
@@ -474,12 +486,19 @@ where
             block_header.parents_hash()
         );
         let fut = async {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                return anyhow::Ok(ParallelSign::NeedMoreBlocks);
+            }
             if block_header.number() % ASYNC_BLOCK_COUNT == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 self.sync_dag_store.delete_all_dag_sync_block()?;
                 self.find_absent_ancestor(vec![block_header.clone()])
                     .await?;
+
+                if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                    return anyhow::Ok(ParallelSign::NeedMoreBlocks);
+                }
 
                 let parallel_execute = DagBlockSender::new(
                     self.sync_dag_store.clone(),
@@ -489,6 +508,8 @@ where
                     self.storage2.clone(),
                     None,
                     self.chain.dag(),
+                    self.execute_timeout_ms,
+                    self.cancel_flag.clone(),
                     self,
                 );
                 parallel_execute.process_absent_blocks().await?;
@@ -533,9 +554,54 @@ where
         anyhow::Result::Ok(())
     }
 
-    async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    async fn fetch_blocks(&self, block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let mut result = vec![];
-        block_ids.retain(|id| {
+        let mut deduped_block_ids = Vec::with_capacity(block_ids.len());
+        let mut seen = HashSet::with_capacity(block_ids.len());
+        for block_id in block_ids {
+            if seen.insert(block_id) {
+                deduped_block_ids.push(block_id);
+            }
+        }
+
+        deduped_block_ids.retain(|id| {
+            match self.chain.has_dag_block(*id) {
+                Ok(true) => return false, // already connected, no need to fetch
+                Ok(false) => (),
+                Err(e) => debug!("failed to check dag block existence for {:?}: {:?}", id, e),
+            }
+
+            match self.local_store.get_block(*id) {
+                Ok(Some(block)) => {
+                    if let Err(e) = self.local_store.save_dag_sync_block(
+                        starcoin_storage::block::DagSyncBlock {
+                            block: block.clone(),
+                            children: vec![],
+                        },
+                    ) {
+                        debug!(
+                            "failed to cache local block {:?} into dag sync store: {:?}",
+                            id, e
+                        );
+                    }
+                    match self.sync_dag_store.save_block(block.clone()) {
+                        Ok(_) => {
+                            result.push(block.header().clone());
+                            return false; // read from local store, remove from p2p request
+                        }
+                        Err(e) => {
+                            debug!(
+                                "failed to save local block {:?} into sync dag store: {:?}",
+                                id, e
+                            );
+                            return true; // need retaining
+                        }
+                    }
+                }
+                Ok(None) => (),
+                Err(e) => debug!("failed to read local block {:?}: {:?}", id, e),
+            }
+
             match self.local_store.get_dag_sync_block(*id) {
                 Ok(op_dag_sync_block) => {
                     if let Some(dag_sync_block) = op_dag_sync_block {
@@ -545,7 +611,7 @@ where
                                 false // read from local store, remove from p2p request
                             }
                             Err(e) => {
-                                debug!("failed to save block for: {:?}", e);
+                                debug!("failed to save block {:?} for: {:?}", id, e);
                                 true // need retaining
                             }
                         }
@@ -553,10 +619,13 @@ where
                         true // need retaining
                     }
                 }
-                Err(_) => true, // need retaining
+                Err(e) => {
+                    debug!("failed to read dag sync block {:?}: {:?}", id, e);
+                    true // need retaining
+                }
             }
         });
-        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
+        for chunk in deduped_block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
             let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
             for (block, _) in remote_dag_sync_blocks {
                 self.local_store
@@ -704,6 +773,10 @@ where
     type Output = BlockChain;
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
+        if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            info!("[sync] BlockCollector canceled by flag.");
+            return Err(TaskError::Canceled.into());
+        }
         let (block, block_info, peer_id) = item.into();
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.

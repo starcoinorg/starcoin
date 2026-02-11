@@ -4,7 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::inner_sync_task::InnerSyncTask;
+use crate::tasks::inner_sync_task::{InnerSyncTask, InnerSyncTaskParams};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Error, Result};
 use find_common_ancestor_task::{DagAncestorCollector, FindRangeLocateTask};
@@ -750,6 +750,8 @@ pub fn full_sync_task<H, A, F, N>(
     dag: BlockDAG,
     sync_dag_store: Arc<SyncDagStore>,
     range_locate: bool,
+    execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -842,20 +844,22 @@ where
 
             fetcher.peer_selector().retain(sub_target.peers.as_slice());
 
-            let inner = InnerSyncTask::new(
-                latest_ancestor,
-                sub_target,
-                storage.clone(),
-                storage2.clone(),
-                block_event_handle.clone(),
-                fetcher.clone(),
-                event_handle_clone.clone(),
-                time_service.clone(),
-                peer_provider.clone(),
-                ext_error_handle.clone(),
-                dag.clone(),
-                sync_dag_store.clone(),
-            );
+            let inner = InnerSyncTask::new(InnerSyncTaskParams {
+                ancestor: latest_ancestor,
+                target: sub_target,
+                storage: storage.clone(),
+                storage2: storage2.clone(),
+                block_event_handle: block_event_handle.clone(),
+                fetcher: fetcher.clone(),
+                event_handle: event_handle_clone.clone(),
+                time_service: time_service.clone(),
+                peer_provider: peer_provider.clone(),
+                custom_error_handle: ext_error_handle.clone(),
+                dag: dag.clone(),
+                sync_dag_store: sync_dag_store.clone(),
+                execute_timeout_ms,
+                cancel_flag: cancel_flag.clone(),
+            });
             let start_now = Instant::now();
             let (block_chain, _) = inner
                 .do_sync(

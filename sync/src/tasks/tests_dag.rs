@@ -13,6 +13,8 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRe
 use starcoin_txpool_mock_service::MockTxPoolService;
 use test_helper::DummyNetworkService;
 
+const EXECUTE_TIMEOUT_MS: u64 = 300_000;
+
 async fn sync_block_process(
     target_node: Arc<SyncNodeMocker>,
     local_node: Arc<SyncNodeMocker>,
@@ -52,6 +54,8 @@ async fn sync_block_process(
             local_node.chain().dag().clone(),
             local_node.sync_dag_store.clone(),
             false,
+            EXECUTE_TIMEOUT_MS,
+            Arc::new(std::sync::atomic::AtomicBool::new(false)),
         )?;
         let branch = sync_task.await?;
         info!("checking branch in sync service is the same as target's branch");

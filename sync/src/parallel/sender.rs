@@ -34,6 +34,8 @@ pub struct DagBlockSender<'a> {
     storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     notifier: &'a mut dyn ContinueChainOperator,
 }
 
@@ -46,6 +48,8 @@ impl<'a> DagBlockSender<'a> {
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        execute_timeout_ms: u64,
+        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
         notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
         Self {
@@ -57,6 +61,8 @@ impl<'a> DagBlockSender<'a> {
             storage2,
             vm_metrics,
             dag,
+            execute_timeout_ms,
+            cancel_flag,
             notifier,
         }
     }
@@ -123,6 +129,10 @@ impl<'a> DagBlockSender<'a> {
         let sync_dag_store = self.sync_dag_store.clone();
         let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                self.abort_workers();
+                return Ok(());
+            }
             let (_, value) = result_value?;
             let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
                 anyhow::format_err!("failed to decode for the block in parallel!")
@@ -145,6 +155,7 @@ impl<'a> DagBlockSender<'a> {
                 self.storage2.clone(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
+                self.execute_timeout_ms,
             )?;
 
             self.executors.push(DagBlockWorker {
@@ -171,6 +182,11 @@ impl<'a> DagBlockSender<'a> {
                         info!("finish to execute block {:?}", executed_block.header());
                         self.notifier.notify((*executed_block).clone())?;
                         worker.state = ExecuteState::Executed(executed_block);
+                    } else if let ExecuteState::Error(header) = state {
+                        return Err(anyhow::format_err!(
+                            "parallel worker failed while executing block: {:?}",
+                            header
+                        ));
                     }
                 }
                 Err(e) => match e {
@@ -198,6 +214,10 @@ impl<'a> DagBlockSender<'a> {
         }
 
         loop {
+            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                self.abort_workers();
+                break;
+            }
             for worker in &mut self.executors {
                 if let ExecuteState::Closed = worker.state {
                     continue;
@@ -208,6 +228,11 @@ impl<'a> DagBlockSender<'a> {
                         if let ExecuteState::Executed(executed_block) = state {
                             info!("finish to execute block {:?}", executed_block.header());
                             self.notifier.notify(*executed_block)?;
+                        } else if let ExecuteState::Error(header) = state {
+                            return Err(anyhow::format_err!(
+                                "parallel worker failed while finishing block execution: {:?}",
+                                header
+                            ));
                         }
                     }
                     Err(e) => match e {
@@ -228,10 +253,30 @@ impl<'a> DagBlockSender<'a> {
             }
         }
 
-        for worker in self.executors {
-            worker.handle.await?;
+        for worker in std::mem::take(&mut self.executors) {
+            match worker.handle.await {
+                Ok(()) => {}
+                Err(join_err) if join_err.is_cancelled() => {}
+                Err(join_err) => return Err(join_err.into()),
+            }
         }
 
         anyhow::Ok(())
+    }
+
+    fn abort_workers(&mut self) {
+        for worker in &self.executors {
+            let _ = worker.sender_to_executor.try_send(None);
+            worker.handle.abort();
+        }
+    }
+}
+
+impl Drop for DagBlockSender<'_> {
+    fn drop(&mut self) {
+        for worker in &self.executors {
+            let _ = worker.sender_to_executor.try_send(None);
+            worker.handle.abort();
+        }
     }
 }

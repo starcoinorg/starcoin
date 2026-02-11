@@ -6,16 +6,34 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
+#[cfg(test)]
+use std::sync::atomic::AtomicBool;
+#[cfg(test)]
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task::JoinHandle,
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+#[cfg(test)]
+static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
+#[cfg(test)]
+static TEST_ASSUME_PARENTS_READY: AtomicBool = AtomicBool::new(false);
+
+#[cfg(test)]
+pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
+    TEST_EXECUTE_DELAY_MS.store(delay_ms, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn set_test_assume_parents_ready(ready: bool) {
+    TEST_ASSUME_PARENTS_READY.store(ready, Ordering::Relaxed);
+}
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -34,6 +52,7 @@ pub struct DagBlockExecutor {
     storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    execute_timeout_ms: u64,
 }
 
 impl DagBlockExecutor {
@@ -45,6 +64,7 @@ impl DagBlockExecutor {
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        execute_timeout_ms: u64,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
@@ -55,6 +75,7 @@ impl DagBlockExecutor {
             storage2,
             vm_metrics,
             dag,
+            execute_timeout_ms,
         };
         anyhow::Ok((sender_for_main, executor))
     }
@@ -64,6 +85,10 @@ impl DagBlockExecutor {
         storage: Arc<dyn Store>,
         parents_hash: &[HashValue],
     ) -> anyhow::Result<bool> {
+        #[cfg(test)]
+        if TEST_ASSUME_PARENTS_READY.load(Ordering::Relaxed) {
+            return Ok(true);
+        }
         for parent_id in parents_hash {
             let header = match storage.get_block_header_by_hash(*parent_id)? {
                 Some(header) => header,
@@ -204,55 +229,106 @@ impl DagBlockExecutor {
                             &self,
                             block.header().id()
                         );
-                        match chain
-                            .as_mut()
-                            .expect("it cannot be none!")
-                            .apply_with_verifier::<FullVerifier>(block)
+                        let mut local_chain = chain.take().expect("it cannot be none!");
+                        let mut execute_handle = tokio::task::spawn_blocking(move || {
+                            #[cfg(test)]
+                            {
+                                let delay_ms = TEST_EXECUTE_DELAY_MS.load(Ordering::Relaxed);
+                                if delay_ms > 0 {
+                                    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+                                }
+                            }
+                            let result = local_chain.apply_with_verifier::<FullVerifier>(block);
+                            (local_chain, result)
+                        });
+
+                        let mut execute_timed_out = false;
+                        let execute_result = match tokio::time::timeout(
+                            tokio::time::Duration::from_millis(self.execute_timeout_ms),
+                            &mut execute_handle,
+                        )
+                        .await
                         {
-                            Ok(executed_block) => {
-                                info!(
-                                    "succeed to execute block: number: {:?}, id: {:?}",
-                                    executed_block.header().number(),
-                                    executed_block.header().id()
+                            Ok(result) => result,
+                            Err(_) => {
+                                execute_timed_out = true;
+                                warn!(
+                                    "sync parallel worker execute exceeded timeout ({}ms), wait for completion before reporting failure: {:?}",
+                                    self.execute_timeout_ms,
+                                    header
                                 );
-                                // Adjust time after successful block execution to ensure proper time synchronization
-                                // This is important for validating subsequent blocks in the parallel execution pipeline
-                                self.time_service
-                                    .adjust(executed_block.header().timestamp());
-                                match self
-                                    .sender
-                                    .send(ExecuteState::Executed(Box::new(executed_block)))
-                                    .await
-                                {
-                                    Ok(_) => tokio::task::yield_now().await,
+                                execute_handle.await
+                            }
+                        };
+                        if execute_timed_out {
+                            error!("sync parallel worker execute timeout: {:?}", header);
+                            let _ = self
+                                .sender
+                                .send(ExecuteState::Error(Box::new(header.clone())))
+                                .await;
+                            return;
+                        }
+                        match execute_result {
+                            Ok((updated_chain, result)) => {
+                                chain = Some(updated_chain);
+                                match result {
+                                    Ok(executed_block) => {
+                                        info!(
+                                            "succeed to execute block: number: {:?}, id: {:?}",
+                                            executed_block.header().number(),
+                                            executed_block.header().id()
+                                        );
+                                        // Adjust time after successful block execution to ensure proper time synchronization
+                                        // This is important for validating subsequent blocks in the parallel execution pipeline
+                                        self.time_service
+                                            .adjust(executed_block.header().timestamp());
+                                        match self
+                                            .sender
+                                            .send(ExecuteState::Executed(Box::new(executed_block)))
+                                            .await
+                                        {
+                                            Ok(_) => tokio::task::yield_now().await,
+                                            Err(e) => {
+                                                error!(
+                                                    "failed to send executed state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                                return;
+                                            }
+                                        }
+                                    }
                                     Err(e) => {
                                         error!(
-                                            "failed to send waiting state: {:?}, for reason: {:?}",
+                                            "failed to execute block: {:?}, for reason: {:?}",
                                             header, e
                                         );
+                                        match self
+                                            .sender
+                                            .send(ExecuteState::Error(Box::new(header.clone())))
+                                            .await
+                                        {
+                                            Ok(_) => (),
+                                            Err(e) => {
+                                                error!(
+                                                    "failed to send error state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                                return;
+                                            }
+                                        }
                                         return;
                                     }
                                 }
                             }
                             Err(e) => {
                                 error!(
-                                    "failed to execute block: {:?}, for reason: {:?}",
-                                    header, e
+                                    "sync parallel worker join error: {:?}, header: {:?}",
+                                    e, header
                                 );
-                                match self
+                                let _ = self
                                     .sender
                                     .send(ExecuteState::Error(Box::new(header.clone())))
-                                    .await
-                                {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        error!(
-                                            "failed to send error state: {:?}, for reason: {:?}",
-                                            header, e
-                                        );
-                                        return;
-                                    }
-                                }
+                                    .await;
                                 return;
                             }
                         }

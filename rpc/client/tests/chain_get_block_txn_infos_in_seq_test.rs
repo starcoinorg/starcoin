@@ -1,6 +1,6 @@
 use anyhow::Result;
 use starcoin_config::NodeConfig;
-use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
@@ -11,7 +11,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_types::transaction::Transaction as Transaction2;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[stest::test(timeout = 180)]
 fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
@@ -54,7 +54,7 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
 
     let client = RpcClient::connect_ipc(ipc_file)?;
 
-    let txn_infos_in_seq = client.chain_get_block_txn_infos_in_seq(block_hash)?;
+    let txn_infos_in_seq = wait_for_txn_infos_in_seq(&client, block_hash, Duration::from_secs(20))?;
 
     assert!(
         !txn_infos_in_seq.is_empty(),
@@ -172,6 +172,37 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     node_handle.stop()?;
 
     Ok(())
+}
+
+fn wait_for_txn_infos_in_seq(
+    client: &RpcClient,
+    block_hash: HashValue,
+    timeout: Duration,
+) -> Result<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        match client.chain_get_block_txn_infos_in_seq(block_hash) {
+            Ok(infos) => {
+                if infos.is_empty() {
+                    if Instant::now() >= deadline {
+                        return Err(anyhow::format_err!(
+                            "timeout waiting for txn infos in seq for block {}",
+                            block_hash
+                        ));
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                    continue;
+                }
+                return Ok(infos);
+            }
+            Err(err) => {
+                if Instant::now() >= deadline {
+                    return Err(err);
+                }
+                std::thread::sleep(Duration::from_millis(200));
+            }
+        }
+    }
 }
 
 fn gen_vm1_user_txn(config: &NodeConfig, seq_number: u64) -> SignedUserTransaction {

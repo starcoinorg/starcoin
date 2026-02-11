@@ -29,6 +29,8 @@ use std::sync::Arc;
 use stest::actix_export::System;
 use test_helper::DummyNetworkService;
 
+const EXECUTE_TIMEOUT_MS: u64 = 300_000;
+
 #[cfg(test)]
 pub struct SyncTestSystem {
     pub target_node: SyncNodeMocker,
@@ -175,6 +177,8 @@ pub(crate) async fn full_sync_new_node() -> Result<()> {
         dag.clone(),
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -210,6 +214,8 @@ pub(crate) async fn full_sync_new_node() -> Result<()> {
         dag,
         node2.sync_dag_store.clone(),
         false,
+        EXECUTE_TIMEOUT_MS,
+        Arc::new(std::sync::atomic::AtomicBool::new(false)),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
