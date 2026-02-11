@@ -11,7 +11,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::system_events::MintBlockEvent;
+use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use starcoin_types::U256;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::convert::TryInto;
@@ -19,7 +19,7 @@ use std::sync::atomic;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-const ERROR_WINDOW_SECS: u64 = 300;
+const ERROR_WINDOW_SECS: u64 = 120;
 const MAX_RECENT_JOBS: usize = 512;
 const STATS_LOG_INTERVAL_SECS: u64 = 60;
 const MAX_NONCE_HEX_LEN: usize = 8;
@@ -49,7 +49,6 @@ struct RateCounter {
 
 #[derive(Debug, Clone)]
 struct JobCacheEntry {
-    event: MintBlockEvent,
     ts: Instant,
 }
 
@@ -75,10 +74,13 @@ pub struct Stratum {
     share_rate: HashMap<WorkerId, RateCounter>,
     recent_jobs: HashMap<[u8; 8], JobCacheEntry>,
     recent_job_queue: VecDeque<[u8; 8]>,
+    solved_jobs: HashMap<[u8; 8], Instant>,
+    current_job: Option<MintBlockEvent>,
     account_workers: HashMap<String, HashSet<WorkerId>>,
     worker_accounts: HashMap<WorkerId, String>,
     stats: ShareStats,
     last_stats_log: Instant,
+    forwarded_blocks: u64,
 }
 
 impl Stratum {
@@ -94,10 +96,13 @@ impl Stratum {
             share_rate: Default::default(),
             recent_jobs: Default::default(),
             recent_job_queue: Default::default(),
+            solved_jobs: Default::default(),
+            current_job: None,
             account_workers: Default::default(),
             worker_accounts: Default::default(),
             stats: ShareStats::default(),
             last_stats_log: Instant::now(),
+            forwarded_blocks: 0,
             limits,
         }
     }
@@ -109,9 +114,19 @@ impl Stratum {
     fn sync_upstream_job(&mut self) -> Result<Option<MintBlockEvent>> {
         let service = self.miner_service.clone();
         let subscribers_num = self.mint_block_subscribers.len() as u32;
-        futures::executor::block_on(service.send(UpdateSubscriberNumRequest {
+        let latest = futures::executor::block_on(service.send(UpdateSubscriberNumRequest {
             number: Some(subscribers_num),
-        }))
+        }))?;
+        if latest.is_none() && subscribers_num > 0 {
+            if let Err(err) = service.notify(GenerateBlockEvent::default()) {
+                warn!(
+                    target: "stratum_server",
+                    "notify generate block event failed: {}",
+                    err
+                );
+            }
+        }
+        Ok(latest)
     }
 
     fn get_downstream_job(
@@ -121,18 +136,23 @@ impl Stratum {
     ) -> StratumJobResponse {
         let login = miner.base_info.clone();
 
-        let target = miner.diff_manager.read().unwrap().get_target();
+        let desired_diff = miner.diff_manager.read().unwrap().difficulty;
+        let network_diff = upstreaum_event.difficulty;
+        let target = crate::difficulty_to_target_hex(desired_diff);
         if target.len() != TARGET_HEX_LEN || !Self::is_hex(&target) {
             warn!(
-                target: "stratum",
+                target: "stratum_server",
                 "unexpected target hex len:{} target:{}",
                 target.len(),
                 target
             );
         }
         info!(
-            "set downstream job diff:{:?}",
-            target_hex_to_difficulty(&target).unwrap()
+            target: "stratum_server",
+            "set downstream job diff:{:?} (worker:{:?}, network:{:?})",
+            target_hex_to_difficulty(&target).unwrap(),
+            desired_diff,
+            network_diff
         );
         StratumJobResponse::from(
             upstreaum_event,
@@ -143,6 +163,7 @@ impl Stratum {
     }
 
     fn dispatch_job_to_clients(&mut self, event: MintBlockEvent) {
+        self.current_job = Some(event.clone());
         self.cache_job(&event);
         let mut remove_outdated = vec![];
         for (id, (ch, worker)) in self.mint_block_subscribers.iter() {
@@ -152,15 +173,15 @@ impl Stratum {
                 .unwrap()
                 .maybe_decay(&worker.base_info.login);
             let job = Self::get_downstream_job(worker, false, &event);
-            info!(target: "stratum", "dispatch startum job:{:?}", job);
+            info!(target: "stratum_server", "dispatch startum job:{:?}", job);
             let mut ch = ch.clone();
             if let Err(err) = ch.try_send(job) {
                 if err.is_disconnected() {
-                    warn!("stratum disconnect worker:{:?}", err);
+                    warn!(target: "stratum_server", "stratum disconnect worker:{:?}", err);
                     remove_outdated.push(*id);
                 } else if err.is_full() {
                     warn!(
-                        target: "stratum",
+                        target: "stratum_server",
                         "subscription {:?} channel full, drop worker",
                         id
                     );
@@ -168,6 +189,7 @@ impl Stratum {
                 }
             }
         }
+        let need_sync = !remove_outdated.is_empty();
         for id in remove_outdated {
             self.mint_block_subscribers.remove(&id);
             self.share_dedup.remove(&id);
@@ -182,6 +204,39 @@ impl Stratum {
                         self.account_workers.remove(&account);
                     }
                 }
+            }
+        }
+        if need_sync {
+            if let Err(err) = self.sync_upstream_job() {
+                warn!(target: "stratum_server", "sync upstream job failed: {}", err);
+            }
+        }
+    }
+
+    fn refresh_upstream_job_if_changed(&mut self) {
+        match self.sync_upstream_job() {
+            Ok(Some(event)) => {
+                let changed = self.current_job.as_ref().is_none_or(|current| {
+                    JobId::from_bob(&current.minting_blob) != JobId::from_bob(&event.minting_blob)
+                });
+                if changed {
+                    let refreshed_job_id = JobId::from_bob(&event.minting_blob).encode();
+                    self.current_job = Some(event.clone());
+                    self.cache_job(&event);
+                    debug!(
+                        target: "stratum_server",
+                        "refresh current job from upstream without dispatch, job_id={}",
+                        refreshed_job_id
+                    );
+                }
+            }
+            Ok(None) => {}
+            Err(err) => {
+                warn!(
+                    target: "stratum_server",
+                    "sync upstream job failed during submit: {}",
+                    err
+                );
             }
         }
     }
@@ -274,13 +329,7 @@ impl Stratum {
     fn cache_job(&mut self, event: &MintBlockEvent) {
         let job_id = JobId::from_bob(&event.minting_blob).job_id;
         let now = Instant::now();
-        self.recent_jobs.insert(
-            job_id,
-            JobCacheEntry {
-                event: event.clone(),
-                ts: now,
-            },
-        );
+        self.recent_jobs.insert(job_id, JobCacheEntry { ts: now });
         self.recent_job_queue.push_back(job_id);
         self.recent_job_queue
             .retain(|id| self.recent_jobs.contains_key(id));
@@ -292,15 +341,9 @@ impl Stratum {
         self.recent_jobs.retain(|_, entry| {
             now.duration_since(entry.ts) <= Duration::from_secs(self.limits.stale_window_secs)
         });
-    }
-
-    fn find_job_event(&mut self, job_id: [u8; 8], now: Instant) -> Option<MintBlockEvent> {
-        self.recent_jobs.retain(|_, entry| {
-            now.duration_since(entry.ts) <= Duration::from_secs(self.limits.stale_window_secs)
+        self.solved_jobs.retain(|_, ts| {
+            now.duration_since(*ts) <= Duration::from_secs(self.limits.stale_window_secs)
         });
-        self.recent_jobs
-            .get(&job_id)
-            .map(|entry| entry.event.clone())
     }
 
     fn check_rate_limit(&mut self, worker_id: WorkerId, now: Instant) -> bool {
@@ -322,9 +365,16 @@ impl Stratum {
         s.bytes().all(|b| b.is_ascii_hexdigit())
     }
 
+    fn is_solved_job(&mut self, job_id: [u8; 8], now: Instant) -> bool {
+        self.solved_jobs.retain(|_, ts| {
+            now.duration_since(*ts) <= Duration::from_secs(self.limits.stale_window_secs)
+        });
+        self.solved_jobs.contains_key(&job_id)
+    }
+
     fn log_disconnect(&self, worker_id: WorkerId, reason: &str) {
         warn!(
-            target: "stratum",
+            target: "stratum_server",
             "disconnect worker {}: {}",
             worker_id.to_hex(),
             reason
@@ -370,14 +420,15 @@ impl Stratum {
     fn note_stat(&mut self, now: Instant) {
         if now.duration_since(self.last_stats_log) >= Duration::from_secs(STATS_LOG_INTERVAL_SECS) {
             info!(
-                target: "stratum",
-                "share_stats accepted:{} invalid:{} duplicate:{} stale:{} job_miss:{} rate_limited:{}",
+                target: "stratum_server",
+                "share_stats accepted:{} invalid:{} duplicate:{} stale:{} job_miss:{} rate_limited:{} forwarded_blocks:{}",
                 self.stats.accepted,
                 self.stats.invalid,
                 self.stats.duplicate,
                 self.stats.stale,
                 self.stats.job_miss,
-                self.stats.rate_limited
+                self.stats.rate_limited,
+                self.forwarded_blocks
             );
             self.last_stats_log = now;
         }
@@ -404,11 +455,13 @@ impl ActorService for Stratum {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<MintBlockEvent>();
+        ctx.subscribe::<MinedBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<MintBlockEvent>();
+        ctx.unsubscribe::<MinedBlock>();
         Ok(())
     }
 }
@@ -416,6 +469,20 @@ impl ActorService for Stratum {
 impl EventHandler<Self, MintBlockEvent> for Stratum {
     fn handle_event(&mut self, event: MintBlockEvent, _ctx: &mut ServiceContext<Stratum>) {
         self.dispatch_job_to_clients(event);
+    }
+}
+
+impl EventHandler<Self, MinedBlock> for Stratum {
+    fn handle_event(&mut self, event: MinedBlock, _ctx: &mut ServiceContext<Stratum>) {
+        let blob = event.0.header().as_pow_header_blob();
+        let job_id = JobId::from_bob(&blob).job_id;
+        let now = Instant::now();
+        self.solved_jobs.insert(job_id, now);
+        debug!(
+            target: "stratum_server",
+            "mark job {} as solved",
+            hex::encode(job_id)
+        );
     }
 }
 
@@ -428,7 +495,7 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
         let SubscribeJobEvent(login) = msg;
         let (mut sender, receiver) = mpsc::channel(JOB_CHANNEL_CAP);
         let sub_id = self.next_id();
-        info!(target: "stratum", "receive subscribe event {:?},sub_id:{}", login, sub_id);
+        info!(target: "stratum_server", "receive subscribe event {:?},sub_id:{}", login, sub_id);
         let account = Self::account_from_login(&login.login);
         let entry = self.account_workers.entry(account.clone()).or_default();
         if entry.len() >= self.limits.max_workers_per_account {
@@ -440,24 +507,35 @@ impl ServiceHandler<Self, SubscribeJobEvent> for Stratum {
             .insert(worker_id, (sender.clone(), miner_worker));
         entry.insert(worker_id);
         self.worker_accounts.insert(worker_id, account);
-        let event = self.sync_upstream_job()?;
-        if let Some(ref e) = event {
-            self.cache_job(e);
+        match self.sync_upstream_job() {
+            Ok(Some(event)) => {
+                self.current_job = Some(event.clone());
+                self.cache_job(&event);
+            }
+            Ok(None) => {}
+            Err(err) => {
+                warn!(target: "stratum_server", "sync upstream job failed: {}", err);
+            }
         }
+        let event = self.current_job.clone();
         let downstream_job = event.as_ref().and_then(|event| {
             self.mint_block_subscribers
                 .get(&worker_id)
                 .map(|(_, worker)| Self::get_downstream_job(worker, true, event))
         });
         if let Some(downstream_job) = downstream_job {
-            info!(target:"stratum", "Respond to stratum subscribe:{:?}", downstream_job);
+            info!(
+                target: "stratum_server",
+                "Respond to stratum subscribe:{:?}",
+                downstream_job
+            );
             if let Err(err) = sender.try_send(downstream_job) {
-                error!(target: "stratum", "Failed to send MintBlockEvent: {}", err);
+                error!(target: "stratum_server", "Failed to send MintBlockEvent: {}", err);
                 self.drop_worker_state(worker_id);
                 return Err(anyhow::anyhow!("subscribe job channel unavailable"));
             }
         } else {
-            warn!(target: "stratum", "current mint job is empty");
+            warn!(target: "stratum_server", "current mint job is empty");
         }
         Ok(receiver)
     }
@@ -469,14 +547,18 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         msg: SubmitShareEvent,
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<SubmitShareResponse> {
+        // Keep current job fresh under real miner traffic; otherwise solved-job shares can
+        // pile up against an outdated template and never reach MinerService.
+        self.refresh_upstream_job_if_changed();
+
         let share = msg.0;
-        info!(target: "stratum", "received submit share event:{:?}", &share);
+        info!(target: "stratum_server", "received submit share event:{:?}", &share);
         let now = Instant::now();
 
         let worker_id = match WorkerId::from_hex(share.id.clone()) {
             Ok(worker_id) => worker_id,
             Err(err) => {
-                warn!(target: "stratum", "invalid worker id: {}", err);
+                warn!(target: "stratum_server", "invalid worker id: {}", err);
                 self.stats.invalid = self.stats.invalid.saturating_add(1);
                 self.note_stat(now);
                 return Ok(Self::reject(-1, "invalid worker id", false));
@@ -485,7 +567,9 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         if !self.mint_block_subscribers.contains_key(&worker_id) {
             self.stats.job_miss = self.stats.job_miss.saturating_add(1);
             self.note_stat(now);
-            return Ok(Self::reject(-1, "worker not found", false));
+            self.log_disconnect(worker_id, "worker not found");
+            self.drop_worker_state(worker_id);
+            return Ok(Self::reject(-1, "worker not found", true));
         }
 
         let validation = self.validate_share_params(worker_id, &share, now);
@@ -501,7 +585,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             return Ok(Self::reject(-1, "rate limited", false));
         }
 
-        let current_mint_event = match self.sync_upstream_job()? {
+        let current_mint_event = match self.current_job.clone() {
             Some(event) => event,
             None => {
                 let disconnect = self.record_job_miss(worker_id, now);
@@ -518,7 +602,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         let job_id = match JobId::new(&share.job_id) {
             Ok(job_id) => job_id,
             Err(err) => {
-                warn!(target: "stratum", "invalid job id: {}", err);
+                warn!(target: "stratum_server", "invalid job id: {}", err);
                 let disconnect = self.record_invalid_share(worker_id, now);
                 self.stats.invalid = self.stats.invalid.saturating_add(1);
                 self.note_stat(now);
@@ -529,34 +613,6 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 return Ok(Self::reject(-1, "invalid job id", disconnect));
             }
         };
-
-        let submit_job_id = JobId::from_bob(&current_mint_event.minting_blob);
-        if job_id != submit_job_id {
-            if self.find_job_event(job_id.job_id, now).is_some() {
-                self.stats.stale = self.stats.stale.saturating_add(1);
-                self.note_stat(now);
-                let disconnect = self.record_stale_share(worker_id, now);
-                if disconnect {
-                    self.log_disconnect(worker_id, "stale share");
-                    self.drop_worker_state(worker_id);
-                }
-                return Ok(Self::reject(-1, "stale share", disconnect));
-            }
-            warn!(
-                target: "stratum",
-                "received job mismatch with current job,{:?},{:?}",
-                job_id,
-                submit_job_id
-            );
-            let disconnect = self.record_job_miss(worker_id, now);
-            self.stats.job_miss = self.stats.job_miss.saturating_add(1);
-            self.note_stat(now);
-            if disconnect {
-                self.log_disconnect(worker_id, "job not found");
-                self.drop_worker_state(worker_id);
-            }
-            return Ok(Self::reject(-1, "job not found", disconnect));
-        }
 
         let (diff_manager, worker_login) = match self.mint_block_subscribers.get(&worker_id) {
             Some((_job_sender, worker)) => (worker.diff_manager(), worker.base_info.login.clone()),
@@ -573,7 +629,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         let seal: MinerSubmitSealRequest = match share.clone().try_into() {
             Ok(seal) => seal,
             Err(err) => {
-                warn!(target: "stratum", "invalid share: {}", err);
+                warn!(target: "stratum_server", "invalid share: {}", err);
                 let disconnect = self.record_invalid_share(worker_id, now);
                 self.stats.invalid = self.stats.invalid.saturating_add(1);
                 self.note_stat(now);
@@ -601,6 +657,32 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             return Ok(Self::reject(-1, "duplicate share", disconnect));
         }
 
+        let submit_job_id = JobId::from_bob(&current_mint_event.minting_blob);
+        if job_id != submit_job_id {
+            let job_known = self.recent_jobs.contains_key(&job_id.job_id);
+            let (disconnect, reason) = if job_known {
+                self.stats.stale = self.stats.stale.saturating_add(1);
+                (self.record_stale_share(worker_id, now), "stale share")
+            } else {
+                self.stats.job_miss = self.stats.job_miss.saturating_add(1);
+                (self.record_job_miss(worker_id, now), "job not found")
+            };
+            debug!(
+                target: "stratum_server",
+                "received job mismatch with current job, submitted={:?}, current={:?}, worker={}, known_job={}",
+                job_id,
+                submit_job_id,
+                share.id,
+                job_known
+            );
+            self.note_stat(now);
+            if disconnect {
+                self.log_disconnect(worker_id, reason);
+                self.drop_worker_state(worker_id);
+            }
+            return Ok(Self::reject(-1, reason, disconnect));
+        }
+
         let mining_blob = Self::build_mining_blob(&current_mint_event, &seal.extra)?;
         let pow_hash = current_mint_event.strategy.calculate_pow_hash(
             &mining_blob,
@@ -608,8 +690,10 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
             &seal.extra,
         )?;
         let pow_hash_u256: U256 = pow_hash.into();
-        let difficulty = diff_manager.read().unwrap().difficulty;
-        let share_target = difficult_to_target(difficulty)?;
+        let desired = diff_manager.read().unwrap().difficulty;
+        let network = current_mint_event.difficulty;
+        let effective = if desired > network { network } else { desired };
+        let share_target = difficult_to_target(effective)?;
         if pow_hash_u256 > share_target {
             let disconnect = self.record_invalid_share(worker_id, now);
             self.stats.invalid = self.stats.invalid.saturating_add(1);
@@ -624,18 +708,26 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         let _updated_diff = diff_manager.write().unwrap().try_update(worker_login);
 
         let network_target = difficult_to_target(current_mint_event.difficulty)?;
+        let solved = self.is_solved_job(job_id.job_id, now);
         if job_id == submit_job_id && pow_hash_u256 <= network_target {
-            if let Err(err) = current_mint_event.strategy.verify_blob(
-                current_mint_event.minting_blob.clone(),
-                seal.nonce,
-                seal.extra,
-                current_mint_event.difficulty,
-            ) {
-                warn!(target: "stratum", "verify blob failed: {}", err);
+            if solved {
+                debug!(
+                    target: "stratum_server",
+                    "skip forwarding solved job {}",
+                    share.job_id
+                );
             } else {
                 let mut forward_seal = seal;
                 forward_seal.minting_blob = current_mint_event.minting_blob;
+                debug!(
+                    target: "stratum_server",
+                    "forward block candidate job_id={}, worker={}, nonce={}",
+                    share.job_id,
+                    share.id,
+                    share.nonce
+                );
                 self.miner_service.try_send(forward_seal)?;
+                self.forwarded_blocks = self.forwarded_blocks.saturating_add(1);
             }
         }
 
@@ -652,6 +744,9 @@ impl ServiceHandler<Self, UnsubscribeWorkerEvent> for Stratum {
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         self.drop_worker_state(msg.worker_id);
+        if let Err(err) = self.sync_upstream_job() {
+            warn!(target: "stratum_server", "sync upstream job failed: {}", err);
+        }
         Ok(())
     }
 }

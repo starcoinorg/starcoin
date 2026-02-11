@@ -1,4 +1,4 @@
-use crate::codec::JsonStreamCodec;
+use crate::codec::{JsonStreamCodec, Separator};
 use crate::rpc::{
     LoginRequest, ShareRequest, Status, SubmitShareEvent, SubmitShareResponse, SubscribeJobEvent,
     UnsubscribeWorkerEvent, WorkerId,
@@ -26,6 +26,7 @@ const MAX_LOGIN_LEN: usize = 256;
 const MAX_PASS_LEN: usize = 256;
 const MAX_AGENT_LEN: usize = 128;
 const READ_IDLE_TIMEOUT_SECS: u64 = 600;
+const WRITE_DRAIN_TIMEOUT_SECS: u64 = 2;
 const REQ_WINDOW_SECS: u64 = 10;
 const MAX_REQS_PER_WINDOW: u32 = 100;
 const PROTOCOL_ERROR_WINDOW_SECS: u64 = 120;
@@ -96,12 +97,12 @@ impl ActorService for StratumService {
                 let runtime = Runtime::new().expect("create stratum tokio runtime");
                 let result = runtime.block_on(run_stratum_server(address, stratum, shutdown_rx));
                 if let Err(err) = result {
-                    error!(target: "stratum", "stratum server stopped with error: {}", err);
+                    error!(target: "stratum_server", "stratum server stopped with error: {}", err);
                 }
             });
             self.shutdown_tx = Some(shutdown_tx);
             self.join_handle = Some(join_handle);
-            info!(target: "stratum", "Stratum tcp server start at: {}", address);
+            info!(target: "stratum_server", "Stratum tcp server start at: {}", address);
         }
         Ok(())
     }
@@ -194,11 +195,11 @@ async fn run_stratum_server(
             accept_result = listener.accept() => {
                 match accept_result {
                     Ok((stream, peer_addr)) => {
-                        info!(target: "stratum", "stratum client connected: {}", peer_addr);
+                        info!(target: "stratum_server", "stratum client connected: {}", peer_addr);
                         tokio::spawn(handle_connection(stream, stratum.clone()));
                     }
                     Err(err) => {
-                        error!(target: "stratum", "accept connection failed: {}", err);
+                        error!(target: "stratum_server", "accept connection failed: {}", err);
                     }
                 }
             }
@@ -208,17 +209,31 @@ async fn run_stratum_server(
 }
 
 async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
-    let framed = Framed::new(stream, JsonStreamCodec::stream_incoming());
+    let peer_addr = stream
+        .peer_addr()
+        .map(|addr| addr.to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
+    let framed = Framed::new(
+        stream,
+        JsonStreamCodec::new(Separator::Byte(b'\n'), Default::default()),
+    );
     let (mut sink, mut stream) = framed.split();
     let (out_tx, mut out_rx) = mpsc::channel::<String>(OUTBOUND_CHANNEL_CAP);
     let mut logged_in = false;
     let mut worker_id: Option<String> = None;
     let mut req_rate = RequestRate::new();
     let mut protocol_errors = ProtocolErrorCounter::new();
+    let mut disconnect_reason: Option<String> = None;
 
+    let writer_peer = peer_addr.clone();
     let writer = tokio::spawn(async move {
         while let Some(msg) = out_rx.next().await {
             if sink.send(msg).await.is_err() {
+                warn!(
+                    target: "stratum_server",
+                    "disconnect client: peer={}, reason=write failed",
+                    writer_peer
+                );
                 break;
             }
         }
@@ -228,23 +243,27 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
         let item = match timeout(Duration::from_secs(READ_IDLE_TIMEOUT_SECS), stream.next()).await {
             Ok(item) => item,
             Err(_) => {
-                debug!(target: "stratum", "stratum read timeout");
+                disconnect_reason = Some("read timeout".to_string());
                 break;
             }
         };
         let item = match item {
             Some(item) => item,
-            None => break,
+            None => {
+                disconnect_reason = Some("client closed".to_string());
+                break;
+            }
         };
         let line = match item {
             Ok(line) => line,
             Err(err) => {
-                debug!(target: "stratum", "stratum read error: {}", err);
+                disconnect_reason = Some(format!("read error: {err}"));
                 break;
             }
         };
+        debug!(target: "stratum_server", "recv line: {}", line);
         if req_rate.exceeded() {
-            debug!(target: "stratum", "request rate limit exceeded");
+            disconnect_reason = Some("request rate limit exceeded".to_string());
             break;
         }
         if line.trim().is_empty() {
@@ -253,13 +272,13 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
         let request: JsonRpcRequest = match serde_json::from_str(&line) {
             Ok(req) => req,
             Err(err) => {
-                debug!(target: "stratum", "invalid jsonrpc request: {}", err);
+                disconnect_reason = Some(format!("invalid jsonrpc request: {err}"));
                 break;
             }
         };
         let request_id = parse_request_id(request.id);
         if request_id.is_none() {
-            debug!(target: "stratum", "missing request id");
+            disconnect_reason = Some("missing request id".to_string());
             break;
         }
         match request.method.as_str() {
@@ -271,6 +290,7 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                         -1,
                         "duplicate login".into(),
                     );
+                    disconnect_reason = Some("duplicate login".to_string());
                     break;
                 }
                 match handle_login(request_id, request.params, &stratum, &out_tx).await {
@@ -278,9 +298,12 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                         logged_in = true;
                         worker_id = Some(id);
                     }
-                    Ok(LoginAction::Disconnect) => break,
+                    Ok(LoginAction::Disconnect(reason)) => {
+                        disconnect_reason = Some(reason);
+                        break;
+                    }
                     Err(err) => {
-                        debug!(target: "stratum", "handle login failed: {}", err);
+                        disconnect_reason = Some(format!("handle login failed: {err}"));
                         break;
                     }
                 }
@@ -293,6 +316,7 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                         -1,
                         "not logged in".into(),
                     );
+                    disconnect_reason = Some("submit before login".to_string());
                     break;
                 }
                 match handle_submit(
@@ -306,9 +330,12 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                 .await
                 {
                     Ok(SubmitAction::Continue) => {}
-                    Ok(SubmitAction::Disconnect) => break,
+                    Ok(SubmitAction::Disconnect(reason)) => {
+                        disconnect_reason = Some(reason);
+                        break;
+                    }
                     Err(err) => {
-                        debug!(target: "stratum", "handle submit failed: {}", err);
+                        disconnect_reason = Some(format!("handle submit failed: {err}"));
                         break;
                     }
                 }
@@ -319,28 +346,55 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
                     status: "KEEPALIVED".to_string(),
                 };
                 if let Err(err) = send_output(&out_tx, id, status) {
-                    debug!(target: "stratum", "send keepalived response failed: {}", err);
+                    disconnect_reason = Some(format!("send keepalived response failed: {err}"));
                     break;
                 }
             }
             "logout" => {
                 if !logged_in {
+                    disconnect_reason = Some("logout before login".to_string());
                     break;
                 }
                 if let Err(err) = handle_logout(request_id, request.params, &out_tx).await {
-                    debug!(target: "stratum", "handle logout failed: {}", err);
+                    disconnect_reason = Some(format!("handle logout failed: {err}"));
+                }
+                if disconnect_reason.is_none() {
+                    disconnect_reason = Some("logout".to_string());
                 }
                 break;
             }
             other => {
                 let id = request_id.clone().unwrap();
                 let _ = send_failure(&out_tx, id, -1, format!("unknown method {}", other));
+                disconnect_reason = Some(format!("unknown method {other}"));
                 break;
             }
         }
     }
 
-    writer.abort();
+    drop(out_tx);
+    let _ = timeout(Duration::from_secs(WRITE_DRAIN_TIMEOUT_SECS), writer).await;
+
+    let reason = disconnect_reason.unwrap_or_else(|| "unknown".to_string());
+    if !logged_in && reason == "client closed" {
+        debug!(
+            target: "stratum_server",
+            "client probe closed: peer={}, worker={}, logged_in={}, reason={}",
+            peer_addr,
+            worker_id.as_deref().unwrap_or("-"),
+            logged_in,
+            reason
+        );
+    } else {
+        warn!(
+            target: "stratum_server",
+            "disconnect client: peer={}, worker={}, logged_in={}, reason={}",
+            peer_addr,
+            worker_id.as_deref().unwrap_or("-"),
+            logged_in,
+            reason
+        );
+    }
 
     if let Some(worker_id) = worker_id {
         if let Ok(worker_id) = WorkerId::from_hex(worker_id) {
@@ -351,7 +405,7 @@ async fn handle_connection(stream: TcpStream, stratum: ServiceRef<Stratum>) {
 
 enum LoginAction {
     Continue { worker_id: String },
-    Disconnect,
+    Disconnect(String),
 }
 
 async fn handle_login(
@@ -366,14 +420,18 @@ async fn handle_login(
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            return Ok(LoginAction::Disconnect);
+            return Ok(LoginAction::Disconnect(format!(
+                "invalid login params: {err}"
+            )));
         }
     };
     if let Err(err) = validate_login_request(&login) {
         if let Some(id) = request_id {
             let _ = send_failure(out_tx, id, -1, err.to_string());
         }
-        return Ok(LoginAction::Disconnect);
+        return Ok(LoginAction::Disconnect(format!(
+            "invalid login request: {err}"
+        )));
     }
     let mut job_rx = match stratum.send(SubscribeJobEvent(login)).await {
         Ok(Ok(rx)) => rx,
@@ -381,13 +439,17 @@ async fn handle_login(
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            return Ok(LoginAction::Disconnect);
+            return Ok(LoginAction::Disconnect(format!(
+                "subscribe job failed: {err}"
+            )));
         }
         Err(err) => {
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            return Ok(LoginAction::Disconnect);
+            return Ok(LoginAction::Disconnect(format!(
+                "subscribe job error: {err}"
+            )));
         }
     };
 
@@ -396,14 +458,18 @@ async fn handle_login(
             Some(job) => job,
             None => {
                 let _ = send_failure(out_tx, id, -1, "no job".to_string());
-                return Ok(LoginAction::Disconnect);
+                return Ok(LoginAction::Disconnect("no job".to_string()));
             }
         };
         let worker_id = first_job.id.clone();
         first_job.login = None;
-        send_output(out_tx, id, first_job)?;
+        if let Err(err) = send_output(out_tx, id, first_job) {
+            return Ok(LoginAction::Disconnect(format!(
+                "send login response failed: {err}"
+            )));
+        }
 
-        let out_tx = out_tx.clone();
+        let mut out_tx = out_tx.clone();
         tokio::spawn(async move {
             while let Some(job_resp) = job_rx.next().await {
                 let notif = JsonRpcNotification {
@@ -414,11 +480,11 @@ async fn handle_login(
                 let msg = match serde_json::to_string(&notif) {
                     Ok(msg) => msg,
                     Err(err) => {
-                        debug!(target: "stratum", "serialize job notification failed: {}", err);
+                        debug!(target: "stratum_server", "serialize job notification failed: {}", err);
                         continue;
                     }
                 };
-                if try_send_msg(&out_tx, msg).is_err() {
+                if out_tx.send(msg).await.is_err() {
                     break;
                 }
             }
@@ -427,12 +493,12 @@ async fn handle_login(
         return Ok(LoginAction::Continue { worker_id });
     }
 
-    Ok(LoginAction::Disconnect)
+    Ok(LoginAction::Disconnect("missing request id".to_string()))
 }
 
 enum SubmitAction {
     Continue,
-    Disconnect,
+    Disconnect(String),
 }
 
 async fn handle_submit(
@@ -451,10 +517,12 @@ async fn handle_submit(
             }
             if protocol_errors.record_and_exceeded() {
                 warn!(
-                    target: "stratum",
+                    target: "stratum_server",
                     "disconnect client: protocol error threshold exceeded (invalid params)"
                 );
-                return Ok(SubmitAction::Disconnect);
+                return Ok(SubmitAction::Disconnect(
+                    "protocol error threshold exceeded (invalid params)".to_string(),
+                ));
             }
             return Ok(SubmitAction::Continue);
         }
@@ -466,10 +534,12 @@ async fn handle_submit(
             }
             if protocol_errors.record_and_exceeded() {
                 warn!(
-                    target: "stratum",
+                    target: "stratum_server",
                     "disconnect client: protocol error threshold exceeded (worker mismatch)"
                 );
-                return Ok(SubmitAction::Disconnect);
+                return Ok(SubmitAction::Disconnect(
+                    "protocol error threshold exceeded (worker mismatch)".to_string(),
+                ));
             }
             return Ok(SubmitAction::Continue);
         }
@@ -481,8 +551,15 @@ async fn handle_submit(
                 let status = Status {
                     status: "OK".to_string(),
                 };
-                if send_output(out_tx, id, status).is_err() {
-                    return Ok(SubmitAction::Disconnect);
+                if let Err(err) = send_output(out_tx, id, status) {
+                    // Keep connection alive and let read/write loops converge naturally.
+                    // Some real miners will retry on transient write-side failures.
+                    warn!(
+                        target: "stratum_server",
+                        "send submit success response failed: {}",
+                        err
+                    );
+                    return Ok(SubmitAction::Continue);
                 }
             }
             Ok(SubmitAction::Continue)
@@ -493,12 +570,19 @@ async fn handle_submit(
             disconnect,
         })) => {
             if let Some(id) = request_id {
-                if send_failure(out_tx, id, code, message).is_err() {
-                    return Ok(SubmitAction::Disconnect);
+                if let Err(err) = send_failure(out_tx, id, code, message.clone()) {
+                    warn!(
+                        target: "stratum_server",
+                        "send submit failure response failed: {}",
+                        err
+                    );
+                    return Ok(SubmitAction::Continue);
                 }
             }
             if disconnect {
-                Ok(SubmitAction::Disconnect)
+                Ok(SubmitAction::Disconnect(format!(
+                    "share rejected (disconnect): {message}"
+                )))
             } else {
                 Ok(SubmitAction::Continue)
             }
@@ -507,13 +591,17 @@ async fn handle_submit(
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            Ok(SubmitAction::Disconnect)
+            Ok(SubmitAction::Disconnect(format!(
+                "submit share error: {err}"
+            )))
         }
         Err(err) => {
             if let Some(id) = request_id {
                 let _ = send_failure(out_tx, id, -1, err.to_string());
             }
-            Ok(SubmitAction::Disconnect)
+            Ok(SubmitAction::Disconnect(format!(
+                "submit share send error: {err}"
+            )))
         }
     }
 }
@@ -523,7 +611,7 @@ async fn handle_logout(
     params: serde_json::Value,
     out_tx: &mpsc::Sender<String>,
 ) -> Result<()> {
-    info!(target: "stratum", "receive logout request params: {}", params);
+    info!(target: "stratum_server", "receive logout request params: {}", params);
     if let Some(id) = request_id {
         let _ = send_output(out_tx, id, false);
     }

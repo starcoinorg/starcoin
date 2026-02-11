@@ -119,3 +119,21 @@ impl Encoder<String> for JsonStreamCodec {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_decode_rejects_oversized_inbound_message() {
+        let mut codec = JsonStreamCodec::default();
+        let oversized = vec![b'a'; MAX_INBOUND_BYTES + 1];
+        let mut buf = BytesMut::from(oversized.as_slice());
+
+        let err = codec
+            .decode(&mut buf)
+            .expect_err("oversized payload should be rejected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidData);
+        assert!(err.to_string().contains("jsonrpc message too large"));
+    }
+}
