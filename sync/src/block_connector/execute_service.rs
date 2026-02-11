@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use anyhow::Result;
 use network_api::PeerId;
@@ -10,7 +9,7 @@ use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::{debug, error, info, warn};
+use starcoin_logger::prelude::{debug, error, info};
 use starcoin_service_registry::{
     bus::Bus, ActorService, EventHandler, ServiceContext, ServiceFactory,
 };
@@ -53,14 +52,6 @@ pub struct ExecuteService {
     sync_status: Option<SyncStatus>,
 }
 
-const PEER_BLOCK_RETRY_DELAY_MS: u64 = 200;
-
-#[derive(Debug, Clone)]
-struct PeerBlockTryLater {
-    peer_id: PeerId,
-    block: Block,
-}
-
 impl ExecuteService {
     fn new(
         time_service: Arc<dyn TimeService>,
@@ -74,13 +65,6 @@ impl ExecuteService {
             storage2,
             dag,
             sync_status: None,
-        }
-    }
-
-    fn is_synced(&self) -> bool {
-        match self.sync_status.as_ref() {
-            Some(sync_status) => sync_status.is_nearly_synced(),
-            None => false,
         }
     }
 
@@ -263,7 +247,10 @@ impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
                         ));
                     }
                     None => {
-                        warn!("failed to execute the peer block, id: {:?} ", block_id);
+                        info!(
+                            "future block from peer, id: {:?} and will cause sync",
+                            block_id
+                        );
                         ctx.broadcast(CheckSyncEvent::default());
                     }
                 }
@@ -278,32 +265,8 @@ impl EventHandler<Self, SyncStatusChangeEvent> for ExecuteService {
     }
 }
 
-impl EventHandler<Self, PeerBlockTryLater> for ExecuteService {
-    fn handle_event(&mut self, msg: PeerBlockTryLater, ctx: &mut ServiceContext<Self>) {
-        let PeerBlockTryLater { peer_id, block } = msg;
-        ctx.run_later(
-            Duration::from_millis(PEER_BLOCK_RETRY_DELAY_MS),
-            move |service_ctx| {
-                if let Err(e) = service_ctx
-                    .self_ref()
-                    .notify(PeerNewBlock::new(peer_id.clone(), block.clone()))
-                {
-                    error!("retry notify peer block error: {:?}", e);
-                }
-            },
-        );
-    }
-}
-
 impl EventHandler<Self, PeerNewBlock> for ExecuteService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        if !self.is_synced() {
-            debug!(
-                "[execute] Ignore PeerNewBlock event because the node has not been synchronized yet."
-            );
-            return;
-        }
-
         let time_service = self.time_service.clone();
         let storage = self.storage.clone();
         let storage2 = self.storage2.clone();
@@ -331,9 +294,12 @@ impl EventHandler<Self, PeerNewBlock> for ExecuteService {
                             .map_err(anyhow::Error::from),
                         ExecuteResult::AlreadyExecuted => Ok(()),
                         ExecuteResult::TryLater => self_ref
-                            .notify(PeerBlockTryLater {
-                                peer_id: msg.get_peer_id(),
-                                block: msg.get_block().clone(),
+                            .notify(ExecutedBlockInfo {
+                                executed_block: None, // force to start sync
+                                from: ExecuteBlockFrom::PeerMinedBlock(
+                                    msg.get_block().id(),
+                                    msg.get_peer_id(),
+                                ),
                             })
                             .map_err(anyhow::Error::from),
                     } {
