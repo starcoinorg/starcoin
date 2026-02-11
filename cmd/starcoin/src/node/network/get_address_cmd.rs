@@ -29,12 +29,13 @@ impl CommandAction for GetAddressCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        client.network_get_address(
+        let addresses = client.network_get_address(
             ctx.opt()
                 .peer_id
                 .clone()
                 .ok_or_else(|| format_err!("Please input peer-id arg."))?
                 .to_string(),
-        )
+        )?;
+        Ok(addresses.into_iter().map(|addr| addr.to_string()).collect())
     }
 }
