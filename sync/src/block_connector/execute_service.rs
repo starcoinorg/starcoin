@@ -23,7 +23,7 @@ use starcoin_types::system_events::{
     MinedBlock, NewDagBlock, NewDagBlockFromPeer, SyncStatusChangeEvent,
 };
 
-use crate::sync::CheckSyncEvent;
+use crate::sync::{CheckSyncEvent, SyncService};
 
 #[derive(Debug, Clone)]
 enum ExecuteResult {
@@ -251,7 +251,9 @@ impl EventHandler<Self, ExecutedBlockInfo> for ExecuteService {
                             "future block from peer, id: {:?} and will cause sync",
                             block_id
                         );
-                        ctx.broadcast(CheckSyncEvent::default());
+                        if let Ok(sync_service) = ctx.service_ref::<SyncService>() {
+                            let _ = sync_service.notify(CheckSyncEvent::default());
+                        }
                     }
                 }
             }
