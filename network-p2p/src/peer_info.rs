@@ -450,11 +450,17 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                 Poll::Ready(ToSwarm::GenerateEvent(PingEvent {
                     peer,
                     connection,
-                    result: Ok(rtt),
-                })) => {
-                    self.handle_ping_report(&peer, rtt);
-                    let _ = connection;
-                }
+                    result,
+                })) => match result {
+                    Ok(rtt) => self.handle_ping_report(&peer, rtt),
+                    Err(err) => debug!(
+                        target: "sub-libp2p",
+                        "Ping with peer {:?} failed on {:?}: {}",
+                        peer,
+                        connection,
+                        err
+                    ),
+                },
                 Poll::Ready(other) => {
                     return Poll::Ready(
                         other
