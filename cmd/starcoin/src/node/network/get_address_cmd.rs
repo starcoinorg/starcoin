@@ -6,6 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use clap::Parser;
 use network_p2p_types::peer_id::PeerId;
+use network_types::peer_info::Multiaddr;
 use scmd::{CommandAction, ExecContext};
 
 #[derive(Debug, Parser, Default)]
@@ -22,20 +23,19 @@ impl CommandAction for GetAddressCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetAddressOpt;
-    type ReturnItem = Vec<String>;
+    type ReturnItem = Vec<Multiaddr>;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let addresses = client.network_get_address(
+        client.network_get_address(
             ctx.opt()
                 .peer_id
                 .clone()
                 .ok_or_else(|| format_err!("Please input peer-id arg."))?
                 .to_string(),
-        )?;
-        Ok(addresses.into_iter().map(|addr| addr.to_string()).collect())
+        )
     }
 }

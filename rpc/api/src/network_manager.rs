@@ -7,7 +7,7 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
-use network_p2p_types::Multiaddr;
+use network_types::peer_info::Multiaddr;
 use openrpc_derive::openrpc;
 use std::borrow::Cow;
 
