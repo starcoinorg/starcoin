@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::parallel::parallel_info_service::{ParallelInfoService, ResetParallelSyncStatRequest};
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
@@ -707,6 +708,22 @@ impl SyncService {
         }
     }
 
+    fn reset_parallel_sync_stat(ctx: &mut ServiceContext<Self>) {
+        match ctx.service_ref_opt::<ParallelInfoService>() {
+            Ok(Some(parallel_info_service)) => {
+                parallel_info_service.do_send(ResetParallelSyncStatRequest);
+            }
+            Ok(None) => {
+                debug!(
+                    "[sync] ParallelInfoService is not registered, skip resetting parallel sync stat."
+                );
+            }
+            Err(e) => {
+                warn!("[sync] Failed to get ParallelInfoService ref: {:?}", e);
+            }
+        }
+    }
+
     fn publish_sync_status(&self, ctx: &mut ServiceContext<Self>) {
         self.store_sync_status(ctx);
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
@@ -901,6 +918,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 //task_handle.cancel();
             }
             SyncStage::Checking => {
+                Self::reset_parallel_sync_stat(ctx);
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
