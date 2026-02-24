@@ -14,7 +14,10 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
 };
-use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
+use move_vm_types::value_serde::{
+    deserialize_and_allow_delayed_values, deserialize_and_replace_values_with_ids,
+    serialize_and_allow_delayed_values, ValueToIdentifierMapping,
+};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
 use starcoin_aggregator::delta_math::DeltaHistory;
@@ -169,7 +172,6 @@ pub(crate) struct VersionedView<'a, S: StateView> {
     hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
     delayed_field_cache: Arc<DelayedFieldCache>,
     delayed_fields_enabled: bool,
-    max_value_nest_depth: Option<u64>,
     accessed_groups: RefCell<HashSet<StateKey>>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
@@ -181,9 +183,9 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             MoveTypeLayout::Native(..) => true,
             MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
             MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => {
-                    fields.iter().any(Self::layout_has_identifier_mappings)
-                }
+                MoveStructLayout::Runtime(fields) => fields
+                    .iter()
+                    .any(Self::layout_has_identifier_mappings),
                 MoveStructLayout::WithFields(fields) => fields
                     .iter()
                     .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
@@ -200,14 +202,12 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
         delayed_field_cache: Arc<DelayedFieldCache>,
         delayed_fields_enabled: bool,
-        max_value_nest_depth: Option<u64>,
     ) -> Self {
         Self {
             base_view,
             hashmap_view,
             delayed_field_cache,
             delayed_fields_enabled,
-            max_value_nest_depth,
             accessed_groups: RefCell::new(HashSet::new()),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
@@ -318,14 +318,9 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_serde()
-            .deserialize(bytes, layout)
-            .ok_or_else(|| {
-                StateviewError::Other(
-                    "Failed to deserialize value for delayed field scan".to_string(),
-                )
-            })?;
+        let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
+            StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
+        })?;
         let mut ids: HashSet<u64> = HashSet::new();
         find_identifiers_in_value(&value, &mut ids).map_err(|e| {
             StateviewError::Other(format!("Failed to scan delayed field identifiers: {:?}", e))
@@ -335,6 +330,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 
     fn exchange_state_value(
         &self,
+        _state_key: &StateKey,
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
@@ -380,15 +376,11 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_replacement(&mapping)
-            .deserialize(state_value.bytes(), layout)
+        let value = deserialize_and_replace_values_with_ids(state_value.bytes(), layout, &mapping)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_serde()
-            .serialize(&value, layout)
+        let serialized = serialize_and_allow_delayed_values(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
             .ok_or_else(|| {
                 StateviewError::Other("Failed to serialize value with delayed ids".to_string())
@@ -403,13 +395,14 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 
     fn maybe_exchange_state_value(
         &self,
+        state_key: &StateKey,
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok((state_value.clone(), HashSet::new(), false));
         }
-        let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
+        let (exchanged, delayed_ids) = self.exchange_state_value(state_key, state_value, layout)?;
         Ok((exchanged, delayed_ids, true))
     }
 
@@ -432,7 +425,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             if let (Some(layout), Some(state_value)) = (maybe_layout, maybe_state_value.as_ref()) {
                 if !self.delayed_field_cache.is_base_value_exchanged(state_key) {
                     let (exchanged, ids, exchanged_flag) =
-                        self.maybe_exchange_state_value(state_value, layout)?;
+                        self.maybe_exchange_state_value(state_key, state_value, layout)?;
                     self.delayed_field_cache.insert_base_value(
                         state_key.clone(),
                         WriteOp::from_state_value(Some(exchanged.clone())),
@@ -454,7 +447,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
                 Self::layout_has_identifier_mappings(layout),
                 || {
                     let (value_with_ids, ids, _) =
-                        self.maybe_exchange_state_value(state_value, layout)?;
+                        self.maybe_exchange_state_value(state_key, state_value, layout)?;
                     self.record_resource_read(state_key, &value_with_ids, layout, ids);
                     Ok(WriteOp::from_state_value(Some(value_with_ids)))
                 },
@@ -623,7 +616,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                     let state_value =
                         StateValue::new_with_metadata(raw_bytes.clone(), metadata.clone());
                     let (value_with_ids, ids, _) =
-                        self.maybe_exchange_state_value(&state_value, layout)?;
+                        self.maybe_exchange_state_value(group_key, &state_value, layout)?;
                     self.record_group_read(
                         group_key,
                         metadata,

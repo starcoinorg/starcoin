@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    #"benchmarks",
+    "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -49,6 +49,7 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
     "network-p2p",
@@ -184,6 +185,7 @@ default-members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
     "network-p2p",

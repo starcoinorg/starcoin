@@ -10,14 +10,15 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+use move_core_types::value::{IdentifierMappingKind, MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
-use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
-use move_vm_types::loaded_data::runtime_types::TypeBuilder;
-use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
+use move_vm_types::value_serde::{
+    deserialize_and_allow_delayed_values, deserialize_and_replace_values_with_ids,
+    serialize_and_allow_delayed_values, ValueToIdentifierMapping,
+};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
 use starcoin_aggregator::resolver::TDelayedFieldView;
@@ -30,12 +31,12 @@ use starcoin_mvhashmap::versioned_delayed_fields::{
     TVersionedDelayedFieldView, VersionedDelayedFields,
 };
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::vm::config::{starcoin_prod_deserializer_config, starcoin_prod_vm_config};
+use starcoin_types::vm::config::starcoin_prod_deserializer_config;
 use starcoin_vm_runtime_types::resolver::{
     ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
 };
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
-use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, TimedFeaturesBuilder, VMConfig};
+use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
     errors::StateviewError,
     state_key::StateKey,
@@ -93,7 +94,6 @@ struct ResourceGroupStats {
 
 static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
     LazyLock::new(ResourceGroupStats::default);
-#[cfg(debug_assertions)]
 static EXCHANGE_DUMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
@@ -117,14 +117,6 @@ pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
             .group_size_ns
             .swap(0, Ordering::Relaxed),
     }
-}
-
-pub(crate) fn effective_max_value_nest_depth<S: StateView>(state_view: &S) -> Option<u64> {
-    let features = Features::fetch_config(state_view).unwrap_or_default();
-    let timed_features = TimedFeaturesBuilder::enable_all().build();
-    starcoin_prod_vm_config(&features, &timed_features, TypeBuilder::Legacy)
-        .max_value_nest_depth
-        .or(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
 }
 
 pub fn get_resource_group_member_from_metadata(
@@ -155,7 +147,7 @@ struct GroupReadInfo {
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
-/// Adapter to convert a `ExecutorView` into a `MoveResolver`.
+/// Adapter to convert a `ExecutorView` into a `AptosMoveResolver`.
 ///
 /// Resources in groups are handled either through dedicated interfaces of executor_view
 /// (that tie to specialized handling in block executor), or via 'standard' interfaces
@@ -163,7 +155,6 @@ struct GroupReadInfo {
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
     deserializer_config: DeserializerConfig,
-    max_value_nest_depth: Option<u64>,
     resource_group_view: ResourceGroupAdapter<'e>,
     delayed_fields_enabled: bool,
     accessed_groups: RefCell<HashSet<StateKey>>,
@@ -259,9 +250,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             MoveTypeLayout::Native(..) => true,
             MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
             MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => {
-                    fields.iter().any(Self::layout_has_identifier_mappings)
-                }
+                MoveStructLayout::Runtime(fields) => fields
+                    .iter()
+                    .any(Self::layout_has_identifier_mappings),
                 MoveStructLayout::WithFields(fields) => fields
                     .iter()
                     .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
@@ -276,7 +267,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn new(
         state_store: &'a S,
         deserializer_config: DeserializerConfig,
-        max_value_nest_depth: Option<u64>,
         resource_group_view: ResourceGroupAdapter<'a>,
         delayed_fields_enabled: bool,
     ) -> Self {
@@ -284,7 +274,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         Self {
             executor_view: state_store,
             deserializer_config,
-            max_value_nest_depth,
             resource_group_view,
             delayed_fields_enabled,
             accessed_groups: RefCell::new(HashSet::new()),
@@ -336,14 +325,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_serde()
-            .deserialize(bytes, layout)
-            .ok_or_else(|| {
-                StateviewError::Other(
-                    "Failed to deserialize value for delayed field scan".to_string(),
-                )
-            })?;
+        let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
+            StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
+        })?;
         let mut ids: HashSet<u64> = HashSet::new();
         find_identifiers_in_value(&value, &mut ids).map_err(|e| {
             StateviewError::Other(format!("Failed to scan delayed field identifiers: {:?}", e))
@@ -416,6 +400,11 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
+        if let Some(exchanged) = self.try_manual_exchange_for_nested_native_u64(layout, state_value)?
+        {
+            return Ok(exchanged);
+        }
+
         struct Mapping<'a, S: StateView> {
             adapter: &'a StorageAdapter<'a, S>,
             delayed_ids: RefCell<HashSet<DelayedFieldID>>,
@@ -454,15 +443,11 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_replacement(&mapping)
-            .deserialize(state_value.bytes(), layout)
+        let value = deserialize_and_replace_values_with_ids(state_value.bytes(), layout, &mapping)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
-            .with_delayed_fields_serde()
-            .serialize(&value, layout)
+        let serialized = serialize_and_allow_delayed_values(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
             .ok_or_else(|| {
                 StateviewError::Other("Failed to serialize value with delayed ids".to_string())
@@ -473,6 +458,87 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             state_value.clone().into_metadata(),
         );
         Ok((exchanged, mapping.delayed_ids.into_inner()))
+    }
+
+    // Fallback for the known crashing release path in move-vm-types deserialization:
+    // Struct([Struct([Native(Aggregator|Snapshot, U64), U64])]).
+    // This performs the same exchange as deserialize_and_replace_values_with_ids:
+    // replace the first field with delayed id bytes and keep the second field as-is.
+    fn try_manual_exchange_for_nested_native_u64(
+        &self,
+        layout: &MoveTypeLayout,
+        state_value: &StateValue,
+    ) -> Result<Option<(StateValue, HashSet<DelayedFieldID>)>, StateviewError> {
+        let (kind, native_layout) = match layout {
+            MoveTypeLayout::Struct(outer) => {
+                let outer_fields = outer.fields();
+                if outer_fields.len() != 1 {
+                    return Ok(None);
+                }
+                match &outer_fields[0] {
+                    MoveTypeLayout::Struct(inner) => {
+                        let inner_fields = inner.fields();
+                        if inner_fields.len() != 2 {
+                            return Ok(None);
+                        }
+                        match (&inner_fields[0], &inner_fields[1]) {
+                            (MoveTypeLayout::Native(kind, native_layout), MoveTypeLayout::U64) => {
+                                (kind, native_layout.as_ref())
+                            }
+                            _ => return Ok(None),
+                        }
+                    }
+                    _ => return Ok(None),
+                }
+            }
+            _ => return Ok(None),
+        };
+
+        if !matches!(native_layout, MoveTypeLayout::U64) {
+            return Ok(None);
+        }
+        if !matches!(
+            kind,
+            IdentifierMappingKind::Aggregator | IdentifierMappingKind::Snapshot
+        ) {
+            return Ok(None);
+        }
+
+        let bytes = state_value.bytes();
+        if bytes.len() != 16 {
+            return Err(StateviewError::Other(format!(
+                "Manual exchange expected 16 bytes, got {} for layout {:?}",
+                bytes.len(),
+                layout
+            )));
+        }
+
+        let native_value = u64::from_le_bytes(
+            bytes[0..8]
+                .try_into()
+                .map_err(|_| StateviewError::Other("Failed to parse native u64 bytes".to_string()))?,
+        );
+        let delayed_value = match kind {
+            IdentifierMappingKind::Aggregator => DelayedFieldValue::Aggregator(native_value as u128),
+            IdentifierMappingKind::Snapshot => DelayedFieldValue::Snapshot(native_value as u128),
+            _ => unreachable!(),
+        };
+        let id = self.generate_delayed_field_id(8);
+        self.delayed_fields.set_base_value(id, delayed_value);
+
+        let mut exchanged = bytes.to_vec();
+        exchanged[0..8].copy_from_slice(&id.as_u64().to_le_bytes());
+        let exchanged_state = StateValue::new_with_metadata(
+            Bytes::from(exchanged),
+            state_value.clone().into_metadata(),
+        );
+        let mut delayed_ids = HashSet::new();
+        delayed_ids.insert(id);
+
+        warn!(
+            "[vm2-delayed] manual exchange fallback applied for nested native U64 layout"
+        );
+        Ok(Some((exchanged_state, delayed_ids)))
     }
 
     fn maybe_exchange_state_value(
@@ -487,7 +553,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         Ok((exchanged, delayed_ids, true))
     }
 
-    #[cfg(debug_assertions)]
     fn maybe_dump_exchange_input(
         &self,
         scope: &str,
@@ -635,10 +700,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             self.executor_view,
             &mut group_cache,
             has_delayed,
-            self.max_value_nest_depth,
         )?;
         let patched_events = if has_delayed {
-            materialize_events(&output, &mapping, self.max_value_nest_depth)?
+            materialize_events(&output, &mapping)?
         } else {
             output
                 .events()
@@ -893,9 +957,7 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                             .map(|v| v.into_metadata())
                             .unwrap_or_else(StateValueMetadata::none);
                         let group_size = self.resource_group_view.resource_group_size(&key)?.get();
-                        let state_value =
-                            StateValue::new_with_metadata(raw_bytes.clone(), metadata);
-                        #[cfg(debug_assertions)]
+                        let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
                         self.maybe_dump_exchange_input(
                             "group_fresh",
                             &key,
@@ -983,7 +1045,6 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                                     .with_message("Cached base value missing bytes".to_string())
                             })?;
-                            #[cfg(debug_assertions)]
                             self.maybe_dump_exchange_input(
                                 "base_cached",
                                 &state_key,
@@ -1018,7 +1079,6 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                         let Some(state_value) = state_value else {
                             return Ok((None, 0));
                         };
-                        #[cfg(debug_assertions)]
                         self.maybe_dump_exchange_input(
                             "base_fresh",
                             &state_key,
@@ -1128,12 +1188,11 @@ impl<S: StateView> AsMoveResolver<S> for S {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         let delayed_fields_enabled = features.is_aggregator_v2_delayed_fields_enabled();
-        let vm_config = VMConfig::fetch_config(self);
-        let max_value_nest_depth = effective_max_value_nest_depth(self);
-        let gas_feature_version = vm_config
-            .as_ref()
-            .map(|config| config.gas_schedule.feature_version)
-            .unwrap_or(default_gas_schedule().feature_version);
+
+        let gas_feature_version = VMConfig::fetch_config(self)
+            .map(|config| config.gas_schedule)
+            .unwrap_or(default_gas_schedule())
+            .feature_version;
         let resource_group_adapter = ResourceGroupAdapter::new(
             None,
             self,
@@ -1145,7 +1204,6 @@ impl<S: StateView> AsMoveResolver<S> for S {
         StorageAdapter::new(
             self,
             deserializer_config,
-            max_value_nest_depth,
             resource_group_adapter,
             delayed_fields_enabled,
         )
