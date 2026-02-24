@@ -11,7 +11,7 @@ use starcoin_miner_client::stratum_client_service::{
 };
 use starcoin_miner_client::JobClient;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-use starcoin_stratumd::rpc::LoginRequest;
+use starcoin_stratumd::stratum_rpc::LoginRequest;
 use starcoin_time_service::RealTimeService;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::{MintBlockEvent, SealEvent};

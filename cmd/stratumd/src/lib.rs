@@ -2,8 +2,10 @@ use starcoin_types::U256;
 
 pub mod codec;
 pub mod diff_manager;
+pub mod node_rpc;
+pub mod pplns;
 pub mod pplns_store;
-pub mod rpc;
+pub mod stratum_rpc;
 
 #[derive(Debug, Clone)]
 pub struct StratumLimits {

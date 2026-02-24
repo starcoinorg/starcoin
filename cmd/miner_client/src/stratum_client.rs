@@ -6,7 +6,7 @@ use futures::future;
 use futures::stream::{BoxStream, StreamExt};
 use starcoin_logger::prelude::error;
 use starcoin_service_registry::ServiceRef;
-use starcoin_stratumd::rpc::LoginRequest;
+use starcoin_stratumd::stratum_rpc::LoginRequest;
 use starcoin_stratumd::target_hex_to_difficulty;
 use starcoin_time_service::TimeService;
 use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};

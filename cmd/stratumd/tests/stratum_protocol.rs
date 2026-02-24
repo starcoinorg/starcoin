@@ -3,7 +3,7 @@ use jsonrpc_core::{Error as JsonRpcError, IoHandler, Params};
 use jsonrpc_ws_server::{Server as WsServer, ServerBuilder};
 use once_cell::sync::Lazy;
 use serde_json::json;
-use starcoin_stratumd::rpc::{StratumJob, StratumJobResponse};
+use starcoin_stratumd::stratum_rpc::{StratumJob, StratumJobResponse};
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
