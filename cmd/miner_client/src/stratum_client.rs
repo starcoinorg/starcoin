@@ -1,4 +1,6 @@
-use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSealRequest};
+use crate::stratum_client_service::{
+    LoginServiceRequest, ShareRequest, StratumClientService, SubmitSealRequest,
+};
 use crate::{ConsensusStrategy, JobClient, SealEvent};
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -39,7 +41,7 @@ impl JobClient for StratumJobClient {
         let login = self.login.clone();
         let fut = async move {
             let stream = srv
-                .send(login)
+                .send(LoginServiceRequest(login))
                 .await?
                 .await
                 .map_err(|e| anyhow::anyhow!(format!("{}", e)))

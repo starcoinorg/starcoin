@@ -1,11 +1,7 @@
 use crate::diff_manager::DifficultyManager;
-use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
-use futures::channel::mpsc;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::DefaultHasher;
 use starcoin_crypto::HashValue;
-use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
-use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
@@ -17,25 +13,6 @@ pub struct ShareRequest {
     pub job_id: String,
     pub nonce: String,
     pub result: String,
-}
-
-impl TryInto<MinerSubmitSealRequest> for ShareRequest {
-    type Error = anyhow::Error;
-    fn try_into(self) -> anyhow::Result<MinerSubmitSealRequest> {
-        let nonce_temp = u32::from_str_radix(self.nonce.as_str(), 16)?;
-        let mut n = Vec::new();
-        let _ = n.write_u32::<LittleEndian>(nonce_temp);
-        let nonce = byteorder::BigEndian::read_u32(&n);
-        let extra = hex::decode(self.id)?;
-        let extra: [u8; 4] = extra
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("Failed to parse extra"))?;
-        Ok(MinerSubmitSealRequest {
-            nonce,
-            extra: BlockHeaderExtra::new(extra),
-            minting_blob: vec![],
-        })
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -51,29 +28,6 @@ pub struct KeepalivedResult {
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct Status {
     pub status: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct SubscribeJobEvent(pub LoginRequest);
-
-impl ServiceRequest for SubscribeJobEvent {
-    type Response = anyhow::Result<mpsc::Receiver<StratumJobResponse>>;
-}
-
-#[derive(Debug, Clone)]
-pub struct SubmitShareEvent(pub ShareRequest);
-
-impl ServiceRequest for SubmitShareEvent {
-    type Response = anyhow::Result<SubmitShareResponse>;
-}
-
-#[derive(Debug, Clone)]
-pub struct UnsubscribeWorkerEvent {
-    pub worker_id: WorkerId,
-}
-
-impl ServiceRequest for UnsubscribeWorkerEvent {
-    type Response = anyhow::Result<()>;
 }
 
 #[derive(Debug, Clone)]
@@ -93,11 +47,6 @@ pub struct LoginRequest {
     pub agent: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub algo: Option<Vec<String>>,
-}
-
-impl ServiceRequest for LoginRequest {
-    type Response =
-        futures::channel::oneshot::Receiver<futures::channel::mpsc::UnboundedReceiver<StratumJob>>;
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
