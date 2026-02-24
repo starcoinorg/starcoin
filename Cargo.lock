@@ -12604,7 +12604,6 @@ dependencies = [
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-service-registry",
- "starcoin-stratumd",
  "starcoin-time-service",
  "starcoin-vm-types",
  "starcoin-vm1-types",

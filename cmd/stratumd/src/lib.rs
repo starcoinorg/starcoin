@@ -7,6 +7,24 @@ pub mod pplns;
 pub mod pplns_store;
 pub mod stratum_rpc;
 
+pub const OUTBOUND_CHANNEL_CAP: usize = 128;
+pub const MAX_LOGIN_LEN: usize = 256;
+pub const MAX_PASS_LEN: usize = 256;
+pub const MAX_AGENT_LEN: usize = 128;
+pub const READ_IDLE_TIMEOUT_SECS: u64 = 600;
+pub const WRITE_DRAIN_TIMEOUT_SECS: u64 = 2;
+pub const REQ_WINDOW_SECS: u64 = 10;
+pub const MAX_REQS_PER_WINDOW: u32 = 100;
+pub const PROTOCOL_ERROR_WINDOW_SECS: u64 = 120;
+pub const MAX_PROTOCOL_ERRORS: u32 = 60;
+pub const ERROR_WINDOW_SECS: u64 = 120;
+pub const MAX_RECENT_JOBS: usize = 512;
+pub const STATS_LOG_INTERVAL_SECS: u64 = 60;
+pub const MAX_NONCE_HEX_LEN: usize = 8;
+pub const JOB_ID_HEX_LEN: usize = 16;
+pub const WORKER_ID_HEX_LEN: usize = 8;
+pub const TARGET_HEX_LEN: usize = 16;
+
 #[derive(Debug, Clone)]
 pub struct StratumLimits {
     pub share_dedup_window_secs: u64,

@@ -9,9 +9,9 @@ use starcoin_miner_client::stratum_client::StratumJobClient;
 use starcoin_miner_client::stratum_client_service::{
     StratumClientService, StratumClientServiceServiceFactory,
 };
+use starcoin_miner_client::stratum_compat::LoginRequest;
 use starcoin_miner_client::JobClient;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-use starcoin_stratumd::stratum_rpc::LoginRequest;
 use starcoin_time_service::RealTimeService;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::{MintBlockEvent, SealEvent};
@@ -132,27 +132,17 @@ impl Drop for StratumdProcess {
 }
 
 fn resolve_stratumd_bin() -> Result<PathBuf> {
-    if let Ok(bin) = std::env::var("CARGO_BIN_EXE_starcoin_stratumd") {
-        return Ok(PathBuf::from(bin));
+    let bin = std::env::var("STRATUMD_BIN").context(
+        "STRATUMD_BIN is not set. Point it to standalone starcoin_stratumd binary path.",
+    )?;
+    let path = PathBuf::from(bin);
+    if !path.exists() {
+        return Err(anyhow::anyhow!(
+            "STRATUMD_BIN path does not exist: {:?}",
+            path
+        ));
     }
-
-    let current = std::env::current_exe().context("resolve current test executable failed")?;
-    let debug_dir = current.parent().and_then(|p| p.parent()).ok_or_else(|| {
-        anyhow::anyhow!("cannot locate target/debug directory from {:?}", current)
-    })?;
-    let bin_name = if cfg!(windows) {
-        "starcoin_stratumd.exe"
-    } else {
-        "starcoin_stratumd"
-    };
-    let candidate = debug_dir.join(bin_name);
-    if candidate.exists() {
-        return Ok(candidate);
-    }
-    Err(anyhow::anyhow!(
-        "cannot find stratumd binary via env var or {:?}",
-        candidate
-    ))
+    Ok(path)
 }
 
 fn pick_free_port() -> Result<u16> {
@@ -215,6 +205,7 @@ async fn wait_submit_count(mock: &MockMiningRpc, expected: usize, timeout: Durat
 }
 
 #[stest::test]
+#[ignore = "requires external standalone stratumd binary via STRATUMD_BIN"]
 async fn test_miner_client_stratum_compat() -> Result<()> {
     let _guard = TEST_MUTEX.lock().await;
 

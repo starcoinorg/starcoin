@@ -1,3 +1,7 @@
+use crate::stratum_compat::JsonStreamCodec;
+pub use crate::stratum_compat::{
+    LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
+};
 use anyhow::anyhow;
 use anyhow::Result;
 use futures::{select, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
@@ -8,10 +12,6 @@ use starcoin_config::MinerClientConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
-};
-use starcoin_stratumd::codec::JsonStreamCodec;
-pub use starcoin_stratumd::stratum_rpc::{
-    LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
 };
 use std::collections::HashMap;
 use std::convert::TryFrom;

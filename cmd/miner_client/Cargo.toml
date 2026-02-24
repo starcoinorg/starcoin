@@ -36,7 +36,6 @@ starcoin-miner-client-api = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 starcoin-service-registry = { workspace = true }
-starcoin-stratumd = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
 

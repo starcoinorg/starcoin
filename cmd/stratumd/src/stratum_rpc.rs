@@ -89,8 +89,16 @@ impl MinerWorker {
     }
 
     pub fn new(sub_id: u32, base_info: LoginRequest) -> Self {
-        let worker_id = Self::generate_worker_id(base_info.login.clone(), sub_id);
         let diff_manager = Arc::new(RwLock::new(DifficultyManager::new()));
+        Self::new_with_diff_manager(sub_id, base_info, diff_manager)
+    }
+
+    pub fn new_with_diff_manager(
+        sub_id: u32,
+        base_info: LoginRequest,
+        diff_manager: Arc<RwLock<DifficultyManager>>,
+    ) -> Self {
+        let worker_id = Self::generate_worker_id(base_info.login.clone(), sub_id);
         Self {
             base_info,
             sub_id,

@@ -560,7 +560,6 @@ starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
 starcoin-storage = { path = "storage" }
-starcoin-stratumd = { path = "cmd/stratumd" }
 starcoin-sync = { path = "sync" }
 starcoin-sync-api = { path = "sync/api" }
 starcoin-system = { path = "commons/system", package = "starcoin-system" }
