@@ -297,8 +297,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus::Keep(_) => {
-                // Cache BlockMetadata output for reuse during block execution
-                self.cached_vm1_outputs.push(output.clone());
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
