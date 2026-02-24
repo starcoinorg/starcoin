@@ -17,7 +17,6 @@
             pkgs.protobuf
             pkgs.zlib
             pkgs.openssl
-            pkgs.postgresql
             pkgs.llvmPackages.clang
             pkgs.llvmPackages.libclang
             pkgs.mold
@@ -36,7 +35,7 @@
           RUSTFLAGS = "-C link-arg=-fuse-ld=mold";
           CARGO_INCREMENTAL = "1";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-          LD_LIBRARY_PATH = "${pkgs.zlib}/lib:${pkgs.gcc.cc.lib}/lib:${pkgs.openssl.out}/lib:${pkgs.postgresql.lib}/lib";
+          LD_LIBRARY_PATH = "${pkgs.zlib}/lib:${pkgs.gcc.cc.lib}/lib:${pkgs.openssl.out}/lib";
           OPENSSL_NO_VENDOR = "1";
         };
       });
