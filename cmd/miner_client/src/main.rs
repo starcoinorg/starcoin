@@ -10,7 +10,7 @@ use starcoin_miner_client::stratum_client_service::{
     StratumClientService, StratumClientServiceServiceFactory,
 };
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-use starcoin_stratum::rpc::LoginRequest;
+use starcoin_stratumd::rpc::LoginRequest;
 use starcoin_time_service::RealTimeService;
 use std::sync::Arc;
 

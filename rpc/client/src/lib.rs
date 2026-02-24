@@ -1029,6 +1029,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn miner_get_job(&self) -> anyhow::Result<Option<MintBlockEvent>> {
+        self.call_rpc_blocking(|inner| inner.miner_client.get_job())
+            .map_err(map_err)
+    }
+
     pub fn txpool_status(&self) -> anyhow::Result<TxPoolStatus> {
         self.call_rpc_blocking(|inner| inner.txpool_client.state())
             .map_err(map_err)

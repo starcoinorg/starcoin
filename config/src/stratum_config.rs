@@ -216,10 +216,12 @@ mod tests {
 
     #[test]
     fn test_pplns_mode_switches() {
-        let mut config = StratumConfig::default();
-        config.pplns_enabled = Some(false);
-        config.pplns_ingest_enabled = Some(true);
-        config.pplns_settlement_enabled = Some(true);
+        let config = StratumConfig {
+            pplns_enabled: Some(false),
+            pplns_ingest_enabled: Some(true),
+            pplns_settlement_enabled: Some(true),
+            ..Default::default()
+        };
         let pplns = config.pplns();
         assert!(!pplns.enabled);
         assert!(!pplns.ingest_enabled);
@@ -235,12 +237,14 @@ mod tests {
 
     #[test]
     fn test_pplns_split_mode_flags() {
-        let mut config = StratumConfig::default();
-        config.pplns_enabled = Some(true);
-        config.pplns_ingest_enabled = Some(true);
-        config.pplns_settlement_enabled = Some(false);
-        config.pplns_batch_period_secs = Some(7_200);
-        config.pplns_database_url = Some("postgres://localhost:5432/starcoin".to_string());
+        let config = StratumConfig {
+            pplns_enabled: Some(true),
+            pplns_ingest_enabled: Some(true),
+            pplns_settlement_enabled: Some(false),
+            pplns_batch_period_secs: Some(7_200),
+            pplns_database_url: Some("postgres://localhost:5432/starcoin".to_string()),
+            ..Default::default()
+        };
         let pplns = config.pplns();
         assert!(pplns.enabled);
         assert!(pplns.ingest_enabled);

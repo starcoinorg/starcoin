@@ -9,8 +9,8 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
-use starcoin_stratum::codec::JsonStreamCodec;
-pub use starcoin_stratum::rpc::{
+use starcoin_stratumd::codec::JsonStreamCodec;
+pub use starcoin_stratumd::rpc::{
     LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
 };
 use std::collections::HashMap;

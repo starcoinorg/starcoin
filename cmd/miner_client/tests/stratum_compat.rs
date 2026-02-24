@@ -1,197 +1,230 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures::StreamExt;
+use jsonrpc_core::{Error as JsonRpcError, IoHandler, Params};
+use jsonrpc_ws_server::{Server as WsServer, ServerBuilder};
 use once_cell::sync::Lazy;
-use starcoin_config::{BuiltinNetworkID, MinerClientConfig, NodeConfig, StarcoinOpt};
-use starcoin_crypto::HashValue;
-use starcoin_miner::{DispatchMintBlockTemplate, MinerService};
+use serde_json::json;
+use starcoin_config::MinerClientConfig;
 use starcoin_miner_client::stratum_client::StratumJobClient;
 use starcoin_miner_client::stratum_client_service::{
     StratumClientService, StratumClientServiceServiceFactory,
 };
 use starcoin_miner_client::JobClient;
-use starcoin_service_registry::{
-    ActorService, EventHandler, RegistryAsyncService, RegistryService, ServiceContext,
-    ServiceFactory,
-};
-use starcoin_stratum::rpc::LoginRequest;
-use starcoin_stratum::service::{StratumService, StratumServiceFactory};
-use starcoin_stratum::stratum::{Stratum, StratumFactory};
+use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+use starcoin_stratumd::rpc::LoginRequest;
 use starcoin_time_service::RealTimeService;
-use starcoin_types::block::{BlockBody, BlockTemplate};
-use starcoin_types::block_metadata::BlockMetadata;
-use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_types::system_events::{MinedBlock, SealEvent};
+use starcoin_types::genesis_config::ConsensusStrategy;
+use starcoin_types::system_events::{MintBlockEvent, SealEvent};
 use starcoin_types::U256;
-use starcoin_vm2_vm_types::account_address::AccountAddress as Vm2AccountAddress;
-use starcoin_vm2_vm_types::on_chain_resource::ChainId as Vm2ChainId;
-use std::fs;
-use std::io;
 use std::net::{Ipv4Addr, SocketAddr};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, Mutex as StdMutex};
+use std::time::Duration;
 use tokio::net::TcpStream;
-use tokio::sync::{mpsc, Mutex};
-use tokio::time::{sleep, Duration, Instant};
+use tokio::sync::Mutex;
+use tokio::time::Instant;
 
 static TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-fn pick_free_port() -> std::io::Result<u16> {
-    let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
-    let port = listener.local_addr()?.port();
-    Ok(port)
+#[derive(Clone)]
+struct MockRpcState {
+    current_job: MintBlockEvent,
+    submit_count: usize,
 }
 
-fn prepare_config() -> Result<Option<(NodeConfig, SocketAddr)>> {
-    static TEST_DIR_COUNTER: AtomicUsize = AtomicUsize::new(0);
-    let suffix = TEST_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let base_dir = std::env::temp_dir().join(format!(
-        "starcoin-miner-client-stratum-test-{}-{}",
-        std::process::id(),
-        suffix,
-    ));
-    fs::create_dir_all(&base_dir)?;
-    let opt = StarcoinOpt {
-        net: Some(BuiltinNetworkID::Dev.into()),
-        base_data_dir: Some(base_dir),
-        ..StarcoinOpt::default()
-    };
-    let mut config = NodeConfig::load_with_opt(&opt)?;
-    config.stratum.address = Some(Ipv4Addr::LOCALHOST.into());
-    let port = match pick_free_port() {
-        Ok(port) => port,
-        Err(err) if err.kind() == std::io::ErrorKind::PermissionDenied => {
-            eprintln!("Skipping test: cannot bind local port in this environment.");
-            return Ok(None);
+struct MockMiningRpc {
+    state: Arc<StdMutex<MockRpcState>>,
+    server: Option<WsServer>,
+    addr: SocketAddr,
+}
+
+impl MockMiningRpc {
+    fn start(initial_job: MintBlockEvent) -> Result<Self> {
+        let state = Arc::new(StdMutex::new(MockRpcState {
+            current_job: initial_job,
+            submit_count: 0,
+        }));
+        let mut io = IoHandler::default();
+
+        let state_for_get_job = state.clone();
+        io.add_sync_method("mining.get_job", move |_params: Params| {
+            let guard = state_for_get_job
+                .lock()
+                .map_err(|_| JsonRpcError::internal_error())?;
+            serde_json::to_value(Some(guard.current_job.clone()))
+                .map_err(|_| JsonRpcError::internal_error())
+        });
+
+        let state_for_submit = state.clone();
+        io.add_sync_method("mining.submit", move |params: Params| {
+            let (_minting_blob, _nonce, _extra): (String, u32, String) = params
+                .parse()
+                .map_err(|_| JsonRpcError::invalid_params("invalid submit params"))?;
+            let mut guard = state_for_submit
+                .lock()
+                .map_err(|_| JsonRpcError::internal_error())?;
+            guard.submit_count = guard.submit_count.saturating_add(1);
+            let block_hash = guard.current_job.parent_hash;
+            Ok(json!({ "block_hash": block_hash }))
+        });
+
+        let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), pick_free_port()?);
+        let server = ServerBuilder::new(io)
+            .start(&addr)
+            .context("start mock mining rpc ws server failed")?;
+        Ok(Self {
+            state,
+            server: Some(server),
+            addr,
+        })
+    }
+
+    fn ws_url(&self) -> String {
+        format!("ws://{}", self.addr)
+    }
+
+    fn submit_count(&self) -> Result<usize> {
+        let guard = self
+            .state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("mock rpc mutex poisoned"))?;
+        Ok(guard.submit_count)
+    }
+}
+
+impl Drop for MockMiningRpc {
+    fn drop(&mut self) {
+        if let Some(server) = self.server.take() {
+            std::mem::forget(server);
         }
-        Err(err) => return Err(err.into()),
-    };
-    config.stratum.port = Some(port);
-    let addr = config.stratum.get_address().expect("stratum address");
-    Ok(Some((config, addr)))
+    }
 }
 
-fn build_block_template(number: u64, timestamp: u64) -> BlockTemplate {
-    let parent_hash = HashValue::zero();
-    let author = Vm2AccountAddress::from_hex_literal("0x1").expect("valid address");
-    let chain_id_v2 = Vm2ChainId::test();
-    let metadata = BlockMetadata::new(
-        parent_hash,
-        timestamp,
-        author,
-        0,
-        number,
-        chain_id_v2,
-        0,
-        vec![],
-        0,
-    );
-    BlockTemplate::new(
-        HashValue::zero(),
-        HashValue::zero(),
-        HashValue::zero(),
-        HashValue::zero(),
-        HashValue::zero(),
-        0,
-        BlockBody::new_empty(),
-        ChainId::test(),
-        U256::from(1u64),
+struct StratumdProcess {
+    child: Child,
+}
+
+impl StratumdProcess {
+    async fn spawn(listen: SocketAddr, node_rpc: &str) -> Result<Self> {
+        let bin = resolve_stratumd_bin()?;
+        let mut cmd = Command::new(&bin);
+        cmd.arg("--listen")
+            .arg(listen.to_string())
+            .arg("--node-rpc")
+            .arg(node_rpc)
+            .arg("--job-poll-ms")
+            .arg("50")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
+        let mut child = cmd.spawn().context("spawn stratumd failed")?;
+        wait_for_server_ready(&mut child, listen, Duration::from_secs(6)).await?;
+        Ok(Self { child })
+    }
+}
+
+impl Drop for StratumdProcess {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+fn resolve_stratumd_bin() -> Result<PathBuf> {
+    if let Ok(bin) = std::env::var("CARGO_BIN_EXE_starcoin_stratumd") {
+        return Ok(PathBuf::from(bin));
+    }
+
+    let current = std::env::current_exe().context("resolve current test executable failed")?;
+    let debug_dir = current.parent().and_then(|p| p.parent()).ok_or_else(|| {
+        anyhow::anyhow!("cannot locate target/debug directory from {:?}", current)
+    })?;
+    let bin_name = if cfg!(windows) {
+        "starcoin_stratumd.exe"
+    } else {
+        "starcoin_stratumd"
+    };
+    let candidate = debug_dir.join(bin_name);
+    if candidate.exists() {
+        return Ok(candidate);
+    }
+    Err(anyhow::anyhow!(
+        "cannot find stratumd binary via env var or {:?}",
+        candidate
+    ))
+}
+
+fn pick_free_port() -> Result<u16> {
+    let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
+    Ok(listener.local_addr()?.port())
+}
+
+fn build_mint_event(number: u64) -> MintBlockEvent {
+    let mut minting_blob = vec![0u8; 76];
+    minting_blob[0..8].copy_from_slice(&number.to_le_bytes());
+    MintBlockEvent::new(
+        starcoin_crypto::HashValue::random(),
         ConsensusStrategy::Dummy,
-        metadata,
-        0,
-        HashValue::zero(),
-        vec![],
+        minting_blob,
+        U256::from(1u64),
+        number,
+        None,
     )
 }
 
-async fn connect_with_retry(addr: SocketAddr, timeout: Duration) -> Result<TcpStream> {
+async fn wait_for_server_ready(
+    child: &mut Child,
+    addr: SocketAddr,
+    timeout: Duration,
+) -> Result<()> {
     let start = Instant::now();
     loop {
-        match TcpStream::connect(addr).await {
-            Ok(stream) => return Ok(stream),
-            Err(err) if err.kind() == io::ErrorKind::ConnectionRefused => {
-                if start.elapsed() >= timeout {
-                    return Err(anyhow::anyhow!(
-                        "connect timeout after {:?}: {}",
-                        timeout,
-                        err
-                    ));
-                }
-                sleep(Duration::from_millis(50)).await;
-            }
-            Err(err) => return Err(err.into()),
+        if let Ok(stream) = TcpStream::connect(addr).await {
+            drop(stream);
+            return Ok(());
         }
+        if let Some(status) = child.try_wait()? {
+            return Err(anyhow::anyhow!(
+                "stratumd exited before ready, status: {}",
+                status
+            ));
+        }
+        if start.elapsed() > timeout {
+            return Err(anyhow::anyhow!("wait stratumd ready timeout: {}", addr));
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
     }
 }
 
-struct MinedBlockListener {
-    tx: mpsc::UnboundedSender<HashValue>,
-}
-
-impl ActorService for MinedBlockListener {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<MinedBlock>();
-        Ok(())
-    }
-
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<MinedBlock>();
-        Ok(())
-    }
-}
-
-impl EventHandler<Self, MinedBlock> for MinedBlockListener {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(block) = msg;
-        let _ = self.tx.send(block.id());
-    }
-}
-
-struct MinedBlockListenerFactory;
-
-impl ServiceFactory<MinedBlockListener> for MinedBlockListenerFactory {
-    fn create(ctx: &mut ServiceContext<MinedBlockListener>) -> Result<MinedBlockListener> {
-        let tx = ctx
-            .get_shared::<mpsc::UnboundedSender<HashValue>>()?
-            .clone();
-        Ok(MinedBlockListener { tx })
+async fn wait_submit_count(mock: &MockMiningRpc, expected: usize, timeout: Duration) -> Result<()> {
+    let start = Instant::now();
+    loop {
+        if mock.submit_count()? >= expected {
+            return Ok(());
+        }
+        if start.elapsed() >= timeout {
+            return Err(anyhow::anyhow!(
+                "submit count timeout, expected >= {}, got {}",
+                expected,
+                mock.submit_count()?
+            ));
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
     }
 }
 
 #[stest::test]
 async fn test_miner_client_stratum_compat() -> Result<()> {
     let _guard = TEST_MUTEX.lock().await;
-    let Some((config, addr)) = prepare_config()? else {
-        return Ok(());
-    };
+
+    let mock = MockMiningRpc::start(build_mint_event(1))?;
+    let listen = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), pick_free_port()?);
+    let _stratumd = StratumdProcess::spawn(listen, &mock.ws_url()).await?;
 
     let registry = RegistryService::launch();
-    registry.put_shared(Arc::new(config)).await?;
-
-    registry.register::<MinerService>().await?;
-    registry
-        .register_by_factory::<Stratum, StratumFactory>()
-        .await?;
-    registry
-        .register_by_factory::<StratumService, StratumServiceFactory>()
-        .await?;
-
-    let miner = registry.service_ref::<MinerService>().await?;
-    miner
-        .send(DispatchMintBlockTemplate {
-            block_template: build_block_template(1, 0),
-        })
-        .await?;
-
-    let _ = connect_with_retry(addr, Duration::from_secs(5)).await?;
-
-    let (block_tx, mut block_rx) = mpsc::unbounded_channel();
-    registry.put_shared(block_tx).await?;
-    registry
-        .register_by_factory::<MinedBlockListener, MinedBlockListenerFactory>()
-        .await?;
-
     let client_config = MinerClientConfig {
-        server: Some(addr.to_string()),
+        server: Some(listen.to_string()),
         plugin_path: None,
         miner_thread: 1,
         enable_stderr: false,
@@ -227,11 +260,7 @@ async fn test_miner_client_stratum_compat() -> Result<()> {
         hash_result: "00".into(),
     };
     job_client.submit_seal(seal).await?;
-
-    tokio::time::timeout(Duration::from_secs(5), block_rx.recv())
-        .await
-        .map_err(|_| anyhow::anyhow!("mined block timeout"))?
-        .ok_or_else(|| anyhow::anyhow!("mined block channel closed"))?;
+    wait_submit_count(&mock, 1, Duration::from_secs(3)).await?;
 
     let _ = registry.shutdown_system().await;
     Ok(())

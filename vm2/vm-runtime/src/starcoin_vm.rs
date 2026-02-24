@@ -242,7 +242,7 @@ impl StarcoinVM {
                     bail!("failed to load the gas schedule when trying to print its info");
                 }
                 Some(gs) => {
-                    gs.info(_message);
+                    gs.info("gas schedule from VMConfig");
                 }
             }
         }

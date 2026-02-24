@@ -118,6 +118,7 @@ members = [
     "abi/resolver",
     "test-helper",
     "cmd/starcoin",
+    "cmd/stratumd",
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
@@ -130,7 +131,6 @@ members = [
     #"cmd/peer-watcher",
     "cmd/airdrop",
     #"cmd/replay",
-    "stratum",
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
@@ -237,6 +237,7 @@ default-members = [
     "abi/resolver",
     "test-helper",
     "cmd/starcoin",
+    "cmd/stratumd",
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
@@ -248,7 +249,6 @@ default-members = [
     "cmd/airdrop",
     #"cmd/replay",
     "cmd/genesis-nft-miner",
-    "stratum",
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/cmd-utils",
@@ -560,7 +560,7 @@ starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
 starcoin-storage = { path = "storage" }
-starcoin-stratum = { path = "stratum" }
+starcoin-stratumd = { path = "cmd/stratumd" }
 starcoin-sync = { path = "sync" }
 starcoin-sync-api = { path = "sync/api" }
 starcoin-system = { path = "commons/system", package = "starcoin-system" }

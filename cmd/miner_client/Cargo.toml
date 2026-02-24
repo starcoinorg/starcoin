@@ -36,11 +36,13 @@ starcoin-miner-client-api = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 starcoin-service-registry = { workspace = true }
-starcoin-stratum = { workspace = true }
+starcoin-stratumd = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+jsonrpc-core = { workspace = true }
+jsonrpc-ws-server = { workspace = true }
 starcoin-miner = { workspace = true }
 once_cell = { workspace = true }
 
