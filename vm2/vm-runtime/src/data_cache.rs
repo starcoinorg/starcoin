@@ -95,7 +95,6 @@ struct ResourceGroupStats {
 
 static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
     LazyLock::new(ResourceGroupStats::default);
-#[cfg(debug_assertions)]
 static EXCHANGE_DUMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 #[doc(hidden)]
@@ -560,7 +559,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         let (exchanged, delayed_value) =
             manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
         self.delayed_fields.set_base_value(id, delayed_value);
-
         let exchanged_state = StateValue::new_with_metadata(
             Bytes::from(exchanged),
             state_value.clone().into_metadata(),
@@ -584,7 +582,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         Ok((exchanged, delayed_ids, true))
     }
 
-    #[cfg(debug_assertions)]
     fn maybe_dump_exchange_input(
         &self,
         scope: &str,
@@ -991,7 +988,6 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                         let group_size = self.resource_group_view.resource_group_size(&key)?.get();
                         let state_value =
                             StateValue::new_with_metadata(raw_bytes.clone(), metadata);
-                        #[cfg(debug_assertions)]
                         self.maybe_dump_exchange_input(
                             "group_fresh",
                             &key,
@@ -1079,7 +1075,6 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                                     .with_message("Cached base value missing bytes".to_string())
                             })?;
-                            #[cfg(debug_assertions)]
                             self.maybe_dump_exchange_input(
                                 "base_cached",
                                 &state_key,
@@ -1114,7 +1109,6 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                         let Some(state_value) = state_value else {
                             return Ok((None, 0));
                         };
-                        #[cfg(debug_assertions)]
                         self.maybe_dump_exchange_input(
                             "base_fresh",
                             &state_key,

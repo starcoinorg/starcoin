@@ -257,9 +257,6 @@ impl NodeService {
 
         registry.put_shared(config.clone()).await?;
         registry.put_shared(logger_handle).await?;
-        registry
-            .put_shared(Arc::new(TransactionOutputCache::new()))
-            .await?;
         let vm_metrics = config
             .metrics
             .registry()

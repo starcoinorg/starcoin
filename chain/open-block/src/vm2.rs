@@ -41,8 +41,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                // Cache BlockMetadata output for reuse during block execution
-                self.cached_vm2_outputs.push(output.clone());
                 self.push_txn_and_state2(block_meta_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
@@ -201,8 +199,6 @@ impl OpenedBlock {
                 );
             }
             TransactionStatus2::Keep(_) => {
-                // Cache BlockEpilogue output for reuse during block execution
-                self.cached_vm2_outputs.push(output.clone());
                 self.push_txn_and_state2(block_epilogue_txn_hash, output, true)?;
             }
             TransactionStatus2::Retry => {
