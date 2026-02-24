@@ -2,6 +2,8 @@ use starcoin_types::U256;
 
 pub mod codec;
 pub mod diff_manager;
+pub mod pplns;
+pub mod pplns_store;
 pub mod rpc;
 pub mod service;
 pub mod stratum;

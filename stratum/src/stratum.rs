@@ -3,6 +3,7 @@ use anyhow::Result;
 use futures::channel::mpsc;
 use starcoin_config::StratumLimits;
 use starcoin_consensus::{difficult_to_target, Consensus};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_miner::{
     MinerService, SubmitSealRequest as MinerSubmitSealRequest, UpdateSubscriberNumRequest,
@@ -17,7 +18,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::convert::TryInto;
 use std::sync::atomic;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const ERROR_WINDOW_SECS: u64 = 120;
 const MAX_RECENT_JOBS: usize = 512;
@@ -52,6 +53,21 @@ struct JobCacheEntry {
     ts: Instant,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct CandidateSubmitKey {
+    job_id: [u8; 8],
+    nonce: u32,
+    extra: [u8; 4],
+}
+
+#[derive(Debug, Clone)]
+struct CandidateMeta {
+    worker_id: WorkerId,
+    account: String,
+    share_seq: u64,
+    submitted_at: Instant,
+}
+
 #[derive(Debug, Default, Clone)]
 struct ShareStats {
     accepted: u64,
@@ -60,6 +76,47 @@ struct ShareStats {
     stale: u64,
     job_miss: u64,
     rate_limited: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AcceptedShareEvent {
+    pub seq: u64,
+    pub worker_id: String,
+    pub account: String,
+    pub difficulty: u64,
+    pub accepted_at_millis: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct CandidateBlockEvent {
+    pub block_hash: HashValue,
+    pub block_number: u64,
+    pub worker_id: String,
+    pub account: String,
+    pub anchor_share_seq: u64,
+    pub found_at_millis: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct CandidateSubmitEvent {
+    pub job_id: String,
+    pub nonce: u32,
+    pub extra: String,
+    pub worker_id: String,
+    pub account: String,
+    pub anchor_share_seq: u64,
+    pub expected_block_number: u64,
+    pub submitted_at_millis: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct CandidateSolvedEvent {
+    pub job_id: String,
+    pub nonce: u32,
+    pub extra: String,
+    pub block_hash: HashValue,
+    pub block_number: u64,
+    pub found_at_millis: u64,
 }
 
 pub struct Stratum {
@@ -75,12 +132,14 @@ pub struct Stratum {
     recent_jobs: HashMap<[u8; 8], JobCacheEntry>,
     recent_job_queue: VecDeque<[u8; 8]>,
     solved_jobs: HashMap<[u8; 8], Instant>,
+    pending_candidates: HashMap<CandidateSubmitKey, CandidateMeta>,
     current_job: Option<MintBlockEvent>,
     account_workers: HashMap<String, HashSet<WorkerId>>,
     worker_accounts: HashMap<WorkerId, String>,
     stats: ShareStats,
     last_stats_log: Instant,
     forwarded_blocks: u64,
+    accepted_share_seq: u64,
 }
 
 impl Stratum {
@@ -97,12 +156,14 @@ impl Stratum {
             recent_jobs: Default::default(),
             recent_job_queue: Default::default(),
             solved_jobs: Default::default(),
+            pending_candidates: Default::default(),
             current_job: None,
             account_workers: Default::default(),
             worker_accounts: Default::default(),
             stats: ShareStats::default(),
             last_stats_log: Instant::now(),
             forwarded_blocks: 0,
+            accepted_share_seq: 0,
             limits,
         }
     }
@@ -329,6 +390,7 @@ impl Stratum {
     fn cache_job(&mut self, event: &MintBlockEvent) {
         let job_id = JobId::from_bob(&event.minting_blob).job_id;
         let now = Instant::now();
+        self.retain_pending_candidates(now);
         self.recent_jobs.insert(job_id, JobCacheEntry { ts: now });
         self.recent_job_queue.push_back(job_id);
         self.recent_job_queue
@@ -359,6 +421,24 @@ impl Stratum {
         }
         entry.count = entry.count.saturating_add(1);
         entry.count > self.limits.max_shares_per_window
+    }
+
+    fn next_share_seq(&mut self) -> u64 {
+        self.accepted_share_seq = self.accepted_share_seq.saturating_add(1);
+        self.accepted_share_seq
+    }
+
+    fn now_millis() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |duration| duration.as_millis() as u64)
+    }
+
+    fn retain_pending_candidates(&mut self, now: Instant) {
+        self.pending_candidates.retain(|_, meta| {
+            now.duration_since(meta.submitted_at)
+                <= Duration::from_secs(self.limits.stale_window_secs)
+        });
     }
 
     fn is_hex(s: &str) -> bool {
@@ -473,11 +553,44 @@ impl EventHandler<Self, MintBlockEvent> for Stratum {
 }
 
 impl EventHandler<Self, MinedBlock> for Stratum {
-    fn handle_event(&mut self, event: MinedBlock, _ctx: &mut ServiceContext<Stratum>) {
-        let blob = event.0.header().as_pow_header_blob();
+    fn handle_event(&mut self, event: MinedBlock, ctx: &mut ServiceContext<Stratum>) {
+        let header = event.0.header();
+        let blob = header.as_pow_header_blob();
         let job_id = JobId::from_bob(&blob).job_id;
         let now = Instant::now();
+        self.retain_pending_candidates(now);
         self.solved_jobs.insert(job_id, now);
+        let candidate_key = CandidateSubmitKey {
+            job_id,
+            nonce: header.nonce(),
+            extra: *header.extra().as_slice(),
+        };
+        ctx.broadcast(CandidateSolvedEvent {
+            job_id: hex::encode(job_id),
+            nonce: candidate_key.nonce,
+            extra: hex::encode(candidate_key.extra),
+            block_hash: header.id(),
+            block_number: header.number(),
+            found_at_millis: header.timestamp(),
+        });
+        if let Some(candidate) = self.pending_candidates.remove(&candidate_key) {
+            ctx.broadcast(CandidateBlockEvent {
+                block_hash: header.id(),
+                block_number: header.number(),
+                worker_id: candidate.worker_id.to_hex(),
+                account: candidate.account,
+                anchor_share_seq: candidate.share_seq,
+                found_at_millis: header.timestamp(),
+            });
+        } else {
+            debug!(
+                target: "stratum_server",
+                "missing candidate mapping for solved block: job_id={}, nonce={}, extra={}",
+                hex::encode(job_id),
+                header.nonce(),
+                hex::encode(header.extra().as_slice())
+            );
+        }
         debug!(
             target: "stratum_server",
             "mark job {} as solved",
@@ -545,7 +658,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
     fn handle(
         &mut self,
         msg: SubmitShareEvent,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<SubmitShareResponse> {
         // Keep current job fresh under real miner traffic; otherwise solved-job shares can
         // pile up against an outdated template and never reach MinerService.
@@ -554,6 +667,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
         let share = msg.0;
         info!(target: "stratum_server", "received submit share event:{:?}", &share);
         let now = Instant::now();
+        self.retain_pending_candidates(now);
 
         let worker_id = match WorkerId::from_hex(share.id.clone()) {
             Ok(worker_id) => worker_id,
@@ -625,6 +739,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 return Ok(Self::reject(-1, "worker not found", disconnect));
             }
         };
+        let worker_account = Self::account_from_login(&worker_login);
 
         let seal: MinerSubmitSealRequest = match share.clone().try_into() {
             Ok(seal) => seal,
@@ -709,6 +824,7 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
 
         let network_target = difficult_to_target(current_mint_event.difficulty)?;
         let solved = self.is_solved_job(job_id.job_id, now);
+        let mut forwarded_candidate_key: Option<CandidateSubmitKey> = None;
         if job_id == submit_job_id && pow_hash_u256 <= network_target {
             if solved {
                 debug!(
@@ -728,10 +844,45 @@ impl ServiceHandler<Self, SubmitShareEvent> for Stratum {
                 );
                 self.miner_service.try_send(forward_seal)?;
                 self.forwarded_blocks = self.forwarded_blocks.saturating_add(1);
+                forwarded_candidate_key = Some(CandidateSubmitKey {
+                    job_id: job_id.job_id,
+                    nonce: share_key.nonce,
+                    extra: share_key.extra,
+                });
             }
         }
 
+        let share_seq = self.next_share_seq();
         self.stats.accepted = self.stats.accepted.saturating_add(1);
+        ctx.broadcast(AcceptedShareEvent {
+            seq: share_seq,
+            worker_id: worker_id.to_hex(),
+            account: worker_account.clone(),
+            difficulty: effective.as_u64(),
+            accepted_at_millis: Self::now_millis(),
+        });
+        if let Some(candidate_key) = forwarded_candidate_key {
+            let submitted_at_millis = Self::now_millis();
+            ctx.broadcast(CandidateSubmitEvent {
+                job_id: hex::encode(candidate_key.job_id),
+                nonce: candidate_key.nonce,
+                extra: hex::encode(candidate_key.extra),
+                worker_id: worker_id.to_hex(),
+                account: worker_account.clone(),
+                anchor_share_seq: share_seq,
+                expected_block_number: current_mint_event.block_number,
+                submitted_at_millis,
+            });
+            self.pending_candidates.insert(
+                candidate_key,
+                CandidateMeta {
+                    worker_id,
+                    account: worker_account,
+                    share_seq,
+                    submitted_at: now,
+                },
+            );
+        }
         self.note_stat(now);
         Ok(Self::accept())
     }

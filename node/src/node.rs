@@ -44,6 +44,7 @@ use starcoin_storage::{
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
     Storage, Storage2,
 };
+use starcoin_stratum::pplns::{PplnsService, PplnsServiceFactory};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
@@ -414,6 +415,11 @@ impl NodeService {
         registry
             .register_by_factory::<Stratum, StratumFactory>()
             .await?;
+        if !config.stratum.disable && config.stratum.pplns().enabled {
+            registry
+                .register_by_factory::<PplnsService, PplnsServiceFactory>()
+                .await?;
+        }
 
         registry.register::<GenerateBlockEventPacemaker>().await?;
 

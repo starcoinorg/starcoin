@@ -8,13 +8,18 @@ serde = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 tokio = { features = ["full"], workspace = true }
 tokio-util = { workspace = true }
+postgres = { workspace = true }
 starcoin-config = { workspace = true }
+starcoin-chain-api = { workspace = true }
+starcoin-chain-service = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
