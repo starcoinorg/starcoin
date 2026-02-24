@@ -3,11 +3,12 @@ updates:
 - package-ecosystem: cargo
   directory: "/"
   schedule:
-    interval: daily
+    interval: weekly
+    day: monday
     time: "02:00"
     # Use UTC +08:00
     timezone: "Asia/Shanghai"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 3
   groups:
     minor-and-patch:
       patterns:
@@ -15,4 +16,9 @@ updates:
       update-types:
         - "minor"
         - "patch"
-  # Major updates will be created as separate PRs for careful review
+    major-updates:
+      patterns:
+        - "*"
+      update-types:
+        - "major"
+  # Major updates are grouped to reduce PR volume.
