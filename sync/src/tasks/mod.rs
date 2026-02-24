@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::parallel::parallel_info_service::ParallelInfoService;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::{InnerSyncTask, InnerSyncTaskParams};
@@ -763,6 +764,61 @@ where
     F: SyncFetcher + 'static,
     N: PeerProvider + Clone + 'static,
 {
+    full_sync_task_with_parallel_info(
+        current_block_id,
+        target,
+        skip_pow_verify,
+        time_service,
+        storage,
+        storage2,
+        block_event_handle,
+        fetcher,
+        ancestor_event_handle,
+        peer_provider,
+        max_retry_times,
+        sync_metrics,
+        vm_metrics,
+        dag,
+        sync_dag_store,
+        range_locate,
+        execute_timeout_ms,
+        cancel_flag,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn full_sync_task_with_parallel_info<H, A, F, N>(
+    current_block_id: HashValue,
+    target: SyncTarget,
+    skip_pow_verify: bool,
+    time_service: Arc<dyn TimeService>,
+    storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
+    block_event_handle: H,
+    fetcher: Arc<F>,
+    ancestor_event_handle: A,
+    peer_provider: N,
+    max_retry_times: u64,
+    sync_metrics: Option<SyncMetrics>,
+    vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG,
+    sync_dag_store: Arc<SyncDagStore>,
+    range_locate: bool,
+    execute_timeout_ms: u64,
+    cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+    parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
+) -> Result<(
+    BoxFuture<'static, Result<BlockChain, TaskError>>,
+    TaskHandle,
+    Arc<TaskEventCounterHandle>,
+)>
+where
+    H: BlockConnectedEventHandle + Sync + 'static,
+    A: AncestorEventHandle + Sync + 'static,
+    F: SyncFetcher + 'static,
+    N: PeerProvider + Clone + 'static,
+{
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
@@ -859,6 +915,7 @@ where
                 sync_dag_store: sync_dag_store.clone(),
                 execute_timeout_ms,
                 cancel_flag: cancel_flag.clone(),
+                parallel_info_service: parallel_info_service.clone(),
             });
             let start_now = Instant::now();
             let (block_chain, _) = inner

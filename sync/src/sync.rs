@@ -6,7 +6,7 @@ use crate::parallel::parallel_info_service::{ParallelInfoService, ResetParallelS
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
-use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
+use crate::tasks::{full_sync_task_with_parallel_info, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -484,6 +484,7 @@ impl SyncService {
         let connector_service = ctx
             .service_ref::<BlockConnectorService<TxPoolService>>()?
             .clone();
+        let parallel_info_service = ctx.service_ref_opt::<ParallelInfoService>()?.cloned();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
@@ -517,7 +518,7 @@ impl SyncService {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
                 let cancel_flag = Arc::new(AtomicBool::new(false));
-                let (fut, task_handle, task_event_handle) = full_sync_task(
+                let (fut, task_handle, task_event_handle) = full_sync_task_with_parallel_info(
                     current_block_id,
                     target.clone(),
                     skip_pow_verify,
@@ -536,6 +537,7 @@ impl SyncService {
                     range_locate,
                     config.sync.execute_timeout_ms(),
                     cancel_flag.clone(),
+                    parallel_info_service.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {

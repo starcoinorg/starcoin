@@ -141,6 +141,7 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
         chain.head().dag(),
         1,
         Arc::new(AtomicBool::new(false)),
+        None,
         &mut operator,
     );
 

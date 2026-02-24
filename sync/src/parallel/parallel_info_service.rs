@@ -182,7 +182,8 @@ impl ParallelInfoAsyncService for ServiceRef<ParallelInfoService> {
     }
 
     async fn report_worker_synced_block(&self, worker_id: ParallelWorkerId) -> Result<()> {
-        self.send(ReportWorkerSyncedBlockRequest { worker_id }).await
+        self.send(ReportWorkerSyncedBlockRequest { worker_id })
+            .await
     }
 
     async fn report_worker_synced_blocks(

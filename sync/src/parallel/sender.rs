@@ -1,9 +1,15 @@
-use std::{sync::Arc, vec};
+use std::{
+    cmp::Reverse,
+    collections::BinaryHeap,
+    sync::Arc,
+    vec,
+};
 
 use starcoin_config::TimeService;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::info;
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Block;
 use tokio::{
@@ -17,8 +23,14 @@ use crate::{
 };
 
 use super::executor::{DagBlockExecutor, ExecuteState};
+use super::parallel_info_service::{
+    ParallelInfoService, ParallelWorkerId, RegisterWorkerRequest, ReportWorkerSyncedBlockRequest,
+    UnregisterWorkerRequest,
+};
 
 struct DagBlockWorker {
+    pub worker_id: ParallelWorkerId,
+    pub registered: bool,
     pub sender_to_executor: Sender<Option<Block>>,
     pub receiver_from_executor: Receiver<ExecuteState>,
     pub state: ExecuteState,
@@ -36,6 +48,9 @@ pub struct DagBlockSender<'a> {
     dag: BlockDAG,
     execute_timeout_ms: u64,
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+    parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
+    next_worker_id: ParallelWorkerId,
+    free_worker_ids: BinaryHeap<Reverse<ParallelWorkerId>>,
     notifier: &'a mut dyn ContinueChainOperator,
 }
 
@@ -50,6 +65,7 @@ impl<'a> DagBlockSender<'a> {
         dag: BlockDAG,
         execute_timeout_ms: u64,
         cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+        parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
         notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
         Self {
@@ -63,8 +79,58 @@ impl<'a> DagBlockSender<'a> {
             dag,
             execute_timeout_ms,
             cancel_flag,
+            parallel_info_service,
+            next_worker_id: 0,
+            free_worker_ids: BinaryHeap::new(),
             notifier,
         }
+    }
+
+    fn register_worker(
+        parallel_info_service: &Option<ServiceRef<ParallelInfoService>>,
+        worker_id: ParallelWorkerId,
+    ) {
+        if let Some(parallel_info_service) = parallel_info_service {
+            parallel_info_service.do_send(RegisterWorkerRequest { worker_id });
+        }
+    }
+
+    fn report_worker_synced_block(
+        parallel_info_service: &Option<ServiceRef<ParallelInfoService>>,
+        worker_id: ParallelWorkerId,
+    ) {
+        if let Some(parallel_info_service) = parallel_info_service {
+            parallel_info_service.do_send(ReportWorkerSyncedBlockRequest { worker_id });
+        }
+    }
+
+    fn mark_worker_closed(
+        parallel_info_service: &Option<ServiceRef<ParallelInfoService>>,
+        free_worker_ids: &mut BinaryHeap<Reverse<ParallelWorkerId>>,
+        worker: &mut DagBlockWorker,
+    ) {
+        worker.state = ExecuteState::Closed;
+        if worker.registered {
+            if let Some(parallel_info_service) = parallel_info_service {
+                parallel_info_service.do_send(UnregisterWorkerRequest {
+                    worker_id: worker.worker_id,
+                });
+            }
+            free_worker_ids.push(Reverse(worker.worker_id));
+            worker.registered = false;
+        }
+    }
+
+    fn allocate_worker_id(&mut self) -> anyhow::Result<ParallelWorkerId> {
+        if let Some(Reverse(worker_id)) = self.free_worker_ids.pop() {
+            return Ok(worker_id);
+        }
+
+        let worker_id = self.next_worker_id;
+        self.next_worker_id = self.next_worker_id.checked_add(1).ok_or_else(|| {
+            anyhow::format_err!("parallel worker id overflow, cannot allocate new worker id")
+        })?;
+        Ok(worker_id)
     }
 
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
@@ -158,12 +224,16 @@ impl<'a> DagBlockSender<'a> {
                 self.execute_timeout_ms,
             )?;
 
+            let worker_id = self.allocate_worker_id()?;
             self.executors.push(DagBlockWorker {
+                worker_id,
+                registered: true,
                 sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor,
                 state: ExecuteState::Executing(block.id()),
                 handle: executor.start_to_execute()?,
             });
+            Self::register_worker(&self.parallel_info_service, worker_id);
 
             sender_to_worker.send(Some(block)).await?;
             self.flush_executor_state().await?;
@@ -181,6 +251,10 @@ impl<'a> DagBlockSender<'a> {
                     if let ExecuteState::Executed(executed_block) = state {
                         info!("finish to execute block {:?}", executed_block.header());
                         self.notifier.notify((*executed_block).clone())?;
+                        Self::report_worker_synced_block(
+                            &self.parallel_info_service,
+                            worker.worker_id,
+                        );
                         worker.state = ExecuteState::Executed(executed_block);
                     } else if let ExecuteState::Error(header) = state {
                         return Err(anyhow::format_err!(
@@ -191,7 +265,13 @@ impl<'a> DagBlockSender<'a> {
                 }
                 Err(e) => match e {
                     mpsc::error::TryRecvError::Empty => (),
-                    mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                    mpsc::error::TryRecvError::Disconnected => {
+                        Self::mark_worker_closed(
+                            &self.parallel_info_service,
+                            &mut self.free_worker_ids,
+                            worker,
+                        );
+                    }
                 },
             }
         }
@@ -227,6 +307,10 @@ impl<'a> DagBlockSender<'a> {
                     Ok(state) => {
                         if let ExecuteState::Executed(executed_block) = state {
                             info!("finish to execute block {:?}", executed_block.header());
+                            Self::report_worker_synced_block(
+                                &self.parallel_info_service,
+                                worker.worker_id,
+                            );
                             self.notifier.notify(*executed_block)?;
                         } else if let ExecuteState::Error(header) = state {
                             return Err(anyhow::format_err!(
@@ -238,7 +322,11 @@ impl<'a> DagBlockSender<'a> {
                     Err(e) => match e {
                         mpsc::error::TryRecvError::Empty => (),
                         mpsc::error::TryRecvError::Disconnected => {
-                            worker.state = ExecuteState::Closed
+                            Self::mark_worker_closed(
+                                &self.parallel_info_service,
+                                &mut self.free_worker_ids,
+                                worker,
+                            );
                         }
                     },
                 }
@@ -253,7 +341,12 @@ impl<'a> DagBlockSender<'a> {
             }
         }
 
-        for worker in std::mem::take(&mut self.executors) {
+        for mut worker in std::mem::take(&mut self.executors) {
+            Self::mark_worker_closed(
+                &self.parallel_info_service,
+                &mut self.free_worker_ids,
+                &mut worker,
+            );
             match worker.handle.await {
                 Ok(()) => {}
                 Err(join_err) if join_err.is_cancelled() => {}
@@ -265,18 +358,28 @@ impl<'a> DagBlockSender<'a> {
     }
 
     fn abort_workers(&mut self) {
-        for worker in &self.executors {
+        for worker in &mut self.executors {
             let _ = worker.sender_to_executor.try_send(None);
             worker.handle.abort();
+            Self::mark_worker_closed(
+                &self.parallel_info_service,
+                &mut self.free_worker_ids,
+                worker,
+            );
         }
     }
 }
 
 impl Drop for DagBlockSender<'_> {
     fn drop(&mut self) {
-        for worker in &self.executors {
+        for worker in &mut self.executors {
             let _ = worker.sender_to_executor.try_send(None);
             worker.handle.abort();
+            Self::mark_worker_closed(
+                &self.parallel_info_service,
+                &mut self.free_worker_ids,
+                worker,
+            );
         }
     }
 }
