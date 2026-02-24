@@ -21,8 +21,9 @@
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 
 use futures::prelude::*;
-use libp2p::core::{transport::MemoryTransport, upgrade};
-use libp2p::swarm::{Config as SwarmConfig, Swarm, SwarmEvent};
+use libp2p::core::{transport::MemoryTransport, upgrade, Endpoint};
+use libp2p::swarm::behaviour::{FromSwarm, NewExternalAddrOfPeer};
+use libp2p::swarm::{Config as SwarmConfig, ConnectionId, NetworkBehaviour, Swarm, SwarmEvent};
 use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, Transport};
 use std::{iter, time::Duration};
@@ -217,4 +218,53 @@ fn reconnect_after_disconnect() {
             }
         }
     });
+}
+
+#[test]
+fn fallback_to_cached_external_address_for_pending_outbound() {
+    let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
+        sets: vec![sc_peerset::SetConfig {
+            in_peers: 25,
+            out_peers: 25,
+            bootnodes: vec![],
+            reserved_nodes: Default::default(),
+            reserved_only: false,
+        }],
+    });
+
+    let mut behaviour = GenericProto::new(
+        peerset,
+        iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
+    );
+    let peer_id = identity::Keypair::generate_ed25519().public().to_peer_id();
+    let cached_addr: Multiaddr = "/memory/4242".parse().expect("valid memory addr");
+
+    NetworkBehaviour::on_swarm_event(
+        &mut behaviour,
+        FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer {
+            peer_id,
+            addr: &cached_addr,
+        }),
+    );
+
+    let fallback = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(1),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(fallback, vec![cached_addr.clone()]);
+
+    let existing_addr: Multiaddr = "/memory/5252".parse().expect("valid memory addr");
+    let passthrough = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(2),
+        Some(peer_id),
+        std::slice::from_ref(&existing_addr),
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(passthrough, vec![existing_addr]);
 }

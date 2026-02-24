@@ -301,6 +301,11 @@ where
         self.apply_block(block, None)
     }
 
+    #[cfg(test)]
+    pub async fn fetch_blocks_for_test(&self, block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+        self.fetch_blocks(block_ids).await
+    }
+
     fn notify_connected_block(
         &mut self,
         block: Block,

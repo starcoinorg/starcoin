@@ -665,6 +665,7 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
 #[derive(Default)]
 struct MockBlockFetcher {
     blocks: Mutex<HashMap<HashValue, Block>>,
+    fetch_calls: Mutex<Vec<Vec<HashValue>>>,
 }
 
 impl MockBlockFetcher {
@@ -675,6 +676,10 @@ impl MockBlockFetcher {
     pub fn put(&self, block: Block) {
         self.blocks.lock().unwrap().insert(block.id(), block);
     }
+
+    pub fn fetch_blocks_call_count(&self) -> usize {
+        self.fetch_calls.lock().unwrap().len()
+    }
 }
 
 impl BlockFetcher for MockBlockFetcher {
@@ -682,6 +687,7 @@ impl BlockFetcher for MockBlockFetcher {
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+        self.fetch_calls.lock().unwrap().push(block_ids.clone());
         let blocks = self.blocks.lock().unwrap();
         let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
             .iter()
@@ -776,6 +782,58 @@ impl BlockFetcher for MockBlockFetcher {
         }
         .boxed()
     }
+}
+
+#[stest::test]
+async fn test_block_collector_fetch_blocks_dedup_and_local_first() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let (storage, storage2, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
+    let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        storage2.clone(),
+        None,
+        dag,
+    )?;
+    let fetcher = Arc::new(MockBlockFetcher::new());
+    let (sender, _) = unbounded();
+    let chain_status = chain.status();
+    let target = SyncTarget {
+        target_id: BlockIdAndNumber::new(chain_status.head.id(), chain_status.head.number()),
+        block_info: chain_status.info,
+        peers: vec![PeerId::random()],
+    };
+
+    let collector = BlockCollector::new_with_handle(
+        chain_info.status().info.clone(),
+        target,
+        chain,
+        sender,
+        DummyNetworkService::default(),
+        true,
+        storage.clone(),
+        storage2,
+        fetcher.clone(),
+        sync_dag_store.clone(),
+        EXECUTE_TIMEOUT_MS,
+        Arc::new(AtomicBool::new(false)),
+    );
+
+    let local_block = Block::new(BlockHeaderBuilder::random().with_number(1).build(), vec![]);
+    storage.commit_block(local_block.clone())?;
+
+    let headers = collector
+        .fetch_blocks_for_test(vec![local_block.id(), local_block.id()])
+        .await?;
+    assert_eq!(headers.len(), 1);
+    assert_eq!(headers[0].id(), local_block.id());
+    assert_eq!(fetcher.fetch_blocks_call_count(), 0);
+    assert!(sync_dag_store
+        .get_dag_sync_block(local_block.header().number(), local_block.id())
+        .is_ok());
+    Ok(())
 }
 
 fn build_block_fetcher(total_blocks: u64) -> (MockBlockFetcher, MerkleAccumulator) {
