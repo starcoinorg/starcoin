@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    #"benchmarks",
+    "benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -49,9 +49,9 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -185,9 +185,9 @@ default-members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -676,6 +676,7 @@ starcoin-txpool.debug = 1
 starcoin-executor.debug = 1
 starcoin-genesis.debug = 1
 starcoin-vm-runtime.debug = 1
+move-vm-types.opt-level = 1
 
 [profile.release.package."*"]
 debug = false

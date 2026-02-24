@@ -10,7 +10,7 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::MoveTypeLayout;
+use move_core_types::value::{IdentifierMappingKind, MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
@@ -94,6 +94,7 @@ struct ResourceGroupStats {
 
 static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
     LazyLock::new(ResourceGroupStats::default);
+static EXCHANGE_DUMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
     ResourceGroupStatsSnapshot {
@@ -244,6 +245,25 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
 }
 
 impl<'a, S: StateView> StorageAdapter<'a, S> {
+    fn layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
+        match layout {
+            MoveTypeLayout::Native(..) => true,
+            MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
+            MoveTypeLayout::Struct(struct_layout) => match struct_layout {
+                MoveStructLayout::Runtime(fields) => fields
+                    .iter()
+                    .any(Self::layout_has_identifier_mappings),
+                MoveStructLayout::WithFields(fields) => fields
+                    .iter()
+                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
+                MoveStructLayout::WithTypes { fields, .. } => fields
+                    .iter()
+                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
+            },
+            _ => false,
+        }
+    }
+
     pub fn new(
         state_store: &'a S,
         deserializer_config: DeserializerConfig,
@@ -302,6 +322,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         bytes: &Bytes,
         layout: &MoveTypeLayout,
     ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
+        if !Self::layout_has_identifier_mappings(layout) {
+            return Ok(HashSet::new());
+        }
         let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
             StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
         })?;
@@ -377,6 +400,11 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
+        if let Some(exchanged) = self.try_manual_exchange_for_nested_native_u64(layout, state_value)?
+        {
+            return Ok(exchanged);
+        }
+
         struct Mapping<'a, S: StateView> {
             adapter: &'a StorageAdapter<'a, S>,
             delayed_ids: RefCell<HashSet<DelayedFieldID>>,
@@ -430,6 +458,186 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             state_value.clone().into_metadata(),
         );
         Ok((exchanged, mapping.delayed_ids.into_inner()))
+    }
+
+    // Fallback for the known crashing release path in move-vm-types deserialization:
+    // Struct([Struct([Native(Aggregator|Snapshot, U64), U64])]).
+    // This performs the same exchange as deserialize_and_replace_values_with_ids:
+    // replace the first field with delayed id bytes and keep the second field as-is.
+    fn try_manual_exchange_for_nested_native_u64(
+        &self,
+        layout: &MoveTypeLayout,
+        state_value: &StateValue,
+    ) -> Result<Option<(StateValue, HashSet<DelayedFieldID>)>, StateviewError> {
+        let (kind, native_layout) = match layout {
+            MoveTypeLayout::Struct(outer) => {
+                let outer_fields = outer.fields();
+                if outer_fields.len() != 1 {
+                    return Ok(None);
+                }
+                match &outer_fields[0] {
+                    MoveTypeLayout::Struct(inner) => {
+                        let inner_fields = inner.fields();
+                        if inner_fields.len() != 2 {
+                            return Ok(None);
+                        }
+                        match (&inner_fields[0], &inner_fields[1]) {
+                            (MoveTypeLayout::Native(kind, native_layout), MoveTypeLayout::U64) => {
+                                (kind, native_layout.as_ref())
+                            }
+                            _ => return Ok(None),
+                        }
+                    }
+                    _ => return Ok(None),
+                }
+            }
+            _ => return Ok(None),
+        };
+
+        if !matches!(native_layout, MoveTypeLayout::U64) {
+            return Ok(None);
+        }
+        if !matches!(
+            kind,
+            IdentifierMappingKind::Aggregator | IdentifierMappingKind::Snapshot
+        ) {
+            return Ok(None);
+        }
+
+        let bytes = state_value.bytes();
+        if bytes.len() != 16 {
+            return Err(StateviewError::Other(format!(
+                "Manual exchange expected 16 bytes, got {} for layout {:?}",
+                bytes.len(),
+                layout
+            )));
+        }
+
+        let native_value = u64::from_le_bytes(
+            bytes[0..8]
+                .try_into()
+                .map_err(|_| StateviewError::Other("Failed to parse native u64 bytes".to_string()))?,
+        );
+        let delayed_value = match kind {
+            IdentifierMappingKind::Aggregator => DelayedFieldValue::Aggregator(native_value as u128),
+            IdentifierMappingKind::Snapshot => DelayedFieldValue::Snapshot(native_value as u128),
+            _ => unreachable!(),
+        };
+        let id = self.generate_delayed_field_id(8);
+        self.delayed_fields.set_base_value(id, delayed_value);
+
+        let mut exchanged = bytes.to_vec();
+        exchanged[0..8].copy_from_slice(&id.as_u64().to_le_bytes());
+        let exchanged_state = StateValue::new_with_metadata(
+            Bytes::from(exchanged),
+            state_value.clone().into_metadata(),
+        );
+        let mut delayed_ids = HashSet::new();
+        delayed_ids.insert(id);
+
+        warn!(
+            "[vm2-delayed] manual exchange fallback applied for nested native U64 layout"
+        );
+        Ok(Some((exchanged_state, delayed_ids)))
+    }
+
+    fn maybe_exchange_state_value(
+        &self,
+        state_value: &StateValue,
+        layout: &MoveTypeLayout,
+    ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
+        if !Self::layout_has_identifier_mappings(layout) {
+            return Ok((state_value.clone(), HashSet::new(), false));
+        }
+        let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
+        Ok((exchanged, delayed_ids, true))
+    }
+
+    fn maybe_dump_exchange_input(
+        &self,
+        scope: &str,
+        state_key: &StateKey,
+        struct_tag: &StructTag,
+        state_value: &StateValue,
+        layout: &MoveTypeLayout,
+    ) {
+        if std::env::var_os("STARCOIN_VM2_DUMP_EXCHANGE_INPUT").is_none() {
+            return;
+        }
+
+        // Keep dumps focused on the crashing path by default.
+        if !(struct_tag.address == AccountAddress::ONE
+            && struct_tag.module.as_ident_str().as_str() == "fungible_asset"
+            && struct_tag.name.as_ident_str().as_str() == "ConcurrentFungibleBalance")
+        {
+            return;
+        }
+
+        let dump_dir = std::env::var("STARCOIN_VM2_DUMP_DIR")
+            .unwrap_or_else(|_| "/tmp/starcoin_vm2_exchange_dump".to_string());
+        if let Err(err) = std::fs::create_dir_all(&dump_dir) {
+            warn!(
+                "[vm2-delayed] failed to create dump dir {}: {:?}",
+                dump_dir, err
+            );
+            return;
+        }
+
+        let seq = EXCHANGE_DUMP_SEQ.fetch_add(1, Ordering::Relaxed);
+        let base = format!("{}/case-{}-{}", dump_dir, std::process::id(), seq);
+        let value_path = format!("{}.value.bin", base);
+        let layout_bcs_path = format!("{}.layout.bcs", base);
+        let layout_debug_path = format!("{}.layout.debug.txt", base);
+        let context_path = format!("{}.context.txt", base);
+
+        if let Err(err) = std::fs::write(&value_path, state_value.bytes()) {
+            warn!(
+                "[vm2-delayed] failed to write dump file {}: {:?}",
+                value_path, err
+            );
+            return;
+        }
+
+        let layout_bcs = match bcs::to_bytes(layout) {
+            Ok(bytes) => bytes,
+            Err(err) => {
+                warn!(
+                    "[vm2-delayed] failed to serialize layout for dump {}: {:?}",
+                    layout_bcs_path, err
+                );
+                return;
+            }
+        };
+        if let Err(err) = std::fs::write(&layout_bcs_path, layout_bcs) {
+            warn!(
+                "[vm2-delayed] failed to write dump file {}: {:?}",
+                layout_bcs_path, err
+            );
+            return;
+        }
+
+        let layout_debug = format!("{:#?}\n", layout);
+        if let Err(err) = std::fs::write(&layout_debug_path, layout_debug) {
+            warn!(
+                "[vm2-delayed] failed to write dump file {}: {:?}",
+                layout_debug_path, err
+            );
+        }
+
+        let context = format!(
+            "scope={}\nstate_key={:?}\nstruct_tag={:?}\nvalue_len={}\nmetadata={:?}\n",
+            scope,
+            state_key,
+            struct_tag,
+            state_value.bytes().len(),
+            state_value.clone().into_metadata()
+        );
+        if let Err(err) = std::fs::write(&context_path, context) {
+            warn!(
+                "[vm2-delayed] failed to write dump file {}: {:?}",
+                context_path, err
+            );
+        }
     }
 
     pub fn materialize_output(&self, mut output: VMOutput) -> Result<TransactionOutput, VMStatus> {
@@ -714,14 +922,71 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                 .fetch_add(1, Ordering::Relaxed);
             let key = StateKey::resource_group(address, &resource_group);
             let buf = if let Some(layout) = maybe_layout {
-                if let Some(cached) = self
-                    .delayed_field_cache
-                    .get_group_member_value(&key, struct_tag)
-                {
-                    RESOURCE_GROUP_STATS
-                        .group_cache_hits
-                        .fetch_add(1, Ordering::Relaxed);
-                    Some(cached)
+                if self.delayed_fields_enabled {
+                    if let Some(cached) = self
+                        .delayed_field_cache
+                        .get_group_member_value(&key, struct_tag)
+                    {
+                        RESOURCE_GROUP_STATS
+                            .group_cache_hits
+                            .fetch_add(1, Ordering::Relaxed);
+                        Some(cached)
+                    } else {
+                        RESOURCE_GROUP_STATS
+                            .group_member_calls
+                            .fetch_add(1, Ordering::Relaxed);
+                        let member_start = Instant::now();
+                        let raw = self.resource_group_view.get_resource_from_group(
+                            &key,
+                            struct_tag,
+                            maybe_layout,
+                        )?;
+                        RESOURCE_GROUP_STATS
+                            .group_member_ns
+                            .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+                        let Some(raw_bytes) = raw else {
+                            return Ok((None, 0));
+                        };
+                        let metadata = self
+                            .executor_view
+                            .get_state_value(&key)
+                            .map_err(|e| {
+                                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                    .with_message(format!("{:?}", e))
+                            })?
+                            .map(|v| v.into_metadata())
+                            .unwrap_or_else(StateValueMetadata::none);
+                        let group_size = self.resource_group_view.resource_group_size(&key)?.get();
+                        let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
+                        self.maybe_dump_exchange_input(
+                            "group_fresh",
+                            &key,
+                            struct_tag,
+                            &state_value,
+                            layout,
+                        );
+                        let (exchanged, ids, _) = self
+                            .maybe_exchange_state_value(&state_value, layout)
+                            .map_err(|e| {
+                                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                    .with_message(format!("{:?}", e))
+                            })?;
+                        self.record_group_read(
+                            &key,
+                            exchanged.clone().into_metadata(),
+                            group_size,
+                            struct_tag.clone(),
+                            layout,
+                            ids,
+                        );
+                        let exchanged_bytes = exchanged.bytes().clone();
+                        self.delayed_field_cache.insert_group_member_value(
+                            key.clone(),
+                            struct_tag.clone(),
+                            exchanged_bytes.clone(),
+                        );
+                        Some(exchanged_bytes)
+                    }
                 } else {
                     RESOURCE_GROUP_STATS
                         .group_member_calls
@@ -735,41 +1000,7 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                     RESOURCE_GROUP_STATS
                         .group_member_ns
                         .fetch_add(member_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
-                    let Some(raw_bytes) = raw else {
-                        return Ok((None, 0));
-                    };
-                    let metadata = self
-                        .executor_view
-                        .get_state_value(&key)
-                        .map_err(|e| {
-                            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                .with_message(format!("{:?}", e))
-                        })?
-                        .map(|v| v.into_metadata())
-                        .unwrap_or_else(StateValueMetadata::none);
-                    let group_size = self.resource_group_view.resource_group_size(&key)?.get();
-                    let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
-                    let (exchanged, ids) = self
-                        .exchange_state_value(&state_value, layout)
-                        .map_err(|e| {
-                            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                .with_message(format!("{:?}", e))
-                        })?;
-                    self.record_group_read(
-                        &key,
-                        exchanged.clone().into_metadata(),
-                        group_size,
-                        struct_tag.clone(),
-                        layout,
-                        ids,
-                    );
-                    let exchanged_bytes = exchanged.bytes().clone();
-                    self.delayed_field_cache.insert_group_member_value(
-                        key.clone(),
-                        struct_tag.clone(),
-                        exchanged_bytes.clone(),
-                    );
-                    Some(exchanged_bytes)
+                    raw
                 }
             } else {
                 RESOURCE_GROUP_STATS
@@ -807,52 +1038,71 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
         } else {
             let state_key = resource_state_key(address, struct_tag)?;
             let buf = if let Some(layout) = maybe_layout {
-                if let Some(cached) = self.delayed_field_cache.get_base_value(&state_key) {
-                    if !self.delayed_field_cache.is_base_value_exchanged(&state_key) {
-                        let state_value = cached.as_state_value().ok_or_else(|| {
-                            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                .with_message("Cached base value missing bytes".to_string())
-                        })?;
-                        let (exchanged, ids) = self
-                            .exchange_state_value(&state_value, layout)
+                if self.delayed_fields_enabled {
+                    if let Some(cached) = self.delayed_field_cache.get_base_value(&state_key) {
+                        if !self.delayed_field_cache.is_base_value_exchanged(&state_key) {
+                            let state_value = cached.as_state_value().ok_or_else(|| {
+                                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                    .with_message("Cached base value missing bytes".to_string())
+                            })?;
+                            self.maybe_dump_exchange_input(
+                                "base_cached",
+                                &state_key,
+                                struct_tag,
+                                &state_value,
+                                layout,
+                            );
+                            let (exchanged, ids, exchanged_flag) = self
+                                .maybe_exchange_state_value(&state_value, layout)
+                                .map_err(|e| {
+                                    PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                        .with_message(format!("{:?}", e))
+                                })?;
+                            self.record_resource_read(&state_key, &exchanged, layout, ids);
+                            self.delayed_field_cache.insert_base_value(
+                                state_key.clone(),
+                                WriteOp::from_state_value(Some(exchanged.clone())),
+                                exchanged_flag,
+                            );
+                            Some(exchanged.bytes().clone())
+                        } else {
+                            cached.bytes().cloned()
+                        }
+                    } else {
+                        let state_value =
+                            self.executor_view
+                                .get_state_value(&state_key)
+                                .map_err(|e| {
+                                    PartialVMError::new(StatusCode::STORAGE_ERROR)
+                                        .with_message(format!("{:?}", e))
+                                })?;
+                        let Some(state_value) = state_value else {
+                            return Ok((None, 0));
+                        };
+                        self.maybe_dump_exchange_input(
+                            "base_fresh",
+                            &state_key,
+                            struct_tag,
+                            &state_value,
+                            layout,
+                        );
+                        let (exchanged, ids, exchanged_flag) = self
+                            .maybe_exchange_state_value(&state_value, layout)
                             .map_err(|e| {
                                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                                     .with_message(format!("{:?}", e))
                             })?;
                         self.record_resource_read(&state_key, &exchanged, layout, ids);
-                        self.delayed_field_cache.insert_base_value(
+                        let cached = self.delayed_field_cache.get_or_insert_base_value(
                             state_key.clone(),
-                            WriteOp::from_state_value(Some(exchanged.clone())),
-                            true,
-                        );
-                        Some(exchanged.bytes().clone())
-                    } else {
+                            exchanged_flag,
+                            || Ok(WriteOp::from_state_value(Some(exchanged.clone()))),
+                        )?;
                         cached.bytes().cloned()
                     }
                 } else {
-                    let state_value =
-                        self.executor_view
-                            .get_state_value(&state_key)
-                            .map_err(|e| {
-                                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                    .with_message(format!("{:?}", e))
-                            })?;
-                    let Some(state_value) = state_value else {
-                        return Ok((None, 0));
-                    };
-                    let (exchanged, ids) = self
-                        .exchange_state_value(&state_value, layout)
-                        .map_err(|e| {
-                            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                .with_message(format!("{:?}", e))
-                        })?;
-                    self.record_resource_read(&state_key, &exchanged, layout, ids);
-                    let cached = self.delayed_field_cache.get_or_insert_base_value(
-                        state_key.clone(),
-                        true,
-                        || Ok(WriteOp::from_state_value(Some(exchanged.clone()))),
-                    )?;
-                    cached.bytes().cloned()
+                    self.executor_view
+                        .get_resource_bytes(&state_key, maybe_layout)?
                 }
             } else {
                 self.executor_view
