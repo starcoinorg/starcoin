@@ -388,9 +388,7 @@ impl NodeService {
 
         info!("Self peer_id is: {}", peer_id.to_base58());
         info!("Self address is: {}", config.network.self_address());
-        warn!(
-            "In-process stratum is removed from node. Stratum-related node config is ignored; use standalone `starcoin_stratumd`."
-        );
+        warn!("In-process stratum is removed from node; use standalone `starcoin_stratumd`.");
 
         // Create NewHeaderChannel for miner services
         use starcoin_miner::{NewHeaderChannel, NewHeaderService};

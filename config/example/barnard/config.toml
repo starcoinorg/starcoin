@@ -37,9 +37,6 @@ apis = "chain,miner,node,pubsub,state,txpool,contract"
 [storage]
 max_open_files = 40960
 
-[stratum]
-port = 8090
-
 [sync]
 
 [tx_pool]

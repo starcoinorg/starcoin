@@ -1,15 +1,16 @@
 use anyhow::Result;
 use byteorder::{BigEndian, ByteOrder, LittleEndian, WriteBytesExt};
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
+use postgres::{Client, NoTls};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use starcoin_config::{Connect, StratumLimits, StratumPplnsConfig};
+use starcoin_config::Connect;
 use starcoin_consensus::{difficult_to_target, Consensus};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{AsyncRpcClient, ConnSource};
+use starcoin_rpc_client::{AsyncRpcClient, ConnSource, RpcClient};
 use starcoin_stratumd::codec::{JsonStreamCodec, Separator};
 use starcoin_stratumd::pplns_store::{
     build_pplns_store, CandidateRecord, CandidateStatus, PendingSubmitRecord, PplnsStore,
@@ -19,7 +20,7 @@ use starcoin_stratumd::rpc::{
     JobId, LoginRequest, MinerWorker, ShareRequest, Status, StratumJobResponse,
     SubmitShareResponse, WorkerId,
 };
-use starcoin_stratumd::target_hex_to_difficulty;
+use starcoin_stratumd::{target_hex_to_difficulty, StratumLimits, StratumPplnsConfig};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
@@ -59,7 +60,21 @@ const SHARE_FLUSH_BATCH_SIZE: u64 = 64;
 #[derive(Parser, Debug, Clone)]
 #[command(name = "starcoin_stratumd")]
 #[command(about = "Standalone Stratum gateway process")]
-struct Opt {
+struct Cli {
+    #[clap(subcommand)]
+    command: Option<Command>,
+
+    #[clap(flatten)]
+    run: RunOpt,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+enum Command {
+    VerifySettlement(VerifySettlementOpt),
+}
+
+#[derive(Args, Debug, Clone)]
+struct RunOpt {
     #[arg(long, default_value = "0.0.0.0:9888")]
     listen: SocketAddr,
 
@@ -116,6 +131,21 @@ struct Opt {
 
     #[arg(long)]
     pplns_database_url: Option<String>,
+}
+
+#[derive(Args, Debug, Clone)]
+struct VerifySettlementOpt {
+    #[arg(long, default_value = "ws://127.0.0.1:9870")]
+    node_rpc: String,
+
+    #[arg(long)]
+    pplns_database_url: String,
+
+    #[arg(long)]
+    from_height: Option<u64>,
+
+    #[arg(long)]
+    to_height: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -597,6 +627,7 @@ struct PplnsRuntime {
     local_share_anchor_map: BTreeMap<u64, u64>,
     last_batch_run_millis: Option<u64>,
     last_settled_height: Option<u64>,
+    integrity_degraded: bool,
 }
 
 impl PplnsRuntime {
@@ -611,15 +642,35 @@ impl PplnsRuntime {
             local_share_anchor_map: BTreeMap::new(),
             last_batch_run_millis,
             last_settled_height,
+            integrity_degraded: false,
         })
     }
 
     fn ingest_enabled(&self) -> bool {
-        self.config.enabled && self.config.ingest_enabled
+        self.config.enabled && self.config.ingest_enabled && !self.integrity_degraded
     }
 
     fn settlement_enabled(&self) -> bool {
-        self.config.enabled && self.config.settlement_enabled
+        self.config.enabled && self.config.settlement_enabled && !self.integrity_degraded
+    }
+
+    fn mark_integrity_degraded(&mut self, stage: &str, err: &dyn std::fmt::Display) {
+        if !self.integrity_degraded {
+            error!(
+                target: "stratum_server",
+                "pplns integrity degraded at {}: {}. settlement paused to avoid wrong payout",
+                stage,
+                err
+            );
+        } else {
+            warn!(
+                target: "stratum_server",
+                "pplns still degraded at {}: {}",
+                stage,
+                err
+            );
+        }
+        self.integrity_degraded = true;
     }
 
     fn remember_share_anchor(&mut self, local_seq: u64, persisted_seq: u64) {
@@ -689,7 +740,7 @@ impl PplnsRuntime {
         ) {
             Ok(seq) => seq,
             Err(err) => {
-                warn!(target: "stratum_server", "pplns append share failed: {}", err);
+                self.mark_integrity_degraded("append_share", &err);
                 return;
             }
         };
@@ -726,11 +777,7 @@ impl PplnsRuntime {
             },
             self.config.max_retained_candidates,
         ) {
-            warn!(
-                target: "stratum_server",
-                "pplns upsert pending submit failed: {}",
-                err
-            );
+            self.mark_integrity_degraded("upsert_pending_submit", &err);
             return;
         }
         self.dirty_ops = self.dirty_ops.saturating_add(1);
@@ -751,11 +798,7 @@ impl PplnsRuntime {
         let pending = match self.store.take_pending_submit(&job_id, nonce, &extra) {
             Ok(pending) => pending,
             Err(err) => {
-                warn!(
-                    target: "stratum_server",
-                    "pplns take pending submit failed: {}",
-                    err
-                );
+                self.mark_integrity_degraded("take_pending_submit", &err);
                 return;
             }
         };
@@ -785,7 +828,7 @@ impl PplnsRuntime {
             },
             self.config.max_retained_candidates,
         ) {
-            warn!(target: "stratum_server", "pplns upsert candidate failed: {}", err);
+            self.mark_integrity_degraded("upsert_candidate", &err);
             return;
         }
         self.dirty_ops = self.dirty_ops.saturating_add(1);
@@ -794,6 +837,12 @@ impl PplnsRuntime {
 
     async fn settle_tick(&mut self, rpc: &AsyncRpcClient) -> Result<()> {
         if !self.settlement_enabled() {
+            if self.integrity_degraded {
+                warn!(
+                    target: "stratum_server",
+                    "pplns settlement skipped: integrity degraded"
+                );
+            }
             return Ok(());
         }
         let now = Self::now_millis();
@@ -1570,11 +1619,337 @@ struct JsonRpcNotification<T> {
     params: T,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let _logger = starcoin_logger::init();
-    let opt = Opt::parse();
+#[derive(Debug, Clone)]
+struct ConfirmedCandidateRow {
+    block_hash: String,
+    block_number: u64,
+    reward: Option<u128>,
+}
 
+fn to_u64_named(name: &str, value: i64) -> Result<u64> {
+    u64::try_from(value).map_err(|_| anyhow::anyhow!("{} overflow: {}", name, value))
+}
+
+fn to_i64_named(name: &str, value: u64) -> Result<i64> {
+    i64::try_from(value).map_err(|_| anyhow::anyhow!("{} overflow: {}", name, value))
+}
+
+fn parse_u128_named(name: &str, raw: &str) -> Result<u128> {
+    raw.parse::<u128>()
+        .map_err(|_| anyhow::anyhow!("invalid {} numeric value: {}", name, raw))
+}
+
+fn resolve_verify_range(
+    db: &mut Client,
+    verify_opt: &VerifySettlementOpt,
+) -> Result<Option<(u64, u64)>> {
+    let row = db.query_one(
+        "select min(block_number), max(block_number)
+         from pplns_candidates
+         where status = 'confirmed'",
+        &[],
+    )?;
+    let min_height_db = row.get::<_, Option<i64>>(0);
+    let max_height_db = row.get::<_, Option<i64>>(1);
+    let (min_height_db, max_height_db) = match (min_height_db, max_height_db) {
+        (Some(min_v), Some(max_v)) => (
+            to_u64_named("min confirmed height", min_v)?,
+            to_u64_named("max confirmed height", max_v)?,
+        ),
+        _ => return Ok(None),
+    };
+    let from_height = verify_opt.from_height.unwrap_or(min_height_db);
+    let to_height = verify_opt.to_height.unwrap_or(max_height_db);
+    if from_height > to_height {
+        return Err(anyhow::anyhow!(
+            "invalid height range: from_height {} > to_height {}",
+            from_height,
+            to_height
+        ));
+    }
+    Ok(Some((from_height, to_height)))
+}
+
+fn load_confirmed_candidates(
+    db: &mut Client,
+    from_height: u64,
+    to_height: u64,
+) -> Result<Vec<ConfirmedCandidateRow>> {
+    let from_height = to_i64_named("from_height", from_height)?;
+    let to_height = to_i64_named("to_height", to_height)?;
+    let rows = db.query(
+        "select block_hash, block_number, reward::text
+         from pplns_candidates
+         where status = 'confirmed'
+           and block_number >= $1
+           and block_number <= $2
+         order by block_number asc, block_hash asc",
+        &[&from_height, &to_height],
+    )?;
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        let reward_text = row.get::<_, Option<String>>(2);
+        let reward = match reward_text {
+            Some(raw) => Some(parse_u128_named("candidate.reward", &raw)?),
+            None => None,
+        };
+        out.push(ConfirmedCandidateRow {
+            block_hash: row.get(0),
+            block_number: to_u64_named("candidate.block_number", row.get::<_, i64>(1))?,
+            reward,
+        });
+    }
+    Ok(out)
+}
+
+fn load_credit_sums_by_block(
+    db: &mut Client,
+    from_height: u64,
+    to_height: u64,
+) -> Result<HashMap<String, u128>> {
+    let from_height = to_i64_named("from_height", from_height)?;
+    let to_height = to_i64_named("to_height", to_height)?;
+    let rows = db.query(
+        "select c.block_hash, coalesce(sum(l.amount), 0)::text as total_credit
+         from pplns_candidates c
+         left join pplns_ledger_entries l
+           on l.block_hash = c.block_hash and l.entry_type = 'credit'
+         where c.block_number >= $1 and c.block_number <= $2
+         group by c.block_hash",
+        &[&from_height, &to_height],
+    )?;
+    let mut out = HashMap::with_capacity(rows.len());
+    for row in rows {
+        let block_hash = row.get::<_, String>(0);
+        let sum_text = row.get::<_, String>(1);
+        let amount = parse_u128_named("ledger sum(amount)", &sum_text)?;
+        out.insert(block_hash, amount);
+    }
+    Ok(out)
+}
+
+fn check_confirmed_uniqueness(
+    db: &mut Client,
+    from_height: u64,
+    to_height: u64,
+) -> Result<Vec<String>> {
+    let from_height = to_i64_named("from_height", from_height)?;
+    let to_height = to_i64_named("to_height", to_height)?;
+    let rows = db.query(
+        "select block_number, count(*)::bigint
+         from pplns_candidates
+         where status = 'confirmed'
+           and block_number >= $1
+           and block_number <= $2
+         group by block_number
+         having count(*) > 1",
+        &[&from_height, &to_height],
+    )?;
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        let block_number = to_u64_named("duplicate block_number", row.get::<_, i64>(0))?;
+        let count = to_u64_named("duplicate confirmed count", row.get::<_, i64>(1))?;
+        out.push(format!(
+            "height {} has {} confirmed candidates (expected 1)",
+            block_number, count
+        ));
+    }
+    Ok(out)
+}
+
+fn check_non_confirmed_has_no_credit(
+    db: &mut Client,
+    from_height: u64,
+    to_height: u64,
+) -> Result<Vec<String>> {
+    let from_height = to_i64_named("from_height", from_height)?;
+    let to_height = to_i64_named("to_height", to_height)?;
+    let rows = db.query(
+        "select c.block_hash, c.status, sum(l.amount)::text
+         from pplns_candidates c
+         join pplns_ledger_entries l
+           on l.block_hash = c.block_hash and l.entry_type = 'credit'
+         where c.block_number >= $1
+           and c.block_number <= $2
+           and c.status <> 'confirmed'
+         group by c.block_hash, c.status
+         having sum(l.amount) <> 0",
+        &[&from_height, &to_height],
+    )?;
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        let block_hash = row.get::<_, String>(0);
+        let status = row.get::<_, String>(1);
+        let amount = row.get::<_, String>(2);
+        out.push(format!(
+            "non-confirmed candidate has non-zero credit: block_hash={}, status={}, credit={}",
+            block_hash, status, amount
+        ));
+    }
+    Ok(out)
+}
+
+fn build_sync_rpc_client(node_rpc: &str) -> Result<RpcClient> {
+    match Connect::from_str(node_rpc)? {
+        Connect::WebSocket(url) => RpcClient::connect_websocket(url.as_str()),
+        Connect::IPC(Some(path)) => RpcClient::connect_ipc(path),
+        Connect::IPC(None) => Err(anyhow::anyhow!(
+            "node rpc ipc path is empty, please set --node-rpc <path-to-ipc-file>"
+        )),
+    }
+}
+
+fn fetch_block_reward_sync(
+    rpc: &RpcClient,
+    block_hash: HashValue,
+    block_number: u64,
+) -> Result<u128> {
+    let txn_infos = rpc.chain_get_block_txn_infos(block_hash)?;
+    let mut reward = 0u128;
+    for txn_info in txn_infos {
+        let txn_hash = txn_info.transaction_hash;
+        let events = rpc.chain_get_events_by_txn_hash(txn_hash, None)?;
+        for event_info in events {
+            let event = event_info.event;
+            if event.block_hash != Some(block_hash) {
+                continue;
+            }
+            let tag = event.type_tag.to_string();
+            let data = &event.data.0;
+            if let Some((reward_block_number, amount)) =
+                PplnsRuntime::parse_block_reward_event(&tag, data)
+            {
+                if reward_block_number == block_number {
+                    reward = reward.saturating_add(amount);
+                }
+            }
+        }
+    }
+    Ok(reward)
+}
+
+fn run_verify_settlement(verify_opt: &VerifySettlementOpt) -> Result<()> {
+    let mut db = Client::connect(verify_opt.pplns_database_url.as_str(), NoTls)
+        .map_err(|err| anyhow::anyhow!("connect pplns database failed: {}", err))?;
+    db.batch_execute(include_str!("../sql/pplns.postgresql.sql"))?;
+
+    let Some((from_height, to_height)) = resolve_verify_range(&mut db, verify_opt)? else {
+        println!("verify-settlement: no confirmed candidates found");
+        return Ok(());
+    };
+
+    let confirmed = load_confirmed_candidates(&mut db, from_height, to_height)?;
+    if confirmed.is_empty() {
+        println!(
+            "verify-settlement: no confirmed candidates in range [{}..={}]",
+            from_height, to_height
+        );
+        return Ok(());
+    }
+
+    let mut issues = Vec::new();
+    issues.extend(check_confirmed_uniqueness(&mut db, from_height, to_height)?);
+    issues.extend(check_non_confirmed_has_no_credit(
+        &mut db,
+        from_height,
+        to_height,
+    )?);
+
+    let credit_sums = load_credit_sums_by_block(&mut db, from_height, to_height)?;
+
+    let rpc = build_sync_rpc_client(verify_opt.node_rpc.as_str())?;
+
+    for candidate in confirmed {
+        let Some(db_reward) = candidate.reward else {
+            issues.push(format!(
+                "candidate reward is null: block_hash={}, height={}",
+                candidate.block_hash, candidate.block_number
+            ));
+            continue;
+        };
+
+        let main_block = match rpc.chain_get_block_by_number(candidate.block_number, None)? {
+            Some(block) => block,
+            None => {
+                issues.push(format!(
+                    "chain missing block by number: height={}, candidate_hash={}",
+                    candidate.block_number, candidate.block_hash
+                ));
+                continue;
+            }
+        };
+        let main_hash = main_block.header.block_hash;
+        let candidate_hash = match HashValue::from_str(candidate.block_hash.as_str()) {
+            Ok(hash) => hash,
+            Err(err) => {
+                issues.push(format!(
+                    "invalid candidate hash format: block_hash={}, err={}",
+                    candidate.block_hash, err
+                ));
+                continue;
+            }
+        };
+        if candidate_hash != main_hash {
+            issues.push(format!(
+                "candidate hash not on main chain: height={}, candidate_hash={}, main_hash={}",
+                candidate.block_number, candidate_hash, main_hash
+            ));
+            continue;
+        }
+
+        let chain_reward = fetch_block_reward_sync(&rpc, main_hash, candidate.block_number)?;
+        if db_reward != chain_reward {
+            issues.push(format!(
+                "reward mismatch: height={}, block_hash={}, db_reward={}, chain_reward={}",
+                candidate.block_number, candidate.block_hash, db_reward, chain_reward
+            ));
+        }
+
+        let ledger_sum = credit_sums.get(&candidate.block_hash).copied().unwrap_or(0);
+        if ledger_sum != db_reward {
+            issues.push(format!(
+                "ledger mismatch: height={}, block_hash={}, db_reward={}, ledger_sum={}",
+                candidate.block_number, candidate.block_hash, db_reward, ledger_sum
+            ));
+        }
+    }
+
+    if issues.is_empty() {
+        println!(
+            "verify-settlement OK: range=[{}..={}], checked candidates and ledger consistency",
+            from_height, to_height
+        );
+        return Ok(());
+    }
+
+    println!(
+        "verify-settlement FAILED: range=[{}..={}], issues={}",
+        from_height,
+        to_height,
+        issues.len()
+    );
+    for (idx, issue) in issues.iter().take(50).enumerate() {
+        println!("{}. {}", idx + 1, issue);
+    }
+    Err(anyhow::anyhow!(
+        "verify-settlement detected {} issue(s)",
+        issues.len()
+    ))
+}
+
+fn main() -> Result<()> {
+    let _logger = starcoin_logger::init();
+    let cli = Cli::parse();
+
+    if let Some(Command::VerifySettlement(verify_opt)) = cli.command {
+        return run_verify_settlement(&verify_opt);
+    }
+
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(run_gateway(cli.run))
+}
+
+async fn run_gateway(opt: RunOpt) -> Result<()> {
     let limits = StratumLimits {
         share_dedup_window_secs: opt.share_dedup_window_secs,
         stale_window_secs: opt.stale_window_secs,
@@ -1629,7 +2004,7 @@ fn parse_conn_source(node_rpc: &str) -> Result<ConnSource> {
     }
 }
 
-fn build_pplns_runtime(opt: &Opt) -> Result<Option<Arc<Mutex<PplnsRuntime>>>> {
+fn build_pplns_runtime(opt: &RunOpt) -> Result<Option<Arc<Mutex<PplnsRuntime>>>> {
     if !opt.pplns_enabled {
         return Ok(None);
     }
@@ -2006,4 +2381,69 @@ fn validate_login_request(login: &LoginRequest) -> Result<()> {
         return Err(anyhow::anyhow!("agent too long"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn candidate(account: &str) -> CandidateRecord {
+        CandidateRecord {
+            block_hash: "0x1".to_string(),
+            block_number: 1,
+            account: account.to_string(),
+            worker_id: "w1".to_string(),
+            anchor_share_seq: 1,
+            found_at_millis: 1,
+            status: CandidateStatus::Pending,
+            reward: None,
+            settled_at_millis: None,
+        }
+    }
+
+    fn share(account: &str, difficulty: u64) -> ShareRecord {
+        ShareRecord {
+            seq: 1,
+            account: account.to_string(),
+            worker_id: "w".to_string(),
+            difficulty,
+            accepted_at_millis: 1,
+        }
+    }
+
+    fn sum_credits(credits: &HashMap<String, u128>) -> u128 {
+        credits.values().copied().sum()
+    }
+
+    #[test]
+    fn test_allocate_credits_weighted_sum_matches_reward() {
+        let credits = PplnsRuntime::allocate_credits(
+            &candidate("winner"),
+            &[share("a", 1), share("b", 3)],
+            1_000,
+        );
+        assert_eq!(credits.get("a"), Some(&250));
+        assert_eq!(credits.get("b"), Some(&750));
+        assert_eq!(sum_credits(&credits), 1_000);
+    }
+
+    #[test]
+    fn test_allocate_credits_remainder_goes_to_candidate_account() {
+        let credits = PplnsRuntime::allocate_credits(
+            &candidate("winner"),
+            &[share("a", 1), share("b", 1)],
+            101,
+        );
+        assert_eq!(credits.get("a"), Some(&50));
+        assert_eq!(credits.get("b"), Some(&50));
+        assert_eq!(credits.get("winner"), Some(&1));
+        assert_eq!(sum_credits(&credits), 101);
+    }
+
+    #[test]
+    fn test_allocate_credits_empty_window_falls_back_to_candidate() {
+        let credits = PplnsRuntime::allocate_credits(&candidate("winner"), &[], 777);
+        assert_eq!(credits.get("winner"), Some(&777));
+        assert_eq!(sum_credits(&credits), 777);
+    }
 }

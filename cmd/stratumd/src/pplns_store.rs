@@ -1,7 +1,7 @@
+use crate::StratumPplnsConfig;
 use anyhow::{bail, Context, Result};
 use postgres::{Client, NoTls};
 use serde::{Deserialize, Serialize};
-use starcoin_config::StratumPplnsConfig;
 use std::collections::HashMap;
 
 const PPLNS_SETTLEMENT_LOCK_ID: i64 = 0x5354_5254_4d50_4c4e;
