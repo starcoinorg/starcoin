@@ -302,7 +302,10 @@ where
     }
 
     #[cfg(test)]
-    pub async fn fetch_blocks_for_test(&self, block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    pub async fn fetch_blocks_for_test(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> Result<Vec<BlockHeader>> {
         self.fetch_blocks(block_ids).await
     }
 
