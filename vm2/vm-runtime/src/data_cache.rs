@@ -96,6 +96,79 @@ static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
     LazyLock::new(ResourceGroupStats::default);
 static EXCHANGE_DUMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
+#[doc(hidden)]
+pub fn nested_native_u64_kind_for_manual_exchange(
+    layout: &MoveTypeLayout,
+) -> Option<IdentifierMappingKind> {
+    let (kind, native_layout) = match layout {
+        MoveTypeLayout::Struct(outer) => {
+            let outer_fields = outer.fields();
+            if outer_fields.len() != 1 {
+                return None;
+            }
+            match &outer_fields[0] {
+                MoveTypeLayout::Struct(inner) => {
+                    let inner_fields = inner.fields();
+                    if inner_fields.len() != 2 {
+                        return None;
+                    }
+                    match (&inner_fields[0], &inner_fields[1]) {
+                        (MoveTypeLayout::Native(kind, native_layout), MoveTypeLayout::U64) => {
+                            (kind, native_layout.as_ref())
+                        }
+                        _ => return None,
+                    }
+                }
+                _ => return None,
+            }
+        }
+        _ => return None,
+    };
+
+    if !matches!(native_layout, MoveTypeLayout::U64) {
+        return None;
+    }
+
+    match kind {
+        IdentifierMappingKind::Aggregator => Some(IdentifierMappingKind::Aggregator),
+        IdentifierMappingKind::Snapshot => Some(IdentifierMappingKind::Snapshot),
+        _ => None,
+    }
+}
+
+#[doc(hidden)]
+pub fn manual_exchange_bytes_for_nested_native_u64(
+    kind: IdentifierMappingKind,
+    bytes: &[u8],
+    delayed_field_id: DelayedFieldID,
+) -> Result<(Vec<u8>, DelayedFieldValue), StateviewError> {
+    if bytes.len() != 16 {
+        return Err(StateviewError::Other(format!(
+            "Manual exchange expected 16 bytes, got {}",
+            bytes.len()
+        )));
+    }
+
+    let native_bytes: [u8; 8] = bytes[0..8]
+        .try_into()
+        .map_err(|_| StateviewError::Other("Failed to parse native u64 bytes".to_string()))?;
+    let native_value = u64::from_le_bytes(native_bytes);
+    let delayed_value = match kind {
+        IdentifierMappingKind::Aggregator => DelayedFieldValue::Aggregator(native_value as u128),
+        IdentifierMappingKind::Snapshot => DelayedFieldValue::Snapshot(native_value as u128),
+        _ => {
+            return Err(StateviewError::Other(format!(
+                "Unsupported mapping kind for manual exchange: {:?}",
+                kind
+            )));
+        }
+    };
+
+    let mut exchanged = bytes.to_vec();
+    exchanged[0..8].copy_from_slice(&delayed_field_id.as_u64().to_le_bytes());
+    Ok((exchanged, delayed_value))
+}
+
 pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
     ResourceGroupStatsSnapshot {
         group_accesses: RESOURCE_GROUP_STATS
@@ -250,9 +323,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             MoveTypeLayout::Native(..) => true,
             MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
             MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => fields
-                    .iter()
-                    .any(Self::layout_has_identifier_mappings),
+                MoveStructLayout::Runtime(fields) => {
+                    fields.iter().any(Self::layout_has_identifier_mappings)
+                }
                 MoveStructLayout::WithFields(fields) => fields
                     .iter()
                     .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
@@ -400,7 +473,8 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
-        if let Some(exchanged) = self.try_manual_exchange_for_nested_native_u64(layout, state_value)?
+        if let Some(exchanged) =
+            self.try_manual_exchange_for_nested_native_u64(layout, state_value)?
         {
             return Ok(exchanged);
         }
@@ -469,65 +543,14 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         layout: &MoveTypeLayout,
         state_value: &StateValue,
     ) -> Result<Option<(StateValue, HashSet<DelayedFieldID>)>, StateviewError> {
-        let (kind, native_layout) = match layout {
-            MoveTypeLayout::Struct(outer) => {
-                let outer_fields = outer.fields();
-                if outer_fields.len() != 1 {
-                    return Ok(None);
-                }
-                match &outer_fields[0] {
-                    MoveTypeLayout::Struct(inner) => {
-                        let inner_fields = inner.fields();
-                        if inner_fields.len() != 2 {
-                            return Ok(None);
-                        }
-                        match (&inner_fields[0], &inner_fields[1]) {
-                            (MoveTypeLayout::Native(kind, native_layout), MoveTypeLayout::U64) => {
-                                (kind, native_layout.as_ref())
-                            }
-                            _ => return Ok(None),
-                        }
-                    }
-                    _ => return Ok(None),
-                }
-            }
-            _ => return Ok(None),
-        };
-
-        if !matches!(native_layout, MoveTypeLayout::U64) {
+        let Some(kind) = nested_native_u64_kind_for_manual_exchange(layout) else {
             return Ok(None);
-        }
-        if !matches!(
-            kind,
-            IdentifierMappingKind::Aggregator | IdentifierMappingKind::Snapshot
-        ) {
-            return Ok(None);
-        }
-
-        let bytes = state_value.bytes();
-        if bytes.len() != 16 {
-            return Err(StateviewError::Other(format!(
-                "Manual exchange expected 16 bytes, got {} for layout {:?}",
-                bytes.len(),
-                layout
-            )));
-        }
-
-        let native_value = u64::from_le_bytes(
-            bytes[0..8]
-                .try_into()
-                .map_err(|_| StateviewError::Other("Failed to parse native u64 bytes".to_string()))?,
-        );
-        let delayed_value = match kind {
-            IdentifierMappingKind::Aggregator => DelayedFieldValue::Aggregator(native_value as u128),
-            IdentifierMappingKind::Snapshot => DelayedFieldValue::Snapshot(native_value as u128),
-            _ => unreachable!(),
         };
         let id = self.generate_delayed_field_id(8);
+        let (exchanged, delayed_value) =
+            manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
         self.delayed_fields.set_base_value(id, delayed_value);
 
-        let mut exchanged = bytes.to_vec();
-        exchanged[0..8].copy_from_slice(&id.as_u64().to_le_bytes());
         let exchanged_state = StateValue::new_with_metadata(
             Bytes::from(exchanged),
             state_value.clone().into_metadata(),
@@ -535,9 +558,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         let mut delayed_ids = HashSet::new();
         delayed_ids.insert(id);
 
-        warn!(
-            "[vm2-delayed] manual exchange fallback applied for nested native U64 layout"
-        );
+        warn!("[vm2-delayed] manual exchange fallback applied for nested native U64 layout");
         Ok(Some((exchanged_state, delayed_ids)))
     }
 
@@ -957,7 +978,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                             .map(|v| v.into_metadata())
                             .unwrap_or_else(StateValueMetadata::none);
                         let group_size = self.resource_group_view.resource_group_size(&key)?.get();
-                        let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
+                        let state_value =
+                            StateValue::new_with_metadata(raw_bytes.clone(), metadata);
                         self.maybe_dump_exchange_input(
                             "group_fresh",
                             &key,
