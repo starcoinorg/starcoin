@@ -1,3 +1,4 @@
+use crate::node_rpc::NodeRpc;
 use crate::pplns_store::{
     build_pplns_store, CandidateRecord, CandidateStatus, PendingSubmitRecord, PplnsStore,
     ShareRecord,
@@ -6,7 +7,6 @@ use crate::StratumPplnsConfig;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::AsyncRpcClient;
 use starcoin_vm2_vm_types::account_config::events::BlockRewardEvent as BlockRewardEventV2;
 use starcoin_vm_types::account_config::events::BlockRewardEvent as BlockRewardEventV1;
 use std::collections::{BTreeMap, HashMap};
@@ -234,7 +234,7 @@ impl PplnsRuntime {
         self.flush_store(true);
     }
 
-    pub async fn settle_tick(&mut self, rpc: &AsyncRpcClient) -> Result<()> {
+    pub async fn settle_tick(&mut self, rpc: &dyn NodeRpc) -> Result<()> {
         if !self.settlement_enabled() {
             if self.integrity_degraded {
                 warn!(
@@ -295,7 +295,7 @@ impl PplnsRuntime {
         Ok(())
     }
 
-    async fn settle_pending(&mut self, rpc: &AsyncRpcClient) -> Result<(u64, u64)> {
+    async fn settle_pending(&mut self, rpc: &dyn NodeRpc) -> Result<(u64, u64)> {
         let head = rpc.chain_info().await?;
         let head_number = head.head.number.0;
         let confirmed_head =
@@ -383,7 +383,7 @@ impl PplnsRuntime {
     }
 
     async fn fetch_block_reward(
-        rpc: &AsyncRpcClient,
+        rpc: &dyn NodeRpc,
         block_hash: HashValue,
         block_number: u64,
     ) -> Result<u128> {

@@ -1,13 +1,13 @@
 use anyhow::Result;
 use byteorder::{BigEndian, ByteOrder, LittleEndian, WriteBytesExt};
 use futures::channel::mpsc;
-use futures::{SinkExt, TryStreamExt};
+use futures::{SinkExt, StreamExt};
 use serde::Serialize;
 use starcoin_consensus::{difficult_to_target, Consensus};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::AsyncRpcClient;
 use starcoin_stratumd::diff_manager::DifficultyManager;
+use starcoin_stratumd::node_rpc::NodeRpc;
 use starcoin_stratumd::pplns::PplnsRuntime;
 use starcoin_stratumd::stratum_rpc::{
     JobId, LoginRequest, MinerWorker, ShareRequest, StratumJobResponse, SubmitShareResponse,
@@ -520,7 +520,7 @@ struct JsonRpcNotification<T> {
 
 #[derive(Clone)]
 pub struct App {
-    rpc: Arc<AsyncRpcClient>,
+    rpc: Arc<dyn NodeRpc>,
     state: Arc<Mutex<GatewayState>>,
     job_poll: Duration,
     pplns: Option<Arc<Mutex<PplnsRuntime>>>,
@@ -528,7 +528,7 @@ pub struct App {
 
 impl App {
     pub fn new(
-        rpc: Arc<AsyncRpcClient>,
+        rpc: Arc<dyn NodeRpc>,
         limits: StratumLimits,
         job_poll: Duration,
         pplns: Option<Arc<Mutex<PplnsRuntime>>>,
@@ -964,16 +964,16 @@ impl App {
         loop {
             match self.rpc.subscribe_new_mint_blocks().await {
                 Ok(mut stream) => loop {
-                    match stream.try_next().await {
-                        Ok(Some(job)) => self.on_new_job(job).await,
-                        Ok(None) => {
+                    match stream.next().await {
+                        Some(Ok(job)) => self.on_new_job(job).await,
+                        None => {
                             warn!(
                                 target: "stratum_server",
                                 "upstream mint block stream closed"
                             );
                             break;
                         }
-                        Err(err) => {
+                        Some(Err(err)) => {
                             warn!(
                                 target: "stratum_server",
                                 "upstream mint block stream failed: {}",
@@ -1009,7 +1009,7 @@ impl App {
         loop {
             if let Some(pplns) = &self.pplns {
                 let mut pplns = pplns.lock().await;
-                if let Err(err) = pplns.settle_tick(&self.rpc).await {
+                if let Err(err) = pplns.settle_tick(self.rpc.as_ref()).await {
                     warn!(target: "stratum_server", "pplns settlement tick failed: {}", err);
                 }
             }

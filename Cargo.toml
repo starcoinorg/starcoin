@@ -118,7 +118,6 @@ members = [
     "abi/resolver",
     "test-helper",
     "cmd/starcoin",
-    "cmd/stratumd",
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
@@ -237,7 +236,6 @@ default-members = [
     "abi/resolver",
     "test-helper",
     "cmd/starcoin",
-    "cmd/stratumd",
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
@@ -255,6 +253,8 @@ default-members = [
     "dataformat-generator",
     "dataformat-generator-vm2",
 ]
+
+exclude = ["cmd/stratumd"]
 
 [profile.dev]
 panic = "unwind"

@@ -1,8 +1,7 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::AsyncRpcClient;
-use starcoin_stratumd::node_rpc::parse_conn_source;
+use starcoin_stratumd::node_rpc::build_async_rpc_client;
 use starcoin_stratumd::pplns::PplnsRuntime;
 use starcoin_stratumd::{StratumLimits, StratumPplnsConfig};
 use std::sync::Arc;
@@ -129,8 +128,7 @@ async fn run_gateway(opt: RunOpt) -> Result<()> {
         limits.max_workers_per_account
     );
 
-    let conn = parse_conn_source(&opt.node_rpc)?;
-    let rpc = Arc::new(AsyncRpcClient::new(conn).await?);
+    let rpc = build_async_rpc_client(&opt.node_rpc).await?;
     let pplns = build_pplns_runtime(&opt)?;
     let app = App::new(
         rpc,

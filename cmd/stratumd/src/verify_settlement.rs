@@ -2,8 +2,7 @@ use anyhow::Result;
 use clap::Args;
 use postgres::{Client, NoTls};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_client::RpcClient;
-use starcoin_stratumd::node_rpc::build_sync_rpc_client;
+use starcoin_stratumd::node_rpc::{build_sync_rpc_client, NodeRpcSync};
 use starcoin_stratumd::pplns::PplnsRuntime;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -194,7 +193,7 @@ fn check_non_confirmed_has_no_credit(
 }
 
 fn fetch_block_reward_sync(
-    rpc: &RpcClient,
+    rpc: &dyn NodeRpcSync,
     block_hash: HashValue,
     block_number: u64,
 ) -> Result<u128> {
