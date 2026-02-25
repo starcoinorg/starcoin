@@ -341,7 +341,9 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             let id = self.hashmap_view.generate_delayed_field_id(8);
             let (exchanged, delayed_value) =
                 manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
-            self.hashmap_view.delayed_fields().set_base_value(id, delayed_value);
+            self.hashmap_view
+                .delayed_fields()
+                .set_base_value(id, delayed_value);
 
             let exchanged_state = StateValue::new_with_metadata(
                 Bytes::from(exchanged),
