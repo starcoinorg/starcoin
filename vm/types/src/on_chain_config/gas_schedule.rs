@@ -422,6 +422,10 @@ pub fn native_gas_schedule_v4() -> Vec<(String, u64)> {
             gas_total(4, 1),
         ),
         (
+            "starcoin_natives.secp256k1.secp256k1_sign.base".to_string(),
+            gas_total(4, 1),
+        ),
+        (
             "move_stdlib.vector.spawn_from.legacy_per_abstract_memory_unit".to_string(),
             gas_total(4, 1),
         ),
