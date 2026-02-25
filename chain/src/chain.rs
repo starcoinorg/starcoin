@@ -36,7 +36,9 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_management::{get_force_upgrade_block_number, should_force_upgrade};
+use starcoin_vm_runtime::force_upgrade_management::{
+    get_force_upgrade_block_number, should_force_upgrade,
+};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
