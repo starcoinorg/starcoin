@@ -15,12 +15,15 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
-      - name: setup environment
-        run: |
-          bash ./scripts/dev_setup.sh -b -t -y -m
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: setup rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.66.1
+          components: rustfmt, clippy
       - name: run fmt check
         run: cargo fmt -- --check
+      - name: setup environment
+        run: bash ./scripts/dev_setup.sh -b -t -y -m
       - name: run cargo clean
         run: cargo clean
       - name: run cargo check
