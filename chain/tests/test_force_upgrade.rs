@@ -37,6 +37,7 @@ use test_helper::executor::{get_balance, get_sequence_number};
 use test_helper::gen_blockchain_for_test;
 
 #[stest::test]
+#[ignore = "force upgrade has been removed from test network"]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let config = Arc::new(test_node_config());
     let net = config.net();
@@ -261,6 +262,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 }
 
 #[stest::test]
+#[ignore = "force upgrade has been removed from test network"]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
     let config = Arc::new(test_node_config());
 
@@ -286,6 +288,7 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
 }
 
 #[stest::test]
+#[ignore = "force upgrade has been removed from test network"]
 fn test_frozen_account() -> anyhow::Result<()> {
     let config = Arc::new(test_node_config());
 
@@ -346,6 +349,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
 }
 
 #[stest::test]
+#[ignore = "force upgrade has been removed from test network"]
 fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
     let config = Arc::new(test_node_config());
 
