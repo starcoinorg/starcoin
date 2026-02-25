@@ -1,9 +1,14 @@
 use move_core_types::value::{IdentifierMappingKind, MoveStructLayout, MoveTypeLayout};
-use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, TryFromMoveValue};
+use move_vm_types::value_serde::{
+    deserialize_and_replace_values_with_ids, serialize_and_allow_delayed_values,
+    ValueToIdentifierMapping,
+};
 use starcoin_aggregator::types::DelayedFieldValue;
 use starcoin_vm_runtime::data_cache::{
     manual_exchange_bytes_for_nested_native_u64, nested_native_u64_kind_for_manual_exchange,
 };
+use std::cell::RefCell;
 
 fn nested_manual_exchange_layout(kind: IdentifierMappingKind) -> MoveTypeLayout {
     MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![MoveTypeLayout::Struct(
@@ -96,4 +101,67 @@ fn manual_exchange_bytes_snapshot_maps_to_snapshot_value() {
         delayed_value,
         DelayedFieldValue::Snapshot(v) if v == 13
     ));
+}
+
+#[test]
+fn manual_exchange_bytes_matches_standard_exchange_for_target_layout() {
+    struct Mapping {
+        id: DelayedFieldID,
+        seen: RefCell<Option<DelayedFieldValue>>,
+    }
+
+    impl ValueToIdentifierMapping for Mapping {
+        type Identifier = DelayedFieldID;
+
+        fn value_to_identifier(
+            &self,
+            kind: &move_core_types::value::IdentifierMappingKind,
+            layout: &MoveTypeLayout,
+            value: move_vm_types::values::Value,
+        ) -> Result<Self::Identifier, move_binary_format::errors::PartialVMError> {
+            let (base, width) = DelayedFieldValue::try_from_move_value(layout, value, kind)?;
+            assert_eq!(width, 8);
+            *self.seen.borrow_mut() = Some(base);
+            Ok(self.id)
+        }
+
+        fn identifier_to_value(
+            &self,
+            _layout: &MoveTypeLayout,
+            _identifier: Self::Identifier,
+        ) -> Result<move_vm_types::values::Value, move_binary_format::errors::PartialVMError> {
+            unreachable!()
+        }
+    }
+
+    let delayed_id = DelayedFieldID::new_with_width(33, 8);
+    let layout = nested_manual_exchange_layout(IdentifierMappingKind::Aggregator);
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&123u64.to_le_bytes());
+    bytes.extend_from_slice(&456u64.to_le_bytes());
+
+    let mapping = Mapping {
+        id: delayed_id,
+        seen: RefCell::new(None),
+    };
+    let standard = deserialize_and_replace_values_with_ids(&bytes, &layout, &mapping)
+        .expect("standard exchange should succeed");
+    let standard_bytes = serialize_and_allow_delayed_values(&standard, &layout)
+        .expect("standard serialization should succeed")
+        .expect("standard serialization should return bytes");
+    let standard_base = mapping
+        .seen
+        .borrow()
+        .clone()
+        .expect("standard exchange should capture base value");
+
+    let (manual_bytes, manual_base) = manual_exchange_bytes_for_nested_native_u64(
+        IdentifierMappingKind::Aggregator,
+        &bytes,
+        delayed_id,
+    )
+    .expect("manual exchange should succeed");
+
+    assert_eq!(manual_bytes, standard_bytes);
+    assert_eq!(manual_base, standard_base);
 }

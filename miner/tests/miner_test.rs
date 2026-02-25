@@ -238,6 +238,7 @@ async fn test_miner_service() {
         None,
     );
     registry.put_shared(txpool).await.unwrap();
+<<<<<<< HEAD
     let account_storage = AccountStorage::create_from_path(
         node_config.vault.dir2(),
         node_config.storage.rocksdb_config(),
@@ -247,6 +248,12 @@ async fn test_miner_service() {
         .put_shared::<AccountStorage>(account_storage)
         .await
         .unwrap();
+=======
+    let account_storage =
+        AccountStorage::create_from_path(node_config.vault.dir2(), node_config.storage.rocksdb_config())
+            .unwrap();
+    registry.put_shared::<AccountStorage>(account_storage).await.unwrap();
+>>>>>>> 74620a84c (fix test cases)
     registry.register::<AccountService>().await.unwrap();
     registry.register::<PruningPointService>().await.unwrap();
 

@@ -43,7 +43,10 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
-use crate::data_cache::get_resource_group_member_from_metadata;
+use crate::data_cache::{
+    get_resource_group_member_from_metadata, manual_exchange_bytes_for_nested_native_u64,
+    nested_native_u64_kind_for_manual_exchange,
+};
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use crate::parallel_executor::{ParallelStateKey, ParallelStateValue};
 
@@ -334,6 +337,21 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
+        if let Some(kind) = nested_native_u64_kind_for_manual_exchange(layout) {
+            let id = self.hashmap_view.generate_delayed_field_id(8);
+            let (exchanged, delayed_value) =
+                manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
+            self.hashmap_view.delayed_fields().set_base_value(id, delayed_value);
+
+            let exchanged_state = StateValue::new_with_metadata(
+                Bytes::from(exchanged),
+                state_value.clone().into_metadata(),
+            );
+            let mut delayed_ids = HashSet::new();
+            delayed_ids.insert(id);
+            return Ok((exchanged_state, delayed_ids));
+        }
+
         struct Mapping<'a, S: StateView> {
             view: &'a VersionedView<'a, S>,
             delayed_ids: RefCell<HashSet<DelayedFieldID>>,
