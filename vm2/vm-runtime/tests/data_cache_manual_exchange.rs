@@ -129,7 +129,8 @@ fn manual_exchange_bytes_matches_standard_exchange_for_target_layout() {
             &self,
             _layout: &MoveTypeLayout,
             _identifier: Self::Identifier,
-        ) -> Result<move_vm_types::values::Value, move_binary_format::errors::PartialVMError> {
+        ) -> Result<move_vm_types::values::Value, move_binary_format::errors::PartialVMError>
+        {
             unreachable!()
         }
     }
