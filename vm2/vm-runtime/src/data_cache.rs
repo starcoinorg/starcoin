@@ -30,7 +30,6 @@ use starcoin_mvhashmap::types::MVDelayedFieldsError;
 use starcoin_mvhashmap::versioned_delayed_fields::{
     TVersionedDelayedFieldView, VersionedDelayedFields,
 };
-#[cfg(debug_assertions)]
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
 use starcoin_vm_runtime_types::resolver::{
