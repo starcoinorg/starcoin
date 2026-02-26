@@ -144,6 +144,14 @@ pub fn manual_exchange_bytes_for_nested_native_u64(
     bytes: &[u8],
     delayed_field_id: DelayedFieldID,
 ) -> Result<(Vec<u8>, DelayedFieldValue), StateviewError> {
+    let width = delayed_field_id.extract_width();
+    if width != 8 {
+        return Err(StateviewError::Other(format!(
+            "Manual exchange expected delayed field width 8, got {}",
+            width
+        )));
+    }
+
     if bytes.len() != 16 {
         return Err(StateviewError::Other(format!(
             "Manual exchange expected 16 bytes, got {}",

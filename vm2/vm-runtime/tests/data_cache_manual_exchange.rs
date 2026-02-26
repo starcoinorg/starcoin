@@ -84,6 +84,23 @@ fn manual_exchange_bytes_rejects_invalid_length() {
 }
 
 #[test]
+fn manual_exchange_bytes_rejects_invalid_delayed_field_width() {
+    let delayed_id = DelayedFieldID::new_with_width(7, 16);
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&1u64.to_le_bytes());
+    bytes.extend_from_slice(&2u64.to_le_bytes());
+
+    let err = manual_exchange_bytes_for_nested_native_u64(
+        IdentifierMappingKind::Aggregator,
+        &bytes,
+        delayed_id,
+    )
+    .expect_err("manual exchange should reject non-u64 delayed field ids");
+
+    assert!(format!("{err:?}").contains("expected delayed field width 8"));
+}
+
+#[test]
 fn manual_exchange_bytes_snapshot_maps_to_snapshot_value() {
     let delayed_id = DelayedFieldID::new_with_width(7, 8);
     let mut bytes = Vec::new();
