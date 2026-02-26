@@ -128,6 +128,19 @@ impl ServiceRequest for SyncSpecificTargretRequest {
 #[derive(Debug, Clone)]
 pub struct SyncProgressRequest;
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct ParallelWorkerSyncStat {
+    pub worker_id: u64,
+    pub synced_block_count: u64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct ParallelSyncStat {
+    pub worker_count: usize,
+    pub total_synced_block_count: u64,
+    pub workers: Vec<ParallelWorkerSyncStat>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SyncProgressReport {
     pub target_id: HashValue,
@@ -137,6 +150,8 @@ pub struct SyncProgressReport {
     pub target_difficulty: U256,
     pub target_peers: Vec<PeerId>,
     pub current: TaskProgressReport,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parallel: Option<ParallelSyncStat>,
 }
 
 impl ServiceRequest for SyncProgressRequest {

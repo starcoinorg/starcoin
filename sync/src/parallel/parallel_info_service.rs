@@ -1,23 +1,12 @@
 use anyhow::Result;
+use starcoin_logger::prelude::warn;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
+use starcoin_sync_api::{ParallelSyncStat, ParallelWorkerSyncStat};
 use std::collections::HashMap;
 
 pub type ParallelWorkerId = u64;
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct WorkerSyncStat {
-    pub worker_id: ParallelWorkerId,
-    pub synced_block_count: u64,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct ParallelSyncStat {
-    pub worker_count: usize,
-    pub total_synced_block_count: u64,
-    pub workers: Vec<WorkerSyncStat>,
-}
 
 #[derive(Default)]
 pub struct ParallelInfoService {
@@ -26,10 +15,10 @@ pub struct ParallelInfoService {
 
 impl ParallelInfoService {
     fn snapshot(&self) -> ParallelSyncStat {
-        let mut workers: Vec<WorkerSyncStat> = self
+        let mut workers: Vec<ParallelWorkerSyncStat> = self
             .worker_synced_blocks
             .iter()
-            .map(|(worker_id, synced_block_count)| WorkerSyncStat {
+            .map(|(worker_id, synced_block_count)| ParallelWorkerSyncStat {
                 worker_id: *worker_id,
                 synced_block_count: *synced_block_count,
             })
@@ -46,6 +35,15 @@ impl ParallelInfoService {
             workers,
         }
     }
+
+    fn publish_snapshot(&self, ctx: &ServiceContext<Self>) {
+        if let Err(e) = ctx.put_shared(self.snapshot()) {
+            warn!(
+                "[sync] failed to publish parallel sync stat snapshot: {:?}",
+                e
+            );
+        }
+    }
 }
 
 impl ActorService for ParallelInfoService {}
@@ -60,8 +58,9 @@ impl ServiceRequest for RegisterWorkerRequest {
 }
 
 impl ServiceHandler<Self, RegisterWorkerRequest> for ParallelInfoService {
-    fn handle(&mut self, msg: RegisterWorkerRequest, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, msg: RegisterWorkerRequest, ctx: &mut ServiceContext<Self>) {
         self.worker_synced_blocks.entry(msg.worker_id).or_insert(0);
+        self.publish_snapshot(ctx);
     }
 }
 
@@ -75,8 +74,9 @@ impl ServiceRequest for UnregisterWorkerRequest {
 }
 
 impl ServiceHandler<Self, UnregisterWorkerRequest> for ParallelInfoService {
-    fn handle(&mut self, msg: UnregisterWorkerRequest, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, msg: UnregisterWorkerRequest, ctx: &mut ServiceContext<Self>) {
         self.worker_synced_blocks.remove(&msg.worker_id);
+        self.publish_snapshot(ctx);
     }
 }
 
@@ -90,9 +90,10 @@ impl ServiceRequest for ReportWorkerSyncedBlockRequest {
 }
 
 impl ServiceHandler<Self, ReportWorkerSyncedBlockRequest> for ParallelInfoService {
-    fn handle(&mut self, msg: ReportWorkerSyncedBlockRequest, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, msg: ReportWorkerSyncedBlockRequest, ctx: &mut ServiceContext<Self>) {
         let synced_block_count = self.worker_synced_blocks.entry(msg.worker_id).or_insert(0);
         *synced_block_count = synced_block_count.saturating_add(1);
+        self.publish_snapshot(ctx);
     }
 }
 
@@ -107,9 +108,10 @@ impl ServiceRequest for ReportWorkerSyncedBlocksRequest {
 }
 
 impl ServiceHandler<Self, ReportWorkerSyncedBlocksRequest> for ParallelInfoService {
-    fn handle(&mut self, msg: ReportWorkerSyncedBlocksRequest, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, msg: ReportWorkerSyncedBlocksRequest, ctx: &mut ServiceContext<Self>) {
         let synced_block_count = self.worker_synced_blocks.entry(msg.worker_id).or_insert(0);
         *synced_block_count = synced_block_count.saturating_add(msg.block_count);
+        self.publish_snapshot(ctx);
     }
 }
 
@@ -138,8 +140,9 @@ impl ServiceRequest for ResetParallelSyncStatRequest {
 }
 
 impl ServiceHandler<Self, ResetParallelSyncStatRequest> for ParallelInfoService {
-    fn handle(&mut self, _msg: ResetParallelSyncStatRequest, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, _msg: ResetParallelSyncStatRequest, ctx: &mut ServiceContext<Self>) {
         self.worker_synced_blocks.clear();
+        self.publish_snapshot(ctx);
     }
 }
 

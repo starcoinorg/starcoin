@@ -30,9 +30,9 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort, SyncCancelRequest,
-    SyncProgressReport, SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest,
-    SyncStartRequest, SyncStatusRequest, SyncTarget,
+    ParallelSyncStat, PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort,
+    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
+    SyncSpecificTargretRequest, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
@@ -1093,8 +1093,18 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: SyncProgressRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Option<SyncProgressReport> {
+        let parallel = match ctx.get_shared_opt::<ParallelSyncStat>() {
+            Ok(parallel) => parallel,
+            Err(e) => {
+                warn!(
+                    "[sync] failed to get parallel sync stat from shared: {:?}",
+                    e
+                );
+                None
+            }
+        };
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
                 if let Some(begin) = handle.task_begin.as_ref() {
@@ -1117,6 +1127,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle.target.peers.clone(),
                     current: report,
+                    parallel,
                 }
             })
         })

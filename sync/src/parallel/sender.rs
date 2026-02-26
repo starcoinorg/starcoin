@@ -1,9 +1,4 @@
-use std::{
-    cmp::Reverse,
-    collections::BinaryHeap,
-    sync::Arc,
-    vec,
-};
+use std::{cmp::Reverse, collections::BinaryHeap, sync::Arc, vec};
 
 use starcoin_config::TimeService;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
