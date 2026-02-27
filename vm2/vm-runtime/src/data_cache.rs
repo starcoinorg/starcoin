@@ -10,7 +10,7 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::MoveTypeLayout;
+use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
@@ -244,6 +244,25 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
 }
 
 impl<'a, S: StateView> StorageAdapter<'a, S> {
+    fn layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
+        match layout {
+            MoveTypeLayout::Native(..) => true,
+            MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
+            MoveTypeLayout::Struct(struct_layout) => match struct_layout {
+                MoveStructLayout::Runtime(fields) => {
+                    fields.iter().any(Self::layout_has_identifier_mappings)
+                }
+                MoveStructLayout::WithFields(fields) => fields
+                    .iter()
+                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
+                MoveStructLayout::WithTypes { fields, .. } => fields
+                    .iter()
+                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
+            },
+            _ => false,
+        }
+    }
+
     pub fn new(
         state_store: &'a S,
         deserializer_config: DeserializerConfig,
@@ -302,6 +321,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         bytes: &Bytes,
         layout: &MoveTypeLayout,
     ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
+        if !Self::layout_has_identifier_mappings(layout) {
+            return Ok(HashSet::new());
+        }
         let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
             StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
         })?;
@@ -430,6 +452,18 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             state_value.clone().into_metadata(),
         );
         Ok((exchanged, mapping.delayed_ids.into_inner()))
+    }
+
+    fn maybe_exchange_state_value(
+        &self,
+        state_value: &StateValue,
+        layout: &MoveTypeLayout,
+    ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
+        if !Self::layout_has_identifier_mappings(layout) {
+            return Ok((state_value.clone(), HashSet::new(), false));
+        }
+        let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
+        Ok((exchanged, delayed_ids, true))
     }
 
     pub fn materialize_output(&self, mut output: VMOutput) -> Result<TransactionOutput, VMStatus> {
@@ -749,8 +783,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                         .unwrap_or_else(StateValueMetadata::none);
                     let group_size = self.resource_group_view.resource_group_size(&key)?.get();
                     let state_value = StateValue::new_with_metadata(raw_bytes.clone(), metadata);
-                    let (exchanged, ids) = self
-                        .exchange_state_value(&state_value, layout)
+                    let (exchanged, ids, _) = self
+                        .maybe_exchange_state_value(&state_value, layout)
                         .map_err(|e| {
                             PartialVMError::new(StatusCode::STORAGE_ERROR)
                                 .with_message(format!("{:?}", e))
@@ -813,8 +847,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                             PartialVMError::new(StatusCode::STORAGE_ERROR)
                                 .with_message("Cached base value missing bytes".to_string())
                         })?;
-                        let (exchanged, ids) = self
-                            .exchange_state_value(&state_value, layout)
+                        let (exchanged, ids, exchanged_flag) = self
+                            .maybe_exchange_state_value(&state_value, layout)
                             .map_err(|e| {
                                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                                     .with_message(format!("{:?}", e))
@@ -823,7 +857,7 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                         self.delayed_field_cache.insert_base_value(
                             state_key.clone(),
                             WriteOp::from_state_value(Some(exchanged.clone())),
-                            true,
+                            exchanged_flag,
                         );
                         Some(exchanged.bytes().clone())
                     } else {
@@ -840,8 +874,8 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                     let Some(state_value) = state_value else {
                         return Ok((None, 0));
                     };
-                    let (exchanged, ids) = self
-                        .exchange_state_value(&state_value, layout)
+                    let (exchanged, ids, exchanged_flag) = self
+                        .maybe_exchange_state_value(&state_value, layout)
                         .map_err(|e| {
                             PartialVMError::new(StatusCode::STORAGE_ERROR)
                                 .with_message(format!("{:?}", e))
@@ -849,7 +883,7 @@ impl<S: StateView> ResourceResolver for StorageAdapter<'_, S> {
                     self.record_resource_read(&state_key, &exchanged, layout, ids);
                     let cached = self.delayed_field_cache.get_or_insert_base_value(
                         state_key.clone(),
-                        true,
+                        exchanged_flag,
                         || Ok(WriteOp::from_state_value(Some(exchanged.clone()))),
                     )?;
                     cached.bytes().cloned()
@@ -1071,8 +1105,15 @@ impl<S: StateView> IntoMoveResolver<S> for S {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use move_core_types::value::IdentifierMappingKind;
     use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
+    use starcoin_vm_types::state_store::in_memory_state_view::InMemoryStateView;
+    use std::collections::HashMap;
     //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
+
+    fn has_identifier_mapping(layout: &MoveTypeLayout) -> bool {
+        StorageAdapter::<InMemoryStateView>::layout_has_identifier_mappings(layout)
+    }
 
     // Expose a method to create a storage adapter with a provided group size kind.
     #[allow(dead_code)]
@@ -1099,5 +1140,81 @@ pub(crate) mod tests {
         );
 
         state_view.as_move_resolver()
+    }
+
+    #[test]
+    fn layout_identifier_mapping_detection_handles_non_native_layout() {
+        let plain = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::U8,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U64)),
+        ]));
+        assert!(!has_identifier_mapping(&plain));
+    }
+
+    #[test]
+    fn layout_identifier_mapping_detection_handles_nested_native_layout() {
+        let nested =
+            MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![MoveTypeLayout::Struct(
+                MoveStructLayout::Runtime(vec![
+                    MoveTypeLayout::Native(
+                        IdentifierMappingKind::Aggregator,
+                        Box::new(MoveTypeLayout::U64),
+                    ),
+                    MoveTypeLayout::U64,
+                ]),
+            )]));
+        assert!(has_identifier_mapping(&nested));
+    }
+
+    #[test]
+    fn layout_identifier_mapping_detection_handles_snapshot_kind() {
+        let nested =
+            MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![MoveTypeLayout::Struct(
+                MoveStructLayout::Runtime(vec![
+                    MoveTypeLayout::Native(
+                        IdentifierMappingKind::Snapshot,
+                        Box::new(MoveTypeLayout::U64),
+                    ),
+                    MoveTypeLayout::U64,
+                ]),
+            )]));
+        assert!(has_identifier_mapping(&nested));
+    }
+
+    #[test]
+    fn delayed_ids_scan_skips_plain_layout_without_deserialize() {
+        let state_view = InMemoryStateView::new(HashMap::new());
+        let resolver = state_view.as_move_resolver();
+        let plain = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::U8,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U64)),
+        ]));
+
+        // invalid bytes for this layout, but scan should short-circuit and return empty ids.
+        let ids = resolver
+            .delayed_ids_from_bytes(&Bytes::from_static(b"not-bcs"), &plain)
+            .expect("non-native layout should not attempt delayed-id deserialize");
+        assert!(ids.is_empty());
+    }
+
+    #[test]
+    fn delayed_ids_scan_tries_native_layout_deserialize() {
+        let state_view = InMemoryStateView::new(HashMap::new());
+        let resolver = state_view.as_move_resolver();
+        let nested =
+            MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![MoveTypeLayout::Struct(
+                MoveStructLayout::Runtime(vec![
+                    MoveTypeLayout::Native(
+                        IdentifierMappingKind::Aggregator,
+                        Box::new(MoveTypeLayout::U64),
+                    ),
+                    MoveTypeLayout::U64,
+                ]),
+            )]));
+
+        // The same invalid bytes should error for native layout because serde path is taken.
+        assert!(resolver
+            .delayed_ids_from_bytes(&Bytes::from_static(b"not-bcs"), &nested)
+            .is_err());
     }
 }

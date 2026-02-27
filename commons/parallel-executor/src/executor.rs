@@ -40,11 +40,13 @@ static RAYON_EXEC_POOL: Lazy<rayon::ThreadPool> = Lazy::new(|| {
         .unwrap()
 });
 
+const ID_PREFIX_GRANULARITY: u32 = 1_000_000;
+
 fn gen_id_start_value(sequential: bool) -> u32 {
+    // Keep aptos semantics: random prefix in disjoint ranges for sequential vs parallel.
     let offset = if sequential { 0 } else { 1000 };
     let mut rng = rand::rng();
-    let base: u32 = rng.random_range((1 + offset)..(1000 + offset));
-    base.saturating_mul(1_000_000)
+    rng.random_range((1 + offset)..(1000 + offset)) * ID_PREFIX_GRANULARITY
 }
 
 struct DelayedFieldCommitCoordinator {
@@ -1242,6 +1244,33 @@ mod tests {
         executor
             .execute_transactions_parallel((), transactions)
             .expect("parallel execute");
+    }
+
+    #[test]
+    fn test_delayed_field_id_start_is_in_aptos_ranges_and_disjoint() {
+        let seq_start = gen_id_start_value(true);
+        let par_start = gen_id_start_value(false);
+        assert_eq!(seq_start % ID_PREFIX_GRANULARITY, 0);
+        assert_eq!(par_start % ID_PREFIX_GRANULARITY, 0);
+        assert!((1_000_000..1_000_000_000).contains(&seq_start));
+        assert!((1_001_000_000..2_000_000_000).contains(&par_start));
+        assert!(par_start > seq_start);
+
+        let exec_a: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
+        let exec_b: ParallelTransactionExecutor<TestTransaction, TestExecutor> =
+            ParallelTransactionExecutor::new(num_cpus::get().max(2), None);
+
+        assert!((1_001_000_000..2_000_000_000).contains(&exec_a.delayed_field_id_start));
+        assert!((1_001_000_000..2_000_000_000).contains(&exec_b.delayed_field_id_start));
+        assert_eq!(
+            exec_a.delayed_field_id_counter.load(Ordering::SeqCst),
+            exec_a.delayed_field_id_start
+        );
+        assert_eq!(
+            exec_b.delayed_field_id_counter.load(Ordering::SeqCst),
+            exec_b.delayed_field_id_start
+        );
     }
 
     #[test]
