@@ -1,19 +1,71 @@
-processed 7 tasks
+processed 15 tasks
 
-task 4 'run'. lines 11-19:
+task 5 'run'. lines 78-86:
 {
   "gas_used": 208144,
   "status": "Executed"
 }
 
-task 5 'run'. lines 21-29:
+task 6 'run'. lines 88-96:
 {
   "gas_used": 203925,
   "status": "Executed"
 }
 
-task 6 'run'. lines 31-50:
+task 7 'run'. lines 98-117:
 {
   "gas_used": 3542476,
+  "status": "Executed"
+}
+
+task 8 'run'. lines 119-128:
+{
+  "gas_used": 1088083,
+  "status": "Executed"
+}
+
+task 9 'run'. lines 130-138:
+{
+  "gas_used": 810817,
+  "status": "Executed"
+}
+
+task 10 'run'. lines 140-148:
+{
+  "gas_used": 810817,
+  "status": "Executed"
+}
+
+task 11 'run'. lines 150-166:
+{
+  "gas_used": 3026360,
+  "status": "Executed"
+}
+
+task 12 'run'. lines 168-175:
+{
+  "gas_used": 1587283,
+  "status": "Executed"
+}
+
+task 13 'run'. lines 177-189:
+{
+  "gas_used": 16848,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "starcoin_account"
+        }
+      },
+      "abort_code": "65541"
+    }
+  }
+}
+
+task 14 'run'. lines 191-198:
+{
+  "gas_used": 1582723,
   "status": "Executed"
 }
