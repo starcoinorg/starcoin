@@ -3,7 +3,6 @@
 
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo as Vm1AccountInfo;
-use starcoin_account_service::AccountService;
 use starcoin_chain::verifier::VerifyWithoutConsensus;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{NodeConfig, TimeService};
@@ -32,6 +31,7 @@ use starcoin_types::block::{BlockHeader, BlockTemplate};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{sync_status::SyncStatus, system_events::GenerateBlockEvent, U256};
 use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_account_service::{AccountService, AccountStorage};
 use starcoin_vm2_crypto::keygen::KeyGen;
 use starcoin_vm2_crypto::HashValue as Vm2HashValue;
 use starcoin_vm2_types::account::DEFAULT_EXPIRATION_TIME;
@@ -40,24 +40,33 @@ use starcoin_vm2_types::{account_address, account_config};
 use starcoin_vm2_vm_types::state_view::StateReaderExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc::Sender, Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
 struct TestMinerService {
     pub wait_result_sender: Option<futures::channel::mpsc::UnboundedSender<()>>,
+    pub state: TestMinerServiceState,
+}
+
+#[derive(Clone, Default)]
+struct TestMinerServiceState {
+    pub saw_mint_event: Arc<AtomicBool>,
+    pub async_error: Arc<AtomicBool>,
 }
 
 impl TestMinerService {
-    pub fn new() -> Self {
+    pub fn new(state: TestMinerServiceState) -> Self {
         Self {
             wait_result_sender: None,
+            state,
         }
     }
 }
 
 impl ServiceFactory<Self> for TestMinerService {
-    fn create(_ctx: &mut starcoin_service_registry::ServiceContext<Self>) -> anyhow::Result<Self> {
-        Ok(Self::new())
+    fn create(ctx: &mut starcoin_service_registry::ServiceContext<Self>) -> anyhow::Result<Self> {
+        let state = ctx.get_shared::<TestMinerServiceState>()?;
+        Ok(Self::new(state))
     }
 }
 
@@ -73,14 +82,17 @@ impl ActorService for TestMinerService {
         ctx.subscribe::<MintBlockEvent>();
         let (sender, mut receiver) = futures::channel::mpsc::unbounded::<()>();
         self.wait_result_sender = Some(sender);
+        let state = self.state.clone();
 
         ctx.run_later(
             Duration::from_secs(20),
             move |_ctx: &mut starcoin_service_registry::ServiceContext<'_, Self>| match receiver
                 .try_next()
             {
-                Ok(_) => (),
-                Err(e) => panic!("Failed to receive result: {}", e),
+                Ok(Some(_)) => (),
+                Ok(None) | Err(_) => {
+                    state.async_error.store(true, Ordering::SeqCst);
+                }
             },
         );
         Ok(())
@@ -103,8 +115,17 @@ impl EventHandler<Self, MintBlockEvent> for TestMinerService {
         msg: MintBlockEvent,
         ctx: &mut starcoin_service_registry::ServiceContext<Self>,
     ) {
+        if self.state.saw_mint_event.load(Ordering::SeqCst) {
+            return;
+        }
+
         let response = msg.block_number;
-        assert_eq!(response, 1);
+        if response != 1 {
+            self.state.async_error.store(true, Ordering::SeqCst);
+            return;
+        }
+        self.state.saw_mint_event.store(true, Ordering::SeqCst);
+        ctx.unsubscribe::<MintBlockEvent>();
 
         let miner = ctx.service_ref::<MinerService>().unwrap().clone();
         miner.notify(GenerateBlockEvent::new_break(false)).unwrap();
@@ -130,8 +151,10 @@ impl EventHandler<Self, MintBlockEvent> for TestMinerService {
             ))
             .unwrap();
 
-        if let Some(sender) = self.wait_result_sender.as_mut() {
-            sender.start_send(()).unwrap();
+        if let Some(mut sender) = self.wait_result_sender.take() {
+            if sender.start_send(()).is_err() {
+                self.state.async_error.store(true, Ordering::SeqCst);
+            }
         }
         info!("notify testing service to stop");
     }
@@ -190,11 +213,14 @@ async fn test_miner_service() {
     let mut config = NodeConfig::random_for_dag_test();
     config.miner.disable_mint_empty_block = Some(false);
     let registry = RegistryService::launch();
+    let test_state = TestMinerServiceState::default();
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
+    registry.put_shared(test_state.clone()).await.unwrap();
     let (storage, storage2, _chain_info, genesis, dag) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
+    registry.put_shared(storage2.clone()).await.unwrap();
     registry.put_shared(dag).await.unwrap();
 
     let genesis_hash = genesis.block().id();
@@ -212,11 +238,16 @@ async fn test_miner_service() {
         None,
     );
     registry.put_shared(txpool).await.unwrap();
+    let account_storage = AccountStorage::create_from_path(
+        node_config.vault.dir2(),
+        node_config.storage.rocksdb_config(),
+    )
+    .unwrap();
     registry
-        .register_mocker(AccountService::mock().unwrap())
+        .put_shared::<AccountStorage>(account_storage)
         .await
         .unwrap();
-
+    registry.register::<AccountService>().await.unwrap();
     registry.register::<PruningPointService>().await.unwrap();
 
     registry
@@ -239,12 +270,20 @@ async fn test_miner_service() {
         })
         .expect("failed to send template request");
 
-    std::thread::sleep(Duration::from_secs(30));
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while !test_state.saw_mint_event.load(Ordering::SeqCst) && Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert!(
+        test_state.saw_mint_event.load(Ordering::SeqCst),
+        "did not receive MintBlockEvent in test window"
+    );
+    assert!(
+        !test_state.async_error.load(Ordering::SeqCst),
+        "asynchronous miner test flow encountered an error"
+    );
 
-    registry
-        .shutdown_system()
-        .await
-        .expect("failed to stop registry service");
+    drop(registry);
 }
 
 #[stest::test(timeout = 30)]

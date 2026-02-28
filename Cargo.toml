@@ -51,7 +51,6 @@ members = [
     "sync/api",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -187,7 +186,6 @@ default-members = [
     "sync/api",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -676,6 +674,7 @@ starcoin-txpool.debug = 1
 starcoin-executor.debug = 1
 starcoin-genesis.debug = 1
 starcoin-vm-runtime.debug = 1
+move-vm-types.opt-level = 1
 
 [profile.release.package."*"]
 debug = false

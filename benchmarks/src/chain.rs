@@ -9,11 +9,12 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Storage2};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
@@ -42,12 +43,21 @@ impl ChainBencher {
             ))
             .unwrap(),
         );
+        let dag = BlockDAG::create_for_testing().expect("create block dag fail.");
         let (chain_info, _) =
-            Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
+            Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)
-            .expect("create block chain should success.");
+        let storage2 = Arc::new(Storage2(storage.clone()));
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage,
+            storage2,
+            None,
+            dag,
+        )
+        .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
         ChainBencher {
