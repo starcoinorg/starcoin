@@ -18,8 +18,7 @@ use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractWidth};
 use move_vm_types::value_serde::{
-    deserialize_and_allow_delayed_values, serialize_and_replace_ids_with_values,
-    ValueToIdentifierMapping,
+    ValueSerDeContext, ValueToIdentifierMapping,
 };
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use rayon::prelude::*;
@@ -917,12 +916,15 @@ fn materialize_bytes(
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
 ) -> Result<Bytes, VMStatus> {
-    let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
+    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        .with_delayed_fields_serde()
+        .deserialize(bytes, layout)
+        .ok_or_else(|| {
         VMStatus::error(
             StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
             Some("Failed to deserialize value with delayed fields".to_string()),
         )
-    })?;
+        })?;
     let mut ids: HashSet<u64> = HashSet::new();
     find_identifiers_in_value(&value, &mut ids).map_err(|err| {
         VMStatus::error(
@@ -944,12 +946,15 @@ fn materialize_bytes_force(
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
 ) -> Result<Bytes, VMStatus> {
-    let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
+    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        .with_delayed_fields_serde()
+        .deserialize(bytes, layout)
+        .ok_or_else(|| {
         VMStatus::error(
             StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
             Some("Failed to deserialize value with delayed fields".to_string()),
         )
-    })?;
+        })?;
     materialize_bytes_force_with_value(value, layout, mapping)
 }
 
@@ -958,8 +963,19 @@ fn materialize_bytes_force_with_value(
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
 ) -> Result<Bytes, VMStatus> {
-    let serialized =
-        serialize_and_replace_ids_with_values(&value, layout, mapping).ok_or_else(|| {
+    let serialized = ValueSerDeContext::<DelayedFieldID>::new(None)
+        .with_delayed_fields_replacement(mapping)
+        .serialize(&value, layout)
+        .map_err(|err| {
+            VMStatus::error(
+                StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                Some(format!(
+                    "Failed to serialize value with delayed fields replacement: {}",
+                    err
+                )),
+            )
+        })?
+        .ok_or_else(|| {
             VMStatus::error(
                 StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
                 Some("Failed to serialize value with delayed fields".to_string()),
@@ -1023,7 +1039,7 @@ mod tests {
     use move_core_types::language_storage::StructTag;
     use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
     use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
-    use move_vm_types::value_serde::serialize_and_allow_delayed_values;
+    use move_vm_types::value_serde::ValueSerDeContext;
     use move_vm_types::values::{Struct, Value};
     use starcoin_vm_types::state_store::state_value::StateValueMetadata;
     use starcoin_vm_types::write_set::WriteOp;
@@ -1086,7 +1102,9 @@ mod tests {
             Value::u64(99),
             Value::delayed_value(delayed_id),
         ]));
-        let updated_bytes = serialize_and_allow_delayed_values(&updated_value, &layout_delayed)
+        let updated_bytes = ValueSerDeContext::<DelayedFieldID>::new(None)
+            .with_delayed_fields_serde()
+            .serialize(&updated_value, &layout_delayed)
             .unwrap()
             .unwrap();
 
