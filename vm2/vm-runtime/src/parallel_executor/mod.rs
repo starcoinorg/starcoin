@@ -17,9 +17,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractWidth};
-use move_vm_types::value_serde::{
-    ValueSerDeContext, ValueToIdentifierMapping,
-};
+use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use rayon::prelude::*;
 use starcoin_aggregator::types::ReadPosition;
@@ -920,10 +918,10 @@ fn materialize_bytes(
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
-        VMStatus::error(
-            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-            Some("Failed to deserialize value with delayed fields".to_string()),
-        )
+            VMStatus::error(
+                StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                Some("Failed to deserialize value with delayed fields".to_string()),
+            )
         })?;
     let mut ids: HashSet<u64> = HashSet::new();
     find_identifiers_in_value(&value, &mut ids).map_err(|err| {
@@ -950,10 +948,10 @@ fn materialize_bytes_force(
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
-        VMStatus::error(
-            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-            Some("Failed to deserialize value with delayed fields".to_string()),
-        )
+            VMStatus::error(
+                StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                Some("Failed to deserialize value with delayed fields".to_string()),
+            )
         })?;
     materialize_bytes_force_with_value(value, layout, mapping)
 }

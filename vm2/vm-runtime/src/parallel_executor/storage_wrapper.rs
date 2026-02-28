@@ -14,9 +14,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
 };
-use move_vm_types::value_serde::{
-    ValueSerDeContext, ValueToIdentifierMapping,
-};
+use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
 use starcoin_aggregator::delta_math::DeltaHistory;
@@ -324,7 +322,9 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
-                StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
+                StateviewError::Other(
+                    "Failed to deserialize value for delayed field scan".to_string(),
+                )
             })?;
         let mut ids: HashSet<u64> = HashSet::new();
         find_identifiers_in_value(&value, &mut ids).map_err(|e| {
