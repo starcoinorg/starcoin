@@ -16,6 +16,6 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 starcoin-framework = { path = "../framework" }
 itertools = { workspace = true }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
-move-package = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "4c324b6f81091f4b3faa8262a3a6fd619d8d1395" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "4c324b6f81091f4b3faa8262a3a6fd619d8d1395" }
 tempfile = { workspace = true }
