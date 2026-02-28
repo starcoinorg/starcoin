@@ -340,7 +340,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
-                StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
+                StateviewError::Other(
+                    "Failed to deserialize value for delayed field scan".to_string(),
+                )
             })?;
         let mut ids: HashSet<u64> = HashSet::new();
         find_identifiers_in_value(&value, &mut ids).map_err(|e| {
