@@ -145,7 +145,7 @@ struct GroupReadInfo {
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
-/// Adapter to convert a `ExecutorView` into a `AptosMoveResolver`.
+/// Adapter to convert a `ExecutorView` into a `MoveResolver`.
 ///
 /// Resources in groups are handled either through dedicated interfaces of executor_view
 /// (that tie to specialized handling in block executor), or via 'standard' interfaces
