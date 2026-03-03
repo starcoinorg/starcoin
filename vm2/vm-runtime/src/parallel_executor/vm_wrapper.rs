@@ -16,6 +16,7 @@ use starcoin_parallel_executor::{
 };
 
 use move_core_types::vm_status::VMStatus;
+use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::on_chain_config::OnChainConfig;
 use starcoin_vm_types::state_store::StateView;
@@ -26,6 +27,7 @@ pub(crate) struct StarcoinVMWrapper<'a, S> {
     base_view: &'a S,
     delayed_field_cache: Arc<DelayedFieldCache>,
     delayed_fields_enabled: bool,
+    max_value_nest_depth: Option<u64>,
 }
 
 impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
@@ -42,12 +44,14 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
         let features = starcoin_vm_types::on_chain_config::Features::fetch_config(base_view)
             .unwrap_or_default();
         let delayed_fields_enabled = features.is_aggregator_v2_delayed_fields_enabled();
+        let max_value_nest_depth = Some(DEFAULT_MAX_VALUE_NEST_DEPTH);
 
         Self {
             vm,
             base_view,
             delayed_field_cache,
             delayed_fields_enabled,
+            max_value_nest_depth,
         }
     }
 
@@ -61,6 +65,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
             view,
             self.delayed_field_cache.clone(),
             self.delayed_fields_enabled,
+            self.max_value_nest_depth,
         );
         match self.vm.execute_single_transaction(txn, &versioned_view) {
             Ok((vm_status, output, sender)) => {

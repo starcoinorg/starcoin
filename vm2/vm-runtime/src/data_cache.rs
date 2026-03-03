@@ -12,6 +12,7 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::{IdentifierMappingKind, MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
+use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
@@ -234,6 +235,7 @@ struct GroupReadInfo {
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
     deserializer_config: DeserializerConfig,
+    max_value_nest_depth: Option<u64>,
     resource_group_view: ResourceGroupAdapter<'e>,
     delayed_fields_enabled: bool,
     accessed_groups: RefCell<HashSet<StateKey>>,
@@ -346,6 +348,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn new(
         state_store: &'a S,
         deserializer_config: DeserializerConfig,
+        max_value_nest_depth: Option<u64>,
         resource_group_view: ResourceGroupAdapter<'a>,
         delayed_fields_enabled: bool,
     ) -> Self {
@@ -353,6 +356,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         Self {
             executor_view: state_store,
             deserializer_config,
+            max_value_nest_depth,
             resource_group_view,
             delayed_fields_enabled,
             accessed_groups: RefCell::new(HashSet::new()),
@@ -404,7 +408,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
@@ -528,13 +532,13 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_replacement(&mapping)
             .deserialize(state_value.bytes(), layout)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .serialize(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
@@ -737,9 +741,10 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             self.executor_view,
             &mut group_cache,
             has_delayed,
+            self.max_value_nest_depth,
         )?;
         let patched_events = if has_delayed {
-            materialize_events(&output, &mapping)?
+            materialize_events(&output, &mapping, self.max_value_nest_depth)?
         } else {
             output
                 .events()
@@ -1229,11 +1234,12 @@ impl<S: StateView> AsMoveResolver<S> for S {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         let delayed_fields_enabled = features.is_aggregator_v2_delayed_fields_enabled();
-
-        let gas_feature_version = VMConfig::fetch_config(self)
-            .map(|config| config.gas_schedule)
-            .unwrap_or(default_gas_schedule())
-            .feature_version;
+        let vm_config = VMConfig::fetch_config(self);
+        let max_value_nest_depth = Some(DEFAULT_MAX_VALUE_NEST_DEPTH);
+        let gas_feature_version = vm_config
+            .as_ref()
+            .map(|config| config.gas_schedule.feature_version)
+            .unwrap_or(default_gas_schedule().feature_version);
         let resource_group_adapter = ResourceGroupAdapter::new(
             None,
             self,
@@ -1245,6 +1251,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
         StorageAdapter::new(
             self,
             deserializer_config,
+            max_value_nest_depth,
             resource_group_adapter,
             delayed_fields_enabled,
         )

@@ -16,6 +16,7 @@ use move_binary_format::errors::PartialVMError;
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{StatusCode, VMStatus};
+use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractWidth};
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
@@ -364,6 +365,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     delayed_field_cache: Arc<DelayedFieldCache>,
     state_view: &S,
 ) -> Result<Vec<TransactionOutput>, VMStatus> {
+    let max_value_nest_depth = Some(DEFAULT_MAX_VALUE_NEST_DEPTH);
     let mut outputs = outputs;
     let mut needs_sequential = false;
     let mut has_agg_v1 = false;
@@ -434,16 +436,18 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                         state_view,
                         &mut group_cache,
                         has_delayed,
+                        max_value_nest_depth,
                     )?
                 } else {
                     materialize_resource_write_set_no_groups(
                         &vm_output,
                         &mapping,
                         &delayed_field_cache,
+                        max_value_nest_depth,
                     )?
                 };
                 let patched_events = if has_delayed {
-                    materialize_events(&vm_output, &mapping)?
+                    materialize_events(&vm_output, &mapping, max_value_nest_depth)?
                 } else {
                     vm_output
                         .events()
@@ -529,9 +533,10 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
             &state_cache,
             &mut group_cache,
             has_delayed,
+            max_value_nest_depth,
         )?;
         let patched_events = if has_delayed {
-            materialize_events(&vm_output, &mapping)?
+            materialize_events(&vm_output, &mapping, max_value_nest_depth)?
         } else {
             vm_output
                 .events()
@@ -572,6 +577,7 @@ fn materialize_resource_write_set_no_groups(
     output: &VMOutput,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
     delayed_field_cache: &DelayedFieldCache,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<(StateKey, WriteOp)>, VMStatus> {
     let mut patched = Vec::new();
 
@@ -584,7 +590,12 @@ fn materialize_resource_write_set_no_groups(
                 ..
             }) => {
                 delayed_field_cache.insert_base_value(key.clone(), write_op.clone(), true);
-                materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
+                materialize_write_op_with_layout(
+                    write_op,
+                    layout.as_ref(),
+                    mapping,
+                    max_value_nest_depth,
+                )?
             }
             AbstractResourceWriteOp::InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
                 layout,
@@ -596,6 +607,7 @@ fn materialize_resource_write_set_no_groups(
                 metadata,
                 mapping,
                 delayed_field_cache,
+                max_value_nest_depth,
             )?,
             AbstractResourceWriteOp::WriteResourceGroup(_)
             | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_) => {
@@ -622,6 +634,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
     materialize_delayed: bool,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<(StateKey, WriteOp)>, VMStatus> {
     let mut patched = Vec::new();
 
@@ -636,7 +649,12 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
             }) => {
                 if materialize_delayed {
                     delayed_field_cache.insert_base_value(key.clone(), write_op.clone(), true);
-                    materialize_write_op_with_layout(write_op, layout.as_ref(), mapping)?
+                    materialize_write_op_with_layout(
+                        write_op,
+                        layout.as_ref(),
+                        mapping,
+                        max_value_nest_depth,
+                    )?
                 } else {
                     return Err(VMStatus::error(
                         StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
@@ -663,6 +681,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                     metadata,
                     mapping,
                     delayed_field_cache,
+                    max_value_nest_depth,
                 )?
             }
             AbstractResourceWriteOp::WriteResourceGroup(group_write) => {
@@ -689,6 +708,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                     state_view,
                     group_cache,
                     materialize_delayed,
+                    max_value_nest_depth,
                 )?
             }
             AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(
@@ -711,6 +731,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                     group_read_layouts,
                     state_view,
                     group_cache,
+                    max_value_nest_depth,
                 )?
             }
         };
@@ -725,20 +746,21 @@ fn materialize_write_op_with_layout(
     write_op: &WriteOp,
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     match write_op {
         WriteOp::Deletion { metadata } => Ok(WriteOp::Deletion {
             metadata: metadata.clone(),
         }),
         WriteOp::Creation { data, metadata } => {
-            let bytes = materialize_bytes_force(data, layout, mapping)?;
+            let bytes = materialize_bytes_force(data, layout, mapping, max_value_nest_depth)?;
             Ok(WriteOp::Creation {
                 data: bytes,
                 metadata: metadata.clone(),
             })
         }
         WriteOp::Modification { data, metadata } => {
-            let bytes = materialize_bytes_force(data, layout, mapping)?;
+            let bytes = materialize_bytes_force(data, layout, mapping, max_value_nest_depth)?;
             Ok(WriteOp::Modification {
                 data: bytes,
                 metadata: metadata.clone(),
@@ -753,6 +775,7 @@ fn materialize_in_place_change(
     metadata: &starcoin_vm_types::state_store::state_value::StateValueMetadata,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
     delayed_field_cache: &DelayedFieldCache,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     let base = delayed_field_cache.get_base_value(key).ok_or_else(|| {
         VMStatus::error(
@@ -772,7 +795,7 @@ fn materialize_in_place_change(
             )
         })?
         .clone();
-    let materialized = materialize_bytes_force(&bytes, layout, mapping)?;
+    let materialized = materialize_bytes_force(&bytes, layout, mapping, max_value_nest_depth)?;
     Ok(WriteOp::Modification {
         data: materialized,
         metadata: metadata.clone(),
@@ -786,6 +809,7 @@ fn materialize_group_write<S: StateView>(
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
     materialize_delayed: bool,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     let mut remove_cache = false;
     let group_map = load_group_map_cached(state_view, group_cache, key)?;
@@ -798,7 +822,7 @@ fn materialize_group_write<S: StateView>(
             WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
                 let bytes = if materialize_delayed {
                     if let Some(layout) = layout.as_ref() {
-                        materialize_bytes(data, layout.as_ref(), mapping)?
+                        materialize_bytes(data, layout.as_ref(), mapping, max_value_nest_depth)?
                     } else {
                         data.clone()
                     }
@@ -842,6 +866,7 @@ fn materialize_group_in_place<S: StateView>(
     group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     let group_map = load_group_map_cached(state_view, group_cache, key)?;
     let layouts = group_read_layouts.get(key).ok_or_else(|| {
@@ -866,7 +891,8 @@ fn materialize_group_in_place<S: StateView>(
                     )),
                 )
             })?;
-        let bytes = materialize_bytes_force(&cached, layout.as_ref(), mapping)?;
+        let bytes =
+            materialize_bytes_force(&cached, layout.as_ref(), mapping, max_value_nest_depth)?;
         group_map.insert(tag.clone(), bytes);
     }
 
@@ -879,13 +905,14 @@ fn materialize_group_in_place<S: StateView>(
 pub(crate) fn materialize_events(
     output: &VMOutput,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<ContractEvent>, VMStatus> {
     output
         .events()
         .iter()
         .map(|(event, layout)| match layout {
             None => Ok(event.clone()),
-            Some(layout) => materialize_event(event, layout, mapping),
+            Some(layout) => materialize_event(event, layout, mapping, max_value_nest_depth),
         })
         .collect()
 }
@@ -894,8 +921,14 @@ fn materialize_event(
     event: &ContractEvent,
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<ContractEvent, VMStatus> {
-    let data = materialize_bytes(&Bytes::copy_from_slice(event.event_data()), layout, mapping)?;
+    let data = materialize_bytes(
+        &Bytes::copy_from_slice(event.event_data()),
+        layout,
+        mapping,
+        max_value_nest_depth,
+    )?;
     Ok(match event {
         ContractEvent::V1(event_v1) => ContractEvent::new_v1(
             *event_v1.key(),
@@ -913,8 +946,9 @@ fn materialize_bytes(
     bytes: &Bytes,
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let value = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
@@ -936,15 +970,16 @@ fn materialize_bytes(
     if ids.is_empty() {
         return Ok(bytes.clone());
     }
-    materialize_bytes_force_with_value(value, layout, mapping)
+    materialize_bytes_force_with_value(value, layout, mapping, max_value_nest_depth)
 }
 
 fn materialize_bytes_force(
     bytes: &Bytes,
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let value = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
@@ -953,15 +988,16 @@ fn materialize_bytes_force(
                 Some("Failed to deserialize value with delayed fields".to_string()),
             )
         })?;
-    materialize_bytes_force_with_value(value, layout, mapping)
+    materialize_bytes_force_with_value(value, layout, mapping, max_value_nest_depth)
 }
 
 fn materialize_bytes_force_with_value(
     value: move_vm_types::values::Value,
     layout: &MoveTypeLayout,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let serialized = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let serialized = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
         .with_delayed_fields_replacement(mapping)
         .serialize(&value, layout)
         .map_err(|err| {
@@ -1123,6 +1159,7 @@ mod tests {
             &StateValueMetadata::none(),
             &mapping,
             &delayed_field_cache,
+            None,
         )
         .unwrap();
         let bytes = output.bytes().unwrap().clone();
