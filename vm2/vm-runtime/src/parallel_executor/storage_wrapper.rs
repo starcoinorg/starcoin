@@ -169,6 +169,7 @@ pub(crate) struct VersionedView<'a, S: StateView> {
     hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
     delayed_field_cache: Arc<DelayedFieldCache>,
     delayed_fields_enabled: bool,
+    max_value_nest_depth: Option<u64>,
     accessed_groups: RefCell<HashSet<StateKey>>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
@@ -199,12 +200,14 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
         delayed_field_cache: Arc<DelayedFieldCache>,
         delayed_fields_enabled: bool,
+        max_value_nest_depth: Option<u64>,
     ) -> Self {
         Self {
             base_view,
             hashmap_view,
             delayed_field_cache,
             delayed_fields_enabled,
+            max_value_nest_depth,
             accessed_groups: RefCell::new(HashSet::new()),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
@@ -315,7 +318,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
@@ -377,13 +380,13 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_replacement(&mapping)
             .deserialize(state_value.bytes(), layout)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::<DelayedFieldID>::new(None)
+        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .serialize(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
