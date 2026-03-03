@@ -20,11 +20,11 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
 once_cell = { workspace = true }
 serde_bytes = { workspace = true }
 vm-status-translator = { path = "../vm-status-translator", package = "starcoin-status-translator" }

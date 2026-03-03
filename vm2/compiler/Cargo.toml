@@ -1,8 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
 once_cell = { workspace = true }
 petgraph = { workspace = true }
 regex = { features = ["std", "perf"], workspace = true }
