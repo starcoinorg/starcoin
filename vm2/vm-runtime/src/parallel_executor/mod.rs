@@ -5,7 +5,7 @@ pub(crate) mod storage_wrapper;
 mod vm_wrapper;
 
 use crate::{
-    data_cache::{effective_max_value_nest_depth, take_resource_group_stats, StateViewCache},
+    data_cache::{take_resource_group_stats, StateViewCache},
     parallel_executor::{storage_wrapper::DelayedFieldCache, vm_wrapper::StarcoinVMWrapper},
     preprocess_transaction,
     starcoin_vm::StarcoinVM,
@@ -16,7 +16,6 @@ use move_binary_format::errors::PartialVMError;
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-#[cfg(test)]
 use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractWidth};
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
@@ -247,7 +246,6 @@ impl ParallelStarcoinVM {
         let delayed_fields_enabled = Features::fetch_config(state_view)
             .unwrap_or_default()
             .is_aggregator_v2_delayed_fields_enabled();
-        let max_value_nest_depth = effective_max_value_nest_depth(state_view);
         let signature_verified_block: Vec<PreprocessedTransaction> = transactions
             .par_iter()
             .map(|txn| preprocess_transaction(txn.clone()))
@@ -261,11 +259,7 @@ impl ParallelStarcoinVM {
         )
         .with_delayed_fields(delayed_fields_enabled)
         .execute_transactions_parallel_with_delayed_fields(
-            (
-                state_view,
-                delayed_field_cache.clone(),
-                max_value_nest_depth,
-            ),
+            (state_view, delayed_field_cache.clone()),
             signature_verified_block,
         ) {
             Ok((results, delayed_fields)) => {
@@ -286,7 +280,6 @@ impl ParallelStarcoinVM {
                     delayed_fields,
                     delayed_field_cache,
                     state_view,
-                    max_value_nest_depth,
                 )?;
                 let materialize_ms = materialize_start.elapsed().as_secs_f64() * 1000.0;
                 let rg_stats = take_resource_group_stats();
@@ -371,8 +364,8 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     delayed_fields: VersionedDelayedFields<DelayedFieldID>,
     delayed_field_cache: Arc<DelayedFieldCache>,
     state_view: &S,
-    max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<TransactionOutput>, VMStatus> {
+    let max_value_nest_depth = Some(DEFAULT_MAX_VALUE_NEST_DEPTH);
     let mut outputs = outputs;
     let mut needs_sequential = false;
     let mut has_agg_v1 = false;
@@ -1143,12 +1136,11 @@ mod tests {
             Value::u64(99),
             Value::delayed_value(delayed_id),
         ]));
-        let updated_bytes =
-            ValueSerDeContext::<DelayedFieldID>::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
-                .with_delayed_fields_serde()
-                .serialize(&updated_value, &layout_delayed)
-                .unwrap()
-                .unwrap();
+        let updated_bytes = ValueSerDeContext::<DelayedFieldID>::new(None)
+            .with_delayed_fields_serde()
+            .serialize(&updated_value, &layout_delayed)
+            .unwrap()
+            .unwrap();
 
         let delayed_field_cache = DelayedFieldCache::default();
         delayed_field_cache.insert_base_value(
@@ -1167,7 +1159,7 @@ mod tests {
             &StateValueMetadata::none(),
             &mapping,
             &delayed_field_cache,
-            Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+            None,
         )
         .unwrap();
         let bytes = output.bytes().unwrap().clone();
