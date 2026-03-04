@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
+    data_cache::effective_max_value_nest_depth,
     parallel_executor::{
         storage_wrapper::{DelayedFieldCache, VersionedView},
         StarcoinTransactionOutput,
@@ -16,7 +17,6 @@ use starcoin_parallel_executor::{
 };
 
 use move_core_types::vm_status::VMStatus;
-use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::on_chain_config::OnChainConfig;
 use starcoin_vm_types::state_store::StateView;
@@ -34,17 +34,18 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type T = PreprocessedTransaction;
     type Output = StarcoinTransactionOutput;
     type Error = VMStatus;
-    type Argument = (&'a S, Arc<DelayedFieldCache>);
+    type Argument = (&'a S, Arc<DelayedFieldCache>, Option<u64>);
 
     fn init(argument: Self::Argument) -> Self {
-        let (base_view, delayed_field_cache) = argument;
+        let (base_view, delayed_field_cache, max_value_nest_depth) = argument;
         let mut vm = StarcoinVM::new(None, base_view);
         vm.load_configs(base_view)
             .expect("load configs should always success");
         let features = starcoin_vm_types::on_chain_config::Features::fetch_config(base_view)
             .unwrap_or_default();
         let delayed_fields_enabled = features.is_aggregator_v2_delayed_fields_enabled();
-        let max_value_nest_depth = Some(DEFAULT_MAX_VALUE_NEST_DEPTH);
+        let max_value_nest_depth =
+            max_value_nest_depth.or_else(|| effective_max_value_nest_depth(base_view));
 
         Self {
             vm,
