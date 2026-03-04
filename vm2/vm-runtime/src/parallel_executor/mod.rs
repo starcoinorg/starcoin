@@ -261,7 +261,11 @@ impl ParallelStarcoinVM {
         )
         .with_delayed_fields(delayed_fields_enabled)
         .execute_transactions_parallel_with_delayed_fields(
-            (state_view, delayed_field_cache.clone(), max_value_nest_depth),
+            (
+                state_view,
+                delayed_field_cache.clone(),
+                max_value_nest_depth,
+            ),
             signature_verified_block,
         ) {
             Ok((results, delayed_fields)) => {
@@ -1141,10 +1145,10 @@ mod tests {
         ]));
         let updated_bytes =
             ValueSerDeContext::<DelayedFieldID>::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
-            .with_delayed_fields_serde()
-            .serialize(&updated_value, &layout_delayed)
-            .unwrap()
-            .unwrap();
+                .with_delayed_fields_serde()
+                .serialize(&updated_value, &layout_delayed)
+                .unwrap()
+                .unwrap();
 
         let delayed_field_cache = DelayedFieldCache::default();
         delayed_field_cache.insert_base_value(
