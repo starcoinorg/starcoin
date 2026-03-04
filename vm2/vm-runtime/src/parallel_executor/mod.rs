@@ -261,7 +261,11 @@ impl ParallelStarcoinVM {
         )
         .with_delayed_fields(delayed_fields_enabled)
         .execute_transactions_parallel_with_delayed_fields(
-            (state_view, delayed_field_cache.clone(), max_value_nest_depth),
+            (
+                state_view,
+                delayed_field_cache.clone(),
+                max_value_nest_depth,
+            ),
             signature_verified_block,
         ) {
             Ok((results, delayed_fields)) => {
