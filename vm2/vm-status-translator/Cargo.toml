@@ -3,7 +3,7 @@ anyhow = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 starcoin-vm-types = { path = "../vm-types" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "07b1897ce1e1bab68b8c5cd18ea1ef908ba01ca1" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
 
 [package]
 authors = { workspace = true }
