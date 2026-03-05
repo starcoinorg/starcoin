@@ -10,7 +10,7 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::{IdentifierMappingKind, MoveStructLayout, MoveTypeLayout};
+use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
@@ -95,87 +95,6 @@ static RESOURCE_GROUP_STATS: LazyLock<ResourceGroupStats> =
     LazyLock::new(ResourceGroupStats::default);
 #[cfg(debug_assertions)]
 static EXCHANGE_DUMP_SEQ: AtomicU64 = AtomicU64::new(0);
-
-#[doc(hidden)]
-pub fn nested_native_u64_kind_for_manual_exchange(
-    layout: &MoveTypeLayout,
-) -> Option<IdentifierMappingKind> {
-    let (kind, native_layout) = match layout {
-        MoveTypeLayout::Struct(outer) => {
-            let outer_fields = outer.fields();
-            if outer_fields.len() != 1 {
-                return None;
-            }
-            match &outer_fields[0] {
-                MoveTypeLayout::Struct(inner) => {
-                    let inner_fields = inner.fields();
-                    if inner_fields.len() != 2 {
-                        return None;
-                    }
-                    match (&inner_fields[0], &inner_fields[1]) {
-                        (MoveTypeLayout::Native(kind, native_layout), MoveTypeLayout::U64) => {
-                            (kind, native_layout.as_ref())
-                        }
-                        _ => return None,
-                    }
-                }
-                _ => return None,
-            }
-        }
-        _ => return None,
-    };
-
-    if !matches!(native_layout, MoveTypeLayout::U64) {
-        return None;
-    }
-
-    match kind {
-        IdentifierMappingKind::Aggregator => Some(IdentifierMappingKind::Aggregator),
-        IdentifierMappingKind::Snapshot => Some(IdentifierMappingKind::Snapshot),
-        _ => None,
-    }
-}
-
-#[doc(hidden)]
-pub fn manual_exchange_bytes_for_nested_native_u64(
-    kind: IdentifierMappingKind,
-    bytes: &[u8],
-    delayed_field_id: DelayedFieldID,
-) -> Result<(Vec<u8>, DelayedFieldValue), StateviewError> {
-    let width = delayed_field_id.extract_width();
-    if width != 8 {
-        return Err(StateviewError::Other(format!(
-            "Manual exchange expected delayed field width 8, got {}",
-            width
-        )));
-    }
-
-    if bytes.len() != 16 {
-        return Err(StateviewError::Other(format!(
-            "Manual exchange expected 16 bytes, got {}",
-            bytes.len()
-        )));
-    }
-
-    let native_bytes: [u8; 8] = bytes[0..8]
-        .try_into()
-        .map_err(|_| StateviewError::Other("Failed to parse native u64 bytes".to_string()))?;
-    let native_value = u64::from_le_bytes(native_bytes);
-    let delayed_value = match kind {
-        IdentifierMappingKind::Aggregator => DelayedFieldValue::Aggregator(native_value as u128),
-        IdentifierMappingKind::Snapshot => DelayedFieldValue::Snapshot(native_value as u128),
-        _ => {
-            return Err(StateviewError::Other(format!(
-                "Unsupported mapping kind for manual exchange: {:?}",
-                kind
-            )));
-        }
-    };
-
-    let mut exchanged = bytes.to_vec();
-    exchanged[0..8].copy_from_slice(&delayed_field_id.as_u64().to_le_bytes());
-    Ok((exchanged, delayed_value))
-}
 
 pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
     ResourceGroupStatsSnapshot {
@@ -497,12 +416,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
-        if let Some(exchanged) =
-            self.try_manual_exchange_for_nested_native_u64(layout, state_value)?
-        {
-            return Ok(exchanged);
-        }
-
         struct Mapping<'a, S: StateView> {
             adapter: &'a StorageAdapter<'a, S>,
             delayed_ids: RefCell<HashSet<DelayedFieldID>>,
@@ -560,34 +473,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             state_value.clone().into_metadata(),
         );
         Ok((exchanged, mapping.delayed_ids.into_inner()))
-    }
-
-    // Fallback for the known crashing release path in move-vm-types deserialization:
-    // Struct([Struct([Native(Aggregator|Snapshot, U64), U64])]).
-    // This performs the same exchange as deserialize_and_replace_values_with_ids:
-    // replace the first field with delayed id bytes and keep the second field as-is.
-    fn try_manual_exchange_for_nested_native_u64(
-        &self,
-        layout: &MoveTypeLayout,
-        state_value: &StateValue,
-    ) -> Result<Option<(StateValue, HashSet<DelayedFieldID>)>, StateviewError> {
-        let Some(kind) = nested_native_u64_kind_for_manual_exchange(layout) else {
-            return Ok(None);
-        };
-        let id = self.generate_delayed_field_id(8);
-        let (exchanged, delayed_value) =
-            manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
-        self.delayed_fields.set_base_value(id, delayed_value);
-
-        let exchanged_state = StateValue::new_with_metadata(
-            Bytes::from(exchanged),
-            state_value.clone().into_metadata(),
-        );
-        let mut delayed_ids = HashSet::new();
-        delayed_ids.insert(id);
-
-        warn!("[vm2-delayed] manual exchange fallback applied for nested native U64 layout");
-        Ok(Some((exchanged_state, delayed_ids)))
     }
 
     fn maybe_exchange_state_value(
