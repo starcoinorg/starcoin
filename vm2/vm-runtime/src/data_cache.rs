@@ -12,9 +12,11 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_table_extension::{TableHandle, TableResolver};
+use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
+use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use move_vm_types::value_serde::{
     deserialize_and_allow_delayed_values, deserialize_and_replace_values_with_ids,
     serialize_and_allow_delayed_values, ValueToIdentifierMapping,
@@ -31,12 +33,12 @@ use starcoin_mvhashmap::versioned_delayed_fields::{
     TVersionedDelayedFieldView, VersionedDelayedFields,
 };
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::vm::config::starcoin_prod_deserializer_config;
+use starcoin_types::vm::config::{starcoin_prod_deserializer_config, starcoin_prod_vm_config};
 use starcoin_vm_runtime_types::resolver::{
     ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
 };
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
-use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
+use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, TimedFeaturesBuilder, VMConfig};
 use starcoin_vm_types::state_store::{
     errors::StateviewError,
     state_key::StateKey,
@@ -116,6 +118,14 @@ pub(crate) fn take_resource_group_stats() -> ResourceGroupStatsSnapshot {
             .group_size_ns
             .swap(0, Ordering::Relaxed),
     }
+}
+
+pub(crate) fn effective_max_value_nest_depth<S: StateView>(state_view: &S) -> Option<u64> {
+    let features = Features::fetch_config(state_view).unwrap_or_default();
+    let timed_features = TimedFeaturesBuilder::enable_all().build();
+    starcoin_prod_vm_config(&features, &timed_features, TypeBuilder::Legacy)
+        .max_value_nest_depth
+        .or(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
 }
 
 pub fn get_resource_group_member_from_metadata(
@@ -990,7 +1000,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         let vm_config = VMConfig::fetch_config(self);
-        let max_value_nest_depth = None;
+        let max_value_nest_depth = effective_max_value_nest_depth(self);
         let gas_feature_version = vm_config
             .as_ref()
             .map(|config| config.gas_schedule.feature_version)
