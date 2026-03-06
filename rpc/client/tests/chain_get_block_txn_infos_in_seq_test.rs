@@ -204,7 +204,6 @@ fn wait_for_queryable_main_head_hash(
         std::thread::sleep(Duration::from_millis(200));
     }
 }
-
 fn wait_for_consistent_txn_infos(
     client: &RpcClient,
     block_hash: HashValue,
