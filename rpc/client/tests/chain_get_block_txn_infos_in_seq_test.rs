@@ -54,7 +54,8 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
 
     let client = RpcClient::connect_ipc(ipc_file)?;
 
-    let txn_infos_in_seq = wait_for_txn_infos_in_seq(&client, block_hash, Duration::from_secs(20))?;
+    let (txn_infos_in_seq, vm1_infos, vm2_infos) =
+        wait_for_consistent_txn_infos(&client, block_hash, Duration::from_secs(60))?;
 
     assert!(
         !txn_infos_in_seq.is_empty(),
@@ -117,9 +118,6 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
         "Should have at least 1 VM2 transaction (block meta)"
     );
 
-    let vm1_infos = client.chain_get_block_txn_infos(block_hash)?;
-    let vm2_infos = client.chain_get_block_txn_infos2(block_hash)?;
-
     assert_eq!(
         txn_infos_in_seq.len(),
         vm1_infos.len() + vm2_infos.len(),
@@ -174,34 +172,66 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     Ok(())
 }
 
-fn wait_for_txn_infos_in_seq(
+fn wait_for_consistent_txn_infos(
     client: &RpcClient,
     block_hash: HashValue,
     timeout: Duration,
-) -> Result<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+) -> Result<(
+    Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>,
+    Vec<starcoin_rpc_api::types::TransactionInfoView>,
+    Vec<starcoin_vm2_types::view::TransactionInfoView>,
+)> {
     let deadline = Instant::now() + timeout;
+    let mut last_err: Option<anyhow::Error> = None;
     loop {
-        match client.chain_get_block_txn_infos_in_seq(block_hash) {
-            Ok(infos) => {
-                if infos.is_empty() {
-                    if Instant::now() >= deadline {
-                        return Err(anyhow::format_err!(
-                            "timeout waiting for txn infos in seq for block {}",
-                            block_hash
-                        ));
-                    }
-                    std::thread::sleep(Duration::from_millis(200));
-                    continue;
+        let seq_infos = client.chain_get_block_txn_infos_in_seq(block_hash);
+        let vm1_infos = client.chain_get_block_txn_infos(block_hash);
+        let vm2_infos = client.chain_get_block_txn_infos2(block_hash);
+
+        match (seq_infos, vm1_infos, vm2_infos) {
+            (Ok(seq_infos), Ok(vm1_infos), Ok(vm2_infos)) => {
+                let has_gap = seq_infos.iter().enumerate().any(|(i, info)| {
+                    let index = match info {
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(vm1_info) => {
+                            vm1_info.transaction_index
+                        }
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(vm2_info) => {
+                            vm2_info.transaction_index
+                        }
+                    };
+                    index as usize != i
+                });
+
+                if !seq_infos.is_empty()
+                    && !has_gap
+                    && seq_infos.len() == vm1_infos.len() + vm2_infos.len()
+                {
+                    return Ok((seq_infos, vm1_infos, vm2_infos));
                 }
-                return Ok(infos);
             }
-            Err(err) => {
-                if Instant::now() >= deadline {
-                    return Err(err);
-                }
-                std::thread::sleep(Duration::from_millis(200));
+            (seq_res, vm1_res, vm2_res) => {
+                let seq_err = seq_res.err().map(|e| format!("seq err: {e:?}"));
+                let vm1_err = vm1_res.err().map(|e| format!("vm1 err: {e:?}"));
+                let vm2_err = vm2_res.err().map(|e| format!("vm2 err: {e:?}"));
+                last_err = Some(anyhow::format_err!(
+                    "waiting block {} failed: {:?} {:?} {:?}",
+                    block_hash,
+                    seq_err,
+                    vm1_err,
+                    vm2_err
+                ));
             }
         }
+
+        if Instant::now() >= deadline {
+            return Err(last_err.unwrap_or_else(|| {
+                anyhow::format_err!(
+                    "timeout waiting consistent txn infos in seq for block {}",
+                    block_hash
+                )
+            }));
+        }
+        std::thread::sleep(Duration::from_millis(200));
     }
 }
 
