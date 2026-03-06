@@ -260,9 +260,9 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             MoveTypeLayout::Native(..) => true,
             MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
             MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => fields
-                    .iter()
-                    .any(Self::layout_has_identifier_mappings),
+                MoveStructLayout::Runtime(fields) => {
+                    fields.iter().any(Self::layout_has_identifier_mappings)
+                }
                 MoveStructLayout::WithFields(fields) => fields
                     .iter()
                     .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
