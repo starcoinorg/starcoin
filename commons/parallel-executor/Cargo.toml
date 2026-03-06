@@ -24,7 +24,7 @@ starcoin-mvhashmap = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-aggregator = { workspace = true }
 rand = { workspace = true }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
 criterion = { workspace = true, optional = true }
 proptest = { workspace = true, optional = true }
 proptest-derive = { workspace = true, optional = true }

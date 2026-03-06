@@ -49,8 +49,10 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
+    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -186,6 +188,7 @@ default-members = [
     "sync/api",
     "block-relayer",
     "miner",
+    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -261,7 +264,7 @@ panic = "unwind"
 debug = false
 panic = "unwind"
 debug-assertions = false
-codegen-units = 16
+codegen-units = 1
 
 [workspace.package]
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
@@ -615,8 +618,8 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83", package = "move-transactional-test-runner" }
 
 strum = "0.28"
 strum_macros = "0.28.0"
@@ -627,7 +630,7 @@ syn = { version = "2.0.108", features = [
     "fold",
 ] }
 sysinfo = "0.29.0"
-tempfile = "3.26.0"
+tempfile = "3.25.0"
 test-case = "3.3.1"
 test-helper = { path = "test-helper" }
 textwrap = "0.14.0"
@@ -674,7 +677,6 @@ starcoin-txpool.debug = 1
 starcoin-executor.debug = 1
 starcoin-genesis.debug = 1
 starcoin-vm-runtime.debug = 1
-move-vm-types.opt-level = 1
 
 [profile.release.package."*"]
 debug = false

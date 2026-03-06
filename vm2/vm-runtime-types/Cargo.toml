@@ -14,13 +14,13 @@ starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-gas-meter = { path = "../framework/gas-meter" }
 starcoin-gas-schedule = { path = "../framework/gas-schedule" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
 anyhow = { workspace = true }
 bytes = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true }
 starcoin-aggregator = { path = "../aggregator" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "28b8c351dc92c41b074067a21b297bd7636f0967" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
 rand = { workspace = true }
 starcoin-logger = { workspace = true }
 
