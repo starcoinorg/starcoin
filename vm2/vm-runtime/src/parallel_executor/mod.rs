@@ -502,12 +502,15 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     let mut sequential_outputs = HashMap::new();
     let mut parallel_candidates = Vec::new();
     for (txn_idx, output) in outputs.into_iter() {
+        let has_delayed = output.output.contains_delayed_fields();
         let has_agg_v1 = !output.output.aggregator_v1_delta_set().is_empty();
         let touches_duplicated_group =
             output.output.resource_write_set().iter().any(|(key, op)| {
                 is_group_write_op(op) && group_touch_counts.get(key).copied().unwrap_or(0) > 1
             });
-        if has_agg_v1 || touches_duplicated_group {
+        // In mixed mode, keep delayed-field outputs in sequential path so
+        // delayed_field_cache updates remain in transaction order.
+        if has_delayed || has_agg_v1 || touches_duplicated_group {
             sequential_outputs.insert(txn_idx, output);
         } else {
             parallel_candidates.push((txn_idx, output));
