@@ -418,14 +418,12 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
-            type Identifier = DelayedFieldID;
-
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
                 layout: &MoveTypeLayout,
                 value: move_vm_types::values::Value,
-            ) -> Result<Self::Identifier, PartialVMError> {
+            ) -> Result<DelayedFieldID, PartialVMError> {
                 let (base_value, width) =
                     DelayedFieldValue::try_from_move_value(layout, value, kind)?;
                 let id = self.adapter.generate_delayed_field_id(width);
@@ -437,7 +435,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             fn identifier_to_value(
                 &self,
                 _layout: &MoveTypeLayout,
-                _identifier: Self::Identifier,
+                _identifier: DelayedFieldID,
             ) -> Result<move_vm_types::values::Value, PartialVMError> {
                 Err(PartialVMError::new(
                     StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
@@ -572,14 +570,12 @@ struct DelayedFieldValueMapping<'a> {
 }
 
 impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
-    type Identifier = DelayedFieldID;
-
     fn value_to_identifier(
         &self,
         _kind: &move_core_types::value::IdentifierMappingKind,
         _layout: &MoveTypeLayout,
         _value: move_vm_types::values::Value,
-    ) -> Result<Self::Identifier, PartialVMError> {
+    ) -> Result<DelayedFieldID, PartialVMError> {
         Err(PartialVMError::new(
             StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
         ))
@@ -588,7 +584,7 @@ impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
     fn identifier_to_value(
         &self,
         layout: &MoveTypeLayout,
-        identifier: Self::Identifier,
+        identifier: DelayedFieldID,
     ) -> Result<move_vm_types::values::Value, PartialVMError> {
         let value = self
             .delayed_fields

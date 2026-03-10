@@ -172,7 +172,6 @@ pub(crate) struct VersionedView<'a, S: StateView> {
     hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
     delayed_field_cache: Arc<DelayedFieldCache>,
     delayed_fields_enabled: bool,
-    _max_value_nest_depth: Option<u64>,
     accessed_groups: RefCell<HashSet<StateKey>>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
@@ -203,14 +202,12 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
         delayed_field_cache: Arc<DelayedFieldCache>,
         delayed_fields_enabled: bool,
-        max_value_nest_depth: Option<u64>,
     ) -> Self {
         Self {
             base_view,
             hashmap_view,
             delayed_field_cache,
             delayed_fields_enabled,
-            _max_value_nest_depth: max_value_nest_depth,
             accessed_groups: RefCell::new(HashSet::new()),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
@@ -342,14 +339,12 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
-            type Identifier = DelayedFieldID;
-
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
                 layout: &MoveTypeLayout,
                 value: move_vm_types::values::Value,
-            ) -> move_binary_format::errors::PartialVMResult<Self::Identifier> {
+            ) -> move_binary_format::errors::PartialVMResult<DelayedFieldID> {
                 let (base_value, width) =
                     DelayedFieldValue::try_from_move_value(layout, value, kind)?;
                 let id = self.view.hashmap_view.generate_delayed_field_id(width);
@@ -364,7 +359,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             fn identifier_to_value(
                 &self,
                 _layout: &MoveTypeLayout,
-                _identifier: Self::Identifier,
+                _identifier: DelayedFieldID,
             ) -> move_binary_format::errors::PartialVMResult<move_vm_types::values::Value>
             {
                 Err(move_binary_format::errors::PartialVMError::new(
