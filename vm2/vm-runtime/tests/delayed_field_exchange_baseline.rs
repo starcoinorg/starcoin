@@ -44,7 +44,7 @@ impl ValueToIdentifierMapping for Mapping {
 }
 
 #[test]
-fn baseline_nested_aggregator_exchange_keeps_tail_bytes() {
+fn test_baseline_nested_aggregator_exchange_keeps_tail_bytes() {
     let layout = nested_layout(IdentifierMappingKind::Aggregator);
     let delayed_id = DelayedFieldID::new_with_width(42, 8);
     let mapping = Mapping {
@@ -75,7 +75,7 @@ fn baseline_nested_aggregator_exchange_keeps_tail_bytes() {
 }
 
 #[test]
-fn baseline_nested_snapshot_exchange_keeps_tail_bytes() {
+fn test_baseline_nested_snapshot_exchange_keeps_tail_bytes() {
     let layout = nested_layout(IdentifierMappingKind::Snapshot);
     let delayed_id = DelayedFieldID::new_with_width(7, 8);
     let mapping = Mapping {
@@ -106,7 +106,7 @@ fn baseline_nested_snapshot_exchange_keeps_tail_bytes() {
 }
 
 #[test]
-fn baseline_nested_layout_rejects_invalid_bytes_length() {
+fn test_baseline_nested_layout_rejects_invalid_bytes_length() {
     let layout = nested_layout(IdentifierMappingKind::Aggregator);
     let delayed_id = DelayedFieldID::new_with_width(9, 8);
     let mapping = Mapping {
