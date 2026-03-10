@@ -339,6 +339,8 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
+            type Identifier = DelayedFieldID;
+
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
