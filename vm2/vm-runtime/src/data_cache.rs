@@ -418,6 +418,8 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
+            type Identifier = DelayedFieldID;
+
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
@@ -570,6 +572,8 @@ struct DelayedFieldValueMapping<'a> {
 }
 
 impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
+    type Identifier = DelayedFieldID;
+
     fn value_to_identifier(
         &self,
         _kind: &move_core_types::value::IdentifierMappingKind,
