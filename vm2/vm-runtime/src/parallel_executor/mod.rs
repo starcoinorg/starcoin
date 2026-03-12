@@ -334,8 +334,6 @@ struct DelayedFieldValueMapping<'a> {
 }
 
 impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
-    type Identifier = DelayedFieldID;
-
     fn value_to_identifier(
         &self,
         _kind: &move_core_types::value::IdentifierMappingKind,
@@ -632,7 +630,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 
 fn materialize_resource_write_set_no_groups(
     output: &VMOutput,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<(StateKey, WriteOp)>, VMStatus> {
@@ -685,7 +683,7 @@ fn materialize_resource_write_set_no_groups(
 
 pub(crate) fn materialize_resource_write_set<S: StateView>(
     output: &VMOutput,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
     group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
@@ -802,7 +800,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
 fn materialize_write_op_with_layout(
     write_op: &WriteOp,
     layout: &MoveTypeLayout,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     match write_op {
@@ -830,7 +828,7 @@ fn materialize_in_place_change(
     key: &StateKey,
     layout: &MoveTypeLayout,
     metadata: &starcoin_vm_types::state_store::state_value::StateValueMetadata,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
     max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
@@ -862,7 +860,7 @@ fn materialize_in_place_change(
 fn materialize_group_write<S: StateView>(
     key: &StateKey,
     group_write: &GroupWrite,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
     materialize_delayed: bool,
@@ -918,7 +916,7 @@ fn materialize_group_write<S: StateView>(
 fn materialize_group_in_place<S: StateView>(
     key: &StateKey,
     metadata: &starcoin_vm_types::state_store::state_value::StateValueMetadata,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
     group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
@@ -961,7 +959,7 @@ fn materialize_group_in_place<S: StateView>(
 
 pub(crate) fn materialize_events(
     output: &VMOutput,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<ContractEvent>, VMStatus> {
     output
@@ -977,7 +975,7 @@ pub(crate) fn materialize_events(
 fn materialize_event(
     event: &ContractEvent,
     layout: &MoveTypeLayout,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<ContractEvent, VMStatus> {
     let data = materialize_bytes(
@@ -1002,10 +1000,10 @@ fn materialize_event(
 fn materialize_bytes(
     bytes: &Bytes,
     layout: &MoveTypeLayout,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let value = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
+    let value = ValueSerDeContext::new(max_value_nest_depth)
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
@@ -1033,10 +1031,10 @@ fn materialize_bytes(
 fn materialize_bytes_force(
     bytes: &Bytes,
     layout: &MoveTypeLayout,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let value = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
+    let value = ValueSerDeContext::new(max_value_nest_depth)
         .with_delayed_fields_serde()
         .deserialize(bytes, layout)
         .ok_or_else(|| {
@@ -1051,10 +1049,10 @@ fn materialize_bytes_force(
 fn materialize_bytes_force_with_value(
     value: move_vm_types::values::Value,
     layout: &MoveTypeLayout,
-    mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
+    mapping: &impl ValueToIdentifierMapping,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Bytes, VMStatus> {
-    let serialized = ValueSerDeContext::<DelayedFieldID>::new(max_value_nest_depth)
+    let serialized = ValueSerDeContext::new(max_value_nest_depth)
         .with_delayed_fields_replacement(mapping)
         .serialize(&value, layout)
         .map_err(|err| {
@@ -1152,8 +1150,6 @@ mod tests {
     }
 
     impl ValueToIdentifierMapping for TestMapping {
-        type Identifier = DelayedFieldID;
-
         fn value_to_identifier(
             &self,
             _kind: &move_core_types::value::IdentifierMappingKind,
@@ -1205,12 +1201,11 @@ mod tests {
             Value::u64(99),
             Value::delayed_value(delayed_id),
         ]));
-        let updated_bytes =
-            ValueSerDeContext::<DelayedFieldID>::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
-                .with_delayed_fields_serde()
-                .serialize(&updated_value, &layout_delayed)
-                .unwrap()
-                .unwrap();
+        let updated_bytes = ValueSerDeContext::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
+            .with_delayed_fields_serde()
+            .serialize(&updated_value, &layout_delayed)
+            .unwrap()
+            .unwrap();
 
         let delayed_field_cache = DelayedFieldCache::default();
         delayed_field_cache.insert_base_value(
