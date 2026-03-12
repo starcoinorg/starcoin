@@ -49,6 +49,7 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
     "node",
