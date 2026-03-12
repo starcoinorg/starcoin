@@ -17,9 +17,7 @@ use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
-use move_vm_types::value_serde::{
-    ValueSerDeContext, ValueToIdentifierMapping,
-};
+use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
 use starcoin_aggregator::resolver::TDelayedFieldView;
@@ -422,8 +420,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
-            type Identifier = DelayedFieldID;
-
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
@@ -580,8 +576,6 @@ struct DelayedFieldValueMapping<'a> {
 }
 
 impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
-    type Identifier = DelayedFieldID;
-
     fn value_to_identifier(
         &self,
         _kind: &move_core_types::value::IdentifierMappingKind,
