@@ -182,7 +182,7 @@ fn wait_for_consistent_txn_infos(
     Vec<starcoin_vm2_types::view::TransactionInfoView>,
 )> {
     let deadline = Instant::now() + timeout;
-    let mut last_err: Option<anyhow::Error> = None;
+    let mut last_err: Option<anyhow::Error>;
     loop {
         let seq_infos = client.chain_get_block_txn_infos_in_seq(block_hash);
         let vm1_infos = client.chain_get_block_txn_infos(block_hash);
@@ -202,12 +202,78 @@ fn wait_for_consistent_txn_infos(
                     index as usize != i
                 });
 
+                let vm1_hashes: std::collections::HashSet<_> =
+                    vm1_infos.iter().map(|info| info.transaction_hash).collect();
+                let seq_vm1_hashes: std::collections::HashSet<_> = seq_infos
+                    .iter()
+                    .filter_map(|info| {
+                        if let starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(vm1_info) =
+                            info
+                        {
+                            Some(vm1_info.transaction_hash)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                let vm2_hashes: std::collections::HashSet<_> =
+                    vm2_infos.iter().map(|info| info.transaction_hash).collect();
+                let seq_vm2_hashes: std::collections::HashSet<_> = seq_infos
+                    .iter()
+                    .filter_map(|info| {
+                        if let starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(vm2_info) =
+                            info
+                        {
+                            Some(vm2_info.transaction_hash)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
                 if !seq_infos.is_empty()
                     && !has_gap
                     && seq_infos.len() == vm1_infos.len() + vm2_infos.len()
+                    && vm1_hashes == seq_vm1_hashes
+                    && vm2_hashes == seq_vm2_hashes
                 {
                     return Ok((seq_infos, vm1_infos, vm2_infos));
                 }
+
+                let vm1_only_in_seq: Vec<_> = seq_vm1_hashes
+                    .difference(&vm1_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm1_missing_in_seq: Vec<_> = vm1_hashes
+                    .difference(&seq_vm1_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm2_only_in_seq: Vec<_> = seq_vm2_hashes
+                    .difference(&vm2_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm2_missing_in_seq: Vec<_> = vm2_hashes
+                    .difference(&seq_vm2_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+
+                last_err = Some(anyhow::format_err!(
+                    "waiting block {} inconsistent results: has_gap={}, seq_len={}, vm1_len={}, vm2_len={}, vm1_only_in_seq={:?}, vm1_missing_in_seq={:?}, vm2_only_in_seq={:?}, vm2_missing_in_seq={:?}",
+                    block_hash,
+                    has_gap,
+                    seq_infos.len(),
+                    vm1_infos.len(),
+                    vm2_infos.len(),
+                    vm1_only_in_seq,
+                    vm1_missing_in_seq,
+                    vm2_only_in_seq,
+                    vm2_missing_in_seq
+                ));
             }
             (seq_res, vm1_res, vm2_res) => {
                 let seq_err = seq_res.err().map(|e| format!("seq err: {e:?}"));

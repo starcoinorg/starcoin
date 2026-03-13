@@ -123,6 +123,20 @@ struct Cli {
         help = "Number of users per batch. Each batch uses different users (0 to batch_user_count-1 in first batch, etc). Within each batch, first half sends to second half."
     )]
     batch_user_count: usize,
+
+    #[arg(
+        long = "balance-wait-timeout-secs",
+        default_value = "600",
+        help = "Timeout in seconds while waiting for association balance to become sufficient."
+    )]
+    balance_wait_timeout_secs: u64,
+
+    #[arg(
+        long = "settle-delay-ms",
+        default_value = "10000",
+        help = "Delay in milliseconds after funding transfers before benchmark starts."
+    )]
+    settle_delay_ms: u64,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -471,8 +485,16 @@ async fn wait_for_sufficient_balance(
     chain_reader_service: ServiceRef<ChainReaderService>,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
+    timeout: Duration,
 ) -> Result<()> {
+    let deadline = Instant::now() + timeout;
     loop {
+        if Instant::now() >= deadline {
+            bail!(
+                "timed out waiting for sufficient association balance after {:?}",
+                timeout
+            );
+        }
         let current_header = get_current_header(chain_reader_service.clone()).await?;
         let association_balance = match get_balance(
             association_address(),
@@ -842,6 +864,7 @@ async fn execute_benchmark(
             chain_reader_service.clone(),
             storage1.clone(),
             storage2.clone(),
+            Duration::from_secs(cli.balance_wait_timeout_secs),
         )
         .await?;
 
@@ -877,8 +900,8 @@ async fn execute_benchmark(
         )
         .await?;
 
-        // wait a bit to ensure all is settled
-        tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
+        // wait for node/txpool state to settle before observing benchmark traffic
+        tokio::time::sleep(tokio::time::Duration::from_millis(cli.settle_delay_ms)).await;
 
         let current_header = get_current_header(chain_reader_service.clone()).await?;
         let chain_id = ChainId2::new(current_header.chain_id().id());
