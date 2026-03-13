@@ -43,10 +43,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
-use crate::data_cache::{
-    get_resource_group_member_from_metadata, manual_exchange_bytes_for_nested_native_u64,
-    nested_native_u64_kind_for_manual_exchange,
-};
+use crate::data_cache::get_resource_group_member_from_metadata;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use crate::parallel_executor::{ParallelStateKey, ParallelStateValue};
 
@@ -333,27 +330,9 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 
     fn exchange_state_value(
         &self,
-        _state_key: &StateKey,
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>), StateviewError> {
-        if let Some(kind) = nested_native_u64_kind_for_manual_exchange(layout) {
-            let id = self.hashmap_view.generate_delayed_field_id(8);
-            let (exchanged, delayed_value) =
-                manual_exchange_bytes_for_nested_native_u64(kind, state_value.bytes(), id)?;
-            self.hashmap_view
-                .delayed_fields()
-                .set_base_value(id, delayed_value);
-
-            let exchanged_state = StateValue::new_with_metadata(
-                Bytes::from(exchanged),
-                state_value.clone().into_metadata(),
-            );
-            let mut delayed_ids = HashSet::new();
-            delayed_ids.insert(id);
-            return Ok((exchanged_state, delayed_ids));
-        }
-
         struct Mapping<'a, S: StateView> {
             view: &'a VersionedView<'a, S>,
             delayed_ids: RefCell<HashSet<DelayedFieldID>>,
@@ -367,7 +346,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
                 kind: &move_core_types::value::IdentifierMappingKind,
                 layout: &MoveTypeLayout,
                 value: move_vm_types::values::Value,
-            ) -> move_binary_format::errors::PartialVMResult<Self::Identifier> {
+            ) -> move_binary_format::errors::PartialVMResult<DelayedFieldID> {
                 let (base_value, width) =
                     DelayedFieldValue::try_from_move_value(layout, value, kind)?;
                 let id = self.view.hashmap_view.generate_delayed_field_id(width);
@@ -382,7 +361,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             fn identifier_to_value(
                 &self,
                 _layout: &MoveTypeLayout,
-                _identifier: Self::Identifier,
+                _identifier: DelayedFieldID,
             ) -> move_binary_format::errors::PartialVMResult<move_vm_types::values::Value>
             {
                 Err(move_binary_format::errors::PartialVMError::new(
@@ -415,14 +394,13 @@ impl<'a, S: StateView> VersionedView<'a, S> {
 
     fn maybe_exchange_state_value(
         &self,
-        state_key: &StateKey,
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
-        if !Self::layout_has_identifier_mappings(layout) {
+        if !self.delayed_fields_enabled || !Self::layout_has_identifier_mappings(layout) {
             return Ok((state_value.clone(), HashSet::new(), false));
         }
-        let (exchanged, delayed_ids) = self.exchange_state_value(state_key, state_value, layout)?;
+        let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
         Ok((exchanged, delayed_ids, true))
     }
 
@@ -445,7 +423,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             if let (Some(layout), Some(state_value)) = (maybe_layout, maybe_state_value.as_ref()) {
                 if !self.delayed_field_cache.is_base_value_exchanged(state_key) {
                     let (exchanged, ids, exchanged_flag) =
-                        self.maybe_exchange_state_value(state_key, state_value, layout)?;
+                        self.maybe_exchange_state_value(state_value, layout)?;
                     self.delayed_field_cache.insert_base_value(
                         state_key.clone(),
                         WriteOp::from_state_value(Some(exchanged.clone())),
@@ -467,7 +445,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
                 Self::layout_has_identifier_mappings(layout),
                 || {
                     let (value_with_ids, ids, _) =
-                        self.maybe_exchange_state_value(state_key, state_value, layout)?;
+                        self.maybe_exchange_state_value(state_value, layout)?;
                     self.record_resource_read(state_key, &value_with_ids, layout, ids);
                     Ok(WriteOp::from_state_value(Some(value_with_ids)))
                 },
@@ -636,7 +614,7 @@ impl<S: StateView> TResourceGroupView for VersionedView<'_, S> {
                     let state_value =
                         StateValue::new_with_metadata(raw_bytes.clone(), metadata.clone());
                     let (value_with_ids, ids, _) =
-                        self.maybe_exchange_state_value(group_key, &state_value, layout)?;
+                        self.maybe_exchange_state_value(&state_value, layout)?;
                     self.record_group_read(
                         group_key,
                         metadata,
