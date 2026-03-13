@@ -47,7 +47,7 @@ impl ServiceRequest for BlockTemplateRequest {
     type Response = Result<BlockTemplateResponse>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockTemplateResponse {
     pub parent: BlockHeader,
     pub template: BlockTemplate,
