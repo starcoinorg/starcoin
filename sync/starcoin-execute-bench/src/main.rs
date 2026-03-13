@@ -230,6 +230,9 @@ fn main() -> Result<()> {
 
     let network_choice = cli.network;
     let chain_network = network_choice.to_chain_network()?;
+    let funding_batch_size = 10usize;
+    let estimated_funding_txns = (cli.account_count as usize).div_ceil(funding_batch_size);
+    let txpool_max_per_sender_for_bench = (estimated_funding_txns as u64 + 32).max(128);
     let data_dir = DataDir::new(cli.data_dir)?;
     let base_dir = data_dir.path().to_path_buf();
     let custom_genesis = if matches!(network_choice, NetworkChoice::Custom) {
@@ -256,6 +259,9 @@ fn main() -> Result<()> {
         base_data_dir: Some(base_dir.clone()),
         ..Default::default()
     };
+    init_opt
+        .txpool
+        .set_max_per_sender(txpool_max_per_sender_for_bench);
     init_opt.genesis_config = match custom_genesis {
         Some(path) => Some(path),
         None => network_choice.genesis_name().map(ToOwned::to_owned),
@@ -267,6 +273,9 @@ fn main() -> Result<()> {
         base_data_dir: Some(base_dir),
         ..Default::default()
     };
+    global_opt
+        .txpool
+        .set_max_per_sender(txpool_max_per_sender_for_bench);
     global_opt.genesis_config = init_opt.genesis_config.clone();
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
@@ -529,7 +538,7 @@ async fn transfer_to_accounts(
 
     let funding_txn_hashes: Vec<HashValue> =
         signed_transactions.iter().map(|txn| txn.id()).collect();
-    txpool.add_txns_multi_signed(
+    let import_results = txpool.add_txns_multi_signed(
         signed_transactions
             .into_iter()
             .map(MultiSignedUserTransaction::VM2)
@@ -537,6 +546,21 @@ async fn transfer_to_accounts(
         false,
         None,
     )?;
+    let imported_count = import_results.iter().filter(|r| r.is_ok()).count();
+    if imported_count != import_results.len() {
+        let sample_errors: Vec<String> = import_results
+            .iter()
+            .filter_map(|r| r.as_ref().err())
+            .take(5)
+            .map(|e| format!("{:?}", e))
+            .collect();
+        bail!(
+            "Funding tx import incomplete: imported {}/{}. sample errors: {}",
+            imported_count,
+            import_results.len(),
+            sample_errors.join(", ")
+        );
+    }
 
     // Wait for all funding transactions to be processed and balances visible on-chain.
     let start = Instant::now();
@@ -829,18 +853,15 @@ async fn execute_benchmark(
 
         let receivers = create_account(account_count, account_service.clone()).await?;
 
-        // Txpool default max_per_sender is 128. Keep funding tx count under this threshold.
-        const TARGET_ASSOC_TXNS_PER_SENDER: usize = 120;
-        let batch_size = receivers
-            .len()
-            .div_ceil(TARGET_ASSOC_TXNS_PER_SENDER)
-            .max(10);
+        let batch_size = 10usize;
         let estimated_funding_txns = receivers.len().div_ceil(batch_size);
         info!(
-            "Funding batch plan: receivers={}, batch_size={}, estimated_funding_txns={}",
+            "Funding batch plan: receivers={}, batch_size={}, estimated_funding_txns={}, funding_max_gas={}, txpool_max_per_sender={}",
             receivers.len(),
             batch_size,
-            estimated_funding_txns
+            estimated_funding_txns,
+            max_gas,
+            config.tx_pool.max_per_sender()
         );
         transfer_to_accounts(
             &receivers,
