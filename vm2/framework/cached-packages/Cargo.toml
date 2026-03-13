@@ -17,7 +17,7 @@ starcoin-framework = { path = ".." }
 starcoin-package-builder = { path = "../../package-builder" }
 starcoin-vm-types = { path = "../../vm-types" }
 bcs = { workspace = true }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
 once_cell = { workspace = true }
 proptest = { workspace = true, optional = true }
 proptest-derive = { workspace = true, optional = true }
