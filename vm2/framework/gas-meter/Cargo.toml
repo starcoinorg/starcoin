@@ -1,11 +1,11 @@
 [dependencies]
 starcoin-gas-schedule = { path = "../gas-schedule" }
 clap = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "e767a5266b19862d5695cf8eefe1ba1f35d1362a" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc" }
 starcoin-logger = { workspace = true }
 starcoin-gas-algebra = { path = "../gas-algebra" }
 
