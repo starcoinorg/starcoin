@@ -307,6 +307,8 @@ fn main() -> Result<()> {
         cli.gas_price,
         cli.max_gas,
         cli.batch_user_count,
+        cli.balance_wait_timeout_secs,
+        cli.settle_delay_ms,
     ));
 
     node.stop()?;
@@ -842,6 +844,8 @@ async fn execute_benchmark(
     gas_price: u64,
     max_gas: u64,
     batch_user_count: usize,
+    balance_wait_timeout_secs: u64,
+    settle_delay_ms: u64,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -864,7 +868,7 @@ async fn execute_benchmark(
             chain_reader_service.clone(),
             storage1.clone(),
             storage2.clone(),
-            Duration::from_secs(cli.balance_wait_timeout_secs),
+            Duration::from_secs(balance_wait_timeout_secs),
         )
         .await?;
 
@@ -901,7 +905,7 @@ async fn execute_benchmark(
         .await?;
 
         // wait for node/txpool state to settle before observing benchmark traffic
-        tokio::time::sleep(tokio::time::Duration::from_millis(cli.settle_delay_ms)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(settle_delay_ms)).await;
 
         let current_header = get_current_header(chain_reader_service.clone()).await?;
         let chain_id = ChainId2::new(current_header.chain_id().id());
@@ -1299,8 +1303,7 @@ impl ObserverService {
             }
         }
 
-        Ok(())
-        // dumper.dump_results()
+        dumper.dump_results()
     }
 }
 
