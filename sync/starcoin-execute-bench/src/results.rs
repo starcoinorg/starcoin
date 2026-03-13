@@ -652,7 +652,7 @@ impl<'a> ResultsDumper<'a> {
             0.0
         };
 
-        let stats_lines = vec![
+        let stats_lines = [
             format!("TPS: {:.2}", tps),
             format!(
                 "Total Executed: {} | Unique Txn: {} | Duplicates: {} ({:.1}%)",
@@ -812,7 +812,7 @@ impl<'a> ResultsDumper<'a> {
             }
         }
 
-        let stats_lines = vec![
+        let stats_lines = [
             format!(
                 "Block Range: {} - {} ({} blocks with txns, {} empty blocks)",
                 min_block, max_block, num_blocks, empty_blocks
