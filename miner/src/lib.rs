@@ -19,6 +19,8 @@ mod create_block_template;
 pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
+#[cfg(test)]
+mod tests;
 
 use crate::create_block_template::BlockTemplateResponse;
 pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
