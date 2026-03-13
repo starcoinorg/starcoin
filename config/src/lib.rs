@@ -37,7 +37,6 @@ mod miner_config;
 mod network_config;
 mod rpc_config;
 mod storage_config;
-mod stratum_config;
 mod sync_config;
 #[cfg(test)]
 mod tests;
@@ -48,7 +47,6 @@ use thiserror::Error;
 
 use crate::account_provider_config::AccountProviderConfig;
 use crate::genesis_config::vm2::GenesisConfig as GenesisConfig2;
-use crate::stratum_config::StratumConfig;
 pub use api_config::{Api, ApiSet};
 pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
@@ -224,9 +222,6 @@ pub struct StarcoinOpt {
     pub sync: SyncConfig,
     #[clap(flatten)]
     pub vault: AccountVaultConfig,
-    #[serde(default)]
-    #[clap(flatten)]
-    pub stratum: StratumConfig,
     #[clap(flatten)]
     pub account_provider: AccountProviderConfig,
 }
@@ -481,8 +476,9 @@ pub struct NodeConfig {
     pub metrics: MetricsConfig,
     #[serde(default)]
     pub logger: LoggerConfig,
-    #[serde(default)]
-    pub stratum: StratumConfig,
+    // Compatibility shim: keep accepting legacy `[stratum]` table from old config files.
+    #[serde(default, skip_serializing)]
+    pub stratum: Option<serde_json::Value>,
     #[serde(default)]
     pub account_provider: AccountProviderConfig,
 }
@@ -572,7 +568,6 @@ impl NodeConfig {
         self.vault.merge_with_opt(opt, base.clone())?;
         self.metrics.merge_with_opt(opt, base.clone())?;
         self.logger.merge_with_opt(opt, base.clone())?;
-        self.stratum.merge_with_opt(opt, base.clone())?;
         self.account_provider.merge_with_opt(opt, base)?;
         Ok(())
     }

@@ -19,9 +19,12 @@ use parking_lot::Mutex;
 // Starcoin crates
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::{
-    chain::GetBlockOption,
+    chain::{GetBlockOption, GetEventOption},
     node::NodeInfo,
-    types::{BlockView, MintedBlockView, MultiStateView},
+    types::{
+        BlockView, ChainInfoView, MintedBlockView, MultiStateView, TransactionEventResponse,
+        TransactionInfoView as TransactionInfoViewRpc,
+    },
 };
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_vm2_account_api::AccountInfo;
@@ -227,6 +230,32 @@ impl AsyncRpcClient {
             .await
             .map_err(map_err)
     }
+
+    pub async fn chain_info(&self) -> anyhow::Result<ChainInfoView> {
+        self.call_rpc_async(|inner| inner.chain_client.info())
+            .await
+            .map_err(map_err)
+    }
+
+    pub async fn chain_get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> anyhow::Result<Vec<TransactionInfoViewRpc>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_block_txn_infos(block_hash))
+            .await
+            .map_err(map_err)
+    }
+
+    pub async fn chain_get_events_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> anyhow::Result<Vec<TransactionEventResponse>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_events_by_txn_hash(txn_hash, option))
+            .await
+            .map_err(map_err)
+    }
+
     pub async fn node_info(&self) -> anyhow::Result<NodeInfo> {
         self.call_rpc_async(|inner| inner.node_client.info())
             .await
@@ -240,6 +269,12 @@ impl AsyncRpcClient {
         extra: String,
     ) -> anyhow::Result<MintedBlockView> {
         self.call_rpc_async(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
+            .await
+            .map_err(map_err)
+    }
+
+    pub async fn miner_get_job(&self) -> anyhow::Result<Option<MintBlockEvent>> {
+        self.call_rpc_async(|inner| inner.miner_client.get_job())
             .await
             .map_err(map_err)
     }

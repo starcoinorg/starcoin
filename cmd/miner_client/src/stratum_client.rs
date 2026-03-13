@@ -1,4 +1,7 @@
-use crate::stratum_client_service::{ShareRequest, StratumClientService, SubmitSealRequest};
+use crate::stratum_client_service::{
+    LoginServiceRequest, ShareRequest, StratumClientService, SubmitSealRequest,
+};
+use crate::stratum_compat::{target_hex_to_difficulty, LoginRequest};
 use crate::{ConsensusStrategy, JobClient, SealEvent};
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -6,8 +9,6 @@ use futures::future;
 use futures::stream::{BoxStream, StreamExt};
 use starcoin_logger::prelude::error;
 use starcoin_service_registry::ServiceRef;
-use starcoin_stratum::rpc::LoginRequest;
-use starcoin_stratum::target_hex_to_difficulty;
 use starcoin_time_service::TimeService;
 use starcoin_types::system_events::{MintBlockEvent, MintEventExtra};
 use std::sync::Arc;
@@ -39,7 +40,7 @@ impl JobClient for StratumJobClient {
         let login = self.login.clone();
         let fut = async move {
             let stream = srv
-                .send(login)
+                .send(LoginServiceRequest(login))
                 .await?
                 .await
                 .map_err(|e| anyhow::anyhow!(format!("{}", e)))

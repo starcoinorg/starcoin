@@ -44,8 +44,6 @@ use starcoin_storage::{
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
     Storage, Storage2,
 };
-use starcoin_stratum::service::{StratumService, StratumServiceFactory};
-use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, ResetRequest};
 use starcoin_sync::sync::SyncService;
@@ -390,6 +388,7 @@ impl NodeService {
 
         info!("Self peer_id is: {}", peer_id.to_base58());
         info!("Self address is: {}", config.network.self_address());
+        warn!("In-process stratum is removed from node; use standalone `starcoin_stratumd`.");
 
         // Create NewHeaderChannel for miner services
         use starcoin_miner::{NewHeaderChannel, NewHeaderService};
@@ -411,10 +410,6 @@ impl NodeService {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
 
-        registry
-            .register_by_factory::<Stratum, StratumFactory>()
-            .await?;
-
         registry.register::<GenerateBlockEventPacemaker>().await?;
 
         // wait for service init.
@@ -428,10 +423,6 @@ impl NodeService {
         registry
             .register_by_factory::<RpcService, RpcServiceFactory>()
             .await?;
-        registry
-            .register_by_factory::<StratumService, StratumServiceFactory>()
-            .await?;
-
         // start metrics server
         if !config.metrics.disable_metrics() {
             registry.register::<MetricsServerActorService>().await?;

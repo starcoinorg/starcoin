@@ -7,6 +7,7 @@ pub mod miner;
 mod solver;
 pub mod stratum_client;
 pub mod stratum_client_service;
+pub mod stratum_compat;
 use anyhow::Result;
 use futures::stream::BoxStream;
 use starcoin_config::TimeService;

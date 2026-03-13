@@ -1,15 +1,74 @@
-use bytes::BytesMut;
-use std::{io, str};
+use serde::{Deserialize, Serialize};
+use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::U256;
+use std::{convert::TryInto, io, str};
+use tokio_util::bytes::BytesMut;
 use tokio_util::codec::{Decoder, Encoder};
 
-/// Separator for enveloping messages in streaming codecs.
+const MAX_INBOUND_BYTES: usize = 256 * 1024;
+
+pub fn target_hex_to_difficulty(target: &str) -> anyhow::Result<U256> {
+    let mut temp = hex::decode(target)?;
+    temp.reverse();
+    let temp = hex::encode(temp);
+    let temp = U256::from_str_radix(&temp, 16)?;
+    Ok(U256::from(u64::MAX) / temp)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct LoginRequest {
+    pub login: String,
+    pub pass: String,
+    pub agent: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub algo: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShareRequest {
+    pub id: String,
+    pub job_id: String,
+    pub nonce: String,
+    pub result: String,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+pub struct Status {
+    pub status: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct StratumJobResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub login: Option<LoginRequest>,
+    pub id: String,
+    pub status: String,
+    pub job: StratumJob,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct StratumJob {
+    pub height: u64,
+    pub id: String,
+    pub target: String,
+    pub job_id: String,
+    pub blob: String,
+}
+
+impl StratumJob {
+    pub fn get_extra(&self) -> anyhow::Result<BlockHeaderExtra> {
+        let blob = hex::decode(&self.blob)?;
+        if blob.len() != 76 {
+            return Err(anyhow::anyhow!("Invalid stratum job"));
+        }
+        let extra: [u8; 4] = blob[35..39].try_into()?;
+        Ok(BlockHeaderExtra::new(extra))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Separator {
-    /// No envelope is expected between messages. Decoder will try to figure out
-    /// message boundaries by accumulating incoming bytes until valid JSON is formed.
-    /// Encoder will send messages without any boundaries between requests.
     Empty,
-    /// Byte is used as a sentinel between messages.
     Byte(u8),
 }
 
@@ -19,7 +78,6 @@ impl Default for Separator {
     }
 }
 
-/// Stream codec for streaming JSON-RPC over TCP.
 #[derive(Debug, Default)]
 pub struct JsonStreamCodec {
     incoming_separator: Separator,
@@ -27,12 +85,10 @@ pub struct JsonStreamCodec {
 }
 
 impl JsonStreamCodec {
-    /// Default codec with streaming input data. Input can be both enveloped and not.
     pub fn stream_incoming() -> Self {
         Self::new(Separator::Empty, Default::default())
     }
 
-    /// New custom stream codec.
     pub fn new(incoming_separator: Separator, outgoing_separator: Separator) -> Self {
         Self {
             incoming_separator,
@@ -50,6 +106,12 @@ impl Decoder for JsonStreamCodec {
     type Error = io::Error;
 
     fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Self::Item>> {
+        if buf.len() > MAX_INBOUND_BYTES {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "jsonrpc message too large",
+            ));
+        }
         if let Separator::Byte(separator) = self.incoming_separator {
             if let Some(i) = buf.as_ref().iter().position(|&b| b == separator) {
                 let line = buf.split_to(i);
@@ -57,7 +119,7 @@ impl Decoder for JsonStreamCodec {
 
                 match str::from_utf8(line.as_ref()) {
                     Ok(s) => Ok(Some(s.to_string())),
-                    Err(_) => Err(io::Error::new(io::ErrorKind::Other, "invalid UTF-8")),
+                    Err(_) => Err(io::Error::other("invalid UTF-8")),
                 }
             } else {
                 Ok(None)

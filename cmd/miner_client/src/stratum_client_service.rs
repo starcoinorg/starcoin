@@ -1,3 +1,7 @@
+use crate::stratum_compat::JsonStreamCodec;
+pub use crate::stratum_compat::{
+    LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
+};
 use anyhow::anyhow;
 use anyhow::Result;
 use futures::{select, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
@@ -8,10 +12,6 @@ use starcoin_config::MinerClientConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
-};
-use starcoin_stratum::codec::JsonStreamCodec;
-pub use starcoin_stratum::rpc::{
-    LoginRequest, ShareRequest, Status, StratumJob, StratumJobResponse,
 };
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -126,6 +126,13 @@ impl ServiceRequest for SubmitSealRequest {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SubmitSealRequest(pub ShareRequest);
+
+#[derive(Clone, Debug)]
+pub struct LoginServiceRequest(pub LoginRequest);
+
+impl ServiceRequest for LoginServiceRequest {
+    type Response = oneshot::Receiver<mpsc::UnboundedReceiver<StratumJob>>;
+}
 
 fn build_request_string<T: ?Sized + Serialize>(
     method: &str,
@@ -277,16 +284,16 @@ impl ActorService for StratumClientService {
     }
 }
 
-impl ServiceHandler<StratumClientService, LoginRequest> for StratumClientService {
+impl ServiceHandler<StratumClientService, LoginServiceRequest> for StratumClientService {
     fn handle(
         &mut self,
-        msg: LoginRequest,
+        msg: LoginServiceRequest,
         _ctx: &mut ServiceContext<StratumClientService>,
-    ) -> <LoginRequest as ServiceRequest>::Response {
+    ) -> <LoginServiceRequest as ServiceRequest>::Response {
         match self.sender.clone() {
             Some(sender) => {
                 let (s, r) = futures::channel::oneshot::channel();
-                if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg, s)) {
+                if let Err(err) = sender.unbounded_send(Request::LoginRequest(msg.0, s)) {
                     error!("stratum handle login_request failed: {}", err);
                 }
                 r

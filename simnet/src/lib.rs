@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use rand_chacha::{
-    rand_core::{RngCore, SeedableRng},
+    rand_core::{Rng, SeedableRng},
     ChaCha8Rng,
 };
 use std::cmp::Ordering;
@@ -182,12 +182,12 @@ impl BlkStream {
     }
 }
 
-fn exp_sample<R: RngCore + ?Sized>(rng: &mut R, mean_interval: u64) -> u64 {
+fn exp_sample<R: Rng + ?Sized>(rng: &mut R, mean_interval: u64) -> u64 {
     let u = next_unit_interval(rng);
     (-u.ln() * mean_interval as f64) as u64
 }
 
-fn next_unit_interval<R: RngCore + ?Sized>(rng: &mut R) -> f64 {
+fn next_unit_interval<R: Rng + ?Sized>(rng: &mut R) -> f64 {
     // Map u64 samples to (0, 1]; clamp to avoid ln(0) during exponential sampling.
     const SCALE: f64 = 1.0 / (u64::MAX as f64 + 1.0);
     (rng.next_u64() as f64 * SCALE).clamp(f64::EPSILON, 1.0)
