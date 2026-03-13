@@ -8,15 +8,17 @@ use std::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc,
     },
+    time::{Duration, Instant},
 };
 
 use anyhow::{bail, format_err, Result};
 use chrono::Local;
-use clap::{Parser, ValueHint};
+use clap::{Parser, ValueEnum, ValueHint};
 use results::{ResultsDumper, TransactionExecutionResult};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BaseConfig, BuiltinNetworkID, ChainNetworkID, NodeConfig, StarcoinOpt};
+use starcoin_config::{G_DEV_CONFIG, G_HALLEY_CONFIG, G_PROXIMA_CONFIG};
 use starcoin_crypto::HashValue;
 use starcoin_logger::{
     prelude::{error, info, LevelFilter},
@@ -35,6 +37,7 @@ use starcoin_types::{
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
     system_events::{MinedBlock, NewHeadBlock},
+    transaction::StcTransactionInfo,
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -67,6 +70,14 @@ struct Cli {
         help = "Network to run against (custom, test, dev, halley, proxima, barnard, main)."
     )]
     network: NetworkChoice,
+
+    #[arg(
+        long = "custom-template",
+        value_enum,
+        default_value = "halley",
+        help = "Template used to generate custom genesis when --network custom (halley or proxima)."
+    )]
+    custom_template: CustomGenesisTemplate,
 
     #[arg(
         short = 'c',
@@ -135,6 +146,21 @@ enum NetworkChoice {
     Custom,
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+enum CustomGenesisTemplate {
+    Halley,
+    Proxima,
+}
+
+impl CustomGenesisTemplate {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Halley => "halley",
+            Self::Proxima => "proxima",
+        }
+    }
+}
+
 impl NetworkChoice {
     fn to_chain_network(self) -> Result<ChainNetworkID> {
         match self {
@@ -150,16 +176,16 @@ impl NetworkChoice {
         }
     }
 
-    fn genesis_name(self) -> &'static str {
+    fn genesis_name(self) -> Option<&'static str> {
         match self {
-            Self::Custom => "dev",
+            Self::Custom => None,
             Self::Builtin(builtin_network_id) => match builtin_network_id {
-                BuiltinNetworkID::Test => "test",
-                BuiltinNetworkID::Dev => "dev",
-                BuiltinNetworkID::Halley => "halley",
-                BuiltinNetworkID::Proxima => "proxima",
-                BuiltinNetworkID::Barnard => "barnard",
-                BuiltinNetworkID::Main => "main",
+                BuiltinNetworkID::Test => Some("test"),
+                BuiltinNetworkID::Dev => Some("dev"),
+                BuiltinNetworkID::Halley => Some("halley"),
+                BuiltinNetworkID::Proxima => Some("proxima"),
+                BuiltinNetworkID::Barnard => Some("barnard"),
+                BuiltinNetworkID::Main => Some("main"),
             },
         }
     }
@@ -206,6 +232,14 @@ fn main() -> Result<()> {
     let chain_network = network_choice.to_chain_network()?;
     let data_dir = DataDir::new(cli.data_dir)?;
     let base_dir = data_dir.path().to_path_buf();
+    let custom_genesis = if matches!(network_choice, NetworkChoice::Custom) {
+        Some(prepare_custom_genesis_template(
+            &base_dir,
+            cli.custom_template,
+        )?)
+    } else {
+        None
+    };
     if matches!(network_choice, NetworkChoice::Custom) {
         let chain_dir = base_dir.join(chain_network.chain_name());
         if chain_dir.exists() {
@@ -222,7 +256,10 @@ fn main() -> Result<()> {
         base_data_dir: Some(base_dir.clone()),
         ..Default::default()
     };
-    init_opt.genesis_config = Some(network_choice.genesis_name().to_owned());
+    init_opt.genesis_config = match custom_genesis {
+        Some(path) => Some(path),
+        None => network_choice.genesis_name().map(ToOwned::to_owned),
+    };
     BaseConfig::load_with_opt(&init_opt)?;
 
     let mut global_opt = StarcoinOpt {
@@ -255,6 +292,33 @@ fn main() -> Result<()> {
     bench_result?;
     close_result?;
     Ok(())
+}
+
+fn prepare_custom_genesis_template(
+    base_dir: &Path,
+    template: CustomGenesisTemplate,
+) -> Result<String> {
+    use starcoin_config::genesis_config::vm2;
+
+    let mut genesis_config = match template {
+        CustomGenesisTemplate::Halley => G_HALLEY_CONFIG.clone(),
+        CustomGenesisTemplate::Proxima => G_PROXIMA_CONFIG.clone(),
+    };
+    let mut genesis_config2 = match template {
+        CustomGenesisTemplate::Halley => vm2::G_HALLEY_CONFIG.clone(),
+        CustomGenesisTemplate::Proxima => vm2::G_PROXIMA_CONFIG.clone(),
+    };
+
+    // Keep halley/proxima runtime parameters, but inject local association private keys
+    // from dev template so the benchmark can batch-fund test accounts.
+    genesis_config.association_key_pair = G_DEV_CONFIG.association_key_pair.clone();
+    genesis_config2.association_key_pair = vm2::G_DEV_CONFIG.association_key_pair.clone();
+
+    let genesis_path = base_dir.join(format!("bench-custom-template-{}.json", template.as_str()));
+    let genesis_path2 = PathBuf::from(format!("{}.2", genesis_path.display()));
+    genesis_config.save(genesis_path.as_path())?;
+    genesis_config2.save(genesis_path2.as_path())?;
+    Ok(genesis_path.to_string_lossy().into_owned())
 }
 
 async fn create_account(
@@ -359,6 +423,24 @@ async fn get_current_header(
     Ok(current_header)
 }
 
+async fn get_txn_status_debug(
+    chain_reader_service: ServiceRef<ChainReaderService>,
+    txn_hash: HashValue,
+) -> Result<Option<String>> {
+    let txn_info = match chain_reader_service
+        .send(ChainRequest::GetTransactionInfo(txn_hash))
+        .await??
+    {
+        ChainResponse::TransactionInfo(info) => info,
+        _ => bail!("Unexpected response type."),
+    };
+
+    Ok(txn_info.map(|info| match info.transaction_info {
+        StcTransactionInfo::V1(txn_info) => format!("{:?}", txn_info.status()),
+        StcTransactionInfo::V2(txn_info) => format!("{:?}", txn_info.status()),
+    }))
+}
+
 async fn get_balance(
     address: AccountAddress,
     storage1: Arc<Storage>,
@@ -445,6 +527,8 @@ async fn transfer_to_accounts(
     )
     .await?;
 
+    let funding_txn_hashes: Vec<HashValue> =
+        signed_transactions.iter().map(|txn| txn.id()).collect();
     txpool.add_txns_multi_signed(
         signed_transactions
             .into_iter()
@@ -454,23 +538,75 @@ async fn transfer_to_accounts(
         None,
     )?;
 
-    // Wait for all transactions to be processed
-    for account in receivers {
-        loop {
+    // Wait for all funding transactions to be processed and balances visible on-chain.
+    let start = Instant::now();
+    let timeout = Duration::from_secs(180);
+    loop {
+        let current_header = get_current_header(chain_reader_service.clone()).await?;
+        let mut funded_count = 0usize;
+        for account in receivers {
             let balance = get_balance(
                 account.address,
                 storage1.clone(),
                 storage2.clone(),
-                get_current_header(chain_reader_service.clone()).await?.id(),
+                current_header.id(),
             )
             .await?;
             if balance >= initial_balance {
-                break;
-            } else {
-                info!("waiting for the transfer to account {}, current balance: {}, initial balance: {}", account.address, balance, initial_balance);
-                tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
+                funded_count += 1;
             }
         }
+        if funded_count == receivers.len() {
+            break;
+        }
+
+        let mut seen_count = 0usize;
+        let mut executed_count = 0usize;
+        let mut pending_count = 0usize;
+        let mut failed_statuses = vec![];
+        for txn_hash in &funding_txn_hashes {
+            let status = get_txn_status_debug(chain_reader_service.clone(), *txn_hash).await?;
+            if let Some(status) = status {
+                seen_count += 1;
+                if status.eq_ignore_ascii_case("executed") {
+                    executed_count += 1;
+                } else if failed_statuses.len() < 5 {
+                    failed_statuses.push(format!("{}={}", txn_hash, status));
+                }
+            } else {
+                pending_count += 1;
+            }
+        }
+
+        if !failed_statuses.is_empty() {
+            bail!(
+                "Funding transactions executed but failed (showing up to 5): {}",
+                failed_statuses.join(", ")
+            );
+        }
+
+        if start.elapsed() >= timeout {
+            bail!(
+                "Timed out waiting funding transfer (funded {}/{}). Txn progress: total={}, seen={}, executed={}, pending={}",
+                funded_count,
+                receivers.len(),
+                funding_txn_hashes.len(),
+                seen_count,
+                executed_count,
+                pending_count
+            );
+        }
+
+        info!(
+            "waiting funding transfer: funded {}/{}, txns total={}, seen={}, executed={}, pending={}",
+            funded_count,
+            receivers.len(),
+            funding_txn_hashes.len(),
+            seen_count,
+            executed_count,
+            pending_count
+        );
+        tokio::time::sleep(tokio::time::Duration::from_millis(3000)).await;
     }
 
     info!(
@@ -693,8 +829,19 @@ async fn execute_benchmark(
 
         let receivers = create_account(account_count, account_service.clone()).await?;
 
-        // Use batch size of 100 for efficient token distribution
-        let batch_size = 10;
+        // Txpool default max_per_sender is 128. Keep funding tx count under this threshold.
+        const TARGET_ASSOC_TXNS_PER_SENDER: usize = 120;
+        let batch_size = receivers
+            .len()
+            .div_ceil(TARGET_ASSOC_TXNS_PER_SENDER)
+            .max(10);
+        let estimated_funding_txns = receivers.len().div_ceil(batch_size);
+        info!(
+            "Funding batch plan: receivers={}, batch_size={}, estimated_funding_txns={}",
+            receivers.len(),
+            batch_size,
+            estimated_funding_txns
+        );
         transfer_to_accounts(
             &receivers,
             initial_balance,
