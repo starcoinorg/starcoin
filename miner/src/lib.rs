@@ -4,7 +4,6 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use futures::executor::block_on;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::*;
@@ -20,7 +19,10 @@ mod create_block_template;
 pub mod generate_block_event_pacemaker;
 mod metrics;
 pub mod task;
+#[cfg(test)]
+mod tests;
 
+use crate::create_block_template::BlockTemplateResponse;
 pub use create_block_template::{BlockBuilderService, BlockTemplateRequest};
 use starcoin_crypto::HashValue;
 pub use starcoin_types::block::BlockHeaderExtra;
@@ -50,6 +52,8 @@ pub struct MinerService {
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
+    inflight_template_build: bool,
+    pending_template_event: Option<PendingGenerateBlockEvent>,
     metrics: Option<MinerMetrics>,
 }
 
@@ -90,10 +94,18 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
     fn handle(
         &mut self,
         req: UpdateSubscriberNumRequest,
-        _ctx: &mut ServiceContext<MinerService>,
+        ctx: &mut ServiceContext<MinerService>,
     ) -> Option<MintBlockEvent> {
+        let previous = self.client_subscribers_num;
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
+            if previous == 0
+                && self.client_subscribers_num > 0
+                && self.current_task.is_none()
+                && !self.inflight_template_build
+            {
+                ctx.notify(GenerateBlockEvent::default());
+            }
         }
         self.current_task.as_ref().map(|task| MintBlockEvent {
             parent_hash: task.block_template.parent_hash,
@@ -119,6 +131,8 @@ impl ServiceFactory<MinerService> for MinerService {
             current_task: None,
             create_block_template_service,
             client_subscribers_num: 0,
+            inflight_template_build: false,
+            pending_template_event: None,
             metrics,
         })
     }
@@ -153,23 +167,90 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
 // one hour
 const MAX_BLOCK_TIME_GAP: u64 = 3600 * 1000;
 
+#[derive(Clone, Copy, Debug, Default)]
+struct PendingGenerateBlockEvent {
+    break_current_task: bool,
+    skip_empty_block_check: bool,
+}
+
+impl PendingGenerateBlockEvent {
+    fn merge(&mut self, event: GenerateBlockEvent) {
+        self.break_current_task |= event.break_current_task;
+        self.skip_empty_block_check |= event.skip_empty_block_check;
+    }
+
+    fn into_event(self) -> GenerateBlockEvent {
+        GenerateBlockEvent::new(self.break_current_task, self.skip_empty_block_check)
+    }
+}
+
+impl From<GenerateBlockEvent> for PendingGenerateBlockEvent {
+    fn from(event: GenerateBlockEvent) -> Self {
+        Self {
+            break_current_task: event.break_current_task,
+            skip_empty_block_check: event.skip_empty_block_check,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct BlockTemplateBuilt {
+    request: PendingGenerateBlockEvent,
+    response: std::result::Result<BlockTemplateResponse, String>,
+}
+
 impl MinerService {
-    pub fn dispatch_task(
+    fn queue_template_build(&mut self, event: GenerateBlockEvent) {
+        match self.pending_template_event.as_mut() {
+            Some(pending) => pending.merge(event),
+            None => self.pending_template_event = Some(event.into()),
+        }
+    }
+
+    fn maybe_start_template_build(&mut self, ctx: &mut ServiceContext<MinerService>) {
+        if self.inflight_template_build {
+            return;
+        }
+
+        let request = match self.pending_template_event.take() {
+            Some(request) => request,
+            None => return,
+        };
+        self.inflight_template_build = true;
+
+        let create_block_template_service = self.create_block_template_service.clone();
+        let self_ref = ctx.self_ref();
+        ctx.spawn(async move {
+            let response = match create_block_template_service
+                .send(BlockTemplateRequest)
+                .await
+            {
+                Ok(Ok(response)) => Ok(response),
+                Ok(Err(err)) => Err(err.to_string()),
+                Err(err) => Err(err.to_string()),
+            };
+
+            if let Err(err) = self_ref.notify(BlockTemplateBuilt { request, response }) {
+                warn!(
+                    target: "miner",
+                    "failed to notify block template result: {:?}",
+                    err
+                );
+            }
+        });
+    }
+
+    fn handle_block_template_built(
         &mut self,
         ctx: &mut ServiceContext<MinerService>,
-        event: GenerateBlockEvent,
+        request: PendingGenerateBlockEvent,
+        response: BlockTemplateResponse,
     ) -> Result<()> {
-        //create block template should block_on for avoid mint same block template.
-        let response = block_on(async {
-            self.create_block_template_service
-                .send(BlockTemplateRequest)
-                .await?
-        })?;
         let parent = response.parent;
         let block_template = response.template;
         let block_time_gap = block_template.timestamp - parent.timestamp();
 
-        if !event.skip_empty_block_check
+        if !request.skip_empty_block_check
             && (block_template.body.transactions.is_empty()
             && self.config.miner.is_disable_mint_empty_block()
             //if block time gap > 3600, force create a empty block for fix https://github.com/starcoinorg/starcoin/issues/3036
@@ -180,16 +261,6 @@ impl MinerService {
         } else {
             self.dispatch_mint_block_event(ctx, block_template)
         }
-    }
-
-    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
-        //create block template should block_on for avoid mint same block template.
-        let response = block_on(async {
-            self.create_block_template_service
-                .send(BlockTemplateRequest)
-                .await?
-        })?;
-        self.dispatch_mint_block_event(ctx, response.template)
     }
 
     fn dispatch_mint_block_event(
@@ -284,14 +355,42 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             });
             return;
         }
-        if let Err(err) = self.dispatch_task(ctx, event) {
-            warn!(
-                "Failed to process generate block event:{}, delay to trigger a new event.",
-                err
-            );
-            ctx.run_later(Duration::from_secs(2), move |ctx| {
-                ctx.notify(GenerateBlockEvent::default());
-            });
+        self.queue_template_build(event);
+        self.maybe_start_template_build(ctx);
+    }
+}
+
+impl EventHandler<Self, BlockTemplateBuilt> for MinerService {
+    fn handle_event(&mut self, event: BlockTemplateBuilt, ctx: &mut ServiceContext<MinerService>) {
+        self.inflight_template_build = false;
+
+        match event.response {
+            Ok(response) => {
+                if let Err(err) = self.handle_block_template_built(ctx, event.request, response) {
+                    warn!(
+                        target: "miner",
+                        "Failed to process generated block template: {}, delay to trigger a new event.",
+                        err
+                    );
+                    let retry_event = event.request.into_event();
+                    ctx.run_later(Duration::from_secs(2), move |ctx| {
+                        ctx.notify(retry_event.clone());
+                    });
+                }
+            }
+            Err(err) => {
+                warn!(
+                    target: "miner",
+                    "Failed to build block template: {}, delay to trigger a new event.",
+                    err
+                );
+                let retry_event = event.request.into_event();
+                ctx.run_later(Duration::from_secs(2), move |ctx| {
+                    ctx.notify(retry_event.clone());
+                });
+            }
         }
+
+        self.maybe_start_template_build(ctx);
     }
 }

@@ -8,21 +8,29 @@ use jsonrpc_core::{futures, MetaIoHandler};
 use jsonrpc_pubsub::Session;
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
+use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_chain_notify::ChainNotifyHandlerService;
+use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
+use starcoin_genesis::Genesis as ChainGenesis;
 use starcoin_logger::prelude::*;
+use starcoin_miner::{
+    BlockBuilderService, BlockHeaderExtra, MinerService, SubmitSealRequest,
+    UpdateSubscriberNumRequest,
+};
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::RegistryAsyncService;
+use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_state_api::StateReaderExt;
 use starcoin_storage::BlockStore;
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{GenerateBlockEvent, MintBlockEvent};
 use starcoin_types::{account_address, U256};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
@@ -128,6 +136,58 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         }
     }
     Ok(())
+}
+
+async fn start_pubsub_registry_with_disabled_miner_client() -> Result<(
+    Arc<NodeConfig>,
+    ServiceRef<RegistryService>,
+    ServiceRef<BusService>,
+    ServiceRef<MinerService>,
+    ServiceRef<PubSubService>,
+)> {
+    let mut config = NodeConfig::random_for_test();
+    config.miner.disable_miner_client = Some(true);
+    config.miner.disable_mint_empty_block = Some(false);
+    let node_config = Arc::new(config);
+
+    let (storage, _chain_info, genesis) = ChainGenesis::init_storage_for_test(node_config.net())?;
+    let chain_header = storage
+        .get_block_header_by_hash(genesis.block().id())?
+        .unwrap();
+    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+
+    let registry = RegistryService::launch();
+    registry.put_shared(node_config.clone()).await?;
+    registry.put_shared(storage.clone()).await?;
+    let bus = registry.service_ref::<BusService>().await?;
+    registry.put_shared(bus.clone()).await?;
+    registry.put_shared(txpool).await?;
+    registry
+        .register_mocker(AccountService::mock().unwrap())
+        .await?;
+    registry.register::<BlockBuilderService>().await?;
+    let miner = registry.register::<MinerService>().await?;
+    let pubsub = registry
+        .register_by_factory::<PubSubService, PubSubServiceFactory>()
+        .await?;
+    Ok((node_config, registry, bus, miner, pubsub))
+}
+
+async fn wait_for_mint_job(miner: &ServiceRef<MinerService>) -> MintBlockEvent {
+    timeout(Duration::from_secs(2), async {
+        loop {
+            if let Some(event) = miner
+                .send(UpdateSubscriberNumRequest { number: None })
+                .await
+                .unwrap()
+            {
+                break event;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("mint job should become available")
 }
 
 #[stest::test]
@@ -238,5 +298,67 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;
     let resp = io.handle_request(request, metadata).await;
     assert_eq!(resp, Some(response.to_owned()));
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_mint_block_disconnect_resets_subscriber_count() -> Result<()> {
+    let (config, registry, bus, miner, service) =
+        start_pubsub_registry_with_disabled_miner_client().await?;
+    let pubsub = PubSubImpl::new(service).to_delegate();
+
+    let mut io = MetaIoHandler::default();
+    io.extend_with(pubsub);
+
+    let mut metadata = Metadata::default();
+    let (sender, receiver) = futures::channel::mpsc::unbounded();
+    metadata.session = Some(Arc::new(Session::new(sender)));
+
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newMintBlock"}], "id": 1}"#;
+    let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
+    let resp = io.handle_request(request, metadata).await;
+    assert_eq!(resp, Some(response.to_owned()));
+
+    let current_job = wait_for_mint_job(&miner).await;
+
+    drop(receiver);
+    bus.broadcast(MintBlockEvent::new(
+        HashValue::random(),
+        ConsensusStrategy::Dummy,
+        vec![0u8; 76],
+        U256::from(1024),
+        0,
+        None,
+    ))?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let nonce = config
+        .net()
+        .genesis_config()
+        .consensus()
+        .solve_consensus_nonce(
+            &current_job.minting_blob,
+            current_job.difficulty,
+            config.net().time_service().as_ref(),
+        );
+    miner.try_send(SubmitSealRequest::new(
+        current_job.minting_blob,
+        nonce,
+        BlockHeaderExtra::new([0u8; 4]),
+    ))?;
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    miner.notify(GenerateBlockEvent::default())?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let next_job = miner
+        .send(UpdateSubscriberNumRequest { number: None })
+        .await?;
+    assert!(
+        next_job.is_none(),
+        "disconnected mint subscribers should not keep miner service active"
+    );
+
+    registry.shutdown_system().await?;
     Ok(())
 }

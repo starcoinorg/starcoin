@@ -231,6 +231,12 @@ impl PubSubService {
         let id = self.subscriber_id.fetch_add(1, atomic::Ordering::SeqCst);
         SubscriptionId::Number(id)
     }
+
+    fn sync_mint_block_subscribers(&self) {
+        self.miner_service.do_send(UpdateSubscriberNumRequest {
+            number: Some(self.mint_block_subscribers.len() as u32),
+        });
+    }
 }
 
 type NewHeadNotification = Notification<ThinBlock>;
@@ -265,7 +271,9 @@ impl ActorEventHandler<Self, ContractEventNotification> for PubSubService {
 
 impl ActorEventHandler<Self, MintBlockEvent> for PubSubService {
     fn handle_event(&mut self, msg: MintBlockEvent, _ctx: &mut ServiceContext<PubSubService>) {
-        send_to_all(&mut self.mint_block_subscribers, msg);
+        if send_to_all(&mut self.mint_block_subscribers, msg) > 0 {
+            self.sync_mint_block_subscribers();
+        }
     }
 }
 
@@ -283,11 +291,13 @@ impl ServiceHandler<Self, SubscribeNewHeads> for PubSubService {
         let subscriber_id = self.next_id();
         self.new_header_subscribers
             .insert(subscriber_id.clone(), sender);
+        let service_ref = ctx.self_ref();
         ctx.spawn(run_subscription(
             receiver,
             subscriber_id,
             sink,
             NewHeadHandler,
+            Some(service_ref),
         ));
     }
 }
@@ -306,19 +316,19 @@ impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
         let subscriber_id = self.next_id();
         self.mint_block_subscribers
             .insert(subscriber_id.clone(), sender.clone());
+        self.sync_mint_block_subscribers();
         let miner_service = self.miner_service.clone();
-        let subscribers_num = self.mint_block_subscribers.len() as u32;
+        let service_ref = ctx.self_ref();
         ctx.spawn(run_subscription(
             receiver,
             subscriber_id,
             subscriber,
             NewMintBlockHandler,
+            Some(service_ref),
         ));
         ctx.spawn(async move {
             match miner_service
-                .send(UpdateSubscriberNumRequest {
-                    number: Some(subscribers_num),
-                })
+                .send(UpdateSubscriberNumRequest { number: None })
                 .await
             {
                 Ok(Some(event)) => {
@@ -355,6 +365,7 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
         let subscriber_id = self.next_id();
         self.new_event_subscribers
             .insert(subscriber_id.clone(), sender);
+        let service_ref = ctx.self_ref();
         ctx.spawn(run_subscription(
             receiver,
             subscriber_id,
@@ -364,6 +375,7 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
                 filter,
                 decode,
             },
+            Some(service_ref),
         ));
     }
 }
@@ -384,12 +396,14 @@ impl ServiceHandler<Self, SubscribeNewPendingTxns> for PubSubService {
         let tasks = self.new_pending_txn_tasks.clone();
         let subscriber_id_clone = subscriber_id.clone();
         let receiver = self.txpool.subscribe_pending_txn();
+        let service_ref = ctx.self_ref();
         let (f, abort_handle) = futures::future::abortable(async move {
             run_subscription(
                 receiver,
                 subscriber_id_clone.clone(),
                 subscriber,
                 TxnEventHandler,
+                Some(service_ref),
             )
             .await;
             // remove self from task list.
@@ -417,10 +431,9 @@ impl ServiceHandler<Self, Unsubscribe> for PubSubService {
     fn handle(&mut self, msg: Unsubscribe, _ctx: &mut ServiceContext<Self>) {
         self.new_header_subscribers.remove(&msg.0);
         self.new_event_subscribers.remove(&msg.0);
-        self.mint_block_subscribers.remove(&msg.0);
-        self.miner_service.do_send(UpdateSubscriberNumRequest {
-            number: Some(self.mint_block_subscribers.len() as u32),
-        });
+        if self.mint_block_subscribers.remove(&msg.0).is_some() {
+            self.sync_mint_block_subscribers();
+        }
         if let Some(h) = self.new_pending_txn_tasks.write().remove(&msg.0) {
             h.abort();
         }
@@ -430,7 +443,7 @@ impl ServiceHandler<Self, Unsubscribe> for PubSubService {
 fn send_to_all<T: Clone>(
     subscriptions: &mut HashMap<SubscriptionId, mpsc::UnboundedSender<T>>,
     msg: T,
-) {
+) -> usize {
     let mut remove_outdated = vec![];
 
     for (id, ch) in subscriptions.iter() {
@@ -446,10 +459,13 @@ fn send_to_all<T: Clone>(
         }
     }
 
+    let removed = remove_outdated.len();
     // drop outdated subscribers.
     for id in remove_outdated {
         subscriptions.remove(&id);
     }
+
+    removed
 }
 
 async fn run_subscription<M, Handler>(
@@ -457,6 +473,7 @@ async fn run_subscription<M, Handler>(
     subscriber_id: SubscriptionId,
     subscriber: Subscriber<pubsub::Result>,
     event_handler: Handler,
+    cleanup_service: Option<ServiceRef<PubSubService>>,
 ) where
     M: Send + 'static,
     Handler: EventHandler<M> + Send + 'static,
@@ -473,6 +490,9 @@ async fn run_subscription<M, Handler>(
         if let Err(e) = forward {
             log::warn!(target: "rpc", "Unable to send notification: {}", e);
         }
+    }
+    if let Some(service) = cleanup_service {
+        service.do_send(Unsubscribe(subscriber_id));
     }
 }
 
