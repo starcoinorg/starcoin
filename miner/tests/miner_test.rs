@@ -86,11 +86,8 @@ impl ActorService for TestMinerService {
 
         ctx.run_later(
             Duration::from_secs(20),
-            move |_ctx: &mut starcoin_service_registry::ServiceContext<'_, Self>| match receiver
-                .try_next()
-            {
-                Ok(Some(_)) => (),
-                Ok(None) | Err(_) => {
+            move |_ctx: &mut starcoin_service_registry::ServiceContext<'_, Self>| {
+                if receiver.try_recv().is_err() {
                     state.async_error.store(true, Ordering::SeqCst);
                 }
             },

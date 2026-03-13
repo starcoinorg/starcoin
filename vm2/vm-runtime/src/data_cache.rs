@@ -334,7 +334,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::new(None)
+        let value = ValueSerDeContext::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
@@ -450,13 +450,13 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::new(None)
+        let value = ValueSerDeContext::new(self.max_value_nest_depth)
             .with_delayed_fields_replacement(&mapping)
             .deserialize(state_value.bytes(), layout)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::new(None)
+        let serialized = ValueSerDeContext::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .serialize(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?

@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, fs::OpenOptions, io::Write};
 
+use anyhow::Context;
 use chrono::{DateTime, Local};
 use plotters::prelude::*;
 use starcoin_crypto::HashValue;
@@ -31,6 +32,24 @@ fn format_epoch_ms(epoch_ms: u64) -> String {
             local.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
         })
         .unwrap_or_else(|| format!("{}ms", epoch_ms))
+}
+
+fn calculate_statistics(values: &[f64]) -> (f64, f64, f64, f64) {
+    if values.is_empty() {
+        return (0.0, 0.0, 0.0, 0.0);
+    }
+    let min = values.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    let max = values.iter().fold(0.0f64, |a, &b| a.max(b));
+    let avg = values.iter().sum::<f64>() / values.len() as f64;
+
+    let mut sorted = values.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let median = if sorted.len() % 2 == 0 {
+        (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
+    } else {
+        sorted[sorted.len() / 2]
+    };
+    (min, max, avg, median)
 }
 
 impl std::fmt::Debug for TransactionExecutionResult {
@@ -165,24 +184,7 @@ impl<'a> ResultsDumper<'a> {
         info!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
             total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
 
-        let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max_delay = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
-        let avg_delay = if total_txns > 0 {
-            all_delays.iter().sum::<f64>() / total_txns as f64
-        } else {
-            0.0
-        };
-        let median_delay = if total_txns > 0 {
-            let mut sorted = all_delays.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            if sorted.len() % 2 == 0 {
-                (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
-            } else {
-                sorted[sorted.len() / 2]
-            }
-        } else {
-            0.0
-        };
+        let (min_delay, max_delay, avg_delay, median_delay) = calculate_statistics(&all_delays);
 
         // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
@@ -297,7 +299,7 @@ impl<'a> ResultsDumper<'a> {
         }
 
         if all_exec_times.len() < 2 {
-            return all_exec_times.len() as f64;
+            return 0.0;
         }
 
         all_exec_times.sort();
@@ -360,20 +362,7 @@ impl<'a> ResultsDumper<'a> {
             return (0.0, 0.0, 0.0, 0.0);
         }
 
-        // Calculate statistics
-        let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
-        let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
-
-        // Median
-        block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        let median_tps = if block_tps_list.len() % 2 == 0 {
-            (block_tps_list[block_tps_list.len() / 2 - 1]
-                + block_tps_list[block_tps_list.len() / 2])
-                / 2.0
-        } else {
-            block_tps_list[block_tps_list.len() / 2]
-        };
+        let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&block_tps_list);
 
         (min_tps, max_tps, avg_tps, median_tps)
     }
@@ -435,49 +424,30 @@ impl<'a> ResultsDumper<'a> {
             return (0.0, 0.0, 0.0, 0.0);
         }
 
-        // Calculate statistics
-        let min_tps = block_tps_list.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max_tps = block_tps_list.iter().fold(0.0f64, |a, &b| a.max(b));
-        let avg_tps = block_tps_list.iter().sum::<f64>() / block_tps_list.len() as f64;
-
-        // Median
-        block_tps_list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        let median_tps = if block_tps_list.len() % 2 == 0 {
-            (block_tps_list[block_tps_list.len() / 2 - 1]
-                + block_tps_list[block_tps_list.len() / 2])
-                / 2.0
-        } else {
-            block_tps_list[block_tps_list.len() / 2]
-        };
+        let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&block_tps_list);
 
         (min_tps, max_tps, avg_tps, median_tps)
     }
 
     pub fn dump_results(&self) -> anyhow::Result<()> {
-        // let mut file = OpenOptions::new()
-        //     .write(true)
-        //     .create(true)
-        //     .truncate(true)
-        //     .open("./transaction_results.txt")?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("./transaction_results.txt")
+            .context("failed to open transaction_results.txt")?;
 
-        // for (transaction, results) in self.transaction_data {
-        //     writeln!(
-        //         file,
-        //         "transaction id: {}, results: {:?}",
-        //         *transaction, results
-        //     )?;
-        // }
+        for (transaction, results) in self.transaction_data {
+            writeln!(
+                file,
+                "transaction id: {}, results: {:?}",
+                *transaction, results
+            )
+            .context("failed to write transaction results")?;
+        }
 
-        // match self.export_combined_svg("./benchmark_results.svg") {
-        //     Ok(_) => (),
-        //     Err(e) => {
-        //         return Err(anyhow::format_err!(
-        //             "failed to export benchmark results svg: {}",
-        //             e
-        //         ));
-        //     }
-        // }
-
+        self.export_combined_svg("./benchmark_results.svg")
+            .map_err(|e| anyhow::format_err!("failed to export benchmark results svg: {}", e))?;
         Ok(())
     }
 
@@ -651,29 +621,13 @@ impl<'a> ResultsDumper<'a> {
             )))?;
         }
 
-        // Calculate statistics
         let all_delays: Vec<f64> = valid_executions.iter().map(|(_, _, l)| *l).collect();
         let total_txns = all_delays.len();
-        let min_delay = all_delays.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        let max_delay_stat = all_delays.iter().fold(0.0f64, |a, &b| a.max(b));
-        let avg_delay = if total_txns > 0 {
-            all_delays.iter().sum::<f64>() / total_txns as f64
-        } else {
-            0.0
-        };
-        let median_delay = if total_txns > 0 {
-            let mut sorted = all_delays.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            if sorted.len() % 2 == 0 {
-                (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
-            } else {
-                sorted[sorted.len() / 2]
-            }
-        } else {
-            0.0
-        };
+        let (min_delay, max_delay_stat, avg_delay, median_delay) =
+            calculate_statistics(&all_delays);
 
-        // Calculate TPS based on first to last transaction Added time
+        // This chart uses submission TPS (from first/last Added timestamp).
+        // It intentionally differs from calculate_tps_from_executed(), which reports execution TPS.
         let tps = if valid_executions.len() >= 2 {
             let first_time = valid_executions.first().map(|(_, t, _)| *t);
             let last_time = valid_executions.last().map(|(_, t, _)| *t);
