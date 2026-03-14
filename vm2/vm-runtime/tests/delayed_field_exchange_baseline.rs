@@ -20,7 +20,6 @@ struct Mapping {
 }
 
 impl ValueToIdentifierMapping for Mapping {
-    type Identifier = DelayedFieldID;
 
     fn value_to_identifier(
         &self,
@@ -56,11 +55,11 @@ fn test_baseline_nested_aggregator_exchange_keeps_tail_bytes() {
     input.extend_from_slice(&123u64.to_le_bytes());
     input.extend_from_slice(&456u64.to_le_bytes());
 
-    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let value = ValueSerDeContext::new(None)
         .with_delayed_fields_replacement(&mapping)
         .deserialize(&input, &layout)
         .expect("exchange should succeed for nested aggregator layout");
-    let output = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let output = ValueSerDeContext::new(None)
         .with_delayed_fields_serde()
         .serialize(&value, &layout)
         .expect("serialization should succeed")
@@ -87,11 +86,11 @@ fn test_baseline_nested_snapshot_exchange_keeps_tail_bytes() {
     input.extend_from_slice(&11u64.to_le_bytes());
     input.extend_from_slice(&22u64.to_le_bytes());
 
-    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let value = ValueSerDeContext::new(None)
         .with_delayed_fields_replacement(&mapping)
         .deserialize(&input, &layout)
         .expect("exchange should succeed for nested snapshot layout");
-    let output = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let output = ValueSerDeContext::new(None)
         .with_delayed_fields_serde()
         .serialize(&value, &layout)
         .expect("serialization should succeed")
@@ -115,7 +114,7 @@ fn test_baseline_nested_layout_rejects_invalid_bytes_length() {
     };
 
     let invalid = vec![0u8; 8];
-    let value = ValueSerDeContext::<DelayedFieldID>::new(None)
+    let value = ValueSerDeContext::new(None)
         .with_delayed_fields_replacement(&mapping)
         .deserialize(&invalid, &layout);
     assert!(
