@@ -20,7 +20,6 @@ struct Mapping {
 }
 
 impl ValueToIdentifierMapping for Mapping {
-
     fn value_to_identifier(
         &self,
         kind: &IdentifierMappingKind,
