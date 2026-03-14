@@ -13,7 +13,7 @@ use starcoin_rpc_client::StateRootOption;
 use starcoin_vm2_account_api::AccountPublicKey;
 use starcoin_vm2_state_api::StateReaderExt;
 use starcoin_vm2_types::transaction::{
-    parse_transaction_argument_advance, DryRunTransaction, RawUserTransaction, TransactionArgument,
+    parse_transaction_argument_advance, RawUserTransaction, TransactionArgument,
 };
 use starcoin_vm2_types::view::{
     FunctionIdView, RawUserTransactionView, TransactionPayloadView,
@@ -29,7 +29,7 @@ use starcoin_vm2_vm_types::{
     language_storage::TypeTag,
     parser::parse_type_tag,
     token::stc::STC_TOKEN_CODE_STR,
-    transaction::{EntryFunction, TransactionPayload},
+    transaction::{DryRunTransaction, EntryFunction, TransactionPayload},
     transaction_argument::convert_txn_args,
 };
 
@@ -173,14 +173,11 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
         // pre-run the txn when first generation.
         if opt.multisig_txn_file.is_none() {
-            let output = ctx
-                .state()
-                .vm2()?
-                .client()
-                .dry_run_raw2(DryRunTransaction {
-                    public_key: AccountPublicKey::Multi(account_public_key.clone()),
-                    raw_txn: raw_txn.clone(),
-                })?;
+            // Use the same local dry-run path as normal transaction execution.
+            let output = ctx.state().vm2()?.dry_run_transaction(DryRunTransaction {
+                public_key: AccountPublicKey::Multi(account_public_key.clone()),
+                raw_txn: raw_txn.clone(),
+            })?;
 
             eprintln!(
                 "Transaction dry run execute output: \n {}",
