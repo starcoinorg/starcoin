@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_logger::prelude::*;
@@ -22,7 +22,7 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     let ipc_file = config.rpc.get_ipc_file();
 
     let node_handle = test_helper::run_node_by_config(config.clone())?;
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let txpool = node_handle.txpool();
 
@@ -45,14 +45,18 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     assert!(import_result2[0].is_ok());
     assert!(import_result2[1].is_ok());
 
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let block = node_handle.generate_block()?;
-    let block_hash = block.id();
 
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let client = RpcClient::connect_ipc(ipc_file)?;
+    let block_hash = wait_for_queryable_main_head_hash(
+        &client,
+        block.header().number(),
+        Duration::from_secs(60),
+    )?;
 
     let (txn_infos_in_seq, vm1_infos, vm2_infos) =
         wait_for_consistent_txn_infos(&client, block_hash, Duration::from_secs(60))?;
@@ -170,6 +174,38 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     node_handle.stop()?;
 
     Ok(())
+}
+
+fn wait_for_queryable_main_head_hash(
+    client: &RpcClient,
+    min_number: u64,
+    timeout: Duration,
+) -> Result<HashValue> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if Instant::now() >= deadline {
+            return Err(format_err!(
+                "timeout waiting queryable main head, min number {}",
+                min_number
+            ));
+        }
+        match client.chain_info() {
+            Ok(chain_info) => {
+                let head_number = chain_info.head.number.0;
+                let head_hash = chain_info.head.block_hash;
+                if head_number >= min_number {
+                    let seq_res = client.chain_get_block_txn_infos_in_seq(head_hash);
+                    let vm1_res = client.chain_get_block_txn_infos(head_hash);
+                    let vm2_res = client.chain_get_block_txn_infos2(head_hash);
+                    if seq_res.is_ok() && vm1_res.is_ok() && vm2_res.is_ok() {
+                        return Ok(head_hash);
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+        std::thread::sleep(Duration::from_millis(200));
+    }
 }
 
 fn wait_for_consistent_txn_infos(
