@@ -189,20 +189,17 @@ fn wait_for_queryable_main_head_hash(
                 min_number
             ));
         }
-        match client.chain_info() {
-            Ok(chain_info) => {
-                let head_number = chain_info.head.number.0;
-                let head_hash = chain_info.head.block_hash;
-                if head_number >= min_number {
-                    let seq_res = client.chain_get_block_txn_infos_in_seq(head_hash);
-                    let vm1_res = client.chain_get_block_txn_infos(head_hash);
-                    let vm2_res = client.chain_get_block_txn_infos2(head_hash);
-                    if seq_res.is_ok() && vm1_res.is_ok() && vm2_res.is_ok() {
-                        return Ok(head_hash);
-                    }
+        if let Ok(chain_info) = client.chain_info() {
+            let head_number = chain_info.head.number.0;
+            let head_hash = chain_info.head.block_hash;
+            if head_number >= min_number {
+                let seq_res = client.chain_get_block_txn_infos_in_seq(head_hash);
+                let vm1_res = client.chain_get_block_txn_infos(head_hash);
+                let vm2_res = client.chain_get_block_txn_infos2(head_hash);
+                if seq_res.is_ok() && vm1_res.is_ok() && vm2_res.is_ok() {
+                    return Ok(head_hash);
                 }
             }
-            Err(_) => {}
         }
         std::thread::sleep(Duration::from_millis(200));
     }
