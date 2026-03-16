@@ -21,7 +21,7 @@ use starcoin_config::{BaseConfig, BuiltinNetworkID, ChainNetworkID, NodeConfig, 
 use starcoin_config::{G_DEV_CONFIG, G_HALLEY_CONFIG, G_PROXIMA_CONFIG};
 use starcoin_crypto::HashValue;
 use starcoin_logger::{
-    prelude::{error, info, LevelFilter},
+    prelude::{error, info, warn, LevelFilter},
     LoggerHandle,
 };
 use starcoin_node::NodeHandle;
@@ -724,20 +724,28 @@ impl BenchmarkState {
         batch_user_count: usize,
         chain_id: ChainId2,
     ) -> Self {
-        // Adjust batch_user_count if it's larger than account count
-        let effective_batch_user_count = if batch_user_count > accounts.len() {
-            // Use all accounts as one batch, ensuring even number
-            let adjusted = accounts.len() & !1; // Round down to even number
+        // Normalize to a usable batch size:
+        // 1) no larger than account count
+        // 2) even number so sender/receiver split has equal length
+        let mut effective_batch_user_count = batch_user_count.min(accounts.len());
+        if effective_batch_user_count % 2 != 0 {
+            effective_batch_user_count -= 1;
+        }
+        if effective_batch_user_count != batch_user_count {
             info!(
                 "Adjusted batch_user_count from {} to {} (account_count={})",
                 batch_user_count,
-                adjusted,
+                effective_batch_user_count,
                 accounts.len()
             );
-            adjusted
-        } else {
-            batch_user_count
-        };
+        }
+        if effective_batch_user_count == 0 {
+            warn!(
+                "Effective batch_user_count is 0 (requested={}, account_count={}), benchmark will submit no user transactions",
+                batch_user_count,
+                accounts.len()
+            );
+        }
 
         // Each batch has batch_user_count/2 senders, each sends 1 transaction
         let total_batches = if effective_batch_user_count > 0 {
@@ -770,6 +778,9 @@ impl BenchmarkState {
     /// Each batch uses batch_user_count users, where first half sends to second half.
     /// Returns None if all batches have been sent.
     fn build_next_batch(&self, expire_time: u64) -> Option<Vec<RawUserTransaction2>> {
+        if self.batch_user_count == 0 {
+            return None;
+        }
         let batch_index = self.batch_index.fetch_add(1, Ordering::SeqCst);
         let start = batch_index * self.batch_user_count;
 
@@ -809,13 +820,20 @@ impl BenchmarkState {
 
     /// Check if all batches have been sent
     fn all_batches_sent(&self) -> bool {
+        if self.batch_user_count == 0 {
+            return true;
+        }
         let next_start = self.batch_index.load(Ordering::SeqCst) * self.batch_user_count;
         next_start + self.batch_user_count > self.accounts.len()
     }
 
     /// Get total number of batches
     fn total_batches(&self) -> usize {
-        self.accounts.len() / self.batch_user_count
+        if self.batch_user_count == 0 {
+            0
+        } else {
+            self.accounts.len() / self.batch_user_count
+        }
     }
 
     /// Check if all transactions have been executed
