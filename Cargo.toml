@@ -615,8 +615,8 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "2dfc8d3315a632f8bbdec0dddafc78d43440fdbc", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-transactional-test-runner" }
 
 strum = "0.28"
 strum_macros = "0.28.0"
