@@ -10,6 +10,8 @@ updates:
     timezone: "Asia/Shanghai"
   open-pull-requests-limit: 3
   labels:
+    - "dependencies"
+    - "rust"
     - "dependabot"
     - "ci-runner: k8s"
   groups:
