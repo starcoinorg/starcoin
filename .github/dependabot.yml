@@ -9,6 +9,9 @@ updates:
     # Use UTC +08:00
     timezone: "Asia/Shanghai"
   open-pull-requests-limit: 3
+  labels:
+    - "dependabot"
+    - "ci-runner: k8s"
   groups:
     minor-and-patch:
       patterns:

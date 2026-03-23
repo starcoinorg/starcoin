@@ -1,0 +1,100 @@
+name: Dependabot Auto Merge
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches:
+      - dual-verse-dag
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-and-enable-auto-merge:
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure labels exist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const labels = [
+              {
+                name: 'dependabot',
+                color: '1d76db',
+                description: 'Automated dependency update PR created by Dependabot',
+              },
+              {
+                name: 'ci-runner: k8s',
+                color: '0e8a16',
+                description: 'Route PR CI to the k8s self-hosted runner pool',
+              },
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: label.name });
+                core.info(`Label "${label.name}" already exists.`);
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description,
+                });
+                core.info(`Created label "${label.name}".`);
+              }
+            }
+
+      - name: Add labels to Dependabot PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['dependabot', 'ci-runner: k8s'],
+            });
+
+      - name: Enable PR auto-merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.graphql(
+                `
+                  mutation EnableAutoMerge($pullRequestId: ID!) {
+                    enablePullRequestAutoMerge(
+                      input: {
+                        pullRequestId: $pullRequestId
+                        mergeMethod: SQUASH
+                      }
+                    ) {
+                      pullRequest {
+                        number
+                      }
+                    }
+                  }
+                `,
+                {
+                  pullRequestId: context.payload.pull_request.node_id,
+                }
+              );
+              core.info(`Enabled auto-merge for PR #${context.payload.pull_request.number}.`);
+            } catch (error) {
+              if (error.message && /already enabled/i.test(error.message)) {
+                core.info(`Auto-merge already enabled for PR #${context.payload.pull_request.number}.`);
+                return;
+              }
+              throw error;
+            }
