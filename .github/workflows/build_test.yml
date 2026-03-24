@@ -17,9 +17,13 @@ on:
     branches:
       - dual-verse-dag
 
+  merge_group:
+    branches:
+      - dual-verse-dag
+
 jobs:
   choose-runner:
-    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
     runs-on: ubuntu-latest
     outputs:
       runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
@@ -30,27 +34,55 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
           INPUT_LABEL: ${{ inputs.runner_label }}
+          REF_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+          API_URL: ${{ github.api_url }}
+          TOKEN: ${{ github.token }}
+          DEFAULT_CI_RUNNER_LABEL: ${{ vars.DEFAULT_CI_RUNNER_LABEL }}
         run: |
           set -euo pipefail
+
           if [ "$EVENT_NAME" = "pull_request" ]; then
             target=$(printf '%s' "$LABELS_JSON" \
               | jq -r '.[]?.name
                         | select(startswith("ci-runner:"))
                         | sub("^ci-runner:\\s*"; "")' \
               | head -n1)
-            if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
-              echo "No ci-runner label found" >&2
+          elif [ "$EVENT_NAME" = "merge_group" ]; then
+            pr_number=$(printf '%s\n' "$REF_NAME" | sed -n 's#.*/pr-\([0-9][0-9]*\)-.*#\1#p' | head -n1)
+            if [ -z "${pr_number:-}" ]; then
+              echo "Cannot parse PR number from merge queue ref: $REF_NAME" >&2
               exit 1
             fi
-            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$target" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
+
+            labels_json=$(curl -fsSL \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$API_URL/repos/$REPOSITORY/issues/$pr_number/labels")
+            target=$(printf '%s' "$labels_json" \
+              | jq -r '.[]?.name
+                        | select(startswith("ci-runner:"))
+                        | sub("^ci-runner:\\s*"; "")' \
+              | head -n1)
+
+            if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+              target="${DEFAULT_CI_RUNNER_LABEL:-}"
+            fi
           else
-            printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$INPUT_LABEL" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
+            target="$INPUT_LABEL"
           fi
+
+          if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+            echo "No runner label found. Expected ci-runner:* on PR or vars.DEFAULT_CI_RUNNER_LABEL." >&2
+            exit 1
+          fi
+
+          printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$target" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
 
   build-and-test:
     name: build and test
     needs: choose-runner
-    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
+    if: ${{ (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:')) || github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.runner_label != '') }}
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
     timeout-minutes: 120
     steps:
