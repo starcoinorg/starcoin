@@ -920,7 +920,6 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 //task_handle.cancel();
             }
             SyncStage::Checking => {
-                Self::reset_parallel_sync_stat(ctx);
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
                 if target_total_difficulty <= current_total_difficulty {
@@ -928,6 +927,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                     cancel_flag.store(true, Ordering::SeqCst);
                     task_handle.cancel();
                 } else {
+                    Self::reset_parallel_sync_stat(ctx);
                     let target_id_number =
                         BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
                     self.sync_status

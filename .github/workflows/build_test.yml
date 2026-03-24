@@ -55,7 +55,7 @@ jobs:
               exit 1
             fi
 
-            labels_json=$(curl -fsSL \
+            labels_json=$(curl -fsSL --connect-timeout 10 --max-time 30 \
               -H "Authorization: Bearer $TOKEN" \
               -H "Accept: application/vnd.github+json" \
               "$API_URL/repos/$REPOSITORY/issues/$pr_number/labels")
@@ -87,7 +87,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Install Rust (reads rust-toolchain.toml)

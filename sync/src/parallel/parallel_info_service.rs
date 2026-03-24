@@ -30,7 +30,7 @@ impl ParallelInfoService {
         });
 
         ParallelSyncStat {
-            worker_count: workers.len(),
+            worker_count: workers.len() as u64,
             total_synced_block_count,
             workers,
         }

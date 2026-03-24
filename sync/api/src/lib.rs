@@ -136,7 +136,7 @@ pub struct ParallelWorkerSyncStat {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ParallelSyncStat {
-    pub worker_count: usize,
+    pub worker_count: u64,
     pub total_synced_block_count: u64,
     pub workers: Vec<ParallelWorkerSyncStat>,
 }
