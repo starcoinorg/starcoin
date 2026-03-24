@@ -1,6 +1,6 @@
 use anyhow::Ok;
+use starcoin_config::temp_dir;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber},
@@ -9,11 +9,9 @@ use starcoin_types::{
     U256,
 };
 
-use crate::store::sync_absent_ancestor::DagSyncBlockKey;
-
 use super::{
     sync_absent_ancestor::{AbsentDagBlockStoreReader, AbsentDagBlockStoreWriter, DagSyncBlock},
-    sync_dag_store::SyncDagStore,
+    sync_dag_store::{SyncDagStore, SyncDagStoreConfig},
 };
 
 fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
@@ -162,12 +160,6 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
     sync_dag_store.save_block(four.clone())?;
     sync_dag_store.save_block(two_again.clone())?;
 
-    let mut iter = sync_dag_store
-        .iter_at_first()?
-        .take(10)
-        .collect::<Vec<_>>()
-        .into_iter();
-
     let mut expect_order = vec![one, two, three, four, two_again];
     expect_order.sort_by(|first, second| {
         if first.header().number() != second.header().number() {
@@ -177,45 +169,69 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
         }
     });
 
-    let mut db_order = vec![];
-
-    loop {
-        let mut op_next = iter.next();
-        if op_next.is_none() {
-            break;
-        }
-
-        while let Some(next) = op_next {
-            match next {
-                std::result::Result::Ok((id_raw, data_raw)) => {
-                    let key = DagSyncBlockKey::decode_key(&id_raw)?;
-                    let dag_sync_block = DagSyncBlock::decode_value(&data_raw)?;
-                    println!(
-                        "id: {:?}, id in data: {:?}, number: {:?}",
-                        key,
-                        dag_sync_block.block.as_ref().unwrap().id(),
-                        dag_sync_block.block.as_ref().unwrap().header().number()
-                    );
-                    db_order.push(dag_sync_block.block.unwrap().clone());
-                }
-                Err(e) => {
-                    println!("error: {:?}", e);
-                    return Err(e);
-                }
-            }
-            op_next = iter.next();
-        }
-    }
+    let db_order = sync_dag_store.all_blocks()?;
 
     assert_eq!(expect_order, db_order);
 
-    let mut iter_to_see_empty = sync_dag_store.iter_at_first()?;
-    assert!(iter_to_see_empty.next().is_some());
+    assert!(!sync_dag_store.all_blocks()?.is_empty());
 
     sync_dag_store.delete_all_dag_sync_block()?;
 
-    iter_to_see_empty = sync_dag_store.iter_at_first()?;
-    assert!(iter_to_see_empty.next().is_none());
+    assert!(sync_dag_store.all_blocks()?.is_empty());
+
+    Ok(())
+}
+
+#[test]
+fn test_spill_to_disk_when_memory_limit_exceeded() -> anyhow::Result<()> {
+    let test_path = temp_dir()
+        .as_ref()
+        .join(format!("sync-dag-store-spill-{}", HashValue::random()));
+    std::fs::create_dir_all(&test_path)?;
+    let sync_dag_store = SyncDagStore::create_from_path(
+        &test_path,
+        SyncDagStoreConfig::create_with_params(1, Default::default(), 1),
+    )?;
+
+    let one = build_version_0_block(1);
+    let two = build_version_0_block(2);
+    sync_dag_store.save_block(one.clone())?;
+    sync_dag_store.save_block(two.clone())?;
+
+    assert!(sync_dag_store.spilled_to_disk());
+    let all = sync_dag_store.all_blocks()?;
+    assert_eq!(all.len(), 2);
+
+    Ok(())
+}
+
+#[test]
+fn test_reopen_with_existing_disk_data_starts_in_disk_mode() -> anyhow::Result<()> {
+    let test_path = temp_dir()
+        .as_ref()
+        .join(format!("sync-dag-store-reopen-{}", HashValue::random()));
+    std::fs::create_dir_all(&test_path)?;
+
+    let one = build_version_0_block(1);
+    let two = build_version_0_block(2);
+
+    {
+        let first = SyncDagStore::create_from_path(
+            &test_path,
+            SyncDagStoreConfig::create_with_params(1, Default::default(), 1),
+        )?;
+        first.save_block(one.clone())?;
+        first.save_block(two.clone())?;
+        assert!(first.spilled_to_disk());
+    }
+
+    let reopened = SyncDagStore::create_from_path(
+        &test_path,
+        SyncDagStoreConfig::create_with_params(1, Default::default(), 256 * 1024 * 1024),
+    )?;
+    assert!(reopened.spilled_to_disk());
+    let all = reopened.all_blocks()?;
+    assert_eq!(all.len(), 2);
 
     Ok(())
 }

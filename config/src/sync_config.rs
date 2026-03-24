@@ -73,6 +73,15 @@ pub struct SyncConfig {
         help = "sync execute timeout in milliseconds, default 300000."
     )]
     execute_timeout_ms: Option<u64>,
+
+    /// in-memory upper bound for sync dag store before spilling to disk (MB)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-dag-store-memory-limit-mb",
+        long,
+        help = "sync dag store memory upper bound in MB, default 1024."
+    )]
+    dag_store_memory_limit_mb: Option<u64>,
 }
 
 impl SyncConfig {
@@ -112,6 +121,15 @@ impl SyncConfig {
             _ => 300_000,
         }
     }
+
+    pub fn dag_store_memory_limit_bytes(&self) -> usize {
+        let mb = match self.dag_store_memory_limit_mb {
+            Some(value) if value > 0 => value,
+            _ => 1024,
+        };
+        let bytes_u64 = mb.saturating_mul(1024 * 1024);
+        usize::try_from(bytes_u64).unwrap_or(usize::MAX)
+    }
 }
 
 impl ConfigModule for SyncConfig {
@@ -142,6 +160,10 @@ impl ConfigModule for SyncConfig {
 
         if opt.sync.execute_timeout_ms.is_some() {
             self.execute_timeout_ms = opt.sync.execute_timeout_ms;
+        }
+
+        if opt.sync.dag_store_memory_limit_mb.is_some() {
+            self.dag_store_memory_limit_mb = opt.sync.dag_store_memory_limit_mb;
         }
 
         Ok(())

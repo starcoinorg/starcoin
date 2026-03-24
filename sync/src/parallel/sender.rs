@@ -1,7 +1,7 @@
 use std::{sync::Arc, vec};
 
 use starcoin_config::TimeService;
-use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::info;
 use starcoin_storage::{Store, Store2};
@@ -12,7 +12,7 @@ use tokio::{
 };
 
 use crate::{
-    store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagStore},
+    store::sync_dag_store::SyncDagStore,
     tasks::continue_execute_absent_block::ContinueChainOperator,
 };
 
@@ -127,16 +127,11 @@ impl<'a> DagBlockSender<'a> {
 
     pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
         let sync_dag_store = self.sync_dag_store.clone();
-        let iter = sync_dag_store.iter_at_first()?;
-        for result_value in iter {
+        for block in sync_dag_store.all_blocks()? {
             if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                 self.abort_workers();
                 return Ok(());
             }
-            let (_, value) = result_value?;
-            let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
-                anyhow::format_err!("failed to decode for the block in parallel!")
-            })?;
 
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {

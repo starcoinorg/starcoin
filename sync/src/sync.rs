@@ -117,6 +117,7 @@ impl SyncService {
             SyncDagStoreConfig::create_with_params(
                 config.storage.cache_size(),
                 RocksdbConfig::default(),
+                config.sync.dag_store_memory_limit_bytes(),
             ),
         )?);
         //TODO bail PrometheusError after use custom metrics registry.
