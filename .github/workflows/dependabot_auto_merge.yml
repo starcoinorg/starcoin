@@ -1,0 +1,81 @@
+name: Dependabot Auto Merge
+
+on:
+  workflow_run:
+    workflows: ["Build and Test"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge for Dependabot PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullRequests = context.payload.workflow_run.pull_requests || [];
+
+            if (pullRequests.length === 0) {
+              core.info('No pull requests associated with this workflow run.');
+              return;
+            }
+
+            for (const pullRequestRef of pullRequests) {
+              const pull_number = pullRequestRef.number;
+              const { data: pr } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number,
+              });
+
+              if (pr.user.login !== 'dependabot[bot]') {
+                core.info(`PR #${pull_number} was opened by ${pr.user.login}; skipping.`);
+                continue;
+              }
+
+              if (pr.base.ref !== 'dual-verse-dag') {
+                core.info(`PR #${pull_number} targets ${pr.base.ref}; skipping.`);
+                continue;
+              }
+
+              if (pr.state !== 'open' || pr.draft) {
+                core.info(`PR #${pull_number} is not mergeable yet; skipping.`);
+                continue;
+              }
+
+              try {
+                await github.graphql(
+                  `
+                    mutation EnableAutoMerge($pullRequestId: ID!) {
+                      enablePullRequestAutoMerge(
+                        input: {
+                          pullRequestId: $pullRequestId
+                          mergeMethod: SQUASH
+                        }
+                      ) {
+                        pullRequest {
+                          number
+                        }
+                      }
+                    }
+                  `,
+                  {
+                    pullRequestId: pr.node_id,
+                  }
+                );
+                core.info(`Enabled auto-merge for PR #${pull_number}.`);
+              } catch (error) {
+                if (error.message && /already enabled/i.test(error.message)) {
+                  core.info(`Auto-merge already enabled for PR #${pull_number}.`);
+                  continue;
+                }
+                throw error;
+              }
+            }
