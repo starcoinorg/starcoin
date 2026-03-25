@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::parallel::parallel_info_service::ParallelInfoService;
 use crate::parallel::sender::DagBlockSender;
 use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
@@ -19,6 +20,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::ValueCodec;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::db_storage::SchemaIterator;
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
@@ -219,6 +221,7 @@ pub struct BlockCollector<N, H> {
     sync_dag_store: Arc<SyncDagStore>,
     execute_timeout_ms: u64,
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+    parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -278,6 +281,39 @@ where
         execute_timeout_ms: u64,
         cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     ) -> Self {
+        Self::new_with_handle_with_parallel_info(
+            current_block_info,
+            target,
+            chain,
+            event_handle,
+            peer_provider,
+            skip_pow_verify,
+            local_store,
+            storage2,
+            fetcher,
+            sync_dag_store,
+            execute_timeout_ms,
+            cancel_flag,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_handle_with_parallel_info(
+        current_block_info: BlockInfo,
+        target: SyncTarget,
+        chain: BlockChain,
+        event_handle: H,
+        peer_provider: N,
+        skip_pow_verify: bool,
+        local_store: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
+        fetcher: Arc<dyn BlockFetcher>,
+        sync_dag_store: Arc<SyncDagStore>,
+        execute_timeout_ms: u64,
+        cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+        parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
+    ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
             current_block_info,
@@ -293,6 +329,7 @@ where
             sync_dag_store,
             execute_timeout_ms,
             cancel_flag,
+            parallel_info_service,
         }
     }
 
@@ -510,6 +547,7 @@ where
                     self.chain.dag(),
                     self.execute_timeout_ms,
                     self.cancel_flag.clone(),
+                    self.parallel_info_service.clone(),
                     self,
                 );
                 parallel_execute.process_absent_blocks().await?;

@@ -1,4 +1,5 @@
 mod executor;
+pub mod parallel_info_service;
 pub mod sender;
 
 #[cfg(test)]

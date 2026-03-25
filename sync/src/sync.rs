@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::parallel::parallel_info_service::{ParallelInfoService, ResetParallelSyncStatRequest};
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
-use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
+use crate::tasks::{full_sync_task_with_parallel_info, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -29,9 +30,9 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort, SyncCancelRequest,
-    SyncProgressReport, SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest,
-    SyncStartRequest, SyncStatusRequest, SyncTarget,
+    ParallelSyncStat, PeerScoreRequest, PeerScoreResponse, SyncAsyncService, SyncBlockSort,
+    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
+    SyncSpecificTargretRequest, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
@@ -483,6 +484,7 @@ impl SyncService {
         let connector_service = ctx
             .service_ref::<BlockConnectorService<TxPoolService>>()?
             .clone();
+        let parallel_info_service = ctx.service_ref_opt::<ParallelInfoService>()?.cloned();
         let config = self.config.clone();
         let peer_score_metrics = self.peer_score_metrics.clone();
         let sync_metrics = self.metrics.clone();
@@ -516,7 +518,7 @@ impl SyncService {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
                 let cancel_flag = Arc::new(AtomicBool::new(false));
-                let (fut, task_handle, task_event_handle) = full_sync_task(
+                let (fut, task_handle, task_event_handle) = full_sync_task_with_parallel_info(
                     current_block_id,
                     target.clone(),
                     skip_pow_verify,
@@ -535,6 +537,7 @@ impl SyncService {
                     range_locate,
                     config.sync.execute_timeout_ms(),
                     cancel_flag.clone(),
+                    parallel_info_service.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -704,6 +707,22 @@ impl SyncService {
     fn store_sync_status(&self, ctx: &mut ServiceContext<Self>) {
         if let Err(e) = ctx.put_shared(self.sync_status.clone()) {
             error!("[sync] Put shared SyncStatus error: {:?}", e);
+        }
+    }
+
+    fn reset_parallel_sync_stat(ctx: &mut ServiceContext<Self>) {
+        match ctx.service_ref_opt::<ParallelInfoService>() {
+            Ok(Some(parallel_info_service)) => {
+                parallel_info_service.do_send(ResetParallelSyncStatRequest);
+            }
+            Ok(None) => {
+                debug!(
+                    "[sync] ParallelInfoService is not registered, skip resetting parallel sync stat."
+                );
+            }
+            Err(e) => {
+                warn!("[sync] Failed to get ParallelInfoService ref: {:?}", e);
+            }
         }
     }
 
@@ -908,6 +927,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                     cancel_flag.store(true, Ordering::SeqCst);
                     task_handle.cancel();
                 } else {
+                    Self::reset_parallel_sync_stat(ctx);
                     let target_id_number =
                         BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
                     self.sync_status
@@ -1073,8 +1093,18 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
     fn handle(
         &mut self,
         _msg: SyncProgressRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Option<SyncProgressReport> {
+        let parallel = match ctx.get_shared_opt::<ParallelSyncStat>() {
+            Ok(parallel) => parallel,
+            Err(e) => {
+                warn!(
+                    "[sync] failed to get parallel sync stat from shared: {:?}",
+                    e
+                );
+                None
+            }
+        };
         self.task_handle().and_then(|handle| {
             handle.task_event_handle.total_report().map(|mut report| {
                 if let Some(begin) = handle.task_begin.as_ref() {
@@ -1097,6 +1127,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService {
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle.target.peers.clone(),
                     current: report,
+                    parallel,
                 }
             })
         })

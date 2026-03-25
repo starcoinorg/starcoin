@@ -48,6 +48,7 @@ use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::{BlockConnectorService, ExecuteService, ResetRequest};
+use starcoin_sync::parallel::parallel_info_service::ParallelInfoService;
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
@@ -369,6 +370,7 @@ impl NodeService {
         registry
             .register::<BlockConnectorService<TxPoolService>>()
             .await?;
+        registry.register::<ParallelInfoService>().await?;
         registry.register::<SyncService>().await?;
 
         let block_relayer = registry.register::<BlockRelayer>().await?;

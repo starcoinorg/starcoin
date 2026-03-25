@@ -1,3 +1,4 @@
+use crate::parallel::parallel_info_service::ParallelInfoService;
 use anyhow::{format_err, Ok};
 use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -5,6 +6,7 @@ use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_sync_api::SyncTarget;
@@ -43,6 +45,7 @@ where
     sync_dag_store: Arc<SyncDagStore>,
     execute_timeout_ms: u64,
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+    parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
 }
 
 pub struct InnerSyncTaskParams<H, F, N> {
@@ -60,6 +63,7 @@ pub struct InnerSyncTaskParams<H, F, N> {
     pub sync_dag_store: Arc<SyncDagStore>,
     pub execute_timeout_ms: u64,
     pub cancel_flag: Arc<std::sync::atomic::AtomicBool>,
+    pub parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -84,6 +88,7 @@ where
             sync_dag_store,
             execute_timeout_ms,
             cancel_flag,
+            parallel_info_service,
         } = params;
         Self {
             ancestor,
@@ -100,6 +105,7 @@ where
             sync_dag_store,
             execute_timeout_ms,
             cancel_flag,
+            parallel_info_service,
         }
     }
 
@@ -174,7 +180,7 @@ where
                 vm_metrics,
                 self.dag.clone(),
             )?;
-            let block_collector = BlockCollector::new_with_handle(
+            let block_collector = BlockCollector::new_with_handle_with_parallel_info(
                 current_block_info.clone(),
                 self.target.clone(),
                 chain,
@@ -187,6 +193,7 @@ where
                 self.sync_dag_store.clone(),
                 self.execute_timeout_ms,
                 self.cancel_flag.clone(),
+                self.parallel_info_service.clone(),
             );
 
             Ok(TaskGenerator::new(
