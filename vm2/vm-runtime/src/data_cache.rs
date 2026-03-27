@@ -56,7 +56,7 @@ use std::sync::{
     Arc,
 };
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::btree_map::BTreeMap,
     collections::HashSet,
     ops::{Deref, DerefMut},
@@ -153,6 +153,57 @@ struct GroupReadInfo {
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
+fn compute_layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
+    match layout {
+        MoveTypeLayout::Native(..) => true,
+        MoveTypeLayout::Vector(inner) => compute_layout_has_identifier_mappings(inner),
+        MoveTypeLayout::Struct(struct_layout) => match struct_layout {
+            MoveStructLayout::Runtime(fields) => {
+                fields.iter().any(compute_layout_has_identifier_mappings)
+            }
+            MoveStructLayout::WithFields(fields) => fields
+                .iter()
+                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
+            MoveStructLayout::WithTypes { fields, .. } => fields
+                .iter()
+                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
+        },
+        _ => false,
+    }
+}
+
+#[derive(Default)]
+struct LayoutIdentifierMappingCache {
+    last_key: Cell<usize>,
+    last_value: Cell<bool>,
+    has_last: Cell<bool>,
+    entries: RefCell<HashMap<usize, bool>>,
+}
+
+impl LayoutIdentifierMappingCache {
+    fn has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
+        let key = layout as *const MoveTypeLayout as usize;
+        if self.has_last.get() && self.last_key.get() == key {
+            return self.last_value.get();
+        }
+
+        if let Some(cached) = self.entries.borrow().get(&key) {
+            let value = *cached;
+            self.last_key.set(key);
+            self.last_value.set(value);
+            self.has_last.set(true);
+            return value;
+        }
+
+        let computed = compute_layout_has_identifier_mappings(layout);
+        self.entries.borrow_mut().insert(key, computed);
+        self.last_key.set(key);
+        self.last_value.set(computed);
+        self.has_last.set(true);
+        computed
+    }
+}
+
 /// Adapter to convert a `ExecutorView` into a `MoveResolver`.
 ///
 /// Resources in groups are handled either through dedicated interfaces of executor_view
@@ -169,6 +220,7 @@ pub struct StorageAdapter<'e, E> {
     delayed_fields: VersionedDelayedFields<DelayedFieldID>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
+    layout_identifier_mapping_cache: LayoutIdentifierMappingCache,
     delayed_field_id_start: u32,
     delayed_field_id_counter: AtomicU32,
 }
@@ -252,23 +304,9 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
 }
 
 impl<'a, S: StateView> StorageAdapter<'a, S> {
-    fn layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
-        match layout {
-            MoveTypeLayout::Native(..) => true,
-            MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
-            MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => {
-                    fields.iter().any(Self::layout_has_identifier_mappings)
-                }
-                MoveStructLayout::WithFields(fields) => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-                MoveStructLayout::WithTypes { fields, .. } => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-            },
-            _ => false,
-        }
+    fn layout_has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
+        self.layout_identifier_mapping_cache
+            .has_identifier_mappings(layout)
     }
 
     pub fn new(
@@ -290,6 +328,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_fields: VersionedDelayedFields::empty(),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
+            layout_identifier_mapping_cache: LayoutIdentifierMappingCache::default(),
             delayed_field_id_start,
             delayed_field_id_counter: AtomicU32::new(delayed_field_id_start),
         }
@@ -331,7 +370,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         bytes: &Bytes,
         layout: &MoveTypeLayout,
     ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
-        if !Self::layout_has_identifier_mappings(layout) {
+        if !self.layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
         let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
@@ -478,7 +517,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
-        if !self.delayed_fields_enabled || !Self::layout_has_identifier_mappings(layout) {
+        if !self.delayed_fields_enabled || !self.layout_has_identifier_mappings(layout) {
             return Ok((state_value.clone(), HashSet::new(), false));
         }
         let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
@@ -1140,7 +1179,10 @@ impl<S: StateView> IntoMoveResolver<S> for S {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use move_core_types::value::IdentifierMappingKind;
     use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
+    use std::hint::black_box;
+    use std::time::Instant;
     //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
 
     // Expose a method to create a storage adapter with a provided group size kind.
@@ -1168,5 +1210,76 @@ pub(crate) mod tests {
         );
 
         state_view.as_move_resolver()
+    }
+
+    fn build_complex_aggregator_like_layout() -> MoveTypeLayout {
+        // Move-like shape:
+        // struct Position { cash: Aggregator<u128>, snap: Snapshot<u128>, limit: u128 }
+        // struct Account  { positions: vector<Position>, totals: vector<Aggregator<u128>> }
+        // struct Vault    { accounts: vector<Account>, risk: Position, nonce: u64 }
+        let position = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Native(
+                IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U128),
+            ),
+            MoveTypeLayout::Native(
+                IdentifierMappingKind::Snapshot,
+                Box::new(MoveTypeLayout::U128),
+            ),
+            MoveTypeLayout::U128,
+        ]));
+        let account = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Vector(Box::new(position.clone())),
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::Native(
+                IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U128),
+            ))),
+        ]));
+        MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Vector(Box::new(account)),
+            position,
+            MoveTypeLayout::U64,
+        ]))
+    }
+
+    #[test]
+    #[ignore = "benchmark-style regression probe; run manually with --ignored --nocapture"]
+    fn test_bench_layout_identifier_mapping_cache_complex_aggregator() {
+        let layout = build_complex_aggregator_like_layout();
+        let iterations = 2_000_000usize;
+
+        let start_plain = Instant::now();
+        let mut plain_acc = 0usize;
+        for _ in 0..iterations {
+            let hit = compute_layout_has_identifier_mappings(&layout);
+            plain_acc ^= usize::from(black_box(hit));
+        }
+        let plain_elapsed = start_plain.elapsed();
+
+        let cache = LayoutIdentifierMappingCache::default();
+        let start_cached = Instant::now();
+        let mut cached_acc = 0usize;
+        for _ in 0..iterations {
+            let hit = cache.has_identifier_mappings(&layout);
+            cached_acc ^= usize::from(black_box(hit));
+        }
+        let cached_elapsed = start_cached.elapsed();
+
+        assert_eq!(plain_acc, cached_acc, "cache must preserve semantics");
+        assert_eq!(plain_acc, 0, "xor accumulator keeps optimizer honest");
+
+        let plain_ns_per_iter = plain_elapsed.as_nanos() as f64 / iterations as f64;
+        let cached_ns_per_iter = cached_elapsed.as_nanos() as f64 / iterations as f64;
+        let speedup = plain_ns_per_iter / cached_ns_per_iter;
+
+        println!(
+            "[layout-check-bench] iters={} plain={:?} cached={:?} plain_ns/iter={:.2} cached_ns/iter={:.2} speedup={:.2}x",
+            iterations,
+            plain_elapsed,
+            cached_elapsed,
+            plain_ns_per_iter,
+            cached_ns_per_iter,
+            speedup
+        );
     }
 }

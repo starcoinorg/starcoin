@@ -36,7 +36,7 @@ use starcoin_vm_types::state_store::{
     state_value::StateValueMetadata, StateView, TStateView,
 };
 use starcoin_vm_types::write_set::{TransactionWrite, WriteOp};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
@@ -164,6 +164,57 @@ struct GroupReadInfo {
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
+fn compute_layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
+    match layout {
+        MoveTypeLayout::Native(..) => true,
+        MoveTypeLayout::Vector(inner) => compute_layout_has_identifier_mappings(inner),
+        MoveTypeLayout::Struct(struct_layout) => match struct_layout {
+            MoveStructLayout::Runtime(fields) => {
+                fields.iter().any(compute_layout_has_identifier_mappings)
+            }
+            MoveStructLayout::WithFields(fields) => fields
+                .iter()
+                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
+            MoveStructLayout::WithTypes { fields, .. } => fields
+                .iter()
+                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
+        },
+        _ => false,
+    }
+}
+
+#[derive(Default)]
+struct LayoutIdentifierMappingCache {
+    last_key: Cell<usize>,
+    last_value: Cell<bool>,
+    has_last: Cell<bool>,
+    entries: RefCell<HashMap<usize, bool>>,
+}
+
+impl LayoutIdentifierMappingCache {
+    fn has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
+        let key = layout as *const MoveTypeLayout as usize;
+        if self.has_last.get() && self.last_key.get() == key {
+            return self.last_value.get();
+        }
+
+        if let Some(cached) = self.entries.borrow().get(&key) {
+            let value = *cached;
+            self.last_key.set(key);
+            self.last_value.set(value);
+            self.has_last.set(true);
+            return value;
+        }
+
+        let computed = compute_layout_has_identifier_mappings(layout);
+        self.entries.borrow_mut().insert(key, computed);
+        self.last_key.set(key);
+        self.last_value.set(computed);
+        self.has_last.set(true);
+        computed
+    }
+}
+
 pub(crate) struct VersionedView<'a, S: StateView> {
     base_view: &'a S,
     hashmap_view: &'a MVHashMapView<'a, ParallelStateKey, ParallelStateValue>,
@@ -173,26 +224,13 @@ pub(crate) struct VersionedView<'a, S: StateView> {
     accessed_groups: RefCell<HashSet<StateKey>>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
+    layout_identifier_mapping_cache: LayoutIdentifierMappingCache,
 }
 
 impl<'a, S: StateView> VersionedView<'a, S> {
-    fn layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
-        match layout {
-            MoveTypeLayout::Native(..) => true,
-            MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
-            MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => {
-                    fields.iter().any(Self::layout_has_identifier_mappings)
-                }
-                MoveStructLayout::WithFields(fields) => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-                MoveStructLayout::WithTypes { fields, .. } => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-            },
-            _ => false,
-        }
+    fn layout_has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
+        self.layout_identifier_mapping_cache
+            .has_identifier_mappings(layout)
     }
 
     pub fn new(
@@ -211,6 +249,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             accessed_groups: RefCell::new(HashSet::new()),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
+            layout_identifier_mapping_cache: LayoutIdentifierMappingCache::default(),
         }
     }
 
@@ -315,7 +354,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         bytes: &Bytes,
         layout: &MoveTypeLayout,
     ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
-        if !Self::layout_has_identifier_mappings(layout) {
+        if !self.layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
         let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
@@ -406,7 +445,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
-        if !self.delayed_fields_enabled || !Self::layout_has_identifier_mappings(layout) {
+        if !self.delayed_fields_enabled || !self.layout_has_identifier_mappings(layout) {
             return Ok((state_value.clone(), HashSet::new(), false));
         }
         let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
@@ -451,7 +490,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         if let (Some(layout), Some(state_value)) = (maybe_layout, maybe_state_value.as_ref()) {
             let exchanged = self.delayed_field_cache.get_or_insert_base_value(
                 state_key.clone(),
-                Self::layout_has_identifier_mappings(layout),
+                self.layout_has_identifier_mappings(layout),
                 || {
                     let (value_with_ids, ids, _) =
                         self.maybe_exchange_state_value(state_value, layout)?;
