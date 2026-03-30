@@ -4,8 +4,8 @@
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
-use ripemd::Digest as OtherDigest;
-use sha2::Sha512;
+use ripemd::{Digest as _, Ripemd160};
+use sha2::{Digest as _, Sha512};
 use sha3::Sha3_512;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
@@ -150,7 +150,7 @@ fn native_ripemd160(
     let cost = HASH_RIPEMD160_BASE + HASH_RIPEMD160_PER_BYTE * NumBytes::new(bytes.len() as u64);
     context.charge(cost)?;
 
-    let mut hasher = ripemd::Ripemd160::new();
+    let mut hasher = Ripemd160::new();
     hasher.update(&bytes);
     let output = hasher.finalize().to_vec();
 
