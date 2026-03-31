@@ -432,7 +432,7 @@ blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
-ripemd = "0.1.1"
+ripemd = "0.2.0"
 siphasher = "1.0.2"
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 
