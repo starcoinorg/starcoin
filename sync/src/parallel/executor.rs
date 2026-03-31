@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use starcoin_chain::{verifier::FullVerifier, BlockChain, ChainReader};
@@ -24,6 +25,8 @@ const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
 static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
 #[cfg(test)]
 static TEST_ASSUME_PARENTS_READY: AtomicBool = AtomicBool::new(false);
+#[cfg(test)]
+static TEST_PARENT_CHECK_INVOCATIONS: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
 pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
@@ -33,6 +36,16 @@ pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
 #[cfg(test)]
 pub(crate) fn set_test_assume_parents_ready(ready: bool) {
     TEST_ASSUME_PARENTS_READY.store(ready, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn reset_test_parent_check_invocations() {
+    TEST_PARENT_CHECK_INVOCATIONS.store(0, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn test_parent_check_invocations() -> u64 {
+    TEST_PARENT_CHECK_INVOCATIONS.load(Ordering::Relaxed)
 }
 
 #[allow(dead_code)]
@@ -84,12 +97,18 @@ impl DagBlockExecutor {
         chain: &BlockDAG,
         storage: Arc<dyn Store>,
         parents_hash: &[HashValue],
+        ready_parent_cache: &mut HashSet<HashValue>,
     ) -> anyhow::Result<bool> {
         #[cfg(test)]
         if TEST_ASSUME_PARENTS_READY.load(Ordering::Relaxed) {
             return Ok(true);
         }
         for parent_id in parents_hash {
+            if ready_parent_cache.contains(parent_id) {
+                continue;
+            }
+            #[cfg(test)]
+            TEST_PARENT_CHECK_INVOCATIONS.fetch_add(1, Ordering::Relaxed);
             let header = match storage.get_block_header_by_hash(*parent_id)? {
                 Some(header) => header,
                 None => return Ok(false),
@@ -102,6 +121,7 @@ impl DagBlockExecutor {
             if !chain.has_block_connected(&header)? {
                 return Ok(false);
             }
+            ready_parent_cache.insert(*parent_id);
         }
         Ok(true)
     }
@@ -109,6 +129,7 @@ impl DagBlockExecutor {
     pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
         let handle = tokio::spawn(async move {
             let mut chain = None;
+            let mut ready_parent_cache = HashSet::new();
             loop {
                 match self.receiver.recv().await {
                     Some(op_block) => {
@@ -135,6 +156,7 @@ impl DagBlockExecutor {
                                 &self.dag,
                                 self.storage.clone(),
                                 block.header().parents_hash(),
+                                &mut ready_parent_cache,
                             ) {
                                 Ok(true) => break,
                                 Ok(false) => {
