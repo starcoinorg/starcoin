@@ -2256,7 +2256,7 @@ impl ObserverService {
             }
         };
 
-        let batch_index = state.batch_index.load(Ordering::SeqCst);
+        let batch_index = state.batch_index.load(Ordering::SeqCst).saturating_sub(1);
         let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
         state.add_txn_hashes(&txn_hashes);
         info!(

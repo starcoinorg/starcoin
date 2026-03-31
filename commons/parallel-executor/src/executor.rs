@@ -2278,13 +2278,13 @@ mod tests {
             _view: &MVHashMapView<u64, u64>,
             txn: &Self::T,
         ) -> ExecutionStatus<Self::Output, ()> {
-            let change = match txn.op {
+            let change = match &txn.op {
                 CreateThenAddOp::Create { value } => {
-                    DelayedChange::Create(DelayedFieldValue::Aggregator(value))
+                    DelayedChange::Create(DelayedFieldValue::Aggregator(*value))
                 }
                 CreateThenAddOp::Add { delta, max_value } => {
                     DelayedChange::Apply(DelayedApplyChange::AggregatorDelta {
-                        delta: DeltaWithMax::new(SignedU128::Positive(delta), max_value),
+                        delta: DeltaWithMax::new(SignedU128::Positive(*delta), *max_value),
                     })
                 }
             };

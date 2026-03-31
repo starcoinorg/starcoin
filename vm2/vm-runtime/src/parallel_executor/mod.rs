@@ -456,10 +456,14 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     }
 
     let mut outputs = outputs;
+    let mut has_delayed = false;
     let mut has_agg_v1 = false;
     let mut group_touches = 0u64;
     let mut group_touch_counts: HashMap<StateKey, usize> = HashMap::new();
     for (_, output) in outputs.iter() {
+        if output.output.contains_delayed_fields() {
+            has_delayed = true;
+        }
         if !output.output.aggregator_v1_delta_set().is_empty() {
             has_agg_v1 = true;
         }
@@ -471,7 +475,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         }
     }
     let has_group_dup = group_touch_counts.values().any(|count| *count > 1);
-    let needs_sequential = has_agg_v1 || has_group_dup;
+    let needs_sequential = has_delayed || has_agg_v1 || has_group_dup;
     outputs.sort_by_key(|(idx, _)| *idx);
 
     if !needs_sequential {
@@ -495,7 +499,8 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 
     info!(
         target: "vm-bench",
-        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
+        "materialize sequential: delayed={} agg_v1={} group_dup={} group_touches={}",
+        has_delayed,
         has_agg_v1,
         has_group_dup,
         group_touches

@@ -52,8 +52,10 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     std::thread::sleep(Duration::from_secs(5));
 
     let client = RpcClient::connect_ipc(ipc_file)?;
-    let block_hash = wait_for_queryable_main_head_hash(
+    let block_hash = block.id();
+    wait_for_block_queryable(
         &client,
+        block_hash,
         block.header().number(),
         Duration::from_secs(60),
     )?;
@@ -176,28 +178,29 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     Ok(())
 }
 
-fn wait_for_queryable_main_head_hash(
+fn wait_for_block_queryable(
     client: &RpcClient,
+    block_hash: HashValue,
     min_number: u64,
     timeout: Duration,
-) -> Result<HashValue> {
+) -> Result<()> {
     let deadline = Instant::now() + timeout;
     loop {
         if Instant::now() >= deadline {
             return Err(format_err!(
-                "timeout waiting queryable main head, min number {}",
+                "timeout waiting queryable block {:?}, min number {}",
+                block_hash,
                 min_number
             ));
         }
         if let Ok(chain_info) = client.chain_info() {
             let head_number = chain_info.head.number.0;
-            let head_hash = chain_info.head.block_hash;
             if head_number >= min_number {
-                let seq_res = client.chain_get_block_txn_infos_in_seq(head_hash);
-                let vm1_res = client.chain_get_block_txn_infos(head_hash);
-                let vm2_res = client.chain_get_block_txn_infos2(head_hash);
+                let seq_res = client.chain_get_block_txn_infos_in_seq(block_hash);
+                let vm1_res = client.chain_get_block_txn_infos(block_hash);
+                let vm2_res = client.chain_get_block_txn_infos2(block_hash);
                 if seq_res.is_ok() && vm1_res.is_ok() && vm2_res.is_ok() {
-                    return Ok(head_hash);
+                    return Ok(());
                 }
             }
         }
