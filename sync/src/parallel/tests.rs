@@ -1,6 +1,9 @@
 use super::executor::{DagBlockExecutor, ExecuteState};
 use super::sender::DagBlockSender;
-use super::{set_test_assume_parents_ready, set_test_execute_delay_ms};
+use super::{
+    reset_test_parent_check_invocations, set_test_assume_parents_ready, set_test_execute_delay_ms,
+    test_parent_check_invocations,
+};
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueChainOperator;
 use anyhow::Result;
@@ -9,6 +12,7 @@ use starcoin_chain_api::ExecutedBlock;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use stream_task::CollectorState;
@@ -156,5 +160,41 @@ async fn test_process_absent_blocks_timeout_no_notify() -> Result<()> {
     assert!(sync_dag_store
         .get_dag_sync_block(block_number, block_id)
         .is_ok());
+    Ok(())
+}
+
+#[test]
+fn test_waiting_for_parents_uses_ready_parent_cache() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let mut chain = MockChain::new(net.clone())?;
+    chain.produce_and_apply()?;
+
+    let storage = chain.get_storage();
+    let dag = chain.head().dag();
+    let parent_id = chain.head().current_header().id();
+    let mut ready_parent_cache = HashSet::new();
+
+    reset_test_parent_check_invocations();
+
+    assert!(DagBlockExecutor::waiting_for_parents(
+        &dag,
+        storage.clone(),
+        &[parent_id],
+        &mut ready_parent_cache
+    )?);
+    assert_eq!(test_parent_check_invocations(), 1);
+    assert!(ready_parent_cache.contains(&parent_id));
+
+    assert!(DagBlockExecutor::waiting_for_parents(
+        &dag,
+        storage,
+        &[parent_id],
+        &mut ready_parent_cache
+    )?);
+    assert_eq!(
+        test_parent_check_invocations(),
+        1,
+        "cached parent should not trigger repeated readiness checks"
+    );
     Ok(())
 }
