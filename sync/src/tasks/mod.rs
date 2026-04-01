@@ -4,6 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::parallel::parallel_info_service::ParallelInfoService;
 use crate::store::sync_dag_store::SyncDagStore;
+use crate::sync_profiling_info_enabled;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::{InnerSyncTask, InnerSyncTaskParams};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
@@ -40,6 +41,8 @@ use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator,
     TaskHandle,
 };
+
+const SYNC_PROF_PREFIX: &str = "[sync-prof]";
 
 pub trait SyncFetcher:
     PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher + BlockIdRangeFetcher
@@ -945,6 +948,17 @@ where
                 total_time,
                 time_per_block
             );
+            if sync_profiling_info_enabled() {
+                info!(
+                    "{} stage=sync_round_summary strategy={} synced_blocks={} peers={} total_ms={} avg_ms_per_block={}",
+                    SYNC_PROF_PREFIX,
+                    fetcher.peer_selector().strategy(),
+                    total_block_count,
+                    fetcher.peer_selector().len(),
+                    total_time,
+                    time_per_block
+                );
+            }
 
             if let Some(sync_metrics) = sync_metrics.as_ref() {
                 sync_metrics.sync_time.set(total_time as u64);

@@ -73,6 +73,15 @@ pub struct SyncConfig {
         help = "sync execute timeout in milliseconds, default 300000."
     )]
     execute_timeout_ms: Option<u64>,
+
+    /// enable sync profiling info logs for bottleneck diagnosis
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "sync-profiling-info",
+        long,
+        help = "enable sync profiling info logs, default false."
+    )]
+    profiling_info: Option<bool>,
 }
 
 impl SyncConfig {
@@ -112,6 +121,10 @@ impl SyncConfig {
             _ => 300_000,
         }
     }
+
+    pub fn profiling_info(&self) -> bool {
+        self.profiling_info.unwrap_or(false)
+    }
 }
 
 impl ConfigModule for SyncConfig {
@@ -142,6 +155,10 @@ impl ConfigModule for SyncConfig {
 
         if opt.sync.execute_timeout_ms.is_some() {
             self.execute_timeout_ms = opt.sync.execute_timeout_ms;
+        }
+
+        if opt.sync.profiling_info.is_some() {
+            self.profiling_info = opt.sync.profiling_info;
         }
 
         Ok(())
