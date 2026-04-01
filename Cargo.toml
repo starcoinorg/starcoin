@@ -15,6 +15,7 @@ members = [
     "commons/stream-task",
     "commons/rpc/local",
     "commons/rpc/ipc",
+    "commons/rpc/tcp",
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
@@ -154,6 +155,7 @@ default-members = [
     "commons/stream-task",
     "commons/rpc/local",
     "commons/rpc/ipc",
+    "commons/rpc/tcp",
     "commons/api-limiter",
     "commons/accumulator",
     "commons/forkable-jellyfish-merkle",
@@ -544,6 +546,7 @@ starcoin-rpc-local = { path = "commons/rpc/local" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
 starcoin-rpc-ipc = { path = "commons/rpc/ipc" }
+starcoin-rpc-tcp = { path = "commons/rpc/tcp" }
 starcoin-service-registry = { path = "commons/service-registry" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }

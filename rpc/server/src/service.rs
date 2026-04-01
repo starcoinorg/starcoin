@@ -9,9 +9,10 @@ use anyhow::{anyhow, Result};
 use futures::FutureExt;
 use jsonrpsee::async_client::Client;
 use jsonrpsee::core::middleware::RpcServiceBuilder;
-use jsonrpsee::server::{ServerBuilder, ServerConfigBuilder, ServerHandle};
-use starcoin_config::{Api, ApiSet, ListenAddress, NodeConfig};
+use jsonrpsee::server::{Extensions, ServerBuilder, ServerConfigBuilder, ServerHandle};
+use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
     account::{account_methods, AccountApiServer},
@@ -46,6 +47,7 @@ pub struct RpcService {
     api_registry: ApiRegistry,
     ipc: Option<ServerHandle>,
     http: Option<ServerHandle>,
+    tcp: Option<ServerHandle>,
     ws: Option<ServerHandle>,
     rpc_runtime: tokio::runtime::Runtime,
 }
@@ -59,12 +61,12 @@ impl ActorService for RpcService {
             self.config.rpc.get_tcp_address(),
             self.config.rpc.ipc.disable
         );
-        ensure_tcp_supported(
-            self.config.rpc.tcp_is_explicitly_configured(),
-            self.config.rpc.get_tcp_address(),
-        )?;
         self.http = self.start_http().map_err(|e| {
             error!("Failed to start rpc http endpoint: {:?}", e);
+            e
+        })?;
+        self.tcp = self.start_tcp().map_err(|e| {
+            error!("Failed to start rpc tcp endpoint: {:?}", e);
             e
         })?;
         self.ws = self.start_ws().map_err(|e| {
@@ -97,6 +99,7 @@ impl RpcService {
             api_registry,
             ipc: None,
             http: None,
+            tcp: None,
             ws: None,
             rpc_runtime,
         }
@@ -388,6 +391,38 @@ impl RpcService {
         })
     }
 
+    fn start_tcp(&self) -> Result<Option<ServerHandle>> {
+        Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
+            let apis: HashSet<Api> = self.config.rpc.tcp.apis().list_apis();
+            let methods = self.api_registry.get_apis(apis)?;
+            let socket_addr: SocketAddr = addr.clone().into();
+            let rpc_middleware = RpcServiceBuilder::new()
+                .layer_fn({
+                    let metrics = self.api_registry.metrics();
+                    move |service| MetricMiddleware::new(service, metrics.clone())
+                })
+                .layer(JsonApiRateLimitLayer::from_config(
+                    self.api_registry.quotas(),
+                ));
+            let listener = self.run_on_rpc_runtime(async move {
+                tokio::net::TcpListener::bind(socket_addr)
+                    .await
+                    .map_err(anyhow::Error::from)
+            })?;
+            let server = starcoin_rpc_tcp::server::Builder::default()
+                .set_rpc_middleware(rpc_middleware)
+                .set_connection_metadata(tcp_connection_metadata)
+                .custom_tokio_runtime(self.rpc_runtime.handle().clone())
+                .build(listener)?;
+            let local_addr = server.local_addr();
+
+            info!("Rpc: tcp server start at: {}", local_addr);
+            Some(server.start(methods))
+        } else {
+            None
+        })
+    }
+
     fn run_on_rpc_runtime<F, T>(&self, fut: F) -> Result<T>
     where
         F: Future<Output = Result<T>> + Send + 'static,
@@ -412,6 +447,11 @@ impl RpcService {
                 debug!("Rpc http server already stopped: {:?}", err);
             }
         }
+        if let Some(tcp) = self.tcp.take() {
+            if let Err(err) = tcp.stop() {
+                debug!("Rpc tcp server already stopped: {:?}", err);
+            }
+        }
         if let Some(ws) = self.ws.take() {
             if let Err(err) = ws.stop() {
                 debug!("Rpc ws server already stopped: {:?}", err);
@@ -421,17 +461,12 @@ impl RpcService {
     }
 }
 
-fn ensure_tcp_supported(
-    tcp_explicitly_configured: bool,
-    tcp_address: Option<ListenAddress>,
-) -> Result<()> {
-    match (tcp_explicitly_configured, tcp_address) {
-        (true, Some(addr)) => Err(anyhow!(
-            "Rpc: tcp endpoint {} is configured but not supported by current jsonrpsee server backend",
-            addr
-        )),
-        _ => Ok(()),
-    }
+fn tcp_connection_metadata(peer_addr: SocketAddr) -> Extensions {
+    let mut extensions = Extensions::new();
+    extensions.insert(Metadata {
+        user: Some(peer_addr.ip().to_string()),
+    });
+    extensions
 }
 
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
@@ -453,41 +488,15 @@ impl ServiceHandler<Self, ConnectLocal> for RpcService {
 
 #[cfg(test)]
 mod tests {
-    use super::ensure_tcp_supported;
-    use starcoin_config::ListenAddress;
-    use std::net::{IpAddr, Ipv4Addr};
+    use super::tcp_connection_metadata;
+    use starcoin_rpc_api::metadata::Metadata;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
     #[test]
-    fn rejects_configured_tcp_address() {
-        let err = ensure_tcp_supported(
-            true,
-            Some(ListenAddress::new(
-                "tcp",
-                IpAddr::V4(Ipv4Addr::LOCALHOST),
-                9860,
-            )),
-        )
-        .expect_err("tcp rpc must fail fast while unsupported");
-        assert!(err
-            .to_string()
-            .contains("tcp endpoint tcp://127.0.0.1:9860 is configured"));
-    }
-
-    #[test]
-    fn allows_implicit_tcp_address() {
-        ensure_tcp_supported(
-            false,
-            Some(ListenAddress::new(
-                "tcp",
-                IpAddr::V4(Ipv4Addr::LOCALHOST),
-                9860,
-            )),
-        )
-        .expect("implicit tcp config should be accepted");
-    }
-
-    #[test]
-    fn allows_absent_tcp_address() {
-        ensure_tcp_supported(true, None).expect("disabled tcp config should be accepted");
+    fn tcp_connection_metadata_uses_peer_ip_as_user() {
+        let peer = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9860);
+        let extensions = tcp_connection_metadata(peer);
+        let metadata = extensions.get::<Metadata>().expect("tcp metadata");
+        assert_eq!(metadata.user.as_deref(), Some("127.0.0.1"));
     }
 }

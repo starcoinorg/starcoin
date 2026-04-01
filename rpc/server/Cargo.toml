@@ -43,6 +43,7 @@ starcoin-rpc-api = { workspace = true }
 starcoin-rpc-ipc = { workspace = true }
 starcoin-rpc-local = { workspace = true }
 starcoin-rpc-middleware = { workspace = true }
+starcoin-rpc-tcp = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-service = { workspace = true }
