@@ -84,17 +84,11 @@ impl ActorService for TestMinerService {
         self.wait_result_sender = Some(sender);
         let state = self.state.clone();
 
-        ctx.run_later(
-            Duration::from_secs(20),
-            move |_ctx: &mut starcoin_service_registry::ServiceContext<'_, Self>| match receiver
-                .try_next()
-            {
-                Ok(Some(_)) => (),
-                Ok(None) | Err(_) => {
-                    state.async_error.store(true, Ordering::SeqCst);
-                }
-            },
-        );
+        ctx.run_later(Duration::from_secs(20), move |_ctx| {
+            if receiver.try_recv().is_err() {
+                state.async_error.store(true, Ordering::SeqCst);
+            }
+        });
         Ok(())
     }
 

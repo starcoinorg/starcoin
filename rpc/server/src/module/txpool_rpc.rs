@@ -13,7 +13,9 @@ use starcoin_rpc_api::{
 };
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
+use starcoin_types::multi_transaction::{
+    MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
+};
 use starcoin_vm2_vm_types::account_address::AccountAddress as AccountAddress2;
 use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransaction2;
 use starcoin_vm_types::transaction::SignedUserTransaction;
@@ -35,32 +37,49 @@ where
         Self { service }
     }
 
+    fn submit_multi_signed_transactions(
+        &self,
+        txns: Vec<MultiSignedUserTransaction>,
+        bypass_vm1_limit: bool,
+        local_peer_id: Option<String>,
+    ) -> RpcResult<Vec<HashValue>> {
+        let txn_hashes = txns.iter().map(|txn| txn.id()).collect::<Vec<_>>();
+        let results = self
+            .service
+            .add_txns_multi_signed(txns, bypass_vm1_limit, local_peer_id)
+            .map_err(convert_to_rpc_error)
+            .map_err(crate::module::map_jsonrpc_err)?;
+        self.ensure_submission_results(&txn_hashes, results)?;
+        Ok(txn_hashes)
+    }
+
     fn submit_transaction_multi(&self, txn: MultiSignedUserTransaction) -> RpcResult<HashValue> {
         let bypass_vm1_limit = matches!(txn, MultiSignedUserTransaction::VM2(_));
-        let local_peer_id = if bypass_vm1_limit {
-            None
-        } else {
-            Some("local-rpc".to_string())
-        };
-        let txn_hash = txn.id();
-        let mut result =
-            match self
-                .service
-                .add_txns_multi_signed(vec![txn], bypass_vm1_limit, local_peer_id)
-            {
-                Ok(result) => result,
-                Err(e) => {
-                    return Err(crate::module::map_jsonrpc_err(convert_to_rpc_error(e)));
-                }
-            };
-        let result = result
-            .pop()
-            .expect("txpool should return result")
-            .map_err(convert_to_rpc_error);
+        let local_peer_id = (!bypass_vm1_limit).then(|| "local-rpc".to_string());
+        self.submit_multi_signed_transactions(vec![txn], bypass_vm1_limit, local_peer_id)
+            .map(|mut txn_hashes| txn_hashes.pop().expect("single txn must yield one hash"))
+    }
 
-        result
-            .map(|_| txn_hash)
-            .map_err(crate::module::map_jsonrpc_err)
+    fn ensure_submission_results(
+        &self,
+        txn_hashes: &[HashValue],
+        results: Vec<Result<(), MultiTransactionError>>,
+    ) -> RpcResult<()> {
+        if results.len() != txn_hashes.len() {
+            return Err(crate::module::map_jsonrpc_err(anyhow::anyhow!(
+                "txpool returned {} results for {} transactions",
+                results.len(),
+                txn_hashes.len()
+            )));
+        }
+
+        for result in results {
+            result
+                .map_err(convert_to_rpc_error)
+                .map_err(crate::module::map_jsonrpc_err)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -81,65 +100,26 @@ where
         &self,
         txns: Vec<SignedUserTransaction>,
     ) -> RpcResult<Vec<HashValue>> {
-        let txn_hashes = txns.iter().map(|txn| txn.id()).collect();
-        let mut result = match self.service.add_txns(txns) {
-            Ok(result) => result,
-            Err(e) => {
-                return Err(crate::module::map_jsonrpc_err(convert_to_rpc_error(e)));
-            }
-        };
-        let result = result
-            .pop()
-            .expect("txpool should return result")
-            .map_err(convert_to_rpc_error);
-
-        result
-            .map(|_| txn_hashes)
-            .map_err(crate::module::map_jsonrpc_err)
+        let txns = txns.into_iter().map(Into::into).collect();
+        self.submit_multi_signed_transactions(txns, false, Some("local-rpc".to_string()))
     }
 
     async fn submit_hex_transaction(&self, tx: String) -> RpcResult<HashValue> {
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
-        let result = hex::decode(tx)
+        let txn = hex::decode(tx)
             .map_err(convert_to_rpc_error)
             .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
-            .and_then(|txn| {
-                let txn_hash = txn.id();
-                let mut result = match self.service.add_txns(vec![txn]) {
-                    Ok(result) => result,
-                    Err(e) => return Err(convert_to_rpc_error(e)),
-                };
-                result
-                    .pop()
-                    .expect("txpool should return result")
-                    .map(|_| txn_hash)
-                    .map_err(convert_to_rpc_error)
-            });
-        result.map_err(crate::module::map_jsonrpc_err)
+            .map_err(crate::module::map_jsonrpc_err)?;
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM1(txn))
     }
 
     async fn submit_hex_transaction2(&self, tx: String) -> RpcResult<HashValue> {
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
-        let result = hex::decode(tx)
+        let txn = hex::decode(tx)
             .map_err(convert_to_rpc_error)
             .and_then(|txn_bytes| SignedUserTransaction2::decode(&txn_bytes).map_err(map_err))
-            .and_then(|txn| {
-                let txn_hash = txn.id();
-                let mut result = match self.service.add_txns_multi_signed(
-                    vec![MultiSignedUserTransaction::VM2(txn)],
-                    true,
-                    None,
-                ) {
-                    Ok(result) => result,
-                    Err(e) => return Err(convert_to_rpc_error(e)),
-                };
-                result
-                    .pop()
-                    .expect("txpool should return result")
-                    .map(|_| txn_hash)
-                    .map_err(convert_to_rpc_error)
-            });
-        result.map_err(crate::module::map_jsonrpc_err)
+            .map_err(crate::module::map_jsonrpc_err)?;
+        self.submit_transaction_multi(MultiSignedUserTransaction::VM2(txn))
     }
 
     async fn gas_price(&self) -> RpcResult<StrView<u64>> {
@@ -242,14 +222,122 @@ where
 mod tests {
     use super::*;
     use futures::executor::block_on;
+    use futures_channel::mpsc;
     use starcoin_rpc_api::txpool::txpool_methods;
+    use starcoin_txpool_api::TxnStatusFullEvent;
     use starcoin_txpool_mock_service::MockTxPoolService;
     use starcoin_types::account::{peer_to_peer_txn, Account};
+    use starcoin_types::block::Block;
+    use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionError};
+    use starcoin_types::transaction::TransactionError;
     use starcoin_vm2_types::{
         account::{peer_to_peer_txn as peer_to_peer_txn2, Account as Account2},
         transaction::SignedUserTransaction as SignedUserTransaction2,
     };
     use starcoin_vm_types::transaction::TransactionPayload;
+    use std::sync::Arc;
+
+    #[derive(Clone)]
+    struct FailingTxPoolService {
+        results: Vec<Result<(), MultiTransactionError>>,
+    }
+
+    impl FailingTxPoolService {
+        fn new(results: Vec<Result<(), MultiTransactionError>>) -> Self {
+            Self { results }
+        }
+    }
+
+    impl TxPoolSyncService for FailingTxPoolService {
+        fn add_txns_multi_signed(
+            &self,
+            _txns: Vec<MultiSignedUserTransaction>,
+            _bypass_vm1_limit: bool,
+            _peer_id: Option<String>,
+        ) -> anyhow::Result<Vec<Result<(), MultiTransactionError>>> {
+            Ok(self.results.clone())
+        }
+
+        fn remove_txn(
+            &self,
+            _txn_hash: HashValue,
+            _is_invalid: bool,
+        ) -> Option<MultiSignedUserTransaction> {
+            unimplemented!()
+        }
+
+        fn get_pending_txns(
+            &self,
+            _max_len: Option<u64>,
+            _now: Option<u64>,
+        ) -> anyhow::Result<Vec<MultiSignedUserTransaction>> {
+            unimplemented!()
+        }
+
+        fn get_pending_with_state(
+            &self,
+            _max_len: u64,
+            _current_timestamp_secs: Option<u64>,
+            _state_root1: HashValue,
+            _state_root2: HashValue,
+        ) -> anyhow::Result<Vec<MultiSignedUserTransaction>> {
+            unimplemented!()
+        }
+
+        fn next_sequence_number(&self, _address: AccountAddress) -> Option<u64> {
+            unimplemented!()
+        }
+
+        fn next_sequence_number_in_batch(
+            &self,
+            _addresses: Vec<AccountAddress>,
+        ) -> Option<Vec<(AccountAddress, Option<u64>)>> {
+            unimplemented!()
+        }
+
+        fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
+            unimplemented!()
+        }
+
+        fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
+            unimplemented!()
+        }
+
+        fn chain_new_block(
+            &self,
+            _enacted: Vec<Block>,
+            _retracted: Vec<Block>,
+        ) -> anyhow::Result<()> {
+            unimplemented!()
+        }
+
+        fn status(&self) -> TxPoolStatus {
+            unimplemented!()
+        }
+
+        fn find_txn(&self, _hash: &HashValue) -> Option<MultiSignedUserTransaction> {
+            unimplemented!()
+        }
+
+        fn txns_of_sender(
+            &self,
+            _sender: &MultiAccountAddress,
+            _max_len: Option<usize>,
+        ) -> Vec<MultiSignedUserTransaction> {
+            unimplemented!()
+        }
+
+        fn next_sequence_number2(&self, _address: AccountAddress2) -> Option<u64> {
+            unimplemented!()
+        }
+
+        fn next_sequence_number2_in_batch(
+            &self,
+            _addresses: Vec<AccountAddress2>,
+        ) -> Option<Vec<(AccountAddress2, Option<u64>)>> {
+            unimplemented!()
+        }
+    }
 
     #[test]
     fn test_submit_transaction() {
@@ -298,5 +386,22 @@ mod tests {
         //  payload2 EntryFunction(EntryFunction { module: ModuleId { address: 0x00000000000000000000000000000001, name: Identifier("transfer_scripts") }, function: Identifier("peer_to_peer_v2"), ty_args: [Struct(StructTag { address: 0x00000000000000000000000000000001, module: Identifier("starcoin_coin"), name: Identifier("STC"), type_args: [] })], args: [[49, 168, 188, 110, 65, 29, 84, 144, 62, 98, 92, 76, 111, 114, 234, 38], [16, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]] })
 
         println!("payload2 {:?}", payload2);
+    }
+
+    #[test]
+    fn test_submit_transactions_returns_first_failure() {
+        let txpool_service = FailingTxPoolService::new(vec![
+            Err(MultiTransactionError::VM1(TransactionError::Old)),
+            Ok(()),
+        ]);
+        let txpool = TxPoolRpcImpl::new(txpool_service);
+        let err = block_on(txpool.submit_transactions(vec![
+            SignedUserTransaction::mock(),
+            SignedUserTransaction::mock(),
+        ]))
+        .expect_err("batch submission should fail when any txn is rejected");
+
+        assert_eq!(err.code(), jsonrpsee::types::error::INVALID_PARAMS_CODE);
+        assert!(err.message().contains("No longer valid"));
     }
 }

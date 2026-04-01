@@ -268,3 +268,68 @@ fn fallback_to_cached_external_address_for_pending_outbound() {
     .expect("pending outbound should not fail");
     assert_eq!(passthrough, vec![existing_addr]);
 }
+
+#[test]
+fn cached_external_addresses_are_bounded_and_keep_recent_entries() {
+    let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
+        sets: vec![sc_peerset::SetConfig {
+            in_peers: 25,
+            out_peers: 25,
+            bootnodes: vec![],
+            reserved_nodes: Default::default(),
+            reserved_only: false,
+        }],
+    });
+
+    let mut behaviour = GenericProto::new(
+        peerset,
+        iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
+    );
+    let peer_id = identity::Keypair::generate_ed25519().public().to_peer_id();
+    let cached_addrs: Vec<Multiaddr> = (0..40)
+        .map(|idx| {
+            format!("/memory/{}", 4100 + idx)
+                .parse()
+                .expect("valid memory addr")
+        })
+        .collect();
+
+    for addr in &cached_addrs {
+        NetworkBehaviour::on_swarm_event(
+            &mut behaviour,
+            FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer { peer_id, addr }),
+        );
+    }
+
+    let bounded = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(3),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(bounded, cached_addrs[8..].to_vec());
+
+    let repeated = cached_addrs[20].clone();
+    NetworkBehaviour::on_swarm_event(
+        &mut behaviour,
+        FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer {
+            peer_id,
+            addr: &repeated,
+        }),
+    );
+
+    let deduped = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(4),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    let mut expected = cached_addrs[8..].to_vec();
+    expected.retain(|addr| addr != &repeated);
+    expected.push(repeated);
+    assert_eq!(deduped, expected);
+}

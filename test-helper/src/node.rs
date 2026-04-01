@@ -15,8 +15,11 @@ pub fn run_test_node() -> Result<NodeHandle> {
 }
 
 pub fn run_node_by_config(config: Arc<NodeConfig>) -> Result<NodeHandle> {
+    let mut config = (*config).clone();
+    config.disable_tcp_rpc();
+
     let logger_handle = starcoin_logger::init_for_test();
-    let node_handle = NodeService::launch(config, logger_handle)?;
+    let node_handle = NodeService::launch(Arc::new(config), logger_handle)?;
     block_on(async { node_handle.node_service().stop_pacemaker().await })?;
     Ok(node_handle)
 }

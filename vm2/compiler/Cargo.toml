@@ -1,12 +1,12 @@
 [dependencies]
 anyhow = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 once_cell = { workspace = true }
 petgraph = { workspace = true }
 regex = { features = ["std", "perf"], workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
 starcoin-logger = { workspace = true }
 starcoin-vm-types = { path = "../vm-types" }
 tempfile = { workspace = true }

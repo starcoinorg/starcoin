@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use jsonrpsee::core::{async_trait, RpcResult};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    types::{error::INTERNAL_ERROR_CODE, ErrorObjectOwned},
+};
 use network_api::PeerProvider;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkServiceRef;
@@ -19,6 +22,16 @@ impl NodeRpcImpl {
     pub fn new(config: Arc<NodeConfig>, service: Option<NetworkServiceRef>) -> Self {
         Self { config, service }
     }
+
+    fn network_service(&self) -> RpcResult<NetworkServiceRef> {
+        self.service.clone().ok_or_else(|| {
+            ErrorObjectOwned::owned(
+                INTERNAL_ERROR_CODE,
+                "Network service unavailable",
+                None::<()>,
+            )
+        })
+    }
 }
 
 #[async_trait]
@@ -29,7 +42,7 @@ impl NodeApiServer for NodeRpcImpl {
     }
 
     async fn info(&self) -> RpcResult<NodeInfo> {
-        let service = self.service.clone().unwrap();
+        let service = self.network_service()?;
         let self_address = self.config.network.self_address().to_string();
         let net = self.config.net().clone();
         let peer_info = service
@@ -49,7 +62,7 @@ impl NodeApiServer for NodeRpcImpl {
     }
 
     async fn peers(&self) -> RpcResult<Vec<PeerInfoView>> {
-        let service = self.service.clone().unwrap();
+        let service = self.network_service()?;
         let peers = service
             .peer_set()
             .await

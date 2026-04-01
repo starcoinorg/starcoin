@@ -41,7 +41,7 @@ impl RawRpcClient for MockRpcClient {
         peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         *self.call_count.lock().unwrap() += 1;
         if peer_id == self.peer_id1 {
             futures::future::ready(Err(format_err!("NotConnected"))).boxed()
@@ -70,7 +70,7 @@ impl RawRpcClient for TimeoutRpcClient {
         _peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         _message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         futures::future::pending().boxed()
     }
 }
@@ -107,7 +107,7 @@ impl RawRpcClient for AdaptiveGetBlockIdsRpcClient {
         _peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         let req: GetBlockIds = bcs_ext::from_bytes(&message).unwrap();
         self.observed_max_sizes.lock().unwrap().push(req.max_size);
 

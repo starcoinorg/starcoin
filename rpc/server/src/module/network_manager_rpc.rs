@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use jsonrpsee::core::{async_trait, RpcResult};
-use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
+use network_api::{PeerProvider, ReputationChange};
 use network_p2p_core::RawRpcClient;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
@@ -71,7 +71,7 @@ impl NetworkManagerApiServer for NetworkManagerRpcImpl {
         let service = self.service.clone();
         let peer_id = PeerId::from_str(peer_id.as_str()).map_err(crate::module::map_jsonrpc_err)?;
         let old_reput = service
-            .reputations(BANNED_THRESHOLD)
+            .reputations(i32::MIN)
             .await
             .map_err(crate::module::map_jsonrpc_err)?
             .await

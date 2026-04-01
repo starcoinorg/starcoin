@@ -28,9 +28,6 @@ apis = "chain,miner,node,state,txpool,contract"
 [rpc.ipc]
 apis = "account,chain,debug,miner,network_manager,node_manager,node,pubsub,state,sync_manager,txpool,contract"
 
-[rpc.tcp]
-apis = "chain,miner,node,state,txpool,contract"
-
 [rpc.ws]
 apis = "chain,miner,node,pubsub,state,txpool,contract"
 

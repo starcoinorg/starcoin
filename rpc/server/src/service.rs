@@ -10,7 +10,7 @@ use futures::FutureExt;
 use jsonrpsee::async_client::Client;
 use jsonrpsee::core::middleware::RpcServiceBuilder;
 use jsonrpsee::server::{ServerBuilder, ServerConfigBuilder, ServerHandle};
-use starcoin_config::{Api, ApiSet, NodeConfig};
+use starcoin_config::{Api, ApiSet, ListenAddress, NodeConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
@@ -59,6 +59,10 @@ impl ActorService for RpcService {
             self.config.rpc.get_tcp_address(),
             self.config.rpc.ipc.disable
         );
+        ensure_tcp_supported(
+            self.config.rpc.tcp_is_explicitly_configured(),
+            self.config.rpc.get_tcp_address(),
+        )?;
         self.http = self.start_http().map_err(|e| {
             error!("Failed to start rpc http endpoint: {:?}", e);
             e
@@ -67,7 +71,6 @@ impl ActorService for RpcService {
             error!("Failed to start rpc websocket endpoint: {:?}", e);
             e
         })?;
-        self.warn_tcp_unsupported();
         self.ipc = self.start_ipc().map_err(|e| {
             error!("Failed to start rpc ipc endpoint: {:?}", e);
             e
@@ -309,8 +312,10 @@ impl RpcService {
                 .layer(JsonApiRateLimitLayer::from_config(
                     self.api_registry.quotas(),
                 ));
-            let http_middleware = tower::ServiceBuilder::new()
-                .layer(HttpMetadataLayer::new(self.config.rpc.http.ip_headers()));
+            let http_middleware = tower::ServiceBuilder::new().layer(HttpMetadataLayer::new(
+                self.config.rpc.http.ip_headers(),
+                self.config.rpc.http.trust_forwarded_ip_headers(),
+            ));
 
             if self.config.rpc.http.threads.is_some() {
                 warn!("jsonrpsee http server ignores rpc.http.threads setting");
@@ -383,14 +388,6 @@ impl RpcService {
         })
     }
 
-    fn warn_tcp_unsupported(&self) {
-        if self.config.rpc.get_tcp_address().is_some() {
-            warn!(
-                "Rpc: tcp endpoint is configured but not supported by current jsonrpsee server backend"
-            );
-        }
-    }
-
     fn run_on_rpc_runtime<F, T>(&self, fut: F) -> Result<T>
     where
         F: Future<Output = Result<T>> + Send + 'static,
@@ -424,6 +421,19 @@ impl RpcService {
     }
 }
 
+fn ensure_tcp_supported(
+    tcp_explicitly_configured: bool,
+    tcp_address: Option<ListenAddress>,
+) -> Result<()> {
+    match (tcp_explicitly_configured, tcp_address) {
+        (true, Some(addr)) => Err(anyhow!(
+            "Rpc: tcp endpoint {} is configured but not supported by current jsonrpsee server backend",
+            addr
+        )),
+        _ => Ok(()),
+    }
+}
+
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
     fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> Client {
         let apis = ApiSet::All.list_apis();
@@ -438,5 +448,46 @@ impl ServiceHandler<Self, ConnectLocal> for RpcService {
             }
         }));
         client
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ensure_tcp_supported;
+    use starcoin_config::ListenAddress;
+    use std::net::{IpAddr, Ipv4Addr};
+
+    #[test]
+    fn rejects_configured_tcp_address() {
+        let err = ensure_tcp_supported(
+            true,
+            Some(ListenAddress::new(
+                "tcp",
+                IpAddr::V4(Ipv4Addr::LOCALHOST),
+                9860,
+            )),
+        )
+        .expect_err("tcp rpc must fail fast while unsupported");
+        assert!(err
+            .to_string()
+            .contains("tcp endpoint tcp://127.0.0.1:9860 is configured"));
+    }
+
+    #[test]
+    fn allows_implicit_tcp_address() {
+        ensure_tcp_supported(
+            false,
+            Some(ListenAddress::new(
+                "tcp",
+                IpAddr::V4(Ipv4Addr::LOCALHOST),
+                9860,
+            )),
+        )
+        .expect("implicit tcp config should be accepted");
+    }
+
+    #[test]
+    fn allows_absent_tcp_address() {
+        ensure_tcp_supported(true, None).expect("disabled tcp config should be accepted");
     }
 }

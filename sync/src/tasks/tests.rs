@@ -686,7 +686,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_blocks(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.fetch_calls.lock().unwrap().push(block_ids.clone());
         let blocks = self.blocks.lock().unwrap();
         let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
@@ -709,7 +709,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_block_headers(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(HashValue, Option<starcoin_types::block::BlockHeader>)>>> {
         let blocks = self.blocks.lock().unwrap();
         let result = block_ids
             .iter()
@@ -731,7 +731,7 @@ impl BlockFetcher for MockBlockFetcher {
     fn fetch_dag_block_children(
         &self,
         block_ids: Vec<HashValue>,
-    ) -> BoxFuture<Result<Vec<HashValue>>> {
+    ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let blocks = self.blocks.lock().unwrap();
         let mut result: Vec<HashValue> = vec![];
         block_ids.iter().for_each(|block_id| {
@@ -757,7 +757,7 @@ impl BlockFetcher for MockBlockFetcher {
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
-    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         let mut round = block_ids.into_iter().collect::<HashSet<HashValue>>();
         let blocks = self.blocks.lock().unwrap();
         let mut result = HashSet::new();
@@ -830,9 +830,13 @@ async fn test_block_collector_fetch_blocks_dedup_and_local_first() -> Result<()>
     assert_eq!(headers.len(), 1);
     assert_eq!(headers[0].id(), local_block.id());
     assert_eq!(fetcher.fetch_blocks_call_count(), 0);
-    assert!(sync_dag_store
+    let cached = sync_dag_store
         .get_dag_sync_block(local_block.header().number(), local_block.id())
-        .is_ok());
+        .expect("local block should be cached in sync dag store");
+    assert_eq!(
+        cached.block.as_ref().map(|block| block.id()),
+        Some(local_block.id())
+    );
     Ok(())
 }
 
@@ -1151,16 +1155,15 @@ fn sync_block_in_async_connection(
     let process_block = move || {
         // Simply wait for the target block without creating a new chain
         loop {
-            if let std::result::Result::Ok(result) = receiver.try_next() {
-                match result {
-                    Some(event) => {
-                        // Just check if we've reached the target block
-                        if target_id == event.block.id() {
-                            break;
-                        }
+            match receiver.try_recv() {
+                std::result::Result::Ok(event) => {
+                    // Just check if we've reached the target block
+                    if target_id == event.block.id() {
+                        break;
                     }
-                    None => break,
                 }
+                std::result::Result::Err(futures::channel::mpsc::TryRecvError::Closed) => break,
+                std::result::Result::Err(futures::channel::mpsc::TryRecvError::Empty) => {}
             }
         }
     };

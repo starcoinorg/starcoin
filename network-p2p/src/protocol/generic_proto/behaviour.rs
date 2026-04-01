@@ -43,6 +43,8 @@ use std::{
 use std::{mem, pin::Pin, str, sync::Arc, time::Duration};
 use wasm_timer::Instant;
 
+const MAX_CACHED_ADDRS_PER_PEER: usize = 32;
+
 /// Network behaviour that handles opening substreams for custom protocols with other peers.
 ///
 /// # How it works
@@ -135,6 +137,15 @@ pub struct GenericProto {
 
     /// Events to produce from `poll()`.
     events: VecDeque<ToSwarm<GenericProtoOut, NotifsHandlerIn>>,
+}
+
+fn remember_peer_address(peer_addresses: &mut Vec<Multiaddr>, addr: &Multiaddr) {
+    if let Some(index) = peer_addresses.iter().position(|existing| existing == addr) {
+        peer_addresses.remove(index);
+    } else if peer_addresses.len() >= MAX_CACHED_ADDRS_PER_PEER {
+        peer_addresses.remove(0);
+    }
+    peer_addresses.push(addr.clone());
 }
 
 /// Identifier for a delay firing.
@@ -1627,9 +1638,7 @@ impl NetworkBehaviour for GenericProto {
             FromSwarm::ExternalAddrExpired(_) => {}
             FromSwarm::NewExternalAddrOfPeer(event) => {
                 let list = self.peer_addresses.entry(event.peer_id).or_default();
-                if !list.iter().any(|a| a == event.addr) {
-                    list.push(event.addr.clone());
-                }
+                remember_peer_address(list, event.addr);
             }
             _ => {}
         }

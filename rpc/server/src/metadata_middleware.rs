@@ -13,12 +13,14 @@ use tower::{Layer, Service};
 #[derive(Clone, Debug)]
 pub struct HttpMetadataLayer {
     ip_headers: Arc<Vec<String>>,
+    trust_forwarded_ip_headers: bool,
 }
 
 impl HttpMetadataLayer {
-    pub fn new(ip_headers: Vec<String>) -> Self {
+    pub fn new(ip_headers: Vec<String>, trust_forwarded_ip_headers: bool) -> Self {
         Self {
             ip_headers: Arc::new(ip_headers),
+            trust_forwarded_ip_headers,
         }
     }
 }
@@ -30,6 +32,7 @@ impl<S> Layer<S> for HttpMetadataLayer {
         HttpMetadataService {
             service,
             ip_headers: self.ip_headers.clone(),
+            trust_forwarded_ip_headers: self.trust_forwarded_ip_headers,
         }
     }
 }
@@ -38,6 +41,7 @@ impl<S> Layer<S> for HttpMetadataLayer {
 pub struct HttpMetadataService<S> {
     service: S,
     ip_headers: Arc<Vec<String>>,
+    trust_forwarded_ip_headers: bool,
 }
 
 impl<S, B> Service<HttpRequest<B>> for HttpMetadataService<S>
@@ -55,7 +59,10 @@ where
     }
 
     fn call(&mut self, mut request: HttpRequest<B>) -> Self::Future {
-        let user = extract_user_from_request(&request, &self.ip_headers);
+        let user = self
+            .trust_forwarded_ip_headers
+            .then(|| extract_user_from_request(&request, &self.ip_headers))
+            .flatten();
         request.extensions_mut().insert(Metadata { user });
 
         let fut = self.service.call(request);
@@ -115,7 +122,7 @@ mod tests {
     #[test]
     fn extract_user_from_first_matching_header() {
         let mut service =
-            HttpMetadataLayer::new(vec!["X-Real-IP".into(), "X-Forwarded-For".into()])
+            HttpMetadataLayer::new(vec!["X-Real-IP".into(), "X-Forwarded-For".into()], true)
                 .layer(CaptureMetadataService);
         let request = HttpRequest::builder()
             .header("X-Forwarded-For", "10.1.2.3, 8.8.8.8")
@@ -134,9 +141,27 @@ mod tests {
     #[test]
     fn ignore_invalid_header_value() {
         let mut service =
-            HttpMetadataLayer::new(vec!["X-Real-IP".into()]).layer(CaptureMetadataService);
+            HttpMetadataLayer::new(vec!["X-Real-IP".into()], true).layer(CaptureMetadataService);
         let request = HttpRequest::builder()
             .header("X-Real-IP", "not-an-ip")
+            .body(())
+            .expect("build request");
+
+        let response = futures::executor::block_on(service.call(request)).expect("service call");
+        let user = response
+            .extensions()
+            .get::<Option<String>>()
+            .cloned()
+            .expect("response must contain captured user");
+        assert_eq!(user, None);
+    }
+
+    #[test]
+    fn ignore_forwarded_headers_when_not_trusted() {
+        let mut service = HttpMetadataLayer::new(vec!["X-Forwarded-For".into()], false)
+            .layer(CaptureMetadataService);
+        let request = HttpRequest::builder()
+            .header("X-Forwarded-For", "10.1.2.3")
             .body(())
             .expect("build request");
 

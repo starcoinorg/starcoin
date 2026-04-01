@@ -106,14 +106,22 @@ where
             }
 
             // write all responses to the sink
-            while this.conn.as_mut().poll_ready(cx).is_ready() {
-                if let Some(item) = this.items.pop_front() {
-                    if let Err(err) = this.conn.as_mut().start_send(item) {
+            while let Poll::Ready(ready) = this.conn.as_mut().poll_ready(cx) {
+                match ready {
+                    Ok(()) => {
+                        if let Some(item) = this.items.pop_front() {
+                            if let Err(err) = this.conn.as_mut().start_send(item) {
+                                tracing::warn!("IPC response failed: {:?}", err);
+                                return Poll::Ready(());
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    Err(err) => {
                         tracing::warn!("IPC response failed: {:?}", err);
                         return Poll::Ready(());
                     }
-                } else {
-                    break;
                 }
             }
 
@@ -135,6 +143,16 @@ where
                 };
 
                 // read from the stream
+                match this.service.poll_ready(cx) {
+                    Poll::Ready(Ok(())) => {}
+                    Poll::Ready(Err(err)) => {
+                        let err: Box<dyn core::error::Error + Send + Sync> = err.into();
+                        tracing::warn!(error = %err, "IPC request dispatch failed");
+                        return Poll::Ready(());
+                    }
+                    Poll::Pending => return Poll::Pending,
+                }
+
                 match this.conn.as_mut().poll_next(cx) {
                     Poll::Ready(res) => match res {
                         Some(Ok(item)) => {

@@ -55,7 +55,7 @@ pub trait RawDBStorage: Send + Sync {
         &self,
         prefix: &str,
         key: K,
-    ) -> Result<Option<DBPinnableSlice>>;
+    ) -> Result<Option<DBPinnableSlice<'_>>>;
 
     fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()>;
     fn raw_write_batch_sync(&self, batch: DBWriteBatch) -> Result<()>;
@@ -538,7 +538,7 @@ where
 
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>>;
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>>;
 
     fn remove_all(&self) -> Result<()>;
 }
@@ -676,7 +676,7 @@ where
         KVStore::get(self.get_store(), key.encode_key()?.as_slice())
     }
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>> {
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>> {
         let db = self
             .get_store()
             .storage()

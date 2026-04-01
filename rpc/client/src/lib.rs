@@ -11,6 +11,7 @@ pub use async_client::AsyncRpcClient;
 use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
 use futures::{TryStream, TryStreamExt};
+use jsonrpsee::core::client::Error as JsonRpseeClientError;
 use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
@@ -573,7 +574,7 @@ impl RpcClient {
     pub fn state_reader(
         &self,
         state_root_opt: StateRootOption,
-    ) -> anyhow::Result<RemoteStateReader> {
+    ) -> anyhow::Result<RemoteStateReader<'_>> {
         RemoteStateReader::new(self, state_root_opt)
     }
 
@@ -1154,7 +1155,9 @@ impl RpcClient {
         let result = f(inner).await;
         if let Err(e) = &result {
             error!("rpc error due to {}", e);
-            *(self.inner.lock()) = None;
+            if should_reset_connection(e) {
+                *(self.inner.lock()) = None;
+            }
         }
         result
     }
@@ -1300,8 +1303,59 @@ where
     rpc_err.into()
 }
 
+fn should_reset_connection(err: &RpcError) -> bool {
+    matches!(
+        err.downcast_ref::<JsonRpseeClientError>(),
+        Some(
+            JsonRpseeClientError::Transport(_)
+                | JsonRpseeClientError::RestartNeeded(_)
+                | JsonRpseeClientError::ServiceDisconnect
+        )
+    )
+}
+
 impl From<RpcChannel> for RpcClientInner {
     fn from(channel: RpcChannel) -> Self {
         Self::new(channel)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{should_reset_connection, RpcError};
+    use jsonrpsee::core::client::Error as JsonRpseeClientError;
+    use jsonrpsee::types::ErrorObjectOwned;
+    use std::io;
+    use std::sync::Arc;
+
+    #[test]
+    fn call_errors_do_not_reset_connection() {
+        let err: RpcError = JsonRpseeClientError::Call(ErrorObjectOwned::owned(
+            -32602,
+            "invalid params",
+            None::<()>,
+        ))
+        .into();
+        assert!(!should_reset_connection(&err));
+    }
+
+    #[test]
+    fn transport_errors_reset_connection() {
+        let err: RpcError = JsonRpseeClientError::Transport(Box::new(io::Error::new(
+            io::ErrorKind::BrokenPipe,
+            "boom",
+        )))
+        .into();
+        assert!(should_reset_connection(&err));
+    }
+
+    #[test]
+    fn restart_needed_errors_reset_connection() {
+        let inner = JsonRpseeClientError::Transport(Box::new(io::Error::new(
+            io::ErrorKind::ConnectionReset,
+            "closed",
+        )));
+        let err: RpcError = JsonRpseeClientError::RestartNeeded(Arc::new(inner)).into();
+        assert!(should_reset_connection(&err));
     }
 }

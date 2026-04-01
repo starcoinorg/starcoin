@@ -67,8 +67,8 @@ pub use miner_config::{
 };
 pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
-    ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,
-    WsConfiguration,
+    ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, ListenAddress, RpcConfig,
+    TcpConfiguration, WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
@@ -557,6 +557,10 @@ impl NodeConfig {
 
     pub fn node_name(&self) -> String {
         self.network.node_name()
+    }
+
+    pub fn disable_tcp_rpc(&mut self) {
+        self.rpc.disable_tcp();
     }
 }
 

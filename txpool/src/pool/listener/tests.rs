@@ -27,10 +27,10 @@ fn should_notify_listeners() {
 
     // then
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    let pending_res = pending_receiver.try_next().unwrap();
-    assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Added)].into()));
-    assert_eq!(pending_res, Some(vec![*tx.hash()].into()));
+    let full_res = full_receiver.try_recv().unwrap();
+    let pending_res = pending_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Added)].into());
+    assert_eq!(pending_res, vec![*tx.hash()].into());
 }
 
 #[test]
@@ -44,38 +44,32 @@ fn test_notify() {
     let tx = new_tx();
     tx_listener.rejected(&tx, &tx_pool::Error::AlreadyImported(tx.hash));
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    assert_eq!(
-        full_res,
-        Some(vec![(*tx.hash(), TxStatus::Rejected)].into())
-    );
+    let full_res = full_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Rejected)].into());
 
     // dropped
     tx_listener.dropped(&tx, None);
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Dropped)].into()));
+    let full_res = full_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Dropped)].into());
 
     // canceled
     tx_listener.canceled(&tx);
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    assert_eq!(
-        full_res,
-        Some(vec![(*tx.hash(), TxStatus::Canceled)].into())
-    );
+    let full_res = full_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Canceled)].into());
 
     // culled
     tx_listener.culled(&tx);
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Culled)].into()));
+    let full_res = full_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Culled)].into());
 
     // invalid
     tx_listener.invalid(&tx);
     tx_listener.notify();
-    let full_res = full_receiver.try_next().unwrap();
-    assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Invalid)].into()));
+    let full_res = full_receiver.try_recv().unwrap();
+    assert_eq!(full_res, vec![(*tx.hash(), TxStatus::Invalid)].into());
 }
 
 fn new_tx() -> Arc<Transaction> {

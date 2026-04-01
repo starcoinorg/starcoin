@@ -593,9 +593,11 @@ where
                 .filter(|r| *r > max_block_range)
                 .is_some()
             {
-                return Err(anyhow::anyhow!(format!(
-                    "from_block is too far, max block range is {} ",
-                    max_block_range
+                return Err(crate::module::to_invalid_param_err(anyhow::anyhow!(
+                    format!(
+                        "from_block is too far, max block range is {} ",
+                        max_block_range
+                    )
                 )));
             }
 

@@ -1,4 +1,6 @@
-# upgrade-libp2p-dep 分支变更分析（对照 dual-verse-dag）
+# upgrade-libp2p-dep 分支变更分析（历史参考，对照 dual-verse-dag）
+
+> 说明：这份分析文档原本用于 `upgrade-libp2p-dep` 分支评审，当前保留在 `refactor-with-jsonrpsee-v2` PR 中仅作为历史背景材料；它不描述本 PR 的实际变更范围。
 
 ## 对比范围
 

@@ -10,7 +10,6 @@ use parking_lot::RwLock;
 use quick_cache::sync::Cache;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::*;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::identifier::Identifier;

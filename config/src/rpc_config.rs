@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Parser;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_logger::prelude::*;
 use std::collections::HashSet;
 use std::fmt::Formatter;
@@ -63,6 +63,13 @@ pub struct HttpConfiguration {
     /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
 
+    #[clap(
+        name = "http-trust-forwarded-ip-headers",
+        long,
+        help = "trust configured forwarded IP headers for per-user RPC metadata; only enable behind a trusted proxy"
+    )]
+    pub trust_forwarded_ip_headers: bool,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "unsupported-rpc-protocols", long, use_value_delimiter = true)]
     unsupported_rpc_protocols: Option<Vec<String>>,
@@ -83,6 +90,10 @@ impl HttpConfiguration {
         self.ip_headers
             .clone()
             .unwrap_or_else(|| vec!["X-Real-IP".to_string(), "X-Forwarded-For".to_string()])
+    }
+
+    pub fn trust_forwarded_ip_headers(&self) -> bool {
+        self.trust_forwarded_ip_headers
     }
 
     pub fn merge(&mut self, o: &Self) -> Result<()> {
@@ -111,6 +122,9 @@ impl HttpConfiguration {
             ip_headers.extend(o.ip_headers.clone().unwrap_or_default());
             self.ip_headers = Some(ip_headers.into_iter().collect());
         }
+        if o.trust_forwarded_ip_headers {
+            self.trust_forwarded_ip_headers = true;
+        }
         if o.unsupported_rpc_protocols.is_some() {
             let mut protocols: HashSet<String> = self
                 .unsupported_rpc_protocols
@@ -134,7 +148,7 @@ impl HttpConfiguration {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Parser)]
 pub struct TcpConfiguration {
     #[serde(skip)]
     #[clap(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
@@ -148,11 +162,45 @@ pub struct TcpConfiguration {
     #[clap(name = "tcp-port", long)]
     /// Default tcp port is 9860
     pub port: Option<u16>,
+
+    #[serde(skip)]
+    #[clap(skip)]
+    configured: bool,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct TcpConfigurationRepr {
+    apis: Option<ApiSet>,
+    port: Option<u16>,
+}
+
+impl<'de> Deserialize<'de> for TcpConfiguration {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let repr = TcpConfigurationRepr::deserialize(deserializer)?;
+        let configured = repr.apis.is_some() || repr.port.is_some();
+        Ok(Self {
+            disable: false,
+            apis: repr.apis,
+            port: repr.port,
+            configured,
+        })
+    }
 }
 
 impl TcpConfiguration {
     pub fn apis(&self) -> &ApiSet {
         self.apis.as_ref().unwrap_or(&ApiSet::UnsafeContext)
+    }
+
+    pub fn is_configured(&self) -> bool {
+        self.configured
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.apis.is_none() && self.port.is_none()
     }
 
     pub fn merge(&mut self, o: &Self) -> Result<()> {
@@ -164,6 +212,9 @@ impl TcpConfiguration {
         }
         if o.port.is_some() {
             self.port = o.port;
+        }
+        if o.apis.is_some() || o.port.is_some() || o.configured {
+            self.configured = true;
         }
         Ok(())
     }
@@ -338,7 +389,7 @@ pub struct RpcConfig {
     #[clap(flatten)]
     pub http: HttpConfiguration,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "TcpConfiguration::is_empty")]
     #[clap(flatten)]
     pub tcp: TcpConfiguration,
 
@@ -438,6 +489,10 @@ impl RpcConfig {
         self.tcp_address.clone()
     }
 
+    pub fn tcp_is_explicitly_configured(&self) -> bool {
+        self.tcp.is_configured()
+    }
+
     pub fn get_ws_address(&self) -> Option<ListenAddress> {
         self.ws_address.clone()
     }
@@ -450,6 +505,11 @@ impl RpcConfig {
     pub fn txn_info_query_max_range(&self) -> u64 {
         self.txn_info_query_max_range
             .unwrap_or(DEFAULT_TXN_INFO_QUEYR_MAX_RANGE)
+    }
+
+    pub(crate) fn disable_tcp(&mut self) {
+        self.tcp.disable = true;
+        self.tcp_address = None;
     }
 
     fn base(&self) -> &BaseConfig {

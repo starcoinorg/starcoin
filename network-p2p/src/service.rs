@@ -76,6 +76,7 @@ const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
 /// A cloneable handle for reporting cost/benefits of peers.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct ReportHandle {
     #[allow(unused)]
     inner: PeersetHandle, // wraps it so we don't have to worry about breaking API.
@@ -94,6 +95,7 @@ pub struct NetworkService {
     /// Number of peers we're connected to.
     num_connected: Arc<AtomicUsize>,
     /// The local external addresses.
+    #[allow(dead_code)]
     external_addresses: Arc<Mutex<Vec<Multiaddr>>>,
     /// Are we actively catching up with the chain?
     is_major_syncing: Arc<AtomicBool>,

@@ -90,7 +90,7 @@ impl FakeDataStore {
     }
 
     /// Yields a reference to the internal data structure of the global state
-    pub fn inner(&self) -> RwLockReadGuard<HashMap<StateKey, Vec<u8>>> {
+    pub fn inner(&self) -> RwLockReadGuard<'_, HashMap<StateKey, Vec<u8>>> {
         self.state_data.read().expect("Panic for read state data")
     }
 }

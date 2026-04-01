@@ -51,7 +51,7 @@ use libp2p::{
     },
     PeerId,
 };
-use log::{error, info};
+use log::info;
 pub use network_p2p_types::{
     IfDisconnected, InboundFailure, IncomingRequest, OutboundFailure, OutgoingResponse,
     RequestFailure, ResponseFailure,

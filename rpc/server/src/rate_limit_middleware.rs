@@ -1,5 +1,5 @@
 // Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2
+// SPDX-License-Identifier: Apache-2.0
 
 use api_limiter::ApiLimiters;
 pub use api_limiter::Quota;

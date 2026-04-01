@@ -6,14 +6,14 @@ use jsonrpsee::{
     core::client::{ReceivedMessage, TransportReceiverT, TransportSenderT},
     Methods,
 };
-use std::sync::Arc;
 use thiserror::Error;
 use tokio::{
-    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+    sync::mpsc::{self, Receiver, Sender},
     task::JoinError,
 };
 
 const SUBSCRIPTION_BUFFER_SIZE: usize = 1024;
+const LOCAL_CHANNEL_CAPACITY: usize = 1024;
 const PARSE_ERROR_RESPONSE: &str =
     r#"{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error"},"id":null}"#;
 
@@ -28,8 +28,8 @@ pub fn connect_local(
 ) {
     let methods = methods.into();
 
-    let (to_server_tx, to_server_rx) = mpsc::unbounded_channel::<String>();
-    let (to_client_tx, to_client_rx) = mpsc::unbounded_channel::<String>();
+    let (to_server_tx, to_server_rx) = mpsc::channel::<String>(LOCAL_CHANNEL_CAPACITY);
+    let (to_client_tx, to_client_rx) = mpsc::channel::<String>(LOCAL_CHANNEL_CAPACITY);
 
     let client = ClientBuilder::default().build_with_tokio(
         LocalSender {
@@ -50,32 +50,34 @@ pub fn connect_local(
 
 async fn run_local_server(
     methods: Methods,
-    mut to_server_rx: UnboundedReceiver<String>,
-    to_client_tx: UnboundedSender<String>,
+    mut to_server_rx: Receiver<String>,
+    to_client_tx: Sender<String>,
 ) {
-    let to_client_tx = Arc::new(to_client_tx);
-
     while let Some(req) = to_server_rx.recv().await {
         match methods
             .raw_json_request(&req, SUBSCRIPTION_BUFFER_SIZE)
             .await
         {
             Ok((resp, mut sub_rx)) => {
-                if to_client_tx.send(resp.get().to_owned()).is_err() {
+                if to_client_tx.send(resp.get().to_owned()).await.is_err() {
                     break;
                 }
 
-                let sub_tx = Arc::clone(&to_client_tx);
+                let sub_tx = to_client_tx.clone();
                 tokio::spawn(async move {
                     while let Some(msg) = sub_rx.recv().await {
-                        if sub_tx.send(msg.get().to_owned()).is_err() {
+                        if sub_tx.send(msg.get().to_owned()).await.is_err() {
                             break;
                         }
                     }
                 });
             }
             Err(_) => {
-                if to_client_tx.send(PARSE_ERROR_RESPONSE.to_string()).is_err() {
+                if to_client_tx
+                    .send(PARSE_ERROR_RESPONSE.to_string())
+                    .await
+                    .is_err()
+                {
                     break;
                 }
             }
@@ -85,7 +87,7 @@ async fn run_local_server(
 
 #[derive(Debug)]
 struct LocalSender {
-    inner: UnboundedSender<String>,
+    inner: Sender<String>,
 }
 
 impl TransportSenderT for LocalSender {
@@ -94,6 +96,7 @@ impl TransportSenderT for LocalSender {
     async fn send(&mut self, msg: String) -> Result<(), Self::Error> {
         self.inner
             .send(msg)
+            .await
             .map_err(|_| LocalRpcError::ChannelClosed)
     }
 
@@ -108,7 +111,7 @@ impl TransportSenderT for LocalSender {
 
 #[derive(Debug)]
 struct LocalReceiver {
-    inner: UnboundedReceiver<String>,
+    inner: Receiver<String>,
 }
 
 impl TransportReceiverT for LocalReceiver {

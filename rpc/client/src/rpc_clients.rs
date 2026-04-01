@@ -116,10 +116,9 @@ impl RpcChannel {
                 .subscribe(subscribe_method, params, unsubscribe_method)
                 .await
                 .map_err(Into::into),
-            Self::Http(client) => client
-                .subscribe(subscribe_method, params, unsubscribe_method)
-                .await
-                .map_err(Into::into),
+            Self::Http(_) => Err(anyhow::anyhow!(
+                "http/https transport does not support pubsub"
+            )),
         }
     }
 
@@ -199,7 +198,11 @@ fn normalize_http_connect_url(url: &str) -> String {
 
 #[cfg(test)]
 mod connect_tests {
-    use super::{normalize_http_connect_url, normalize_ws_connect_url};
+    use super::{normalize_http_connect_url, normalize_ws_connect_url, RpcChannel};
+    use jsonrpsee::rpc_params;
+    use jsonrpsee_http_client::HttpClientBuilder;
+    use serde_json::Value;
+    use std::sync::Arc;
 
     #[test]
     fn test_normalize_ipv4_any_addr() {
@@ -253,6 +256,22 @@ mod connect_tests {
             normalize_http_connect_url("https://[::]:9850/path"),
             "https://[::1]:9850/path"
         );
+    }
+
+    #[test]
+    fn test_http_subscribe_fails_fast() {
+        let client = HttpClientBuilder::default()
+            .build("http://127.0.0.1:9850")
+            .expect("http client should build without connecting");
+        let channel = RpcChannel::Http(Arc::new(client));
+        let err = futures::executor::block_on(channel.subscribe::<Value, _>(
+            "starcoin_subscribe",
+            rpc_params![],
+            "starcoin_unsubscribe",
+        ))
+        .expect_err("http transport should reject pubsub before making a request");
+
+        assert!(err.to_string().contains("does not support pubsub"));
     }
 }
 

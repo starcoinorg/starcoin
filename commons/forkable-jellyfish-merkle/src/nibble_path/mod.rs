@@ -113,7 +113,7 @@ impl NibblePath {
     /// Adds a nibble to the end of the nibble path.
     pub fn push(&mut self, nibble: Nibble) {
         assert!(ROOT_NIBBLE_HEIGHT > self.num_nibbles);
-        if self.num_nibbles % 2 == 0 {
+        if self.num_nibbles.is_multiple_of(2) {
             self.bytes.push(u8::from(nibble) << 4);
         } else {
             self.bytes[self.num_nibbles / 2] |= u8::from(nibble);
@@ -123,7 +123,7 @@ impl NibblePath {
 
     /// Pops a nibble from the end of the nibble path.
     pub fn pop(&mut self) -> Option<Nibble> {
-        let poped_nibble = if self.num_nibbles % 2 == 0 {
+        let poped_nibble = if self.num_nibbles.is_multiple_of(2) {
             self.bytes.last_mut().map(|last_byte| {
                 let nibble = *last_byte & 0x0f;
                 *last_byte &= 0xf0;
@@ -141,7 +141,7 @@ impl NibblePath {
     /// Returns the last nibble.
     pub fn last(&self) -> Option<Nibble> {
         let last_byte_option = self.bytes.last();
-        if self.num_nibbles % 2 == 0 {
+        if self.num_nibbles.is_multiple_of(2) {
             last_byte_option.map(|last_byte| Nibble::from(*last_byte & 0x0f))
         } else {
             let last_byte = last_byte_option.expect("Last byte must exist if num_nibbles is odd.");
@@ -164,7 +164,7 @@ impl NibblePath {
     }
 
     /// Get a bit iterator iterates over the whole nibble path.
-    pub fn bits(&self) -> BitIterator {
+    pub fn bits(&self) -> BitIterator<'_> {
         assume!(self.num_nibbles <= ROOT_NIBBLE_HEIGHT); // invariant
         BitIterator {
             nibble_path: self,
@@ -173,7 +173,7 @@ impl NibblePath {
     }
 
     /// Get a nibble iterator iterates over the whole nibble path.
-    pub fn nibbles(&self) -> NibbleIterator {
+    pub fn nibbles(&self) -> NibbleIterator<'_> {
         assume!(self.num_nibbles <= ROOT_NIBBLE_HEIGHT); // invariant
         NibbleIterator::new(self, 0, self.num_nibbles)
     }

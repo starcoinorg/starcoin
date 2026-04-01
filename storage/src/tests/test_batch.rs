@@ -194,7 +194,7 @@ fn test_cache_multi_get_with_evict() -> Result<()> {
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
 
-    let transaction_infos = vec![transaction_info1, transaction_info2, transaction_info3];
+    let transaction_infos = [transaction_info1, transaction_info2, transaction_info3];
     let mut retained_count = 0;
     for (idx, info) in infos.iter().enumerate() {
         if info.is_some() {

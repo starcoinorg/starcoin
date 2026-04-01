@@ -69,11 +69,6 @@ impl StreamCodec {
     }
 }
 
-#[inline]
-const fn is_whitespace(byte: u8) -> bool {
-    matches!(byte, 0x0D | 0x0A | 0x20 | 0x09)
-}
-
 impl tokio_util::codec::Decoder for StreamCodec {
     type Item = String;
     type Error = io::Error;
@@ -96,7 +91,7 @@ impl tokio_util::codec::Decoder for StreamCodec {
             let mut in_str = false;
             let mut is_escaped = false;
             let mut start_idx = 0;
-            let mut whitespaces = 0;
+            let mut started = false;
 
             for idx in 0..buf.as_ref().len() {
                 let byte = buf.as_ref()[idx];
@@ -104,18 +99,17 @@ impl tokio_util::codec::Decoder for StreamCodec {
                 if (byte == b'{' || byte == b'[') && !in_str {
                     if depth == 0 {
                         start_idx = idx;
+                        started = true;
                     }
                     depth += 1;
                 } else if (byte == b'}' || byte == b']') && !in_str {
                     depth -= 1;
                 } else if byte == b'"' && !is_escaped {
                     in_str = !in_str;
-                } else if is_whitespace(byte) {
-                    whitespaces += 1;
                 }
                 is_escaped = byte == b'\\' && !is_escaped && in_str;
 
-                if depth == 0 && idx != start_idx && idx - start_idx + 1 > whitespaces {
+                if started && depth == 0 && idx >= start_idx {
                     if start_idx > 0 {
                         buf.advance(start_idx);
                     }
@@ -228,6 +222,26 @@ mod tests {
             request4.is_none(),
             "There should be no 4th request because it contains only whitespaces"
         );
+    }
+
+    #[test]
+    fn leading_whitespace_before_short_frames() {
+        let mut buf = BytesMut::with_capacity(2048);
+        buf.put_slice(b"  {}\n\n[]");
+
+        let mut codec = StreamCodec::stream_incoming();
+
+        let request = codec
+            .decode(&mut buf)
+            .expect("leading whitespace decode should not error")
+            .expect("first short frame should be decoded");
+        assert_eq!(request, "{}");
+
+        let request2 = codec
+            .decode(&mut buf)
+            .expect("second short frame should not error")
+            .expect("second short frame should be decoded");
+        assert_eq!(request2, "[]");
     }
 
     #[test]

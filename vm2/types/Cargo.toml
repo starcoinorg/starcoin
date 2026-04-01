@@ -11,7 +11,7 @@ schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
 starcoin-uint = { workspace = true }
 starcoin-state-store-api = { workspace = true }
 starcoin-vm2-vm-types = { path = "../vm-types", package = "starcoin-vm-types" }
@@ -20,11 +20,11 @@ starcoin-vm2-abi-decoder = { workspace = true }
 starcoin-vm2-abi-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 once_cell = { workspace = true }
 serde_bytes = { workspace = true }
 vm-status-translator = { path = "../vm-status-translator", package = "starcoin-status-translator" }

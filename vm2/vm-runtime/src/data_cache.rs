@@ -978,15 +978,15 @@ impl<S: StateView> CompiledModuleView for StorageAdapter<'_, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> StorageAdapter<S>;
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S>;
     fn as_move_resolver_with_delayed_fields(
         &self,
         delayed_fields_enabled: bool,
-    ) -> StorageAdapter<S>;
+    ) -> StorageAdapter<'_, S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> StorageAdapter<S> {
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         self.as_move_resolver_with_delayed_fields(
             features.is_aggregator_v2_delayed_fields_enabled(),
@@ -996,7 +996,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
     fn as_move_resolver_with_delayed_fields(
         &self,
         delayed_fields_enabled: bool,
-    ) -> StorageAdapter<S> {
+    ) -> StorageAdapter<'_, S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         let vm_config = VMConfig::fetch_config(self);
@@ -1142,7 +1142,7 @@ pub(crate) mod tests {
     pub(crate) fn as_resolver_with_group_size_kind<S: StateView>(
         state_view: &S,
         group_size_kind: GroupSizeKind,
-    ) -> StorageAdapter<S> {
+    ) -> StorageAdapter<'_, S> {
         assert_ne!(group_size_kind, GroupSizeKind::AsSum, "not yet supported");
 
         let (gas_feature_version, resource_groups_split_in_vm_change_set_enabled) =

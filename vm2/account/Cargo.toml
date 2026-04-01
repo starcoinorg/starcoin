@@ -9,7 +9,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 starcoin-account-api = { path = "api", package = "starcoin-vm2-account-api" }
 starcoin-config = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
 starcoin-decrypt = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-storage = { workspace = true }

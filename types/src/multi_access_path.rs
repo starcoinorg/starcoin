@@ -68,13 +68,6 @@ impl<'de> Deserialize<'de> for MultiAccessPath {
             }
         } else {
             #[derive(Deserialize)]
-            #[serde(field_identifier, rename_all = "lowercase")]
-            enum Field {
-                VM1,
-                VM2,
-            }
-
-            #[derive(Deserialize)]
             #[serde(untagged)]
             enum Inner {
                 VM1(AccessPath),

@@ -420,7 +420,11 @@ pub enum NotificationsHandshakeError {
     Io(io::Error),
 
     /// Initial message or handshake was too large.
-    #[display(fmt = "Initial message or handshake was too large: {}", requested)]
+    #[display(
+        fmt = "Initial message or handshake was too large: {} > {}",
+        requested,
+        max
+    )]
     TooLarge {
         /// Size requested by the remote.
         requested: usize,

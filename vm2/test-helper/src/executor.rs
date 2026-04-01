@@ -312,8 +312,7 @@ pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> Contract
     output
         .events()
         .iter()
-        .filter(|event| event.is_typed::<Event>())
-        .next_back()
+        .rfind(|event| event.is_typed::<Event>())
         .cloned()
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }
@@ -322,8 +321,7 @@ pub fn expect_decode_event<Event: MoveResource>(output: &TransactionOutput) -> E
     output
         .events()
         .iter()
-        .filter(|event| event.is_typed::<Event>())
-        .next_back()
+        .rfind(|event| event.is_typed::<Event>())
         .cloned()
         .and_then(|event| event.decode_event::<Event>().ok())
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))

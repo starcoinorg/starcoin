@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::to_invalid_param_err;
 use crate::module::txfactory_rpc::TxFactoryStatusHandle;
+use crate::module::{to_invalid_param_err, to_invalid_request_err};
 use jsonrpsee::core::RpcResult;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
@@ -66,8 +66,8 @@ impl DebugApiServer for DebugRpcImpl {
 
     fn panic(&self) -> RpcResult<()> {
         if !self.config.net().is_test() || self.config.net().is_dev() {
-            return Err(crate::module::map_jsonrpc_err(anyhow::anyhow!(
-                "invalid request"
+            return Err(crate::module::map_jsonrpc_err(to_invalid_request_err(
+                anyhow::anyhow!("invalid request"),
             )));
         }
         panic!("DebugApi.panic")
@@ -75,8 +75,8 @@ impl DebugApiServer for DebugRpcImpl {
 
     fn sleep(&self, time: u64) -> RpcResult<()> {
         if !self.config.net().is_test() && !self.config.net().is_dev() {
-            return Err(crate::module::map_jsonrpc_err(anyhow::anyhow!(
-                "invalid request"
+            return Err(crate::module::map_jsonrpc_err(to_invalid_request_err(
+                anyhow::anyhow!("invalid request"),
             )));
         }
         self.config.net().time_service().sleep(time);

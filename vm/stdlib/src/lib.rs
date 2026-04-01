@@ -132,8 +132,7 @@ pub fn stdlib_versions() -> Vec<StdlibVersion> {
 pub fn stdlib_latest_stable_version() -> Option<StdlibVersion> {
     G_STDLIB_VERSIONS
         .iter()
-        .filter(|version| !version.is_latest())
-        .next_back()
+        .rfind(|version| !version.is_latest())
         .cloned()
 }
 
