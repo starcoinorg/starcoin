@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use starcoin_chain::{verifier::FullVerifier, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
@@ -16,7 +17,10 @@ use std::sync::atomic::AtomicBool;
 #[cfg(test)]
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        watch,
+    },
     task::JoinHandle,
 };
 
@@ -25,8 +29,6 @@ const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
 static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
 #[cfg(test)]
 static TEST_ASSUME_PARENTS_READY: AtomicBool = AtomicBool::new(false);
-#[cfg(test)]
-static TEST_PARENT_CHECK_INVOCATIONS: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
 pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
@@ -36,16 +38,6 @@ pub(crate) fn set_test_execute_delay_ms(delay_ms: u64) {
 #[cfg(test)]
 pub(crate) fn set_test_assume_parents_ready(ready: bool) {
     TEST_ASSUME_PARENTS_READY.store(ready, Ordering::Relaxed);
-}
-
-#[cfg(test)]
-pub(crate) fn reset_test_parent_check_invocations() {
-    TEST_PARENT_CHECK_INVOCATIONS.store(0, Ordering::Relaxed);
-}
-
-#[cfg(test)]
-pub(crate) fn test_parent_check_invocations() -> u64 {
-    TEST_PARENT_CHECK_INVOCATIONS.load(Ordering::Relaxed)
 }
 
 #[allow(dead_code)]
@@ -66,6 +58,7 @@ pub struct DagBlockExecutor {
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
     execute_timeout_ms: u64,
+    parent_ready_rx: watch::Receiver<u64>,
 }
 
 impl DagBlockExecutor {
@@ -78,6 +71,7 @@ impl DagBlockExecutor {
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
         execute_timeout_ms: u64,
+        parent_ready_rx: watch::Receiver<u64>,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
@@ -89,6 +83,7 @@ impl DagBlockExecutor {
             vm_metrics,
             dag,
             execute_timeout_ms,
+            parent_ready_rx,
         };
         anyhow::Ok((sender_for_main, executor))
     }
@@ -107,8 +102,6 @@ impl DagBlockExecutor {
             if ready_parent_cache.contains(parent_id) {
                 continue;
             }
-            #[cfg(test)]
-            TEST_PARENT_CHECK_INVOCATIONS.fetch_add(1, Ordering::Relaxed);
             let header = match storage.get_block_header_by_hash(*parent_id)? {
                 Some(header) => header,
                 None => return Ok(false),
@@ -124,6 +117,57 @@ impl DagBlockExecutor {
             ready_parent_cache.insert(*parent_id);
         }
         Ok(true)
+    }
+
+    async fn wait_for_parents_ready(
+        &mut self,
+        header: &BlockHeader,
+        ready_parent_cache: &mut HashSet<HashValue>,
+    ) -> anyhow::Result<()> {
+        let wait_begin = Instant::now();
+        loop {
+            match Self::waiting_for_parents(
+                &self.dag,
+                self.storage.clone(),
+                header.parents_hash(),
+                ready_parent_cache,
+            ) {
+                Ok(true) => return Ok(()),
+                Ok(false) => {}
+                Err(err) => return Err(err),
+            }
+
+            let waited_ms = wait_begin.elapsed().as_millis();
+            if waited_ms >= u128::from(MAX_TOTAL_WAITING_TIME) {
+                return Err(anyhow::format_err!(
+                    "failed to check parents: {:?}, for reason: timeout",
+                    header
+                ));
+            }
+
+            let waited_u64 = waited_ms.min(u128::from(u64::MAX)) as u64;
+            let remaining_ms = MAX_TOTAL_WAITING_TIME.saturating_sub(waited_u64);
+            match tokio::time::timeout(
+                Duration::from_millis(remaining_ms),
+                self.parent_ready_rx.changed(),
+            )
+            .await
+            {
+                Ok(Ok(())) => {}
+                Ok(Err(_)) => {
+                    return Err(anyhow::format_err!(
+                        "failed to wait for parent-ready event: channel closed, block: {:?}",
+                        header
+                    ));
+                }
+                Err(_) => {
+                    return Err(anyhow::format_err!(
+                        "failed to check parents: {:?}, for reason: timeout",
+                        header
+                    ));
+                }
+            }
+        }
     }
 
     pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
@@ -149,66 +193,27 @@ impl DagBlockExecutor {
                             block.header().id()
                         );
 
-                        let mut total_waiting_time: u64 = 0;
-                        let waiting_per_time: u64 = 100;
-                        loop {
-                            match Self::waiting_for_parents(
-                                &self.dag,
-                                self.storage.clone(),
-                                block.header().parents_hash(),
-                                &mut ready_parent_cache,
-                            ) {
-                                Ok(true) => break,
-                                Ok(false) => {
-                                    if total_waiting_time >= MAX_TOTAL_WAITING_TIME {
-                                        error!(
-                                            "failed to check parents: {:?}, for reason: timeout",
-                                            header
-                                        );
-                                        match self
-                                            .sender
-                                            .send(ExecuteState::Error(Box::new(header.clone())))
-                                            .await
-                                        {
-                                            Ok(_) => (),
-                                            Err(e) => {
-                                                error!(
-                                                    "failed to send error state: {:?}, for reason: {:?}",
-                                                    header, e
-                                                );
-                                                return;
-                                            }
-                                        }
-                                        return;
-                                    }
-                                    tokio::task::yield_now().await;
-                                    tokio::time::sleep(tokio::time::Duration::from_millis(
-                                        waiting_per_time,
-                                    ))
-                                    .await;
-                                    total_waiting_time =
-                                        total_waiting_time.saturating_add(waiting_per_time);
-                                }
+                        if let Err(e) = self
+                            .wait_for_parents_ready(&header, &mut ready_parent_cache)
+                            .await
+                        {
+                            error!("failed to check parents: {:?}, for reason: {:?}", header, e);
+                            match self
+                                .sender
+                                .send(ExecuteState::Error(Box::new(header.clone())))
+                                .await
+                            {
+                                Ok(_) => (),
                                 Err(e) => {
                                     error!(
-                                        "failed to check parents: {:?}, for reason: {:?}",
+                                        "failed to send error state: {:?}, for reason: {:?}",
                                         header, e
                                     );
-                                    match self
-                                        .sender
-                                        .send(ExecuteState::Error(Box::new(header.clone())))
-                                        .await
-                                    {
-                                        Ok(_) => (),
-                                        Err(e) => {
-                                            error!("failed to send error state: {:?}, for reason: {:?}", header, e);
-                                            return;
-                                        }
-                                    }
                                     return;
                                 }
                             }
-                        }
+                            return;
+                        };
 
                         match chain {
                             None => {

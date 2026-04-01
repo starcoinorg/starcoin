@@ -8,7 +8,10 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Block;
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        watch,
+    },
     task::JoinHandle,
 };
 
@@ -46,6 +49,8 @@ pub struct DagBlockSender<'a> {
     parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
     next_worker_id: ParallelWorkerId,
     free_worker_ids: BinaryHeap<Reverse<ParallelWorkerId>>,
+    parent_ready_signal_tx: watch::Sender<u64>,
+    parent_ready_signal_seq: u64,
     notifier: &'a mut dyn ContinueChainOperator,
 }
 
@@ -63,6 +68,7 @@ impl<'a> DagBlockSender<'a> {
         parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
         notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
+        let (parent_ready_signal_tx, _) = watch::channel(0_u64);
         Self {
             sync_dag_store,
             executors: vec![],
@@ -77,6 +83,8 @@ impl<'a> DagBlockSender<'a> {
             parallel_info_service,
             next_worker_id: 0,
             free_worker_ids: BinaryHeap::new(),
+            parent_ready_signal_tx,
+            parent_ready_signal_seq: 0,
             notifier,
         }
     }
@@ -126,6 +134,13 @@ impl<'a> DagBlockSender<'a> {
             anyhow::format_err!("parallel worker id overflow, cannot allocate new worker id")
         })?;
         Ok(worker_id)
+    }
+
+    fn signal_parent_ready(&mut self) {
+        self.parent_ready_signal_seq = self.parent_ready_signal_seq.wrapping_add(1);
+        let _ = self
+            .parent_ready_signal_tx
+            .send_replace(self.parent_ready_signal_seq);
     }
 
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
@@ -217,6 +232,7 @@ impl<'a> DagBlockSender<'a> {
                 self.vm_metrics.clone(),
                 self.dag.clone(),
                 self.execute_timeout_ms,
+                self.parent_ready_signal_tx.subscribe(),
             )?;
 
             let worker_id = self.allocate_worker_id()?;
@@ -240,11 +256,13 @@ impl<'a> DagBlockSender<'a> {
     }
 
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
+        let mut has_new_executed = false;
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => {
                     if let ExecuteState::Executed(executed_block) = state {
                         info!("finish to execute block {:?}", executed_block.header());
+                        has_new_executed = true;
                         self.notifier.notify((*executed_block).clone())?;
                         Self::report_worker_synced_block(
                             &self.parallel_info_service,
@@ -270,6 +288,9 @@ impl<'a> DagBlockSender<'a> {
                 },
             }
         }
+        if has_new_executed {
+            self.signal_parent_ready();
+        }
 
         let len = self.executors.len();
         self.executors
@@ -293,6 +314,7 @@ impl<'a> DagBlockSender<'a> {
                 self.abort_workers();
                 break;
             }
+            let mut has_new_executed = false;
             for worker in &mut self.executors {
                 if let ExecuteState::Closed = worker.state {
                     continue;
@@ -302,6 +324,7 @@ impl<'a> DagBlockSender<'a> {
                     Ok(state) => {
                         if let ExecuteState::Executed(executed_block) = state {
                             info!("finish to execute block {:?}", executed_block.header());
+                            has_new_executed = true;
                             Self::report_worker_synced_block(
                                 &self.parallel_info_service,
                                 worker.worker_id,
@@ -325,6 +348,9 @@ impl<'a> DagBlockSender<'a> {
                         }
                     },
                 }
+            }
+            if has_new_executed {
+                self.signal_parent_ready();
             }
 
             if self
