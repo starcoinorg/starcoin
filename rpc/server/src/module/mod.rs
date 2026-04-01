@@ -24,248 +24,31 @@ pub use self::miner_rpc::MinerRpcImpl;
 pub use self::network_manager_rpc::NetworkManagerRpcImpl;
 pub use self::node_manager_rpc::NodeManagerRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
-pub use self::pubsub::{PubSubImpl, PubSubService, PubSubServiceFactory};
+pub use self::pubsub::{pubsub_methods, PubSubImpl, PubSubService, PubSubServiceFactory};
 pub use self::state_rpc::StateRpcImpl;
 pub use self::sync_manager_rpc::SyncManagerRpcImpl;
 pub use self::txfactory_rpc::TxFactoryStatusHandle;
 pub use self::txpool_rpc::TxPoolRpcImpl;
 
-use actix::MailboxError;
-use anyhow::Error;
-use hex::FromHexError;
-use jsonrpc_core::ErrorCode;
-use starcoin_account_api::error::AccountError;
-use starcoin_rpc_api::types::TransactionStatusView;
-use starcoin_types::multi_transaction::MultiTransactionError;
-use starcoin_vm2_types::view::TransactionStatusView as TransactionStatusView2;
-use starcoin_vm2_vm_types::transaction::{
-    CallError as CallError2, TransactionError as TransactionError2,
-    TransactionStatus as TransactionStatus2,
-};
-use starcoin_vm_types::transaction::{CallError, TransactionError, TransactionStatus};
-use starcoin_vm_types::vm_status::VMStatus;
-pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
-    // if err is a jsonrpc error, return directly.
-    if err.is::<jsonrpc_core::Error>() {
-        return err.downcast::<jsonrpc_core::Error>().unwrap();
-    }
-    // TODO: add more error downcasting here
-    let rpc_error: RpcError = if err.is::<TransactionError>() {
-        err.downcast::<TransactionError>().unwrap().into()
-    } else if err.is::<bcs_ext::Error>() {
-        err.downcast::<bcs_ext::Error>().unwrap().into()
-    } else if err.is::<AccountError>() {
-        err.downcast::<AccountError>().unwrap().into()
-    } else if err.is::<MailboxError>() {
-        err.downcast::<MailboxError>().unwrap().into()
-    } else if err.is::<VMStatus>() {
-        err.downcast::<VMStatus>().unwrap().into()
-    } else {
-        err.into()
-    };
-    rpc_error.into()
+pub fn map_err(err: anyhow::Error) -> anyhow::Error {
+    err
 }
 
-fn convert_to_rpc_error<T: Into<RpcError>>(err: T) -> jsonrpc_core::Error {
-    let err = err.into();
+pub fn map_jsonrpc_err(err: anyhow::Error) -> jsonrpsee::types::ErrorObjectOwned {
+    jsonrpsee::types::ErrorObjectOwned::owned(
+        jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+        err.to_string(),
+        None::<()>,
+    )
+}
+
+pub fn convert_to_rpc_error<T: Into<anyhow::Error>>(err: T) -> anyhow::Error {
     err.into()
 }
 
-/// A wrapper for jsonrpc error.
-/// It's necessary because
-/// only traits defined in the current crate can be implemented for arbitrary types.
-#[derive(Debug)]
-struct RpcError(jsonrpc_core::Error);
-
-#[allow(clippy::from_over_into)]
-impl Into<jsonrpc_core::Error> for RpcError {
-    fn into(self) -> jsonrpc_core::Error {
-        self.0
-    }
-}
-
-impl From<anyhow::Error> for RpcError {
-    fn from(e: Error) -> Self {
-        Self(jsonrpc_core::Error {
-            code: jsonrpc_core::ErrorCode::InternalError,
-            message: e.to_string(),
-            data: None,
-        })
-    }
-}
-
-const TXN_ERROR_BASE: i64 = -50000;
-const ACCOUNT_ERROR_BASE: i64 = -60000;
-
-impl From<AccountError> for RpcError {
-    fn from(err: AccountError) -> Self {
-        let rpc_error = match err {
-            AccountError::StoreError(error) => jsonrpc_core::Error {
-                code: ErrorCode::ServerError(ACCOUNT_ERROR_BASE),
-                message: error.to_string(),
-                data: None,
-            },
-            e => jsonrpc_core::Error {
-                code: ErrorCode::InvalidParams,
-                message: e.to_string(),
-                data: None,
-            },
-        };
-        Self(rpc_error)
-    }
-}
-
-impl From<TransactionError> for RpcError {
-    fn from(err: TransactionError) -> Self {
-        let err_message = err.to_string();
-        let (err_code, err_data) = match err {
-            TransactionError::AlreadyImported
-            | TransactionError::Old
-            | TransactionError::InsufficientGasPrice { .. }
-            | TransactionError::TooCheapToReplace { .. }
-            | TransactionError::InsufficientGas { .. }
-            | TransactionError::InsufficientBalance { .. }
-            | TransactionError::GasLimitExceeded { .. }
-            | TransactionError::SenderBanned
-            | TransactionError::RecipientBanned
-            | TransactionError::CodeBanned
-            | TransactionError::InvalidChainId
-            | TransactionError::InvalidSignature(..)
-            | TransactionError::NotAllowed
-            | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
-            TransactionError::LimitReached(..) => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
-            TransactionError::CallErr(call_err) => match call_err {
-                CallError::TransactionNotFound => (ErrorCode::InvalidParams, None),
-                CallError::StatePruned | CallError::StateCorrupt => {
-                    (ErrorCode::ServerError(TXN_ERROR_BASE + 1), None)
-                }
-                CallError::ExecutionError(vm_status) => (
-                    ErrorCode::ServerError(TXN_ERROR_BASE + 2),
-                    Some(
-                        // translate to jsonrpc types
-                        serde_json::to_value(TransactionStatusView::from(TransactionStatus::from(
-                            vm_status,
-                        )))
-                        .expect("vm status to json should be ok"),
-                    ),
-                ),
-            },
-            TransactionError::APIInterrupted(_) => (ErrorCode::InternalError, None),
-        };
-        Self(jsonrpc_core::Error {
-            code: err_code,
-            message: err_message,
-            data: err_data,
-        })
-    }
-}
-
-impl From<hex::FromHexError> for RpcError {
-    fn from(err: FromHexError) -> Self {
-        Self(jsonrpc_core::Error {
-            code: ErrorCode::InvalidParams,
-            message: err.to_string(),
-            data: None,
-        })
-    }
-}
-impl From<bcs_ext::Error> for RpcError {
-    fn from(err: bcs_ext::Error) -> Self {
-        Self(jsonrpc_core::Error {
-            code: ErrorCode::InvalidParams,
-            message: err.to_string(),
-            data: None,
-        })
-    }
-}
-
-impl From<MailboxError> for RpcError {
-    fn from(err: MailboxError) -> Self {
-        Self(jsonrpc_core::Error {
-            code: ErrorCode::InternalError,
-            message: err.to_string(),
-            data: None,
-        })
-    }
-}
-
-impl From<VMStatus> for RpcError {
-    fn from(vm_status: VMStatus) -> Self {
-        Self(jsonrpc_core::Error {
-            code: ErrorCode::InvalidParams,
-            message: vm_status.to_string(),
-            data: Some(
-                // use jsonrpc types do serialization.
-                serde_json::to_value(TransactionStatusView::from(TransactionStatus::from(
-                    vm_status,
-                )))
-                .expect("vm status to json should be ok"),
-            ),
-        })
-    }
-}
-
-pub fn to_invalid_param_err<E>(err: E) -> jsonrpc_core::Error
+pub fn to_invalid_param_err<E>(err: E) -> anyhow::Error
 where
     E: Into<anyhow::Error>,
 {
-    let anyhow_err: anyhow::Error = err.into();
-    let message = format!("Invalid param error: {:?}", anyhow_err);
-    jsonrpc_core::Error::invalid_params(message)
-}
-
-impl From<TransactionError2> for RpcError {
-    fn from(err: TransactionError2) -> Self {
-        let err_message = err.to_string();
-        let (err_code, err_data) = match err {
-            TransactionError2::AlreadyImported
-            | TransactionError2::Old
-            | TransactionError2::InsufficientGasPrice { .. }
-            | TransactionError2::TooCheapToReplace { .. }
-            | TransactionError2::InsufficientGas { .. }
-            | TransactionError2::InsufficientBalance { .. }
-            | TransactionError2::GasLimitExceeded { .. }
-            | TransactionError2::SenderBanned
-            | TransactionError2::RecipientBanned
-            | TransactionError2::CodeBanned
-            | TransactionError2::InvalidChainId
-            | TransactionError2::InvalidSignature(..)
-            | TransactionError2::NotAllowed
-            | TransactionError2::TooBig => (ErrorCode::InvalidParams, None),
-            TransactionError2::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
-            TransactionError2::CallErr(call_err) => match call_err {
-                CallError2::TransactionNotFound => (ErrorCode::InvalidParams, None),
-                CallError2::StatePruned | CallError2::StateCorrupt => {
-                    (ErrorCode::ServerError(TXN_ERROR_BASE + 1), None)
-                }
-                CallError2::ExecutionError(vm_status) => (
-                    ErrorCode::ServerError(TXN_ERROR_BASE + 2),
-                    Some(
-                        // translate to jsonrpc types
-                        serde_json::to_value(TransactionStatusView2::from(
-                            TransactionStatus2::from(vm_status),
-                        ))
-                        .expect("vm status to json should be ok"),
-                    ),
-                ),
-            },
-            TransactionError2::APIInterrupted(_) => (ErrorCode::InternalError, None),
-        };
-        RpcError(jsonrpc_core::Error {
-            code: err_code,
-            message: err_message,
-            data: err_data,
-        })
-    }
-}
-impl From<MultiTransactionError> for RpcError {
-    fn from(err: MultiTransactionError) -> Self {
-        match err {
-            MultiTransactionError::VM1(error) => error.into(),
-            MultiTransactionError::VM2(error) => error.into(),
-            MultiTransactionError::APIInterrupted(api_interrupted_error) => {
-                Error::from(api_interrupted_error).into()
-            }
-        }
-    }
+    anyhow::anyhow!("Invalid param error: {:?}", err.into())
 }

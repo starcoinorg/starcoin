@@ -43,7 +43,7 @@ impl CommandAction for CallApiCommand {
 
         let params = match opt.params.as_ref() {
             Some(param) => serde_json::from_str(param.as_str())?,
-            None => Params::None,
+            None => Params::Null,
         };
 
         let result = ctx

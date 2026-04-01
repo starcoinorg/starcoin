@@ -92,8 +92,9 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                 chain_state_service2.clone(),
             )
         });
-        let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();
-        let pubsub_api = Some(PubSubImpl::new(pubsub_service));
+        let pubsub_api = ctx
+            .service_ref_opt::<PubSubService>()?
+            .map(|service_ref| PubSubImpl::new(service_ref.clone()));
         let debug_api = Some(DebugRpcImpl::new(
             config.clone(),
             log_handler,

@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
-use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
 pub use crate::remote_state_reader2::{
     AsyncRemoteStateReader, RemoteStateReader as RemoteStateReader2,
 };
 use actix::{Addr, Arbiter, System};
-use anyhow::anyhow;
 pub use async_client::AsyncRpcClient;
 use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
 use futures::{TryStream, TryStreamExt};
-use jsonrpc_client_transports::RawClient;
-pub use jsonrpc_core::Params;
-use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use network_api::PeerStrategy;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::Multiaddr;
 use parking_lot::Mutex;
-use serde_json::Value;
+pub use rpc_clients::{
+    connect_http, connect_ipc, connect_ws, AccountClient, AccountClient2, ChainClient,
+    ContractClient, ContractClient2, DebugClient, MinerClient, NetworkManagerClient, NodeClient,
+    NodeManagerClient, PubSubClient, RawClient, RpcChannel, RpcError, StateClient, StateClient2,
+    SyncManagerClient, TxPoolClient,
+};
+pub use serde_json::Value as Params;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
@@ -29,6 +30,7 @@ use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{
     GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
 };
+use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::state::{
@@ -44,12 +46,6 @@ use starcoin_rpc_api::types::{
     TransactionEventResponse, TransactionEventView, TransactionInfoView, TransactionInfoViewEnum,
     TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
-use starcoin_rpc_api::{
-    account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
-    miner::MinerClient, multi_types::MultiSignedUserTransactionView,
-    network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
-    state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
-};
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_txpool_api::TxPoolStatus;
@@ -62,10 +58,6 @@ use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm2_rpc_api::block_info_view2::BlockInfoView2;
 use starcoin_vm2_rpc_api::transaction_view2::TransactionView2;
-use starcoin_vm2_rpc_api::{
-    account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
-    state_api::StateClient as StateClient2,
-};
 use starcoin_vm2_types::view::{
     TransactionEventView as TransactionEventView2, TransactionInfoView as TransactionInfoView2,
 };
@@ -81,24 +73,36 @@ use tokio::runtime::Runtime;
 
 mod async_client;
 pub mod chain_watcher;
-mod pubsub_client;
 mod remote_state_reader;
 mod remote_state_reader2;
+mod rpc_clients;
 mod vm2;
 
 #[derive(Clone)]
 pub enum ConnSource {
     Ipc(PathBuf),
+    Http(String),
     WebSocket(String),
-    Local(Box<RpcChannel>),
+    Local(RpcChannel),
 }
 
 impl std::fmt::Debug for ConnSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
+            Self::Http(url) => write!(f, "Http({})", url),
             Self::WebSocket(url) => write!(f, "WebSocket({})", url),
             Self::Local(_) => write!(f, "Local"),
+        }
+    }
+}
+
+impl ConnSource {
+    fn supports_pubsub(&self) -> bool {
+        match self {
+            Self::Ipc(_) | Self::WebSocket(_) => true,
+            Self::Http(_) => false,
+            Self::Local(channel) => channel.supports_pubsub(),
         }
     }
 }
@@ -115,6 +119,7 @@ where
 pub struct RpcClient {
     inner: Mutex<Option<RpcClientInner>>,
     provider: ConnectionProvider,
+    supports_pubsub: bool,
     chain_watcher: Addr<ChainWatcher>,
     //hold the watch thread handle.
     watcher_thread: JoinHandle<()>,
@@ -142,17 +147,16 @@ impl ConnectionProvider {
         self.runtime.lock().block_on(future)
     }
 
-    fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
+    fn get_rpc_channel(&self) -> anyhow::Result<RpcChannel, RpcError> {
         self.block_on(async { self.get_rpc_channel_async().await })
     }
 
-    async fn get_rpc_channel_async(
-        &self,
-    ) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
+    async fn get_rpc_channel_async(&self) -> anyhow::Result<RpcChannel, RpcError> {
         match self.conn_source.clone() {
-            ConnSource::Ipc(sock_path) => ipc::connect(sock_path).await,
-            ConnSource::WebSocket(url) => ws::try_connect(url.as_str())?.await,
-            ConnSource::Local(channel) => Ok(*channel),
+            ConnSource::Ipc(sock_path) => connect_ipc(sock_path).await,
+            ConnSource::Http(url) => connect_http(url.as_str()).await,
+            ConnSource::WebSocket(url) => connect_ws(url.as_str()).await,
+            ConnSource::Local(channel) => Ok(channel),
         }
     }
 }
@@ -160,6 +164,7 @@ impl ConnectionProvider {
 impl RpcClient {
     pub(crate) fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
+        let supports_pubsub = conn_source.supports_pubsub();
         let provider = ConnectionProvider::new(conn_source, Runtime::new()?);
         let inner: RpcClientInner = provider.get_rpc_channel().map_err(map_err)?.into(); //Self::create_client_inner(conn_source.clone()).map_err(map_err)?;
         let pubsub_client = inner.pubsub_client.clone();
@@ -184,12 +189,15 @@ impl RpcClient {
             });
         });
         let watcher = futures::executor::block_on(rx).expect("Init chain watcher fail.");
-        watcher.do_send(StartSubscribe {
-            client: pubsub_client,
-        });
+        if supports_pubsub {
+            watcher.do_send(StartSubscribe {
+                client: pubsub_client,
+            });
+        }
         Ok(Self {
             inner: Mutex::new(Some(inner)),
             provider,
+            supports_pubsub,
             chain_watcher: watcher,
             watcher_thread: handle,
             watcher_thread_exit_sender: handle_exit_sender,
@@ -200,12 +208,16 @@ impl RpcClient {
         Self::new(ConnSource::WebSocket(url.to_string()))
     }
 
+    pub fn connect_http(url: &str) -> anyhow::Result<Self> {
+        Self::new(ConnSource::Http(url.to_string()))
+    }
+
     pub fn connect_local<S>(rpc_service: S) -> anyhow::Result<Self>
     where
         S: RpcAsyncService,
     {
         let client = futures::executor::block_on(async { rpc_service.connect_local().await })?;
-        Self::new(ConnSource::Local(Box::new(client)))
+        Self::new(ConnSource::Local(RpcChannel::new_async(client)))
     }
 
     pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
@@ -218,6 +230,11 @@ impl RpcClient {
         txn_hash: HashValue,
         timeout: Option<Duration>,
     ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
+        if !self.supports_pubsub {
+            return Err(anyhow::anyhow!(
+                "watch_txn requires websocket/ipc transport; http/https does not support pubsub"
+            ));
+        }
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
@@ -233,6 +250,11 @@ impl RpcClient {
         &self,
         block_number: BlockNumber,
     ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
+        if !self.supports_pubsub {
+            return Err(anyhow::anyhow!(
+                "watch_block requires websocket/ipc transport; http/https does not support pubsub"
+            ));
+        }
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
@@ -970,7 +992,7 @@ impl RpcClient {
                 block_hash,
                 transaction_global_index,
                 event_index,
-                access_path.map(Into::into),
+                access_path,
             )
         })
         .map_err(map_err)
@@ -988,7 +1010,7 @@ impl RpcClient {
                 block_hash,
                 transaction_global_index,
                 event_index,
-                access_path.map(Into::into),
+                access_path,
             )
         })
         .map_err(map_err)
@@ -1091,10 +1113,10 @@ impl RpcClient {
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F + Send,
-    ) -> Result<T, jsonrpc_client_transports::RpcError>
+    ) -> Result<T, RpcError>
     where
         T: Send,
-        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
+        F: std::future::Future<Output = Result<T, RpcError>> + Send,
     {
         self.provider
             .block_on(async { self.call_rpc_async(f).await })
@@ -1103,9 +1125,9 @@ impl RpcClient {
     async fn call_rpc_async<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F + Send,
-    ) -> Result<T, jsonrpc_client_transports::RpcError>
+    ) -> Result<T, RpcError>
     where
-        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
+        F: std::future::Future<Output = Result<T, RpcError>> + Send,
     {
         let inner_opt = self.inner.lock().as_ref().cloned();
         let inner = match inner_opt {
@@ -1121,14 +1143,16 @@ impl RpcClient {
                     .await
                     .map(|c| c.into())?;
                 *(self.inner.lock()) = Some(new_inner.clone());
-                self.chain_watcher.do_send(StartSubscribe {
-                    client: new_inner.pubsub_client.clone(),
-                });
+                if self.supports_pubsub {
+                    self.chain_watcher.do_send(StartSubscribe {
+                        client: new_inner.pubsub_client.clone(),
+                    });
+                }
                 new_inner
             }
         };
         let result = f(inner).await;
-        if let Err(jsonrpc_client_transports::RpcError::Other(e)) = &result {
+        if let Err(e) = &result {
             error!("rpc error due to {}", e);
             *(self.inner.lock()) = None;
         }
@@ -1196,15 +1220,11 @@ impl RpcClient {
         rpc_method: String,
         message: StrView<Vec<u8>>,
     ) -> anyhow::Result<StrView<Vec<u8>>> {
-        self.call_rpc_blocking(|inner| {
-            inner
-                .network_client
-                .call_peer(peer_id, rpc_method.into(), message)
-        })
-        .map_err(map_err)
+        self.call_rpc_blocking(|inner| inner.network_client.call_peer(peer_id, rpc_method, message))
+            .map_err(map_err)
     }
 
-    pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Value> {
+    pub fn call_raw_api(&self, api: &str, params: Params) -> anyhow::Result<Params> {
         self.call_rpc_blocking(|inner| inner.raw_client.call_method(api, params))
             .map_err(map_err)
     }
@@ -1273,8 +1293,11 @@ impl RpcClientInner {
     }
 }
 
-fn map_err(rpc_err: jsonrpc_client_transports::RpcError) -> anyhow::Error {
-    anyhow!(format!("{}", rpc_err))
+fn map_err<E>(rpc_err: E) -> anyhow::Error
+where
+    E: Into<anyhow::Error>,
+{
+    rpc_err.into()
 }
 
 impl From<RpcChannel> for RpcClientInner {

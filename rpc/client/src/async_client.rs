@@ -9,33 +9,34 @@ use std::sync::{
 
 // Third-party crates
 use futures::{TryStream, TryStreamExt};
-use jsonrpc_client_transports::{
-    transports::{ipc, ws},
-    RpcChannel, RpcError,
-};
 use log::error;
 use parking_lot::Mutex;
 
 // Starcoin crates
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::{
-    chain::GetBlockOption,
+    chain::{GetBlockOption, GetTransactionOption},
     node::NodeInfo,
-    types::{BlockView, MintedBlockView, MultiStateView},
+    types::{BlockInfoView, BlockView, ChainInfoView, MintedBlockView, MultiStateView},
 };
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_rpc_api::{block_info_view2::BlockInfoView2, transaction_view2::TransactionView2};
 use starcoin_vm2_types::{
     account_address::AccountAddress,
-    view::{StateWithProofView, TransactionInfoView},
+    view::{
+        AccountStateSetView, StateWithProofView, StateWithTableItemProofView, TransactionInfoView,
+    },
 };
 use starcoin_vm2_vm_types::{
     state_store::state_key::StateKey,
+    state_store::table::TableHandle,
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
 
 // Local crate
-use crate::{map_err, ConnSource, RpcClientInner};
+use crate::rpc_clients::{connect_http, connect_ipc, connect_ws};
+use crate::{map_err, rpc_clients::RpcChannel, rpc_clients::RpcError, ConnSource, RpcClientInner};
 
 pub struct AsyncRpcClient {
     inner: Arc<Mutex<Option<Arc<RpcClientInner>>>>,
@@ -53,9 +54,10 @@ impl AsyncConnProvider {
     }
     pub async fn get_rpc_channel_async(&self) -> anyhow::Result<RpcChannel, RpcError> {
         match self.conn_source.clone() {
-            ConnSource::Ipc(sock_path) => ipc::connect(sock_path).await,
-            ConnSource::WebSocket(url) => ws::try_connect(url.as_str())?.await,
-            ConnSource::Local(channel) => Ok(*channel),
+            ConnSource::Ipc(sock_path) => connect_ipc(sock_path).await,
+            ConnSource::Http(url) => connect_http(url.as_str()).await,
+            ConnSource::WebSocket(url) => connect_ws(url.as_str()).await,
+            ConnSource::Local(channel) => Ok(channel),
         }
     }
 }
@@ -77,7 +79,7 @@ impl AsyncRpcClient {
     }
     async fn call_rpc_async<F, T>(
         &self,
-        f: impl FnOnce(Arc<RpcClientInner>) -> F + Send,
+        f: impl FnOnce(RpcClientInner) -> F + Send,
     ) -> Result<T, RpcError>
     where
         F: std::future::Future<Output = Result<T, RpcError>> + Send,
@@ -88,7 +90,7 @@ impl AsyncRpcClient {
                 Some(inner.clone())
             } else if self.connecting.load(Ordering::SeqCst) {
                 // quick failing if someone is trying to connect
-                return Err(RpcError::Client("re-connecting to RPC server...".into()));
+                return Err(anyhow::anyhow!("re-connecting to RPC server..."));
             } else {
                 // no other client is re-connecting, so we can try to connect and stop following clients
                 self.connecting.store(true, Ordering::SeqCst);
@@ -114,8 +116,8 @@ impl AsyncRpcClient {
                 new_inner
             }
         };
-        let result = f(inner_client).await;
-        if let Err(RpcError::Other(e)) = &result {
+        let result = f(inner_client.as_ref().clone()).await;
+        if let Err(e) = &result {
             error!("rpc error due to {}", e);
             {
                 let mut inner_opt = self.inner.lock();
@@ -202,6 +204,58 @@ impl AsyncRpcClient {
             .await
             .map_err(map_err)
     }
+    pub async fn state_get_account_state_set(
+        &self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> anyhow::Result<Option<AccountStateSetView>> {
+        self.call_rpc_async(|inner| {
+            inner
+                .state_client2
+                .get_account_state_set(address, state_root)
+        })
+        .await
+        .map_err(map_err)
+    }
+    pub async fn state_get_with_table_item_proof_by_root(
+        &self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> anyhow::Result<StateWithTableItemProofView> {
+        self.call_rpc_async(|inner| {
+            inner
+                .state_client2
+                .get_with_table_item_proof_by_root(handle, key, state_root)
+        })
+        .await
+        .map_err(map_err)
+    }
+    pub async fn get_state_node_by_node_hash(
+        &self,
+        key_hash: HashValue,
+    ) -> anyhow::Result<Option<Vec<u8>>> {
+        self.call_rpc_async(|inner| inner.state_client2.get_state_node_by_node_hash(key_hash))
+            .await
+            .map_err(map_err)
+    }
+
+    pub async fn chain_info(&self) -> anyhow::Result<ChainInfoView> {
+        self.call_rpc_async(|inner| inner.chain_client.info())
+            .await
+            .map_err(map_err)
+    }
+
+    pub async fn chain_get_block_by_hash(
+        &self,
+        hash: HashValue,
+        option: Option<GetBlockOption>,
+    ) -> anyhow::Result<Option<BlockView>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_block_by_hash(hash, option))
+            .await
+            .map_err(map_err)
+    }
+
     pub async fn chain_get_transaction_info(
         &self,
         hash: HashValue,
@@ -210,12 +264,44 @@ impl AsyncRpcClient {
             .await
             .map_err(map_err)
     }
+    pub async fn chain_get_transaction_info2(
+        &self,
+        hash: HashValue,
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
+        self.chain_get_transaction_info(hash).await
+    }
+
     pub async fn chain_get_block_by_number(
         &self,
         number: u64,
         opt: Option<GetBlockOption>,
     ) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_async(|inner| inner.chain_client.get_block_by_number(number, opt))
+            .await
+            .map_err(map_err)
+    }
+    pub async fn chain_get_block_info_by_number(
+        &self,
+        number: u64,
+    ) -> anyhow::Result<Option<BlockInfoView>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_block_info_by_number(number))
+            .await
+            .map_err(map_err)
+    }
+    pub async fn chain_get_block_info_by_number2(
+        &self,
+        number: u64,
+    ) -> anyhow::Result<Option<BlockInfoView2>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_block_info_by_number2(number))
+            .await
+            .map_err(map_err)
+    }
+    pub async fn chain_get_transaction2(
+        &self,
+        hash: HashValue,
+        option: Option<GetTransactionOption>,
+    ) -> anyhow::Result<Option<TransactionView2>> {
+        self.call_rpc_async(|inner| inner.chain_client.get_transaction2(hash, option))
             .await
             .map_err(map_err)
     }

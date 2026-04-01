@@ -6,10 +6,9 @@ use elasticsearch::http::Url;
 use elasticsearch::Elasticsearch;
 use futures_retry::{FutureRetry, RetryPolicy};
 use futures_util::TryFutureExt;
-use jsonrpc_core_client::transports::http;
 use starcoin_indexer::{BlockClient, BlockData, EsSinker, IndexConfig};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::chain::ChainClient;
+use starcoin_rpc_client::{connect_http, ChainClient};
 use std::cmp::min;
 use std::thread::sleep;
 use std::time::Duration;
@@ -243,10 +242,10 @@ fn main() -> anyhow::Result<()> {
         .thread_name("starcoin-indexer")
         .enable_all()
         .build()?;
-    let channel: ChainClient = rt
-        .block_on(http::connect(opts.node_url.as_str()))
-        .map_err(|e| anyhow!(format!("{}", e)))?;
-    let block_client = BlockClient::new(channel);
+    let channel = rt
+        .block_on(connect_http(opts.node_url.as_str()))
+        .map_err(|e| anyhow!(e.to_string()))?;
+    let block_client = BlockClient::new(ChainClient::from(channel));
     let mut transport = elasticsearch::http::transport::TransportBuilder::new(
         SingleNodeConnectionPool::new(opts.es_url),
     );

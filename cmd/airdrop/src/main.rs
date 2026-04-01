@@ -4,13 +4,11 @@
 use anyhow::Result;
 use bcs_ext::BCSCodec;
 use clap::Parser;
-use jsonrpc_core_client::{RpcChannel, RpcError};
 use serde::Deserialize;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
-use starcoin_rpc_api::types::{ResourceView, TransactionInfoView, TransactionStatusView};
-use starcoin_rpc_api::{
-    chain::ChainClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
-};
+use starcoin_rpc_api::state::GetResourceOption;
+use starcoin_rpc_api::types::{ResourceView, StrView, TransactionInfoView, TransactionStatusView};
+use starcoin_rpc_client::{connect_http, ChainClient, NodeClient, StateClient, TxPoolClient};
 use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{account_struct_tag, genesis_address, AccountResource};
@@ -58,42 +56,46 @@ pub struct AirdropInfo {
     amount: u128,
 }
 
-fn map_rpc_error(err: RpcError) -> anyhow::Error {
-    anyhow::anyhow!(format!("{}", err))
-}
-
 async fn is_accept_token(
     address: AccountAddress,
     token_type: StructTag,
     client: &StateClient,
 ) -> Result<bool> {
-    let account = client
-        .get_resource(address, AccountResource::struct_tag().into(), None)
-        .await
-        .map_err(map_rpc_error)?;
+    let account: Option<ResourceView> = client
+        .clone()
+        .get_resource(
+            address,
+            StrView(AccountResource::struct_tag()),
+            None::<GetResourceOption>,
+        )
+        .await?;
 
     // if account do not exist on chain, will auto create when transfer token to the account.
     if account.is_none() {
         return Ok(true);
     }
 
-    let balance = client
+    let balance: Option<ResourceView> = client
+        .clone()
         .get_resource(
             address,
-            BalanceResource::struct_tag_for_token(token_type).into(),
-            None,
+            StrView(BalanceResource::struct_tag_for_token(token_type)),
+            None::<GetResourceOption>,
         )
-        .await
-        .map_err(map_rpc_error)?;
+        .await?;
 
     if balance.is_some() {
         return Ok(true);
     }
 
     let auto_accept_token: Option<ResourceView> = client
-        .get_resource(address, AutoAcceptToken::struct_tag().into(), None)
-        .await
-        .map_err(map_rpc_error)?;
+        .clone()
+        .get_resource(
+            address,
+            StrView(AutoAcceptToken::struct_tag()),
+            None::<GetResourceOption>,
+        )
+        .await?;
 
     let auto_accept = match auto_accept_token {
         Some(view) => {
@@ -111,14 +113,12 @@ async fn main() -> Result<()> {
     let node_url = options.node_url.clone();
     let airdrop_file = options.airdrop_file.clone();
     let batch_size = options.batch_size;
-    let channel: RpcChannel = jsonrpc_core_client::transports::http::connect(node_url.as_str())
-        .await
-        .map_err(map_rpc_error)?;
+    let channel = connect_http(node_url.as_str()).await?;
     let chain_client = ChainClient::from(channel.clone());
     let txpool_client = TxPoolClient::from(channel.clone());
     let state_client = StateClient::from(channel.clone());
     let node_client = NodeClient::from(channel.clone());
-    let chain_id: u8 = chain_client.id().await.map_err(map_rpc_error)?.id;
+    let chain_id = chain_client.clone().id().await?.id;
 
     let token_type: StructTag = options
         .token_code
@@ -219,7 +219,7 @@ async fn main() -> Result<()> {
     // read from onchain
     let account_sequence_number = {
         let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
-        let account_data: Option<Vec<u8>> = state_client.get(ap).await.map_err(map_rpc_error)?;
+        let account_data: Option<Vec<u8>> = state_client.clone().get(ap).await?;
         account_data
             .map(|account_data| AccountResource::decode(&account_data))
             .transpose()?
@@ -255,7 +255,7 @@ async fn main() -> Result<()> {
             ],
         );
 
-        let now = node_client.info().await.map_err(map_rpc_error)?.now_seconds;
+        let now = node_client.clone().info().await?.now_seconds;
         let txn = RawUserTransaction::new_script_function(
             sender,
             account_sequence_number + i as u64,
@@ -270,14 +270,12 @@ async fn main() -> Result<()> {
 
         let signed_txn_hex = hex::encode(signed_txn.encode()?);
         let txn_hash: HashValue = txpool_client
+            .clone()
             .submit_hex_transaction(signed_txn_hex)
-            .await
-            .map_err(map_rpc_error)?;
+            .await?;
         let txn_info: TransactionInfoView = loop {
-            let txn_info = chain_client
-                .get_transaction_info(txn_hash)
-                .await
-                .map_err(map_rpc_error)?;
+            let txn_info: Option<TransactionInfoView> =
+                chain_client.clone().get_transaction_info(txn_hash).await?;
             match txn_info {
                 None => {
                     println!("wait txn to be mined, {}", txn_hash);

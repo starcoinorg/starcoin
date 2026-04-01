@@ -1,11 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as NodeClient;
 use crate::types::PeerInfoView;
-use crate::FutureResult;
-use jsonrpc_core::Result;
-use openrpc_derive::openrpc;
+use jsonrpsee::{
+    core::{RegisterMethodError, RpcResult},
+    proc_macros::rpc,
+    Methods,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetworkID;
@@ -39,27 +40,34 @@ impl NodeInfo {
         }
     }
 }
-
-#[openrpc]
+#[rpc(client, server, namespace = "node", namespace_separator = ".")]
 pub trait NodeApi {
     /// Get node run status, just for api available check.
-    #[rpc(name = "node.status")]
-    fn status(&self) -> Result<bool>;
+    #[method(name = "status")]
+    fn status(&self) -> RpcResult<bool>;
 
     /// Get node self info.
-    #[rpc(name = "node.info")]
-    fn info(&self) -> FutureResult<NodeInfo>;
+    #[method(name = "info")]
+    async fn info(&self) -> RpcResult<NodeInfo>;
 
     /// Get current node connect peers.
-    #[rpc(name = "node.peers")]
-    fn peers(&self) -> FutureResult<Vec<PeerInfoView>>;
+    #[method(name = "peers")]
+    async fn peers(&self) -> RpcResult<Vec<PeerInfoView>>;
 
-    #[rpc(name = "node.metrics")]
-    fn metrics(&self) -> Result<HashMap<String, String>>;
+    #[method(name = "metrics")]
+    fn metrics(&self) -> RpcResult<HashMap<String, String>>;
 }
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
+
+pub use NodeApiClient as NodeApiRpcClient;
+pub use NodeApiServer as NodeApiRpcServer;
+
+/// Build jsonrpsee methods from legacy `NodeApi`.
+///
+/// This helper allows migration to jsonrpsee runtime while keeping the current
+/// `NodeApi` interface and implementations unchanged.
+pub fn node_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: NodeApiServer + Send + Sync + 'static,
+{
+    Ok(NodeApiServer::into_rpc(api).into())
 }

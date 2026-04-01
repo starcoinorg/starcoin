@@ -4,8 +4,7 @@
 use crate::helpers::TransactionRequestFiller;
 use crate::map_err;
 use anyhow::format_err;
-use futures::future::TryFutureExt;
-use futures::FutureExt;
+use jsonrpsee::core::{async_trait, RpcResult};
 use starcoin_config::NodeConfig;
 use starcoin_metrics::metrics::VMMetrics;
 use starcoin_storage::Storage2;
@@ -16,7 +15,7 @@ use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation, TypeIn
 use starcoin_vm2_account_api::AccountAsyncService;
 use starcoin_vm2_dev::playground::{call_contract, PlaygroudService};
 use starcoin_vm2_resource_viewer::{module_cache::ModuleCache, MoveValueAnnotator};
-use starcoin_vm2_rpc_api::{contract_api::ContractApi, FutureResult};
+use starcoin_vm2_rpc_api::contract_api::ContractApiServer;
 use starcoin_vm2_state_api::ChainStateAsyncService;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::view::{
@@ -79,30 +78,33 @@ where
     }
 }
 
-impl<Account, Pool, State> ContractApi for ContractRpcImpl<Account, Pool, State>
+#[async_trait]
+impl<Account, Pool, State> ContractApiServer for ContractRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService + 'static,
     Pool: TxPoolSyncService + 'static,
     State: ChainStateAsyncService + 'static,
 {
-    fn get_code(&self, module_id: StrView<ModuleId>) -> FutureResult<Option<StrView<Vec<u8>>>> {
+    async fn get_code(&self, module_id: StrView<ModuleId>) -> RpcResult<Option<StrView<Vec<u8>>>> {
         let service = self.chain_state.clone();
         let state_key = StateKey::module(module_id.0.address(), module_id.0.name());
-        let f = async move {
+        async move {
             let code = service.get(state_key).await?.map(|v| v.to_vec());
             Ok(code.map(StrView))
-        };
-        Box::pin(f.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_resource(
+    async fn get_resource(
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
-    ) -> FutureResult<Option<AnnotatedMoveStructView>> {
+    ) -> RpcResult<Option<AnnotatedMoveStructView>> {
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
-        let f = async move {
+        async move {
             let state_root = service.clone().state_root().await?;
             let state_key = StateKey::resource(&addr, &resource_type.0)?;
             let data = service.get(state_key).await?;
@@ -117,10 +119,12 @@ where
                     Ok(Some(value.into()))
                 }
             }
-        };
-        Box::pin(f.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
-    fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValueView>> {
+    async fn call(&self, call: ContractCall) -> RpcResult<Vec<AnnotatedMoveValueView>> {
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
         let ContractCall {
@@ -128,7 +132,7 @@ where
             type_args,
             args,
         } = call;
-        let f = async move {
+        async move {
             let state_root = service.state_root().await?;
             let output = playground.call_contract(
                 state_root,
@@ -139,11 +143,12 @@ where
             )?;
             Ok(output.into_iter().map(Into::into).collect())
         }
-        .map_err(map_err);
-        Box::pin(f.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn call_v2(&self, call: ContractCall) -> FutureResult<Vec<DecodedMoveValue>> {
+    async fn call_v2(&self, call: ContractCall) -> RpcResult<Vec<DecodedMoveValue>> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let ContractCall {
@@ -152,7 +157,7 @@ where
             args,
         } = call;
         let metrics = self.playground.metrics.clone();
-        let f = async move {
+        async move {
             let state_root = service.state_root().await?;
             let state = ChainStateDB::new(storage, Some(state_root));
             let output = call_contract(
@@ -169,16 +174,17 @@ where
                 .map(|(ty, v)| annotator.view_value(&ty, &v).map(Into::into))
                 .collect::<anyhow::Result<Vec<_>>>()
         }
-        .map_err(map_err);
-        Box::pin(f.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<DryRunOutputView> {
+    async fn dry_run(&self, txn: DryRunTransactionRequest) -> RpcResult<DryRunOutputView> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let txn_builder = self.txn_request_filler();
         let metrics = self.playground.metrics.clone();
-        let f = async move {
+        async move {
             let state_root = service.state_root().await?;
             let DryRunTransactionRequest {
                 transaction,
@@ -196,19 +202,20 @@ where
                 metrics,
             )
         }
-        .map_err(map_err);
-        Box::pin(f.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn dry_run_raw(
+    async fn dry_run_raw(
         &self,
         raw_txn: String,
         sender_public_key: StrView<AccountPublicKey>,
-    ) -> FutureResult<DryRunOutputView> {
+    ) -> RpcResult<DryRunOutputView> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let metrics = self.playground.metrics.clone();
-        let f = async move {
+        async move {
             let state_root = service.state_root().await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
             let state_view = ChainStateDB::new(storage, Some(state_root));
@@ -221,57 +228,62 @@ where
                 metrics,
             )
         }
-        .map_err(map_err);
-        Box::pin(f.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn resolve_function(&self, function_id: FunctionIdView) -> FutureResult<FunctionABI> {
+    async fn resolve_function(&self, function_id: FunctionIdView) -> RpcResult<FunctionABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
-        let fut = async move {
+        async move {
             let state = ChainStateDB::new(storage, Some(service.state_root().await?));
             ABIResolver::new(&state)
                 .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
         }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn resolve_module_function_index(
+    async fn resolve_module_function_index(
         &self,
         module_id: ModuleIdView,
         function_idx: u16,
-    ) -> FutureResult<FunctionABI> {
+    ) -> RpcResult<FunctionABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
-        let fut = async move {
+        async move {
             let state = ChainStateDB::new(storage, Some(service.state_root().await?));
             ABIResolver::new(&state).resolve_module_function_index(&module_id.0, function_idx)
         }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn resolve_struct(&self, struct_tag: StructTagView) -> FutureResult<StructInstantiation> {
+    async fn resolve_struct(&self, struct_tag: StructTagView) -> RpcResult<StructInstantiation> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
-        let fut = async move {
+        async move {
             let state = ChainStateDB::new(storage, Some(service.state_root().await?));
             ABIResolver::new(&state).resolve_struct_tag(&struct_tag.0)
         }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn resolve_module(&self, module_id: ModuleIdView) -> FutureResult<ModuleABI> {
+    async fn resolve_module(&self, module_id: ModuleIdView) -> RpcResult<ModuleABI> {
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
-        let fut = async move {
+        async move {
             let state = ChainStateDB::new(storage, Some(service.state_root().await?));
             ABIResolver::new(&state).resolve_module(&module_id.0)
         }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 }
 

@@ -5124,21 +5124,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-ipc-server"
-version = "18.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "382bb0206323ca7cda3dcd7e245cea86d37d02457a02a975e3378fb149a48845"
-dependencies = [
- "futures 0.3.31",
- "jsonrpc-core",
- "jsonrpc-server-utils",
- "log 0.4.27",
- "parity-tokio-ipc",
- "parking_lot 0.11.2",
- "tower-service",
-]
-
-[[package]]
 name = "jsonrpc-pubsub"
 version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5169,19 +5154,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.6.10",
  "unicase 2.6.0",
-]
-
-[[package]]
-name = "jsonrpc-tcp-server"
-version = "18.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a0a0d35558123e93743d467285196905da1368500378cb5352b71856377874"
-dependencies = [
- "jsonrpc-core",
- "jsonrpc-server-utils",
- "log 0.4.27",
- "parking_lot 0.11.2",
- "tower-service",
 ]
 
 [[package]]
@@ -12998,6 +12970,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
+ "jsonrpsee",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=babf994a38cda17b84186c7992f92fb3554347f0)",
  "network-api",
  "network-p2p-types",
@@ -13124,11 +13097,10 @@ dependencies = [
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-http-server",
- "jsonrpc-ipc-server",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
- "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
+ "jsonrpsee",
  "log 0.4.27",
  "network-api",
  "network-p2p-core",
@@ -13162,6 +13134,7 @@ dependencies = [
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
+ "starcoin-rpc-ipc",
  "starcoin-rpc-middleware",
  "starcoin-service-registry",
  "starcoin-state-api",
@@ -14159,6 +14132,7 @@ dependencies = [
  "jsonrpc-core",
  "jsonrpc-core-client",
  "jsonrpc-derive",
+ "jsonrpsee",
  "openrpc-derive",
  "openrpc-schema",
  "schemars",

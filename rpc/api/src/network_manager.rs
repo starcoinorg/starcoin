@@ -1,51 +1,59 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as NetworkManagerClient;
 use crate::types::StrView;
-use crate::FutureResult;
-use jsonrpc_core::Result;
+use jsonrpsee::{
+    core::{RegisterMethodError, RpcResult},
+    proc_macros::rpc,
+    Methods,
+};
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::Multiaddr;
-use openrpc_derive::openrpc;
-use std::borrow::Cow;
-
-#[openrpc]
+#[rpc(
+    client,
+    server,
+    namespace = "network_manager",
+    namespace_separator = "."
+)]
 pub trait NetworkManagerApi {
-    #[rpc(name = "network_manager.state")]
-    fn state(&self) -> FutureResult<NetworkState>;
+    #[method(name = "state")]
+    async fn state(&self) -> RpcResult<NetworkState>;
 
-    #[rpc(name = "network_manager.known_peers")]
-    fn known_peers(&self) -> FutureResult<Vec<PeerId>>;
+    #[method(name = "known_peers")]
+    async fn known_peers(&self) -> RpcResult<Vec<PeerId>>;
 
-    #[rpc(name = "network_manager.get_address")]
-    fn get_address(&self, peer_id: String) -> FutureResult<Vec<Multiaddr>>;
+    #[method(name = "get_address")]
+    async fn get_address(&self, peer_id: String) -> RpcResult<Vec<Multiaddr>>;
 
-    #[rpc(name = "network_manager.add_peer")]
-    fn add_peer(&self, peer: String) -> FutureResult<()>;
+    #[method(name = "add_peer")]
+    async fn add_peer(&self, peer: String) -> RpcResult<()>;
 
     /// Call peer's network rpc method.
-    #[rpc(name = "network_manager.call")]
-    fn call_peer(
+    #[method(name = "call")]
+    async fn call_peer(
         &self,
         peer_id: String,
-        rpc_method: Cow<'static, str>,
+        rpc_method: String,
         message: StrView<Vec<u8>>,
-    ) -> FutureResult<StrView<Vec<u8>>>;
+    ) -> RpcResult<StrView<Vec<u8>>>;
 
     /// Set peer reputation
-    #[rpc(name = "network_manager.set_peer_reput")]
-    fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()>;
+    #[method(name = "set_peer_reput")]
+    async fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> RpcResult<()>;
 
     /// ban peer
-    #[rpc(name = "network_manager.ban_peer")]
-    fn ban_peer(&self, peer_id: String, ban: bool) -> Result<()>;
+    #[method(name = "ban_peer")]
+    fn ban_peer(&self, peer_id: String, ban: bool) -> RpcResult<()>;
 }
 
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
+pub use NetworkManagerApiClient as NetworkManagerApiRpcClient;
+pub use NetworkManagerApiServer as NetworkManagerApiRpcServer;
+
+/// Build jsonrpsee methods from legacy `NetworkManagerApi`.
+pub fn network_manager_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: NetworkManagerApiServer + Send + Sync + 'static,
+{
+    Ok(NetworkManagerApiServer::into_rpc(api).into())
 }

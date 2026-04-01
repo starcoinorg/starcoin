@@ -3,7 +3,7 @@
 
 use crate::errors;
 use crate::types::{BlockView, TransactionEventResponse};
-use jsonrpc_core::error::Error as JsonRpcError;
+use anyhow::Error as JsonRpcError;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

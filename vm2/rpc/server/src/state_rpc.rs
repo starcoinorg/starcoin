@@ -5,8 +5,7 @@ use crate::map_err;
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use bytes::Bytes;
-use futures::future::TryFutureExt;
-use futures::FutureExt;
+use jsonrpsee::core::{async_trait, RpcResult};
 use serde_json::Value;
 use starcoin_vm2_abi_decoder::DecodedMoveValue;
 use starcoin_vm2_abi_resolver::ABIResolver;
@@ -16,9 +15,8 @@ use starcoin_vm2_resource_viewer::MoveValueAnnotator;
 use starcoin_vm2_vm_types::move_resource::MoveStructType;
 
 use starcoin_vm2_rpc_api::state_api::{
-    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
+    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption, StateApiServer,
 };
-use starcoin_vm2_rpc_api::{state_api::StateApi, FutureResult};
 use starcoin_vm2_state_api::{ChainStateAsyncService, StateNodeStore, StateReaderExt};
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_vm2_types::view::{
@@ -60,63 +58,71 @@ where
     }
 }
 
-impl<S> StateApi for StateRpcImpl<S>
+#[async_trait]
+impl<S> StateApiServer for StateRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    fn get(&self, state_key: StateKey) -> FutureResult<Option<Bytes>> {
-        let fut = self.service.clone().get(state_key).map_err(map_err);
-        Box::pin(fut)
+    async fn get(&self, state_key: StateKey) -> RpcResult<Option<Bytes>> {
+        self.service
+            .clone()
+            .get(state_key)
+            .await
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Bytes>> {
-        let state_store = self.state_store.clone();
-        let f = async move {
-            let node = state_store.get(&key_hash)?.map(|n| n.0);
-            Ok(node.map(Bytes::from))
-        };
-        Box::pin(f.map_err(map_err).boxed())
+    async fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> RpcResult<Option<Bytes>> {
+        let node = self
+            .state_store
+            .clone()
+            .get(&key_hash)
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)?
+            .map(|n| n.0)
+            .map(Bytes::from);
+        Ok(node)
     }
 
-    fn get_with_proof(&self, state_key: StateKey) -> FutureResult<StateWithProofView> {
-        let fut = self
-            .service
+    async fn get_with_proof(&self, state_key: StateKey) -> RpcResult<StateWithProofView> {
+        self.service
             .clone()
             .get_with_proof(state_key)
-            .map_ok(|p| p.into())
-            .map_err(map_err);
-        Box::pin(fut)
+            .await
+            .map(|p| p.into())
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_with_proof_raw(&self, state_key: StateKey) -> FutureResult<StrView<Vec<u8>>> {
-        let fut = self
-            .service
+    async fn get_with_proof_raw(&self, state_key: StateKey) -> RpcResult<StrView<Vec<u8>>> {
+        self.service
             .clone()
             .get_with_proof(state_key)
-            .map_ok(|p| {
+            .await
+            .map(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
-            .map_err(map_err);
-        Box::pin(fut)
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<AccountState> {
-        let fut = self
-            .service
+    async fn get_account_state(&self, address: AccountAddress) -> RpcResult<AccountState> {
+        self.service
             .clone()
             .get_account_state(address)
-            .map_err(map_err);
-        Box::pin(fut)
+            .await
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_account_state_set(
+    async fn get_account_state_set(
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> FutureResult<Option<AccountStateSetView>> {
+    ) -> RpcResult<Option<AccountStateSetView>> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
-        let fut = async move {
+        async move {
             let state_root = state_root.unwrap_or(state_service.state_root().await?);
             let statedb = ChainStateDB::new(db, Some(state_root));
             let state = statedb.get_account_state_set(&address)?;
@@ -155,83 +161,89 @@ where
                     }))
                 }
             }
-        };
-        Box::pin(fut.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_state_root(&self) -> FutureResult<HashValue> {
-        let fut = self.service.clone().state_root().map_err(map_err);
-        Box::pin(fut)
+    async fn get_state_root(&self) -> RpcResult<HashValue> {
+        self.service
+            .clone()
+            .state_root()
+            .await
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_with_proof_by_root(
+    async fn get_with_proof_by_root(
         &self,
         state_key: StateKey,
         state_root: HashValue,
-    ) -> FutureResult<StateWithProofView> {
-        let fut = self
-            .service
+    ) -> RpcResult<StateWithProofView> {
+        self.service
             .clone()
             .get_with_proof_by_root(state_key, state_root)
-            .map_ok(|p| p.into())
-            .map_err(map_err);
-        Box::pin(fut)
+            .await
+            .map(|p| p.into())
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_with_proof_by_root_raw(
+    async fn get_with_proof_by_root_raw(
         &self,
         state_key: StateKey,
         state_root: HashValue,
-    ) -> FutureResult<StrView<Vec<u8>>> {
-        let fut = self
-            .service
+    ) -> RpcResult<StrView<Vec<u8>>> {
+        self.service
             .clone()
             .get_with_proof_by_root(state_key, state_root)
-            .map_ok(|p| {
+            .await
+            .map(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
-            .map_err(map_err);
-        Box::pin(fut)
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_with_table_item_proof(
+    async fn get_with_table_item_proof(
         &self,
         handle: TableHandle,
         key: Vec<u8>,
-    ) -> FutureResult<StateWithTableItemProofView> {
-        let fut = self
-            .service
+    ) -> RpcResult<StateWithTableItemProofView> {
+        self.service
             .clone()
             .get_with_table_item_proof(handle, key)
-            .map_ok(|p| p.into())
-            .map_err(map_err);
-        Box::pin(fut)
+            .await
+            .map(|p| p.into())
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_with_table_item_proof_by_root(
+    async fn get_with_table_item_proof_by_root(
         &self,
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
-    ) -> FutureResult<StateWithTableItemProofView> {
-        let fut = self
-            .service
+    ) -> RpcResult<StateWithTableItemProofView> {
+        self.service
             .clone()
             .get_with_table_item_proof_by_root(handle, key, state_root)
-            .map_ok(|p| p.into())
-            .map_err(map_err);
-        Box::pin(fut)
+            .await
+            .map(|p| p.into())
+            .map_err(map_err)
+            .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_code(
+    async fn get_code(
         &self,
         module_id: StrView<ModuleId>,
         option: Option<GetCodeOption>,
-    ) -> FutureResult<Option<CodeView>> {
+    ) -> RpcResult<Option<CodeView>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
-        let f = async move {
+        async move {
             let state_root = option
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
@@ -253,20 +265,22 @@ where
                     })
                 }
             })
-        };
-        Box::pin(f.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn get_resource(
+    async fn get_resource(
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
-    ) -> FutureResult<Option<ResourceView>> {
+    ) -> RpcResult<Option<ResourceView>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
-        let f = async move {
+        async move {
             let state_root = option
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
@@ -310,18 +324,20 @@ where
                     })
                 }
             })
-        };
-        Box::pin(f.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 
-    fn list_resource(
+    async fn list_resource(
         &self,
         addr: AccountAddress,
         option: Option<ListResourceOption>,
-    ) -> FutureResult<ListResourceView> {
+    ) -> RpcResult<ListResourceView> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
-        let fut = async move {
+        async move {
             let ListResourceOption {
                 decode,
                 state_root,
@@ -415,18 +431,21 @@ where
             Ok(ListResourceView {
                 resources: resources?,
             })
-        };
-        Box::pin(fut.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
-    fn list_code(
+
+    async fn list_code(
         &self,
         addr: AccountAddress,
         option: Option<ListCodeOption>,
-    ) -> FutureResult<ListCodeView> {
+    ) -> RpcResult<ListCodeView> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let option = option.unwrap_or_default();
-        let fut = async move {
+        async move {
             let state_root = option
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
@@ -463,8 +482,10 @@ where
                     Ok(ListCodeView { codes: codes? })
                 }
             }
-        };
-        Box::pin(fut.map_err(map_err).boxed())
+        }
+        .await
+        .map_err(map_err)
+        .map_err(crate::map_jsonrpc_err)
     }
 }
 

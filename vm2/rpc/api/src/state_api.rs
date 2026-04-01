@@ -1,11 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as StateClient;
-use crate::FutureResult;
 // copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/state/mod.rs#L14 etc
 use bytes::Bytes;
-use openrpc_derive::openrpc;
+use jsonrpsee::{
+    core::{RegisterMethodError, RpcResult},
+    proc_macros::rpc,
+    Methods,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
@@ -20,101 +22,113 @@ use starcoin_vm2_vm_types::{
     language_storage::{ModuleId, StructTag},
     state_store::{state_key::StateKey, table::TableHandle},
 };
-#[openrpc]
+
+#[rpc(client, server, namespace = "state2", namespace_separator = ".")]
 pub trait StateApi {
-    #[rpc(name = "state2.get")]
-    fn get(&self, state_key: StateKey) -> FutureResult<Option<Bytes>>;
+    #[method(name = "get")]
+    async fn get(&self, state_key: StateKey) -> RpcResult<Option<Bytes>>;
 
     /// Return state from StateTree storage directly by tree node key.
-    #[rpc(name = "state2.get_state_node_by_node_hash")]
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Bytes>>;
+    #[method(name = "get_state_node_by_node_hash")]
+    async fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> RpcResult<Option<Bytes>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
-    #[rpc(name = "state2.get_with_proof")]
-    fn get_with_proof(&self, state_key: StateKey) -> FutureResult<StateWithProofView>;
+    #[method(name = "get_with_proof")]
+    async fn get_with_proof(&self, state_key: StateKey) -> RpcResult<StateWithProofView>;
 
     /// Same as `state2.get_with_proof` but return `StateWithProof` in BCS serialize bytes.
-    #[rpc(name = "state2.get_with_proof_raw")]
-    fn get_with_proof_raw(&self, state_key: StateKey) -> FutureResult<StrView<Vec<u8>>>;
+    #[method(name = "get_with_proof_raw")]
+    async fn get_with_proof_raw(&self, state_key: StateKey) -> RpcResult<StrView<Vec<u8>>>;
 
-    #[rpc(name = "state2.get_account_state")]
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<AccountState>;
+    #[method(name = "get_account_state")]
+    async fn get_account_state(&self, address: AccountAddress) -> RpcResult<AccountState>;
 
-    #[rpc(name = "state2.get_account_state_set")]
-    fn get_account_state_set(
+    #[method(name = "get_account_state_set")]
+    async fn get_account_state_set(
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> FutureResult<Option<AccountStateSetView>>;
+    ) -> RpcResult<Option<AccountStateSetView>>;
 
-    #[rpc(name = "state2.get_state_root")]
-    fn get_state_root(&self) -> FutureResult<HashValue>;
+    #[method(name = "get_state_root")]
+    async fn get_state_root(&self) -> RpcResult<HashValue>;
 
     /// Return the Resource Or Code at the `access_path` and provide a State Proof at `state_root`
-    #[rpc(name = "state2.get_with_proof_by_root")]
-    fn get_with_proof_by_root(
+    #[method(name = "get_with_proof_by_root")]
+    async fn get_with_proof_by_root(
         &self,
         state_key: StateKey,
         state_root: HashValue,
-    ) -> FutureResult<StateWithProofView>;
+    ) -> RpcResult<StateWithProofView>;
 
     /// Same as `state2.get_with_proof_by_root` but return `StateWithProof` in BCS serialize bytes.
-    #[rpc(name = "state2.get_with_proof_by_root_raw")]
-    fn get_with_proof_by_root_raw(
+    #[method(name = "get_with_proof_by_root_raw")]
+    async fn get_with_proof_by_root_raw(
         &self,
         state_key: StateKey,
         state_root: HashValue,
-    ) -> FutureResult<StrView<Vec<u8>>>;
+    ) -> RpcResult<StrView<Vec<u8>>>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
-    #[rpc(name = "state2.get_with_table_item_proof")]
-    fn get_with_table_item_proof(
+    #[method(name = "get_with_table_item_proof")]
+    async fn get_with_table_item_proof(
         &self,
         handle: TableHandle,
         key: Vec<u8>,
-    ) -> FutureResult<StateWithTableItemProofView>;
+    ) -> RpcResult<StateWithTableItemProofView>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
-    #[rpc(name = "state2.get_with_table_item_proof_by_root")]
-    fn get_with_table_item_proof_by_root(
+    #[method(name = "get_with_table_item_proof_by_root")]
+    async fn get_with_table_item_proof_by_root(
         &self,
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
-    ) -> FutureResult<StateWithTableItemProofView>;
+    ) -> RpcResult<StateWithTableItemProofView>;
 
     /// get code of module
-    #[rpc(name = "state2.get_code")]
-    fn get_code(
+    #[method(name = "get_code")]
+    async fn get_code(
         &self,
         module_id: StrView<ModuleId>,
         option: Option<GetCodeOption>,
-    ) -> FutureResult<Option<CodeView>>;
+    ) -> RpcResult<Option<CodeView>>;
 
     /// get resource data of `addr`
-    #[rpc(name = "state2.get_resource")]
-    fn get_resource(
+    #[method(name = "get_resource")]
+    async fn get_resource(
         &self,
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
-    ) -> FutureResult<Option<ResourceView>>;
+    ) -> RpcResult<Option<ResourceView>>;
 
     /// list resources data of `addr`
-    #[rpc(name = "state2.list_resource")]
-    fn list_resource(
+    #[method(name = "list_resource")]
+    async fn list_resource(
         &self,
         addr: AccountAddress,
         option: Option<ListResourceOption>,
-    ) -> FutureResult<ListResourceView>;
+    ) -> RpcResult<ListResourceView>;
 
     /// list resources data of `addr`
-    #[rpc(name = "state2.list_code")]
-    fn list_code(
+    #[method(name = "list_code")]
+    async fn list_code(
         &self,
         addr: AccountAddress,
         option: Option<ListCodeOption>,
-    ) -> FutureResult<ListCodeView>;
+    ) -> RpcResult<ListCodeView>;
+}
+
+pub use StateApiClient as StateApiRpcClient;
+pub use StateApiServer as StateApiRpcServer;
+
+/// Build jsonrpsee methods from legacy `StateApi`.
+pub fn state_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: StateApiServer + Send + Sync + 'static,
+{
+    Ok(StateApiServer::into_rpc(api).into())
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
@@ -173,10 +187,4 @@ pub struct ListCodeOption {
     /// The state tree root, default is the latest block state root
     pub state_root: Option<HashValue>,
     //TODO support filter by type and pagination
-}
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
 }

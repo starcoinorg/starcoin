@@ -10,18 +10,6 @@ dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }
 itertools = { workspace = true }
-jsonrpc-client-transports = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-], workspace = true }
-jsonrpc-core-client = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-], workspace = true }
 log = { workspace = true }
 move-binary-format = { workspace = true }
 move-command-line-common = { workspace = true }
@@ -36,9 +24,6 @@ tempfile = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
-jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-derive = { workspace = true }
-jsonrpc-http-server = { workspace = true }
 move-resource-viewer = { workspace = true }
 starcoin-abi-decoder = { workspace = true }
 starcoin-accumulator = { workspace = true }
