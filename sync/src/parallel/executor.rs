@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use crate::sync_profiling_info_enabled;
 use starcoin_chain::{verifier::FullVerifier, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
@@ -25,6 +26,9 @@ use tokio::{
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+const WAIT_PARENTS_LOG_MS: u128 = 500;
+const EXECUTE_SLOW_LOG_MS: u128 = 200;
+const SYNC_PROF_PREFIX: &str = "[sync-prof]";
 #[cfg(test)]
 static TEST_EXECUTE_DELAY_MS: AtomicU64 = AtomicU64::new(0);
 #[cfg(test)]
@@ -132,7 +136,19 @@ impl DagBlockExecutor {
                 header.parents_hash(),
                 ready_parent_cache,
             ) {
-                Ok(true) => return Ok(()),
+                Ok(true) => {
+                    let waited_ms = wait_begin.elapsed().as_millis();
+                    if sync_profiling_info_enabled() && waited_ms >= WAIT_PARENTS_LOG_MS {
+                        info!(
+                            "{} stage=wait_for_parents status=slow block_id={} block_number={} waited_ms={}",
+                            SYNC_PROF_PREFIX,
+                            header.id(),
+                            header.number(),
+                            waited_ms
+                        );
+                    }
+                    return Ok(());
+                }
                 Ok(false) => {}
                 Err(err) => return Err(err),
             }
@@ -256,6 +272,7 @@ impl DagBlockExecutor {
                             &self,
                             block.header().id()
                         );
+                        let execute_begin = Instant::now();
                         let mut local_chain = chain.take().expect("it cannot be none!");
                         let mut execute_handle = tokio::task::spawn_blocking(move || {
                             #[cfg(test)]
@@ -289,6 +306,15 @@ impl DagBlockExecutor {
                         };
                         if execute_timed_out {
                             error!("sync parallel worker execute timeout: {:?}", header);
+                            if sync_profiling_info_enabled() {
+                                error!(
+                                    "{} stage=parallel_execute status=timeout block_id={} block_number={} elapsed_ms={}",
+                                    SYNC_PROF_PREFIX,
+                                    header.id(),
+                                    header.number(),
+                                    execute_begin.elapsed().as_millis()
+                                );
+                            }
                             let _ = self
                                 .sender
                                 .send(ExecuteState::Error(Box::new(header.clone())))
@@ -300,6 +326,19 @@ impl DagBlockExecutor {
                                 chain = Some(updated_chain);
                                 match result {
                                     Ok(executed_block) => {
+                                        let execute_elapsed_ms =
+                                            execute_begin.elapsed().as_millis();
+                                        if sync_profiling_info_enabled()
+                                            && execute_elapsed_ms >= EXECUTE_SLOW_LOG_MS
+                                        {
+                                            info!(
+                                                "{} stage=parallel_execute status=ok block_id={} block_number={} elapsed_ms={}",
+                                                SYNC_PROF_PREFIX,
+                                                executed_block.header().id(),
+                                                executed_block.header().number(),
+                                                execute_elapsed_ms
+                                            );
+                                        }
                                         info!(
                                             "succeed to execute block: number: {:?}, id: {:?}",
                                             executed_block.header().number(),
@@ -329,6 +368,16 @@ impl DagBlockExecutor {
                                             "failed to execute block: {:?}, for reason: {:?}",
                                             header, e
                                         );
+                                        if sync_profiling_info_enabled() {
+                                            error!(
+                                                "{} stage=parallel_execute status=err block_id={} block_number={} elapsed_ms={} error={:?}",
+                                                SYNC_PROF_PREFIX,
+                                                header.id(),
+                                                header.number(),
+                                                execute_begin.elapsed().as_millis(),
+                                                e
+                                            );
+                                        }
                                         match self
                                             .sender
                                             .send(ExecuteState::Error(Box::new(header.clone())))
@@ -352,6 +401,16 @@ impl DagBlockExecutor {
                                     "sync parallel worker join error: {:?}, header: {:?}",
                                     e, header
                                 );
+                                if sync_profiling_info_enabled() {
+                                    error!(
+                                        "{} stage=parallel_execute status=join_err block_id={} block_number={} elapsed_ms={} error={:?}",
+                                        SYNC_PROF_PREFIX,
+                                        header.id(),
+                                        header.number(),
+                                        execute_begin.elapsed().as_millis(),
+                                        e
+                                    );
+                                }
                                 let _ = self
                                     .sender
                                     .send(ExecuteState::Error(Box::new(header.clone())))

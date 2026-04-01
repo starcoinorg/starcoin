@@ -3,6 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::parallel::parallel_info_service::{ParallelInfoService, ResetParallelSyncStatRequest};
+use crate::set_sync_profiling_info_enabled;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
@@ -191,6 +192,10 @@ impl SyncService {
         dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        set_sync_profiling_info_enabled(config.sync.profiling_info());
+        if config.sync.profiling_info() {
+            info!("[sync-prof] sync profiling info logging enabled");
+        }
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("can't get startup info"))?;

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::sync_profiling_info_enabled;
 use anyhow::{format_err, Result};
 use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerId;
@@ -32,6 +33,8 @@ use thiserror::Error;
 use tokio::time::timeout;
 
 use network_p2p_types::{OutboundFailure, RequestFailure};
+
+const SYNC_PROF_PREFIX: &str = "[sync-prof]";
 
 #[derive(Clone, Debug, Error)]
 #[error("Peer {peers:?} return valid rpc response: {msg:?}")]
@@ -776,8 +779,10 @@ impl VerifiedRpcClient {
             reverse,
             max_size: self.block_ids_sizer.clamp_request_size(requested_max),
         };
+        let profiling_info = sync_profiling_info_enabled();
         let mut count = 0;
         while count < self.rpc_retry_count {
+            let rpc_begin = Instant::now();
             match self
                 .client
                 .get_block_ids(peer_id.clone(), request.clone())
@@ -785,6 +790,20 @@ impl VerifiedRpcClient {
             {
                 Ok(result) => {
                     self.block_ids_sizer.on_success(result.len() as u64);
+                    if profiling_info {
+                        info!(
+                            "{} stage=rpc_get_block_ids status=ok peer_id={} start_number={} reverse={} requested_max_size={} actual_max_size={} returned_ids={} attempt={} elapsed_ms={}",
+                            SYNC_PROF_PREFIX,
+                            peer_id,
+                            start_number,
+                            reverse,
+                            requested_max,
+                            request.max_size,
+                            result.len(),
+                            count.saturating_add(1),
+                            rpc_begin.elapsed().as_millis()
+                        );
+                    }
                     return Ok(result);
                 }
                 Err(e) => {
@@ -793,6 +812,20 @@ impl VerifiedRpcClient {
                         request.max_size = self.block_ids_sizer.clamp_request_size(requested_max);
                     }
                     count = count.saturating_add(1);
+                    if profiling_info {
+                        warn!(
+                            "{} stage=rpc_get_block_ids status=err peer_id={} start_number={} reverse={} requested_max_size={} actual_max_size={} attempt={} elapsed_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            peer_id,
+                            start_number,
+                            reverse,
+                            requested_max,
+                            request.max_size,
+                            count,
+                            rpc_begin.elapsed().as_millis(),
+                            e
+                        );
+                    }
                     if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
@@ -1009,6 +1042,7 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
+        let profiling_info = sync_profiling_info_enabled();
         let mut peer_iter = self.peer_selector.peer_iterator();
         let max_retries = self.max_retry_times;
         let mut attempts: u64 = 0;
@@ -1031,6 +1065,16 @@ impl VerifiedRpcClient {
                         let time = (Instant::now()
                             .saturating_duration_since(start_time)
                             .as_millis()) as u32;
+                        if profiling_info {
+                            info!(
+                                "{} stage=rpc_get_blocks status=ok peer_id={} ids={} attempt={} elapsed_ms={}",
+                                SYNC_PROF_PREFIX,
+                                peer_id,
+                                ids.len(),
+                                attempts,
+                                time
+                            );
+                        }
                         let score = self.score(time);
                         self.record(&peer_id, score);
                         return Ok(ids
@@ -1055,10 +1099,25 @@ impl VerifiedRpcClient {
                             .collect());
                     }
                     Err(err) => {
+                        let elapsed_ms = Instant::now()
+                            .saturating_duration_since(start_time)
+                            .as_millis();
                         warn!(
                             "Failed to get blocks from peer {} (attempt {}/{}): {:?}, trying next peer",
                             peer_id, attempts, max_retries, err
                         );
+                        if profiling_info {
+                            warn!(
+                                "{} stage=rpc_get_blocks status=err peer_id={} ids={} attempt={}/{} elapsed_ms={} error={:?}",
+                                SYNC_PROF_PREFIX,
+                                peer_id,
+                                ids.len(),
+                                attempts,
+                                max_retries,
+                                elapsed_ms,
+                                err
+                            );
+                        }
                         self.record(&peer_id, 0);
                         last_error = Some(err);
                     }
@@ -1081,9 +1140,11 @@ impl VerifiedRpcClient {
         req: Vec<HashValue>,
         exp: u64,
     ) -> Result<Vec<(Block, Option<PeerId>)>> {
+        let profiling_info = sync_profiling_info_enabled();
         let mut count = 0;
         let peer_id = self.select_a_peer()?;
         while count < self.rpc_retry_count {
+            let rpc_begin = Instant::now();
             match timeout(
                 self.rpc_timeout,
                 self.client.get_absent_blocks(
@@ -1097,14 +1158,38 @@ impl VerifiedRpcClient {
             .await
             {
                 Ok(Ok(result)) => {
+                    if profiling_info {
+                        info!(
+                            "{} stage=rpc_get_absent_blocks status=ok peer_id={} request_ids={} exp={} returned_blocks={} attempt={} elapsed_ms={}",
+                            SYNC_PROF_PREFIX,
+                            peer_id,
+                            req.len(),
+                            exp,
+                            result.absent_blocks.len(),
+                            count.saturating_add(1),
+                            rpc_begin.elapsed().as_millis()
+                        );
+                    }
                     return Ok(result
                         .absent_blocks
                         .into_iter()
                         .map(|block| (block, Some(peer_id.clone())))
-                        .collect())
+                        .collect());
                 }
                 Ok(Err(e)) => {
                     count = count.saturating_add(1);
+                    if profiling_info {
+                        warn!(
+                            "{} stage=rpc_get_absent_blocks status=err peer_id={} request_ids={} exp={} attempt={} elapsed_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            peer_id,
+                            req.len(),
+                            exp,
+                            count,
+                            rpc_begin.elapsed().as_millis(),
+                            e
+                        );
+                    }
                     if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
@@ -1119,6 +1204,17 @@ impl VerifiedRpcClient {
                 }
                 Err(_) => {
                     count = count.saturating_add(1);
+                    if profiling_info {
+                        warn!(
+                            "{} stage=rpc_get_absent_blocks status=timeout peer_id={} request_ids={} exp={} attempt={} elapsed_ms={}",
+                            SYNC_PROF_PREFIX,
+                            peer_id,
+                            req.len(),
+                            exp,
+                            count,
+                            rpc_begin.elapsed().as_millis()
+                        );
+                    }
                     if count == self.rpc_retry_count {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
