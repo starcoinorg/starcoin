@@ -42,7 +42,7 @@ use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
 use crate::protocol::event::Event;
-use crate::protocol::generic_proto::{NotificationsSink, NotifsHandlerError, Ready};
+use crate::protocol::generic_proto::{NotificationsSink, Ready};
 use crate::protocol::{Protocol, HARD_CORE_PROTOCOL_ID};
 use crate::request_responses::{InboundFailure, OutboundFailure, RequestFailure, ResponseFailure};
 use crate::{
@@ -56,16 +56,11 @@ use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
-use libp2p::swarm::Executor;
 use libp2p::{
-    core::{either::EitherError, ConnectedPoint},
+    core::ConnectedPoint,
     identify::Info as IdentifyInfo,
-    kad::record::Key as KademliaKey,
-    ping::Failure as PingFailure,
-    swarm::{
-        AddressScore, ConnectionError, ConnectionLimits, DialError, NetworkBehaviour, Swarm,
-        SwarmBuilder, SwarmEvent,
-    },
+    kad::RecordKey as KademliaKey,
+    swarm::{Config as SwarmConfig, ConnectionError, DialError, Swarm, SwarmEvent},
     PeerId,
 };
 use log::{debug, error, info, trace, warn};
@@ -278,32 +273,13 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
                 };
                 transport::build_transport(local_identity, config_mem)
             };
-            let builder = {
-                struct SpawnImpl<F>(F);
-                impl<F: Fn(Pin<Box<dyn Future<Output = ()> + Send>>)> Executor for SpawnImpl<F> {
-                    fn exec(&self, f: Pin<Box<dyn Future<Output = ()> + Send>>) {
-                        (self.0)(f)
-                    }
-                }
-                SwarmBuilder::with_executor(
-                    transport,
-                    behaviour,
-                    local_peer_id,
-                    SpawnImpl(Box::new(|f| {
-                        tokio::spawn(f);
-                    })),
-                )
-                .connection_limits(
-                    ConnectionLimits::default()
-                        .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
-                        .with_max_established_incoming(Some(
-                            crate::MAX_CONNECTIONS_ESTABLISHED_INCOMING,
-                        )),
-                )
-                .notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
-                .connection_event_buffer_size(1024)
-            };
-            (builder.build(), bandwidth)
+            let swarm_config = SwarmConfig::with_tokio_executor()
+                .with_notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
+                .with_per_connection_event_buffer_size(1024);
+            (
+                Swarm::new(transport, behaviour, local_peer_id, swarm_config),
+                bandwidth,
+            )
         };
 
         // Listen on multiaddresses.
@@ -315,7 +291,7 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
 
         // Add external addresses.
         for addr in &params.network_config.public_addresses {
-            Swarm::add_external_address(&mut swarm, addr.clone(), AddressScore::Infinite);
+            Swarm::add_external_address(&mut swarm, addr.clone());
         }
 
         let external_addresses = Arc::new(Mutex::new(Vec::new()));
@@ -403,8 +379,11 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
         let connected_peers = {
             let swarm = &mut *swarm;
             open.iter().filter_map(move |peer_id| {
-                let known_addresses = NetworkBehaviour::addresses_of_peer(swarm.behaviour_mut(), peer_id)
-                    .into_iter().collect();
+                let known_addresses = swarm
+                    .behaviour_mut()
+                    .addresses_of_peer(peer_id)
+                    .into_iter()
+                    .collect();
 
                 let endpoint = if let Some(op_e) = swarm.behaviour_mut().node(peer_id).map(|i| i.endpoint()) {
                     match op_e {
@@ -446,12 +425,11 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
                                 .behaviour_mut()
                                 .node(&peer_id)
                                 .and_then(|i| i.latest_ping()),
-                            known_addresses: NetworkBehaviour::addresses_of_peer(
-                                swarm.behaviour_mut(),
-                                &peer_id,
-                            )
-                            .into_iter()
-                            .collect(),
+                            known_addresses: swarm
+                                .behaviour_mut()
+                                .addresses_of_peer(&peer_id)
+                                .into_iter()
+                                .collect(),
                         },
                     )
                 })
@@ -461,11 +439,7 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
         NetworkState {
             peer_id: swarm.local_peer_id().to_base58(),
             listened_addresses: swarm.listeners().cloned().collect(),
-            external_addresses: swarm
-                .external_addresses()
-                .map(|r| &r.addr)
-                .cloned()
-                .collect(),
+            external_addresses: swarm.external_addresses().cloned().collect(),
             connected_peers,
             not_connected_peers,
             peerset: swarm
@@ -496,11 +470,11 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
     }
 
     pub fn ban_peer(&mut self, peer_id: &PeerId) {
-        self.network_service.ban_peer_id(*peer_id)
+        let _ = self.network_service.disconnect_peer_id(*peer_id);
     }
 
     pub fn unban_peer(&mut self, peer_id: &PeerId) {
-        self.network_service.unban_peer_id(*peer_id)
+        let _ = peer_id;
     }
 }
 
@@ -1102,9 +1076,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                 }
                 ServiceToWorkerMsg::BanPeer(ban, peer_id) => {
                     if ban {
-                        this.network_service.ban_peer_id(peer_id)
-                    } else {
-                        this.network_service.unban_peer_id(peer_id)
+                        let _ = this.network_service.disconnect_peer_id(peer_id);
                     }
                 }
             }
@@ -1159,7 +1131,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         peer_id,
                         duration.as_secs()
                     );
-                    this.network_service.ban_peer_id(peer_id);
+                    let _ = this.network_service.disconnect_peer_id(peer_id);
                     this.unbans.push(
                         async move {
                             let delay = futures_timer::Delay::new(duration);
@@ -1194,6 +1166,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                                     ResponseFailure::Network(InboundFailure::ResponseOmission) => {
                                         "busy-omitted"
                                     }
+                                    ResponseFailure::Network(InboundFailure::Io(_)) => "io-error",
                                 };
 
                                 metrics
@@ -1232,6 +1205,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                                     RequestFailure::Network(
                                         OutboundFailure::UnsupportedProtocols,
                                     ) => "unsupported",
+                                    RequestFailure::Network(OutboundFailure::Io(_)) => "io-error",
                                     RequestFailure::NotConnected => "not-connected",
                                     RequestFailure::UnknownProtocol => "unknown-protocol",
                                     RequestFailure::Obsolete => "obsolete",
@@ -1398,13 +1372,6 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         };
                         let reason = match cause {
                             Some(ConnectionError::IO(_)) => "transport-error",
-                            Some(ConnectionError::Handler(EitherError::A(EitherError::A(
-                                EitherError::B(EitherError::A(PingFailure::Timeout)),
-                            )))) => "ping-timeout",
-                            Some(ConnectionError::Handler(EitherError::A(EitherError::A(
-                                EitherError::A(NotifsHandlerError::SyncNotificationsClogged),
-                            )))) => "sync-notifications-clogged",
-                            Some(ConnectionError::Handler(_)) => "protocol-error",
                             Some(ConnectionError::KeepAliveTimeout) => "keep-alive-timeout",
                             None => "actively-closed",
                         };
@@ -1433,7 +1400,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         error);
 
                         if this.boot_node_ids.contains(&peer_id) {
-                            if let DialError::InvalidPeerId(_) = error {
+                            if let DialError::WrongPeerId { .. } = error {
                                 error!(
                                 "💔 The bootnode you want to connect to provided a different peer ID than the one you expect: `{}`.",
                                 peer_id,
@@ -1444,33 +1411,32 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
 
                     if let Some(metrics) = this.metrics.as_ref() {
                         match error {
-                            DialError::ConnectionLimit(_) => metrics
+                            DialError::Denied { .. } => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["limit-reached"])
                                 .inc(),
-                            DialError::InvalidPeerId(_) => metrics
+                            DialError::WrongPeerId { .. } => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["invalid-peer-id"])
                                 .inc(),
-                            DialError::Transport(_) | DialError::ConnectionIo(_) => metrics
+                            DialError::Transport(_) => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["transport-error"])
                                 .inc(),
-                            DialError::Banned => {}
-                            DialError::LocalPeerId => {}
+                            DialError::LocalPeerId { .. } => {}
                             DialError::NoAddresses => {}
                             DialError::DialPeerConditionFalse(_) => {}
                             DialError::Aborted => {}
-                            DialError::WrongPeerId { .. } => {}
                         }
                     }
                 }
-                Poll::Ready(SwarmEvent::Dialing(peer_id)) => {
+                Poll::Ready(SwarmEvent::Dialing { peer_id, .. }) => {
                     trace!(target: "sub-libp2p", "Libp2p => Dialing({:?})", peer_id)
                 }
                 Poll::Ready(SwarmEvent::IncomingConnection {
                     local_addr,
                     send_back_addr,
+                    ..
                 }) => {
                     trace!(target: "sub-libp2p", "Libp2p => IncomingConnection({},{}))",
                            local_addr, send_back_addr);
@@ -1479,13 +1445,10 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     local_addr,
                     send_back_addr,
                     error,
+                    ..
                 }) => {
                     trace!(target: "sub-libp2p", "Libp2p => IncomingConnectionError({},{}): {}",
                            local_addr, send_back_addr, error);
-                }
-                Poll::Ready(SwarmEvent::BannedPeer { peer_id, endpoint }) => {
-                    trace!(target: "sub-libp2p", "Libp2p => BannedPeer({}). Connected via {:?}.",
-                           peer_id, endpoint);
                 }
                 Poll::Ready(SwarmEvent::ListenerClosed { reason, .. }) => {
                     warn!(target: "sub-libp2p", "Libp2p => ListenerClosed: {:?}", reason);
@@ -1522,6 +1485,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         .user_protocol_mut()
                         .add_set_discovered_nodes(iter::once(peer_id));
                 }
+                Poll::Ready(_) => {}
             };
         }
 
@@ -1563,7 +1527,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
             }
         }
         while let Poll::Ready(Some(peer_id)) = Pin::new(&mut this.unbans).poll_next(cx) {
-            this.network_service.unban_peer_id(peer_id);
+            let _ = peer_id;
         }
         Poll::Pending
     }

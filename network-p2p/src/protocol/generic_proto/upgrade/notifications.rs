@@ -38,7 +38,7 @@ use asynchronous_codec::Framed;
 ///
 use bytes::BytesMut;
 use futures::prelude::*;
-use libp2p::core::{upgrade, InboundUpgrade, OutboundUpgrade, UpgradeInfo};
+use libp2p::core::{InboundUpgrade, OutboundUpgrade, UpgradeInfo};
 use log::error;
 use std::{
     borrow::Cow,
@@ -120,15 +120,11 @@ impl NotificationsIn {
 }
 
 impl UpgradeInfo for NotificationsIn {
-    type Info = Cow<'static, [u8]>;
+    type Info = Cow<'static, str>;
     type InfoIter = iter::Once<Self::Info>;
 
     fn protocol_info(&self) -> Self::InfoIter {
-        let bytes: Cow<'static, [u8]> = match &self.protocol_name {
-            Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
-            Cow::Owned(s) => Cow::Owned(s.as_bytes().to_vec()),
-        };
-        iter::once(bytes)
+        iter::once(self.protocol_name.clone())
     }
 }
 
@@ -331,15 +327,11 @@ impl NotificationsOut {
 }
 
 impl UpgradeInfo for NotificationsOut {
-    type Info = Cow<'static, [u8]>;
+    type Info = Cow<'static, str>;
     type InfoIter = iter::Once<Self::Info>;
 
     fn protocol_info(&self) -> Self::InfoIter {
-        let bytes: Cow<'static, [u8]> = match &self.protocol_name {
-            Cow::Borrowed(s) => Cow::Borrowed(s.as_bytes()),
-            Cow::Owned(s) => Cow::Owned(s.as_bytes().to_vec()),
-        };
-        iter::once(bytes)
+        iter::once(self.protocol_name.clone())
     }
 }
 
@@ -353,7 +345,18 @@ where
 
     fn upgrade_outbound(self, mut socket: TSubstream, _: Self::Info) -> Self::Future {
         Box::pin(async move {
-            upgrade::write_length_prefixed(&mut socket, &self.initial_message).await?;
+            {
+                let mut len = unsigned_varint::encode::usize_buffer();
+                socket
+                    .write_all(unsigned_varint::encode::usize(
+                        self.initial_message.len(),
+                        &mut len,
+                    ))
+                    .await?;
+            }
+            if !self.initial_message.is_empty() {
+                socket.write_all(&self.initial_message).await?;
+            }
 
             // Reading handshake.
             let handshake_len = unsigned_varint::aio::read_usize(&mut socket).await?;
@@ -456,7 +459,7 @@ mod tests {
     use super::{NotificationsIn, NotificationsOut};
 
     use futures::{channel::oneshot, prelude::*};
-    use libp2p::core::upgrade;
+    use libp2p::core::{InboundUpgrade, OutboundUpgrade};
     use std::borrow::Cow;
     use tokio::net::{TcpListener, TcpStream};
     use tokio_util::compat::TokioAsyncReadCompatExt;
@@ -470,13 +473,11 @@ mod tests {
             let socket = TcpStream::connect(listener_addr_rx.await.unwrap())
                 .await
                 .unwrap();
-            let (handshake, mut substream) = upgrade::apply_outbound(
-                socket.compat(),
-                NotificationsOut::new(PROTO_NAME, &b"initial message"[..], 1024 * 1024),
-                upgrade::Version::V1,
-            )
-            .await
-            .unwrap();
+            let (handshake, mut substream) =
+                NotificationsOut::new(PROTO_NAME.clone(), &b"initial message"[..], 1024 * 1024)
+                    .upgrade_outbound(socket.compat(), PROTO_NAME)
+                    .await
+                    .unwrap();
 
             assert_eq!(handshake, b"hello world");
             substream.send(b"test message".to_vec()).await.unwrap();
@@ -488,12 +489,11 @@ mod tests {
             .unwrap();
 
         let (socket, _) = listener.accept().await.unwrap();
-        let (initial_message, mut substream) = upgrade::apply_inbound(
-            socket.compat(),
-            NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-        )
-        .await
-        .unwrap();
+        let (initial_message, mut substream) =
+            NotificationsIn::new(PROTO_NAME.clone(), 1024 * 1024)
+                .upgrade_inbound(socket.compat(), PROTO_NAME)
+                .await
+                .unwrap();
 
         assert_eq!(initial_message, b"initial message");
         substream.send_handshake(&b"hello world"[..]);
@@ -515,13 +515,11 @@ mod tests {
             let socket = TcpStream::connect(listener_addr_rx.await.unwrap())
                 .await
                 .unwrap();
-            let (handshake, mut substream) = upgrade::apply_outbound(
-                socket.compat(),
-                NotificationsOut::new(PROTO_NAME, vec![], 1024 * 1024),
-                upgrade::Version::V1,
-            )
-            .await
-            .unwrap();
+            let (handshake, mut substream) =
+                NotificationsOut::new(PROTO_NAME.clone(), vec![], 1024 * 1024)
+                    .upgrade_outbound(socket.compat(), PROTO_NAME)
+                    .await
+                    .unwrap();
 
             assert!(handshake.is_empty());
             substream.send(Default::default()).await.unwrap();
@@ -534,12 +532,11 @@ mod tests {
                 .unwrap();
 
             let (socket, _) = listener.accept().await.unwrap();
-            let (initial_message, mut substream) = upgrade::apply_inbound(
-                socket.compat(),
-                NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-            )
-            .await
-            .unwrap();
+            let (initial_message, mut substream) =
+                NotificationsIn::new(PROTO_NAME.clone(), 1024 * 1024)
+                    .upgrade_inbound(socket.compat(), PROTO_NAME)
+                    .await
+                    .unwrap();
 
             assert!(initial_message.is_empty());
             substream.send_handshake(vec![]);
@@ -560,12 +557,9 @@ mod tests {
             let socket = TcpStream::connect(listener_addr_rx.await.unwrap())
                 .await
                 .unwrap();
-            let outcome = upgrade::apply_outbound(
-                socket.compat(),
-                NotificationsOut::new(PROTO_NAME, &b"hello"[..], 1024 * 1024),
-                upgrade::Version::V1,
-            )
-            .await;
+            let outcome = NotificationsOut::new(PROTO_NAME.clone(), &b"hello"[..], 1024 * 1024)
+                .upgrade_outbound(socket.compat(), PROTO_NAME)
+                .await;
 
             // Despite the protocol negotiation being successfully conducted on the listener
             // side, we have to receive an error here because the listener didn't send the
@@ -580,12 +574,10 @@ mod tests {
                 .unwrap();
 
             let (socket, _) = listener.accept().await.unwrap();
-            let (initial_msg, substream) = upgrade::apply_inbound(
-                socket.compat(),
-                NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-            )
-            .await
-            .unwrap();
+            let (initial_msg, substream) = NotificationsIn::new(PROTO_NAME.clone(), 1024 * 1024)
+                .upgrade_inbound(socket.compat(), PROTO_NAME)
+                .await
+                .unwrap();
 
             assert_eq!(initial_msg, b"hello");
 
@@ -605,16 +597,13 @@ mod tests {
             let socket = TcpStream::connect(listener_addr_rx.await.unwrap())
                 .await
                 .unwrap();
-            let ret = upgrade::apply_outbound(
-                socket.compat(),
+            let ret = NotificationsOut::new(
+                PROTO_NAME.clone(),
                 // We check that an initial message that is too large gets refused.
-                NotificationsOut::new(
-                    PROTO_NAME,
-                    (0..32768).map(|_| 0).collect::<Vec<_>>(),
-                    1024 * 1024,
-                ),
-                upgrade::Version::V1,
+                (0..32768).map(|_| 0).collect::<Vec<_>>(),
+                1024 * 1024,
             )
+            .upgrade_outbound(socket.compat(), PROTO_NAME)
             .await;
             assert!(ret.is_err());
         });
@@ -626,11 +615,9 @@ mod tests {
                 .unwrap();
 
             let (socket, _) = listener.accept().await.unwrap();
-            let ret = upgrade::apply_inbound(
-                socket.compat(),
-                NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-            )
-            .await;
+            let ret = NotificationsIn::new(PROTO_NAME.clone(), 1024 * 1024)
+                .upgrade_inbound(socket.compat(), PROTO_NAME)
+                .await;
             assert!(ret.is_err());
         }
 
@@ -646,12 +633,10 @@ mod tests {
             let socket = TcpStream::connect(listener_addr_rx.await.unwrap())
                 .await
                 .unwrap();
-            let ret = upgrade::apply_outbound(
-                socket.compat(),
-                NotificationsOut::new(PROTO_NAME, &b"initial message"[..], 1024 * 1024),
-                upgrade::Version::V1,
-            )
-            .await;
+            let ret =
+                NotificationsOut::new(PROTO_NAME.clone(), &b"initial message"[..], 1024 * 1024)
+                    .upgrade_outbound(socket.compat(), PROTO_NAME)
+                    .await;
             assert!(ret.is_err());
         });
 
@@ -662,12 +647,11 @@ mod tests {
                 .unwrap();
 
             let (socket, _) = listener.accept().await.unwrap();
-            let (initial_message, mut substream) = upgrade::apply_inbound(
-                socket.compat(),
-                NotificationsIn::new(PROTO_NAME, 1024 * 1024),
-            )
-            .await
-            .unwrap();
+            let (initial_message, mut substream) =
+                NotificationsIn::new(PROTO_NAME.clone(), 1024 * 1024)
+                    .upgrade_inbound(socket.compat(), PROTO_NAME)
+                    .await
+                    .unwrap();
             assert_eq!(initial_message, b"initial message");
 
             // We check that a handshake that is too large gets refused.

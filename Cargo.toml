@@ -372,13 +372,12 @@ jsonrpc-ws-server = "18"
 lazy_static = "1.5.0"
 libc = "^0.2"
 libloading = "0.7.2"
-libp2p = { version = "0.50.0", features = [
+libp2p = { version = "0.56.0", features = [
     "dns",
     "identify",
     "kad",
     "macros",
     "mdns",
-    "mplex",
     "noise",
     "ping",
     "tcp",
@@ -387,7 +386,6 @@ libp2p = { version = "0.50.0", features = [
     "websocket",
     "secp256k1",
 ] }
-libp2p-core = { version = "0.50.0" }
 libsecp256k1 = "0.7.2"
 linked-hash-map = "0.5.6"
 linked_hash_set = "0.1.6"
@@ -495,7 +493,7 @@ serde_bytes = "0.11"
 serde_derive = "1.0"
 serde_json = "~1"
 serde_yaml = "0.8.26"
-sha2 = "0.10.6"
+sha2 = "0.10.9"
 sha2_0_9 = { package = "sha2", version = "0.9.3" }
 sha3 = "0.10.1"
 shell-words = "1.0.0"
@@ -525,7 +523,7 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "bc3ca2138cf66d646f14a0f673ae5d853743f50a" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates-v1" }
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
@@ -602,7 +600,7 @@ starcoin-vm2-gas-algebra = { path = "vm2/framework/gas-algebra", package = "star
 starcoin-vm2-gas-schedule = { path = "vm2/framework/gas-schedule", package = "starcoin-gas-schedule" }
 starcoin-vm2-gas-meter = { path = "vm2/framework/gas-meter", package = "starcoin-gas-meter" }
 starcoin-vm2-native-interface = { path = "vm2/framework/native-interface", package = "starcoin-native-interface" }
-starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
+starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", branch = "upgrade-crates", package = "starcoin-crypto" }
 starcoin-vm2-dev = { path = "vm2/dev" }
 starcoin-vm2-statedb = { path = "state/statedb-v2" }
 starcoin-vm2-state-api = { path = "state/api-v2" }
