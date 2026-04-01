@@ -323,7 +323,6 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
             from_worker,
             event_streams: out_events::OutChannels::new(params.metrics_registry.as_ref())?,
             metrics,
-            unbans: Default::default(),
             boot_node_ids,
             peers_notifications_sinks,
         })
@@ -472,11 +471,11 @@ impl<T: BusinessLayerHandle + Send> NetworkWorker<T> {
     }
 
     pub fn ban_peer(&mut self, peer_id: &PeerId) {
-        let _ = self.network_service.disconnect_peer_id(*peer_id);
+        self.service.peerset.ban_peer(*peer_id);
     }
 
     pub fn unban_peer(&mut self, peer_id: &PeerId) {
-        let _ = peer_id;
+        self.service.peerset.unban_peer(*peer_id);
     }
 }
 
@@ -849,9 +848,11 @@ impl NetworkService {
     }
 
     pub fn ban_peer(&self, peer_id: PeerId, ban: bool) {
-        let _ = self
-            .to_worker
-            .unbounded_send(ServiceToWorkerMsg::BanPeer(ban, peer_id));
+        if ban {
+            self.peerset.ban_peer(peer_id);
+        } else {
+            self.peerset.unban_peer(peer_id);
+        }
     }
 }
 
@@ -979,7 +980,6 @@ enum ServiceToWorkerMsg {
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
     UpdateBusinessLayerStatus(Vec<u8>),
     AddressByPeerId(PeerId, oneshot::Sender<Vec<Multiaddr>>),
-    BanPeer(bool, PeerId),
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -997,7 +997,6 @@ pub struct NetworkWorker<T: 'static + BusinessLayerHandle + Send> {
     event_streams: out_events::OutChannels,
     /// Prometheus network metrics.
     metrics: Option<Metrics>,
-    unbans: stream::FuturesUnordered<Pin<Box<dyn Future<Output = PeerId> + Send>>>,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
     /// For each peer, an object that allows sending notifications to
@@ -1076,11 +1075,6 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                 ServiceToWorkerMsg::AddressByPeerId(peer_id, tx) => {
                     let _ = tx.send(this.network_service.behaviour_mut().get_address(&peer_id));
                 }
-                ServiceToWorkerMsg::BanPeer(ban, peer_id) => {
-                    if ban {
-                        let _ = this.network_service.disconnect_peer_id(peer_id);
-                    }
-                }
             }
         }
 
@@ -1132,15 +1126,6 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         "network banned peer {} for {} secs",
                         peer_id,
                         duration.as_secs()
-                    );
-                    let _ = this.network_service.disconnect_peer_id(peer_id);
-                    this.unbans.push(
-                        async move {
-                            let delay = futures_timer::Delay::new(duration);
-                            delay.await;
-                            peer_id
-                        }
-                        .boxed(),
                     );
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::InboundRequest {
@@ -1527,9 +1512,6 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     .with_label_values(&[format!("set_{}", set_index).as_str()])
                     .set(node_count as u64)
             }
-        }
-        while let Poll::Ready(Some(peer_id)) = Pin::new(&mut this.unbans).poll_next(cx) {
-            let _ = peer_id;
         }
         Poll::Pending
     }
