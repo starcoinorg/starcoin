@@ -1,5 +1,15 @@
+mod agent_loop;
+mod analyzer;
+mod config_tuner;
+mod experiment;
+mod history;
+mod iteration;
+mod knowledge;
 mod pipeline;
+mod regression;
 mod results;
+mod strategy;
+mod suggester;
 
 use std::{
     collections::HashMap,
@@ -26,6 +36,7 @@ use starcoin_logger::{
     LoggerHandle,
 };
 use starcoin_node::NodeHandle;
+use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, global_collector};
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -54,7 +65,7 @@ use starcoin_vm2_types::{
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm2_vm_types::{account_address::AccountAddress, state_view::StateReaderExt};
 use tempfile::TempDir;
-use test_helper::run_node_by_config;
+use test_helper::run_node_with_all_service;
 
 #[derive(Debug, Parser)]
 #[command(about = "Execute the full build-and-execute benchmark outside of tests.")]
@@ -138,6 +149,62 @@ struct Cli {
         help = "Delay in milliseconds after funding transfers before benchmark starts."
     )]
     settle_delay_ms: u64,
+
+    #[arg(
+        long = "agent-mode",
+        default_value = "false",
+        help = "Run in agent mode with full analysis output (bottleneck detection, optimization suggestions, regression detection)."
+    )]
+    agent_mode: bool,
+
+    #[arg(
+        long = "history-dir",
+        default_value = ".benchmark_history",
+        help = "Directory for storing benchmark history (used by agent mode)."
+    )]
+    history_dir: String,
+
+    #[arg(
+        long = "knowledge-dir",
+        default_value = ".optimization_knowledge",
+        help = "Directory for storing optimization knowledge base (used by agent mode)."
+    )]
+    knowledge_dir: String,
+
+    #[arg(
+        long = "agent-output",
+        default_value = "agent_output.json",
+        help = "Output file for agent mode JSON results."
+    )]
+    agent_output: String,
+
+    #[arg(
+        long = "tags",
+        value_delimiter = ',',
+        help = "Comma-separated tags for this benchmark run (used by agent mode)."
+    )]
+    tags: Vec<String>,
+
+    #[arg(
+        long = "iterate",
+        default_value = "false",
+        help = "Run in iteration mode - automatically apply optimizations and re-run benchmarks."
+    )]
+    iterate: bool,
+
+    #[arg(
+        long = "target-tps",
+        default_value = "1000",
+        help = "Target TPS to achieve in iteration mode."
+    )]
+    target_tps: f64,
+
+    #[arg(
+        long = "max-iterations",
+        default_value = "10",
+        help = "Maximum number of optimization iterations."
+    )]
+    max_iterations: u32,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -294,7 +361,17 @@ fn main() -> Result<()> {
     global_opt.genesis_config = init_opt.genesis_config.clone();
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
-    let node = run_node_by_config(node_config.clone())?;
+    let node = run_node_with_all_service(node_config.clone())?;
+
+    // Wait for node services to fully initialize (sync status, pacemaker, etc.)
+    info!("Waiting for node services to fully initialize...");
+    std::thread::sleep(std::time::Duration::from_secs(3));
+    info!("Node initialization wait complete.");
+
+    // Enable pipeline timing collection before benchmark
+    clear_timing();
+    enable_timing();
+    info!("[Pipeline Timing] Enabled timing collection");
 
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -312,7 +389,97 @@ fn main() -> Result<()> {
         cli.settle_delay_ms,
     ));
 
+    // Disable pipeline timing collection after benchmark
+    disable_timing();
+    info!("[Pipeline Timing] Disabled timing collection");
+
+    // Print pipeline timing statistics
+    let timing_stats = global_collector().calculate_stage_stats();
+    info!("[Pipeline Timing] Stage Statistics:");
+    for (stage, stats) in &timing_stats {
+        if stats.count > 0 {
+            info!(
+                "  {}: count={}, avg={:.3}ms, min={:.3}ms, max={:.3}ms, throughput={:.2} txns/s",
+                stage, stats.count, stats.avg_ms, stats.min_ms, stats.max_ms, stats.throughput
+            );
+        }
+    }
+
+    // Convert timing stats to HashMap<String, StageTiming> for agent loop (before node.stop() clears data)
+    let pipeline_stages: std::collections::HashMap<String, starcoin_pipeline_timing::StageTiming> = 
+        timing_stats.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+
+    // Stop node first - this triggers ObserverService.stopped() which exports benchmark_results.json
     node.stop()?;
+
+    // Run agent loop analysis if enabled (after node.stop() so benchmark_results.json is available)
+    if cli.agent_mode {
+        info!("[Agent Mode] Starting analysis...");
+        
+        // Read actual stats from benchmark_results.json (exported by ObserverService.stopped())
+        let stats = match std::fs::read_to_string("./benchmark_results.json") {
+            Ok(json_content) => {
+                match serde_json::from_str::<results::BenchmarkJsonOutput>(&json_content) {
+                    Ok(output) => {
+                        info!("[Agent Mode] Loaded stats from benchmark_results.json: TPS={:.2}", output.summary.tps);
+                        output.summary
+                    }
+                    Err(e) => {
+                        warn!("[Agent Mode] Failed to parse benchmark_results.json: {}, using defaults", e);
+                        results::BenchmarkStats::default()
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("[Agent Mode] Failed to read benchmark_results.json: {}, using defaults", e);
+                results::BenchmarkStats::default()
+            }
+        };
+        
+        // Create benchmark config for history
+        let bench_config = history::BenchmarkConfig {
+            account_count: cli.account_count,
+            batch_user_count: cli.batch_user_count,
+            gas_price: cli.gas_price,
+            max_gas: cli.max_gas,
+            network: format!("{:?}", cli.network),
+        };
+        
+        // Create agent loop with config
+        let agent_config = agent_loop::AgentConfig {
+            history_dir: cli.history_dir.clone(),
+            knowledge_dir: cli.knowledge_dir.clone(),
+            save_history: true,
+            use_knowledge_base: true,
+            ..Default::default()
+        };
+        
+        match agent_loop::AgentLoop::with_config(agent_config) {
+            Ok(mut agent) => {
+                match agent.process(bench_config, stats, pipeline_stages, cli.tags.clone()) {
+                    Ok(output) => {
+                        info!("\n{}", output);
+                        
+                        // Export to JSON
+                        if let Err(e) = agent_loop::AgentLoop::export_json(
+                            &output, 
+                            std::path::Path::new(&cli.agent_output)
+                        ) {
+                            error!("Failed to export agent output: {}", e);
+                        } else {
+                            info!("[Agent Mode] Output written to {}", cli.agent_output);
+                        }
+                    }
+                    Err(e) => {
+                        error!("[Agent Mode] Analysis failed: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                error!("[Agent Mode] Failed to initialize agent loop: {}", e);
+            }
+        }
+    }
 
     let close_result = data_dir.close();
     bench_result?;
@@ -1276,6 +1443,7 @@ impl ObserverService {
 
         // Record mined event for each transaction in the block
         let user_txn_count = block.body.transactions2.len();
+        
         for transaction in &block.body.transactions2 {
             self.transaction_data
                 .entry(transaction.id())
@@ -1322,8 +1490,8 @@ impl ObserverService {
             }
         }
 
-        // Export to JSON for AI agent loop
-        dumper.export_json("./benchmark_results.json", None)?;
+        // Export to JSON for AI agent loop with pipeline timing data from global collector
+        dumper.export_json("./benchmark_results.json")?;
         
         dumper.dump_results()
     }

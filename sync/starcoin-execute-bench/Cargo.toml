@@ -11,7 +11,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-chrono = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true }
 futures = { workspace = true }
 num_cpus = { workspace = true }
@@ -26,6 +26,7 @@ starcoin-dag = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-node = { workspace = true }
+starcoin-pipeline-timing = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
@@ -41,3 +42,4 @@ starcoin-vm2-vm-types = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 tokio = { workspace = true }
+uuid = { version = "1.0", features = ["v4"] }

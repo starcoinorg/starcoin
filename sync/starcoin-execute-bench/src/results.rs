@@ -6,8 +6,7 @@ use plotters::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
-
-use crate::pipeline::{PipelineStage, PipelineTimingCollector, StageTiming};
+use starcoin_pipeline_timing::{global_collector, PipelineStage, StageTiming};
 
 #[derive(Clone)]
 pub enum TransactionExecutionResult {
@@ -97,7 +96,7 @@ impl std::fmt::Debug for TransactionExecutionResult {
 }
 
 /// Benchmark statistics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BenchmarkStats {
     pub tps: f64,
     /// Block-based TPS statistics (calculated per block: from block_timestamp to executed_time)
@@ -481,20 +480,15 @@ impl<'a> ResultsDumper<'a> {
     pub fn export_json(
         &self,
         file_path: &str,
-        pipeline_collector: Option<&PipelineTimingCollector>,
     ) -> anyhow::Result<()> {
         let stats = self.calculate_stats();
         
-        // Build stage timing data if available
-        let stage_timings: HashMap<String, StageTiming> = if let Some(collector) = pipeline_collector {
-            collector
-                .calculate_stage_stats()
-                .into_iter()
-                .map(|(stage, timing)| (stage.name().to_string(), timing))
-                .collect()
-        } else {
-            HashMap::new()
-        };
+        // Build stage timing data from global collector
+        let stage_timings: HashMap<String, StageTiming> = global_collector()
+            .calculate_stage_stats()
+            .into_iter()
+            .map(|(stage, timing)| (stage.to_string(), timing))
+            .collect();
 
         let output = BenchmarkJsonOutput {
             timestamp: chrono::Utc::now().to_rfc3339(),
