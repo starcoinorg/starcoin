@@ -27,7 +27,7 @@ use crate::{
     tasks::continue_execute_absent_block::ContinueChainOperator,
 };
 
-use super::executor::{DagBlockExecutor, ExecuteDurations, ExecuteState};
+use super::executor::{DagBlockExecutor, ExecuteDurations, ExecuteState, WorkerExecuteEvent};
 use super::parallel_info_service::{
     ParallelInfoService, ParallelWorkerId, RegisterWorkerRequest, ReportWorkerSyncedBlockRequest,
     UnregisterWorkerRequest,
@@ -100,7 +100,6 @@ struct DagBlockWorker {
     pub worker_id: ParallelWorkerId,
     pub registered: bool,
     pub sender_to_executor: Sender<Option<Block>>,
-    pub receiver_from_executor: Receiver<ExecuteState>,
     pub state: ExecuteState,
     pub handle: JoinHandle<()>,
 }
@@ -119,6 +118,8 @@ pub struct DagBlockSender<'a> {
     parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
     next_worker_id: ParallelWorkerId,
     free_worker_ids: BinaryHeap<Reverse<ParallelWorkerId>>,
+    executor_event_tx: Sender<WorkerExecuteEvent>,
+    executor_event_rx: Receiver<WorkerExecuteEvent>,
     parent_ready_signal_tx: watch::Sender<u64>,
     parent_ready_signal_seq: u64,
     ready_parent_cache: HashSet<HashValue>,
@@ -140,6 +141,8 @@ impl<'a> DagBlockSender<'a> {
         parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
         notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
+        let (executor_event_tx, executor_event_rx) =
+            mpsc::channel::<WorkerExecuteEvent>(queue_size);
         let (parent_ready_signal_tx, _) = watch::channel(0_u64);
         Self {
             sync_dag_store,
@@ -155,6 +158,8 @@ impl<'a> DagBlockSender<'a> {
             parallel_info_service,
             next_worker_id: 0,
             free_worker_ids: BinaryHeap::new(),
+            executor_event_tx,
+            executor_event_rx,
             parent_ready_signal_tx,
             parent_ready_signal_seq: 0,
             ready_parent_cache: HashSet::new(),
@@ -259,23 +264,6 @@ impl<'a> DagBlockSender<'a> {
             }
         }
 
-        for executor in &mut self.executors {
-            match &executor.state {
-                ExecuteState::Executed { .. } => {
-                    executor.state = ExecuteState::Executing(block.id());
-                    executor
-                        .sender_to_executor
-                        .send(Some(block.clone()))
-                        .await?;
-                    return anyhow::Ok(true);
-                }
-
-                ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
-                    continue;
-                }
-            }
-        }
-
         anyhow::Ok(false)
     }
 
@@ -289,10 +277,9 @@ impl<'a> DagBlockSender<'a> {
     }
 
     async fn spawn_worker_for_block(&mut self, block: Block) -> anyhow::Result<()> {
-        let (sender_to_main, receiver_from_executor) =
-            mpsc::channel::<ExecuteState>(self.queue_size);
+        let worker_id = self.allocate_worker_id()?;
         let (sender_to_worker, executor) = DagBlockExecutor::new(
-            sender_to_main,
+            self.executor_event_tx.clone(),
             self.queue_size,
             self.time_service.clone(),
             self.storage.clone(),
@@ -301,14 +288,13 @@ impl<'a> DagBlockSender<'a> {
             self.dag.clone(),
             self.execute_timeout_ms,
             self.parent_ready_signal_tx.subscribe(),
+            worker_id,
         )?;
 
-        let worker_id = self.allocate_worker_id()?;
         self.executors.push(DagBlockWorker {
             worker_id,
             registered: true,
             sender_to_executor: sender_to_worker.clone(),
-            receiver_from_executor,
             state: ExecuteState::Executing(block.id()),
             handle: executor.start_to_execute()?,
         });
@@ -395,15 +381,15 @@ impl<'a> DagBlockSender<'a> {
                 })?;
                 pending_blocks.push(block);
                 self.profile.observe_pending(pending_blocks.len());
-                self.flush_executor_state().await?;
+                self.flush_executor_events_nonblocking()?;
                 let _ = self.schedule_ready_blocks(&mut pending_blocks).await?;
-                self.flush_executor_state().await?;
+                self.flush_executor_events_nonblocking()?;
             }
 
             while !pending_blocks.is_empty() {
-                self.flush_executor_state().await?;
+                self.flush_executor_events_nonblocking()?;
                 let scheduled = self.schedule_ready_blocks(&mut pending_blocks).await?;
-                self.flush_executor_state().await?;
+                self.flush_executor_events_nonblocking()?;
                 if scheduled == 0 {
                     self.profile.record_no_ready_cycle();
                     if !self.has_executing_workers() {
@@ -413,10 +399,14 @@ impl<'a> DagBlockSender<'a> {
                         let _ = self
                             .fallback_dispatch_one_block(&mut pending_blocks)
                             .await?;
-                        self.flush_executor_state().await?;
+                        self.flush_executor_events_nonblocking()?;
                         continue;
                     }
-                    tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+                    if !self.wait_for_executor_event().await? {
+                        return Err(anyhow::format_err!(
+                            "executor event channel closed while pending blocks remain"
+                        ));
+                    }
                 }
             }
 
@@ -433,54 +423,7 @@ impl<'a> DagBlockSender<'a> {
         result
     }
 
-    async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
-        let mut has_new_executed = false;
-        for worker in &mut self.executors {
-            match worker.receiver_from_executor.try_recv() {
-                Ok(state) => {
-                    if let ExecuteState::Executed {
-                        executed_block,
-                        durations,
-                    } = state
-                    {
-                        info!("finish to execute block {:?}", executed_block.header());
-                        has_new_executed = true;
-                        self.profile.record_execute(durations);
-                        let notify_begin = std::time::Instant::now();
-                        self.notifier.notify((*executed_block).clone())?;
-                        self.profile
-                            .record_apply_notify(notify_begin.elapsed().as_millis());
-                        Self::report_worker_synced_block(
-                            &self.parallel_info_service,
-                            worker.worker_id,
-                        );
-                        worker.state = ExecuteState::Executed {
-                            executed_block,
-                            durations,
-                        };
-                    } else if let ExecuteState::Error(header) = state {
-                        return Err(anyhow::format_err!(
-                            "parallel worker failed while executing block: {:?}",
-                            header
-                        ));
-                    }
-                }
-                Err(e) => match e {
-                    mpsc::error::TryRecvError::Empty => (),
-                    mpsc::error::TryRecvError::Disconnected => {
-                        Self::mark_worker_closed(
-                            &self.parallel_info_service,
-                            &mut self.free_worker_ids,
-                            worker,
-                        );
-                    }
-                },
-            }
-        }
-        if has_new_executed {
-            self.signal_parent_ready();
-        }
-
+    fn retain_open_workers(&mut self) {
         let len = self.executors.len();
         self.executors
             .retain(|worker| !matches!(worker.state, ExecuteState::Closed));
@@ -488,8 +431,91 @@ impl<'a> DagBlockSender<'a> {
         if len != self.executors.len() {
             info!("sync workers count: {:?}", self.executors.len());
         }
+    }
 
-        anyhow::Ok(())
+    fn handle_worker_event(&mut self, event: WorkerExecuteEvent) -> anyhow::Result<bool> {
+        let worker = match self
+            .executors
+            .iter_mut()
+            .find(|worker| worker.worker_id == event.worker_id)
+        {
+            Some(worker) => worker,
+            None => {
+                warn!(
+                    "received execute event from unknown worker id: {:?}, ignore",
+                    event.worker_id
+                );
+                return Ok(false);
+            }
+        };
+
+        match event.state {
+            ExecuteState::Executing(block_id) => {
+                worker.state = ExecuteState::Executing(block_id);
+                Ok(false)
+            }
+            ExecuteState::Executed {
+                executed_block,
+                durations,
+            } => {
+                info!("finish to execute block {:?}", executed_block.header());
+                self.profile.record_execute(durations);
+                let notify_begin = std::time::Instant::now();
+                self.notifier.notify((*executed_block).clone())?;
+                self.profile
+                    .record_apply_notify(notify_begin.elapsed().as_millis());
+                Self::report_worker_synced_block(&self.parallel_info_service, worker.worker_id);
+                worker.state = ExecuteState::Executed {
+                    executed_block,
+                    durations,
+                };
+                Ok(true)
+            }
+            ExecuteState::Error(header) => Err(anyhow::format_err!(
+                "parallel worker failed while executing block: {:?}",
+                header
+            )),
+            ExecuteState::Closed => {
+                Self::mark_worker_closed(
+                    &self.parallel_info_service,
+                    &mut self.free_worker_ids,
+                    worker,
+                );
+                Ok(false)
+            }
+        }
+    }
+
+    fn flush_executor_events_nonblocking(&mut self) -> anyhow::Result<()> {
+        let mut has_new_executed = false;
+        loop {
+            match self.executor_event_rx.try_recv() {
+                Ok(event) => {
+                    has_new_executed |= self.handle_worker_event(event)?;
+                }
+                Err(mpsc::error::TryRecvError::Empty) => break,
+                Err(mpsc::error::TryRecvError::Disconnected) => break,
+            }
+        }
+        if has_new_executed {
+            self.signal_parent_ready();
+        }
+        self.retain_open_workers();
+        Ok(())
+    }
+
+    async fn wait_for_executor_event(&mut self) -> anyhow::Result<bool> {
+        match self.executor_event_rx.recv().await {
+            Some(event) => {
+                let has_new_executed = self.handle_worker_event(event)?;
+                if has_new_executed {
+                    self.signal_parent_ready();
+                }
+                self.retain_open_workers();
+                Ok(true)
+            }
+            None => Ok(false),
+        }
     }
 
     async fn wait_for_finish(&mut self) -> anyhow::Result<()> {
@@ -503,63 +529,18 @@ impl<'a> DagBlockSender<'a> {
                 self.abort_workers();
                 break;
             }
-            let mut has_new_executed = false;
-            for worker in &mut self.executors {
-                if let ExecuteState::Closed = worker.state {
-                    continue;
-                }
-
-                match worker.receiver_from_executor.try_recv() {
-                    Ok(state) => {
-                        if let ExecuteState::Executed {
-                            executed_block,
-                            durations,
-                        } = state
-                        {
-                            info!("finish to execute block {:?}", executed_block.header());
-                            has_new_executed = true;
-                            self.profile.record_execute(durations);
-                            Self::report_worker_synced_block(
-                                &self.parallel_info_service,
-                                worker.worker_id,
-                            );
-                            let notify_begin = std::time::Instant::now();
-                            self.notifier.notify((*executed_block).clone())?;
-                            self.profile
-                                .record_apply_notify(notify_begin.elapsed().as_millis());
-                            worker.state = ExecuteState::Executed {
-                                executed_block,
-                                durations,
-                            };
-                        } else if let ExecuteState::Error(header) = state {
-                            return Err(anyhow::format_err!(
-                                "parallel worker failed while finishing block execution: {:?}",
-                                header
-                            ));
-                        }
-                    }
-                    Err(e) => match e {
-                        mpsc::error::TryRecvError::Empty => (),
-                        mpsc::error::TryRecvError::Disconnected => {
-                            Self::mark_worker_closed(
-                                &self.parallel_info_service,
-                                &mut self.free_worker_ids,
-                                worker,
-                            );
-                        }
-                    },
-                }
-            }
-            if has_new_executed {
-                self.signal_parent_ready();
-            }
-
             if self
                 .executors
                 .iter()
                 .all(|worker| matches!(worker.state, ExecuteState::Closed))
             {
                 break;
+            }
+
+            if !self.wait_for_executor_event().await? {
+                return Err(anyhow::format_err!(
+                    "executor event channel closed before workers fully closed"
+                ));
             }
         }
 
