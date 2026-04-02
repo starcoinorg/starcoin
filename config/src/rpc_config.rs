@@ -63,6 +63,7 @@ pub struct HttpConfiguration {
     /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
 
+    #[serde(default)]
     #[clap(
         name = "http-trust-forwarded-ip-headers",
         long,

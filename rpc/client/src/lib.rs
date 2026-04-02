@@ -18,7 +18,7 @@ use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::Multiaddr;
 use parking_lot::Mutex;
 pub use rpc_clients::{
-    connect_http, connect_ipc, connect_ws, AccountClient, AccountClient2, ChainClient,
+    connect_http, connect_ipc, connect_tcp, connect_ws, AccountClient, AccountClient2, ChainClient,
     ContractClient, ContractClient2, DebugClient, MinerClient, NetworkManagerClient, NodeClient,
     NodeManagerClient, PubSubClient, RawClient, RpcChannel, RpcError, StateClient, StateClient2,
     SyncManagerClient, TxPoolClient,
@@ -83,6 +83,7 @@ mod vm2;
 pub enum ConnSource {
     Ipc(PathBuf),
     Http(String),
+    Tcp(String),
     WebSocket(String),
     Local(RpcChannel),
 }
@@ -92,6 +93,7 @@ impl std::fmt::Debug for ConnSource {
         match self {
             Self::Ipc(path) => write!(f, "Ipc({})", path.as_path().to_string_lossy()),
             Self::Http(url) => write!(f, "Http({})", url),
+            Self::Tcp(addr) => write!(f, "Tcp({})", addr),
             Self::WebSocket(url) => write!(f, "WebSocket({})", url),
             Self::Local(_) => write!(f, "Local"),
         }
@@ -102,7 +104,7 @@ impl ConnSource {
     fn supports_pubsub(&self) -> bool {
         match self {
             Self::Ipc(_) | Self::WebSocket(_) => true,
-            Self::Http(_) => false,
+            Self::Http(_) | Self::Tcp(_) => false,
             Self::Local(channel) => channel.supports_pubsub(),
         }
     }
@@ -156,6 +158,7 @@ impl ConnectionProvider {
         match self.conn_source.clone() {
             ConnSource::Ipc(sock_path) => connect_ipc(sock_path).await,
             ConnSource::Http(url) => connect_http(url.as_str()).await,
+            ConnSource::Tcp(addr) => connect_tcp(addr.as_str()).await,
             ConnSource::WebSocket(url) => connect_ws(url.as_str()).await,
             ConnSource::Local(channel) => Ok(channel),
         }
@@ -211,6 +214,10 @@ impl RpcClient {
 
     pub fn connect_http(url: &str) -> anyhow::Result<Self> {
         Self::new(ConnSource::Http(url.to_string()))
+    }
+
+    pub fn connect_tcp(addr: &str) -> anyhow::Result<Self> {
+        Self::new(ConnSource::Tcp(addr.to_string()))
     }
 
     pub fn connect_local<S>(rpc_service: S) -> anyhow::Result<Self>

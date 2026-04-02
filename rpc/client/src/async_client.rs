@@ -35,7 +35,7 @@ use starcoin_vm2_vm_types::{
 };
 
 // Local crate
-use crate::rpc_clients::{connect_http, connect_ipc, connect_ws};
+use crate::rpc_clients::{connect_http, connect_ipc, connect_tcp, connect_ws};
 use crate::{map_err, rpc_clients::RpcChannel, rpc_clients::RpcError, ConnSource, RpcClientInner};
 
 pub struct AsyncRpcClient {
@@ -56,6 +56,7 @@ impl AsyncConnProvider {
         match self.conn_source.clone() {
             ConnSource::Ipc(sock_path) => connect_ipc(sock_path).await,
             ConnSource::Http(url) => connect_http(url.as_str()).await,
+            ConnSource::Tcp(addr) => connect_tcp(addr.as_str()).await,
             ConnSource::WebSocket(url) => connect_ws(url.as_str()).await,
             ConnSource::Local(channel) => Ok(channel),
         }

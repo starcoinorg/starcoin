@@ -23,6 +23,7 @@ starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-rpc-api = { workspace = true }
 starcoin-rpc-ipc = { workspace = true }
+starcoin-rpc-tcp = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }

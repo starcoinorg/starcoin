@@ -164,6 +164,23 @@ pub async fn connect_http(url: &str) -> Result<RpcChannel, RpcError> {
     Ok(RpcChannel::Http(Arc::new(client)))
 }
 
+pub async fn connect_tcp(url: &str) -> Result<RpcChannel, RpcError> {
+    let normalized_addr = normalize_tcp_connect_addr(url);
+    if normalized_addr.as_str() != url {
+        debug!(
+            "rewrite tcp endpoint from {} to {} for local connect",
+            url, normalized_addr
+        );
+    }
+    let addr = normalized_addr
+        .strip_prefix("tcp://")
+        .unwrap_or(normalized_addr.as_str());
+    let client = starcoin_rpc_tcp::client::TcpClientBuilder::default()
+        .build(addr)
+        .await?;
+    Ok(RpcChannel::Async(Arc::new(client)))
+}
+
 fn normalize_ws_connect_url(url: &str) -> String {
     if let Some(rest) = url.strip_prefix("ws://0.0.0.0") {
         return format!("ws://127.0.0.1{}", rest);
@@ -196,9 +213,22 @@ fn normalize_http_connect_url(url: &str) -> String {
     url.to_string()
 }
 
+fn normalize_tcp_connect_addr(url: &str) -> String {
+    if let Some(rest) = url.strip_prefix("tcp://0.0.0.0") {
+        return format!("tcp://127.0.0.1{}", rest);
+    }
+    if let Some(rest) = url.strip_prefix("tcp://[::]") {
+        return format!("tcp://[::1]{}", rest);
+    }
+    url.to_string()
+}
+
 #[cfg(test)]
 mod connect_tests {
-    use super::{normalize_http_connect_url, normalize_ws_connect_url, RpcChannel};
+    use super::{
+        normalize_http_connect_url, normalize_tcp_connect_addr, normalize_ws_connect_url,
+        RpcChannel,
+    };
     use jsonrpsee::rpc_params;
     use jsonrpsee_http_client::HttpClientBuilder;
     use serde_json::Value;
@@ -255,6 +285,22 @@ mod connect_tests {
         assert_eq!(
             normalize_http_connect_url("https://[::]:9850/path"),
             "https://[::1]:9850/path"
+        );
+    }
+
+    #[test]
+    fn test_normalize_tcp_ipv4_any_addr() {
+        assert_eq!(
+            normalize_tcp_connect_addr("tcp://0.0.0.0:9860"),
+            "tcp://127.0.0.1:9860"
+        );
+    }
+
+    #[test]
+    fn test_normalize_tcp_ipv6_any_addr() {
+        assert_eq!(
+            normalize_tcp_connect_addr("tcp://[::]:9860"),
+            "tcp://[::1]:9860"
         );
     }
 

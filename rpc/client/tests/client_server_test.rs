@@ -32,11 +32,15 @@ fn do_client_test() -> Result<()> {
         "http://127.0.0.1:{}",
         config.rpc.get_http_address().unwrap().port
     );
+    let tcp_url = format!(
+        "tcp://127.0.0.1:{}",
+        config.rpc.get_tcp_address().unwrap().port
+    );
     let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
 
-    let node_handle = test_helper::run_node_by_config(config)?;
+    let node_handle = test_helper::run_node_by_config_with_tcp(config)?;
 
     let rpc_service_ref = node_handle.rpc_service()?;
 
@@ -58,6 +62,14 @@ fn do_client_test() -> Result<()> {
         "http/https transport must not support pubsub"
     );
 
+    let tcp_client = RpcClient::connect_tcp(tcp_url.as_str()).expect("connect tcp fail.");
+    let status_tcp = wait_for_rpc_ready(Duration::from_secs(10), || tcp_client.node_info())?;
+    info!("tcp_client status: {:?}", status_tcp);
+    assert!(
+        tcp_client.subscribe_new_blocks().is_err(),
+        "tcp transport must not support pubsub"
+    );
+
     let ws_client =
         RpcClient::connect_websocket(url.to_string().as_str()).expect("connect websocket fail.");
     let status = ws_client.node_info()?;
@@ -65,6 +77,7 @@ fn do_client_test() -> Result<()> {
     local_client.close();
     ipc_client.close();
     http_client.close();
+    tcp_client.close();
     ws_client.close();
     if let Err(e) = node_handle.stop() {
         error!("node stop error: {:?}", e)

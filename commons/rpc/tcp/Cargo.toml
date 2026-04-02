@@ -11,7 +11,7 @@ description = "Raw TCP support for Starcoin JSON-RPC"
 [dependencies]
 futures.workspace = true
 futures-util.workspace = true
-jsonrpsee = { workspace = true, features = ["server"] }
+jsonrpsee = { workspace = true, features = ["async-client", "client-core", "server"] }
 pin-project.workspace = true
 serde_json.workspace = true
 starcoin-rpc-ipc = { workspace = true }
@@ -20,6 +20,7 @@ tokio-stream.workspace = true
 tokio-util = { workspace = true, features = ["codec"] }
 tower.workspace = true
 tracing.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
