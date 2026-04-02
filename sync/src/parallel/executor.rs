@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use super::parallel_info_service::ParallelWorkerId;
 use crate::sync_profiling_info_enabled;
 use starcoin_chain::{verifier::FullVerifier, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
@@ -63,7 +64,8 @@ pub struct ExecuteDurations {
 }
 
 pub struct DagBlockExecutor {
-    sender: Sender<ExecuteState>,
+    sender: Sender<WorkerExecuteEvent>,
+    worker_id: ParallelWorkerId,
     receiver: Receiver<Option<Block>>,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
@@ -74,9 +76,14 @@ pub struct DagBlockExecutor {
     parent_ready_rx: watch::Receiver<u64>,
 }
 
+pub struct WorkerExecuteEvent {
+    pub worker_id: ParallelWorkerId,
+    pub state: ExecuteState,
+}
+
 impl DagBlockExecutor {
     pub fn new(
-        sender_to_main: Sender<ExecuteState>,
+        sender_to_main: Sender<WorkerExecuteEvent>,
         buffer_size: usize,
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
@@ -85,10 +92,12 @@ impl DagBlockExecutor {
         dag: BlockDAG,
         execute_timeout_ms: u64,
         parent_ready_rx: watch::Receiver<u64>,
+        worker_id: ParallelWorkerId,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
             sender: sender_to_main,
+            worker_id,
             receiver,
             time_service,
             storage,
@@ -99,6 +108,16 @@ impl DagBlockExecutor {
             parent_ready_rx,
         };
         anyhow::Ok((sender_for_main, executor))
+    }
+
+    async fn send_state(&self, state: ExecuteState) -> anyhow::Result<()> {
+        self.sender
+            .send(WorkerExecuteEvent {
+                worker_id: self.worker_id,
+                state,
+            })
+            .await
+            .map_err(|e| anyhow::format_err!("failed to send execute event: {:?}", e))
     }
 
     pub fn waiting_for_parents(
@@ -206,8 +225,7 @@ impl DagBlockExecutor {
                             Some(block) => block,
                             None => {
                                 info!("sync worker channel closed");
-                                drop(self.sender);
-                                return;
+                                break;
                             }
                         };
                         let header = block.header().clone();
@@ -228,21 +246,16 @@ impl DagBlockExecutor {
                                     "failed to check parents: {:?}, for reason: {:?}",
                                     header, e
                                 );
-                                match self
-                                    .sender
-                                    .send(ExecuteState::Error(Box::new(header.clone())))
+                                if let Err(send_err) = self
+                                    .send_state(ExecuteState::Error(Box::new(header.clone())))
                                     .await
                                 {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        error!(
-                                            "failed to send error state: {:?}, for reason: {:?}",
-                                            header, e
-                                        );
-                                        return;
-                                    }
+                                    error!(
+                                        "failed to send error state: {:?}, for reason: {:?}",
+                                        header, send_err
+                                    );
                                 }
-                                return;
+                                break;
                             }
                         };
 
@@ -263,7 +276,7 @@ impl DagBlockExecutor {
                                             block.header().id(),
                                             e
                                         );
-                                        return;
+                                        break;
                                     }
                                 }
                             }
@@ -273,7 +286,7 @@ impl DagBlockExecutor {
                                         Ok(new_chain) => Some(new_chain),
                                         Err(e) => {
                                             error!("failed to fork in parallel for: {:?}", e);
-                                            return;
+                                            break;
                                         }
                                     }
                                 } else {
@@ -331,10 +344,9 @@ impl DagBlockExecutor {
                                 );
                             }
                             let _ = self
-                                .sender
-                                .send(ExecuteState::Error(Box::new(header.clone())))
+                                .send_state(ExecuteState::Error(Box::new(header.clone())))
                                 .await;
-                            return;
+                            break;
                         }
                         match execute_result {
                             Ok((updated_chain, result)) => {
@@ -364,8 +376,7 @@ impl DagBlockExecutor {
                                         self.time_service
                                             .adjust(executed_block.header().timestamp());
                                         match self
-                                            .sender
-                                            .send(ExecuteState::Executed {
+                                            .send_state(ExecuteState::Executed {
                                                 executed_block: Box::new(executed_block),
                                                 durations: ExecuteDurations {
                                                     wait_parents_ms,
@@ -380,7 +391,7 @@ impl DagBlockExecutor {
                                                     "failed to send executed state: {:?}, for reason: {:?}",
                                                     header, e
                                                 );
-                                                return;
+                                                break;
                                             }
                                         }
                                     }
@@ -400,8 +411,9 @@ impl DagBlockExecutor {
                                             );
                                         }
                                         match self
-                                            .sender
-                                            .send(ExecuteState::Error(Box::new(header.clone())))
+                                            .send_state(ExecuteState::Error(Box::new(
+                                                header.clone(),
+                                            )))
                                             .await
                                         {
                                             Ok(_) => (),
@@ -410,10 +422,10 @@ impl DagBlockExecutor {
                                                     "failed to send error state: {:?}, for reason: {:?}",
                                                     header, e
                                                 );
-                                                return;
+                                                break;
                                             }
                                         }
-                                        return;
+                                        break;
                                     }
                                 }
                             }
@@ -433,20 +445,19 @@ impl DagBlockExecutor {
                                     );
                                 }
                                 let _ = self
-                                    .sender
-                                    .send(ExecuteState::Error(Box::new(header.clone())))
+                                    .send_state(ExecuteState::Error(Box::new(header.clone())))
                                     .await;
-                                return;
+                                break;
                             }
                         }
                     }
                     None => {
                         info!("sync worker channel closed");
-                        drop(self.sender);
-                        return;
+                        break;
                     }
                 }
             }
+            let _ = self.send_state(ExecuteState::Closed).await;
         });
 
         anyhow::Ok(handle)
