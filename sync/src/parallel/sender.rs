@@ -1,6 +1,12 @@
-use std::{cmp::Reverse, collections::BinaryHeap, sync::Arc, vec};
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, HashSet},
+    sync::Arc,
+    vec,
+};
 
 use starcoin_config::TimeService;
+use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{info, warn};
@@ -38,7 +44,8 @@ struct ParallelStageProfile {
     apply_notify_ms: u128,
     peak_workers: usize,
     peak_pending_blocks: usize,
-    no_progress_loops: u64,
+    no_ready_cycles: u64,
+    fallback_dispatch_count: u64,
 }
 
 impl ParallelStageProfile {
@@ -66,8 +73,12 @@ impl ParallelStageProfile {
         self.peak_pending_blocks = self.peak_pending_blocks.max(pending);
     }
 
-    fn record_no_progress_loop(&mut self) {
-        self.no_progress_loops = self.no_progress_loops.saturating_add(1);
+    fn record_no_ready_cycle(&mut self) {
+        self.no_ready_cycles = self.no_ready_cycles.saturating_add(1);
+    }
+
+    fn record_fallback_dispatch(&mut self) {
+        self.fallback_dispatch_count = self.fallback_dispatch_count.saturating_add(1);
     }
 
     fn total_accounted_ms(&self) -> u128 {
@@ -110,6 +121,7 @@ pub struct DagBlockSender<'a> {
     free_worker_ids: BinaryHeap<Reverse<ParallelWorkerId>>,
     parent_ready_signal_tx: watch::Sender<u64>,
     parent_ready_signal_seq: u64,
+    ready_parent_cache: HashSet<HashValue>,
     profile: ParallelStageProfile,
     notifier: &'a mut dyn ContinueChainOperator,
 }
@@ -145,6 +157,7 @@ impl<'a> DagBlockSender<'a> {
             free_worker_ids: BinaryHeap::new(),
             parent_ready_signal_tx,
             parent_ready_signal_seq: 0,
+            ready_parent_cache: HashSet::new(),
             profile: ParallelStageProfile::default(),
             notifier,
         }
@@ -266,13 +279,13 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(false)
     }
 
-    fn block_parents_ready(&self, block: &Block) -> anyhow::Result<bool> {
-        for parent in block.header().parents_hash() {
-            if !self.notifier.has_dag_block(*parent)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
+    fn block_parents_ready(&mut self, block: &Block) -> anyhow::Result<bool> {
+        DagBlockExecutor::waiting_for_parents(
+            &self.dag,
+            self.storage.clone(),
+            block.header().parents_hash(),
+            &mut self.ready_parent_cache,
+        )
     }
 
     async fn spawn_worker_for_block(&mut self, block: Block) -> anyhow::Result<()> {
@@ -338,6 +351,26 @@ impl<'a> DagBlockSender<'a> {
         Ok(scheduled)
     }
 
+    async fn fallback_dispatch_one_block(
+        &mut self,
+        pending_blocks: &mut Vec<Block>,
+    ) -> anyhow::Result<bool> {
+        if pending_blocks.is_empty() {
+            return Ok(false);
+        }
+
+        let block = pending_blocks.remove(0);
+        self.profile.observe_pending(pending_blocks.len());
+        if self.dispatch_to_worker(&block).await? {
+            self.profile.record_scheduled(1);
+        } else {
+            self.spawn_worker_for_block(block).await?;
+            self.profile.record_scheduled(1);
+        }
+        self.profile.record_fallback_dispatch();
+        Ok(true)
+    }
+
     fn has_executing_workers(&self) -> bool {
         self.executors
             .iter()
@@ -372,25 +405,17 @@ impl<'a> DagBlockSender<'a> {
                 let scheduled = self.schedule_ready_blocks(&mut pending_blocks).await?;
                 self.flush_executor_state().await?;
                 if scheduled == 0 {
+                    self.profile.record_no_ready_cycle();
                     if !self.has_executing_workers() {
-                        let example = pending_blocks
-                            .first()
-                            .map(|block| {
-                                format!(
-                                    "block_id={} block_number={} parents={:?}",
-                                    block.id(),
-                                    block.header().number(),
-                                    block.header().parents_hash()
-                                )
-                            })
-                            .unwrap_or_else(|| "none".to_string());
-                        return Err(anyhow::format_err!(
-                            "pending blocks are not ready and no executing workers remain, cannot make progress. pending_count={}, example={}",
-                            pending_blocks.len(),
-                            example
-                        ));
+                        // Fallback path:
+                        // if no worker is running and no block is considered ready by ready-first,
+                        // dispatch one pending block to re-enter executor-side parent waiting.
+                        let _ = self
+                            .fallback_dispatch_one_block(&mut pending_blocks)
+                            .await?;
+                        self.flush_executor_state().await?;
+                        continue;
                     }
-                    self.profile.record_no_progress_loop();
                     tokio::time::sleep(std::time::Duration::from_millis(1)).await;
                 }
             }
@@ -584,7 +609,7 @@ impl<'a> DagBlockSender<'a> {
         );
         if let Err(err) = result {
             warn!(
-                "{} stage=parallel_pipeline_summary status=err executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_progress_loops={} error={:?}",
+                "{} stage=parallel_pipeline_summary status=err executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_ready_cycles={} fallback_dispatch_count={} error={:?}",
                 SYNC_PROF_PREFIX,
                 blocks,
                 self.profile.scheduled_blocks,
@@ -595,12 +620,13 @@ impl<'a> DagBlockSender<'a> {
                 other_ms,
                 self.profile.peak_workers,
                 self.profile.peak_pending_blocks,
-                self.profile.no_progress_loops,
+                self.profile.no_ready_cycles,
+                self.profile.fallback_dispatch_count,
                 err
             );
         } else {
             info!(
-                "{} stage=parallel_pipeline_summary status=ok executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_progress_loops={}",
+                "{} stage=parallel_pipeline_summary status=ok executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_ready_cycles={} fallback_dispatch_count={}",
                 SYNC_PROF_PREFIX,
                 blocks,
                 self.profile.scheduled_blocks,
@@ -611,7 +637,8 @@ impl<'a> DagBlockSender<'a> {
                 other_ms,
                 self.profile.peak_workers,
                 self.profile.peak_pending_blocks,
-                self.profile.no_progress_loops
+                self.profile.no_ready_cycles,
+                self.profile.fallback_dispatch_count
             );
         }
     }
