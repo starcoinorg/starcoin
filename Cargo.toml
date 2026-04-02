@@ -18,6 +18,7 @@ members = [
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
     "commons/infallible",
+    "commons/pipeline-timing",
     "types",
     "types/uint",
     "genesis",
@@ -581,6 +582,7 @@ stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
 starcoin-mvhashmap = { path = "commons/mvhashmap" }
 starcoin-infallible = { path = "commons/infallible" }
+starcoin-pipeline-timing = { path = "commons/pipeline-timing" }
 starcoin-parallel-executor = { path = "commons/parallel-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }

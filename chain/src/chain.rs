@@ -32,6 +32,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
+use starcoin_pipeline_timing::global_collector;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{Store, Store2};
@@ -605,6 +606,11 @@ impl BlockChain {
 
         assert!(!transactions2.is_empty());
 
+        // Record VM execution start
+        let vm_exec_start = std::time::Instant::now();
+        let txn_count = transactions.len() + transactions2.len();
+        global_collector().record_vm_exec_start(block_id, header.number(), txn_count);
+
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
             &statedb,
@@ -620,6 +626,16 @@ impl BlockChain {
             vm_metrics,
         )?;
         watch(CHAIN_WATCH_NAME, "n22");
+
+        // Record VM execution end
+        global_collector().record_vm_exec_end(block_id);
+        let vm_exec_duration_ms = vm_exec_start.elapsed().as_secs_f64() * 1000.0;
+        if global_collector().is_enabled() {
+            info!(
+                "[Pipeline] VM Execute block {} ({} txns) took {:.3} ms",
+                block_id, txn_count, vm_exec_duration_ms
+            );
+        }
 
         let (state_root, multi_state) = {
             // if no txns, state_root is kept unchanged after calling txn-execution
@@ -710,12 +726,26 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
+        // Record state commit timing
+        let commit_start = std::time::Instant::now();
+        global_collector().record_state_commit_start(block_id, header.number(), txn_count);
+        
         statedb2
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+
+        // Record state commit end
+        global_collector().record_state_commit_end(block_id);
+        let commit_duration_ms = commit_start.elapsed().as_secs_f64() * 1000.0;
+        if global_collector().is_enabled() {
+            info!(
+                "[Pipeline] State Commit block {} ({} txns) took {:.3} ms",
+                block_id, txn_count, commit_duration_ms
+            );
+        }
 
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
@@ -2328,6 +2358,12 @@ impl BlockChain {
         // If cache hit, we can skip execution and apply_write_set entirely
         let state_cache = global_block_state_cache();
         let cached_state = state_cache.remove(header.txn_accumulator_root());
+        
+        // Record VM Execute timing for DAG path
+        let dag_txn_count_for_exec = transactions.len() + transactions2.len();
+        let dag_vm_exec_start = std::time::Instant::now();
+        global_collector().record_vm_exec_start(block_id, header.number(), dag_txn_count_for_exec);
+        
         // Execute or use cached data
         let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
             if let Some(cached) = cached_state {
@@ -2366,9 +2402,23 @@ impl BlockChain {
                 )?;
                 (data, data2, None, None)
             };
+        
+        // Record VM Execute end
+        global_collector().record_vm_exec_end(block_id);
+        let dag_vm_exec_duration_ms = dag_vm_exec_start.elapsed().as_secs_f64() * 1000.0;
+        if global_collector().is_enabled() {
+            info!(
+                "[Pipeline] DAG VM Execute block {} ({} txns) took {:.3} ms",
+                block_id, dag_txn_count_for_exec, dag_vm_exec_duration_ms
+            );
+        }
 
         // If we used cached statedb, we need to flush the cached ones
         // Otherwise, we only need to flush self.statedb (executor already applied write_sets)
+        let dag_txn_count = transactions.len() + transactions2.len();
+        let dag_commit_start = std::time::Instant::now();
+        global_collector().record_state_commit_start(block_id, header.number(), dag_txn_count);
+        
         if cached_statedb.is_some() && cached_statedb2.is_some() {
             // Flush cached statedbs
             let cached_db = cached_statedb.as_ref().unwrap();
@@ -2380,6 +2430,15 @@ impl BlockChain {
             // (block_execute / execute_transactions), we only need to flush here
             statedb.flush()?;
             statedb2.flush()?;
+        }
+        
+        global_collector().record_state_commit_end(block_id);
+        let dag_commit_duration_ms = dag_commit_start.elapsed().as_secs_f64() * 1000.0;
+        if global_collector().is_enabled() {
+            info!(
+                "[Pipeline] DAG State Commit block {} ({} txns) took {:.3} ms",
+                block_id, dag_txn_count, dag_commit_duration_ms
+            );
         }
 
         // Update state roots

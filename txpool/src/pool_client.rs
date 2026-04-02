@@ -4,6 +4,7 @@ use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
 use starcoin_executor::VMMetrics;
+use starcoin_pipeline_timing::global_collector;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
@@ -245,7 +246,11 @@ impl crate::pool::Client for PoolClient {
                     txn,
                     self.vm_metrics.clone(),
                 ) {
-                    None => Ok(checked_txn),
+                    None => {
+                        // Record timing for pipeline analysis
+                        global_collector().record_txn_verify(tx_hash, total_start.elapsed().as_secs_f64() * 1000.0);
+                        Ok(checked_txn)
+                    }
                     Some(status) => {
                         Err(TransactionError::CallErr(CallError::ExecutionError(status)).into())
                     }
@@ -277,6 +282,8 @@ impl crate::pool::Client for PoolClient {
                                 total_start.elapsed().as_secs_f64() * 1000.0,
                             );
                         }
+                        // Record timing for pipeline analysis
+                        global_collector().record_txn_verify(tx_hash, total_start.elapsed().as_secs_f64() * 1000.0);
                         Ok(checked_txn)
                     }
                     Some(status) => {

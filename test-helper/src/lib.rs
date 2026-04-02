@@ -21,7 +21,7 @@ pub use block::*;
 pub use chain::{gen_blockchain_for_test, gen_blockchain_with_blocks_for_test};
 pub use dummy_network_service::DummyNetworkService;
 pub use network::{build_network, build_network_cluster, build_network_pair};
-pub use node::{run_node_by_config, run_test_node};
+pub use node::{run_node_by_config, run_node_with_all_service, run_test_node};
 pub use starcoin_genesis::Genesis;
 pub use starcoin_node::NodeHandle;
 pub use starcoin_types::account::Account;
