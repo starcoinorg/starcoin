@@ -44,6 +44,15 @@ enum ParallelSign {
     Continue,
 }
 
+#[derive(Clone, Debug, Default)]
+struct CollectStageProfile {
+    collect_count: u64,
+    ensure_parents_ms: u128,
+    apply_connect_ms: u128,
+    notify_connected_ms: u128,
+    total_collect_ms: u128,
+}
+
 #[derive(Clone, Debug)]
 pub struct SyncBlockData {
     pub(crate) block: Block,
@@ -288,6 +297,8 @@ pub struct BlockCollector<N, H> {
     execute_timeout_ms: u64,
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
+    profiling_info: bool,
+    profile: CollectStageProfile,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -396,7 +407,70 @@ where
             execute_timeout_ms,
             cancel_flag,
             parallel_info_service,
+            profiling_info: sync_profiling_info_enabled(),
+            profile: CollectStageProfile::default(),
         }
+    }
+
+    fn record_collect_profile(
+        &mut self,
+        total_collect_ms: u128,
+        ensure_parents_ms: u128,
+        apply_connect_ms: u128,
+        notify_connected_ms: u128,
+    ) {
+        self.profile.collect_count = self.profile.collect_count.saturating_add(1);
+        self.profile.ensure_parents_ms = self
+            .profile
+            .ensure_parents_ms
+            .saturating_add(ensure_parents_ms);
+        self.profile.apply_connect_ms = self
+            .profile
+            .apply_connect_ms
+            .saturating_add(apply_connect_ms);
+        self.profile.notify_connected_ms = self
+            .profile
+            .notify_connected_ms
+            .saturating_add(notify_connected_ms);
+        self.profile.total_collect_ms = self
+            .profile
+            .total_collect_ms
+            .saturating_add(total_collect_ms);
+    }
+
+    fn avg_ms(total_ms: u128, count: u64) -> u128 {
+        if count == 0 {
+            0
+        } else {
+            total_ms / u128::from(count)
+        }
+    }
+
+    fn log_collect_profile_summary(&self) {
+        if !self.profiling_info {
+            return;
+        }
+        let count = self.profile.collect_count;
+        let other_ms = self.profile.total_collect_ms.saturating_sub(
+            self.profile
+                .ensure_parents_ms
+                .saturating_add(self.profile.apply_connect_ms)
+                .saturating_add(self.profile.notify_connected_ms),
+        );
+        info!(
+            "{} stage=block_collect_summary status=ok collect_count={} total_ms={} ensure_parents_ms={} apply_connect_ms={} notify_connected_ms={} other_ms={} avg_total_ms={} avg_ensure_parents_ms={} avg_apply_connect_ms={} avg_notify_connected_ms={}",
+            SYNC_PROF_PREFIX,
+            count,
+            self.profile.total_collect_ms,
+            self.profile.ensure_parents_ms,
+            self.profile.apply_connect_ms,
+            self.profile.notify_connected_ms,
+            other_ms,
+            Self::avg_ms(self.profile.total_collect_ms, count),
+            Self::avg_ms(self.profile.ensure_parents_ms, count),
+            Self::avg_ms(self.profile.apply_connect_ms, count),
+            Self::avg_ms(self.profile.notify_connected_ms, count)
+        );
     }
 
     #[cfg(test)]
@@ -910,73 +984,148 @@ where
             return Err(TaskError::Canceled.into());
         }
         let (block, block_info, peer_id) = item.into();
+        let collect_begin = Instant::now();
+        let mut apply_connect_ms = 0_u128;
+        let mut notify_connected_ms = 0_u128;
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        match self.ensure_dag_parent_blocks_exist(block.clone())? {
-            ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
-            ParallelSign::Continue => (),
-        }
-        let state = self.check_enough();
-        if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-            if self.chain.has_dag_block(block.header().id())? {
-                let current_header = self.chain.current_header();
-                let current_block = self
-                    .local_store
-                    .get_block(current_header.id())?
-                    .expect("failed to get the current block which should exist");
-                self.latest_block_id = block.header().id();
-                return self.notify_connected_block(
-                    current_block,
-                    self.local_store
-                        .get_block_info(current_header.id())?
-                        .expect("block info should exist"),
-                    BlockConnectAction::ConnectExecutedBlock,
-                    state?,
-                );
+        let ensure_begin = Instant::now();
+        let ensure_result = self.ensure_dag_parent_blocks_exist(block.clone());
+        let ensure_parents_ms = ensure_begin.elapsed().as_millis();
+
+        let collect_result = match ensure_result {
+            Ok(ParallelSign::NeedMoreBlocks) => Ok(CollectorState::Need),
+            Ok(ParallelSign::Continue) => {
+                let state = self.check_enough();
+                if let anyhow::Result::Ok(CollectorState::Enough) = &state {
+                    if self.chain.has_dag_block(block.header().id())? {
+                        let current_header = self.chain.current_header();
+                        let current_block = self
+                            .local_store
+                            .get_block(current_header.id())?
+                            .expect("failed to get the current block which should exist");
+                        self.latest_block_id = block.header().id();
+                        let notify_begin = Instant::now();
+                        let notify_result = self.notify_connected_block(
+                            current_block,
+                            self.local_store
+                                .get_block_info(current_header.id())?
+                                .expect("block info should exist"),
+                            BlockConnectAction::ConnectExecutedBlock,
+                            state?,
+                        );
+                        notify_connected_ms = notify_begin.elapsed().as_millis();
+                        notify_result
+                    } else {
+                        info!("successfully ensure block's parents exist");
+
+                        let timestamp = block.header().timestamp();
+
+                        let block_info = if self.chain.has_dag_block(block.header().id())? {
+                            block_info
+                        } else {
+                            None
+                        };
+
+                        let apply_begin = Instant::now();
+                        let (block_info, action) = match block_info {
+                            Some(block_info) => {
+                                let multi_state =
+                                    self.local_store.get_vm_multi_state(block.id())?;
+                                self.chain.connect(ExecutedBlock::new(
+                                    block.clone(),
+                                    block_info.clone(),
+                                    multi_state,
+                                ))?;
+                                (block_info, BlockConnectAction::ConnectExecutedBlock)
+                            }
+                            None => {
+                                self.apply_block(block.clone(), peer_id)?;
+                                self.chain.time_service().adjust(timestamp);
+                                (
+                                    self.chain.status().info,
+                                    BlockConnectAction::ConnectNewBlock,
+                                )
+                            }
+                        };
+                        apply_connect_ms = apply_begin.elapsed().as_millis();
+                        self.latest_block_id = block.header().id();
+
+                        //verify target
+                        let state: Result<CollectorState, anyhow::Error> =
+                            self.check_enough_by_info(block_info.clone());
+
+                        let notify_begin = Instant::now();
+                        let notify_result =
+                            self.notify_connected_block(block, block_info, action, state?);
+                        notify_connected_ms = notify_begin.elapsed().as_millis();
+                        notify_result
+                    }
+                } else {
+                    info!("successfully ensure block's parents exist");
+
+                    let timestamp = block.header().timestamp();
+
+                    let block_info = if self.chain.has_dag_block(block.header().id())? {
+                        block_info
+                    } else {
+                        None
+                    };
+
+                    let apply_begin = Instant::now();
+                    let (block_info, action) = match block_info {
+                        Some(block_info) => {
+                            let multi_state = self.local_store.get_vm_multi_state(block.id())?;
+                            self.chain.connect(ExecutedBlock::new(
+                                block.clone(),
+                                block_info.clone(),
+                                multi_state,
+                            ))?;
+                            (block_info, BlockConnectAction::ConnectExecutedBlock)
+                        }
+                        None => {
+                            self.apply_block(block.clone(), peer_id)?;
+                            self.chain.time_service().adjust(timestamp);
+                            (
+                                self.chain.status().info,
+                                BlockConnectAction::ConnectNewBlock,
+                            )
+                        }
+                    };
+                    apply_connect_ms = apply_begin.elapsed().as_millis();
+                    self.latest_block_id = block.header().id();
+
+                    //verify target
+                    let state: Result<CollectorState, anyhow::Error> =
+                        self.check_enough_by_info(block_info.clone());
+
+                    let notify_begin = Instant::now();
+                    let notify_result =
+                        self.notify_connected_block(block, block_info, action, state?);
+                    notify_connected_ms = notify_begin.elapsed().as_millis();
+                    notify_result
+                }
             }
-        }
-        info!("successfully ensure block's parents exist");
-
-        let timestamp = block.header().timestamp();
-
-        let block_info = if self.chain.has_dag_block(block.header().id())? {
-            block_info
-        } else {
-            None
+            Err(err) => Err(err),
         };
 
-        let (block_info, action) = match block_info {
-            Some(block_info) => {
-                let multi_state = self.local_store.get_vm_multi_state(block.id())?;
-                self.chain.connect(ExecutedBlock::new(
-                    block.clone(),
-                    block_info.clone(),
-                    multi_state,
-                ))?;
-                (block_info, BlockConnectAction::ConnectExecutedBlock)
-            }
-            None => {
-                self.apply_block(block.clone(), peer_id)?;
-                self.chain.time_service().adjust(timestamp);
-                (
-                    self.chain.status().info,
-                    BlockConnectAction::ConnectNewBlock,
-                )
-            }
-        };
-        self.latest_block_id = block.header().id();
+        if self.profiling_info {
+            self.record_collect_profile(
+                collect_begin.elapsed().as_millis(),
+                ensure_parents_ms,
+                apply_connect_ms,
+                notify_connected_ms,
+            );
+        }
 
-        //verify target
-        let state: Result<CollectorState, anyhow::Error> =
-            self.check_enough_by_info(block_info.clone());
-
-        self.notify_connected_block(block, block_info, action, state?)
+        collect_result
     }
 
     fn finish(self) -> Result<Self::Output> {
         self.local_store.delete_all_dag_sync_blocks()?;
+        self.log_collect_profile_summary();
         // Fork to latest_block_id to ensure the returned chain has its head/state
         // pointing to a specific block, making it ready for subsequent operations.
         // In DAG mode, this sets the execution context to the latest processed block.

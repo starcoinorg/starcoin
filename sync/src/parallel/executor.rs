@@ -48,9 +48,18 @@ pub(crate) fn set_test_assume_parents_ready(ready: bool) {
 #[derive(Debug)]
 pub enum ExecuteState {
     Executing(HashValue),
-    Executed(Box<ExecutedBlock>),
+    Executed {
+        executed_block: Box<ExecutedBlock>,
+        durations: ExecuteDurations,
+    },
     Error(Box<BlockHeader>),
     Closed,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ExecuteDurations {
+    pub wait_parents_ms: u128,
+    pub execute_ms: u128,
 }
 
 pub struct DagBlockExecutor {
@@ -127,7 +136,7 @@ impl DagBlockExecutor {
         &mut self,
         header: &BlockHeader,
         ready_parent_cache: &mut HashSet<HashValue>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<u128> {
         let wait_begin = Instant::now();
         loop {
             match Self::waiting_for_parents(
@@ -147,7 +156,7 @@ impl DagBlockExecutor {
                             waited_ms
                         );
                     }
-                    return Ok(());
+                    return Ok(waited_ms);
                 }
                 Ok(false) => {}
                 Err(err) => return Err(err),
@@ -209,26 +218,32 @@ impl DagBlockExecutor {
                             block.header().id()
                         );
 
-                        if let Err(e) = self
+                        let wait_parents_ms = match self
                             .wait_for_parents_ready(&header, &mut ready_parent_cache)
                             .await
                         {
-                            error!("failed to check parents: {:?}, for reason: {:?}", header, e);
-                            match self
-                                .sender
-                                .send(ExecuteState::Error(Box::new(header.clone())))
-                                .await
-                            {
-                                Ok(_) => (),
-                                Err(e) => {
-                                    error!(
-                                        "failed to send error state: {:?}, for reason: {:?}",
-                                        header, e
-                                    );
-                                    return;
+                            Ok(wait_parents_ms) => wait_parents_ms,
+                            Err(e) => {
+                                error!(
+                                    "failed to check parents: {:?}, for reason: {:?}",
+                                    header, e
+                                );
+                                match self
+                                    .sender
+                                    .send(ExecuteState::Error(Box::new(header.clone())))
+                                    .await
+                                {
+                                    Ok(_) => (),
+                                    Err(e) => {
+                                        error!(
+                                            "failed to send error state: {:?}, for reason: {:?}",
+                                            header, e
+                                        );
+                                        return;
+                                    }
                                 }
+                                return;
                             }
-                            return;
                         };
 
                         match chain {
@@ -350,7 +365,13 @@ impl DagBlockExecutor {
                                             .adjust(executed_block.header().timestamp());
                                         match self
                                             .sender
-                                            .send(ExecuteState::Executed(Box::new(executed_block)))
+                                            .send(ExecuteState::Executed {
+                                                executed_block: Box::new(executed_block),
+                                                durations: ExecuteDurations {
+                                                    wait_parents_ms,
+                                                    execute_ms: execute_elapsed_ms,
+                                                },
+                                            })
                                             .await
                                         {
                                             Ok(_) => tokio::task::yield_now().await,
