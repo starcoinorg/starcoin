@@ -32,9 +32,13 @@ const SYNC_PROF_PREFIX: &str = "[sync-prof]";
 #[derive(Debug, Default)]
 struct ParallelStageProfile {
     executed_blocks: u64,
+    scheduled_blocks: u64,
     wait_parents_ms: u128,
     execute_ms: u128,
     apply_notify_ms: u128,
+    peak_workers: usize,
+    peak_pending_blocks: usize,
+    no_progress_loops: u64,
 }
 
 impl ParallelStageProfile {
@@ -48,6 +52,22 @@ impl ParallelStageProfile {
 
     fn record_apply_notify(&mut self, apply_notify_ms: u128) {
         self.apply_notify_ms = self.apply_notify_ms.saturating_add(apply_notify_ms);
+    }
+
+    fn record_scheduled(&mut self, count: usize) {
+        self.scheduled_blocks = self.scheduled_blocks.saturating_add(count as u64);
+    }
+
+    fn observe_workers(&mut self, workers: usize) {
+        self.peak_workers = self.peak_workers.max(workers);
+    }
+
+    fn observe_pending(&mut self, pending: usize) {
+        self.peak_pending_blocks = self.peak_pending_blocks.max(pending);
+    }
+
+    fn record_no_progress_loop(&mut self) {
+        self.no_progress_loops = self.no_progress_loops.saturating_add(1);
     }
 
     fn total_accounted_ms(&self) -> u128 {
@@ -185,11 +205,15 @@ impl<'a> DagBlockSender<'a> {
     }
 
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
+        // ready-first dispatch:
+        // only route to workers that are already idle (Executed).
+        // do not route to Executing(parent), otherwise child blocks arrive too early and wait.
         for executor in &mut self.executors {
             match &executor.state {
-                ExecuteState::Executing(header_id) => {
-                    if *header_id == block.header().parent_hash()
-                        || block.header.parents_hash().contains(header_id)
+                ExecuteState::Executed { executed_block, .. } => {
+                    let executed_id = executed_block.header().id();
+                    if executed_id == block.header().parent_hash()
+                        || block.header().parents_hash().contains(&executed_id)
                     {
                         executor.state = ExecuteState::Executing(block.id());
                         executor
@@ -199,7 +223,7 @@ impl<'a> DagBlockSender<'a> {
                         return anyhow::Ok(true);
                     }
                 }
-                ExecuteState::Executed { .. } | ExecuteState::Error(_) | ExecuteState::Closed => {
+                ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -242,12 +266,91 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(false)
     }
 
+    fn block_parents_ready(&self, block: &Block) -> anyhow::Result<bool> {
+        for parent in block.header().parents_hash() {
+            if !self.notifier.has_dag_block(*parent)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    async fn spawn_worker_for_block(&mut self, block: Block) -> anyhow::Result<()> {
+        let (sender_to_main, receiver_from_executor) =
+            mpsc::channel::<ExecuteState>(self.queue_size);
+        let (sender_to_worker, executor) = DagBlockExecutor::new(
+            sender_to_main,
+            self.queue_size,
+            self.time_service.clone(),
+            self.storage.clone(),
+            self.storage2.clone(),
+            self.vm_metrics.clone(),
+            self.dag.clone(),
+            self.execute_timeout_ms,
+            self.parent_ready_signal_tx.subscribe(),
+        )?;
+
+        let worker_id = self.allocate_worker_id()?;
+        self.executors.push(DagBlockWorker {
+            worker_id,
+            registered: true,
+            sender_to_executor: sender_to_worker.clone(),
+            receiver_from_executor,
+            state: ExecuteState::Executing(block.id()),
+            handle: executor.start_to_execute()?,
+        });
+        self.profile.observe_workers(self.executors.len());
+        Self::register_worker(&self.parallel_info_service, worker_id);
+
+        sender_to_worker.send(Some(block)).await?;
+        Ok(())
+    }
+
+    async fn schedule_ready_blocks(
+        &mut self,
+        pending_blocks: &mut Vec<Block>,
+    ) -> anyhow::Result<usize> {
+        if pending_blocks.is_empty() {
+            return Ok(0);
+        }
+
+        let mut scheduled = 0_usize;
+        let mut remaining = Vec::with_capacity(pending_blocks.len());
+
+        for block in pending_blocks.drain(..) {
+            if !self.block_parents_ready(&block)? {
+                remaining.push(block);
+                continue;
+            }
+
+            if self.dispatch_to_worker(&block).await? {
+                scheduled = scheduled.saturating_add(1);
+                continue;
+            }
+
+            self.spawn_worker_for_block(block).await?;
+            scheduled = scheduled.saturating_add(1);
+        }
+
+        *pending_blocks = remaining;
+        self.profile.record_scheduled(scheduled);
+        self.profile.observe_pending(pending_blocks.len());
+        Ok(scheduled)
+    }
+
+    fn has_executing_workers(&self) -> bool {
+        self.executors
+            .iter()
+            .any(|worker| matches!(worker.state, ExecuteState::Executing(_)))
+    }
+
     pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
         let profiling_info = sync_profiling_info_enabled();
         let process_begin = std::time::Instant::now();
         let result = async {
             let sync_dag_store = self.sync_dag_store.clone();
             let iter = sync_dag_store.iter_at_first()?;
+            let mut pending_blocks = Vec::new();
             for result_value in iter {
                 if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                     self.abort_workers();
@@ -257,41 +360,39 @@ impl<'a> DagBlockSender<'a> {
                 let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
                     anyhow::format_err!("failed to decode for the block in parallel!")
                 })?;
-
-                // Finding the executing state is the priority
-                if self.dispatch_to_worker(&block).await? {
-                    self.flush_executor_state().await?;
-                    continue;
-                }
-
-                // no suitable worker found, create a new worker
-                let (sender_to_main, receiver_from_executor) =
-                    mpsc::channel::<ExecuteState>(self.queue_size);
-                let (sender_to_worker, executor) = DagBlockExecutor::new(
-                    sender_to_main,
-                    self.queue_size,
-                    self.time_service.clone(),
-                    self.storage.clone(),
-                    self.storage2.clone(),
-                    self.vm_metrics.clone(),
-                    self.dag.clone(),
-                    self.execute_timeout_ms,
-                    self.parent_ready_signal_tx.subscribe(),
-                )?;
-
-                let worker_id = self.allocate_worker_id()?;
-                self.executors.push(DagBlockWorker {
-                    worker_id,
-                    registered: true,
-                    sender_to_executor: sender_to_worker.clone(),
-                    receiver_from_executor,
-                    state: ExecuteState::Executing(block.id()),
-                    handle: executor.start_to_execute()?,
-                });
-                Self::register_worker(&self.parallel_info_service, worker_id);
-
-                sender_to_worker.send(Some(block)).await?;
+                pending_blocks.push(block);
+                self.profile.observe_pending(pending_blocks.len());
                 self.flush_executor_state().await?;
+                let _ = self.schedule_ready_blocks(&mut pending_blocks).await?;
+                self.flush_executor_state().await?;
+            }
+
+            while !pending_blocks.is_empty() {
+                self.flush_executor_state().await?;
+                let scheduled = self.schedule_ready_blocks(&mut pending_blocks).await?;
+                self.flush_executor_state().await?;
+                if scheduled == 0 {
+                    if !self.has_executing_workers() {
+                        let example = pending_blocks
+                            .first()
+                            .map(|block| {
+                                format!(
+                                    "block_id={} block_number={} parents={:?}",
+                                    block.id(),
+                                    block.header().number(),
+                                    block.header().parents_hash()
+                                )
+                            })
+                            .unwrap_or_else(|| "none".to_string());
+                        return Err(anyhow::format_err!(
+                            "pending blocks are not ready and no executing workers remain, cannot make progress. pending_count={}, example={}",
+                            pending_blocks.len(),
+                            example
+                        ));
+                    }
+                    self.profile.record_no_progress_loop();
+                    tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+                }
             }
 
             self.wait_for_finish().await?;
@@ -483,26 +584,34 @@ impl<'a> DagBlockSender<'a> {
         );
         if let Err(err) = result {
             warn!(
-                "{} stage=parallel_pipeline_summary status=err executed_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} error={:?}",
+                "{} stage=parallel_pipeline_summary status=err executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_progress_loops={} error={:?}",
                 SYNC_PROF_PREFIX,
                 blocks,
+                self.profile.scheduled_blocks,
                 total_ms,
                 self.profile.wait_parents_ms,
                 self.profile.execute_ms,
                 self.profile.apply_notify_ms,
                 other_ms,
+                self.profile.peak_workers,
+                self.profile.peak_pending_blocks,
+                self.profile.no_progress_loops,
                 err
             );
         } else {
             info!(
-                "{} stage=parallel_pipeline_summary status=ok executed_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={}",
+                "{} stage=parallel_pipeline_summary status=ok executed_blocks={} scheduled_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} peak_workers={} peak_pending_blocks={} no_progress_loops={}",
                 SYNC_PROF_PREFIX,
                 blocks,
+                self.profile.scheduled_blocks,
                 total_ms,
                 self.profile.wait_parents_ms,
                 self.profile.execute_ms,
                 self.profile.apply_notify_ms,
-                other_ms
+                other_ms,
+                self.profile.peak_workers,
+                self.profile.peak_pending_blocks,
+                self.profile.no_progress_loops
             );
         }
     }
