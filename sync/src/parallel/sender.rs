@@ -3,7 +3,7 @@ use std::{cmp::Reverse, collections::BinaryHeap, sync::Arc, vec};
 use starcoin_config::TimeService;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::info;
+use starcoin_logger::prelude::{info, warn};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::{Store, Store2};
 use starcoin_types::block::Block;
@@ -17,14 +17,53 @@ use tokio::{
 
 use crate::{
     store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagStore},
+    sync_profiling_info_enabled,
     tasks::continue_execute_absent_block::ContinueChainOperator,
 };
 
-use super::executor::{DagBlockExecutor, ExecuteState};
+use super::executor::{DagBlockExecutor, ExecuteDurations, ExecuteState};
 use super::parallel_info_service::{
     ParallelInfoService, ParallelWorkerId, RegisterWorkerRequest, ReportWorkerSyncedBlockRequest,
     UnregisterWorkerRequest,
 };
+
+const SYNC_PROF_PREFIX: &str = "[sync-prof]";
+
+#[derive(Debug, Default)]
+struct ParallelStageProfile {
+    executed_blocks: u64,
+    wait_parents_ms: u128,
+    execute_ms: u128,
+    apply_notify_ms: u128,
+}
+
+impl ParallelStageProfile {
+    fn record_execute(&mut self, durations: ExecuteDurations) {
+        self.executed_blocks = self.executed_blocks.saturating_add(1);
+        self.wait_parents_ms = self
+            .wait_parents_ms
+            .saturating_add(durations.wait_parents_ms);
+        self.execute_ms = self.execute_ms.saturating_add(durations.execute_ms);
+    }
+
+    fn record_apply_notify(&mut self, apply_notify_ms: u128) {
+        self.apply_notify_ms = self.apply_notify_ms.saturating_add(apply_notify_ms);
+    }
+
+    fn total_accounted_ms(&self) -> u128 {
+        self.wait_parents_ms
+            .saturating_add(self.execute_ms)
+            .saturating_add(self.apply_notify_ms)
+    }
+
+    fn avg_ms(total_ms: u128, count: u64) -> u128 {
+        if count == 0 {
+            0
+        } else {
+            total_ms / u128::from(count)
+        }
+    }
+}
 
 struct DagBlockWorker {
     pub worker_id: ParallelWorkerId,
@@ -51,6 +90,7 @@ pub struct DagBlockSender<'a> {
     free_worker_ids: BinaryHeap<Reverse<ParallelWorkerId>>,
     parent_ready_signal_tx: watch::Sender<u64>,
     parent_ready_signal_seq: u64,
+    profile: ParallelStageProfile,
     notifier: &'a mut dyn ContinueChainOperator,
 }
 
@@ -85,6 +125,7 @@ impl<'a> DagBlockSender<'a> {
             free_worker_ids: BinaryHeap::new(),
             parent_ready_signal_tx,
             parent_ready_signal_seq: 0,
+            profile: ParallelStageProfile::default(),
             notifier,
         }
     }
@@ -158,7 +199,7 @@ impl<'a> DagBlockSender<'a> {
                         return anyhow::Ok(true);
                     }
                 }
-                ExecuteState::Executed(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                ExecuteState::Executed { .. } | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -166,7 +207,7 @@ impl<'a> DagBlockSender<'a> {
 
         for executor in &mut self.executors {
             match &executor.state {
-                ExecuteState::Executed(_) => {
+                ExecuteState::Executed { .. } => {
                     executor.state = ExecuteState::Executing(block.id());
                     executor
                         .sender_to_executor
@@ -183,7 +224,7 @@ impl<'a> DagBlockSender<'a> {
 
         for executor in &mut self.executors {
             match &executor.state {
-                ExecuteState::Executed(_) => {
+                ExecuteState::Executed { .. } => {
                     executor.state = ExecuteState::Executing(block.id());
                     executor
                         .sender_to_executor
@@ -202,57 +243,68 @@ impl<'a> DagBlockSender<'a> {
     }
 
     pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
-        let sync_dag_store = self.sync_dag_store.clone();
-        let iter = sync_dag_store.iter_at_first()?;
-        for result_value in iter {
-            if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
-                self.abort_workers();
-                return Ok(());
-            }
-            let (_, value) = result_value?;
-            let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
-                anyhow::format_err!("failed to decode for the block in parallel!")
-            })?;
+        let profiling_info = sync_profiling_info_enabled();
+        let process_begin = std::time::Instant::now();
+        let result = async {
+            let sync_dag_store = self.sync_dag_store.clone();
+            let iter = sync_dag_store.iter_at_first()?;
+            for result_value in iter {
+                if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                    self.abort_workers();
+                    return Ok(());
+                }
+                let (_, value) = result_value?;
+                let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
+                    anyhow::format_err!("failed to decode for the block in parallel!")
+                })?;
 
-            // Finding the executing state is the priority
-            if self.dispatch_to_worker(&block).await? {
+                // Finding the executing state is the priority
+                if self.dispatch_to_worker(&block).await? {
+                    self.flush_executor_state().await?;
+                    continue;
+                }
+
+                // no suitable worker found, create a new worker
+                let (sender_to_main, receiver_from_executor) =
+                    mpsc::channel::<ExecuteState>(self.queue_size);
+                let (sender_to_worker, executor) = DagBlockExecutor::new(
+                    sender_to_main,
+                    self.queue_size,
+                    self.time_service.clone(),
+                    self.storage.clone(),
+                    self.storage2.clone(),
+                    self.vm_metrics.clone(),
+                    self.dag.clone(),
+                    self.execute_timeout_ms,
+                    self.parent_ready_signal_tx.subscribe(),
+                )?;
+
+                let worker_id = self.allocate_worker_id()?;
+                self.executors.push(DagBlockWorker {
+                    worker_id,
+                    registered: true,
+                    sender_to_executor: sender_to_worker.clone(),
+                    receiver_from_executor,
+                    state: ExecuteState::Executing(block.id()),
+                    handle: executor.start_to_execute()?,
+                });
+                Self::register_worker(&self.parallel_info_service, worker_id);
+
+                sender_to_worker.send(Some(block)).await?;
                 self.flush_executor_state().await?;
-                continue;
             }
 
-            // no suitable worker found, create a new worker
-            let (sender_to_main, receiver_from_executor) =
-                mpsc::channel::<ExecuteState>(self.queue_size);
-            let (sender_to_worker, executor) = DagBlockExecutor::new(
-                sender_to_main,
-                self.queue_size,
-                self.time_service.clone(),
-                self.storage.clone(),
-                self.storage2.clone(),
-                self.vm_metrics.clone(),
-                self.dag.clone(),
-                self.execute_timeout_ms,
-                self.parent_ready_signal_tx.subscribe(),
-            )?;
+            self.wait_for_finish().await?;
+            sync_dag_store.delete_all_dag_sync_block()?;
+            Ok(())
+        }
+        .await;
 
-            let worker_id = self.allocate_worker_id()?;
-            self.executors.push(DagBlockWorker {
-                worker_id,
-                registered: true,
-                sender_to_executor: sender_to_worker.clone(),
-                receiver_from_executor,
-                state: ExecuteState::Executing(block.id()),
-                handle: executor.start_to_execute()?,
-            });
-            Self::register_worker(&self.parallel_info_service, worker_id);
-
-            sender_to_worker.send(Some(block)).await?;
-            self.flush_executor_state().await?;
+        if profiling_info {
+            self.log_parallel_stage_profile(process_begin.elapsed().as_millis(), &result);
         }
 
-        self.wait_for_finish().await?;
-        sync_dag_store.delete_all_dag_sync_block()?;
-        Ok(())
+        result
     }
 
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
@@ -260,15 +312,26 @@ impl<'a> DagBlockSender<'a> {
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => {
-                    if let ExecuteState::Executed(executed_block) = state {
+                    if let ExecuteState::Executed {
+                        executed_block,
+                        durations,
+                    } = state
+                    {
                         info!("finish to execute block {:?}", executed_block.header());
                         has_new_executed = true;
+                        self.profile.record_execute(durations);
+                        let notify_begin = std::time::Instant::now();
                         self.notifier.notify((*executed_block).clone())?;
+                        self.profile
+                            .record_apply_notify(notify_begin.elapsed().as_millis());
                         Self::report_worker_synced_block(
                             &self.parallel_info_service,
                             worker.worker_id,
                         );
-                        worker.state = ExecuteState::Executed(executed_block);
+                        worker.state = ExecuteState::Executed {
+                            executed_block,
+                            durations,
+                        };
                     } else if let ExecuteState::Error(header) = state {
                         return Err(anyhow::format_err!(
                             "parallel worker failed while executing block: {:?}",
@@ -303,7 +366,7 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(())
     }
 
-    async fn wait_for_finish(mut self) -> anyhow::Result<()> {
+    async fn wait_for_finish(&mut self) -> anyhow::Result<()> {
         // tell the workers to exit
         for worker in &self.executors {
             worker.sender_to_executor.send(None).await?;
@@ -322,14 +385,26 @@ impl<'a> DagBlockSender<'a> {
 
                 match worker.receiver_from_executor.try_recv() {
                     Ok(state) => {
-                        if let ExecuteState::Executed(executed_block) = state {
+                        if let ExecuteState::Executed {
+                            executed_block,
+                            durations,
+                        } = state
+                        {
                             info!("finish to execute block {:?}", executed_block.header());
                             has_new_executed = true;
+                            self.profile.record_execute(durations);
                             Self::report_worker_synced_block(
                                 &self.parallel_info_service,
                                 worker.worker_id,
                             );
-                            self.notifier.notify(*executed_block)?;
+                            let notify_begin = std::time::Instant::now();
+                            self.notifier.notify((*executed_block).clone())?;
+                            self.profile
+                                .record_apply_notify(notify_begin.elapsed().as_millis());
+                            worker.state = ExecuteState::Executed {
+                                executed_block,
+                                durations,
+                            };
                         } else if let ExecuteState::Error(header) = state {
                             return Err(anyhow::format_err!(
                                 "parallel worker failed while finishing block execution: {:?}",
@@ -376,6 +451,60 @@ impl<'a> DagBlockSender<'a> {
         }
 
         anyhow::Ok(())
+    }
+
+    fn log_parallel_stage_profile(&self, total_ms: u128, result: &anyhow::Result<()>) {
+        let status = if result.is_ok() { "ok" } else { "err" };
+        let blocks = self.profile.executed_blocks;
+        let wait_avg = ParallelStageProfile::avg_ms(self.profile.wait_parents_ms, blocks);
+        let execute_avg = ParallelStageProfile::avg_ms(self.profile.execute_ms, blocks);
+        let notify_avg = ParallelStageProfile::avg_ms(self.profile.apply_notify_ms, blocks);
+        let other_ms = total_ms.saturating_sub(self.profile.total_accounted_ms());
+
+        info!(
+            "{} stage=parallel_stage_wait_parents status={} executed_blocks={} total_ms={} avg_ms={}",
+            SYNC_PROF_PREFIX,
+            status,
+            blocks,
+            self.profile.wait_parents_ms,
+            wait_avg
+        );
+        info!(
+            "{} stage=parallel_stage_execute status={} executed_blocks={} total_ms={} avg_ms={}",
+            SYNC_PROF_PREFIX, status, blocks, self.profile.execute_ms, execute_avg
+        );
+        info!(
+            "{} stage=parallel_stage_apply_notify status={} executed_blocks={} total_ms={} avg_ms={}",
+            SYNC_PROF_PREFIX,
+            status,
+            blocks,
+            self.profile.apply_notify_ms,
+            notify_avg
+        );
+        if let Err(err) = result {
+            warn!(
+                "{} stage=parallel_pipeline_summary status=err executed_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={} error={:?}",
+                SYNC_PROF_PREFIX,
+                blocks,
+                total_ms,
+                self.profile.wait_parents_ms,
+                self.profile.execute_ms,
+                self.profile.apply_notify_ms,
+                other_ms,
+                err
+            );
+        } else {
+            info!(
+                "{} stage=parallel_pipeline_summary status=ok executed_blocks={} total_ms={} wait_parents_ms={} execute_ms={} apply_notify_ms={} other_ms={}",
+                SYNC_PROF_PREFIX,
+                blocks,
+                total_ms,
+                self.profile.wait_parents_ms,
+                self.profile.execute_ms,
+                self.profile.apply_notify_ms,
+                other_ms
+            );
+        }
     }
 
     fn abort_workers(&mut self) {
