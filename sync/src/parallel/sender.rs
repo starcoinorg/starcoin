@@ -123,6 +123,7 @@ pub struct DagBlockSender<'a> {
     parent_ready_signal_tx: watch::Sender<u64>,
     parent_ready_signal_seq: u64,
     ready_parent_cache: HashSet<HashValue>,
+    profiling_enabled: bool,
     profile: ParallelStageProfile,
     notifier: &'a mut dyn ContinueChainOperator,
 }
@@ -144,6 +145,7 @@ impl<'a> DagBlockSender<'a> {
         let (executor_event_tx, executor_event_rx) =
             mpsc::channel::<WorkerExecuteEvent>(queue_size);
         let (parent_ready_signal_tx, _) = watch::channel(0_u64);
+        let profiling_enabled = sync_profiling_info_enabled();
         Self {
             sync_dag_store,
             executors: vec![],
@@ -163,6 +165,7 @@ impl<'a> DagBlockSender<'a> {
             parent_ready_signal_tx,
             parent_ready_signal_seq: 0,
             ready_parent_cache: HashSet::new(),
+            profiling_enabled,
             profile: ParallelStageProfile::default(),
             notifier,
         }
@@ -298,7 +301,9 @@ impl<'a> DagBlockSender<'a> {
             state: ExecuteState::Executing(block.id()),
             handle: executor.start_to_execute()?,
         });
-        self.profile.observe_workers(self.executors.len());
+        if self.profiling_enabled {
+            self.profile.observe_workers(self.executors.len());
+        }
         Self::register_worker(&self.parallel_info_service, worker_id);
 
         sender_to_worker.send(Some(block)).await?;
@@ -332,8 +337,10 @@ impl<'a> DagBlockSender<'a> {
         }
 
         *pending_blocks = remaining;
-        self.profile.record_scheduled(scheduled);
-        self.profile.observe_pending(pending_blocks.len());
+        if self.profiling_enabled {
+            self.profile.record_scheduled(scheduled);
+            self.profile.observe_pending(pending_blocks.len());
+        }
         Ok(scheduled)
     }
 
@@ -346,14 +353,22 @@ impl<'a> DagBlockSender<'a> {
         }
 
         let block = pending_blocks.remove(0);
-        self.profile.observe_pending(pending_blocks.len());
+        if self.profiling_enabled {
+            self.profile.observe_pending(pending_blocks.len());
+        }
         if self.dispatch_to_worker(&block).await? {
-            self.profile.record_scheduled(1);
+            if self.profiling_enabled {
+                self.profile.record_scheduled(1);
+            }
         } else {
             self.spawn_worker_for_block(block).await?;
-            self.profile.record_scheduled(1);
+            if self.profiling_enabled {
+                self.profile.record_scheduled(1);
+            }
         }
-        self.profile.record_fallback_dispatch();
+        if self.profiling_enabled {
+            self.profile.record_fallback_dispatch();
+        }
         Ok(true)
     }
 
@@ -364,8 +379,11 @@ impl<'a> DagBlockSender<'a> {
     }
 
     pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
-        let profiling_info = sync_profiling_info_enabled();
-        let process_begin = std::time::Instant::now();
+        let process_begin = if self.profiling_enabled {
+            Some(std::time::Instant::now())
+        } else {
+            None
+        };
         let result = async {
             let sync_dag_store = self.sync_dag_store.clone();
             let iter = sync_dag_store.iter_at_first()?;
@@ -380,7 +398,9 @@ impl<'a> DagBlockSender<'a> {
                     anyhow::format_err!("failed to decode for the block in parallel!")
                 })?;
                 pending_blocks.push(block);
-                self.profile.observe_pending(pending_blocks.len());
+                if self.profiling_enabled {
+                    self.profile.observe_pending(pending_blocks.len());
+                }
                 self.flush_executor_events_nonblocking()?;
                 let _ = self.schedule_ready_blocks(&mut pending_blocks).await?;
                 self.flush_executor_events_nonblocking()?;
@@ -391,7 +411,9 @@ impl<'a> DagBlockSender<'a> {
                 let scheduled = self.schedule_ready_blocks(&mut pending_blocks).await?;
                 self.flush_executor_events_nonblocking()?;
                 if scheduled == 0 {
-                    self.profile.record_no_ready_cycle();
+                    if self.profiling_enabled {
+                        self.profile.record_no_ready_cycle();
+                    }
                     if !self.has_executing_workers() {
                         // Fallback path:
                         // if no worker is running and no block is considered ready by ready-first,
@@ -416,8 +438,8 @@ impl<'a> DagBlockSender<'a> {
         }
         .await;
 
-        if profiling_info {
-            self.log_parallel_stage_profile(process_begin.elapsed().as_millis(), &result);
+        if let Some(begin) = process_begin {
+            self.log_parallel_stage_profile(begin.elapsed().as_millis(), &result);
         }
 
         result
@@ -459,11 +481,17 @@ impl<'a> DagBlockSender<'a> {
                 durations,
             } => {
                 info!("finish to execute block {:?}", executed_block.header());
-                self.profile.record_execute(durations);
-                let notify_begin = std::time::Instant::now();
-                self.notifier.notify((*executed_block).clone())?;
-                self.profile
-                    .record_apply_notify(notify_begin.elapsed().as_millis());
+                if self.profiling_enabled {
+                    self.profile.record_execute(durations);
+                }
+                if self.profiling_enabled {
+                    let notify_begin = std::time::Instant::now();
+                    self.notifier.notify((*executed_block).clone())?;
+                    self.profile
+                        .record_apply_notify(notify_begin.elapsed().as_millis());
+                } else {
+                    self.notifier.notify((*executed_block).clone())?;
+                }
                 Self::report_worker_synced_block(&self.parallel_info_service, worker.worker_id);
                 worker.state = ExecuteState::Executed {
                     executed_block,
