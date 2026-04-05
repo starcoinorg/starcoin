@@ -10,7 +10,7 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info, warn};
+use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
@@ -314,7 +314,6 @@ impl DagBlockExecutor {
                             (local_chain, result)
                         });
 
-                        let mut execute_timed_out = false;
                         let execute_result = match tokio::time::timeout(
                             tokio::time::Duration::from_millis(self.execute_timeout_ms),
                             &mut execute_handle,
@@ -323,31 +322,27 @@ impl DagBlockExecutor {
                         {
                             Ok(result) => result,
                             Err(_) => {
-                                execute_timed_out = true;
-                                warn!(
-                                    "sync parallel worker execute exceeded timeout ({}ms), wait for completion before reporting failure: {:?}",
+                                error!(
+                                    "sync parallel worker execute exceeded timeout ({}ms), report failure immediately: {:?}",
                                     self.execute_timeout_ms,
                                     header
                                 );
-                                execute_handle.await
+                                execute_handle.abort();
+                                if sync_profiling_info_enabled() {
+                                    error!(
+                                        "{} stage=parallel_execute status=timeout block_id={} block_number={} elapsed_ms={}",
+                                        SYNC_PROF_PREFIX,
+                                        header.id(),
+                                        header.number(),
+                                        execute_begin.elapsed().as_millis()
+                                    );
+                                }
+                                let _ = self
+                                    .send_state(ExecuteState::Error(Box::new(header.clone())))
+                                    .await;
+                                break;
                             }
                         };
-                        if execute_timed_out {
-                            error!("sync parallel worker execute timeout: {:?}", header);
-                            if sync_profiling_info_enabled() {
-                                error!(
-                                    "{} stage=parallel_execute status=timeout block_id={} block_number={} elapsed_ms={}",
-                                    SYNC_PROF_PREFIX,
-                                    header.id(),
-                                    header.number(),
-                                    execute_begin.elapsed().as_millis()
-                                );
-                            }
-                            let _ = self
-                                .send_state(ExecuteState::Error(Box::new(header.clone())))
-                                .await;
-                            break;
-                        }
                         match execute_result {
                             Ok((updated_chain, result)) => {
                                 chain = Some(updated_chain);
@@ -449,7 +444,7 @@ impl DagBlockExecutor {
                                     .await;
                                 break;
                             }
-                        }
+                        };
                     }
                     None => {
                         info!("sync worker channel closed");
