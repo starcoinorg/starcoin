@@ -88,11 +88,7 @@ impl ParallelStageProfile {
     }
 
     fn avg_ms(total_ms: u128, count: u64) -> u128 {
-        if count == 0 {
-            0
-        } else {
-            total_ms / u128::from(count)
-        }
+        total_ms.checked_div(u128::from(count)).unwrap_or(0)
     }
 }
 
