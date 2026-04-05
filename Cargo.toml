@@ -345,7 +345,7 @@ governor = { version = "0.4.2", features = ["dashmap"] }
 hashbrown = "0.16.1"
 heck = "0.5.0"
 hex = "0.4"
-hmac = "0.12.1"
+hmac = "0.13.0"
 hyper = { version = "0.14.12", features = ["full"] }
 include_dir = { version = "0.6.2", features = ["search"] }
 indicatif = "0.16.2"
