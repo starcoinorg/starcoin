@@ -54,6 +54,31 @@ fn calculate_statistics(values: &[f64]) -> (f64, f64, f64, f64) {
     (min, max, avg, median)
 }
 
+/// Calculate trimmed mean by removing top and bottom N% of values
+/// trim_pct: percentage to trim from each end (e.g., 0.1 = remove top 10% and bottom 10%)
+fn calculate_trimmed_mean(values: &[f64], trim_pct: f64) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    if values.len() <= 2 {
+        // Not enough data to trim, return regular mean
+        return values.iter().sum::<f64>() / values.len() as f64;
+    }
+    
+    let mut sorted = values.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    
+    let trim_count = ((values.len() as f64) * trim_pct).floor() as usize;
+    let trim_count = trim_count.max(1).min(values.len() / 2 - 1); // At least 1, but keep at least 1 value
+    
+    let trimmed = &sorted[trim_count..sorted.len() - trim_count];
+    if trimmed.is_empty() {
+        return sorted[sorted.len() / 2]; // Return median if over-trimmed
+    }
+    
+    trimmed.iter().sum::<f64>() / trimmed.len() as f64
+}
+
 impl std::fmt::Debug for TransactionExecutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -99,6 +124,10 @@ impl std::fmt::Debug for TransactionExecutionResult {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BenchmarkStats {
     pub tps: f64,
+    /// Stable TPS: trimmed mean of middle blocks (excludes first/last block, removes outliers)
+    /// This is the recommended metric for CI comparison
+    #[serde(default)]
+    pub stable_tps: f64,
     /// Block-based TPS statistics (calculated per block: from block_timestamp to executed_time)
     pub block_tps_min: f64,
     pub block_tps_max: f64,
@@ -113,6 +142,9 @@ pub struct BenchmarkStats {
     /// Number of benchmark blocks (sample size for TPS calculation)
     #[serde(default)]
     pub block_count: usize,
+    /// Number of middle blocks used for stable TPS calculation
+    #[serde(default)]
+    pub middle_block_count: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
     pub duplicate_pct: f64,
@@ -217,7 +249,7 @@ impl<'a> ResultsDumper<'a> {
         // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
         // Calculate per-block TPS statistics (block_timestamp -> executed_time)
-        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, block_count) =
+        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, stable_tps, block_count, middle_block_count) =
             self.calculate_per_block_tps_stats();
         // Calculate per-block TPS statistics (mined_time -> executed_time)
         let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) =
@@ -231,6 +263,7 @@ impl<'a> ResultsDumper<'a> {
 
         BenchmarkStats {
             tps,
+            stable_tps,
             block_tps_min,
             block_tps_max,
             block_tps_avg,
@@ -241,6 +274,7 @@ impl<'a> ResultsDumper<'a> {
             mined_tps_median,
             total_executed: total_txns,
             block_count,
+            middle_block_count,
             unique_txn_count,
             duplicate_exec_count,
             duplicate_pct,
@@ -345,8 +379,9 @@ impl<'a> ResultsDumper<'a> {
 
     /// Calculate per-block TPS statistics.
     /// For each block, TPS = txn_count / (exec_time - block_timestamp) in seconds.
-    /// Returns: (min_tps, max_tps, avg_tps, median_tps, block_count)
-    fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64, usize) {
+    /// Returns: (min_tps, max_tps, avg_tps, median_tps, stable_tps, block_count, middle_block_count)
+    /// stable_tps: trimmed mean of middle blocks (excludes first/last, removes outliers)
+    fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64, f64, usize, usize) {
         // Collect block data: block_number -> (block_timestamp, exec_time, txn_count)
         let mut block_data: HashMap<u64, (u64, u64, usize)> = HashMap::new();
 
@@ -374,28 +409,57 @@ impl<'a> ResultsDumper<'a> {
         let block_count = block_data.len();
 
         if block_data.is_empty() {
-            return (0.0, 0.0, 0.0, 0.0, 0);
+            return (0.0, 0.0, 0.0, 0.0, 0.0, 0, 0);
         }
 
+        // Sort blocks by block_number to identify first/last
+        let mut sorted_blocks: Vec<(u64, (u64, u64, usize))> = block_data.into_iter().collect();
+        sorted_blocks.sort_by_key(|(block_num, _)| *block_num);
+
         // Calculate TPS for each block
-        let mut block_tps_list: Vec<f64> = Vec::new();
-        for (_block_num, (block_ts, exec_ts, txn_count)) in block_data.iter() {
+        let mut all_block_tps: Vec<(u64, f64)> = Vec::new(); // (block_number, tps)
+        for (block_num, (block_ts, exec_ts, txn_count)) in sorted_blocks.iter() {
             if *exec_ts > *block_ts && *txn_count > 0 {
                 let duration_secs = (*exec_ts - *block_ts) as f64 / 1000.0;
                 if duration_secs > 0.0 {
                     let tps = *txn_count as f64 / duration_secs;
-                    block_tps_list.push(tps);
+                    all_block_tps.push((*block_num, tps));
                 }
             }
         }
 
-        if block_tps_list.is_empty() {
-            return (0.0, 0.0, 0.0, 0.0, block_count);
+        if all_block_tps.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0, 0.0, block_count, 0);
         }
 
-        let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&block_tps_list);
+        // Extract just TPS values for statistics
+        let all_tps_values: Vec<f64> = all_block_tps.iter().map(|(_, tps)| *tps).collect();
+        let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&all_tps_values);
 
-        (min_tps, max_tps, avg_tps, median_tps, block_count)
+        // Calculate stable TPS: exclude first and last block, then use trimmed mean
+        let middle_block_tps: Vec<f64> = if all_block_tps.len() > 2 {
+            // Exclude first and last block
+            all_block_tps[1..all_block_tps.len() - 1]
+                .iter()
+                .map(|(_, tps)| *tps)
+                .collect()
+        } else {
+            // Not enough blocks, use all
+            all_tps_values.clone()
+        };
+
+        let middle_block_count = middle_block_tps.len();
+        
+        // Use trimmed mean (remove top/bottom 10%) for stable TPS
+        let stable_tps = if middle_block_tps.len() >= 3 {
+            calculate_trimmed_mean(&middle_block_tps, 0.1)
+        } else {
+            // Not enough data for trimming, use median
+            let (_, _, _, median) = calculate_statistics(&middle_block_tps);
+            median
+        };
+
+        (min_tps, max_tps, avg_tps, median_tps, stable_tps, block_count, middle_block_count)
     }
 
     /// Calculate per-block TPS statistics based on Mined event time.

@@ -130,28 +130,30 @@ impl std::fmt::Display for BenchmarkOutput {
         writeln!(f, "╚══════════════════════════════════════════════════════════════╝")?;
         writeln!(f)?;
 
-        // Sample Quality Check
-        let sample_quality = if self.stats.block_count >= 5 {
+        // Sample Quality Check based on middle blocks (used for stable TPS)
+        let sample_quality = if self.stats.middle_block_count >= 4 {
             "GOOD"
-        } else if self.stats.block_count >= 3 {
+        } else if self.stats.middle_block_count >= 2 {
             "ACCEPTABLE"
         } else {
             "LOW (increase --account-count for more stable results)"
         };
 
-        // Benchmark Results - highlight stable metrics for CI
+        // Benchmark Results - highlight stable TPS for CI
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "Sample Size: {} blocks [{}]", self.stats.block_count, sample_quality)?;
+        writeln!(f, "Total Blocks: {} | Middle Blocks: {} [{}]", 
+            self.stats.block_count, self.stats.middle_block_count, sample_quality)?;
         writeln!(f)?;
-        writeln!(f, "--- CI Recommended Metrics (stable) ---")?;
-        writeln!(f, "  Median TPS: {:.2}", self.stats.block_tps_median)?;
-        writeln!(f, "  Avg TPS:    {:.2}", self.stats.block_tps_avg)?;
+        writeln!(f, "╭─────────────────────────────────────────╮")?;
+        writeln!(f, "│  ★ STABLE TPS (CI Metric): {:<12.2} │", self.stats.stable_tps)?;
+        writeln!(f, "│    (trimmed mean of middle blocks)     │")?;
+        writeln!(f, "╰─────────────────────────────────────────╯")?;
         writeln!(f)?;
-        writeln!(f, "--- Raw TPS Data ---")?;
-        writeln!(f, "TPS (executed-time): {:.2}", self.stats.tps)?;
+        writeln!(f, "--- Raw TPS Data (for reference) ---")?;
+        writeln!(f, "TPS (all blocks): {:.2}", self.stats.tps)?;
         writeln!(
             f,
-            "TPS (per-block) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            "Per-block TPS - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.stats.block_tps_min, self.stats.block_tps_max,
             self.stats.block_tps_avg, self.stats.block_tps_median
         )?;
