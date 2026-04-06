@@ -127,6 +127,7 @@ impl BlockPipelineTiming {
 
 /// Timing record with unique ID for deduplication
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct TimingRecord {
     duration_ms: f64,
     item_count: u64,
@@ -424,6 +425,7 @@ pub fn global_collector() -> &'static GlobalTimingCollector {
 }
 
 /// RAII guard for timing a code block
+#[allow(dead_code)]
 pub struct TimingGuard {
     stage: PipelineStage,
     block_id: Option<HashValue>,

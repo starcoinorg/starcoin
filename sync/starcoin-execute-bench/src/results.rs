@@ -6,7 +6,7 @@ use plotters::prelude::*;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
-use starcoin_pipeline_timing::{global_collector, PipelineStage, StageTiming};
+use starcoin_pipeline_timing::{global_collector, StageTiming};
 
 #[derive(Clone)]
 pub enum TransactionExecutionResult {

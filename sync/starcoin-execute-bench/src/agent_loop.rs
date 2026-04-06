@@ -7,6 +7,8 @@
 //! 4. Tracking history and detecting regressions
 //! 5. Providing structured output for AI agents
 
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use std::path::Path;
 

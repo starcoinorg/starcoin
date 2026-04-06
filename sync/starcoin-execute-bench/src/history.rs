@@ -2,6 +2,8 @@
 //!
 //! Stores benchmark runs in a JSON-lines format for easy querying and comparison.
 
+#![allow(dead_code)]
+
 use std::{
     collections::VecDeque,
     fs::{File, OpenOptions},

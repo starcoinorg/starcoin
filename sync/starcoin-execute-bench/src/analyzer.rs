@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use starcoin_pipeline_timing::{PipelineStage, StageTiming};
+use starcoin_pipeline_timing::StageTiming;
 
 /// Bottleneck severity level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

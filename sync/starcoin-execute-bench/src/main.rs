@@ -1,23 +1,18 @@
 mod agent_loop;
 mod analyzer;
-mod config_tuner;
-mod experiment;
 mod history;
-mod iteration;
 mod knowledge;
-mod pipeline;
 mod regression;
 mod results;
-mod strategy;
 mod suggester;
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     str::FromStr,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     time::{Duration, Instant},
 };
@@ -41,7 +36,9 @@ use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::{BlockStore, Storage, Storage2, Store};
-use starcoin_transaction_builder::vm2::build_batch_transfer_txn as build_batch_transfer_txn2;
+use starcoin_transaction_builder::vm2::{
+    build_batch_transfer_txn as build_batch_transfer_txn2, raw_peer_to_peer_txn,
+};
 use starcoin_txpool::TxStatus;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
@@ -151,6 +148,27 @@ struct Cli {
     settle_delay_ms: u64,
 
     #[arg(
+        long = "preload-batches",
+        default_value = "0",
+        help = "Number of batches to preload into txpool at start. 0 = preload all batches."
+    )]
+    preload_batches: usize,
+
+    #[arg(
+        long = "txpool-max-count",
+        default_value = "0",
+        help = "Maximum number of transactions in txpool. 0 = auto (based on account_count)."
+    )]
+    txpool_max_count: u64,
+
+    #[arg(
+        long = "simple-transfer",
+        default_value = "false",
+        help = "Use simple P2P transfer instead of batch transfer. Lower gas (~700K vs ~13.8M), allowing more txns per block."
+    )]
+    simple_transfer: bool,
+
+    #[arg(
         long = "agent-mode",
         default_value = "false",
         help = "Run in agent mode with full analysis output (bottleneck detection, optimization suggestions, regression detection)."
@@ -184,27 +202,6 @@ struct Cli {
         help = "Comma-separated tags for this benchmark run (used by agent mode)."
     )]
     tags: Vec<String>,
-
-    #[arg(
-        long = "iterate",
-        default_value = "false",
-        help = "Run in iteration mode - automatically apply optimizations and re-run benchmarks."
-    )]
-    iterate: bool,
-
-    #[arg(
-        long = "target-tps",
-        default_value = "1000",
-        help = "Target TPS to achieve in iteration mode."
-    )]
-    target_tps: f64,
-
-    #[arg(
-        long = "max-iterations",
-        default_value = "10",
-        help = "Maximum number of optimization iterations."
-    )]
-    max_iterations: u32,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -344,6 +341,16 @@ fn main() -> Result<()> {
     init_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    // Set txpool max_count: if 0, auto-calculate based on account_count
+    let txpool_max_count = if cli.txpool_max_count == 0 {
+        // Auto: account_count / 2 (benchmark txns) + account_count / 10 (funding txns) + buffer
+        let auto_count = (cli.account_count as u64 / 2) + (cli.account_count as u64 / 10) + 1000;
+        auto_count.max(4096) // At least default
+    } else {
+        cli.txpool_max_count
+    };
+    init_opt.txpool.set_max_count(txpool_max_count);
+    println!("[Benchmark] Setting txpool max_count to {}", txpool_max_count);
     init_opt.genesis_config = match custom_genesis {
         Some(path) => Some(path),
         None => network_choice.genesis_name().map(ToOwned::to_owned),
@@ -358,10 +365,14 @@ fn main() -> Result<()> {
     global_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    global_opt.txpool.set_max_count(txpool_max_count);
     global_opt.genesis_config = init_opt.genesis_config.clone();
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&global_opt)?);
     let node = run_node_with_all_service(node_config.clone())?;
+
+    // Enable VM parallel execution early (before any transactions)
+    StarcoinVM::set_concurrency_level(num_cpus::get());
 
     // Wait for node services to fully initialize (sync status, pacemaker, etc.)
     info!("Waiting for node services to fully initialize...");
@@ -387,6 +398,8 @@ fn main() -> Result<()> {
         cli.batch_user_count,
         cli.balance_wait_timeout_secs,
         cli.settle_delay_ms,
+        cli.preload_batches,
+        cli.simple_transfer,
     ));
 
     // Disable pipeline timing collection after benchmark
@@ -841,6 +854,7 @@ fn build_transfer_transactions_sync(
     seq_numbers: &mut HashMap<AccountAddress, u64>,
     expire_time: u64,
     chain_id: ChainId2,
+    simple_transfer: bool,
 ) -> Result<Vec<RawUserTransaction2>> {
     if senders.len() != receivers.len() {
         bail!("senders.len() != receivers.len()");
@@ -856,16 +870,32 @@ fn build_transfer_transactions_sync(
             .and_modify(|seq| *seq += 1)
             .or_insert(next_seq + 1);
 
-        let transaction = build_batch_transfer_txn2(
-            sender.address,
-            vec![receiver.address],
-            next_seq,
-            amount,
-            gas_price,
-            max_gas,
-            expire_time,
-            chain_id,
-        );
+        let transaction = if simple_transfer {
+            // Use simple peer-to-peer transfer (~700K gas per txn)
+            raw_peer_to_peer_txn(
+                sender.address,
+                receiver.address,
+                amount,
+                next_seq,
+                gas_price,
+                max_gas,
+                G_STC_TOKEN_CODE.clone().try_into()?,
+                expire_time,
+                chain_id,
+            )
+        } else {
+            // Use batch transfer (~13.8M gas per txn)
+            build_batch_transfer_txn2(
+                sender.address,
+                vec![receiver.address],
+                next_seq,
+                amount,
+                gas_price,
+                max_gas,
+                expire_time,
+                chain_id,
+            )
+        };
         transactions.push(transaction);
     }
     Ok(transactions)
@@ -882,6 +912,9 @@ struct BenchmarkState {
     batch_index: AtomicUsize,
     is_completed: AtomicBool,
     chain_id: ChainId2,
+    simple_transfer: bool,
+    /// Hashes of benchmark transactions (to distinguish from funding transactions)
+    txn_hashes: Mutex<HashSet<HashValue>>,
 }
 
 impl BenchmarkState {
@@ -891,6 +924,7 @@ impl BenchmarkState {
         max_gas: u64,
         batch_user_count: usize,
         chain_id: ChainId2,
+        simple_transfer: bool,
     ) -> Self {
         // Normalize to a usable batch size:
         // 1) no larger than account count
@@ -939,7 +973,21 @@ impl BenchmarkState {
             batch_index: AtomicUsize::new(0),
             is_completed: AtomicBool::new(false),
             chain_id,
+            simple_transfer,
+            txn_hashes: Mutex::new(HashSet::new()),
         }
+    }
+
+    /// Add transaction hashes to the benchmark set
+    fn add_txn_hashes(&self, hashes: &[HashValue]) {
+        let mut set = self.txn_hashes.lock().unwrap();
+        set.extend(hashes.iter().copied());
+    }
+
+    /// Check if a transaction hash belongs to the benchmark
+    fn is_benchmark_txn(&self, hash: &HashValue) -> bool {
+        let set = self.txn_hashes.lock().unwrap();
+        set.contains(hash)
     }
 
     /// Build next batch of transactions using different users each time.
@@ -977,6 +1025,7 @@ impl BenchmarkState {
             &mut seq_numbers,
             expire_time,
             self.chain_id,
+            self.simple_transfer,
         ) {
             Ok(txns) => Some(txns),
             Err(e) => {
@@ -1032,6 +1081,8 @@ async fn execute_benchmark(
     batch_user_count: usize,
     balance_wait_timeout_secs: u64,
     settle_delay_ms: u64,
+    _preload_batches: usize,
+    simple_transfer: bool,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -1066,6 +1117,7 @@ async fn execute_benchmark(
 
         let receivers = create_account(account_count, account_service.clone()).await?;
 
+        // Funding batch size: 10 receivers per transaction (~13.8M gas)
         let batch_size = 10usize;
         let estimated_funding_txns = receivers.len().div_ceil(batch_size);
         info!(
@@ -1102,14 +1154,16 @@ async fn execute_benchmark(
             max_gas,
             batch_user_count,
             chain_id,
+            simple_transfer,
         ));
 
         info!(
-            "Benchmark configured: {} accounts, {} users per batch, {} total batches, {} total txns",
+            "Benchmark configured: {} accounts, {} users per batch, {} total batches, {} total txns, simple_transfer={}",
             receivers.len(),
             batch_user_count,
             benchmark_state.total_batches(),
-            benchmark_state.total_txn_count
+            benchmark_state.total_txn_count,
+            simple_transfer
         );
 
         registry.put_shared(benchmark_state.clone()).await?;
@@ -1119,20 +1173,41 @@ async fn execute_benchmark(
         let receiver = txpool.subscribe_txns();
         observer.add_event_stream(receiver)?;
 
-        StarcoinVM::set_concurrency_level(num_cpus::get());
-
         info!(
             "Starting benchmark with {} user transactions",
             benchmark_state.total_txn_count
         );
 
-        // Submit first batch to kickstart the benchmark
+        // Build ALL transactions first, then sign and import them all at once
+        let total_batches = benchmark_state.total_batches();
+        info!(
+            "Building all {} batches of transactions before signing",
+            total_batches
+        );
+
         let expire_time = config.net().time_service().now_secs() + 3600;
-        if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
-            let _txn_hashes =
-                sign_and_import_transactions(&batch, &account_service, &txpool).await?;
-            info!("Submitted initial batch: {} transactions", batch.len());
+        let mut all_transactions: Vec<RawUserTransaction2> = Vec::new();
+        
+        for _ in 0..total_batches {
+            if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
+                all_transactions.extend(batch);
+            }
         }
+        
+        info!(
+            "Built {} total transactions, now signing all in parallel...",
+            all_transactions.len()
+        );
+        
+        // Sign and import ALL transactions at once
+        let txn_hashes =
+            sign_and_import_transactions(&all_transactions, &account_service, &txpool).await?;
+        benchmark_state.add_txn_hashes(&txn_hashes);
+        
+        info!(
+            "Preloading complete: {} transactions in txpool",
+            txn_hashes.len()
+        );
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
@@ -1216,31 +1291,62 @@ async fn sign_and_import_transactions(
     account_service: &ServiceRef<AccountService2>,
     txpool: &starcoin_txpool::TxPoolService,
 ) -> Result<Vec<HashValue>> {
+    use futures::future::join_all;
+
+    // First, unlock all unique sender accounts in parallel
+    let unique_senders: std::collections::HashSet<_> =
+        transactions.iter().map(|t| t.sender()).collect();
+
+    let unlock_futures: Vec<_> = unique_senders
+        .iter()
+        .map(|sender| {
+            let account_service = account_service.clone();
+            let sender = *sender;
+            async move {
+                account_service
+                    .send(AccountRequest::UnlockAccount(
+                        sender,
+                        "".to_string(),
+                        std::time::Duration::from_secs(3600),
+                    ))
+                    .await
+            }
+        })
+        .collect();
+
+    let _unlock_results = join_all(unlock_futures).await;
+
+    // Now sign all transactions in parallel
+    let sign_futures: Vec<_> = transactions
+        .iter()
+        .map(|txn| {
+            let account_service = account_service.clone();
+            let txn = txn.clone();
+            async move {
+                let sender_address = txn.sender();
+                match account_service
+                    .send(AccountRequest::SignTxn {
+                        txn: Box::new(txn),
+                        signer: sender_address,
+                    })
+                    .await??
+                {
+                    AccountResponse::SignedTxn(signed_transaction) => {
+                        Ok::<_, anyhow::Error>(*signed_transaction)
+                    }
+                    _ => bail!("Unexpected response type."),
+                }
+            }
+        })
+        .collect();
+
+    let sign_results = join_all(sign_futures).await;
+
     let mut signed_transactions = vec![];
     let mut txn_hashes = vec![];
-    for txn in transactions {
-        let sender_address = txn.sender();
-        match account_service
-            .send(AccountRequest::UnlockAccount(
-                sender_address,
-                "".to_string(),
-                std::time::Duration::from_secs(100),
-            ))
-            .await??
-        {
-            AccountResponse::AccountInfo(_) => (),
-            _ => bail!("Unexpected response type."),
-        }
-        let signed_transaction = match account_service
-            .send(AccountRequest::SignTxn {
-                txn: Box::new(txn.clone()),
-                signer: sender_address,
-            })
-            .await??
-        {
-            AccountResponse::SignedTxn(signed_transaction) => *signed_transaction,
-            _ => bail!("Unexpected response type."),
-        };
+
+    for result in sign_results {
+        let signed_transaction = result?;
         txn_hashes.push(signed_transaction.id());
         signed_transactions.push(signed_transaction);
     }
@@ -1262,45 +1368,75 @@ fn sign_and_import_transactions_sync(
     account_service: &ServiceRef<AccountService2>,
     txpool: &starcoin_txpool::TxPoolService,
 ) -> Result<Vec<HashValue>> {
+    use futures::future::join_all;
+
     let transactions = transactions.to_vec();
     let account_service = account_service.clone();
     let txpool = txpool.clone();
 
     // Spawn a new thread to avoid deadlock since we're already in a block_on context
     let handle = std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(num_cpus::get())
             .enable_all()
             .build()
             .expect("Failed to create runtime");
 
         rt.block_on(async {
+            // First, unlock all unique sender accounts in parallel
+            let unique_senders: std::collections::HashSet<_> =
+                transactions.iter().map(|t| t.sender()).collect();
+
+            let unlock_futures: Vec<_> = unique_senders
+                .iter()
+                .map(|sender| {
+                    let account_service = account_service.clone();
+                    let sender = *sender;
+                    async move {
+                        account_service
+                            .send(AccountRequest::UnlockAccount(
+                                sender,
+                                "".to_string(),
+                                std::time::Duration::from_secs(3600),
+                            ))
+                            .await
+                    }
+                })
+                .collect();
+
+            let _unlock_results = join_all(unlock_futures).await;
+
+            // Now sign all transactions in parallel
+            let sign_futures: Vec<_> = transactions
+                .iter()
+                .map(|txn| {
+                    let account_service = account_service.clone();
+                    let txn = txn.clone();
+                    async move {
+                        let sender_address = txn.sender();
+                        match account_service
+                            .send(AccountRequest::SignTxn {
+                                txn: Box::new(txn),
+                                signer: sender_address,
+                            })
+                            .await??
+                        {
+                            AccountResponse::SignedTxn(signed_transaction) => {
+                                Ok::<_, anyhow::Error>(*signed_transaction)
+                            }
+                            _ => bail!("Unexpected response type."),
+                        }
+                    }
+                })
+                .collect();
+
+            let sign_results = join_all(sign_futures).await;
+
             let mut signed_transactions = vec![];
             let mut txn_hashes = vec![];
 
-            for txn in &transactions {
-                let sender_address = txn.sender();
-                match account_service
-                    .send(AccountRequest::UnlockAccount(
-                        sender_address,
-                        "".to_string(),
-                        std::time::Duration::from_secs(100),
-                    ))
-                    .await??
-                {
-                    AccountResponse::AccountInfo(_) => (),
-                    _ => bail!("Unexpected response type."),
-                }
-
-                let signed_transaction = match account_service
-                    .send(AccountRequest::SignTxn {
-                        txn: Box::new(txn.clone()),
-                        signer: sender_address,
-                    })
-                    .await??
-                {
-                    AccountResponse::SignedTxn(signed_transaction) => *signed_transaction,
-                    _ => bail!("Unexpected response type."),
-                };
+            for result in sign_results {
+                let signed_transaction = result?;
                 txn_hashes.push(signed_transaction.id());
                 signed_transactions.push(signed_transaction);
             }
@@ -1376,7 +1512,8 @@ impl ObserverService {
         };
 
         let batch_index = state.batch_index.load(Ordering::SeqCst);
-        let _txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
+        let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
+        state.add_txn_hashes(&txn_hashes);
         info!(
             "Submitted batch {}/{}: {} transactions",
             batch_index,
@@ -1400,33 +1537,41 @@ impl ObserverService {
         let block_id = block.header().id();
         let block_timestamp_ms = block.header().timestamp();
 
-        // Count user transactions (non-block-metadata transactions)
-        let user_txn_count = block.body.transactions2.len();
-
+        // Count benchmark transactions only (not funding transactions)
+        let mut benchmark_txn_count = 0usize;
+        
         for transaction in &block.body.transactions2 {
-            self.transaction_data
-                .entry(transaction.id())
-                .or_default()
-                .push(TransactionExecutionResult::Executed(
-                    connected_time_ms,
-                    block_number,
-                    block_id,
-                    block_timestamp_ms,
-                ));
+            let txn_hash = transaction.id();
+            
+            // Only record benchmark transactions for TPS calculation
+            if let Some(ref state) = self.benchmark_state {
+                if state.is_benchmark_txn(&txn_hash) {
+                    self.transaction_data
+                        .entry(txn_hash)
+                        .or_default()
+                        .push(TransactionExecutionResult::Executed(
+                            connected_time_ms,
+                            block_number,
+                            block_id,
+                            block_timestamp_ms,
+                        ));
+                    benchmark_txn_count += 1;
+                }
+            }
         }
 
         if let Some(ref state) = self.benchmark_state {
-            if user_txn_count > 0 {
-                let total = state.add_executed_count(user_txn_count);
+            if benchmark_txn_count > 0 {
+                let total = state.add_executed_count(benchmark_txn_count);
                 info!(
-                    "Block {} executed {} user txns, total: {}/{}",
-                    block_number, user_txn_count, total, state.total_txn_count
+                    "Block {} executed {} benchmark txns, total: {}/{}",
+                    block_number, benchmark_txn_count, total, state.total_txn_count
                 );
                 // Mark completed when all transactions are executed
                 if state.all_batches_sent() && total >= state.total_txn_count {
                     state.mark_completed();
                 }
-                return Ok(user_txn_count);
+                return Ok(benchmark_txn_count);
             }
         }
 
@@ -1441,24 +1586,32 @@ impl ObserverService {
         let block_number = block.header().number();
         let block_id = block.header().id();
 
-        // Record mined event for each transaction in the block
-        let user_txn_count = block.body.transactions2.len();
+        // Record mined event only for benchmark transactions
+        let mut benchmark_txn_count = 0usize;
         
         for transaction in &block.body.transactions2 {
-            self.transaction_data
-                .entry(transaction.id())
-                .or_default()
-                .push(TransactionExecutionResult::Mined(
-                    mined_time_ms,
-                    block_number,
-                    block_id,
-                ));
+            let txn_hash = transaction.id();
+            
+            // Only record benchmark transactions
+            if let Some(ref state) = self.benchmark_state {
+                if state.is_benchmark_txn(&txn_hash) {
+                    self.transaction_data
+                        .entry(txn_hash)
+                        .or_default()
+                        .push(TransactionExecutionResult::Mined(
+                            mined_time_ms,
+                            block_number,
+                            block_id,
+                        ));
+                    benchmark_txn_count += 1;
+                }
+            }
         }
 
-        if user_txn_count > 0 {
+        if benchmark_txn_count > 0 {
             info!(
-                "Block {} mined with {} user txns at {}",
-                block_number, user_txn_count, mined_time_ms
+                "Block {} mined with {} benchmark txns at {}",
+                block_number, benchmark_txn_count, mined_time_ms
             );
         }
 

@@ -3,6 +3,8 @@
 //! This module records which optimizations worked in what contexts,
 //! building up a knowledge base that helps the agent make better decisions.
 
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
@@ -335,7 +337,7 @@ impl KnowledgeBase {
 
         // Generate insights for strategies with enough data
         let mut new_insights = Vec::new();
-        for (key, records) in by_strategy {
+        for (_key, records) in by_strategy {
             if records.len() < 3 {
                 continue; // Need at least 3 data points
             }
