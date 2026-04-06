@@ -151,7 +151,14 @@ where
     }
 
     fn maybe_remove(&self, key1: &Key1, key2: &Key2) {
-        let mut locked = self.inner.write();
+        // Drop path can be extremely hot during parallel sync execution.
+        // Use opportunistic cleanup to avoid blocking compute threads on
+        // registry write-lock contention.
+        let mut locked = match self.inner.inner().try_write() {
+            Ok(locked) => locked,
+            Err(std::sync::TryLockError::WouldBlock) => return,
+            Err(std::sync::TryLockError::Poisoned(_)) => return,
+        };
         if let Some(map2) = locked.get_mut(key1) {
             if let Some(entry) = map2.get(key2) {
                 if entry.upgrade().is_none() {
