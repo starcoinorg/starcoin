@@ -111,6 +111,7 @@ pub struct BenchmarkStats {
     pub mined_tps_median: f64,
     pub total_executed: usize,
     /// Number of benchmark blocks (sample size for TPS calculation)
+    #[serde(default)]
     pub block_count: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
