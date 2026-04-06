@@ -632,7 +632,7 @@ impl SyncService {
                                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                                         sync_task_total.with_label_values(&["break"]).inc();
                                     }
-                                    (false, false)
+                                    (false, true)
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);

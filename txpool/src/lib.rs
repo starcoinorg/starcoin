@@ -153,6 +153,9 @@ impl TxPoolActorService {
 }
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        // Txn gossip can burst during sync / catch-up; enlarge mailbox to reduce
+        // upstream TrySendError::Full drops in peer message handler.
+        ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.add_stream(self.inner.subscribe_txns());
 
