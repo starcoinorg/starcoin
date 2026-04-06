@@ -172,6 +172,13 @@ struct Cli {
     rounds: usize,
 
     #[arg(
+        long = "fixed-block-time",
+        default_value = "false",
+        help = "Use fixed block time interval instead of random. More deterministic for CI benchmarks."
+    )]
+    fixed_block_time: bool,
+
+    #[arg(
         long = "agent-mode",
         default_value = "false",
         help = "Run in agent mode with full analysis output (bottleneck detection, optimization suggestions, regression detection)."
@@ -283,6 +290,12 @@ impl DataDir {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Set fixed block time if requested
+    if cli.fixed_block_time {
+        std::env::set_var("STARCOIN_FIXED_BLOCK_TIME", "1");
+        println!("[Benchmark] Using fixed block time interval for deterministic timing");
+    }
 
     let network_choice = cli.network;
     let chain_network = network_choice.to_chain_network()?;
