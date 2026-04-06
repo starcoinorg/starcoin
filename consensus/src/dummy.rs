@@ -34,12 +34,20 @@ impl Consensus for DummyConsensus {
         difficulty: U256,
         time_service: &dyn TimeService,
     ) -> u32 {
-        let mut rng = rand::rng();
-        let low = difficulty.as_u32() / 2;
-        let high = difficulty.as_u32().saturating_add(low);
-        let time: u32 = rng.random_range(low..high);
+        // Check if fixed block time is requested via environment variable
+        // This is useful for benchmarking to get more stable TPS measurements
+        let time: u32 = if std::env::var("STARCOIN_FIXED_BLOCK_TIME").is_ok() {
+            // Use fixed time equal to difficulty (block_time_target)
+            difficulty.as_u32()
+        } else {
+            // Original random behavior
+            let mut rng = rand::rng();
+            let low = difficulty.as_u32() / 2;
+            let high = difficulty.as_u32().saturating_add(low);
+            rng.random_range(low..high)
+        };
         info!(
-            "DummyConsensus rand sleep time in millis second : {}, difficulty : {}",
+            "DummyConsensus sleep time in millis second : {}, difficulty : {}",
             time,
             difficulty.as_u32()
         );
