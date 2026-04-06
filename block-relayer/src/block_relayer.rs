@@ -15,6 +15,7 @@ use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::GetTxnsWithHash;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::ExecuteService;
+use starcoin_sync::sync::{CheckSyncEvent, SyncService};
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_time_service::TimeService;
@@ -70,6 +71,13 @@ impl BlockRelayer {
     pub fn is_nearly_synced(&self) -> bool {
         match self.sync_status.as_ref() {
             Some(sync_status) => sync_status.is_nearly_synced(),
+            None => false,
+        }
+    }
+
+    pub fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
     }
@@ -198,6 +206,23 @@ impl BlockRelayer {
         Ok(block)
     }
 
+    fn is_future_compact_block(
+        compact_block: &CompactBlock,
+        txpool: &TxPoolService,
+    ) -> Result<bool> {
+        let storage = txpool.get_store();
+        for parent_id in compact_block.header.parents_hash() {
+            let header = match storage.get_block_header_by_hash(*parent_id)? {
+                Some(header) => header,
+                None => return Ok(true),
+            };
+            if storage.get_block_info(header.id())?.is_none() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     fn handle_block_event(
         &self,
         compact_block_msg: PeerCompactBlockMessage,
@@ -205,15 +230,25 @@ impl BlockRelayer {
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<ExecuteService>()?.clone();
+        let sync_service = ctx.service_ref::<SyncService>()?.clone();
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let max_retry_times = node_config.sync.max_retry_times();
         let txpool = self.txpool.clone();
         let metrics = self.metrics.clone();
+        let is_synced = self.is_synced();
         let fut = async move {
             let compact_block = compact_block_msg.message.compact_block;
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
+            if !is_synced && Self::is_future_compact_block(&compact_block, &txpool)? {
+                info!(
+                    "[block-relay] compact block {:?} is future block while node not synced, trigger sync check and skip txn fill",
+                    block_id
+                );
+                let _ = sync_service.notify(CheckSyncEvent::default());
+                return Ok(());
+            }
             if let Ok(Some((_, _, _, version))) =
                 txpool.get_store().get_failed_block_by_id(block_id)
             {
