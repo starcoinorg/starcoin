@@ -1,4 +1,4 @@
-//! Simplified Agent Output - Stateless benchmark analysis
+//! Simplified Agent Output - Stat)less benchmark analysis
 //!
 //! Provides:
 //! 1. Pipeline analysis with bottleneck detection
@@ -130,22 +130,32 @@ impl std::fmt::Display for BenchmarkOutput {
         writeln!(f, "╚══════════════════════════════════════════════════════════════╝")?;
         writeln!(f)?;
 
-        // Benchmark Results
+        // Sample Quality Check
+        let sample_quality = if self.stats.block_count >= 5 {
+            "GOOD"
+        } else if self.stats.block_count >= 3 {
+            "ACCEPTABLE"
+        } else {
+            "LOW (increase --account-count for more stable results)"
+        };
+
+        // Benchmark Results - highlight stable metrics for CI
         writeln!(f, "========== Benchmark Results ==========")?;
+        writeln!(f, "Sample Size: {} blocks [{}]", self.stats.block_count, sample_quality)?;
+        writeln!(f)?;
+        writeln!(f, "--- CI Recommended Metrics (stable) ---")?;
+        writeln!(f, "  Median TPS: {:.2}", self.stats.block_tps_median)?;
+        writeln!(f, "  Avg TPS:    {:.2}", self.stats.block_tps_avg)?;
+        writeln!(f)?;
+        writeln!(f, "--- Raw TPS Data ---")?;
         writeln!(f, "TPS (executed-time): {:.2}", self.stats.tps)?;
         writeln!(
             f,
-            "TPS (per-block, block_ts->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            "TPS (per-block) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.stats.block_tps_min, self.stats.block_tps_max,
             self.stats.block_tps_avg, self.stats.block_tps_median
         )?;
-        writeln!(
-            f,
-            "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
-            self.stats.mined_tps_min, self.stats.mined_tps_max,
-            self.stats.mined_tps_avg, self.stats.mined_tps_median
-        )?;
-        writeln!(f, "Total Executed: {}", self.stats.total_executed)?;
+        writeln!(f, "Total Executed: {} txns", self.stats.total_executed)?;
         writeln!(
             f,
             "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",

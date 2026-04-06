@@ -87,8 +87,8 @@ struct Cli {
     #[arg(
         short = 'c',
         long = "account-count",
-        default_value = "20",
-        help = "Number of accounts to create for the benchmark."
+        default_value = "8000",
+        help = "Number of accounts to create for the benchmark. Higher values (8000+) give more stable TPS results."
     )]
     account_count: u32,
 

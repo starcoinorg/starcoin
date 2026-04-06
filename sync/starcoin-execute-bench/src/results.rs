@@ -110,6 +110,8 @@ pub struct BenchmarkStats {
     pub mined_tps_avg: f64,
     pub mined_tps_median: f64,
     pub total_executed: usize,
+    /// Number of benchmark blocks (sample size for TPS calculation)
+    pub block_count: usize,
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
     pub duplicate_pct: f64,
@@ -130,7 +132,7 @@ impl std::fmt::Display for BenchmarkStats {
             "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.mined_tps_min, self.mined_tps_max, self.mined_tps_avg, self.mined_tps_median
         )?;
-        writeln!(f, "Total Executed: {}", self.total_executed)?;
+        writeln!(f, "Total Executed: {} | Benchmark Blocks: {}", self.total_executed, self.block_count)?;
         writeln!(
             f,
             "Unique Txn (with Added): {} | Duplicates: {} ({:.1}%)",
@@ -214,7 +216,7 @@ impl<'a> ResultsDumper<'a> {
         // Calculate TPS based on executed times (more reliable)
         let tps = self.calculate_tps_from_executed();
         // Calculate per-block TPS statistics (block_timestamp -> executed_time)
-        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median) =
+        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, block_count) =
             self.calculate_per_block_tps_stats();
         // Calculate per-block TPS statistics (mined_time -> executed_time)
         let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) =
@@ -237,6 +239,7 @@ impl<'a> ResultsDumper<'a> {
             mined_tps_avg,
             mined_tps_median,
             total_executed: total_txns,
+            block_count,
             unique_txn_count,
             duplicate_exec_count,
             duplicate_pct,
@@ -341,8 +344,8 @@ impl<'a> ResultsDumper<'a> {
 
     /// Calculate per-block TPS statistics.
     /// For each block, TPS = txn_count / (exec_time - block_timestamp) in seconds.
-    /// Returns: (min_tps, max_tps, avg_tps, median_tps)
-    fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64) {
+    /// Returns: (min_tps, max_tps, avg_tps, median_tps, block_count)
+    fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64, usize) {
         // Collect block data: block_number -> (block_timestamp, exec_time, txn_count)
         let mut block_data: HashMap<u64, (u64, u64, usize)> = HashMap::new();
 
@@ -367,8 +370,10 @@ impl<'a> ResultsDumper<'a> {
             }
         }
 
+        let block_count = block_data.len();
+
         if block_data.is_empty() {
-            return (0.0, 0.0, 0.0, 0.0);
+            return (0.0, 0.0, 0.0, 0.0, 0);
         }
 
         // Calculate TPS for each block
@@ -384,12 +389,12 @@ impl<'a> ResultsDumper<'a> {
         }
 
         if block_tps_list.is_empty() {
-            return (0.0, 0.0, 0.0, 0.0);
+            return (0.0, 0.0, 0.0, 0.0, block_count);
         }
 
         let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&block_tps_list);
 
-        (min_tps, max_tps, avg_tps, median_tps)
+        (min_tps, max_tps, avg_tps, median_tps, block_count)
     }
 
     /// Calculate per-block TPS statistics based on Mined event time.
