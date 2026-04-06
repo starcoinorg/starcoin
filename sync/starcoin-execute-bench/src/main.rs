@@ -1,10 +1,6 @@
 mod agent_loop;
 mod analyzer;
-mod history;
-mod knowledge;
-mod regression;
 mod results;
-mod suggester;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -175,33 +171,7 @@ struct Cli {
     )]
     agent_mode: bool,
 
-    #[arg(
-        long = "history-dir",
-        default_value = ".benchmark_history",
-        help = "Directory for storing benchmark history (used by agent mode)."
-    )]
-    history_dir: String,
 
-    #[arg(
-        long = "knowledge-dir",
-        default_value = ".optimization_knowledge",
-        help = "Directory for storing optimization knowledge base (used by agent mode)."
-    )]
-    knowledge_dir: String,
-
-    #[arg(
-        long = "agent-output",
-        default_value = "agent_output.json",
-        help = "Output file for agent mode JSON results."
-    )]
-    agent_output: String,
-
-    #[arg(
-        long = "tags",
-        value_delimiter = ',',
-        help = "Comma-separated tags for this benchmark run (used by agent mode)."
-    )]
-    tags: Vec<String>,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -449,49 +419,9 @@ fn main() -> Result<()> {
             }
         };
         
-        // Create benchmark config for history
-        let bench_config = history::BenchmarkConfig {
-            account_count: cli.account_count,
-            batch_user_count: cli.batch_user_count,
-            gas_price: cli.gas_price,
-            max_gas: cli.max_gas,
-            network: format!("{:?}", cli.network),
-        };
-        
-        // Create agent loop with config
-        let agent_config = agent_loop::AgentConfig {
-            history_dir: cli.history_dir.clone(),
-            knowledge_dir: cli.knowledge_dir.clone(),
-            save_history: true,
-            use_knowledge_base: true,
-            ..Default::default()
-        };
-        
-        match agent_loop::AgentLoop::with_config(agent_config) {
-            Ok(mut agent) => {
-                match agent.process(bench_config, stats, pipeline_stages, cli.tags.clone()) {
-                    Ok(output) => {
-                        info!("\n{}", output);
-                        
-                        // Export to JSON
-                        if let Err(e) = agent_loop::AgentLoop::export_json(
-                            &output, 
-                            std::path::Path::new(&cli.agent_output)
-                        ) {
-                            error!("Failed to export agent output: {}", e);
-                        } else {
-                            info!("[Agent Mode] Output written to {}", cli.agent_output);
-                        }
-                    }
-                    Err(e) => {
-                        error!("[Agent Mode] Analysis failed: {}", e);
-                    }
-                }
-            }
-            Err(e) => {
-                error!("[Agent Mode] Failed to initialize agent loop: {}", e);
-            }
-        }
+        // Generate stateless analysis output
+        let output = agent_loop::BenchmarkOutput::from_stats(stats, pipeline_stages);
+        info!("\n{}", output);
     }
 
     let close_result = data_dir.close();
