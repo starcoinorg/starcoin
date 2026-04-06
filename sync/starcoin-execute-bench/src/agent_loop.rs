@@ -130,23 +130,23 @@ impl std::fmt::Display for BenchmarkOutput {
         writeln!(f, "╚══════════════════════════════════════════════════════════════╝")?;
         writeln!(f)?;
 
-        // Sample Quality Check based on middle blocks (used for stable TPS)
-        let sample_quality = if self.stats.middle_block_count >= 4 {
-            "GOOD"
-        } else if self.stats.middle_block_count >= 2 {
-            "ACCEPTABLE"
+        // Sample Quality and method description based on block count
+        let (sample_quality, method_desc) = if self.stats.block_count >= 5 {
+            ("GOOD", "exclude first/last + trimmed mean")
+        } else if self.stats.block_count >= 3 {
+            ("ACCEPTABLE", "remove min/max TPS + mean")
         } else {
-            "LOW (increase --account-count for more stable results)"
+            ("LOW", "median only (need more blocks)")
         };
 
         // Benchmark Results - highlight stable TPS for CI
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "Total Blocks: {} | Middle Blocks: {} [{}]", 
+        writeln!(f, "Total Blocks: {} | Used for calc: {} [{}]", 
             self.stats.block_count, self.stats.middle_block_count, sample_quality)?;
         writeln!(f)?;
         writeln!(f, "╭─────────────────────────────────────────╮")?;
         writeln!(f, "│  ★ STABLE TPS (CI Metric): {:<12.2} │", self.stats.stable_tps)?;
-        writeln!(f, "│    (trimmed mean of middle blocks)     │")?;
+        writeln!(f, "│    ({})     │", method_desc)?;
         writeln!(f, "╰─────────────────────────────────────────╯")?;
         writeln!(f)?;
         writeln!(f, "--- Raw TPS Data (for reference) ---")?;

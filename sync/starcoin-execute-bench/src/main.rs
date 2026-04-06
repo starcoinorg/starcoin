@@ -165,6 +165,13 @@ struct Cli {
     simple_transfer: bool,
 
     #[arg(
+        long = "rounds",
+        default_value = "3",
+        help = "Number of rounds to repeat benchmark transactions. More rounds = more blocks = more stable TPS metric."
+    )]
+    rounds: usize,
+
+    #[arg(
         long = "agent-mode",
         default_value = "false",
         help = "Run in agent mode with full analysis output (bottleneck detection, optimization suggestions, regression detection)."
@@ -311,10 +318,11 @@ fn main() -> Result<()> {
     init_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
-    // Set txpool max_count: if 0, auto-calculate based on account_count
+    // Set txpool max_count: if 0, auto-calculate based on account_count and rounds
     let txpool_max_count = if cli.txpool_max_count == 0 {
-        // Auto: account_count / 2 (benchmark txns) + account_count / 10 (funding txns) + buffer
-        let auto_count = (cli.account_count as u64 / 2) + (cli.account_count as u64 / 10) + 1000;
+        // Auto: (account_count / 2 * rounds) (benchmark txns) + account_count / 10 (funding txns) + buffer
+        let benchmark_txns = (cli.account_count as u64 / 2) * (cli.rounds as u64);
+        let auto_count = benchmark_txns + (cli.account_count as u64 / 10) + 1000;
         auto_count.max(4096) // At least default
     } else {
         cli.txpool_max_count
@@ -370,6 +378,7 @@ fn main() -> Result<()> {
         cli.settle_delay_ms,
         cli.preload_batches,
         cli.simple_transfer,
+        cli.rounds,
     ));
 
     // Disable pipeline timing collection after benchmark
@@ -836,7 +845,11 @@ struct BenchmarkState {
     gas_price: u64,
     max_gas: u64,
     batch_user_count: usize,
-    /// Total number of user transactions to be sent (calculated from accounts and batch_user_count)
+    /// Number of batches in one round
+    total_batches: usize,
+    /// Number of rounds to repeat
+    rounds: usize,
+    /// Total number of user transactions to be sent (calculated from accounts, batch_user_count, and rounds)
     total_txn_count: usize,
     executed_count: AtomicUsize,
     batch_index: AtomicUsize,
@@ -855,6 +868,7 @@ impl BenchmarkState {
         batch_user_count: usize,
         chain_id: ChainId2,
         simple_transfer: bool,
+        rounds: usize,
     ) -> Self {
         // Normalize to a usable batch size:
         // 1) no larger than account count
@@ -886,11 +900,11 @@ impl BenchmarkState {
             0
         };
         let txns_per_batch = effective_batch_user_count / 2;
-        let total_txn_count = total_batches * txns_per_batch;
+        let total_txn_count = total_batches * txns_per_batch * rounds;
 
         info!(
-            "BenchmarkState: accounts={}, effective_batch_user_count={}, total_batches={}, txns_per_batch={}, total_txn_count={}",
-            accounts.len(), effective_batch_user_count, total_batches, txns_per_batch, total_txn_count
+            "BenchmarkState: accounts={}, effective_batch_user_count={}, total_batches={}, txns_per_batch={}, rounds={}, total_txn_count={}",
+            accounts.len(), effective_batch_user_count, total_batches, txns_per_batch, rounds, total_txn_count
         );
 
         Self {
@@ -898,6 +912,8 @@ impl BenchmarkState {
             gas_price,
             max_gas,
             batch_user_count: effective_batch_user_count,
+            total_batches,
+            rounds,
             total_txn_count,
             executed_count: AtomicUsize::new(0),
             batch_index: AtomicUsize::new(0),
@@ -922,28 +938,34 @@ impl BenchmarkState {
 
     /// Build next batch of transactions using different users each time.
     /// Each batch uses batch_user_count users, where first half sends to second half.
+    /// Supports multiple rounds where the same accounts are reused with incrementing sequence numbers.
     /// Returns None if all batches have been sent.
     fn build_next_batch(&self, expire_time: u64) -> Option<Vec<RawUserTransaction2>> {
-        if self.batch_user_count == 0 {
+        if self.batch_user_count == 0 || self.total_batches == 0 {
             return None;
         }
         let batch_index = self.batch_index.fetch_add(1, Ordering::SeqCst);
-        let start = batch_index * self.batch_user_count;
 
-        // Check if we have enough accounts for this batch
-        if start + self.batch_user_count > self.accounts.len() {
+        // Check if we've completed all rounds
+        let total_batch_count = self.total_batches * self.rounds;
+        if batch_index >= total_batch_count {
             return None;
         }
 
+        // Calculate which batch within a round and which round we're in
+        let batch_in_round = batch_index % self.total_batches;
+        let round = batch_index / self.total_batches;
+
+        let start = batch_in_round * self.batch_user_count;
         let batch_accounts = &self.accounts[start..start + self.batch_user_count];
         let mid = self.batch_user_count / 2;
         let senders = &batch_accounts[..mid];
         let receivers = &batch_accounts[mid..];
 
-        // Each sender's sequence number is 0 since they haven't sent before
+        // Sequence number is the round number (0 in first round, 1 in second, etc.)
         let mut seq_numbers: HashMap<AccountAddress, u64> = HashMap::new();
         for sender in senders {
-            seq_numbers.insert(sender.address, 0);
+            seq_numbers.insert(sender.address, round as u64);
         }
 
         match build_transfer_transactions_sync(
@@ -959,7 +981,8 @@ impl BenchmarkState {
         ) {
             Ok(txns) => Some(txns),
             Err(e) => {
-                error!("Failed to build batch {}: {:?}", batch_index, e);
+                error!("Failed to build batch {} (round {}, batch_in_round {}): {:?}", 
+                       batch_index, round, batch_in_round, e);
                 None
             }
         }
@@ -967,20 +990,16 @@ impl BenchmarkState {
 
     /// Check if all batches have been sent
     fn all_batches_sent(&self) -> bool {
-        if self.batch_user_count == 0 {
+        if self.batch_user_count == 0 || self.total_batches == 0 {
             return true;
         }
-        let next_start = self.batch_index.load(Ordering::SeqCst) * self.batch_user_count;
-        next_start + self.batch_user_count > self.accounts.len()
+        let batch_index = self.batch_index.load(Ordering::SeqCst);
+        batch_index >= self.total_batches * self.rounds
     }
 
-    /// Get total number of batches
+    /// Get total number of batches (across all rounds)
     fn total_batches(&self) -> usize {
-        if self.batch_user_count == 0 {
-            0
-        } else {
-            self.accounts.len() / self.batch_user_count
-        }
+        self.total_batches * self.rounds
     }
 
     /// Check if all transactions have been executed
@@ -1013,6 +1032,7 @@ async fn execute_benchmark(
     settle_delay_ms: u64,
     _preload_batches: usize,
     simple_transfer: bool,
+    rounds: usize,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -1085,13 +1105,15 @@ async fn execute_benchmark(
             batch_user_count,
             chain_id,
             simple_transfer,
+            rounds,
         ));
 
         info!(
-            "Benchmark configured: {} accounts, {} users per batch, {} total batches, {} total txns, simple_transfer={}",
+            "Benchmark configured: {} accounts, {} users per batch, {} total batches, {} rounds, {} total txns, simple_transfer={}",
             receivers.len(),
             batch_user_count,
             benchmark_state.total_batches(),
+            rounds,
             benchmark_state.total_txn_count,
             simple_transfer
         );

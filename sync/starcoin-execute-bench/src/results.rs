@@ -436,27 +436,30 @@ impl<'a> ResultsDumper<'a> {
         let all_tps_values: Vec<f64> = all_block_tps.iter().map(|(_, tps)| *tps).collect();
         let (min_tps, max_tps, avg_tps, median_tps) = calculate_statistics(&all_tps_values);
 
-        // Calculate stable TPS: exclude first and last block, then use trimmed mean
-        let middle_block_tps: Vec<f64> = if all_block_tps.len() > 2 {
-            // Exclude first and last block
-            all_block_tps[1..all_block_tps.len() - 1]
+        // Calculate stable TPS using robust statistics:
+        // 1. For 5+ blocks: exclude first/last by time order, then use trimmed mean
+        // 2. For 3-4 blocks: remove min/max TPS values, use remaining mean
+        // 3. For 1-2 blocks: just use median (best we can do)
+        let (stable_tps, middle_block_count) = if all_block_tps.len() >= 5 {
+            // Enough blocks: exclude first/last by time, use trimmed mean
+            let middle_tps: Vec<f64> = all_block_tps[1..all_block_tps.len() - 1]
                 .iter()
                 .map(|(_, tps)| *tps)
-                .collect()
+                .collect();
+            let count = middle_tps.len();
+            (calculate_trimmed_mean(&middle_tps, 0.1), count)
+        } else if all_block_tps.len() >= 3 {
+            // Few blocks: remove min/max TPS (statistical outliers, not by position)
+            let mut sorted_tps = all_tps_values.clone();
+            sorted_tps.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            // Remove 1 min and 1 max
+            let trimmed: Vec<f64> = sorted_tps[1..sorted_tps.len() - 1].to_vec();
+            let count = trimmed.len();
+            let mean = trimmed.iter().sum::<f64>() / count as f64;
+            (mean, count)
         } else {
-            // Not enough blocks, use all
-            all_tps_values.clone()
-        };
-
-        let middle_block_count = middle_block_tps.len();
-        
-        // Use trimmed mean (remove top/bottom 10%) for stable TPS
-        let stable_tps = if middle_block_tps.len() >= 3 {
-            calculate_trimmed_mean(&middle_block_tps, 0.1)
-        } else {
-            // Not enough data for trimming, use median
-            let (_, _, _, median) = calculate_statistics(&middle_block_tps);
-            median
+            // 1-2 blocks: use median
+            (median_tps, all_block_tps.len())
         };
 
         (min_tps, max_tps, avg_tps, median_tps, stable_tps, block_count, middle_block_count)
