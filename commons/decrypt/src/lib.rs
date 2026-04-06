@@ -89,12 +89,12 @@ fn derive_key(derivation_param: &KeyDerivationParams, secret: &[u8]) -> Result<[
     let mut dk = [0u8; 32];
     // use secret to derive a key to encrypt plaintext
     // This should never fail if the secret provided correctly.
-    pbkdf2::pbkdf2::<hmac::Hmac<sha2::Sha256>>(
+    pbkdf2::pbkdf2_hmac::<sha2::Sha256>(
         secret,
         &derivation_param.pbkdf2_salt,
         derivation_param.pbkdf2_iterations,
         &mut dk,
-    )?;
+    );
     Ok(dk)
 }
 
