@@ -149,6 +149,11 @@ impl std::fmt::Display for BenchmarkOutput {
         writeln!(f, "│    ({})     │", method_desc)?;
         writeln!(f, "╰─────────────────────────────────────────╯")?;
         writeln!(f)?;
+        writeln!(f, "--- CI Comparison Guidelines ---")?;
+        writeln!(f, "Expected variance: ~25% (CV)")?;
+        writeln!(f, "For reliable comparison: run 3-5 times, use median")?;
+        writeln!(f, "Significant change threshold: >20% difference")?;
+        writeln!(f)?;
         writeln!(f, "--- Raw TPS Data (for reference) ---")?;
         writeln!(f, "TPS (all blocks): {:.2}", self.stats.tps)?;
         writeln!(

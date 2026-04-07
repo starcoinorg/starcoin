@@ -466,14 +466,7 @@ impl Inner {
             max_len: max_len as usize,
             ordering: PendingOrdering::Priority,
         };
-        // why here calls inner_status???
-        // self.queue
-        //     .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         self.queue.pending(pool_client, pending_settings)
-    }
-
-    pub fn try_read(&self) -> Option<parking_lot::RwLockReadGuard<crate::Pool>> {
-        self.queue.try_read()
     }
 
     pub(crate) fn next_sequence_number(&self, address: MultiAccountAddress) -> Option<u64> {
