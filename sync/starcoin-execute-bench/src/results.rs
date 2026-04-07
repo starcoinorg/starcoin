@@ -246,10 +246,20 @@ impl<'a> ResultsDumper<'a> {
 
         let (min_delay, max_delay, avg_delay, median_delay) = calculate_statistics(&all_delays);
 
-        // Calculate TPS based on executed times (more reliable)
+        // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
-        // Calculate per-block TPS statistics (block_timestamp -> executed_time)
-        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, stable_tps, block_count, middle_block_count) =
+        
+        // Calculate TPS based on block timestamps (STABLE - not affected by event queue delays)
+        // This uses block header timestamps set when blocks are created, providing more
+        // consistent measurements for CI benchmarks.
+        let (block_ts_tps, _total_txns, _first_block_ts, _last_block_ts) = 
+            self.calculate_tps_from_block_timestamps();
+        
+        // Use block timestamp TPS as stable_tps (more reliable for CI)
+        let stable_tps = block_ts_tps;
+        
+        // Calculate per-block TPS statistics (for reference, not used as stable_tps)
+        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, _old_stable_tps, block_count, middle_block_count) =
             self.calculate_per_block_tps_stats();
         // Calculate per-block TPS statistics (mined_time -> executed_time)
         let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) =
@@ -349,7 +359,49 @@ impl<'a> ResultsDumper<'a> {
         result
     }
 
-    /// Calculate TPS based on executed transaction times
+    /// Calculate TPS based on block timestamps (more stable than event processing time)
+    /// This uses block header timestamps which are set when the block is created,
+    /// not affected by event queue delays.
+    fn calculate_tps_from_block_timestamps(&self) -> (f64, usize, u64, u64) {
+        // Collect: block_number -> (block_timestamp, txn_count)
+        let mut block_data: HashMap<u64, (u64, usize)> = HashMap::new();
+
+        for events in self.transaction_data.values() {
+            for ev in events {
+                if let TransactionExecutionResult::Executed(_, block_number, _, block_ts) = ev {
+                    let entry = block_data.entry(*block_number).or_insert((*block_ts, 0));
+                    entry.1 += 1;
+                }
+            }
+        }
+
+        if block_data.len() < 2 {
+            return (0.0, 0, 0, 0);
+        }
+
+        // Sort by block_number
+        let mut sorted: Vec<(u64, u64, usize)> = block_data
+            .into_iter()
+            .map(|(num, (ts, cnt))| (num, ts, cnt))
+            .collect();
+        sorted.sort_by_key(|(num, _, _)| *num);
+
+        let first_block_ts = sorted.first().unwrap().1;
+        let last_block_ts = sorted.last().unwrap().1;
+        let total_txns: usize = sorted.iter().map(|(_, _, cnt)| cnt).sum();
+        
+        let duration_secs = (last_block_ts - first_block_ts) as f64 / 1000.0;
+        
+        let tps = if duration_secs > 0.0 {
+            total_txns as f64 / duration_secs
+        } else {
+            0.0
+        };
+
+        (tps, total_txns, first_block_ts, last_block_ts)
+    }
+
+    /// Calculate TPS based on executed transaction times (OLD - affected by event queue delays)
     fn calculate_tps_from_executed(&self) -> f64 {
         let mut all_exec_times: Vec<u64> = Vec::new();
 
@@ -380,7 +432,8 @@ impl<'a> ResultsDumper<'a> {
     /// Calculate per-block TPS statistics.
     /// For each block, TPS = txn_count / (exec_time - block_timestamp) in seconds.
     /// Returns: (min_tps, max_tps, avg_tps, median_tps, stable_tps, block_count, middle_block_count)
-    /// stable_tps: trimmed mean of middle blocks (excludes first/last, removes outliers)
+    /// NOTE: This uses event processing time (exec_ts) which is affected by event queue delays.
+    /// The stable_tps from this method is NOT used anymore - we use block timestamp TPS instead.
     fn calculate_per_block_tps_stats(&self) -> (f64, f64, f64, f64, f64, usize, usize) {
         // Collect block data: block_number -> (block_timestamp, exec_time, txn_count)
         let mut block_data: HashMap<u64, (u64, u64, usize)> = HashMap::new();
@@ -419,10 +472,11 @@ impl<'a> ResultsDumper<'a> {
         // Calculate TPS for each block
         let mut all_block_tps: Vec<(u64, f64)> = Vec::new(); // (block_number, tps)
         for (block_num, (block_ts, exec_ts, txn_count)) in sorted_blocks.iter() {
+            let duration_ms = exec_ts.saturating_sub(*block_ts);
+            let duration_secs = duration_ms as f64 / 1000.0;
+            let tps = if duration_secs > 0.0 { *txn_count as f64 / duration_secs } else { 0.0 };
             if *exec_ts > *block_ts && *txn_count > 0 {
-                let duration_secs = (*exec_ts - *block_ts) as f64 / 1000.0;
                 if duration_secs > 0.0 {
-                    let tps = *txn_count as f64 / duration_secs;
                     all_block_tps.push((*block_num, tps));
                 }
             }
