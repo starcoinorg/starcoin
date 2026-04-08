@@ -148,13 +148,16 @@ mod inner {
         /// Proxy function to mpsc::UnboundedReceiver
         /// that discounts the messages taken out
         pub fn try_next(&mut self) -> Result<Option<T>, TryRecvError> {
-            self.1.try_next().inspect(|s| {
-                if s.is_some() {
+            match self.1.try_recv() {
+                Ok(msg) => {
                     G_UNBOUNDED_CHANNELS_COUNTER
                         .with_label_values(&[self.0, "received"])
                         .inc();
+                    Ok(Some(msg))
                 }
-            })
+                Err(TryRecvError::Closed) => Ok(None),
+                Err(TryRecvError::Empty) => Err(TryRecvError::Empty),
+            }
         }
     }
 
