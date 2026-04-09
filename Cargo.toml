@@ -53,7 +53,6 @@ members = [
     "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -91,7 +90,6 @@ members = [
     # "vm/move-package-manager",
     "vm/vm-status-translator",
     # "vm/starcoin-transactional-test-harness",
-    "commons/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
@@ -190,7 +188,6 @@ default-members = [
     "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -266,7 +263,7 @@ panic = "unwind"
 debug = false
 panic = "unwind"
 debug-assertions = false
-codegen-units = 1
+codegen-units = 16
 
 [workspace.package]
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
@@ -348,7 +345,7 @@ governor = { version = "0.4.2", features = ["dashmap"] }
 hashbrown = "0.16.1"
 heck = "0.5.0"
 hex = "0.4"
-hmac = "0.12.1"
+hmac = "0.13.0"
 hyper = { version = "0.14.12", features = ["full"] }
 include_dir = { version = "0.6.2", features = ["search"] }
 indicatif = "0.16.2"
@@ -435,7 +432,7 @@ blake2-rfc = "0.2.18"
 bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0" }
 flate2 = "1.1"
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
-ripemd = "0.1.1"
+ripemd = "0.2.0"
 siphasher = "1.0.2"
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 
@@ -621,8 +618,8 @@ starcoin-vm2-account-provider = { path = "vm2/account/provider" }
 starcoin-vm2-resource-viewer = { path = "vm2/resource-viewer" }
 starcoin-vm2-status-translator = { path = "vm2/vm-status-translator", package = "starcoin-status-translator" }
 
-move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83", package = "move-core-types" }
-move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "24eccc3867aaad42d25f1661685ae0fd6546cb83", package = "move-transactional-test-runner" }
+move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-core-types" }
+move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-transactional-test-runner" }
 
 strum = "0.28"
 strum_macros = "0.28.0"

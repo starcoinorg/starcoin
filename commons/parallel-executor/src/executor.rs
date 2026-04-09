@@ -997,7 +997,9 @@ where
 mod tests {
     use super::*;
     use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
-    use starcoin_aggregator::delayed_change::DelayedChange;
+    use starcoin_aggregator::bounded_math::SignedU128;
+    use starcoin_aggregator::delayed_change::{DelayedApplyChange, DelayedChange};
+    use starcoin_aggregator::delta_change_set::DeltaWithMax;
     use starcoin_aggregator::types::{
         DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr, ReadPosition,
     };
@@ -2213,6 +2215,114 @@ mod tests {
 
         assert_eq!(v0, DelayedFieldValue::Aggregator(10));
         assert_eq!(v1, DelayedFieldValue::Aggregator(20));
+    }
+
+    #[derive(Debug, Clone)]
+    enum CreateThenAddOp {
+        Create { value: u128 },
+        Add { delta: u128, max_value: u128 },
+    }
+
+    #[derive(Debug, Clone)]
+    struct CreateThenAddTxn {
+        id: DelayedFieldID,
+        op: CreateThenAddOp,
+    }
+
+    impl Transaction for CreateThenAddTxn {
+        type Key = u64;
+        type Value = u64;
+    }
+
+    #[derive(Debug, Clone)]
+    struct CreateThenAddOutput {
+        changes: Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)>,
+    }
+
+    impl TransactionOutput for CreateThenAddOutput {
+        type T = CreateThenAddTxn;
+
+        fn get_writes(&self) -> Vec<(u64, u64)> {
+            Vec::new()
+        }
+
+        fn gas_used(&self) -> u64 {
+            0
+        }
+
+        fn skip_output() -> Self {
+            Self {
+                changes: Vec::new(),
+            }
+        }
+
+        fn delayed_field_change_set(&self) -> Vec<(DelayedFieldID, DelayedChange<DelayedFieldID>)> {
+            self.changes.clone()
+        }
+    }
+
+    struct CreateThenAddExecutor;
+
+    impl ExecutorTask for CreateThenAddExecutor {
+        type T = CreateThenAddTxn;
+        type Output = CreateThenAddOutput;
+        type Error = ();
+        type Argument = ();
+
+        fn init(_args: Self::Argument) -> Self {
+            Self
+        }
+
+        fn execute_transaction(
+            &self,
+            _view: &MVHashMapView<u64, u64>,
+            txn: &Self::T,
+        ) -> ExecutionStatus<Self::Output, ()> {
+            let change = match txn.op {
+                CreateThenAddOp::Create { value } => {
+                    DelayedChange::Create(DelayedFieldValue::Aggregator(value))
+                }
+                CreateThenAddOp::Add { delta, max_value } => {
+                    DelayedChange::Apply(DelayedApplyChange::AggregatorDelta {
+                        delta: DeltaWithMax::new(SignedU128::Positive(delta), max_value),
+                    })
+                }
+            };
+            ExecutionStatus::Success(CreateThenAddOutput {
+                changes: vec![(txn.id, change)],
+            })
+        }
+    }
+
+    #[test]
+    fn test_delayed_field_create_then_add_accumulates_value() {
+        let id = DelayedFieldID::new_with_width(4000, 8);
+        let txns = vec![
+            CreateThenAddTxn {
+                id,
+                op: CreateThenAddOp::Create { value: 10 },
+            },
+            CreateThenAddTxn {
+                id,
+                op: CreateThenAddOp::Add {
+                    delta: 5,
+                    max_value: 100,
+                },
+            },
+        ];
+
+        let executor: ParallelTransactionExecutor<CreateThenAddTxn, CreateThenAddExecutor> =
+            ParallelTransactionExecutor::new(2, None).with_delayed_fields(true);
+        let (_outputs, delayed_fields) = executor
+            .execute_transactions_parallel_with_delayed_fields((), txns)
+            .unwrap();
+
+        let v = delayed_fields
+            .read_latest_predicted_value(&id, 2, ReadPosition::AfterCurrentTxn)
+            .unwrap();
+
+        assert_ne!(v, DelayedFieldValue::Aggregator(10));
+        assert_eq!(v, DelayedFieldValue::Aggregator(15));
     }
 
     #[test]

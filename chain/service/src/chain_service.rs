@@ -749,10 +749,31 @@ mod tests {
         let c1 = create_block_with_tips(&fork_chain, miner.clone(), vec![genesis_id], &net)?;
         fork_chain.apply(c1.clone())?;
 
-        let merge = create_block_with_tips(&chain, miner, vec![b1.id(), c1.id()], &net)?;
-        chain.apply(merge.clone())?;
-
-        assert_eq!(chain.current_header().id(), merge.id());
+        let merge_tips = vec![b1.id(), c1.id()];
+        let selected_parent = chain
+            .dag()
+            .ghost_dag_manager()
+            .ghostdag(&merge_tips)?
+            .selected_parent;
+        let merge = if selected_parent == chain.current_header().id() {
+            let merge = create_block_with_tips(&chain, miner.clone(), merge_tips.clone(), &net)?;
+            chain.apply(merge.clone())?;
+            assert_eq!(chain.current_header().id(), merge.id());
+            merge
+        } else if selected_parent == fork_chain.current_header().id() {
+            let merge =
+                create_block_with_tips(&fork_chain, miner.clone(), merge_tips.clone(), &net)?;
+            fork_chain.apply(merge.clone())?;
+            assert_eq!(fork_chain.current_header().id(), merge.id());
+            merge
+        } else {
+            bail!(
+                "unexpected selected parent {:?}, main head {:?}, fork head {:?}",
+                selected_parent,
+                chain.current_header().id(),
+                fork_chain.current_header().id()
+            );
+        };
 
         let service_inner = ChainReaderServiceInner::new(
             config.clone(),

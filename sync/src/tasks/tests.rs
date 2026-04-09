@@ -12,8 +12,8 @@ use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
+use anyhow::Context;
 use anyhow::{ensure, format_err, Result};
-use anyhow::{Context, Ok};
 use futures::channel::mpsc::unbounded;
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -1093,16 +1093,15 @@ fn sync_block_in_async_connection(
     let process_block = move || {
         // Simply wait for the target block without creating a new chain
         loop {
-            if let std::result::Result::Ok(result) = receiver.try_next() {
-                match result {
-                    Some(event) => {
-                        // Just check if we've reached the target block
-                        if target_id == event.block.id() {
-                            break;
-                        }
+            match receiver.try_recv() {
+                Ok(event) => {
+                    // Just check if we've reached the target block
+                    if target_id == event.block.id() {
+                        break;
                     }
-                    None => break,
                 }
+                Err(futures::channel::mpsc::TryRecvError::Closed) => break,
+                Err(futures::channel::mpsc::TryRecvError::Empty) => {}
             }
         }
     };
