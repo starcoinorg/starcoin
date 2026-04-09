@@ -45,7 +45,7 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
-    write_set::WriteOp,
+    write_set::{TransactionWrite, WriteOp},
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
@@ -425,6 +425,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                 &vm_output,
                 &mapping,
                 delayed_field_cache,
+                state_view,
                 max_value_nest_depth,
             )?
         };
@@ -457,11 +458,21 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     let mut has_agg_v1 = false;
     let mut group_touches = 0u64;
     let mut group_touch_counts: HashMap<StateKey, usize> = HashMap::new();
+    let mut delayed_resource_touch_counts: HashMap<StateKey, usize> = HashMap::new();
     for (_, output) in outputs.iter() {
         if !output.output.aggregator_v1_delta_set().is_empty() {
             has_agg_v1 = true;
         }
         for (key, op) in output.output.resource_write_set() {
+            if matches!(
+                op,
+                AbstractResourceWriteOp::WriteWithDelayedFields(_)
+                    | AbstractResourceWriteOp::InPlaceDelayedFieldChange(_)
+            ) {
+                *delayed_resource_touch_counts
+                    .entry(key.clone())
+                    .or_insert(0) += 1;
+            }
             if is_group_write_op(op) {
                 group_touches += 1;
                 *group_touch_counts.entry(key.clone()).or_insert(0) += 1;
@@ -469,7 +480,10 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         }
     }
     let has_group_dup = group_touch_counts.values().any(|count| *count > 1);
-    let needs_sequential = has_agg_v1 || has_group_dup;
+    let has_delayed_resource_dup = delayed_resource_touch_counts
+        .values()
+        .any(|count| *count > 1);
+    let needs_sequential = has_agg_v1 || has_group_dup || has_delayed_resource_dup;
     outputs.sort_by_key(|(idx, _)| *idx);
 
     if !needs_sequential {
@@ -493,9 +507,10 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 
     info!(
         target: "vm-bench",
-        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
+        "materialize sequential: agg_v1={} group_dup={} delayed_resource_dup={} group_touches={}",
         has_agg_v1,
         has_group_dup,
+        has_delayed_resource_dup,
         group_touches
     );
     let mut state_cache = StateViewCache::new(state_view);
@@ -632,6 +647,7 @@ fn materialize_resource_write_set_no_groups(
     output: &VMOutput,
     mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
+    state_view: &impl StateView,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<(StateKey, WriteOp)>, VMStatus> {
     let mut patched = Vec::new();
@@ -662,6 +678,7 @@ fn materialize_resource_write_set_no_groups(
                 metadata,
                 mapping,
                 delayed_field_cache,
+                state_view,
                 max_value_nest_depth,
             )?,
             AbstractResourceWriteOp::WriteResourceGroup(_)
@@ -736,6 +753,7 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                     metadata,
                     mapping,
                     delayed_field_cache,
+                    state_view,
                     max_value_nest_depth,
                 )?
             }
@@ -830,17 +848,37 @@ fn materialize_in_place_change(
     metadata: &starcoin_vm_types::state_store::state_value::StateValueMetadata,
     mapping: &impl ValueToIdentifierMapping,
     delayed_field_cache: &DelayedFieldCache,
+    state_view: &impl StateView,
     max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
-    let base = delayed_field_cache.get_base_value(key).ok_or_else(|| {
-        VMStatus::error(
-            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-            Some(format!(
-                "Missing cached base value for delayed field exchange: {:?}",
-                key
-            )),
-        )
-    })?;
+    let base = if let Some(cached_base) = delayed_field_cache.get_base_value(key) {
+        cached_base
+    } else {
+        let state_value = state_view
+            .get_state_value(key)
+            .map_err(|err| {
+                VMStatus::error(
+                    StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                    Some(format!(
+                        "Failed to read base state value for delayed field exchange {:?}: {:?}",
+                        key, err
+                    )),
+                )
+            })?
+            .ok_or_else(|| {
+                VMStatus::error(
+                    StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                    Some(format!(
+                        "Missing base state value for delayed field exchange: {:?}",
+                        key
+                    )),
+                )
+            })?;
+
+        let base_from_state = WriteOp::from_state_value(Some(state_value));
+        delayed_field_cache.insert_base_value(key.clone(), base_from_state.clone(), true);
+        base_from_state
+    };
     let bytes = base
         .bytes()
         .ok_or_else(|| {
@@ -1134,6 +1172,7 @@ mod tests {
     use starcoin_aggregator::bounded_math::SignedU128;
     use starcoin_aggregator::delta_change_set::DeltaOp;
     use starcoin_aggregator::delta_math::DeltaHistory;
+    use starcoin_aggregator::types::DelayedFieldValue;
     use starcoin_vm_runtime_types::change_set::VMChangeSet;
     use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
     use starcoin_vm_runtime_types::resolver::ResourceGroupSize;
@@ -1144,6 +1183,8 @@ mod tests {
     use starcoin_vm_types::transaction::TransactionAuxiliaryData;
     use starcoin_vm_types::write_set::WriteOp;
     use std::time::{Duration, Instant};
+
+    mod tests_delayed_from_state;
 
     struct TestMapping {
         value: u64,
@@ -1224,6 +1265,7 @@ mod tests {
             &StateValueMetadata::none(),
             &mapping,
             &delayed_field_cache,
+            &InMemoryStateView::new(HashMap::new()),
             Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
         )
         .unwrap();
@@ -1342,6 +1384,116 @@ mod tests {
         (outputs, InMemoryStateView::new(state_data), agg_key)
     }
 
+    fn build_delayed_only_dependency_case(
+        consumer_count: usize,
+    ) -> (
+        Vec<(usize, StarcoinTransactionOutput)>,
+        InMemoryStateView,
+        VersionedDelayedFields<DelayedFieldID>,
+        StateKey,
+    ) {
+        let address = AccountAddress::from_hex_literal("0x1").unwrap();
+        let struct_tag = StructTag {
+            address,
+            module: Identifier::new("DelayedOnly").unwrap(),
+            name: Identifier::new("Resource").unwrap(),
+            type_args: vec![],
+        };
+        let state_key = StateKey::resource(&address, &struct_tag).unwrap();
+        let layout = Arc::new(MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Native(
+                move_core_types::value::IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U64),
+            ),
+        ])));
+        let delayed_id = DelayedFieldID::new_with_width(101, 8);
+        let delayed_value = Value::struct_(Struct::pack(vec![
+            Value::u64(1),
+            Value::delayed_value(delayed_id),
+        ]));
+        let delayed_bytes = ValueSerDeContext::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
+            .with_delayed_fields_serde()
+            .serialize(&delayed_value, layout.as_ref())
+            .unwrap()
+            .unwrap();
+        let delayed_bytes = Bytes::from(delayed_bytes);
+
+        let mut outputs = Vec::with_capacity(consumer_count + 1);
+        let mut first_write_set = BTreeMap::new();
+        first_write_set.insert(
+            state_key.clone(),
+            AbstractResourceWriteOp::WriteWithDelayedFields(WriteWithDelayedFieldsOp {
+                write_op: WriteOp::Modification {
+                    data: delayed_bytes.clone(),
+                    metadata: StateValueMetadata::none(),
+                },
+                layout: layout.clone(),
+                materialized_size: Some(delayed_bytes.len() as u64),
+            }),
+        );
+        outputs.push((
+            0,
+            StarcoinTransactionOutput::new(
+                VMOutput::new(
+                    VMChangeSet::new(
+                        first_write_set,
+                        vec![],
+                        BTreeMap::new(),
+                        BTreeMap::new(),
+                        BTreeMap::new(),
+                    ),
+                    ModuleWriteSet::empty(),
+                    FeeStatement::zero(),
+                    TransactionStatus::Keep(KeptVMStatus::Executed),
+                    TransactionAuxiliaryData::None,
+                ),
+                HashMap::new(),
+            ),
+        ));
+
+        for txn_idx in 1..=consumer_count {
+            let mut write_set = BTreeMap::new();
+            write_set.insert(
+                state_key.clone(),
+                AbstractResourceWriteOp::InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
+                    layout: layout.clone(),
+                    materialized_size: delayed_bytes.len() as u64,
+                    metadata: StateValueMetadata::none(),
+                }),
+            );
+            outputs.push((
+                txn_idx,
+                StarcoinTransactionOutput::new(
+                    VMOutput::new(
+                        VMChangeSet::new(
+                            write_set,
+                            vec![],
+                            BTreeMap::new(),
+                            BTreeMap::new(),
+                            BTreeMap::new(),
+                        ),
+                        ModuleWriteSet::empty(),
+                        FeeStatement::zero(),
+                        TransactionStatus::Keep(KeptVMStatus::Executed),
+                        TransactionAuxiliaryData::None,
+                    ),
+                    HashMap::new(),
+                ),
+            ));
+        }
+
+        let delayed_fields = VersionedDelayedFields::empty();
+        delayed_fields.set_base_value(delayed_id, DelayedFieldValue::Aggregator(7));
+
+        (
+            outputs,
+            InMemoryStateView::new(HashMap::new()),
+            delayed_fields,
+            state_key,
+        )
+    }
+
     fn materialize_parallel_outputs_legacy_all_seq<S: StateView + Sync>(
         mut outputs: Vec<(usize, StarcoinTransactionOutput)>,
         delayed_fields: VersionedDelayedFields<DelayedFieldID>,
@@ -1451,6 +1603,34 @@ mod tests {
             Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
         )
         .unwrap();
+        assert_eq!(mixed, legacy);
+    }
+
+    #[test]
+    fn delayed_only_dependency_materialization_matches_legacy_all_seq() {
+        let (mixed_inputs, mixed_state_view, mixed_delayed_fields, mixed_key) =
+            build_delayed_only_dependency_case(64);
+        let (legacy_inputs, legacy_state_view, legacy_delayed_fields, legacy_key) =
+            build_delayed_only_dependency_case(64);
+        assert_eq!(mixed_key, legacy_key);
+
+        let mixed = materialize_parallel_outputs(
+            mixed_inputs,
+            mixed_delayed_fields,
+            Arc::new(DelayedFieldCache::default()),
+            &mixed_state_view,
+            Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+        )
+        .expect("delayed-only dependency case should materialize successfully");
+        let legacy = materialize_parallel_outputs_legacy_all_seq(
+            legacy_inputs,
+            legacy_delayed_fields,
+            Arc::new(DelayedFieldCache::default()),
+            &legacy_state_view,
+            Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+        )
+        .expect("legacy all-seq materialization should succeed");
+
         assert_eq!(mixed, legacy);
     }
 
