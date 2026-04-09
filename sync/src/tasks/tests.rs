@@ -1156,14 +1156,14 @@ fn sync_block_in_async_connection(
         // Simply wait for the target block without creating a new chain
         loop {
             match receiver.try_recv() {
-                Ok(event) => {
+                std::result::Result::Ok(event) => {
                     // Just check if we've reached the target block
                     if target_id == event.block.id() {
                         break;
                     }
                 }
-                Err(futures::channel::mpsc::TryRecvError::Closed) => break,
-                Err(futures::channel::mpsc::TryRecvError::Empty) => {}
+                std::result::Result::Err(futures::channel::mpsc::TryRecvError::Closed) => break,
+                std::result::Result::Err(futures::channel::mpsc::TryRecvError::Empty) => {}
             }
         }
     };

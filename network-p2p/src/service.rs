@@ -1387,7 +1387,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                         error);
 
                         if this.boot_node_ids.contains(&peer_id) {
-                            if matches!(&error, DialError::WrongPeerId { .. }) {
+                            if let DialError::WrongPeerId { .. } = error {
                                 error!(
                                 "💔 The bootnode you want to connect to provided a different peer ID than the one you expect: `{}`.",
                                 peer_id,
@@ -1397,7 +1397,7 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                     }
 
                     if let Some(metrics) = this.metrics.as_ref() {
-                        match &error {
+                        match error {
                             DialError::Denied { .. } => metrics
                                 .pending_connections_errors_total
                                 .with_label_values(&["limit-reached"])

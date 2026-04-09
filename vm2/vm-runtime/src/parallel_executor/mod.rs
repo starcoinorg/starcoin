@@ -1207,10 +1207,10 @@ mod tests {
         ]));
         let updated_bytes =
             ValueSerDeContext::<DelayedFieldID>::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
-            .with_delayed_fields_serde()
-            .serialize(&updated_value, &layout_delayed)
-            .unwrap()
-            .unwrap();
+                .with_delayed_fields_serde()
+                .serialize(&updated_value, &layout_delayed)
+                .unwrap()
+                .unwrap();
 
         let delayed_field_cache = DelayedFieldCache::default();
         delayed_field_cache.insert_base_value(
