@@ -946,13 +946,17 @@ where
     }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {
-        if block_info.block_accumulator_info.num_leaves
-            == self.target.block_info.block_accumulator_info.num_leaves
-        {
-            Ok(CollectorState::Enough)
-        } else {
-            Ok(CollectorState::Need)
+        let current_leaves = block_info.block_accumulator_info.num_leaves;
+        let target_leaves = self.target.block_info.block_accumulator_info.num_leaves;
+        if current_leaves < target_leaves {
+            return Ok(CollectorState::Need);
         }
+        if *block_info.block_id() == self.target.target_id.id()
+            || self.chain.has_dag_block(self.target.target_id.id())?
+        {
+            return Ok(CollectorState::Enough);
+        }
+        Ok(CollectorState::Need)
     }
 
     pub fn check_enough(&self) -> Result<CollectorState> {
@@ -1009,7 +1013,12 @@ where
                             .local_store
                             .get_block(current_header.id())?
                             .expect("failed to get the current block which should exist");
-                        self.latest_block_id = current_header.id();
+                        self.latest_block_id =
+                            if self.chain.has_dag_block(self.target.target_id.id())? {
+                                self.target.target_id.id()
+                            } else {
+                                current_header.id()
+                            };
                         let notify_begin = Instant::now();
                         let notify_result = self.notify_connected_block(
                             current_block,
@@ -1055,10 +1064,16 @@ where
                             }
                         };
                         apply_connect_ms = apply_begin.elapsed().as_millis();
-                        self.latest_block_id = self.chain.current_header().id();
 
                         //verify target
                         let state = self.check_enough_by_info(block_info.clone())?;
+                        self.latest_block_id = if matches!(state, CollectorState::Enough)
+                            && self.chain.has_dag_block(self.target.target_id.id())?
+                        {
+                            self.target.target_id.id()
+                        } else {
+                            self.chain.current_header().id()
+                        };
 
                         let notify_begin = Instant::now();
                         let notify_result =
