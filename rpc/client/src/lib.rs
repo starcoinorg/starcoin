@@ -1,5 +1,5 @@
 // Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2
+// SPDX-License-Identifier: Apache-2.0
 
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
@@ -7,6 +7,7 @@ pub use crate::remote_state_reader2::{
     AsyncRemoteStateReader, RemoteStateReader as RemoteStateReader2,
 };
 use actix::{Addr, Arbiter, System};
+use anyhow::anyhow;
 pub use async_client::AsyncRpcClient;
 use bcs_ext::BCSCodec;
 use futures::channel::oneshot;
@@ -108,6 +109,16 @@ impl ConnSource {
             Self::Local(channel) => channel.supports_pubsub(),
         }
     }
+
+    fn transport_kind(&self) -> &'static str {
+        match self {
+            Self::Ipc(_) => "ipc",
+            Self::Http(_) => "http",
+            Self::Tcp(_) => "tcp",
+            Self::WebSocket(_) => "websocket",
+            Self::Local(_) => "local",
+        }
+    }
 }
 
 impl<P> From<P> for ConnSource
@@ -166,6 +177,17 @@ impl ConnectionProvider {
 }
 
 impl RpcClient {
+    fn ensure_pubsub_supported(&self, operation: &str) -> anyhow::Result<()> {
+        if self.supports_pubsub {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "{operation} requires websocket/ipc transport; current transport {} does not support pubsub",
+                self.provider.conn_source.transport_kind()
+            ))
+        }
+    }
+
     pub(crate) fn new(conn_source: ConnSource) -> anyhow::Result<Self> {
         let (tx, rx) = oneshot::channel();
         let supports_pubsub = conn_source.supports_pubsub();
@@ -238,11 +260,7 @@ impl RpcClient {
         txn_hash: HashValue,
         timeout: Option<Duration>,
     ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
-        if !self.supports_pubsub {
-            return Err(anyhow::anyhow!(
-                "watch_txn requires websocket/ipc transport; http/https does not support pubsub"
-            ));
-        }
+        self.ensure_pubsub_supported("watch_txn")?;
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
@@ -258,11 +276,7 @@ impl RpcClient {
         &self,
         block_number: BlockNumber,
     ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
-        if !self.supports_pubsub {
-            return Err(anyhow::anyhow!(
-                "watch_block requires websocket/ipc transport; http/https does not support pubsub"
-            ));
-        }
+        self.ensure_pubsub_supported("watch_block")?;
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
@@ -1329,7 +1343,7 @@ impl From<RpcChannel> for RpcClientInner {
 
 #[cfg(test)]
 mod tests {
-    use super::{should_reset_connection, RpcError};
+    use super::{should_reset_connection, ConnSource, RpcError};
     use jsonrpsee::core::client::Error as JsonRpseeClientError;
     use jsonrpsee::types::ErrorObjectOwned;
     use std::io;
@@ -1364,5 +1378,21 @@ mod tests {
         )));
         let err: RpcError = JsonRpseeClientError::RestartNeeded(Arc::new(inner)).into();
         assert!(should_reset_connection(&err));
+    }
+
+    #[test]
+    fn transport_kind_reports_tcp() {
+        assert_eq!(
+            ConnSource::Tcp("127.0.0.1:9860".to_string()).transport_kind(),
+            "tcp"
+        );
+    }
+
+    #[test]
+    fn transport_kind_reports_http() {
+        assert_eq!(
+            ConnSource::Http("http://127.0.0.1:9850".to_string()).transport_kind(),
+            "http"
+        );
     }
 }
